@@ -7,10 +7,11 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
+import { CURRENT_SYMBOL_CLOCK_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
 import { CURRENT_SYMBOL_METADATA_RUNTIME_PROFILE, readCurrentSymbolMetadata } from "../src/current-symbol-metadata-runtime.ts";
 import { buildCurrentClosedSymbolMetadataProgram, buildCurrentSymbolMetadataProgram } from "../src/current-symbol-metadata-program.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise both fixed collectors and their distinct source pins against one real file/crypto verification fixture.
 import { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
-// oxlint-disable-next-line import/max-dependencies -- Exercise both fixed collectors against the same real source-verification fixture without duplicating its file/crypto setup.
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
@@ -27,6 +28,13 @@ const syntheticFiles = [
   ...implementation.files.map((pin, index) => ({ relativePath: pin.relativePath, sha256: pin.sha256,
     data: Buffer.alloc(pin.bytes, index + 1) })),
 ].map((file) => Object.assign(file, { syntheticSha256: crypto.createHash("sha256").update(file.data).digest("hex") }));
+const clockFile = { ...CURRENT_SYMBOL_CLOCK_IMPLEMENTATION, data: Buffer.alloc(CURRENT_SYMBOL_CLOCK_IMPLEMENTATION.bytes, 9) };
+const witnessSyntheticFiles = [...syntheticFiles,
+  { ...clockFile, syntheticSha256: crypto.createHash("sha256").update(clockFile.data).digest("hex") }];
+const runtimeObservation = { editorVersion: "3.2.206", actor: { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" },
+  clockSamples: Array.from({ length: 4 }, (_, index) => ({ rendererBeforeMs: 1000 + index * 3,
+    serverTimeMs: 1001 + index * 3, rendererAfterMs: 1002 + index * 3 })),
+  backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false };
 
 function encoded(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope(value) } }; }
 
@@ -60,7 +68,7 @@ function mockSyntheticDigests(context: TestContext, calls: string[]): void {
     function digest(encoding: crypto.BinaryToTextEncoding): string;
     function digest(encoding?: crypto.BinaryToTextEncoding): Buffer | string {
       if (encoding === undefined) { return originalDigest(); }
-      const actual = originalDigest(encoding), file = syntheticFiles.find((entry) => entry.syntheticSha256 === actual);
+      const actual = originalDigest(encoding), file = witnessSyntheticFiles.find((entry) => entry.syntheticSha256 === actual);
       if (encoding === "hex" && file !== undefined) { calls.push(`hash:${file.relativePath}`); return file.sha256; }
       return actual;
     }
@@ -77,7 +85,7 @@ async function runtime(reply: unknown, options: { changeFile?: string; finalDrif
   const scratch = await mkdtemp(join(isolatedRoot, "symbol-metadata-runtime-"));
   const assetsRoot = join(scratch, "assets");
   await mkdir(assetsRoot, { mode: 0o700 });
-  for (const file of syntheticFiles) {
+  for (const file of witnessSyntheticFiles) {
     const path = resolve(assetsRoot, file.relativePath);
     await mkdir(dirname(path), { recursive: true, mode: 0o700 }); await writeFile(path, file.data, { mode: 0o600 });
   }
@@ -156,10 +164,11 @@ void test("symbol metadata malformed and mismatched replies refuse after the sol
 });
 
 void test("internal closed-target collector runs only its fixed compiler and preserves narrow evidence", async (context) => {
-  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true };
+  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true,
+    runtimeObservation, clientTicketObservation: { client: "f".repeat(16), maxTicket: payload.value.ticket, samples: 4 } };
   const fixture = await runtime(encoded(observed), { closedTarget: true }); mockSyntheticDigests(context, fixture.calls);
   const result = await readCurrentClosedSymbolMetadata(fixture.engine, request, fixture.expected);
-  const hashes = syntheticFiles.map((file) => `hash:${file.relativePath}`);
+  const hashes = witnessSyntheticFiles.map((file) => `hash:${file.relativePath}`);
   assert.deepEqual(fixture.calls, ["guard", "status", ...hashes, "guard", "easyeda_execute", ...hashes, "guard", "status"]);
   assert.deepEqual(result.observation, observed); assert.equal(result.executionAuthorized, false);
   assert.equal(result.sourceImplementationVerified, true); assert.match(result.observationSha256, /^[a-f0-9]{64}$/u);
@@ -168,7 +177,8 @@ void test("internal closed-target collector runs only its fixed compiler and pre
 
 void test("internal closed-target collector refuses broad claims, runtime drift and source replacement", async (context) => {
   mockSyntheticDigests(context, []);
-  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true };
+  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true,
+    runtimeObservation, clientTicketObservation: { client: "f".repeat(16), maxTicket: payload.value.ticket, samples: 4 } };
   for (const reply of [payload, { ...observed, workerIdentityVerified: true }, { ...observed, cadAuthority: true },
     { ...observed, value: { ...observed.value, uuid: "f".repeat(16) } }]) {
     const fixture = await runtime(encoded(reply), { closedTarget: true });
@@ -176,7 +186,7 @@ void test("internal closed-target collector refuses broad claims, runtime drift 
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
   }
   const firstFile = syntheticFiles[0]; assert.ok(firstFile !== undefined);
-  for (const options of [{ finalDrift: true }, { changeFile: firstFile.relativePath }]) {
+  for (const options of [{ finalDrift: true }, { changeFile: firstFile.relativePath }, { changeFile: clockFile.relativePath }]) {
     const fixture = await runtime(encoded(observed), { ...options, closedTarget: true });
     await assert.rejects(readCurrentClosedSymbolMetadata(fixture.engine, request, fixture.expected));
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);

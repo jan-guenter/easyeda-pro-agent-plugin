@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "64dc1acc79f321df201baf829fc103f8d7803903fbb8b11a1b9c45f7d25d4aa5";
+const __easyedaBundlePairId = "70dd2b516c8e0e299a7a76a9cb192573601a895eedccd020e10495256724d42b";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -70974,6 +70974,19 @@ async function decodeRawHistoryForOriginalSymbolSqlPlan(input, after) {
   return decoded;
 }
 async function prepareSymbolNewHeadSqlPlan(input) {
+  const prepared = await prepareSymbolSqlState(input);
+  const plan2 = Object.freeze({
+    profile: "easyeda-pro-control.symbol-new-head-sql-plan.v1",
+    beforeSqlSha256: prepared.before.logicalSha256,
+    targetUuid: prepared.symbol.targetUuid,
+    expectedTicket: prepared.witness.preDispatchMaxTicket + 1,
+    executionAuthorized: false,
+    headEligibility: prepared.headEligibility
+  });
+  plans.set(plan2, prepared);
+  return plan2;
+}
+async function prepareSymbolSqlState(input) {
   const before = input.before;
   const witness = structuredClone(input.witness);
   const operation = structuredClone(input.operation);
@@ -71053,15 +71066,7 @@ async function prepareSymbolNewHeadSqlPlan(input) {
   need13(actor.length <= 1, "Actor is ambiguous.");
   const username = actor[0] ? text17(field2(users, actor[0], "username")) : "";
   const nickname = actor[0] ? text17(field2(users, actor[0], "nickname")) : "";
-  const plan2 = Object.freeze({
-    profile: "easyeda-pro-control.symbol-new-head-sql-plan.v1",
-    beforeSqlSha256: before.logicalSha256,
-    targetUuid: symbol4.targetUuid,
-    expectedTicket: witness.preDispatchMaxTicket + 1,
-    executionAuthorized: false,
-    headEligibility: locked === 1n ? "locked" : "aged-unlocked"
-  });
-  plans.set(plan2, {
+  return {
     before,
     witness,
     symbol: symbol4,
@@ -71075,9 +71080,9 @@ async function prepareSymbolNewHeadSqlPlan(input) {
     branchRow,
     projectRow,
     structureRows,
-    sequenceRow
-  });
-  return plan2;
+    sequenceRow,
+    headEligibility: locked === 1n ? "locked" : "aged-unlocked"
+  };
 }
 function newRow(owner, expectedId) {
   const rows2 = owner.rows.filter((row6) => integer4(field2(owner, row6, "id")) === expectedId);
@@ -71165,6 +71170,14 @@ async function exactRows(expected3, observed2, name6) {
 async function verifySymbolNewHeadSqlEffect(plan2, after) {
   const prepared = plans.get(plan2);
   need13(prepared !== void 0, "SQL comparison requires its original prepared plan.");
+  const proof = await verifySymbolSqlEffect(plan2, after, prepared, {
+    resultProfile: "easyeda-pro-control.symbol-new-head-full-sql-effect.v1",
+    documentClock: prepared.witness,
+    documentEditVersion: prepared.symbol.headerEditVersion
+  });
+  return proof;
+}
+async function verifySymbolSqlEffect(plan2, after, prepared, profile) {
   const { before, witness, symbol: symbol4, historyTable, historyData } = prepared;
   supported(after, witness.branchUuid);
   need13(canonicalJson(before.properties) === canonicalJson(after.properties), "Persisted SQL properties changed.");
@@ -71181,14 +71194,14 @@ async function verifySymbolNewHeadSqlEffect(plan2, after) {
   const encoded = text17(field2(afterData, chunk, "dataStr"));
   const plaintext = await decodeNativeHistoryChunk({ historyUuid: headUuid, keyHex: key, dataBase64: encoded });
   const editTime = generatedMs(bodyAt(plaintext, 0)["updateTime"], witness);
-  const documentTime = generatedMs(bodyAt(plaintext, 1)["updateTime"], witness);
+  const documentTime = generatedMs(bodyAt(plaintext, 1)["updateTime"], profile.documentClock);
   const header = {
     docType: "SYMBOL",
     client: witness.client,
     uuid: symbol4.targetUuid,
     updateTime: documentTime,
     version: String(documentTime),
-    ...symbol4.headerEditVersion === null ? {} : { editVersion: symbol4.headerEditVersion }
+    ...profile.documentEditVersion === null ? {} : { editVersion: profile.documentEditVersion }
   };
   const metadata8 = { title: symbol4.desiredTitle, description: symbol4.desiredDescription, tags: symbol4.beforeTags, docType: 2, source: symbol4.beforeSource };
   const expectedPlaintext = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ uuid: witness.actorUuid, username: prepared.username, nickname: prepared.nickname, updateTime: editTime })}|
@@ -71239,7 +71252,7 @@ ${JSON.stringify({ type: "META", ticket: plan2.expectedTicket, id: "META" })}||$
     await yieldProofEventLoop();
   }
   return Object.freeze({
-    profile: "easyeda-pro-control.symbol-new-head-full-sql-effect.v1",
+    profile: profile.resultProfile,
     exactLogicalSqlEffect: true,
     headEligibility: plan2.headEligibility,
     beforeSqlSha256: before.logicalSha256,
@@ -93960,7 +93973,14 @@ function requirePinned(condition) {
 async function verifyCurrentDisposableOpenImplementation(assetsRoot) {
   requirePinned(isAbsolute20(assetsRoot) && await realpath19(assetsRoot) === assetsRoot);
   await verifyCurrentUiImplementation(assetsRoot);
-  for (const pin4 of CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files) {
+  await verifyFiles(assetsRoot, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files);
+}
+async function verifyCurrentSymbolWitnessImplementation(assetsRoot) {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
+}
+async function verifyFiles(assetsRoot, pins) {
+  for (const pin4 of pins) {
     const path5 = resolve12(assetsRoot, pin4.relativePath);
     requirePinned(await realpath19(path5) === path5);
     const handle = await open25(path5, constants20.O_RDONLY | constants20.O_NOFOLLOW | constants20.O_NONBLOCK);
@@ -93982,7 +94002,7 @@ async function verifyCurrentDisposableOpenImplementation(assetsRoot) {
     }
   }
 }
-var CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION;
+var CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, CURRENT_SYMBOL_CLOCK_IMPLEMENTATION;
 var init_current_disposable_open_profile = __esm({
   "server/src/current-disposable-open-profile.ts"() {
     init_current_ui_implementation();
@@ -94002,6 +94022,11 @@ var init_current_disposable_open_profile = __esm({
           sha256: "b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928"
         }
       ]
+    });
+    CURRENT_SYMBOL_CLOCK_IMPLEMENTATION = Object.freeze({
+      relativePath: "pro-mgr/3.2.184.355087e9/js/ws-service.js",
+      bytes: 855142,
+      sha256: "7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453"
     });
   }
 });
@@ -118492,6 +118517,58 @@ var init_current_disposable_open_checkpoint = __esm({
   }
 });
 
+// server/src/current-symbol-runtime-observation.ts
+var milliseconds2, clockSample, currentSymbolRuntimeObservationSchema, CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE;
+var init_current_symbol_runtime_observation = __esm({
+  "server/src/current-symbol-runtime-observation.ts"() {
+    init_zod();
+    init_symbol_dual_actor();
+    milliseconds2 = external_exports.number().int().nonnegative().refine((value) => Number.isSafeInteger(value) && !Object.is(value, -0));
+    clockSample = external_exports.object({ rendererBeforeMs: milliseconds2, serverTimeMs: milliseconds2, rendererAfterMs: milliseconds2 }).strict().refine((value) => value.rendererBeforeMs <= value.serverTimeMs && value.serverTimeMs <= value.rendererAfterMs && value.rendererAfterMs - value.rendererBeforeMs <= 1e4);
+    currentSymbolRuntimeObservationSchema = external_exports.object({
+      editorVersion: external_exports.literal("3.2.206"),
+      actor: external_exports.object({
+        uuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+        username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
+        nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
+      }).strict(),
+      clockSamples: external_exports.array(clockSample).length(4),
+      backendActorVerified: external_exports.literal(false),
+      backendClockVerified: external_exports.literal(false),
+      clockProducerOwnershipVerified: external_exports.literal(false)
+    }).strict().refine((value) => {
+      const first = value.clockSamples[0], last = value.clockSamples[3];
+      return first !== void 0 && last !== void 0 && last.rendererAfterMs - first.rendererBeforeMs <= 1e4 && value.clockSamples.every((sample, index) => index === 0 || sample.rendererBeforeMs >= (value.clockSamples[index - 1]?.rendererAfterMs ?? Infinity));
+    });
+    CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE = `
+${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
+const observedEditorVersion=own(root,'PRO_EDITOR_VERSION');if(observedEditorVersion!=='3.2.206')bad();
+const notifyTab=own(root,'_TAB_ID_');if(typeof notifyTab!=='string'||!/^[a-f0-9]{16}$/.test(notifyTab))bad();
+const notifyKey='/'+notifyTab+'/notify',concurrent=own(host,'concurrentBus'),clockRpc=method(concurrent,'rpcCall');
+const nativeDate=own(root,'Date'),dateNow=own(nativeDate,'now');if(typeof nativeDate!=='function'||typeof dateNow!=='function')bad();
+const clockSamples=[];
+const checkRuntimeObservation=()=>{
+ checkDualActor();methodCheck(clockRpc);
+ if(own(root,'PRO_EDITOR_VERSION')!==observedEditorVersion||own(root,'_TAB_ID_')!==notifyTab||own(root,notifyKey)!==concurrent||own(host,'concurrentBus')!==concurrent||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow)bad();
+};
+const clockInteger=value=>{if(typeof value!=='number'||!Number.isSafeInteger(value)||value<0||Object.is(value,-0))bad();return value;};
+const sampleRuntimeClock=async()=>{
+ same();const rendererBeforeMs=clockInteger(apply(dateNow,nativeDate,[]));
+ const serverTimeMs=await apply(clockRpc.fn,concurrent,['/pro-mgr/serverTime/now']);same();clockInteger(serverTimeMs);
+ const rendererAfterMs=clockInteger(apply(dateNow,nativeDate,[]));same();
+ if(rendererBeforeMs>serverTimeMs||serverTimeMs>rendererAfterMs||rendererAfterMs-rendererBeforeMs>10000||clockSamples.length>=4)bad();
+ const previous=clockSamples[clockSamples.length-1],first=clockSamples[0];
+ if((previous&&rendererBeforeMs<previous.rendererAfterMs)||(first&&rendererAfterMs-first.rendererBeforeMs>10000))bad();
+ clockSamples.push({rendererBeforeMs,serverTimeMs,rendererAfterMs});
+};
+const runtimeObservation=()=>{
+ same();if(clockSamples.length!==4)bad();
+ return{editorVersion:observedEditorVersion,actor:cachedActorProjection,clockSamples,backendActorVerified:false,backendClockVerified:false,clockProducerOwnershipVerified:false};
+};
+`;
+  }
+});
+
 // server/src/current-symbol-closed-target.ts
 function validateCurrentClosedSymbolMetadataResult(input, raw) {
   const request2 = parseCurrentSymbolMetadataRequest(input), result = currentClosedSymbolMetadataResultSchema.parse(raw);
@@ -118502,7 +118579,21 @@ function validateCurrentClosedSymbolMetadataResult(input, raw) {
 }
 function currentClosedSymbolMetadataProjection(input) {
   const value = currentClosedSymbolMetadataResultSchema.parse(input);
-  return currentSymbolMetadataResultSchema.parse({ ...value, kind: "current-symbol-metadata-observation", hiddenEditorsVerified: false });
+  return currentSymbolMetadataResultSchema.parse({
+    ok: value.ok,
+    kind: "current-symbol-metadata-observation",
+    method: value.method,
+    target: value.target,
+    value: value.value,
+    samples: value.samples,
+    implementationKind: value.implementationKind,
+    targetClosedInRegistry: value.targetClosedInRegistry,
+    hiddenEditorsVerified: false,
+    workerIdentityVerified: value.workerIdentityVerified,
+    cadAuthority: value.cadAuthority,
+    persistenceVerified: value.persistenceVerified,
+    sourceMembershipVerified: value.sourceMembershipVerified
+  });
 }
 var currentClosedSymbolMetadataResultSchema;
 var init_current_symbol_closed_target = __esm({
@@ -118510,10 +118601,20 @@ var init_current_symbol_closed_target = __esm({
     init_zod();
     init_core3();
     init_current_symbol_metadata();
+    init_current_symbol_runtime_observation();
     currentClosedSymbolMetadataResultSchema = currentSymbolMetadataResultSchema.extend({
       kind: external_exports.literal("current-closed-symbol-metadata-witness"),
-      hiddenEditorsVerified: external_exports.literal(true)
-    });
+      hiddenEditorsVerified: external_exports.literal(true),
+      runtimeObservation: currentSymbolRuntimeObservationSchema,
+      clientTicketObservation: external_exports.object({
+        client: external_exports.string().regex(/^[a-f0-9]{16}$/u),
+        maxTicket: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0), "Signed zero is unsupported."),
+        samples: external_exports.literal(4)
+      }).strict()
+    }).refine(
+      (value) => value.clientTicketObservation.maxTicket >= value.value.ticket,
+      "Observed project maximum ticket cannot precede the symbol metadata ticket."
+    );
   }
 });
 
@@ -118599,6 +118700,7 @@ const check=()=>{
  if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
 };
 ${closedTarget ? CURRENT_SYMBOL_CLOSED_TARGET_DOM : ""}
+${closedTarget ? CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE : ""}
 // Enumerate the complete current tab registry, not the public split-tree mapper.
 // Absence here deliberately makes no assertion about hidden/export editors.
 const registry=()=>{
@@ -118618,23 +118720,31 @@ const registry=()=>{
   if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
  if(start>1||placeholder>1||currentCount!==1)bad();const url=parseProjectUrl(href,target.projectUuid,target.tabId);if(url.tabIds.some(id=>!allIds.has(id)))bad();check();return{owners,seal:JSON.stringify([names,treeProjection,projection])};
 };
-const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();" : ""}};
+const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();checkRuntimeObservation();" : ""}};
 const childPlain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childPrototype)bad();return value;};
 const identity=async()=>{same();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);same();const value=childPlain(own(childPlain(reply),'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType')||own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const call=async(topic,args)=>{same();const reply=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(reply),'message'));};
+${closedTarget ? `// These fixed scalar getters do not retain the worker object or grant worker identity.
+let retainedClientTicket;
+const clientTicketSample=async()=>{
+ const scalar=async topic=>{same();const reply=await apply(rpc.fn,bus,[topic,[target.projectUuid],0]);same();return own(plain(reply),'message');};
+ const client=await scalar('/PrjDB/project/getClient');same();if(typeof client!=='string'||!/^[a-f0-9]{16}$/.test(client))bad();
+ const maxTicket=await scalar('/PrjDB/project/getMaxTicket');same();if(typeof maxTicket!=='number'||!Number.isSafeInteger(maxTicket)||maxTicket<0||Object.is(maxTicket,-0))bad();
+ const observed={client,maxTicket};if(retainedClientTicket&&(retainedClientTicket.client!==client||retainedClientTicket.maxTicket!==maxTicket))bad();retainedClientTicket=observed;
+};` : ""}
 const projectMetadata=async()=>{const value=await call('/PrjDB/project/getData',[target.projectUuid]);if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;};
 const sample=async()=>{
- await identity();same();const ownerUuid=await projectMetadata();same();
+ await identity();same();${closedTarget ? "await sampleRuntimeClock();await clientTicketSample();same();" : ""}const ownerUuid=await projectMetadata();same();
  // No third argument: the manager's optional canvas flag remains undefined.
  const value=await call('/PrjDB/symbol/getData',[symbolUuid,target.projectUuid]);same();
  if(own(value,'uuid')!==symbolUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'path')!==target.projectUuid||own(value,'docType')!==2||own(plain(own(value,'owner')),'uuid')!==ownerUuid)bad();
  const ticket=own(value,'ticket');if(typeof ticket!=='number'||!Number.isSafeInteger(ticket)||ticket<0||Object.is(ticket,-0))bad();
  const tagsJson=text(own(value,'custom_tags'),131072,true),tags=JSON.parse(tagsJson);for(let i=0,n=dense(tags,256);i<n;i++)text(own(tags,String(i)),512,true);
  const result={uuid:symbolUuid,projectUuid:target.projectUuid,ownerUuid,name:text(own(value,'display_title'),512,true),description:text(own(value,'description'),65536,true),tagsJson,source:text(own(value,'source'),4096,true),version:text(own(value,'version'),128,true),ticket};
- if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();return result;
+ if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();${closedTarget ? "await clientTicketSample();await sampleRuntimeClock();same();if(ticket>retainedClientTicket.maxTicket)bad();" : ""}return result;
 };
 const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request2.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request2.method)},target,value:first,samples:2,${closedTarget ? "clientTicketObservation:{...retainedClientTicket,samples:4},runtimeObservation:runtimeObservation()," : ""}implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
 same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
 }catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}
@@ -118646,6 +118756,7 @@ var init_current_symbol_metadata_program = __esm({
     init_current_project_url();
     init_exact_readers();
     init_current_symbol_closed_target_dom();
+    init_current_symbol_runtime_observation();
   }
 });
 
@@ -118659,7 +118770,7 @@ async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedF
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "Current closed-symbol witness runtime");
-  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code: buildCurrentClosedSymbolMetadataProgram(request2),
@@ -118672,7 +118783,7 @@ async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedF
     throw new Error("Current closed-symbol witness reply exceeds its byte bound.");
   }
   const observation2 = validateCurrentClosedSymbolMetadataResult(request2, decodeExactReadEnvelope(envelope2));
-  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
   const final = finalStatus.stableFingerprint;

@@ -6,6 +6,116 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: current symbol runtime witness and SQL effect profile
+
+Work continues on `feature/current-symbol-runtime-witness`. The restart was
+independently admitted read-only: actual facade236685/parent234854/startTicks6421209
+uses pinned Node24.18.0 and installed140000; former190428 is absent. All1193
+installed files/23310801bytes and42directory modes still match merged072f078f,
+inventory6aef523c. MainCI38732514902 finished successfully with all ten jobs.
+This is process-path/package evidence, not an authenticated connection or memory
+attestation. Do not repeat the completed startup/recovery histories below.
+
+The internal current closed-target collector now takes four matching, exact
+project-qualified client/maxTicket pairs around its two metadata samples.
+Client16 follows the native eight-byte hexadecimal allocator. It also retains
+the two current UI actor objects, editorVersion3.2.206, notify-bus namespace,
+receiver/method chain and Date.now identity. Four bare-scalar notify-clock reads
+are individually bounded by renderer times. Context, DOM and all these owners
+are rechecked across awaits. Actor/clock results remain observations; backend
+actor, backend clock and clock-producer ownership are explicitly unverified.
+The current WS7a372d72 pin is verified before/after this internal collector only.
+Public metadata/discovery contracts and the original opener pins are unchanged.
+
+A separate original-object current SQL plan/verifier models the exact current
+DOCHEAD editVersion3.2.206 transition, including older/absent baseline versions.
+Document time has its own bounds; APP history selection/EDIT_HEAD, SQLite UTC
+defaults and project-local timestamps use explicit backend bounds. No union of
+those clocks, caller-derived provenance, relaxed raw records, partial SQL
+comparison or legacy plan crossover is accepted. All execution/lifecycle flags
+remain false. The old SQL APIs retain their profile and behavior.
+
+Verification passed122 collector/owned-preparation and current/
+legacy/generated-field SQL tests, zero failures or skips. Full typecheck,
+whole-tree zero-warning type-aware lint, sanitizer/build, source/bundle parity,
+package/privacy/repository checks,774-method coverage and all seven official
+skill validators pass. Final independent review found a current-only regex
+coercion path; explicit string guards now reject numeric identities. All six
+current SQL tests, types and targeted zero-warning lint passed again after
+that fix; legacy entry semantics are unchanged. Rebuilt source350 SHA0bea26c3
+and runtime3 SHA9ebda1c6; compatibility
+changes only the facade projections/review time, not external pins. New WS
+admission is a separately reviewed internal capability pin in source. Exact
+payload GitHub CI remains pending until the development branch is pushed.
+The research and next-stage contract are in
+docs/current-symbol-writer-witness-research-2026-10-15.md. Next: transfer the
+original opening generation into a one-shot retained closure owner, capture a
+post-opening raw-copy/full-SQL baseline, qualify subsequent opening effects and
+backend actor/clock, then integrate modifier/inverse and one disposable complete
+lifecycle. A closed baseline followed by another ordinary open is not yet a
+verified before-write baseline. Do not simply repeat open/close cycles.
+
+No live EasyEDA call, app launch, design read/edit, Save or restoration occurred
+in this continuation. Production designs and their records remain excluded.
+This source checkpoint is not an installed release; installed140000 and its
+host remain untouched. No restart is required for unfinished source work.
+
+### Delivered140000: retained-owner preparation and sandbox upgrade
+
+PR35 merged through the protected route as main
+072f078f900556893007f9d50cd16a79995ad721. Final payload
+7a81f0551041a6cf5783ba32c703729fabfef5f6 passed all ten required CI38730923426
+jobs:9952 facade passes/five skips/zero failures and424 bridge passes.
+Windows38730923665 passed. The initial root/nonroot errno test mismatch is
+fixed by requiring the exact kernel graph mount ro/no-rw before accepting
+EROFS or EACCES. Runtime permissions and guards were not changed. Full tree
+80e34bad9eb768997837d73e16b442bd4d4e8044 and package subtree
+6b8441dd3f67292a0852cb0dd9dfbd8b8efd8469 equal the tested payload exactly.
+Postcommit build is reproducible. Types, whole-tree zero-warning lint,
+dependencies/signatures/attestations, privacy/package/repository, actionlint
+and seven official skill checks pass. Source349011e5ac0/runtime3a5ad85a3.
+
+Official named Git-marketplace upgrade under022 completed errors[]. Installed
+and enabled0.3.0+codex.20261015140000 comes from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Independent
+pre/post-probe verification matches1193files/23310801bytes/42directories all0755,
+1192files0644/one0755, seven skills; zero extras/symlinks/hardlinks. Git-tree-order
+inventorySHA6aef523cab2218359dfffd42bb3adac54ba96ba255ea34549e3afe37fa99145a
+uses path NUL Gitmode NUL bytes NUL SHA256 LF. Manifestd236635e and helper
+2320/8ffb025c match. Marketplace marker and snapshotHEAD equal mergedmain.
+
+Actual installed configured startup passes ambientNode26.11.1 to pinned24.18.
+Synthetic-only offline probe passed16normal and3fallback tool catalogs,
+discovery/validation and identical two-document checkpoint preparation. Writer,
+execution and persistence authority stay false. Twenty samples show no upstream
+child/nonstdio socket, stderr0, normal client closes. Independent observation
+confirms probePIDs216937/216962 exited and synthetic lease absent. Proof
+/tmp/easyeda-installed-140000-4tpcFp/proof.json3338bytes SHA
+c77f816304c3692f717288084745b381fe791dcf241bde2b1e79ce6e6ef0113b;
+reviewed script4ef77572. This is offline installed proof, not live collector or
+writer validation. No manual cache/config edits or loaded-owner termination.
+
+Original020000 startup is terminal unknown-abandoned after the user closed an
+idle PowerShell. New090000 startup completed normal close and retained root/Job
+termination before installation. Preserve both histories; never replay launch,
+abandonment or close. No project was deliberately opened, no design action,
+explicit Save or restoration ran; ordinary profile effects are not design-file
+invariance proof. Production designs and their records remain excluded.
+
+Actual host190428 still loaded090000. The release skill requires a fresh Codex
+chat before live140000 calls; independently admit that actual owner first.
+No outstanding startup-recovery prerequisite remains. Next source work is the
+current actor/worker/client/clock witness, operation-owned post-opening baseline
+and complete SQL comparison, then fixed writer/inverse and one disposable owned
+close/reopen proof. Internal preparation does not enable a public writer. Full
+backlog: docs/current-symbol-owned-preparation-release-2026-10-15.md.
+
+Postmerge Windows38732514897 passed. MainCI38732514902 is still running on the
+identical tested tree; do not rerun successful checks. Preserve this local
+delivery checkpoint in the next source change; no docs-only release is needed.
+Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/35#issuecomment-6191784633.
+
 ### Candidate140000: owned preparation; startup recovered; sandbox upgrade
 
 Fresh owner190428/parent188684/startTicks3762281 independently matches installed

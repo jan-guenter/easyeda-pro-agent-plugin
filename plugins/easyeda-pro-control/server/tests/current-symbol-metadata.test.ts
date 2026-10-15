@@ -13,7 +13,12 @@ const ownerUuid = "e".repeat(32), symbolUuid = "d".repeat(16);
 const request = parseCurrentSymbolMetadataRequest({ method: "eda.lib_Symbol.get", arguments: { symbolUuid }, target });
 const value = { uuid: symbolUuid, projectUuid: target.projectUuid, ownerUuid, name: "MixedCase symbol", description: "exact\ntext",
   tagsJson: '[" Tag ","Tag","Tag"]', source: "", version: "12345", ticket: 12_345 };
-interface Options { before?: string; afterRpc?: string; afterIdentity?: string; fastDeadline?: boolean; closedTarget?: boolean }
+const clientTicketObservation = { client: "f".repeat(16), maxTicket: 12_345, samples: 4 };
+const runtimeObservation = { editorVersion: "3.2.206", actor: { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" },
+  clockSamples: Array.from({ length: 4 }, (_, index) => ({ rendererBeforeMs: 1000 + index * 3,
+    serverTimeMs: 1001 + index * 3, rendererAfterMs: 1002 + index * 3 })),
+  backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false };
+interface Options { before?: string; afterRpc?: string; afterIdentity?: string; afterClock?: string; fastDeadline?: boolean; closedTarget?: boolean }
 function fixture(options: Options = {}): { run: () => Promise<unknown>; evaluate: (source: string) => unknown } {
   const childContext = createContext({});
   runInContext(`globalThis.identityCalls=0;class Bus{async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus||topic!=='getTabIdAndDocType'||arg!==undefined||timeout!==0)throw new Error('PRIVATE');identityCalls++;await Promise.resolve();${options.afterIdentity ?? ""}return{message:{tabId:${JSON.stringify(target.tabId)},docType:3}};}}globalThis.MSG_BUS_PCB={messageBus:new Bus()};`, childContext);
@@ -30,13 +35,19 @@ globalThis.containerInfo={id:'editor-window-main',belong:'editor-window-main',ta
 class Tabs{static containerIds=['editor-window-main'];static containerTree={id:'editor-window-main'};static belongContainer='editor-window-main';static currentTabId=target.tabId;static getActiveTab(){return this.currentTabId;}static getTabById(id){return containerInfo.tabs.find(t=>t.tabId===id);}static getContainerInfo(id){return id==='editor-window-main'?containerInfo:undefined;}}
 globalThis.metadata={uuid:${JSON.stringify(symbolUuid)},project_uuid:target.projectUuid,display_title:${JSON.stringify(value.name)},description:${JSON.stringify(value.description)},custom_tags:${JSON.stringify(value.tagsJson)},source:'',version:'12345',ticket:12345,docType:2,path:target.projectUuid,owner:{uuid:${JSON.stringify(ownerUuid)}}};
 globalThis.projectDetail={uuid:target.projectUuid,owner:{uuid:${JSON.stringify(ownerUuid)}},currentBranch:target.branchUuid,isV2Format:false};
-class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))throw new Error('PRIVATE');calls.push([topic,[...args]]);if(topic==='/PrjDB/symbol/getData'){if(args.length!==2||args[0]!==metadata.uuid||args[1]!==target.projectUuid)throw new Error('PRIVATE');}else if(topic==='/PrjDB/project/getData'){if(args.length!==1||args[0]!==target.projectUuid)throw new Error('PRIVATE');}else throw new Error('PRIVATE');await Promise.resolve();${options.afterRpc ?? ""}return{message:topic==='/PrjDB/symbol/getData'?metadata:projectDetail};}}
+globalThis.workerClient=${JSON.stringify(clientTicketObservation.client)};globalThis.workerMaxTicket=${String(clientTicketObservation.maxTicket)};
+class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))throw new Error('PRIVATE');calls.push([topic,[...args]]);if(topic==='/PrjDB/symbol/getData'){if(args.length!==2||args[0]!==metadata.uuid||args[1]!==target.projectUuid)throw new Error('PRIVATE');}else if(['/PrjDB/project/getData','/PrjDB/project/getClient','/PrjDB/project/getMaxTicket'].includes(topic)){if(args.length!==1||args[0]!==target.projectUuid)throw new Error('PRIVATE');}else throw new Error('PRIVATE');await Promise.resolve();${options.afterRpc ?? ""}return{message:topic==='/PrjDB/symbol/getData'?metadata:topic==='/PrjDB/project/getClient'?workerClient:topic==='/PrjDB/project/getMaxTicket'?workerMaxTicket:projectDetail};}}
 globalThis.gVars={currentProject:{projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false},isHistoryMode:false,messageBus:new Bus()};
 globalThis.UI={gVars,tabBar:Tabs};globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40'};
 globalThis.attributes={c_dbid:target.tabId,c_doctype:'3',src:'editor?entry=pcb','pcb-canvas':'true'};
 globalThis.frame={tagName:'IFRAME',id:'frame_'+target.tabId,ownerDocument:document,isConnected:true,contentWindow:child,classList:{contains(name){return name==='editframe';}},getAttribute(name){return attributes[name]??null;},hasAttribute(name){return Object.hasOwn(attributes,name);},parentElement:{getAttribute(name){return name==='uuid'?target.tabId:null;}}};
 child.document={defaultView:child,nodeType:9};child.frameElement=frame;child.parent=globalThis;child.top=globalThis;
 ${options.closedTarget === true ? `
+globalThis.PRO_EDITOR_VERSION='3.2.206';globalThis._TAB_ID_='1'.repeat(16);
+gVars.globalVariableCookieData={userInfo:${JSON.stringify(runtimeObservation.actor)}};gVars.loginedUserInfo=${JSON.stringify(runtimeObservation.actor)};
+globalThis.clockTick=1000;globalThis.clockCalls=0;Date.now=function(){return clockTick++;};
+class ClockBus{async rpcCall(...args){if(this!==gVars.concurrentBus||args.length!==1||args[0]!=='/pro-mgr/serverTime/now')throw new Error('PRIVATE');clockCalls++;await Promise.resolve();${options.afterClock ?? ""}return clockTick++;}}
+gVars.concurrentBus=new ClockBus();globalThis['/'+_TAB_ID_+'/notify']=gVars.concurrentBus;
 globalThis.extraMarkers=[];globalThis.extraIframes=[];globalThis.outsideIframes=[];
 globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[],querySelectorAll(selector){if(selector!=='iframe')throw new Error('PRIVATE');return[frame,...extraIframes];}};
 globalThis.activeBody=frame.parentElement;Object.assign(activeBody,{tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,children:[frame],classList:{contains(name){return ['tabbar-panel','ruler-theme'].includes(name);}}});
@@ -110,15 +121,99 @@ void test("internal closed-symbol program proves exact ordinary DOM scope withou
   const env = fixture({ closedTarget: true });
   const result = validateCurrentClosedSymbolMetadataResult(request, decodeExactReadEnvelope(await env.run()));
   assert.deepEqual(result.value, value); assert.equal(result.hiddenEditorsVerified, true);
-  assert.equal(env.evaluate("calls.length"), 6); assert.equal(env.evaluate("child.identityCalls"), 4);
+  assert.deepEqual(result.clientTicketObservation, clientTicketObservation);
+  assert.deepEqual(result.runtimeObservation, runtimeObservation); assert.equal(env.evaluate("clockCalls"), 4);
+  assert.equal(env.evaluate("calls.length"), 14); assert.equal(env.evaluate("child.identityCalls"), 4);
+  assert.equal(env.evaluate("JSON.stringify(calls.map(call=>call[0]))"), JSON.stringify([
+    "/PrjDB/project/getClient", "/PrjDB/project/getMaxTicket", "/PrjDB/project/getData", "/PrjDB/symbol/getData", "/PrjDB/project/getData",
+    "/PrjDB/project/getClient", "/PrjDB/project/getMaxTicket",
+    "/PrjDB/project/getClient", "/PrjDB/project/getMaxTicket", "/PrjDB/project/getData", "/PrjDB/symbol/getData", "/PrjDB/project/getData",
+    "/PrjDB/project/getClient", "/PrjDB/project/getMaxTicket",
+  ]));
   for (const key of ["workerIdentityVerified", "cadAuthority", "persistenceVerified", "sourceMembershipVerified"] as const) { assert.equal(result[key], false); }
   assert.throws(() => validateCurrentSymbolMetadataResult(request, result));
   const projection = currentClosedSymbolMetadataProjection(result);
   assert.equal(projection.hiddenEditorsVerified, false); assert.deepEqual(projection.value, value);
+  assert.equal(Object.hasOwn(projection, "clientTicketObservation"), false);
+  assert.equal(Object.hasOwn(projection, "runtimeObservation"), false);
   assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, projection));
   for (const invalid of [{ ...result, workerIdentityVerified: true }, { ...result, hiddenEditorsVerified: false }, { ...result, writerReady: true }]) {
     assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, invalid));
   }
+});
+
+void test("internal closed-symbol runtime observations retain both actors and clock owners across awaits", async () => {
+  for (const afterRpc of ["if(calls.length===1)gVars.loginedUserInfo={...gVars.loginedUserInfo};",
+    "if(calls.length===1)gVars.globalVariableCookieData.userInfo={...gVars.globalVariableCookieData.userInfo};",
+    "if(calls.length===1)gVars.loginedUserInfo.username+='changed';",
+    "if(calls.length===1)gVars.globalVariableCookieData.userInfo.nickname+='changed';"]) {
+    const env = fixture({ closedTarget: true, afterRpc });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" }); assert.equal(env.evaluate("calls.length"), 1);
+  }
+  for (const afterClock of ["gVars.concurrentBus=new ClockBus();", "globalThis['/'+_TAB_ID_+'/notify']=new ClockBus();",
+    "Date.now=function(){return clockTick++;};", "globalThis.Date=function(){};", "gVars.globalVariableCookieData={...gVars.globalVariableCookieData};",
+    "gVars.loginedUserInfo.nickname+='changed';"]) {
+    const env = fixture({ closedTarget: true, afterClock });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+    assert.equal(env.evaluate("clockCalls"), 1); assert.equal(env.evaluate("calls.length"), 0);
+  }
+  const accessor = fixture({ closedTarget: true, before:
+    "Object.defineProperty(gVars.loginedUserInfo,'nickname',{get(){getterReads++;throw new Error('PRIVATE');}});" });
+  await assert.rejects(accessor.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" }); assert.equal(accessor.evaluate("getterReads"), 0);
+});
+
+void test("internal closed-symbol clock requires bare safe scalars inside monotone bounded renderer brackets", async () => {
+  for (const afterClock of ["return{message:clockTick};", "return Number.MAX_SAFE_INTEGER+1;", "return -0;",
+    "return clockTick+5;", "if(clockCalls===2){clockTick=1;return 1;}", "clockTick+=10001;"]) {
+    const env = fixture({ closedTarget: true, afterClock });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+  }
+  const betweenSamples = fixture({ closedTarget: true, afterRpc: "if(calls.length===7)clockTick=999;" });
+  await assert.rejects(betweenSamples.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+  assert.equal(betweenSamples.evaluate("clockCalls"), 2);
+  const valid = validateCurrentClosedSymbolMetadataResult(request, decodeExactReadEnvelope(await fixture({ closedTarget: true }).run()));
+  for (const observed of [{ ...runtimeObservation, backendActorVerified: true }, { ...runtimeObservation, backendClockVerified: true },
+    { ...runtimeObservation, clockProducerOwnershipVerified: true }, { ...runtimeObservation, clockSamples: runtimeObservation.clockSamples.slice(1) },
+    { ...runtimeObservation, clockSamples: runtimeObservation.clockSamples.toReversed() },
+    { ...runtimeObservation, actor: { ...runtimeObservation.actor, credentials: "forbidden" } },
+    { ...runtimeObservation, clockSamples: [{ rendererBeforeMs: -0, serverTimeMs: 1001, rendererAfterMs: 1002 }, ...runtimeObservation.clockSamples.slice(1)] }]) {
+    assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, { ...valid, runtimeObservation: observed }));
+  }
+});
+
+void test("internal closed-symbol scalar observations reject malformed values, nonmatching samples and accessor envelopes", async () => {
+  for (const before of ["workerClient=undefined;", "workerClient='';", "workerClient='f'.repeat(17);", "workerClient='F'.repeat(16);",
+    "workerClient=17;", "workerMaxTicket=NaN;", "workerMaxTicket=Infinity;", "workerMaxTicket=-0;", "workerMaxTicket=-1;",
+    "workerMaxTicket=Number.MAX_SAFE_INTEGER+1;", "workerMaxTicket=1.5;", "workerMaxTicket='12345';", "workerMaxTicket=12344;"]) {
+    const env = fixture({ closedTarget: true, before });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+  }
+  for (const afterRpc of ["if(calls.length===6)workerClient='a'.repeat(16);", "if(calls.length===7)workerMaxTicket++;",
+    "if(calls.length===8)workerClient='a'.repeat(16);", "if(calls.length===14)workerMaxTicket++;",
+    "if(topic==='/PrjDB/project/getClient')return Object.create({message:workerClient});",
+    "if(topic==='/PrjDB/project/getMaxTicket')return{get message(){getterReads++;throw new Error('PRIVATE');}};"]) {
+    const env = fixture({ closedTarget: true, afterRpc });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+    assert.equal(env.evaluate("getterReads"), 0);
+  }
+  for (const count of [1, 2, 6, 7, 8, 9, 13, 14]) {
+    const env = fixture({ closedTarget: true, afterRpc: `if(calls.length===${String(count)})gVars.messageBus=new Bus();` });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+    assert.equal(env.evaluate("calls.length"), count);
+  }
+});
+
+void test("internal closed-symbol result validator rejects forged scalar witness fields without expanding public results", async () => {
+  const result = validateCurrentClosedSymbolMetadataResult(request, decodeExactReadEnvelope(await fixture({ closedTarget: true }).run()));
+  for (const observation of [undefined, null, {}, { ...clientTicketObservation, client: "a".repeat(32) },
+    { ...clientTicketObservation, maxTicket: -0 }, { ...clientTicketObservation, maxTicket: "12345" },
+    { ...clientTicketObservation, maxTicket: 12_344 }, { ...clientTicketObservation, maxTicket: Number.MAX_SAFE_INTEGER + 1 },
+    { ...clientTicketObservation, samples: 2 }, { ...clientTicketObservation, workerIdentityVerified: true }]) {
+    assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, { ...result, clientTicketObservation: observation }));
+  }
+  const publicResult = decodeExactReadEnvelope(await fixture().run());
+  assert.ok(publicResult !== null && typeof publicResult === "object");
+  assert.throws(() => validateCurrentSymbolMetadataResult(request, { ...publicResult, clientTicketObservation }));
 });
 
 void test("internal closed-symbol program refuses tabless symbol, export and pooled editors before RPC", async () => {

@@ -355,6 +355,11 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
     const observation = validateCurrentClosedSymbolMetadataResult(request, { ok: true, kind: "current-closed-symbol-metadata-witness", method: "eda.lib_Symbol.get",
       target, value: { uuid: "a".repeat(16), projectUuid: TARGET.projectUuid, ownerUuid: "2".repeat(32), name: "Original", description: "Original description",
         tagsJson: "[]", source: "template", version: "1", ticket: 1 }, samples: 2, implementationKind: "native-task-equivalent",
+      clientTicketObservation: { client: "f".repeat(16), maxTicket: 1, samples: 4 },
+      runtimeObservation: { editorVersion: "3.2.206", actor: { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" },
+        clockSamples: Array.from({ length: 4 }, (_, index) => ({ rendererBeforeMs: 1000 + index * 3,
+          serverTimeMs: 1001 + index * 3, rendererAfterMs: 1002 + index * 3 })),
+        backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false },
       targetClosedInRegistry: true, hiddenEditorsVerified: true, workerIdentityVerified: false, cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
     readControl.duringRead?.();
     return Promise.resolve({ observation, observationSha256: sha256Json(observation), runtimeFingerprintSha256: sha256Json(FINGERPRINT),

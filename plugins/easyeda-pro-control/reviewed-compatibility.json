@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "011e5ac074d7199842dd3d15d5540d8a647602aaf4fafd78ebef313c6b150edb",
-      "fileCount": 349,
+      "sha256": "0bea26c3c0f26cf35b5eaa754def7bb2aedfcc6f4fcdd6f66444d7b122174402",
+      "fileCount": 350,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -448,8 +448,8 @@
         },
         {
           "relativePath": "current-disposable-open-profile.ts",
-          "bytes": 3107,
-          "sha256": "0015cce970aa08e9a7066bc47a3749a50e6d448d43c80648b7da6f7028bf9540"
+          "bytes": 4073,
+          "sha256": "38dd99dc5fd8b694f1f150f191f2d48dc2abfddc3953a325251e5d07fe6569f3"
         },
         {
           "relativePath": "current-disposable-open-runtime.ts",
@@ -513,13 +513,13 @@
         },
         {
           "relativePath": "current-symbol-closed-target-runtime.ts",
-          "bytes": 3265,
-          "sha256": "c4b60acd35b20d84fd6f16c72fa08e3cec6ba70809cf1f318b690aab13b0ff54"
+          "bytes": 3262,
+          "sha256": "4356d778dcf5b2bcba46157ccd5190e3c0a3b3e7b2f0eb6df357d70f5cc828f2"
         },
         {
           "relativePath": "current-symbol-closed-target.ts",
-          "bytes": 1860,
-          "sha256": "2d79b1f73736ba3a097a34086976e1bbf112f5d6b744bb266320154fe4e49788"
+          "bytes": 2850,
+          "sha256": "9959ac88809126cd069c17bd6463f80d625baad71892f381d9b34faae1caacc5"
         },
         {
           "relativePath": "current-symbol-metadata-preparation.ts",
@@ -528,8 +528,8 @@
         },
         {
           "relativePath": "current-symbol-metadata-program.ts",
-          "bytes": 14468,
-          "sha256": "c48176d5fb5cdb481017df5c08618e84fbc04a89cc71a1bd2137c040cff7b982"
+          "bytes": 15816,
+          "sha256": "9d4678d7f794c4e1f3bd9ddc9a62f8f336aa967cc255b11e8ae096bc494bf6ef"
         },
         {
           "relativePath": "current-symbol-metadata-runtime.ts",
@@ -545,6 +545,11 @@
           "relativePath": "current-symbol-owned-preparation.ts",
           "bytes": 6187,
           "sha256": "26b37834ff787e2e3d0851f442b49678c5c4ed47b0bccb671796c64ccb23492e"
+        },
+        {
+          "relativePath": "current-symbol-runtime-observation.ts",
+          "bytes": 4053,
+          "sha256": "28e741b37d6f3938c7c4b3efceb0128aeaa5a6ae70a091cd7b563e251fca7a27"
         },
         {
           "relativePath": "current-ui-implementation.ts",
@@ -1653,8 +1658,8 @@
         },
         {
           "relativePath": "symbol-sql-comparator.ts",
-          "bytes": 28818,
-          "sha256": "32b2adf0b63faceaced403b76869825eb06d0189fa1def902897e2ad3464c8cb"
+          "bytes": 33939,
+          "sha256": "9f1901a9813a669e7ae7edc17bfaf0dd7e65b19722ed1d332c4fd7d4d7a5f33d"
         },
         {
           "relativePath": "symbol-startup-actor.ts",
@@ -1756,7 +1761,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "a5ad85a313ab7e41b61e60eabefbf3d8e1083f9b71b8088ca2789b82f2ab18f9",
+      "sha256": "9ebda1c6152bcc6d4b500e17377d5f5f54c4d5c72e5322383fbf02689824dd67",
       "fileCount": 3,
       "files": [
         {
@@ -1766,19 +1771,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 6637444,
-          "sha256": "b4dccae32dc1bf6774c933e88bc0554fd4c5a1fdaa06d0f5219de2bcf13d64da"
+          "bytes": 6644724,
+          "sha256": "fb98947eb295f63fbfa093f62d252bc3727402ebfc47ceb2986fa6034d0c8ecb"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "7b6bdcfa9af6f41ee3307ad0309f1d2b4b3dfb37361669283e41cb774fbc8db8"
+          "sha256": "c2538ea98921936aceb79940a518a8617df3b81fe88cc1ff0036646ea0bcfe2d"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-15T11:40:09.205Z",
+  "reviewedAt": "2026-10-15T18:53:48.376Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
