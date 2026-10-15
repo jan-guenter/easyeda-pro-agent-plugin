@@ -546,6 +546,7 @@ void test("current cache continuation owns one tracked read and settles without 
   const captures = f.calls("clocked-capture");
   const result = await f.coordinator.observeCaches(f.owner.operationId);
   assert.equal(result["state"], "caches-observed"); assert.equal(result["cacheAttempted"], true);
+  assert.match(String(result["nextSafeAction"]), /baseline-open-project with explicit opening-effect acceptance/u);
   assert.equal(result["cacheReplyRetained"], true); assert.equal(result["cachesObserved"], true);
   assert.equal(result["nativeCacheClockStatus"], "observed"); assert.equal(f.state.cacheReads, 1);
   assert.equal(f.calls("clocked-capture"), captures + 1); assert.equal(f.calls("release-capture"), 2);
@@ -635,6 +636,7 @@ async function projectReadyBaseline(context: TestContext): ReturnType<typeof fix
 void test("current project-only continuation binds the post-opening hash and owns exactly one settled navigation", async (context) => {
   const f = await projectReadyBaseline(context), result = await f.coordinator.openProject(f.owner.operationId);
   assert.equal(result["state"], "project-only-opened"); assert.equal(result["projectOpened"], true);
+  assert.match(String(result["nextSafeAction"]), /baseline-finish-close then baseline-observe-finish/u);
   assert.equal(result["projectOpenReplyRetained"], true); assert.equal(result["projectOpenAttempted"], true);
   assert.equal(f.state.opens, 1); assert.equal(f.state.sourceChecks, 2); assert.equal(f.state.cacheReads, 1);
   assert.ok(f.state.events.lastIndexOf("source-continuity") < f.state.events.indexOf("project-only-open"));

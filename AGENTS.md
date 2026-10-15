@@ -32,8 +32,11 @@ lifecycle. Local checks pass74 focused tests, zero failures/skips, clean npm ci,
 full facade/bridge types and whole-tree strict type-aware lint with zero warnings.
 Build/sanitizer, compatibility, repository/privacy, package,774-method coverage,
 actionlint and all seven official skill checks pass. Audit verifies151 signatures,
-40 attestations and zero vulnerabilities. Source359 SHA0cdef251/runtime3
-SHAe0608c1b are frozen; external compatibility pins are unchanged. These are
+40 attestations and zero vulnerabilities. Final operator review corrected stale
+nextSafeAction text to name the guarded project-only and finish continuations;
+both affected existing tests pass again with explicit instruction assertions.
+Source359 SHA7ebe0085/runtime3 SHA8b7cd10d are frozen; external compatibility pins
+are unchanged. These are
 offline synthetic checks, not live qualification. Full exact-payload CI,
 postcommit reproducibility, publication and installation are pending; do not
 reuse the prior payload's CI. Installed140000 remains unchanged for now.

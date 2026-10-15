@@ -502,7 +502,7 @@ export class CurrentSymbolBaselineCoordinator {
       need(finalClock === slot.admissionClock && await assertIssuedWindowsClockObservation(finalClock) === finalClock,
         "Current symbol admission settled capture clock changed."); await current();
       slot.journal.state = "admitted";
-      slot.journal.nextSafeAction = "New session admitted only. Qualify inactive caches, project-only startup effects and backend actor/clock before opening or writing.";
+      slot.journal.nextSafeAction = "New session admitted only. Observe inactive caches before the separately guarded baseline-open-project continuation. No document opening, Save or writer is authorized.";
       await CurrentSymbolBaselineCoordinator.record(slot, "admission-result", { admissionProved: true, startupQualified: false,
         openingEffectsVerified: false, beforeWriteBaselineVerified: false, executionAuthorized: false }); await current();
       need(await assertIssuedWindowsClockObservation(finalClock) === finalClock, "Current symbol admission final capture clock changed."); await current();
@@ -613,7 +613,7 @@ export class CurrentSymbolBaselineCoordinator {
       validateSdkLocalRuntimeFingerprint(final);
       need(canonicalJson(final) === canonicalJson(initial), "Current symbol cache runtime changed around observation.");
       slot.journal.state = "caches-observed";
-      slot.journal.nextSafeAction = "Cache absence observed only at the recorded samples. Qualify pre-opening continuity, startup producers and backend actor/clock; no opening or writer is authorized.";
+      slot.journal.nextSafeAction = "Cache absence is point-in-time only. Use baseline-open-project with explicit opening-effect acceptance for its fresh source, registry and cache checks. Startup, backend actor/clock and writer authority remain unqualified. Do not open a document or Save.";
       await CurrentSymbolBaselineCoordinator.record(slot, "cache-result", { observation: slot.cacheObservation,
         observationSha256: sha256Json(slot.cacheObservation), dispatchClock: slot.cacheClock, runtimeFingerprintSha256: sha256Json(initial),
         startupQualified: false, persistenceVerified: false, executionAuthorized: false }); await original();
@@ -727,7 +727,7 @@ export class CurrentSymbolBaselineCoordinator {
       validateSdkLocalRuntimeFingerprint(final);
       need(canonicalJson(final) === canonicalJson(initial), "Current project-only runtime changed around navigation.");
       slot.journal.state = "project-only-opened";
-      slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Do not navigate again or write.";
+      slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Use baseline-finish-close then baseline-observe-finish for retained normal closure. Do not navigate again, Save or write.";
       await CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", { observation: slot.projectOpenObservation,
         observationSha256: sha256Json(slot.projectOpenObservation), dispatchClock: slot.projectOpenClock,
         sourceBeforeDispatch: slot.preopenSource, runtimeFingerprintSha256: sha256Json(initial),
