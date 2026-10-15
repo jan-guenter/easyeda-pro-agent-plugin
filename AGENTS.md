@@ -34,14 +34,22 @@ remain excluded. Candidate040000 has ten focused reader/runtime/registration
 tests passing, strict types and zero-warning type-aware lint, dependency audits,
 build, generated coverage and compatibility checks. Independent source review
 accepts the bounded metadata-only implementation and unchanged external pins.
-Full regression verification is running; one existing aux-bytes SQL-stage case
-has failed and needs its terminal diagnostic before release acceptance. No
-connected validation, publication or installation is claimed yet.
+The full local run failed: host library-loading/Windows-interop errors occurred,
+and the new tool lacked its required output-schema registration. The latter was
+a real integration defect, also caught by PR32 CI38666798620. That run was
+canceled and is not release acceptance. The missing standard result/failure
+schema is now registered, with the corresponding restricted-status capability.
+Existing bundled startup, writer-gate, catalog and reader tests pass after the
+fix, as do types, zero-warning lint, build, compatibility, package/repository
+checks and seven official skill validators. The isolated aux-bytes case also
+passes unchanged. Bridge424 passes. No full-local-suite success is claimed;
+the corrected payload still requires full GitHub CI. No connected validation,
+merge or installation is claimed yet.
 
 Frozen source343 aggregate
-bc83e43057c770ccfded006813b2f3a442e9c8b94b334c5b9630937b39db88dd;
+2fc93d4187c044ce123ae8c570a38d8354b8c9afb7e2672cedd5c9d99f53c214;
 runtime3 aggregate
-06b9a01478cbfb1208703204e4f0bef7f838ea43b9fc2d3846337e8b35c2bb84.
+ccbcc79cc197a7c7a8d8be9a4bace080f9280f3619c64fdf6b931498cb72cea7.
 Catalog16 restricted/41 legacy tools, seven skills,774 SDK methods and332
 runtime-guarded routes. Route counts include legacy profiles, not current
 callability. The existing control skill documents invocation and observation

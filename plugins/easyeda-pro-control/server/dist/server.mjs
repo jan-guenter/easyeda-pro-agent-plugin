@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "e83d88d0ffb72fb343eea7dae00f03ddc7ac38d48dd9593b1492fafb3b54b5b1";
+const __easyedaBundlePairId = "b9782915b5a9c7544445e6e1e3903aa2344f2c6d9afd80acaae32a6f7c607407";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -121376,6 +121376,7 @@ var init_src = __esm({
       easyeda_control_project_open: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_pcb_identities: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_pcb_geometry: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_project_symbol: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_history: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_check: external_exports.object({ result: routeAuditResultSchema.optional(), operationId: external_exports.string().optional(), state: external_exports.string().optional(), report: external_exports.unknown().optional(), proof: external_exports.unknown().optional(), reportArtifact: external_exports.unknown().optional(), nextSafeAction: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_native_ui: external_exports.object({ schema: external_exports.string().optional(), action: external_exports.string().optional(), result: external_exports.unknown().optional(), observations: external_exports.array(external_exports.unknown()).optional(), authority: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -121446,6 +121447,7 @@ var init_src = __esm({
             pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
             pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
             pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
+            projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
             historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-validation-only", replayAuthority: false },
             ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
             designAccess: { enabled: false },
