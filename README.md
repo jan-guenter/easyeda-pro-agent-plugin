@@ -19,7 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015040000` adds `easyeda_control_project_symbol`
+Candidate `0.3.0+codex.20261015060000` adds recovery for a reviewed intent-only
+ordinary startup after its facade restarts. A separate read-only Windows helper
+excludes a delayed old-helper launch before recording explicit abandonment.
+It preserves the original intent and does not claim termination or authorize
+design work. See the [recovery scope and limits](docs/ordinary-launch-recovery-release-2026-10-15.md).
+
+Published update `0.3.0+codex.20261015040000` adds `easyeda_control_project_symbol`
 for metadata of one exact project-local symbol absent from the tab registry while a PCB
 is active. It avoids the public getter's cloud-library fallback and geometry
 loading. This provides a reusable read needed by the current-version rename

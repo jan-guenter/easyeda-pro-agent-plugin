@@ -2,6 +2,12 @@
 
 An ambiguous operation must not be repeated or saved. Inspect its journal and preserve the checkpoint, created IDs, runtime proof and phase artifacts. A delayed call may have completed after the response deadline.
 
+For an ordinary application launch with only an intent after a facade restart,
+use the [intent-only startup recovery procedure](connection-and-context.md#intent-only-launch-after-a-restart).
+It requires a fresh coordinator and excludes the old helper's delayed launch
+before recording abandonment. It does not settle a design operation or prove
+that the earlier application never launched.
+
 Current restriction: schematic-page, symbol and PCB design journals cannot
 commit, roll back, repair or complete nonterminal reconciliation. Eight
 symbol/page/container metadata writers are likewise blocked; see
