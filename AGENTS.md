@@ -46,6 +46,13 @@ passes unchanged. Bridge424 passes. No full-local-suite success is claimed;
 the corrected payload still requires full GitHub CI. No connected validation,
 merge or installation is claimed yet.
 
+PR review also found one stale legacy-catalog assertion in the existing
+closed-symbol disposable MCP test:40 instead of41 tools. Corrected that count
+only; its actual SDK strict-envelope test passes and targeted lint is clean.
+All envelope/isolation assertions are unchanged. A search found no remaining
+executable old tool counts. Corrected source/runtime projections below are
+unchanged by this test-only fix; CI38667156029 is superseded, not acceptance.
+
 Frozen source343 aggregate
 2fc93d4187c044ce123ae8c570a38d8354b8c9afb7e2672cedd5c9d99f53c214;
 runtime3 aggregate
