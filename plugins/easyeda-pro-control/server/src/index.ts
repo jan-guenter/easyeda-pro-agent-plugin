@@ -126,6 +126,8 @@ import { currentPcbIdentitiesRequestSchema } from "./current-pcb-identities.ts";
 import { readCurrentPcbIdentities } from "./current-pcb-identities-runtime.ts";
 import { currentPcbGeometryRequestSchema } from "./current-pcb-geometry.ts";
 import { readCurrentPcbGeometry } from "./current-pcb-geometry-runtime.ts";
+import { currentSymbolMetadataRequestSchema } from "./current-symbol-metadata.ts";
+import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
@@ -2433,6 +2435,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbIdentities(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_project_symbol",
+  {
+    title: "Read project-local symbol metadata",
+    description: "Read one exact project-local symbol's metadata on the separately pinned current API/UI/project-worker runtime. Requires an explicit active PCB project/branch/document/tab target and authenticated fingerprint. Two matching bounded observations retain the outer RPC receiver and verify the symbol remains absent from the tab registry. The module-private worker is not independently leased; hidden editors, saved records, complete source and connectivity remain unverified. Native task equivalent of the project-local lib_Symbol.get subset, with no cloud-library lookup, geometry load, navigation, write or Save. Query offline project-symbol/project-symbol-validate first; current writer execution remains blocked.",
+    inputSchema: { request: z.unknown().pipe(currentSymbolMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readCurrentSymbolMetadata(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

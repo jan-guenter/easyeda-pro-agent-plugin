@@ -15,6 +15,7 @@ import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbL
 import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateCurrentDisposableOpenArguments } from "./current-disposable-open.ts";
 import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCurrentPcbIdentitiesArguments } from "./current-pcb-identities.ts";
 import { currentPcbGeometryQuerySchema, queryCurrentPcbGeometry, validateCurrentPcbGeometryArguments } from "./current-pcb-geometry.ts";
+import { currentSymbolMetadataQuerySchema, queryCurrentSymbolMetadata, validateCurrentSymbolMetadataArguments } from "./current-symbol-metadata.ts";
 import { historicalAbandonmentRequestSchema } from "./historical-abandonment.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
@@ -44,6 +45,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pcb-identities-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-geometry"), query: currentPcbGeometryQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -86,6 +89,8 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "pcb-identities-validate": { result = validateCurrentPcbIdentitiesArguments(request.query.request); break; }
     case "pcb-geometry": { result = queryCurrentPcbGeometry(request.query ?? {}); break; }
     case "pcb-geometry-validate": { result = validateCurrentPcbGeometryArguments(request.query.request); break; }
+    case "project-symbol": { result = queryCurrentSymbolMetadata(request.query ?? {}); break; }
+    case "project-symbol-validate": { result = validateCurrentSymbolMetadataArguments(request.query.request); break; }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
         action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",

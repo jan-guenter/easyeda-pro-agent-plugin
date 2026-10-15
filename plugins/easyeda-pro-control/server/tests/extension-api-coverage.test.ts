@@ -519,6 +519,31 @@ void test("current PCB layer coverage preserves the separate legacy route and di
   }
 });
 
+void test("current project symbol metadata is a closed local read distinct from legacy library execution", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.get"); assert.ok(row);
+  assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
+  assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.routes.some((route) => route.tool === "easyeda_control_library"), true);
+  const route = row.routes.find((entry) => entry.tool === "easyeda_control_project_symbol"); assert.ok(route);
+  assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+  assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.match(route.scope, /symbol to remain absent from the complete registered editor tree/u); assert.match(route.scope, /workerIdentityVerified remains false/u);
+  assert.match(route.scope, /No geometry load, navigation, write or Save/u);
+  const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
+  const catalog = queryOfflineApi(apiRequestSchema.parse(discovery)).result; assert.ok(isRecord(catalog));
+  assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  assert.match(JSON.stringify(catalog), /inputSchema/u);
+  const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  const request = { method: "eda.lib_Symbol.get", arguments: { symbolUuid: "d".repeat(32) }, target };
+  const valid = queryOfflineApi(apiRequestSchema.parse({ action: "project-symbol-validate", query: { request } })).result;
+  assert.ok(isRecord(valid)); assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
+  const invalid = queryOfflineApi(apiRequestSchema.parse({ action: "project-symbol-validate", query: {
+    request: { ...request, arguments: { ...request.arguments, libraryUuid: "cloud-library" } },
+  } })).result;
+  assert.ok(isRecord(invalid)); assert.equal(invalid["valid"], false); assert.equal(invalid["executionAuthorized"], false);
+});
+
 void test("current PCB geometry adds narrow native routes without replacing legacy inventory or granting authority", () => {
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };

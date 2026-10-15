@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 331 available with runtime guards,
+methods and 451 omissions. Its routes include 332 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -387,6 +387,35 @@ public parent getter stores the caller-supplied component ID, so it cannot
 independently corroborate the reverse relationship. Pad numbers may repeat;
 they are not symbol-pin identities. These are plain Pad DTOs, not SDK
 ComponentPad instances or a verified electrical mapping.
+
+## Current project-local symbol metadata
+
+Query `project-symbol` with `includeSchemas:true`, validate the exact request
+with `project-symbol-validate`, then call `easyeda_control_project_symbol` with
+the actual authenticated fingerprint. The method is `eda.lib_Symbol.get`, with
+`arguments:{"symbolUuid":"<exact-symbol-id>"}` and the same explicit active PCB
+project/branch/document/tab target used by current PCB readers.
+
+Only a 64-hex local path-hash project ID is accepted. The result includes the
+symbol UUID, project and owner UUIDs, exact displayed `name`, `description`,
+native `tagsJson`, template `source`, `version` and numeric `ticket`. `source`
+is not drawing content. Native empty-string fallbacks and JSON tag encoding
+are preserved; this is not a lossless stored META record. Names, descriptions,
+template references and versions are bounded to 512, 65536, 4096 and 128 characters;
+tags encode at most 256 strings of 512 characters. The total limit is 384 KiB.
+
+This is a project-qualified native metadata subset, not the public wrapper or
+its full library contract. The selected symbol must be absent from the current
+tab registry. The adapter requests no geometry/source loading, cloud-library
+lookup, navigation, write or Save. Missing or inconsistent data refuses rather
+than falling back to another library.
+
+Two matching bounded samples observe native metadata while retaining the outer
+RPC receiver and current project/tab references around awaits. This is not an
+atomic lock on the module-private project worker, complete source, hidden-editor
+absence, saved membership or persistence proof. No writer may accept this result
+as its complete before-state. The ordinary symbol rename still needs its own
+current-version lifecycle and complete closed-file proof.
 
 ## Local historical abandonment
 
