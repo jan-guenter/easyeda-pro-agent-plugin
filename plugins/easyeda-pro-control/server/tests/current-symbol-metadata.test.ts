@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { buildCurrentSymbolMetadataProgram } from "../src/current-symbol-metadata-program.ts";
+import { buildCurrentClosedSymbolMetadataProgram, buildCurrentSymbolMetadataProgram } from "../src/current-symbol-metadata-program.ts";
+import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import { parseCurrentSymbolMetadataRequest, queryCurrentSymbolMetadata, validateCurrentSymbolMetadataArguments,
   validateCurrentSymbolMetadataResult } from "../src/current-symbol-metadata.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
@@ -12,7 +13,7 @@ const ownerUuid = "e".repeat(32), symbolUuid = "d".repeat(16);
 const request = parseCurrentSymbolMetadataRequest({ method: "eda.lib_Symbol.get", arguments: { symbolUuid }, target });
 const value = { uuid: symbolUuid, projectUuid: target.projectUuid, ownerUuid, name: "MixedCase symbol", description: "exact\ntext",
   tagsJson: '[" Tag ","Tag","Tag"]', source: "", version: "12345", ticket: 12_345 };
-interface Options { before?: string; afterRpc?: string; afterIdentity?: string; fastDeadline?: boolean }
+interface Options { before?: string; afterRpc?: string; afterIdentity?: string; fastDeadline?: boolean; closedTarget?: boolean }
 function fixture(options: Options = {}): { run: () => Promise<unknown>; evaluate: (source: string) => unknown } {
   const childContext = createContext({});
   runInContext(`globalThis.identityCalls=0;class Bus{async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus||topic!=='getTabIdAndDocType'||arg!==undefined||timeout!==0)throw new Error('PRIVATE');identityCalls++;await Promise.resolve();${options.afterIdentity ?? ""}return{message:{tabId:${JSON.stringify(target.tabId)},docType:3}};}}globalThis.MSG_BUS_PCB={messageBus:new Bus()};`, childContext);
@@ -35,8 +36,16 @@ globalThis.UI={gVars,tabBar:Tabs};globalThis.eda={extensionUuid:'7e06d286b1ac846
 globalThis.attributes={c_dbid:target.tabId,c_doctype:'3',src:'editor?entry=pcb','pcb-canvas':'true'};
 globalThis.frame={tagName:'IFRAME',id:'frame_'+target.tabId,ownerDocument:document,isConnected:true,contentWindow:child,classList:{contains(name){return name==='editframe';}},getAttribute(name){return attributes[name]??null;},hasAttribute(name){return Object.hasOwn(attributes,name);},parentElement:{getAttribute(name){return name==='uuid'?target.tabId:null;}}};
 child.document={defaultView:child,nodeType:9};child.frameElement=frame;child.parent=globalThis;child.top=globalThis;
+${options.closedTarget === true ? `
+globalThis.extraMarkers=[];globalThis.extraIframes=[];globalThis.outsideIframes=[];
+globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[],querySelectorAll(selector){if(selector!=='iframe')throw new Error('PRIVATE');return[frame,...extraIframes];}};
+globalThis.activeBody=frame.parentElement;Object.assign(activeBody,{tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,children:[frame],classList:{contains(name){return ['tabbar-panel','ruler-theme'].includes(name);}}});
+domRoot.children=['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page'].map(id=>({id,tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,getAttribute(){return null;}}));domRoot.children.push(activeBody);
+document.querySelectorAll=function(selector){if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return[frame,...extraIframes,...outsideIframes];if(selector.startsWith('[id="frame_'))return[frame];if(selector.startsWith('.editframe,'))return[frame,...extraMarkers];throw new Error('PRIVATE');};
+` : ""}
 ${options.before ?? ""}`, context);
-  return { run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentSymbolMetadataProgram(request)}})()`, context, { timeout: 1000 }) as unknown),
+  const program = options.closedTarget === true ? buildCurrentClosedSymbolMetadataProgram(request) : buildCurrentSymbolMetadataProgram(request);
+  return { run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${program}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source: string): unknown => runInContext(source, context, { timeout: 1000 }) as unknown };
 }
 
@@ -95,4 +104,56 @@ void test("current symbol metadata rejects registry/context drift and another re
 void test("current symbol metadata deadline refuses a pending native read and exposes no cancellation claim", async () => {
   const env = fixture({ fastDeadline: true, afterRpc: "if(calls.length===1)await new Promise(()=>{});" });
   await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" }); assert.equal(env.evaluate("calls.length"), 1);
+});
+
+void test("internal closed-symbol program proves exact ordinary DOM scope without broadening the public reader", async () => {
+  const env = fixture({ closedTarget: true });
+  const result = validateCurrentClosedSymbolMetadataResult(request, decodeExactReadEnvelope(await env.run()));
+  assert.deepEqual(result.value, value); assert.equal(result.hiddenEditorsVerified, true);
+  assert.equal(env.evaluate("calls.length"), 6); assert.equal(env.evaluate("child.identityCalls"), 4);
+  for (const key of ["workerIdentityVerified", "cadAuthority", "persistenceVerified", "sourceMembershipVerified"] as const) { assert.equal(result[key], false); }
+  assert.throws(() => validateCurrentSymbolMetadataResult(request, result));
+  const projection = currentClosedSymbolMetadataProjection(result);
+  assert.equal(projection.hiddenEditorsVerified, false); assert.deepEqual(projection.value, value);
+  assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, projection));
+  for (const invalid of [{ ...result, workerIdentityVerified: true }, { ...result, hiddenEditorsVerified: false }, { ...result, writerReady: true }]) {
+    assert.throws(() => validateCurrentClosedSymbolMetadataResult(request, invalid));
+  }
+});
+
+void test("internal closed-symbol program refuses tabless symbol, export and pooled editors before RPC", async () => {
+  for (const before of [
+    "extraMarkers.push({tagName:'DIV',id:'frame_'+metadata.uuid+'@'+target.projectUuid});",
+    "extraMarkers.push({tagName:'IFRAME',id:'frame_export_'+metadata.uuid});",
+    "extraMarkers.push({tagName:'IFRAME',blankIframe:'panel'});",
+    "extraIframes.push({tagName:'IFRAME'});",
+    "outsideIframes.push({tagName:'IFRAME'});",
+    "domRoot.children[0]={...domRoot.children[0],id:'unknown-static'};",
+    "domRoot.children[1]={...domRoot.children[1],id:'commandWin'};",
+    "activeBody.children=[];", "activeBody.parentElement={};",
+    "activeBody.classList.contains=name=>name==='tabbar-panel'||name==='ruler-theme'||name==='blankIframeDiv';",
+  ]) {
+    const env = fixture({ closedTarget: true, before });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+    assert.equal(env.evaluate("calls.length"), 0); assert.equal(env.evaluate("child.identityCalls"), 0);
+  }
+});
+
+void test("internal closed-symbol program rechecks DOM identity after native awaits", async () => {
+  for (const afterRpc of [
+    "if(calls.length===1)extraMarkers.push({tagName:'DIV',id:'frame_orphan'});",
+    "if(calls.length===1)extraIframes.push({tagName:'IFRAME'});",
+    "if(calls.length===1)outsideIframes.push({tagName:'IFRAME'});",
+    "if(calls.length===1)domRoot.children[0]={...domRoot.children[0]};",
+    "if(calls.length===1)domRoot.querySelectorAll=function(){return[frame];};",
+    "if(calls.length===1)activeBody.classList={contains:activeBody.classList.contains};",
+    "if(calls.length===1)activeBody.children.push({tagName:'DIV'});",
+  ]) {
+    const env = fixture({ closedTarget: true, afterRpc });
+    await assert.rejects(env.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+    assert.equal(env.evaluate("calls.length"), 1);
+  }
+  const changed = fixture({ closedTarget: true, afterIdentity: "if(identityCalls===1)parent.extraMarkers.push({id:'frame_export_hidden'});" });
+  await assert.rejects(changed.run(), { message: "CURRENT_SYMBOL_METADATA_READ_FAILED" });
+  assert.equal(changed.evaluate("calls.length"), 0);
 });

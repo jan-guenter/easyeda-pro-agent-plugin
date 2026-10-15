@@ -55,10 +55,10 @@ The separately installed upstream MCP server is invoked at runtime but is not
 bundled in this repository.
 
 GitHub Actions builds
-[`Bubblewrap` 0.11.2 from peeled commit `1b80120ef26a28e065e67f89bfef873f13bdd317`](https://github.com/containers/bubblewrap/tree/1b80120ef26a28e065e67f89bfef873f13bdd317)
+[`Bubblewrap` 0.13.1 from peeled commit `362936aea0d5c6e70f7af75d2d44b5a914cb4ba2`](https://github.com/containers/bubblewrap/tree/362936aea0d5c6e70f7af75d2d44b5a914cb4ba2)
 as a non-setuid external test/runtime prerequisite. Bubblewrap is licensed
-under `LGPL-2.0-or-later`; its authoritative
-[`COPYING`](https://github.com/containers/bubblewrap/blob/1b80120ef26a28e065e67f89bfef873f13bdd317/COPYING)
+under `LGPL-2.1-or-later`; its authoritative
+[`COPYING`](https://github.com/containers/bubblewrap/blob/362936aea0d5c6e70f7af75d2d44b5a914cb4ba2/COPYING)
 is in that source tree. Bubblewrap source and binaries are neither bundled in
 the plugin archive nor uploaded as repository release artifacts.
 

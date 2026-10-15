@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015090000` integrates checkpoint-bound symbol
+Candidate `0.3.0+codex.20261015140000` connects retained disposable-project
+opening to internal checkpoint-bound symbol preparation. It rejects hidden
+editor containers and lost ownership without enabling a writer. It also removes
+a redundant full-journal scan from local launch inspection, identifies blocked
+recovery prerequisites and launcher drift precisely, and qualifies Bubblewrap
+0.13.1. See the [scope and remaining implementation](docs/current-symbol-owned-preparation-release-2026-10-15.md).
+
+Published update `0.3.0+codex.20261015090000` integrates checkpoint-bound symbol
 name/description preparation into the existing offline API. It checks complete
 selected-branch history and peer names without opening the original design or
 enabling a writer. It also fixes PowerShell first-use progress breaking startup
@@ -703,12 +710,16 @@ The supported editing/runtime profile is Linux x86_64 under WSL controlling the 
   The runtime's executable hash and complete file-
   descriptor baseline are exact compatibility inputs, not generic Node 24.x
   support.
-- Bubblewrap exactly `0.11.2` at `/usr/sbin/bwrap`, as a root-owned,
+- Bubblewrap exactly `0.13.1` at `/usr/sbin/bwrap`, as a root-owned,
   non-symlink, non-setuid/non-setgid mode-`0755` executable. The reviewed local
   SHA-256 is recorded in the compatibility manifest. Ubuntu 24.04's older
   distribution build does not implement the descriptor-mount options this
   sandbox requires; install or build the reviewed version rather than weakening
   the launch policy.
+  CI builds the immutable upstream revision with kernel fallbacks enabled.
+  The reviewed local Arch package assumes Linux 6.18 or newer; its binary pin
+  does not establish support on older kernels. See the
+  [upgrade review and execution scope](docs/bubblewrap-admission-research-2026-10-15.md).
 - EasyEDA Pro `3.2.149.88089769`
 - PCB editor bundle `3.2.149.5378b690`
 - public API bundle `0.2.53.aee2f57a`
@@ -820,7 +831,7 @@ GitHub Actions installs binutils, rebuilds the sanitizer twice, and requires its
 exact committed identity before building the plugin. The sandbox regression
 also injects otherwise valid high-numbered host descriptors and proves that
 they cannot reach Bubblewrap. CI separately builds the exact non-setuid
-Bubblewrap 0.11.2 source commit, proves that its `security.capability` xattr is
+Bubblewrap 0.13.1 source commit, proves that its `security.capability` xattr is
 absent and the soft core limit is zero, runs strict TypeScript checking,
 type-aware Oxlint, and the sandbox and bridge tests, and rebuilds both release
 payloads on every push and pull request. It also checks that the committed

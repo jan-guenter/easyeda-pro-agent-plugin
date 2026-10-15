@@ -8,7 +8,9 @@ import type { TestContext } from "node:test";
 import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
 import { CURRENT_SYMBOL_METADATA_RUNTIME_PROFILE, readCurrentSymbolMetadata } from "../src/current-symbol-metadata-runtime.ts";
-import { buildCurrentSymbolMetadataProgram } from "../src/current-symbol-metadata-program.ts";
+import { buildCurrentClosedSymbolMetadataProgram, buildCurrentSymbolMetadataProgram } from "../src/current-symbol-metadata-program.ts";
+import { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise both fixed collectors against the same real source-verification fixture without duplicating its file/crypto setup.
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
@@ -67,7 +69,7 @@ function mockSyntheticDigests(context: TestContext, calls: string[]): void {
   syncBuiltinESMExports(); context.after(() => { context.mock.restoreAll(); syncBuiltinESMExports(); });
 }
 
-async function runtime(reply: unknown, options: { changeFile?: string; finalDrift?: boolean; quarantine?: boolean } = {}): Promise<{
+async function runtime(reply: unknown, options: { changeFile?: string; finalDrift?: boolean; quarantine?: boolean; closedTarget?: boolean } = {}): Promise<{
   engine: Parameters<typeof readCurrentSymbolMetadata>[0]; calls: string[]; expected: ExpectedFingerprint;
 }> {
   const isolatedRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -92,7 +94,7 @@ async function runtime(reply: unknown, options: { changeFile?: string; finalDrif
     upstream: { callTool: async (name, args, timeoutMs) => {
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.equal(args["confirmWrite"], true); assert.equal(args["timeoutMs"], 60_000); assert.equal(timeoutMs, 70_000);
-      assert.equal(args["code"], buildCurrentSymbolMetadataProgram(request));
+      assert.equal(args["code"], options.closedTarget === true ? buildCurrentClosedSymbolMetadataProgram(request) : buildCurrentSymbolMetadataProgram(request));
       if (options.changeFile !== undefined) { await writeFile(resolve(assetsRoot, options.changeFile), "changed synthetic implementation"); }
       return reply;
     } },
@@ -150,5 +152,33 @@ void test("symbol metadata malformed and mismatched replies refuse after the sol
     const fixture = await runtime(encoded(reply));
     await assert.rejects(readCurrentSymbolMetadata(fixture.engine, request, fixture.expected));
     assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute"]);
+  }
+});
+
+void test("internal closed-target collector runs only its fixed compiler and preserves narrow evidence", async (context) => {
+  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true };
+  const fixture = await runtime(encoded(observed), { closedTarget: true }); mockSyntheticDigests(context, fixture.calls);
+  const result = await readCurrentClosedSymbolMetadata(fixture.engine, request, fixture.expected);
+  const hashes = syntheticFiles.map((file) => `hash:${file.relativePath}`);
+  assert.deepEqual(fixture.calls, ["guard", "status", ...hashes, "guard", "easyeda_execute", ...hashes, "guard", "status"]);
+  assert.deepEqual(result.observation, observed); assert.equal(result.executionAuthorized, false);
+  assert.equal(result.sourceImplementationVerified, true); assert.match(result.observationSha256, /^[a-f0-9]{64}$/u);
+  assert.match(result.runtimeFingerprintSha256, /^[a-f0-9]{64}$/u);
+});
+
+void test("internal closed-target collector refuses broad claims, runtime drift and source replacement", async (context) => {
+  mockSyntheticDigests(context, []);
+  const observed = { ...payload, kind: "current-closed-symbol-metadata-witness", hiddenEditorsVerified: true };
+  for (const reply of [payload, { ...observed, workerIdentityVerified: true }, { ...observed, cadAuthority: true },
+    { ...observed, value: { ...observed.value, uuid: "f".repeat(16) } }]) {
+    const fixture = await runtime(encoded(reply), { closedTarget: true });
+    await assert.rejects(readCurrentClosedSymbolMetadata(fixture.engine, request, fixture.expected));
+    assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
+  }
+  const firstFile = syntheticFiles[0]; assert.ok(firstFile !== undefined);
+  for (const options of [{ finalDrift: true }, { changeFile: firstFile.relativePath }]) {
+    const fixture = await runtime(encoded(observed), { ...options, closedTarget: true });
+    await assert.rejects(readCurrentClosedSymbolMetadata(fixture.engine, request, fixture.expected));
+    assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
   }
 });

@@ -1,14 +1,31 @@
+/* oxlint-disable import/max-dependencies -- Exercise the exact opener and internal stage with their real parser, checkpoint decoder and a private source-evaluation scope. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { chmod, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { stripTypeScriptTypes } from "node:module";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
+import type { TestContext } from "node:test";
+import vm from "node:vm";
 import { z } from "zod";
-import { assertUpstreamReplySettled, canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
-import { buildCurrentDisposableOpenProgram, currentDisposableOpenTargetSchema } from "../src/current-disposable-open.ts";
+import { controlDataDirectory } from "../src/artifacts.ts";
+import { OPERATION_SCHEMA, assertSubset, assertUpstreamReplySettled, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "../src/core.ts";
+import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram,
+  currentDisposableOpenSealedTargetSchema, currentDisposableOpenTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenPhase, CurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
+import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "../src/current-disposable-open-diagnostics.ts";
+import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
 import { CurrentDisposableOpenCoordinator } from "../src/current-disposable-open-runtime.ts";
-import type { CurrentDisposableOpenDependencies, CurrentDisposableOpenOptions } from "../src/current-disposable-open-runtime.ts";
-import type { AuthenticatedBridgeDispatchBinding, ExecutionAuthorityEvidence } from "../src/engine.ts";
-import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
+import type { CurrentDisposableOpenDependencies, CurrentDisposableOpenOptions, revalidateCurrentDisposableOpenGeneration } from "../src/current-disposable-open-runtime.ts";
+import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
+import type { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
+import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
+import { assertOriginalCurrentOwnedSymbolPreparation } from "../src/current-symbol-owned-preparation.ts";
+import type { AuthenticatedBridgeDispatchBinding, EasyedaControlEngine, ExecutionAuthorityEvidence } from "../src/engine.ts";
+import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
+import { encrypted } from "./helpers/symbol-sql-fixture.ts";
 
 type Value = Record<string, unknown>;
 // Pinned upstream L0_diagnostics_api.js validates this before calling the bridge.
@@ -260,4 +277,134 @@ void test("stopped opener retains fixed diagnostics across inspect and retiremen
   assert.deepEqual(result["failureDiagnostic"], { schema: "easyeda-pro-control.current-open-failure.v1", phase: "open-project",
     hostStage: "tracked-dispatch", category: "unknown", nativeStage: null, nativeCode: null });
   assert.equal(JSON.stringify([...unknown.artifacts.values(), ...unknown.journals.values(), result]).includes("PRIVATE"), false);
+});
+
+/** Evaluate the unchanged coordinator/stage in a separate VM with synthetic
+ * engine/native classes. Production issuers have no test registration hook;
+ * these VM originals are deliberately rejected by the actual module issuer.
+ * The checkpoint decoder/preparer below is the real maintained implementation.
+ */
+async function sourcePreparation(services: CurrentDisposableOpenDependencies, read: typeof readCurrentClosedSymbolMetadata): Promise<{
+  Coordinator: typeof CurrentDisposableOpenCoordinator;
+  original: typeof assertOriginalCurrentOwnedSymbolPreparation;
+  revalidate: typeof revalidateCurrentDisposableOpenGeneration;
+}> {
+  const source = await Promise.all(["current-disposable-open-runtime", "current-symbol-owned-preparation"].map(async (name) =>
+    stripTypeScriptTypes(await readFile(new URL(`../src/${name}.ts`, import.meta.url), "utf8"))
+      .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "")));
+  const scope = vm.createContext({ z, Buffer, structuredClone, Object, Date, Reflect,
+    canonicalJson, sha256Json, sha256Text, isRecord, assertSubset, isTerminalOperation, OPERATION_SCHEMA, buildPlanHash, extractToolPayload,
+    CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
+    currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
+    currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure, decodeExactReadEnvelope,
+    currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, currentClosedSymbolMetadataProjection, readCurrentClosedSymbolMetadata: read,
+    EasyedaControlEngine: Object, WindowsControlRuntime: Object,
+    createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
+    operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
+    listQualifiedOperationStates: services.listOperations, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
+    verifyCurrentDisposableOpenCheckpoint: services.verifyCheckpoint, verifyCurrentDisposableOpenImplementation: services.verifyImplementation,
+    validateSdkLocalRuntimeFingerprint: services.validateFingerprint,
+  });
+  const loaded: unknown = vm.runInContext(`${source.join("\n")}\n({ Coordinator: CurrentDisposableOpenCoordinator, original: assertOriginalCurrentOwnedSymbolPreparation, revalidate: revalidateCurrentDisposableOpenGeneration });`, scope);
+  assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["original"] === "function" && typeof loaded["revalidate"] === "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These two checked exports were evaluated directly from the maintained source in this private VM, not supplied by a tool caller.
+  return loaded as { Coordinator: typeof CurrentDisposableOpenCoordinator; original: typeof assertOriginalCurrentOwnedSymbolPreparation;
+    revalidate: typeof revalidateCurrentDisposableOpenGeneration };
+}
+
+function historyRecord(type: string, body: unknown, id?: string): string {
+  return `${JSON.stringify({ type, ticket: 1, ...(id === undefined ? {} : { id }) })}||${JSON.stringify(body)}|\n`;
+}
+async function preparationCheckpoint(t: TestContext): Promise<unknown> {
+  const parent = join(controlDataDirectory(), "checkpoints"); await mkdir(parent, { recursive: true, mode: 0o700 });
+  const directory = await mkdtemp(join(parent, "owned-symbol-"));
+  t.after(async () => { await rm(directory, { recursive: true, force: true }); });
+  const path = join(directory, "fixture.eprj2"), symbolUuid = "a".repeat(16);
+  const database = new DatabaseSync(path), head = "f".repeat(32), key = "1".repeat(32);
+  try {
+    database.exec(`CREATE TABLE projects(uuid TEXT PRIMARY KEY,branch_uuid TEXT,owner_uuid TEXT);
+      CREATE TABLE branches(uuid TEXT PRIMARY KEY,project_uuid TEXT,history_uuid TEXT);
+      CREATE TABLE project_history_${SEALED.branchUuid}(uuid TEXT PRIMARY KEY,parent TEXT,snapshot TEXT,key TEXT,num INTEGER,snapshot_num INTEGER);
+      CREATE TABLE history_data(uuid TEXT PRIMARY KEY,history_uuid TEXT,dataStr TEXT);`);
+    database.prepare("INSERT INTO projects VALUES(?,?,?)").run(TARGET.projectUuid, SEALED.branchUuid, "2".repeat(32));
+    database.prepare("INSERT INTO branches VALUES(?,?,?)").run(SEALED.branchUuid, TARGET.projectUuid, head);
+    database.prepare(`INSERT INTO project_history_${SEALED.branchUuid} VALUES(?,?,?,?,?,?)`).run(head, null, null, key, 0, 0);
+    const text = historyRecord("DOCHEAD", { uuid: symbolUuid, docType: "SYMBOL", client: "3".repeat(16), updateTime: 1, version: "1", editVersion: "3.2.196.5cb3e1b3" }) +
+      historyRecord("META", { title: "Original", description: "Original description", tags: [], docType: 2, source: "template" }, "META");
+    database.prepare("INSERT INTO history_data VALUES(?,?,?)").run(head, head, encrypted(text, head, key));
+  } finally { database.close(); }
+  await chmod(path, 0o600);
+  const bytes = await readFile(path);
+  return { checkpoint: { path, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") },
+    target: { projectUuid: TARGET.projectUuid, branchUuid: SEALED.branchUuid, ownerUuid: "2".repeat(32), symbolUuid }, patch: { name: "Changed" } };
+}
+
+void test("owned symbol preparation uses the real checkpoint preparer and invalidates original objects on lifecycle drift", async (t) => {
+  const input = await preparationCheckpoint(t), value = fixture("owned-preparation");
+  // Injected production coordinators cannot mint even preparation-only originals.
+  await value.coordinator.run(value.input, FINGERPRINT);
+  await assert.rejects(value.coordinator.prepareSymbolMetadata(value.input.operationId, input), /injected opening services/u);
+  const isolated = fixture("isolated-preparation");
+  const readControl: { duringRead?: () => void } = {};
+  let reads = 0;
+  const loaded = await sourcePreparation(isolated.services, (engine, request, fingerprint): ReturnType<typeof readCurrentClosedSymbolMetadata> => {
+    assert.equal(engine, isolated.options.engine); assert.deepEqual(fingerprint, FINGERPRINT); reads += 1;
+    const target = { projectUuid: TARGET.projectUuid, branchUuid: SEALED.branchUuid, documentUuid: TARGET.documentUuid,
+      tabId: `${TARGET.documentUuid}@${TARGET.projectUuid}` };
+    assert.equal(canonicalJson(request), canonicalJson({ method: "eda.lib_Symbol.get", arguments: { symbolUuid: "a".repeat(16) }, target }));
+    const observation = validateCurrentClosedSymbolMetadataResult(request, { ok: true, kind: "current-closed-symbol-metadata-witness", method: "eda.lib_Symbol.get",
+      target, value: { uuid: "a".repeat(16), projectUuid: TARGET.projectUuid, ownerUuid: "2".repeat(32), name: "Original", description: "Original description",
+        tagsJson: "[]", source: "template", version: "1", ticket: 1 }, samples: 2, implementationKind: "native-task-equivalent",
+      targetClosedInRegistry: true, hiddenEditorsVerified: true, workerIdentityVerified: false, cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
+    readControl.duringRead?.();
+    return Promise.resolve({ observation, observationSha256: sha256Json(observation), runtimeFingerprintSha256: sha256Json(FINGERPRINT),
+      sourceImplementationVerified: true, executionAuthorized: false });
+  });
+  let active = false, scopeEntries = 0, sessionChanged = false;
+  const upstream = isolated.options.engine.upstream;
+  upstream.withAuthenticatedBridgeDispatchScope = async <Result>(run: (binding: AuthenticatedBridgeDispatchBinding) => PromiseLike<Result> | Result): Promise<Result> => {
+    scopeEntries += 1; active = true; try { return await run(BINDING); } finally { active = false; }
+  };
+  upstream.currentAuthenticatedBridgeDispatchBinding = (): AuthenticatedBridgeDispatchBinding | undefined => active ? BINDING : undefined;
+  upstream.bridgeSessionLifecycle = (): unknown => ({ schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1", gatewayInstanceId: PRIOR.gatewayInstanceId,
+    activeSession: sessionChanged ? null : { sessionId: PRIOR.sessionId, sequence: PRIOR.sequence,
+      authenticatedAtEpochMs: PRIOR.authenticatedAtEpochMs, authenticationReceiptSha256: PRIOR.authenticationReceiptSha256 } });
+  const coordinator = new loaded.Coordinator(isolated.options);
+  await coordinator.run(isolated.input, FINGERPRINT);
+  const beforeScopes = scopeEntries;
+  isolated.state.quarantine = true;
+  await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /quarantine/u);
+  assert.equal(scopeEntries, beforeScopes); assert.equal(reads, 0);
+  isolated.state.quarantine = false;
+  const beforeDispatches = dispatches(isolated), prepared = await coordinator.prepareSymbolMetadata(isolated.input.operationId, input);
+  assert.equal(prepared.checkpointPreparation.metadata.after.name, "Changed");
+  assert.equal(reads, 1); assert.equal(prepared.closedTargetWitness.observation.hiddenEditorsVerified, true);
+  assert.equal(prepared.checkpointPreparation.correlation.metadataMatches, true); assert.equal(prepared.checkpointPreparation.correlation.freshnessVerified, false);
+  assert.equal(prepared.postOpeningBaselineVerified, false); assert.equal(prepared.writerReady, false); assert.equal(prepared.executionAuthorized, false);
+  assert.deepEqual(dispatches(isolated), beforeDispatches);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the isolated VM treats this fixture as its synthetic engine class; the actual issuer below must reject its originals.
+  const engine = isolated.options.engine as EasyedaControlEngine;
+  const original = loaded.original(prepared, engine);
+  assert.equal(original.source.engine, engine); assert.equal(original.source.runtime, isolated.options.runtime());
+  assert.deepEqual(original.source.preNavigationCheckpoint, CHECKPOINT);
+  assert.throws(() => loaded.original(structuredClone(prepared), engine), /not issued unchanged/u);
+  assert.throws(() => assertOriginalCurrentOwnedSymbolPreparation(prepared, engine), /not issued unchanged/u);
+  sessionChanged = true; assert.throws(() => loaded.original(prepared, engine), /session changed/u);
+  sessionChanged = false; assert.throws(() => loaded.original(prepared, engine), /retained opening/u);
+  const next = await coordinator.prepareSymbolMetadata(isolated.input.operationId, input);
+  await coordinator.run({ action: "observe", operationId: isolated.input.operationId });
+  assert.throws(() => loaded.original(next, engine), /retained opening/u);
+  assert.ok(isRecord(input)); const beforeReads = reads;
+  await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, { ...input, observationProjection: {} }));
+  assert.equal(reads, beforeReads);
+  const final = await coordinator.prepareSymbolMetadata(isolated.input.operationId, input), originalFinal = loaded.original(final, engine);
+  const saved = isolated.journals.get(isolated.input.operationId); assert.ok(saved);
+  isolated.journals.set(isolated.input.operationId, { ...saved, nextSafeAction: "changed on disk" });
+  await assert.rejects(loaded.revalidate(originalFinal.generation, engine), /persisted opening changed/u);
+  isolated.journals.set(isolated.input.operationId, saved);
+  assert.throws(() => loaded.original(final, engine), /retained opening/u);
+  readControl.duringRead = (): void => { sessionChanged = true; };
+  await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /original authenticated session changed/u);
+  sessionChanged = false;
+  assert.deepEqual(dispatches(isolated), [...beforeDispatches, "dispatch:observe"]);
 });

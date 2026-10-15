@@ -42,9 +42,9 @@ separately installed upstream MCP server is invoked at runtime but is not
 bundled in this plugin.
 
 Bubblewrap is an external runtime and CI prerequisite. It is not bundled in
-the plugin. The CI workflow builds version 0.11.2 from reviewed commit
-`1b80120ef26a28e065e67f89bfef873f13bdd317`; Bubblewrap is
-LGPL-2.0-or-later.
+the plugin. The CI workflow builds version 0.13.1 from reviewed commit
+`362936aea0d5c6e70f7af75d2d44b5a914cb4ba2`; Bubblewrap is
+LGPL-2.1-or-later.
 
 The corresponding packages and upstream repositories contain their
 authoritative license texts and source notices.

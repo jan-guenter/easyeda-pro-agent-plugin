@@ -5,24 +5,20 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { ordinaryLaunchRequestSchema } from "../src/ordinary-launch.ts";
+import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "../src/ordinary-launch.ts";
+import type { OrdinaryLaunchOptions } from "../src/ordinary-launch.ts";
 
 void test("ordinary launcher registration keeps quarantine and exact shared runtime allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', start);
   assert.ok(start > 0 && end > start);
-  interface Options { assertAllowed: () => Promise<void>; allocateRuntime: (identity: object) => unknown }
-  let options: Options | undefined;
+  let options: OrdinaryLaunchOptions | undefined;
   let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
-  let checks = 0, quarantine = false;
-  const requests: unknown[] = [], runtimeOptions: unknown[] = [];
-  class Coordinator {
-    private readonly input: Options;
-    public constructor(input: Options) { this.input = input; options = input; }
-    public async run(request: unknown): Promise<object> {
-      await this.input.assertAllowed(); requests.push(request); return { inspected: true };
-    }
+  let checks = 0, quarantine = false, quarantineChecks = 0;
+  const runtimeOptions: unknown[] = [];
+  class Coordinator extends OrdinaryLaunchCoordinator {
+    public constructor(input: OrdinaryLaunchOptions) { super(input); options = input; }
   }
   // oxlint-disable-next-line typescript/no-extraneous-class -- The real callback uses new; this constructor double records identity without acquiring a native resource.
   class Runtime { public constructor(input: unknown) { runtimeOptions.push(input); } }
@@ -32,8 +28,13 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
-    engine: { assertBridgeDispatchAllowed: (): Promise<void> => quarantine ? Promise.reject(new Error("quarantine")) : Promise.resolve() },
-    serializedGuarded: (handler: typeof invoke, guardOptions?: unknown): typeof invoke => { assert.equal(guardOptions, undefined); return handler; },
+    engine: { assertBridgeDispatchAllowed: (): Promise<void> => {
+      quarantineChecks += 1; return quarantine ? Promise.reject(new Error("quarantine")) : Promise.resolve();
+    } },
+    serializedGuarded: (handler: typeof invoke, guardOptions: { allowDuringOrphanRisk: unknown }): typeof invoke => {
+      assert.deepEqual(Object.keys(guardOptions), ["allowDuringOrphanRisk"]);
+      assert.equal(guardOptions.allowDuringOrphanRisk, true); return handler;
+    },
     registerFacadeTool: (name: string, config: { inputSchema: { request: z.ZodType } }, handler: typeof invoke): void => {
       assert.equal(name, "easyeda_control_launch");
       assert.equal(config.inputSchema.request.safeParse({ action: "launch", operationId: "fixture", confirmLaunch: true,
@@ -49,17 +50,34 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
       invoke = handler;
     },
   });
-  // Actual registration body with synthetic owners only; never starts a facade,
-  // Helper, bridge or app and never accesses real control data.
+  // Actual registration and coordinator with an isolated journal root and inert
+  // Runtime. No facade, helper, bridge or application is started.
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   quarantine = true;
-  await assert.rejects(invoke({ request: { action: "inspect", operationId: "fixture" } }), /quarantine/u);
-  assert.equal(requests.length, 0); assert.equal(runtimeOptions.length, 0);
+  const inspection = await invoke({ request: { action: "inspect", operationId: "fixture" } });
+  const inspectionSchema = z.object({ result: z.object({ operationId: z.literal("fixture"), state: z.literal("not-found"),
+    attemptConsumed: z.literal(false), designExecutionAuthorized: z.literal(false) }) });
+  assert.ok(inspectionSchema.safeParse(inspection).success);
+  assert.equal(quarantineChecks, 0); assert.equal(runtimeOptions.length, 0);
+  await assert.rejects(invoke({ request: { action: "inspect", operationId: "fixture", force: true } }));
+  assert.equal(quarantineChecks, 0);
+  const digest = "a".repeat(64);
+  const guardedRequests = [
+    { action: "launch", operationId: "fixture", confirmLaunch: true, acceptExistingProfileEffects: true },
+    { action: "observe-application", operationId: "fixture" },
+    { action: "observe-termination", operationId: "fixture" },
+    { action: "observe-window", operationId: "fixture", expectedLaunchedSha256: digest },
+    { action: "normal-close", operationId: "fixture", expectedLaunchedSha256: digest, hwnd: "1234", confirmNormalClose: true },
+    { action: "abandon-supervision", operationId: "fixture", expectedLaunchedSha256: digest, confirmAbandonSupervision: true, acceptUnobservedDescendants: true },
+    { action: "abandon-unknown-launch", operationId: "fixture", expectedIntentSha256: digest, confirmAbandonUnknownLaunch: true, acceptUnobservedDescendants: true },
+  ];
+  for (const request of guardedRequests) { await assert.rejects(invoke({ request }), /quarantine/u); }
+  assert.equal(quarantineChecks, 7); assert.equal(runtimeOptions.length, 0);
   quarantine = false;
   await invoke({ request: { action: "inspect", operationId: "fixture" } });
   assert.ok(options);
-  const identity = { expectedExecutableSha256: "a".repeat(64), reviewedExecutionScopeSha256: "b".repeat(64) };
+  const identity = { expectedExecutableSha256: "a".repeat(64), expectedHelperSha256: "c".repeat(64), reviewedExecutionScopeSha256: "b".repeat(64) };
   const runtime = options.allocateRuntime(identity);
   assert.equal(checks, 1);
   assert.equal(scope["windowsRuntime"], runtime); assert.equal(scope["ordinaryLaunchRuntime"], runtime);

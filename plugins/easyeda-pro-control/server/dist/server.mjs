@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "cf1ad97e1e2445fdabdb1455566644d7e91ed5583908d0db0a935a655a063594";
+const __easyedaBundlePairId = "64dc1acc79f321df201baf829fc103f8d7803903fbb8b11a1b9c45f7d25d4aa5";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -92986,9 +92986,13 @@ var init_ordinary_launch = __esm({
         );
         await this.options.assertAllowed();
         const observation2 = ordinaryLaunchRecoveryObservationSchema.parse(await this.observeRecovery(this.options));
+        let presenceRefusal = "Unknown-launch abandonment refused: a same-name EasyEDA application was observed.";
+        if (observation2.otherPowerShellPresent) {
+          presenceRefusal = observation2.sameNameProcessPresent ? "Unknown-launch abandonment refused: another PowerShell process and a same-name EasyEDA application were observed." : "Unknown-launch abandonment refused: another PowerShell process was observed.";
+        }
         requireValue14(
           !observation2.otherPowerShellPresent && !observation2.sameNameProcessPresent,
-          "Unknown-launch abandonment requires absent other PowerShell and same-name application samples."
+          presenceRefusal
         );
         await this.options.assertAllowed();
         requireValue14(await this.verify(this.options) === facadeSha256, "Unknown-launch recovery installation changed.");
@@ -115006,10 +115010,15 @@ async function captureLauncherAdmissionAt(expected3, command, cwd, entrypoint) {
     captureTrustedFile(expected3.dependencyLock.path),
     captureTrustedFile(expected3.sandbox.command, true)
   ]);
-  if (commandCapture.sha256 !== expected3.commandSha256 || descriptorSanitizerCapture.sha256 !== expected3.sandbox.descriptorSanitizer.sha256 || entrypointCapture.sha256 !== expected3.entrypointSha256 || lockCapture.sha256 !== expected3.dependencyLock.sha256 || sandboxCapture.sha256 !== expected3.sandbox.commandSha256) {
-    throw new Error(
-      "The runtime launcher command, entrypoint, or dependency lock differs from review."
-    );
+  const drift = [
+    { label: "Node executable", actual: commandCapture.sha256, expected: expected3.commandSha256 },
+    { label: "descriptor sanitizer", actual: descriptorSanitizerCapture.sha256, expected: expected3.sandbox.descriptorSanitizer.sha256 },
+    { label: "entrypoint", actual: entrypointCapture.sha256, expected: expected3.entrypointSha256 },
+    { label: "dependency lock", actual: lockCapture.sha256, expected: expected3.dependencyLock.sha256 },
+    { label: "sandbox executable", actual: sandboxCapture.sha256, expected: expected3.sandbox.commandSha256 }
+  ].filter((item2) => item2.actual !== item2.expected).map((item2) => item2.label);
+  if (drift.length > 0) {
+    throw new Error(`Runtime launcher integrity differs from review: ${drift.join(", ")}.`);
   }
   const seals = [
     sealFor(normalizedCwd, cwdInfo, "directory"),
@@ -115191,7 +115200,7 @@ var init_upstream_trust = __esm({
       }
     };
     DEFAULT_SANDBOX_COMMAND = "/usr/sbin/bwrap";
-    REVIEWED_SANDBOX_VERSION = "0.11.2";
+    REVIEWED_SANDBOX_VERSION = "0.13.1";
     REQUIRED_SANDBOX_OPTIONS = [
       "--as-pid-1",
       "--bind-fd",
@@ -115581,7 +115590,7 @@ function bubblewrapArguments(environment, supervisorArguments) {
   });
   return [
     "--unshare-all",
-    // Bubblewrap 0.11.2 requires the explicit option before --disable-userns,
+    // Bubblewrap requires the explicit option before --disable-userns,
     // Explicit user-namespace selection is required despite --unshare-all.
     "--unshare-user",
     "--unshare-pid",
@@ -118483,7 +118492,311 @@ var init_current_disposable_open_checkpoint = __esm({
   }
 });
 
+// server/src/current-symbol-closed-target.ts
+function validateCurrentClosedSymbolMetadataResult(input, raw) {
+  const request2 = parseCurrentSymbolMetadataRequest(input), result = currentClosedSymbolMetadataResultSchema.parse(raw);
+  if (canonicalJson(result.target) !== canonicalJson(request2.target) || result.value.uuid !== request2.arguments.symbolUuid || result.value.projectUuid !== request2.target.projectUuid || Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
+    throw new Error("Current closed-symbol metadata witness differs from its bounded exact target.");
+  }
+  return result;
+}
+function currentClosedSymbolMetadataProjection(input) {
+  const value = currentClosedSymbolMetadataResultSchema.parse(input);
+  return currentSymbolMetadataResultSchema.parse({ ...value, kind: "current-symbol-metadata-observation", hiddenEditorsVerified: false });
+}
+var currentClosedSymbolMetadataResultSchema;
+var init_current_symbol_closed_target = __esm({
+  "server/src/current-symbol-closed-target.ts"() {
+    init_zod();
+    init_core3();
+    init_current_symbol_metadata();
+    currentClosedSymbolMetadataResultSchema = currentSymbolMetadataResultSchema.extend({
+      kind: external_exports.literal("current-closed-symbol-metadata-witness"),
+      hiddenEditorsVerified: external_exports.literal(true)
+    });
+  }
+});
+
+// server/src/current-symbol-closed-target-dom.ts
+var CURRENT_SYMBOL_CLOSED_TARGET_DOM;
+var init_current_symbol_closed_target_dom = __esm({
+  "server/src/current-symbol-closed-target-dom.ts"() {
+    CURRENT_SYMBOL_CLOSED_TARGET_DOM = `
+let closedDomOwners;
+const closedTargetDom=()=>{
+ check();
+ const roots=apply(select,document,['[id="tabbar_bodies"]']);if(roots.length!==1)bad();const bodyRoot=roots[0];
+ if(bodyRoot.tagName!=='DIV'||bodyRoot.ownerDocument!==document||bodyRoot.isConnected!==true||bodyRoot.children.length!==6)bad();
+ const rootSelect=bodyRoot.querySelectorAll;if(typeof rootSelect!=='function')bad();
+ const staticIds=new Set(['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page']),seen=new Set(),owners=[bodyRoot,rootSelect];let activeCount=0;
+ for(const body of bodyRoot.children){
+  if(body.tagName!=='DIV'||body.ownerDocument!==document||body.isConnected!==true||body.parentElement!==bodyRoot||typeof body.getAttribute!=='function')bad();
+  owners.push(body,body.getAttribute);const uuid=apply(body.getAttribute,body,['uuid']);
+  if(uuid===null){if(!staticIds.has(body.id)||seen.has(body.id))bad();seen.add(body.id);continue;}
+  if(uuid!==target.tabId||++activeCount!==1||body!==parent||body.children.length>128)bad();
+  const bodyClasses=body.classList,bodyContains=bodyClasses?.contains;if(typeof bodyContains!=='function')bad();owners.push(bodyClasses,bodyContains);
+  if(!apply(bodyContains,bodyClasses,['tabbar-panel'])||!apply(bodyContains,bodyClasses,['ruler-theme'])||apply(bodyContains,bodyClasses,['blankIframeDiv']))bad();
+  let directFrames=0;for(const element of body.children){owners.push(element);if(element.tagName==='IFRAME'){if(element!==frame)bad();directFrames++;}}
+  if(directFrames!==1)bad();
+ }
+ if(activeCount!==1||seen.size!==5)bad();
+ // Symbols/schematics may be DIVs; exports may lack a UUID body entirely.
+ const markers=apply(select,document,['.editframe,[c_doctype],[c_dbid],[id^="frame_"],iframe[src*="entry="],[blankIframe],[pcb-canvas]']);
+ if(markers.length!==1||markers[0]!==frame)bad();
+ const frames=apply(rootSelect,bodyRoot,['iframe']);if(frames.length!==1||frames[0]!==frame)bad();
+ const documentFrames=apply(select,document,['iframe']);if(documentFrames.length!==1||documentFrames[0]!==frame)bad();
+ if(closedDomOwners===undefined)closedDomOwners=owners;
+ else if(owners.length!==closedDomOwners.length||owners.some((owner,i)=>owner!==closedDomOwners[i]))bad();
+ check();
+};`;
+  }
+});
+
+// server/src/current-symbol-metadata-program.ts
+function buildCurrentSymbolMetadataProgram(input) {
+  return compileCurrentSymbolMetadataProgram(input, false);
+}
+function buildCurrentClosedSymbolMetadataProgram(input) {
+  return compileCurrentSymbolMetadataProgram(input, true);
+}
+function compileCurrentSymbolMetadataProgram(input, closedTarget) {
+  const request2 = parseCurrentSymbolMetadataRequest(input);
+  return `let timer,clear;
+try{
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},symbolUuid=${JSON.stringify(request2.arguments.symbolUuid)};let expired=false;
+const bad=()=>{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');};
+${buildCurrentProjectUrlGuard()}
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0))bad();return value;};
+const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),mode=own(root,'PRO_EDITOR_MODE'),edaOwner=eda;
+const project=plain(own(host,'currentProject')),bus=own(host,'messageBus'),rpc=method(bus,'rpcCall');
+if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
+const tab=plain(apply(getTab.fn,tabs,[target.tabId])),data=plain(own(tab,'data')),select=document?.querySelectorAll;
+if(typeof select!=='function')bad();const matches=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(matches.length!==1)bad();
+const frame=matches[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,'MSG_BUS_PCB'),channel=own(native,'messageBus'),identityCall=method(channel,'rpcCall'),childObject=own(child,'Object'),childPrototype=own(childObject,'prototype');
+const getAttribute=frame?.getAttribute,hasAttribute=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttribute=parent?.getAttribute;
+if(typeof getAttribute!=='function'||typeof hasAttribute!=='function'||typeof contains!=='function'||typeof parentAttribute!=='function')bad();
+const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+const check=()=>{
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
+ parseProjectUrl(href,target.projectUuid,target.tabId);
+ if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'currentProject')!==project||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
+ if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
+ for(const binding of [active,container,getTab,rpc,identityCall])methodCheck(binding);
+ if(apply(active.fn,tabs,[])!==target.tabId||apply(getTab.fn,tabs,[target.tabId])!==tab||own(tab,'data')!==data||own(tab,'tabId')!==target.tabId||own(data,'doctype')!==3||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad();
+ if(document.querySelectorAll!==select)bad();const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1||found[0]!==frame)bad();
+ if(frame.tagName!=='IFRAME'||frame.id!=='frame_'+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==getAttribute||frame.hasAttribute!==hasAttribute||parent.getAttribute!==parentAttribute||!apply(contains,classes,['editframe'])||apply(parentAttribute,parent,['uuid'])!==target.tabId)bad();
+ for(const [key,value] of [['c_dbid',target.tabId],['c_doctype','3'],['src','editor?entry=pcb'],['pcb-canvas','true']])if(apply(getAttribute,frame,[key])!==value)bad();for(const key of ['blankIframe','fromFile','jsonCacheReady'])if(apply(hasAttribute,frame,[key]))bad();
+ if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel||own(child,'Object')!==childObject||own(childObject,'prototype')!==childPrototype)bad();
+ if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
+};
+${closedTarget ? CURRENT_SYMBOL_CLOSED_TARGET_DOM : ""}
+// Enumerate the complete current tab registry, not the public split-tree mapper.
+// Absence here deliberately makes no assertion about hidden/export editors.
+const registry=()=>{
+ check();const owners=[],ids=own(tabs,'containerIds'),n=dense(ids,128);if(n===0)bad();owners.push(ids);const names=[],registered=new Set();
+ for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registered.has(id))bad();registered.add(id);names.push(id);}
+ const tree=own(tabs,'containerTree'),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
+ if(own(tabs,'belongContainer')!=='editor-window-main'||own(tree,'id')!=='editor-window-main')bad();
+ while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
+  if(children===undefined){if(!registered.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
+ if(leaves.size!==registered.size||own(tabs,'currentTabId')!==target.tabId)bad();
+ const allIds=new Set(),projection=[];let count=0,start=0,placeholder=0,currentCount=0;
+ for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256);if(count+length>256)bad();count+=length;owners.push(list);const localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];
+  for(let i=0;i<length;i++){const member=plain(own(list,String(i))),id2=text(own(member,'tabId'),512),entry=plain(own(member,'data'));owners.push(member,entry);if(allIds.has(id2))bad();allIds.add(id2);localIds.add(id2);const type=own(entry,'doctype');
+   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(member,'isAbleDelete')!==false||own(member,'group')!=='start_blank'||own(member,'draggable')!==isStart)bad();const hidden=own(member,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(member,'documentType',true);if(declared!==undefined&&declared!==type)bad();for(const key of ['pid','owner'])if(own(entry,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(member,key,true)!==undefined)bad();if(isStart)start++;else placeholder++;
+   }else{if(![1,3,26].includes(type)||own(entry,'pid')!==target.projectUuid||own(member,'parentLibraryUuid',true)!==undefined)bad();const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid||parts[1]===symbolUuid)bad();const parentProject=own(member,'parentProjectUuid',true),declared=own(member,'documentType',true);if((parentProject!==undefined&&parentProject!==target.projectUuid)||(declared!==undefined&&declared!==type))bad();}
+   if(id2===target.tabId){currentCount++;if(localActive!==target.tabId||member!==tab||entry!==data||type!==3)bad();}rows.push([id2,type]);}
+  if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
+ if(start>1||placeholder>1||currentCount!==1)bad();const url=parseProjectUrl(href,target.projectUuid,target.tabId);if(url.tabIds.some(id=>!allIds.has(id)))bad();check();return{owners,seal:JSON.stringify([names,treeProjection,projection])};
+};
+const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();" : ""}};
+const childPlain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childPrototype)bad();return value;};
+const identity=async()=>{same();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);same();const value=childPlain(own(childPlain(reply),'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType')||own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
+const call=async(topic,args)=>{same();const reply=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(reply),'message'));};
+const projectMetadata=async()=>{const value=await call('/PrjDB/project/getData',[target.projectUuid]);if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;};
+const sample=async()=>{
+ await identity();same();const ownerUuid=await projectMetadata();same();
+ // No third argument: the manager's optional canvas flag remains undefined.
+ const value=await call('/PrjDB/symbol/getData',[symbolUuid,target.projectUuid]);same();
+ if(own(value,'uuid')!==symbolUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'path')!==target.projectUuid||own(value,'docType')!==2||own(plain(own(value,'owner')),'uuid')!==ownerUuid)bad();
+ const ticket=own(value,'ticket');if(typeof ticket!=='number'||!Number.isSafeInteger(ticket)||ticket<0||Object.is(ticket,-0))bad();
+ const tagsJson=text(own(value,'custom_tags'),131072,true),tags=JSON.parse(tagsJson);for(let i=0,n=dense(tags,256);i<n;i++)text(own(tags,String(i)),512,true);
+ const result={uuid:symbolUuid,projectUuid:target.projectUuid,ownerUuid,name:text(own(value,'display_title'),512,true),description:text(own(value,'description'),65536,true),tagsJson,source:text(own(value,'source'),4096,true),version:text(own(value,'version'),128,true),ticket};
+ if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();return result;
+};
+const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
+ const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request2.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
+same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}}}`;
+}
+var init_current_symbol_metadata_program = __esm({
+  "server/src/current-symbol-metadata-program.ts"() {
+    init_current_symbol_metadata();
+    init_current_project_url();
+    init_exact_readers();
+    init_current_symbol_closed_target_dom();
+  }
+});
+
+// server/src/current-symbol-closed-target-runtime.ts
+async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedFingerprint) {
+  const expected3 = structuredClone(expectedFingerprint), request2 = parseCurrentSymbolMetadataRequest(requestInput2);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  await engine2.assertBridgeDispatchAllowed();
+  const initialStatus = await engine2.status();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertExpectedFingerprint(initial);
+  assertSubset(initial, expected3, "Current closed-symbol witness runtime");
+  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code: buildCurrentClosedSymbolMetadataProgram(request2),
+    timeoutMs: 6e4,
+    confirmWrite: true
+  }, 7e4);
+  assertUpstreamReplySettled(raw);
+  const envelope2 = extractToolPayload(raw);
+  if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
+    throw new Error("Current closed-symbol witness reply exceeds its byte bound.");
+  }
+  const observation2 = validateCurrentClosedSymbolMetadataResult(request2, decodeExactReadEnvelope(envelope2));
+  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const finalStatus = await engine2.status();
+  const final = finalStatus.stableFingerprint;
+  validateSdkLocalRuntimeFingerprint(final);
+  if (canonicalJson(final) !== canonicalJson(initial)) {
+    throw new Error("Current closed-symbol witness runtime changed around the observation.");
+  }
+  return {
+    observation: observation2,
+    observationSha256: sha256Json(observation2),
+    runtimeFingerprintSha256: sha256Json(initial),
+    sourceImplementationVerified: true,
+    executionAuthorized: false
+  };
+}
+var init_current_symbol_closed_target_runtime = __esm({
+  "server/src/current-symbol-closed-target-runtime.ts"() {
+    init_core3();
+    init_current_disposable_open_profile();
+    init_current_symbol_closed_target();
+    init_current_symbol_metadata();
+    init_current_symbol_metadata_program();
+    init_exact_readers();
+    init_sdk_local_runtime();
+  }
+});
+
+// server/src/current-symbol-owned-preparation.ts
+function need43(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+function assertOriginalCurrentOwnedSymbolPreparation(value, engine2) {
+  need43(value !== null && typeof value === "object", "Original current symbol preparation is missing.");
+  const issued5 = issuedPreparations2.get(value);
+  need43(
+    issued5 !== void 0 && issued5.engine === engine2 && canonicalJson(value) === issued5.text,
+    "Current symbol preparation was not issued unchanged by this engine."
+  );
+  need43(
+    assertCurrentDisposableOpenGeneration(issued5.original.generation, engine2) === issued5.original.source,
+    "Current symbol preparation original generation changed."
+  );
+  return issued5.original;
+}
+async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
+  const source4 = assertCurrentDisposableOpenGeneration(generation5, engine2);
+  const request2 = currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }).parse(input);
+  need43(
+    request2.target.projectUuid === source4.target.projectUuid && request2.target.branchUuid === source4.target.branchUuid && request2.target.symbolUuid !== source4.target.documentUuid,
+    "Current symbol preparation differs from its original opening target."
+  );
+  const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
+  need43(scopeReader !== void 0, "Current symbol preparation cannot inspect its authenticated scope.");
+  const scope5 = scopeReader.call(engine2.upstream), session = source4.bridgeSession;
+  need43(scope5 !== void 0 && scope5.gatewayInstanceId === session.gatewayInstanceId && scope5.sessionId === session.sessionId && scope5.sessionSequence === session.sequence, "Current symbol preparation scope does not belong to its original session.");
+  const scopeText = canonicalJson(scope5);
+  const current2 = () => {
+    need43(assertCurrentDisposableOpenGeneration(generation5, engine2) === source4 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText, "Current symbol preparation owner or authenticated scope changed.");
+  };
+  await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
+  current2();
+  const target5 = {
+    projectUuid: source4.target.projectUuid,
+    branchUuid: source4.target.branchUuid,
+    documentUuid: source4.target.documentUuid,
+    tabId: `${source4.target.documentUuid}@${source4.target.projectUuid}`
+  };
+  const closedTargetWitness = await readCurrentClosedSymbolMetadata(
+    engine2,
+    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request2.target.symbolUuid }, target: target5 },
+    source4.expectedFingerprint
+  );
+  current2();
+  const checkpointPreparation = await prepareCurrentSymbolMetadata({
+    ...request2,
+    observationProjection: currentClosedSymbolMetadataProjection(closedTargetWitness.observation)
+  });
+  current2();
+  await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
+  current2();
+  const body4 = {
+    profile: "private.current-owned-symbol-metadata-preparation.v1",
+    openingOperationId: generation5.operationId,
+    closedTargetWitness,
+    checkpointPreparation,
+    postOpeningBaselineVerified: false,
+    writerReady: false,
+    executionAuthorized: false
+  };
+  const preparation3 = Object.freeze({ ...body4, preparationSha256: sha256Json(body4) });
+  issuedPreparations2.set(preparation3, { original: Object.freeze({ preparation: preparation3, generation: generation5, source: source4 }), engine: engine2, text: canonicalJson(preparation3) });
+  return preparation3;
+}
+var issuedPreparations2;
+var init_current_symbol_owned_preparation = __esm({
+  "server/src/current-symbol-owned-preparation.ts"() {
+    init_core3();
+    init_current_disposable_open_runtime();
+    init_current_symbol_metadata_preparation();
+    init_current_symbol_closed_target();
+    init_current_symbol_closed_target_runtime();
+    issuedPreparations2 = /* @__PURE__ */ new WeakMap();
+  }
+});
+
 // server/src/current-disposable-open-runtime.ts
+function assertCurrentDisposableOpenGeneration(value, engine2) {
+  requireValue15(value !== null && typeof value === "object", "Current disposable-open original generation is missing.");
+  const issued5 = issuedGenerations.get(value);
+  requireValue15(issued5 !== void 0 && issued5.source.engine === engine2, "Current disposable-open generation was not issued by this engine's retained coordinator.");
+  issued5.current();
+  return issued5.source;
+}
+async function revalidateCurrentDisposableOpenGeneration(value, engine2) {
+  const source4 = assertCurrentDisposableOpenGeneration(value, engine2);
+  requireValue15(value !== null && typeof value === "object", "Current disposable-open original generation is missing.");
+  const issued5 = issuedGenerations.get(value);
+  requireValue15(issued5 !== void 0, "Current disposable-open original generation is missing.");
+  await issued5.revalidate();
+  requireValue15(assertCurrentDisposableOpenGeneration(value, engine2) === source4, "Current disposable-open generation changed during revalidation.");
+  return source4;
+}
 function requireValue15(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -118534,7 +118847,7 @@ function summary6(journal) {
     artifacts: journal.artifacts
   };
 }
-var PROFILE16, digest5, launchSchema2, terminationSchema, closedSessionSchema, defaults, CurrentDisposableOpenCoordinator;
+var PROFILE16, digest5, launchSchema2, terminationSchema, closedSessionSchema, defaults, issuedGenerations, CurrentDisposableOpenCoordinator;
 var init_current_disposable_open_runtime = __esm({
   "server/src/current-disposable-open-runtime.ts"() {
     init_zod();
@@ -118546,7 +118859,10 @@ var init_current_disposable_open_runtime = __esm({
     init_current_disposable_open_checkpoint();
     init_current_disposable_open_profile();
     init_exact_readers();
+    init_engine();
     init_sdk_local_runtime();
+    init_windows_runtime();
+    init_current_symbol_owned_preparation();
     PROFILE16 = "easyeda-pro-control.current-disposable-open.v1";
     digest5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     launchSchema2 = external_exports.object({
@@ -118574,19 +118890,26 @@ var init_current_disposable_open_runtime = __esm({
       verifyImplementation: verifyCurrentDisposableOpenImplementation,
       validateFingerprint: validateSdkLocalRuntimeFingerprint
     };
+    issuedGenerations = /* @__PURE__ */ new WeakMap();
     CurrentDisposableOpenCoordinator = class {
       options;
       services;
       retained = /* @__PURE__ */ new Map();
+      productionServices;
+      generations = /* @__PURE__ */ new Map();
       busy = false;
       constructor(options, dependencies3 = {}) {
         this.options = options;
         this.services = { ...defaults, ...dependencies3 };
+        this.productionServices = Reflect.ownKeys(dependencies3).length === 0;
       }
       async run(input, expectedFingerprint) {
         const request2 = parseCurrentDisposableOpenRequest(structuredClone(input));
         requireValue15(!this.busy, "Current disposable opening is already in progress.");
         this.busy = true;
+        if (request2.action !== "inspect") {
+          this.generations.clear();
+        }
         try {
           if (request2.action === "open") {
             requireValue15(expectedFingerprint !== void 0, "Current disposable opening requires its expected fingerprint.");
@@ -118603,6 +118926,98 @@ var init_current_disposable_open_runtime = __esm({
         } finally {
           this.busy = false;
         }
+      }
+      /** Internal preparation only. The public opener request schema has no route
+       * here. Later writer stages still need their independently issued witness,
+       * post-opening baseline, original close reservation and full SQL inventory.
+       */
+      async prepareSymbolMetadata(operationId3, input) {
+        requireValue15(!this.busy, "Current disposable opening is already in progress.");
+        requireValue15(
+          this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+          "Current symbol preparation cannot issue from injected opening services or an unowned engine."
+        );
+        const engine2 = this.options.engine;
+        this.busy = true;
+        this.generations.clear();
+        try {
+          const loaded = await this.load(operationId3), slot = this.retainedJournal(loaded);
+          requireValue15(slot.runtime instanceof WindowsControlRuntime, "Current symbol preparation requires the retained Windows runtime object.");
+          const runtime = slot.runtime;
+          await engine2.assertBridgeDispatchAllowed();
+          this.current(slot);
+          await engine2.assertRecoveryOperationIsolated(operationId3);
+          this.current(slot);
+          const scope5 = engine2.upstream.withAuthenticatedBridgeDispatchScope;
+          requireValue15(scope5 !== void 0, "Current symbol preparation requires an authenticated dispatch scope.");
+          const result = await scope5.call(engine2.upstream, async () => {
+            const generation5 = this.issueGeneration(slot, engine2, runtime);
+            try {
+              return await prepareCurrentOwnedSymbolMetadata(engine2, generation5, input);
+            } catch (error51) {
+              this.generations.delete(operationId3);
+              throw error51;
+            }
+          });
+          return assertOriginalCurrentOwnedSymbolPreparation(result, engine2).preparation;
+        } finally {
+          this.busy = false;
+        }
+      }
+      issueGeneration(slot, engine2, runtime) {
+        this.current(slot);
+        const journal = slot.journal, journalText = canonicalJson(journal), session = journal.bridgeSessionBeforeOrphan;
+        requireValue15(
+          journal.state === "completed" && !journal.hardStop && !journal.orphanedCallPossible && journal.projectDispatchConsumed && journal.result?.["outcome"] === "target-native-identity-observed" && session !== void 0,
+          "Current symbol preparation requires the retained successful native-identity opening and original session."
+        );
+        const reader = engine2.upstream.bridgeSessionLifecycle, sessionText = canonicalJson(session), upstream2 = engine2.upstream;
+        requireValue15(reader !== void 0, "Current symbol preparation cannot inspect the original authenticated session.");
+        const generation5 = Object.freeze({ profile: "private.current-disposable-open-generation.v1", operationId: journal.operationId });
+        this.generations.set(journal.operationId, generation5);
+        const current2 = () => {
+          try {
+            this.current(slot);
+            requireValue15(this.generations.get(journal.operationId) === generation5 && canonicalJson(journal) === journalText && engine2.upstream === upstream2 && upstream2.bridgeSessionLifecycle === reader, "Current symbol preparation retained opening or lifecycle reader changed.");
+            const lifecycle = reader.call(engine2.upstream);
+            requireValue15(
+              isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && isRecord(lifecycle["activeSession"]) && canonicalJson({ ...lifecycle["activeSession"], gatewayInstanceId: lifecycle["gatewayInstanceId"] }) === sessionText,
+              "Current symbol preparation original authenticated session changed."
+            );
+          } catch (error51) {
+            this.generations.delete(journal.operationId);
+            throw error51;
+          }
+        };
+        const source4 = Object.freeze({
+          engine: engine2,
+          runtime,
+          target: journal.plan.intent.target,
+          expectedFingerprint: journal.plan.expectedFingerprint,
+          launchProjection: slot.launch,
+          bridgeSession: session,
+          preNavigationCheckpoint: journal.checkpointProof
+        });
+        const revalidate = async () => {
+          try {
+            current2();
+            await engine2.assertBridgeDispatchAllowed();
+            current2();
+            await engine2.assertRecoveryOperationIsolated(journal.operationId);
+            current2();
+            await this.admission(source4.expectedFingerprint);
+            current2();
+            const persisted = await this.load(journal.operationId);
+            current2();
+            requireValue15(canonicalJson(persisted) === journalText, "Current symbol preparation persisted opening changed.");
+          } catch (error51) {
+            this.generations.delete(journal.operationId);
+            throw error51;
+          }
+        };
+        current2();
+        issuedGenerations.set(generation5, { source: source4, current: current2, revalidate });
+        return generation5;
       }
       async load(operationId3) {
         const raw = await this.services.loadOperation(operationId3);
@@ -119307,95 +119722,6 @@ var init_current_pcb_geometry_runtime = __esm({
   }
 });
 
-// server/src/current-symbol-metadata-program.ts
-function buildCurrentSymbolMetadataProgram(input) {
-  const request2 = parseCurrentSymbolMetadataRequest(input);
-  return `let timer,clear;
-try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},symbolUuid=${JSON.stringify(request2.arguments.symbolUuid)};let expired=false;
-const bad=()=>{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');};
-${buildCurrentProjectUrlGuard()}
-const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
-const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
-const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
-const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0))bad();return value;};
-const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
-const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
-const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),mode=own(root,'PRO_EDITOR_MODE'),edaOwner=eda;
-const project=plain(own(host,'currentProject')),bus=own(host,'messageBus'),rpc=method(bus,'rpcCall');
-if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
-const tab=plain(apply(getTab.fn,tabs,[target.tabId])),data=plain(own(tab,'data')),select=document?.querySelectorAll;
-if(typeof select!=='function')bad();const matches=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(matches.length!==1)bad();
-const frame=matches[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,'MSG_BUS_PCB'),channel=own(native,'messageBus'),identityCall=method(channel,'rpcCall'),childObject=own(child,'Object'),childPrototype=own(childObject,'prototype');
-const getAttribute=frame?.getAttribute,hasAttribute=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttribute=parent?.getAttribute;
-if(typeof getAttribute!=='function'||typeof hasAttribute!=='function'||typeof contains!=='function'||typeof parentAttribute!=='function')bad();
-const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
-const check=()=>{
- if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- parseProjectUrl(href,target.projectUuid,target.tabId);
- if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
- if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'currentProject')!==project||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
- if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
- for(const binding of [active,container,getTab,rpc,identityCall])methodCheck(binding);
- if(apply(active.fn,tabs,[])!==target.tabId||apply(getTab.fn,tabs,[target.tabId])!==tab||own(tab,'data')!==data||own(tab,'tabId')!==target.tabId||own(data,'doctype')!==3||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad();
- if(document.querySelectorAll!==select)bad();const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1||found[0]!==frame)bad();
- if(frame.tagName!=='IFRAME'||frame.id!=='frame_'+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==getAttribute||frame.hasAttribute!==hasAttribute||parent.getAttribute!==parentAttribute||!apply(contains,classes,['editframe'])||apply(parentAttribute,parent,['uuid'])!==target.tabId)bad();
- for(const [key,value] of [['c_dbid',target.tabId],['c_doctype','3'],['src','editor?entry=pcb'],['pcb-canvas','true']])if(apply(getAttribute,frame,[key])!==value)bad();for(const key of ['blankIframe','fromFile','jsonCacheReady'])if(apply(hasAttribute,frame,[key]))bad();
- if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel||own(child,'Object')!==childObject||own(childObject,'prototype')!==childPrototype)bad();
- if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
-};
-// Enumerate the complete current tab registry, not the public split-tree mapper.
-// Absence here deliberately makes no assertion about hidden/export editors.
-const registry=()=>{
- check();const owners=[],ids=own(tabs,'containerIds'),n=dense(ids,128);if(n===0)bad();owners.push(ids);const names=[],registered=new Set();
- for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registered.has(id))bad();registered.add(id);names.push(id);}
- const tree=own(tabs,'containerTree'),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
- if(own(tabs,'belongContainer')!=='editor-window-main'||own(tree,'id')!=='editor-window-main')bad();
- while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
-  if(children===undefined){if(!registered.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
- if(leaves.size!==registered.size||own(tabs,'currentTabId')!==target.tabId)bad();
- const allIds=new Set(),projection=[];let count=0,start=0,placeholder=0,currentCount=0;
- for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256);if(count+length>256)bad();count+=length;owners.push(list);const localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];
-  for(let i=0;i<length;i++){const member=plain(own(list,String(i))),id2=text(own(member,'tabId'),512),entry=plain(own(member,'data'));owners.push(member,entry);if(allIds.has(id2))bad();allIds.add(id2);localIds.add(id2);const type=own(entry,'doctype');
-   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(member,'isAbleDelete')!==false||own(member,'group')!=='start_blank'||own(member,'draggable')!==isStart)bad();const hidden=own(member,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(member,'documentType',true);if(declared!==undefined&&declared!==type)bad();for(const key of ['pid','owner'])if(own(entry,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(member,key,true)!==undefined)bad();if(isStart)start++;else placeholder++;
-   }else{if(![1,3,26].includes(type)||own(entry,'pid')!==target.projectUuid||own(member,'parentLibraryUuid',true)!==undefined)bad();const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid||parts[1]===symbolUuid)bad();const parentProject=own(member,'parentProjectUuid',true),declared=own(member,'documentType',true);if((parentProject!==undefined&&parentProject!==target.projectUuid)||(declared!==undefined&&declared!==type))bad();}
-   if(id2===target.tabId){currentCount++;if(localActive!==target.tabId||member!==tab||entry!==data||type!==3)bad();}rows.push([id2,type]);}
-  if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
- if(start>1||placeholder>1||currentCount!==1)bad();const url=parseProjectUrl(href,target.projectUuid,target.tabId);if(url.tabIds.some(id=>!allIds.has(id)))bad();check();return{owners,seal:JSON.stringify([names,treeProjection,projection])};
-};
-const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();};
-const childPlain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childPrototype)bad();return value;};
-const identity=async()=>{same();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);same();const value=childPlain(own(childPlain(reply),'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType')||own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
-const call=async(topic,args)=>{same();const reply=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(reply),'message'));};
-const projectMetadata=async()=>{const value=await call('/PrjDB/project/getData',[target.projectUuid]);if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;};
-const sample=async()=>{
- await identity();same();const ownerUuid=await projectMetadata();same();
- // No third argument: the manager's optional canvas flag remains undefined.
- const value=await call('/PrjDB/symbol/getData',[symbolUuid,target.projectUuid]);same();
- if(own(value,'uuid')!==symbolUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'path')!==target.projectUuid||own(value,'docType')!==2||own(plain(own(value,'owner')),'uuid')!==ownerUuid)bad();
- const ticket=own(value,'ticket');if(typeof ticket!=='number'||!Number.isSafeInteger(ticket)||ticket<0||Object.is(ticket,-0))bad();
- const tagsJson=text(own(value,'custom_tags'),131072,true),tags=JSON.parse(tagsJson);for(let i=0,n=dense(tags,256);i<n;i++)text(own(tags,String(i)),512,true);
- const result={uuid:symbolUuid,projectUuid:target.projectUuid,ownerUuid,name:text(own(value,'display_title'),512,true),description:text(own(value,'description'),65536,true),tagsJson,source:text(own(value,'source'),4096,true),version:text(own(value,'version'),128,true),ticket};
- if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();return result;
-};
-const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:'current-symbol-metadata-observation',method:${JSON.stringify(request2.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:false,workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
- const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
-same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}
-finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}}}`;
-}
-var init_current_symbol_metadata_program = __esm({
-  "server/src/current-symbol-metadata-program.ts"() {
-    init_current_symbol_metadata();
-    init_current_project_url();
-    init_exact_readers();
-  }
-});
-
 // server/src/current-symbol-metadata-runtime.ts
 async function readCurrentSymbolMetadata(engine2, requestInput2, expectedFingerprint) {
   const request2 = parseCurrentSymbolMetadataRequest(requestInput2);
@@ -119646,7 +119972,7 @@ __export(closed_symbol_disposable_entry_exports, {
   ClosedSymbolDisposableEntry: () => ClosedSymbolDisposableEntry
 });
 import { randomBytes as randomBytes12 } from "node:crypto";
-function need43(value, message) {
+function need44(value, message) {
   if (!value) {
     throw new Error(message);
   }
@@ -119656,26 +119982,26 @@ function method3(owner, key) {
   for (let depth = 0; current2 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current2, key);
     if (item2 !== void 0) {
-      need43(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Disposable entry owner method changed.");
+      need44(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Disposable entry owner method changed.");
       return item2.value;
     }
     const parent = Object.getPrototypeOf(current2);
-    need43(parent === null || typeof parent === "object", "Disposable entry owner prototype changed.");
+    need44(parent === null || typeof parent === "object", "Disposable entry owner prototype changed.");
     current2 = parent;
   }
   throw new Error("Disposable entry owner method is unavailable.");
 }
 function descriptor7(value) {
-  need43(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Disposable result descriptor refused.");
+  need44(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Disposable result descriptor refused.");
   return Object.freeze({ path: value.path, bytes: value.bytes, sha256: value.sha256 });
 }
 function response(value) {
-  need43(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Disposable result exceeds 16 KiB.");
+  need44(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Disposable result exceeds 16 KiB.");
   return Object.freeze(value);
 }
 function planFor(request2, expected3) {
   const nonces = [randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex")];
-  need43(new Set(nonces).size === 3, "Disposable marker nonce collision; no regeneration.");
+  need44(new Set(nonces).size === 3, "Disposable marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
     projectUuid: request2.target.projectUuid,
@@ -119738,7 +120064,7 @@ var init_closed_symbol_disposable_entry = __esm({
       facadePromise;
       owners;
       constructor(engine2, upstream2, runtime, nativeUi, gate) {
-        need43(engine2.upstream === upstream2, "Disposable entry engine/upstream owner differs.");
+        need44(engine2.upstream === upstream2, "Disposable entry engine/upstream owner differs.");
         this.engine = engine2;
         this.upstream = upstream2;
         this.runtime = runtime;
@@ -119774,15 +120100,15 @@ var init_closed_symbol_disposable_entry = __esm({
         ];
       }
       owner() {
-        need43(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Disposable entry owners changed.");
-        need43(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Disposable entry requires no enclosing authenticated scope.");
+        need44(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Disposable entry owners changed.");
+        need44(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Disposable entry requires no enclosing authenticated scope.");
       }
       fresh() {
         this.owner();
         const status2 = this.runtime.status();
         const lifecycle = this.upstream.bridgeSessionLifecycle();
-        need43(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Disposable entry runtime is not fresh.");
-        need43(lifecycle === void 0 || lifecycle.activeSession === null, "Disposable entry cannot adopt an authenticated session.");
+        need44(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Disposable entry runtime is not fresh.");
+        need44(lifecycle === void 0 || lifecycle.activeSession === null, "Disposable entry cannot adopt an authenticated session.");
       }
       /** Internal diagnostics only. Never serialize this bag through MCP or use it to
        * choose a terminal. Earlier exact objects survive later refusal/publication failure.
@@ -119844,7 +120170,7 @@ var init_closed_symbol_disposable_entry = __esm({
         try {
           request2 = parseClosedSymbolValidationRequest(rawRequest);
           this.request = request2;
-          need43(request2.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
+          need44(request2.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
           requestText = canonicalJson(request2);
           this.owner();
         } catch (error51) {
@@ -119853,7 +120179,7 @@ var init_closed_symbol_disposable_entry = __esm({
         }
         const current2 = () => {
           this.owner();
-          need43(this.request === request2 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Disposable entry request changed.");
+          need44(this.request === request2 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Disposable entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -119877,7 +120203,7 @@ var init_closed_symbol_disposable_entry = __esm({
             const expected3 = this.expected;
             current2();
             this.fresh();
-            need43(
+            need44(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Disposable runtime scope differs from the actual facade expectation."
             );
@@ -119886,7 +120212,7 @@ var init_closed_symbol_disposable_entry = __esm({
             let claim3, coordinator;
             const planned = () => {
               current2();
-              need43(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Disposable retained preparation or plan changed.");
+              need44(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Disposable retained preparation or plan changed.");
             };
             this.phase = "construction";
             const coordinatorModule = await Promise.resolve().then(() => (init_closed_symbol_coordinator(), closed_symbol_coordinator_exports));
@@ -119908,39 +120234,39 @@ var init_closed_symbol_disposable_entry = __esm({
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need43(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
+            need44(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
-            need43(this.coordinator === coordinator, "Disposable coordinator owner changed.");
+            need44(this.coordinator === coordinator, "Disposable coordinator owner changed.");
             const full = this.full;
             const kind = coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
             this.phase = "terminal";
             if (kind === "locked") {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_terminal(), closed_symbol_terminal_exports));
               planned();
-              need43(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Disposable terminal kind changed.");
+              need44(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Disposable terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need43(this.terminal === terminal, "Disposable terminal owner changed.");
+              need44(this.terminal === terminal, "Disposable terminal owner changed.");
               const assertLockedCompletion = terminalModule.assertOriginalClosedSymbolCompletion;
               assertLockedCompletion(this.completion, this.engine, full.operationId);
             } else {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_aged_terminal(), closed_symbol_aged_terminal_exports));
               planned();
-              need43(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Disposable terminal kind changed.");
+              need44(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Disposable terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolAgedTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need43(this.terminal === terminal, "Disposable terminal owner changed.");
+              need44(this.terminal === terminal, "Disposable terminal owner changed.");
               const assertAgedCompletion = terminalModule.assertOriginalAgedClosedSymbolCompletion;
               assertAgedCompletion(this.completion, this.engine, full.operationId);
             }
             this.phase = "projection";
-            need43(
+            need44(
               this.full === full && this.coordinator === coordinator && this.completion.operationId === full.operationId,
               "Disposable final original references changed."
             );
@@ -120147,7 +120473,7 @@ __export(closed_symbol_operation_entry_exports, {
   ClosedSymbolOperationEntry: () => ClosedSymbolOperationEntry
 });
 import { randomBytes as randomBytes13 } from "node:crypto";
-function need44(value, message) {
+function need45(value, message) {
   if (!value) {
     throw new Error(message);
   }
@@ -120157,26 +120483,26 @@ function method4(owner, key) {
   for (let depth = 0; current2 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current2, key);
     if (item2 !== void 0) {
-      need44(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Ordinary entry owner method changed.");
+      need45(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Ordinary entry owner method changed.");
       return item2.value;
     }
     const parent = Object.getPrototypeOf(current2);
-    need44(parent === null || typeof parent === "object", "Ordinary entry owner prototype changed.");
+    need45(parent === null || typeof parent === "object", "Ordinary entry owner prototype changed.");
     current2 = parent;
   }
   throw new Error("Ordinary entry owner method is unavailable.");
 }
 function descriptor8(value) {
-  need44(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Ordinary result descriptor refused.");
+  need45(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Ordinary result descriptor refused.");
   return Object.freeze({ path: value.path, bytes: value.bytes, sha256: value.sha256 });
 }
 function response2(value) {
-  need44(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Ordinary result exceeds 16 KiB.");
+  need45(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Ordinary result exceeds 16 KiB.");
   return Object.freeze(value);
 }
 function planFor2(request2, expected3) {
   const nonces = [randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex")];
-  need44(new Set(nonces).size === 3, "Ordinary marker nonce collision; no regeneration.");
+  need45(new Set(nonces).size === 3, "Ordinary marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
     projectUuid: request2.target.projectUuid,
@@ -120226,7 +120552,7 @@ var init_closed_symbol_operation_entry = __esm({
       facadePromise;
       owners;
       constructor(engine2, upstream2, runtime, nativeUi, gate) {
-        need44(engine2.upstream === upstream2, "Ordinary entry engine/upstream owner differs.");
+        need45(engine2.upstream === upstream2, "Ordinary entry engine/upstream owner differs.");
         this.engine = engine2;
         this.upstream = upstream2;
         this.runtime = runtime;
@@ -120262,15 +120588,15 @@ var init_closed_symbol_operation_entry = __esm({
         ];
       }
       owner() {
-        need44(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Ordinary entry owners changed.");
-        need44(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Ordinary entry requires no enclosing authenticated scope.");
+        need45(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Ordinary entry owners changed.");
+        need45(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Ordinary entry requires no enclosing authenticated scope.");
       }
       fresh() {
         this.owner();
         const status2 = this.runtime.status();
         const lifecycle = this.upstream.bridgeSessionLifecycle();
-        need44(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Ordinary entry runtime is not fresh.");
-        need44(lifecycle === void 0 || lifecycle.activeSession === null, "Ordinary entry cannot adopt an authenticated session.");
+        need45(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Ordinary entry runtime is not fresh.");
+        need45(lifecycle === void 0 || lifecycle.activeSession === null, "Ordinary entry cannot adopt an authenticated session.");
       }
       /** Internal diagnostics only. Never serialize this bag through MCP or use it to
        * choose a terminal. Earlier exact objects survive later refusal/publication failure.
@@ -120334,7 +120660,7 @@ var init_closed_symbol_operation_entry = __esm({
         try {
           request2 = parseClosedSymbolOperationRequest(rawRequest);
           this.request = request2;
-          need44((request2.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
+          need45((request2.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
           requestText = canonicalJson(request2);
           this.owner();
         } catch (error51) {
@@ -120343,7 +120669,7 @@ var init_closed_symbol_operation_entry = __esm({
         }
         const current2 = () => {
           this.owner();
-          need44(this.request === request2 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Ordinary entry request changed.");
+          need45(this.request === request2 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Ordinary entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -120367,7 +120693,7 @@ var init_closed_symbol_operation_entry = __esm({
             const expected3 = this.expected;
             current2();
             this.fresh();
-            need44(
+            need45(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Ordinary runtime scope differs from the actual facade expectation."
             );
@@ -120376,7 +120702,7 @@ var init_closed_symbol_operation_entry = __esm({
             let claim3, coordinator;
             const planned = () => {
               current2();
-              need44(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Ordinary retained preparation or plan changed.");
+              need45(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Ordinary retained preparation or plan changed.");
             };
             this.phase = "construction";
             const coordinatorModule = await Promise.resolve().then(() => (init_closed_symbol_coordinator(), closed_symbol_coordinator_exports));
@@ -120398,39 +120724,39 @@ var init_closed_symbol_operation_entry = __esm({
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need44(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
+            need45(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
-            need44(this.coordinator === coordinator, "Ordinary coordinator owner changed.");
+            need45(this.coordinator === coordinator, "Ordinary coordinator owner changed.");
             const full = this.full;
             const kind = coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
             this.phase = "terminal";
             if (kind === "locked") {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_terminal(), closed_symbol_terminal_exports));
               planned();
-              need44(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Ordinary terminal kind changed.");
+              need45(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Ordinary terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need44(this.terminal === terminal, "Ordinary terminal owner changed.");
+              need45(this.terminal === terminal, "Ordinary terminal owner changed.");
               const assertLockedCompletion = terminalModule.assertOriginalClosedSymbolCompletion;
               assertLockedCompletion(this.completion, this.engine, full.operationId);
             } else {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_aged_terminal(), closed_symbol_aged_terminal_exports));
               planned();
-              need44(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Ordinary terminal kind changed.");
+              need45(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Ordinary terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolAgedTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need44(this.terminal === terminal, "Ordinary terminal owner changed.");
+              need45(this.terminal === terminal, "Ordinary terminal owner changed.");
               const assertAgedCompletion = terminalModule.assertOriginalAgedClosedSymbolCompletion;
               assertAgedCompletion(this.completion, this.engine, full.operationId);
             }
             this.phase = "projection";
-            need44(
+            need45(
               this.full === full && this.coordinator === coordinator && this.completion.operationId === full.operationId,
               "Ordinary final original references changed."
             );
@@ -122493,7 +122819,7 @@ var init_src = __esm({
           });
         }
         return { result: await ordinaryLaunchCoordinator.run(request2) };
-      })
+      }, { allowDuringOrphanRisk: true })
     );
     registerFacadeTool(
       "easyeda_control_project_open",

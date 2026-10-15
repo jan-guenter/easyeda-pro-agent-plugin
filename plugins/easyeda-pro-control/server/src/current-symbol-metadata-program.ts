@@ -1,12 +1,22 @@
 import { CURRENT_SYMBOL_METADATA_MAX_BYTES, parseCurrentSymbolMetadataRequest } from "./current-symbol-metadata.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+import { CURRENT_SYMBOL_CLOSED_TARGET_DOM } from "./current-symbol-closed-target-dom.ts";
 
 /** Fixed project-qualified loaded metadata reads. MGR 005584e0 routes
  * symbol.getData without its optional canvas flag; WORKER b849bd12 reads its
  * existing symbol map. No public cloud-routing wrapper is dispatched.
  */
 export function buildCurrentSymbolMetadataProgram(input: unknown): string {
+  return compileCurrentSymbolMetadataProgram(input, false);
+}
+
+/** Internal owner-only witness compiler, never a public reader option or writer. */
+export function buildCurrentClosedSymbolMetadataProgram(input: unknown): string {
+  return compileCurrentSymbolMetadataProgram(input, true);
+}
+
+function compileCurrentSymbolMetadataProgram(input: unknown, closedTarget: boolean): string {
   const request = parseCurrentSymbolMetadataRequest(input);
   return `let timer,clear;
 try{
@@ -45,6 +55,7 @@ const check=()=>{
  if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel||own(child,'Object')!==childObject||own(childObject,'prototype')!==childPrototype)bad();
  if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
 };
+${closedTarget ? CURRENT_SYMBOL_CLOSED_TARGET_DOM : ""}
 // Enumerate the complete current tab registry, not the public split-tree mapper.
 // Absence here deliberately makes no assertion about hidden/export editors.
 const registry=()=>{
@@ -64,7 +75,7 @@ const registry=()=>{
   if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
  if(start>1||placeholder>1||currentCount!==1)bad();const url=parseProjectUrl(href,target.projectUuid,target.tabId);if(url.tabIds.some(id=>!allIds.has(id)))bad();check();return{owners,seal:JSON.stringify([names,treeProjection,projection])};
 };
-const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();};
+const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();" : ""}};
 const childPlain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childPrototype)bad();return value;};
 const identity=async()=>{same();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);same();const value=childPlain(own(childPlain(reply),'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType')||own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const call=async(topic,args)=>{same();const reply=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(reply),'message'));};
@@ -80,7 +91,7 @@ const sample=async()=>{
  if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();return result;
 };
 const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:'current-symbol-metadata-observation',method:${JSON.stringify(request.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:false,workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
 same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
 }catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}

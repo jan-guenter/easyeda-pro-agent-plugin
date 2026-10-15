@@ -12,10 +12,14 @@ import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenChec
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, verifyCurrentDisposableOpenImplementation } from "./current-disposable-open-profile.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
-import type { EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
+import { EasyedaControlEngine } from "./engine.ts";
+import type { AuthenticatedBridgeSessionIdentity, TrackedDispatchOperationJournal } from "./engine.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
-import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import { WindowsControlRuntime } from "./windows-runtime.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
+// oxlint-disable-next-line import/no-cycle -- The fixed preparation stage consumes this module's private original-object issuer after initialization.
+import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
+import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
@@ -65,6 +69,47 @@ const defaults = { createOperation, loadOperation, updateOperation, writePhaseAr
 /** Offline-test seams only; never parsed from a tool request. */
 export type CurrentDisposableOpenDependencies = Partial<typeof defaults>;
 
+export interface CurrentDisposableOpenGeneration {
+  readonly profile: "private.current-disposable-open-generation.v1";
+  readonly operationId: string;
+}
+export interface CurrentDisposableOpenGenerationSource {
+  readonly engine: EasyedaControlEngine;
+  readonly runtime: WindowsControlRuntime;
+  readonly target: CurrentDisposableOpenSealedTarget;
+  readonly expectedFingerprint: Value;
+  /** A retained status projection, not an issued launch/close/copy capability. */
+  readonly launchProjection: WindowsAuthorityLaunch;
+  readonly bridgeSession: AuthenticatedBridgeSessionIdentity;
+  /** Ordinary opening may change storage; this is never a post-opening baseline. */
+  readonly preNavigationCheckpoint: CurrentDisposableOpenCheckpoint;
+}
+const issuedGenerations = new WeakMap<object, {
+  readonly source: CurrentDisposableOpenGenerationSource;
+  readonly current: () => void;
+  readonly revalidate: () => Promise<void>;
+}>();
+
+/** Fixed lookup of the coordinator's original in-memory owner. JSON, loaded
+ * history and a matching launch projection cannot recreate this identity.
+ */
+export function assertCurrentDisposableOpenGeneration(value: unknown, engine: EasyedaControlEngine): CurrentDisposableOpenGenerationSource {
+  requireValue(value !== null && typeof value === "object", "Current disposable-open original generation is missing.");
+  const issued = issuedGenerations.get(value);
+  requireValue(issued !== undefined && issued.source.engine === engine, "Current disposable-open generation was not issued by this engine's retained coordinator.");
+  issued.current(); return issued.source;
+}
+
+export async function revalidateCurrentDisposableOpenGeneration(value: unknown, engine: EasyedaControlEngine): Promise<CurrentDisposableOpenGenerationSource> {
+  const source = assertCurrentDisposableOpenGeneration(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current disposable-open original generation is missing.");
+  const issued = issuedGenerations.get(value);
+  requireValue(issued !== undefined, "Current disposable-open original generation is missing.");
+  await issued.revalidate();
+  requireValue(assertCurrentDisposableOpenGeneration(value, engine) === source, "Current disposable-open generation changed during revalidation.");
+  return source;
+}
+
 function requireValue(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
 function targetOnly(request: CurrentDisposableOpenTarget): CurrentDisposableOpenTarget {
   return { rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
@@ -108,16 +153,20 @@ export class CurrentDisposableOpenCoordinator {
   private readonly options: CurrentDisposableOpenOptions;
   private readonly services: typeof defaults;
   private readonly retained = new Map<string, Retained>();
+  private readonly productionServices: boolean;
+  private readonly generations = new Map<string, CurrentDisposableOpenGeneration>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
     this.options = options; this.services = { ...defaults, ...dependencies };
+    this.productionServices = Reflect.ownKeys(dependencies).length === 0;
   }
 
   public async run(input: unknown, expectedFingerprint?: Value): Promise<Value> {
     const request = parseCurrentDisposableOpenRequest(structuredClone(input));
     requireValue(!this.busy, "Current disposable opening is already in progress.");
     this.busy = true;
+    if (request.action !== "inspect") { this.generations.clear(); }
     try {
       if (request.action === "open") {
         requireValue(expectedFingerprint !== undefined, "Current disposable opening requires its expected fingerprint.");
@@ -128,6 +177,70 @@ export class CurrentDisposableOpenCoordinator {
       if (request.action === "retire-after-termination") { return await this.retire(journal); }
       return await this.observe(journal);
     } finally { this.busy = false; }
+  }
+
+  /** Internal preparation only. The public opener request schema has no route
+   * here. Later writer stages still need their independently issued witness,
+   * post-opening baseline, original close reservation and full SQL inventory.
+   */
+  public async prepareSymbolMetadata(operationId: string, input: unknown): Promise<CurrentOwnedSymbolMetadataPreparation> {
+    requireValue(!this.busy, "Current disposable opening is already in progress.");
+    requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+      "Current symbol preparation cannot issue from injected opening services or an unowned engine.");
+    const engine = this.options.engine;
+    this.busy = true; this.generations.clear();
+    try {
+      const loaded = await this.load(operationId), slot = this.retainedJournal(loaded);
+      requireValue(slot.runtime instanceof WindowsControlRuntime, "Current symbol preparation requires the retained Windows runtime object.");
+      const runtime = slot.runtime;
+      // Scope acquisition can connect the upstream.
+      // Refuse quarantine before entering, not only inside the callback.
+      await engine.assertBridgeDispatchAllowed(); this.current(slot);
+      await engine.assertRecoveryOperationIsolated(operationId); this.current(slot);
+      const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
+      requireValue(scope !== undefined, "Current symbol preparation requires an authenticated dispatch scope.");
+      const result: unknown = await scope.call(engine.upstream, async () => {
+        const generation = this.issueGeneration(slot, engine, runtime);
+        try { return await prepareCurrentOwnedSymbolMetadata(engine, generation, input); }
+        catch (error) { this.generations.delete(operationId); throw error; }
+      });
+      return assertOriginalCurrentOwnedSymbolPreparation(result, engine).preparation;
+    } finally { this.busy = false; }
+  }
+
+  private issueGeneration(slot: Retained, engine: EasyedaControlEngine, runtime: WindowsControlRuntime): CurrentDisposableOpenGeneration {
+    this.current(slot);
+    const journal = slot.journal, journalText = canonicalJson(journal), session = journal.bridgeSessionBeforeOrphan;
+    requireValue(journal.state === "completed" && !journal.hardStop && !journal.orphanedCallPossible &&
+      journal.projectDispatchConsumed && journal.result?.["outcome"] === "target-native-identity-observed" && session !== undefined,
+    "Current symbol preparation requires the retained successful native-identity opening and original session.");
+    const reader = engine.upstream.bridgeSessionLifecycle, sessionText = canonicalJson(session), upstream = engine.upstream;
+    requireValue(reader !== undefined, "Current symbol preparation cannot inspect the original authenticated session.");
+    const generation = Object.freeze({ profile: "private.current-disposable-open-generation.v1" as const, operationId: journal.operationId });
+    this.generations.set(journal.operationId, generation);
+    const current = (): void => {
+      try {
+        this.current(slot);
+        requireValue(this.generations.get(journal.operationId) === generation && canonicalJson(journal) === journalText &&
+          engine.upstream === upstream && upstream.bridgeSessionLifecycle === reader, "Current symbol preparation retained opening or lifecycle reader changed.");
+        const lifecycle = reader.call(engine.upstream);
+        requireValue(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" &&
+          isRecord(lifecycle["activeSession"]) && canonicalJson({ ...lifecycle["activeSession"], gatewayInstanceId: lifecycle["gatewayInstanceId"] }) === sessionText,
+        "Current symbol preparation original authenticated session changed.");
+      } catch (error) { this.generations.delete(journal.operationId); throw error; }
+    };
+    const source = Object.freeze({ engine, runtime, target: journal.plan.intent.target, expectedFingerprint: journal.plan.expectedFingerprint,
+      launchProjection: slot.launch, bridgeSession: session, preNavigationCheckpoint: journal.checkpointProof });
+    const revalidate = async (): Promise<void> => {
+      try {
+        current(); await engine.assertBridgeDispatchAllowed(); current();
+        await engine.assertRecoveryOperationIsolated(journal.operationId); current();
+        await this.admission(source.expectedFingerprint); current();
+        const persisted = await this.load(journal.operationId); current();
+        requireValue(canonicalJson(persisted) === journalText, "Current symbol preparation persisted opening changed.");
+      } catch (error) { this.generations.delete(journal.operationId); throw error; }
+    };
+    current(); issuedGenerations.set(generation, { source, current, revalidate }); return generation;
   }
 
   private async load(operationId: string): Promise<OpenJournal> {

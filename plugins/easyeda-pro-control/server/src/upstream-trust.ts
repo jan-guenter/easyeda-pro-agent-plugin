@@ -191,7 +191,7 @@ interface ExecutionClosureFingerprint {
 }
 
 const DEFAULT_SANDBOX_COMMAND = "/usr/sbin/bwrap";
-const REVIEWED_SANDBOX_VERSION = "0.11.2";
+const REVIEWED_SANDBOX_VERSION = "0.13.1";
 const REQUIRED_SANDBOX_OPTIONS = [
   "--as-pid-1",
   "--bind-fd",
@@ -1205,17 +1205,16 @@ async function captureLauncherAdmissionAt(
     captureTrustedFile(expected.dependencyLock.path),
     captureTrustedFile(expected.sandbox.command, true),
   ]);
-  if (
-    commandCapture.sha256 !== expected.commandSha256 ||
-    descriptorSanitizerCapture.sha256 !==
-      expected.sandbox.descriptorSanitizer.sha256 ||
-    entrypointCapture.sha256 !== expected.entrypointSha256 ||
-    lockCapture.sha256 !== expected.dependencyLock.sha256 ||
-    sandboxCapture.sha256 !== expected.sandbox.commandSha256
-  ) {
-    throw new Error(
-      "The runtime launcher command, entrypoint, or dependency lock differs from review.",
-    );
+  const drift = [
+    { label: "Node executable", actual: commandCapture.sha256, expected: expected.commandSha256 },
+    { label: "descriptor sanitizer", actual: descriptorSanitizerCapture.sha256, expected: expected.sandbox.descriptorSanitizer.sha256 },
+    { label: "entrypoint", actual: entrypointCapture.sha256, expected: expected.entrypointSha256 },
+    { label: "dependency lock", actual: lockCapture.sha256, expected: expected.dependencyLock.sha256 },
+    { label: "sandbox executable", actual: sandboxCapture.sha256, expected: expected.sandbox.commandSha256 },
+  ].filter((item) => item.actual !== item.expected).map((item) => item.label);
+  if (drift.length > 0) {
+    // Fixed labels only: no private paths, file contents or runtime exception text.
+    throw new Error(`Runtime launcher integrity differs from review: ${drift.join(", ")}.`);
   }
   const seals = [
     sealFor(normalizedCwd, cwdInfo, "directory"),

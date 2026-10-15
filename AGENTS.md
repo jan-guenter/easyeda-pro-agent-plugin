@@ -6,6 +6,121 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate140000: owned preparation; startup recovered; sandbox upgrade
+
+Fresh owner190428/parent188684/startTicks3762281 independently matches installed
+090000 and merged main e0a96b9d:1189files/23241599bytes/42directories, source345
+ddda3b74/runtime3925427cb. Prior165394 is absent. MainCI38712634840 completed all
+ten jobs successfully; do not rerun the delivered release checks.
+
+Original ordinary-startup-020000-20261015 recovery first refused because another
+PowerShell process existed. The user closed their idle terminal normally.
+Maintained inspect and one same-ID abandonment after that change succeeded at
+11:23:20.804Z. Original intent312bytes/rawSHA0a55eac0/canonical8bec5da3 remains
+unchanged; append-only unknown-abandonment receipt910bytes/SHA5158aaf1 records
+two absent samples. This is supervision abandonment, not termination or design
+proof. Never replay that startup or edit its history.
+
+New ordinary-startup-090000-20261015 launched retained root19512/Job0c940588,
+helperbebf39f6. Launched receiptSHAe5ba6116. Status refused before sandbox/bridge
+because the package manager upgraded Bubblewrap0.11.2 to0.13.1. All other
+launcher identities matched. One maintained WM_CLOSE on observed HWND93785800
+was acknowledged; subsequent retained observation proves root/Job termination.
+No project was deliberately opened and no design action or explicit Save ran.
+Ordinary startup/closure can have profile effects; no project-invariance claim.
+
+Source work is on feature/current-symbol-owned-preparation. Internal retained-
+owner preparation now uses a fresh fixed closed-target collector and the actual
+checkpoint decoder. Original objects, session/journal/lifecycle bindings and
+pre-scope quarantine gates are enforced. Whole-document iframe and hidden-editor
+checks remain sampled DOM observations, not worker locks. Post-opening baseline,
+current worker clock/actor, full SQL effects and writer/inverse remain unqualified;
+no writer or public route was enabled. Independent source review accepts scope.
+
+Launch inspect avoids the redundant global journal scan while all noninspect
+actions retain coordinator admission before runtime/native work. Recovery errors
+name the blocking process category; launcher integrity errors use fixed labels
+without private paths. Signed Arch0.13.1 provenance and upstream source review
+support deliberate sandbox pin33516b9c; CI now builds immutable362936ae with
+kernel fallbacks. Existing47 isolated upstream/sanitizer/lifetime tests pass.
+Full types and whole-tree zero-warning lint pass. Initial preparation/core run
+refused the stale source projection before rebuild; rebuilt combined104 tests
+now pass. Clean install/tree,151 signatures/40 attestations, zero vulnerabilities,
+coverage, repository/package and seven official skill checks pass. Source349
+SHA011e5ac0/runtime3a5ad85a3. Added one direct read-only mounted synthetic graph
+assertion in the existing startup test: retained process identity, EROFS and
+unchanged graph/source pass without relaxing Node permissions. Final types,
+whole-tree zero-warning lint and actionlint pass. Exact-payload CI and publication
+remain pending.
+Production designs/records remain excluded. Broader backlog and release scope:
+docs/current-symbol-owned-preparation-release-2026-10-15.md.
+
+### Delivered090000: checkpoint preparation works in both entrypoints; live recovery still pending
+
+PR34 merged through the protected route as main
+e0a96b9d454501989795cbe236097f66d363c63b. Final payload
+97bfbd8d4b6cf5c9d67a0da909c9a4f0a87dcfea passed all ten CI38710998614 jobs:
+9945facade passes/five skips/zero failures and424bridge passes. Windows
+PowerShell5.1 raw-stderr check38710998683 passed. The offline-only fallback
+registration review finding is fixed and resolved. Full tree
+2f46ddb7af9d0a2edc859921b109b938cfc9c38c and package subtree
+ed8a52f2df824d46e30ad44e8d5beb475f3d99d8 exactly equal the tested payload;
+postcommit build is reproducible. Types, zero-warning lint, dependencies,
+privacy/package/repository and seven skill checks pass. External pins and all
+writer restrictions are unchanged.
+
+Official Git marketplace upgrade under022 completed errors[]. Installed/enabled
+0.3.0+codex.20261015090000 comes from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Independent
+pre/post-probe verification matches1189files/23241599bytes/42directories all0755,
+seven skills,1188files0644/one0755, no extras/symlinks/hardlinks. Git-tree-order
+inventorySHA e3f1320f8a515bb8373c318d56bd56f0fb5d1c8faff1cf3eb6e7eeaac4bcca64
+uses path NUL Gitmode NUL bytes NUL SHA256 LF. Source345ddda3b74/runtime3925427cb
+and recoveryhelper2320/8ffb025c match. Marketplace marker and snapshot HEAD both
+equal merged main. No manual cache/config edit or loaded-owner termination.
+
+Actual installed configured startup passes ambientNode26.11.1 to pinned24.18.
+Synthetic-only probe passed discovery/validation/actual checkpoint preparation
+with16normal tools, then3offline-only tools after preserving/renaming only the
+synthetic PCB installation file. Both preparations are identical, two documents,
+all writer/inverse/execution/persistence/SQL authority false, checkpoint unchanged.
+Twenty samples total show no upstream child/nonstdio socket; both stderr0,
+normal client close, probePIDs183120/183145 exited and synthetic lease absent.
+Proof /tmp/easyeda-installed-090000-8Eujte/proof.json3338bytes SHA
+4818377055ddf7a1987f006a631c5c21e269a4318d829ad6a782562b3d4907a9; reviewed
+script c47c61b5. Main and independent bounded proof review pass. This is not live
+runtime, startup recovery or writer validation. Production designs/records were
+not accessed; no project open/edit/Save/restore/close occurred.
+
+Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/34#issuecomment-6188916720.
+Postmerge Windows38712634788 and all ten jobs in mainCI38712634840 passed on the
+exact tested tree. Preserve this local delivery checkpoint in the next source change;
+no docs-only release is needed.
+
+Last admitted actual owner165394 loaded060000. Fresh Codex chat is required
+before live calls. Independently admit the new actual owner, then maintained
+inspect/intent-only recovery BEFORE status or other runtime allocation. Original
+ordinary-startup-020000-20261015 remains unresolved; only its unchanged intent
+exists after the single stderr refusal below. Source diagnostic saw another
+PowerShell process; the corrected transport does not itself grant recovery.
+Never replay startup under any ID, edit the journal, kill unrelated processes,
+hotpatch a cache or start a competing live facade.
+
+Next proposed implementation from read-only source review: an internal original-
+object handoff from CurrentDisposableOpenCoordinator's retained successful slot
+to a current closed-symbol preparation stage. Do not export caller-spoofable
+JSON authority. Ordinary launch's retained Job supports observation/normal close,
+not the full writer or closed-copy lifecycle. A separately qualified post-opening
+baseline, current actor/worker/client/maxTicket/hidden-editor witness, original
+close reservation and full SQL inventory are required by
+ClosedSymbolSqlComparisonStage.prepareForWrite. Reuse copyClosedProjectBytes,
+readClosedCopySqlInventory and prepareSymbolNewHeadSqlPlan only with their actual
+issued inputs. Old URL/urlCmd/native-profile assumptions remain incompatible.
+Then connect the fixed writer and complete one disposable forward/inverse/reopen
+case before enabling it. This handoff is planned, not implemented or validated.
+Broader backlog: docs/current-symbol-preparation-release-2026-10-15.md.
+
 ### Candidate090000: symbol checkpoint preparation integrated; startup recovery transport fixed
 
 PR34 initial payload7fe72359 passed all ten CI38709292917 jobs:9944facade

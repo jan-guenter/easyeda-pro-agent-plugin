@@ -65,12 +65,12 @@ jobs:
             }
           '
 
-      - name: Install SQLite CLI and build reviewed Bubblewrap 0.11.2
+      - name: Install SQLite CLI and build reviewed Bubblewrap 0.13.1
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
-          bwrap_commit="1b80120ef26a28e065e67f89bfef873f13bdd317"
+          bwrap_commit="362936aea0d5c6e70f7af75d2d44b5a914cb4ba2"
           bwrap_source="$(mktemp -d)"
           git -C "${bwrap_source}" init --quiet
           git -C "${bwrap_source}" remote add origin https://github.com/containers/bubblewrap.git
@@ -78,7 +78,8 @@ jobs:
           git -C "${bwrap_source}" checkout --quiet --detach FETCH_HEAD
           test "$(git -C "${bwrap_source}" rev-parse HEAD)" = "${bwrap_commit}"
           meson setup "${bwrap_source}/_build" "${bwrap_source}" \
-            -Dsupport_setuid=false \
+            -Dassume_kernel= \
+            -Dselinux=disabled \
             -Dtests=false \
             -Dman=disabled \
             -Dbash_completion=disabled \
@@ -86,7 +87,7 @@ jobs:
           meson compile -C "${bwrap_source}/_build"
           sudo install -o root -g root -m 0755 "${bwrap_source}/_build/bwrap" /usr/sbin/bwrap
           test ! -L /usr/sbin/bwrap
-          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.11.2"
+          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.13.1"
           test "$(stat -c '%a:%u:%g' /usr/sbin/bwrap)" = "755:0:0"
           test -z "$(getcap -n /usr/sbin/bwrap)"
           bwrap_help="$(/usr/sbin/bwrap --help)"
@@ -306,12 +307,12 @@ jobs:
             }
           '
 
-      - name: Install SQLite CLI and build reviewed Bubblewrap 0.11.2
+      - name: Install SQLite CLI and build reviewed Bubblewrap 0.13.1
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
-          bwrap_commit="1b80120ef26a28e065e67f89bfef873f13bdd317"
+          bwrap_commit="362936aea0d5c6e70f7af75d2d44b5a914cb4ba2"
           bwrap_source="$(mktemp -d)"
           git -C "${bwrap_source}" init --quiet
           git -C "${bwrap_source}" remote add origin https://github.com/containers/bubblewrap.git
@@ -319,7 +320,8 @@ jobs:
           git -C "${bwrap_source}" checkout --quiet --detach FETCH_HEAD
           test "$(git -C "${bwrap_source}" rev-parse HEAD)" = "${bwrap_commit}"
           meson setup "${bwrap_source}/_build" "${bwrap_source}" \
-            -Dsupport_setuid=false \
+            -Dassume_kernel= \
+            -Dselinux=disabled \
             -Dtests=false \
             -Dman=disabled \
             -Dbash_completion=disabled \
@@ -327,7 +329,7 @@ jobs:
           meson compile -C "${bwrap_source}/_build"
           sudo install -o root -g root -m 0755 "${bwrap_source}/_build/bwrap" /usr/sbin/bwrap
           test ! -L /usr/sbin/bwrap
-          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.11.2"
+          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.13.1"
           test "$(stat -c '%a:%u:%g' /usr/sbin/bwrap)" = "755:0:0"
           test -z "$(getcap -n /usr/sbin/bwrap)"
           bwrap_help="$(/usr/sbin/bwrap --help)"

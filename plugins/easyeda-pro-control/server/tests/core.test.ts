@@ -840,7 +840,7 @@ void describe("stable runtime fingerprint validation", () => {
           schema: DESCRIPTOR_SANITIZER_SCHEMA,
           sha256: DESCRIPTOR_SANITIZER_SHA256,
         },
-        version: "0.11.2",
+        version: "0.13.1",
       },
     },
     upstreamImplementationDrift: false,

@@ -2333,7 +2333,9 @@ registerFacadeTool(
       });
     }
     return { result: await ordinaryLaunchCoordinator.run(request) };
-  }),
+  // Local inspection must remain available during quarantine. The coordinator
+  // Runs assertAllowed before every other action, so no native guard is skipped.
+  }, { allowDuringOrphanRisk: true }),
 );
 
 registerFacadeTool(

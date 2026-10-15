@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261015090000",
+  "version": "0.3.0+codex.20261015140000",
   "description": "Safety-gated EasyEDA API adapters, checkpoint-bound symbol preparation, design operations and seven engineering skills.",
   "author": {
     "name": "Jan G\u00fcnter",
