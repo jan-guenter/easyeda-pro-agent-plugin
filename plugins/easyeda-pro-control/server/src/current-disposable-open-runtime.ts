@@ -20,6 +20,9 @@ import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 // oxlint-disable-next-line import/no-cycle -- The fixed preparation stage consumes this module's private original-object issuer after initialization.
 import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
 import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
+// oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; neither module exposes a public route.
+import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema } from "./current-symbol-baseline-runtime.ts";
+import type { MachineProfile } from "./machine-profile.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
@@ -89,6 +92,39 @@ const issuedGenerations = new WeakMap<object, {
   readonly current: () => void;
   readonly revalidate: () => Promise<void>;
 }>();
+export interface CurrentSymbolBaselineOwner {
+  readonly profile: "private.current-symbol-baseline-owner.v1";
+  readonly operationId: string;
+  readonly openingOperationId: string;
+}
+export interface CurrentSymbolBaselineOwnerSource {
+  readonly source: CurrentDisposableOpenGenerationSource;
+  readonly preparation: CurrentOwnedSymbolMetadataPreparation;
+}
+const issuedBaselineOwners = new WeakMap<object, {
+  readonly value: CurrentSymbolBaselineOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
+}>();
+const baselineJobReservations = new WeakMap<object, Set<string>>();
+
+/** One-way transfer out of an active generation. This checks the original
+ * opening, runtime and validator, but deliberately not a now-closed session.
+ * It grants no termination, copy or subsequent opening authority by itself.
+ */
+export function assertCurrentSymbolBaselineOwner(value: unknown, engine: EasyedaControlEngine): CurrentSymbolBaselineOwnerSource {
+  requireValue(value !== null && typeof value === "object", "Current symbol baseline original owner is missing.");
+  const issued = issuedBaselineOwners.get(value);
+  requireValue(issued !== undefined && issued.value.source.engine === engine, "Current symbol baseline owner was not issued by this engine.");
+  issued.current(); return issued.value;
+}
+export async function revalidateCurrentSymbolBaselineOwner(value: unknown, engine: EasyedaControlEngine): Promise<CurrentSymbolBaselineOwnerSource> {
+  const original = assertCurrentSymbolBaselineOwner(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current symbol baseline original owner is missing.");
+  const issued = issuedBaselineOwners.get(value);
+  requireValue(issued !== undefined, "Current symbol baseline original owner is missing.");
+  await issued.revalidate();
+  requireValue(assertCurrentSymbolBaselineOwner(value, engine) === original, "Current symbol baseline owner changed during revalidation.");
+  return original;
+}
 
 /** Fixed lookup of the coordinator's original in-memory owner. JSON, loaded
  * history and a matching launch projection cannot recreate this identity.
@@ -155,6 +191,8 @@ export class CurrentDisposableOpenCoordinator {
   private readonly retained = new Map<string, Retained>();
   private readonly productionServices: boolean;
   private readonly generations = new Map<string, CurrentDisposableOpenGeneration>();
+  private readonly baselineJobs = new Set<string>();
+  private readonly baselines = new Map<string, CurrentSymbolBaselineCoordinator>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -191,12 +229,13 @@ export class CurrentDisposableOpenCoordinator {
     this.busy = true; this.generations.clear();
     try {
       const loaded = await this.load(operationId), slot = this.retainedJournal(loaded);
+      CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
       requireValue(slot.runtime instanceof WindowsControlRuntime, "Current symbol preparation requires the retained Windows runtime object.");
       const runtime = slot.runtime;
       // Scope acquisition can connect the upstream.
       // Refuse quarantine before entering, not only inside the callback.
-      await engine.assertBridgeDispatchAllowed(); this.current(slot);
-      await engine.assertRecoveryOperationIsolated(operationId); this.current(slot);
+      await engine.assertBridgeDispatchAllowed(); this.currentUntransferred(slot);
+      await engine.assertRecoveryOperationIsolated(operationId); this.currentUntransferred(slot);
       const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
       requireValue(scope !== undefined, "Current symbol preparation requires an authenticated dispatch scope.");
       const result: unknown = await scope.call(engine.upstream, async () => {
@@ -208,7 +247,95 @@ export class CurrentDisposableOpenCoordinator {
     } finally { this.busy = false; }
   }
 
-  private issueGeneration(slot: Retained, engine: EasyedaControlEngine, runtime: WindowsControlRuntime): CurrentDisposableOpenGeneration {
+  /** Internal owned baseline only. The public opener schema has no route here.
+   * Consumes this Job before the first await, transfers a fresh preparation,
+   * then requests one normal close outside its authenticated scope.
+   */
+  public async beginSymbolBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"]): Promise<Value> {
+    const request = currentSymbolBaselineRequestSchema.parse(input);
+    requireValue(request.operationId !== openingOperationId && !this.busy && !this.baselines.has(request.operationId),
+      "Current symbol baseline needs a distinct unused operation.");
+    requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+      "Current symbol baseline cannot issue from injected opening services or an unowned engine.");
+    const engine = this.options.engine, slot = this.retained.get(openingOperationId);
+    requireValue(slot !== undefined && slot.runtime instanceof WindowsControlRuntime, "Current symbol baseline needs the original retained opening and runtime.");
+    const runtime = slot.runtime;
+    this.current(slot); CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
+    this.baselineJobs.add(slot.launch.jobId);
+    let reservations = baselineJobReservations.get(slot.runtime);
+    if (reservations === undefined) { reservations = new Set(); baselineJobReservations.set(slot.runtime, reservations); }
+    reservations.add(slot.launch.jobId);
+    this.generations.clear(); this.busy = true;
+    const stage = new CurrentSymbolBaselineCoordinator(engine, runtime, sqlRuntime);
+    this.baselines.set(request.operationId, stage);
+    let owner: CurrentSymbolBaselineOwner | undefined;
+    try {
+      const loaded = await this.load(openingOperationId);
+      requireValue(this.retainedJournal(loaded) === slot, "Current symbol baseline original opening changed.");
+      await engine.assertBridgeDispatchAllowed(); this.current(slot);
+      await engine.assertRecoveryOperationIsolated(openingOperationId); this.current(slot);
+      const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
+      requireValue(scope !== undefined, "Current symbol baseline needs an authenticated scope.");
+      try {
+        await scope.call(engine.upstream, async () => {
+          const generation = this.issueGeneration(slot, engine, runtime, request.operationId);
+          const preparation = await prepareCurrentOwnedSymbolMetadata(engine, generation, request.preparation);
+          owner = this.transferBaseline(slot, engine, generation, preparation, request.operationId);
+          await stage.capture(owner);
+        });
+      } catch (error) {
+        if (owner !== undefined) {
+          try { await stage.stopAfterScopeFailure(owner); }
+          catch (recordError) { throw new AggregateError([error, recordError], "Current symbol baseline scope failed and could not record its stopped state.", { cause: recordError }); }
+        }
+        throw error;
+      }
+      requireValue(owner !== undefined, "Current symbol baseline scope returned without its retained owner.");
+      return await stage.close(owner);
+    } finally { this.generations.delete(openingOperationId); this.busy = false; }
+  }
+
+  public async observeSymbolBaseline(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.observe(operationId); }
+    finally { this.busy = false; }
+  }
+
+  private static assertNotTransferred(runtime: Retained["runtime"]): void {
+    const launch = runtime.status().launch;
+    requireValue(launch === null || baselineJobReservations.get(runtime)?.has(launch.jobId) !== true, "Current disposable opening was transferred to a one-shot baseline owner.");
+  }
+
+  private transferBaseline(slot: Retained, engine: EasyedaControlEngine, generation: CurrentDisposableOpenGeneration,
+    preparation: CurrentOwnedSymbolMetadataPreparation, operationId: string): CurrentSymbolBaselineOwner {
+    const original = assertOriginalCurrentOwnedSymbolPreparation(preparation, engine);
+    requireValue(original.generation === generation && original.source === assertCurrentDisposableOpenGeneration(generation, engine),
+      "Current symbol baseline transfer needs its original preparation and generation.");
+    const journalText = canonicalJson(slot.journal), preparationText = canonicalJson(preparation), source = original.source;
+    const upstream = engine.upstream, validator = engine.executionAuthorityValidator;
+    const lifecycleReader = upstream.bridgeSessionLifecycle, scopeReader = upstream.currentAuthenticatedBridgeDispatchBinding;
+    const owner = Object.freeze({ profile: "private.current-symbol-baseline-owner.v1" as const, operationId, openingOperationId: generation.operationId });
+    const value = Object.freeze({ source, preparation });
+    const current = (): void => {
+      this.current(slot);
+      requireValue(this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine && engine.upstream === upstream &&
+        engine.executionAuthorityValidator === validator && upstream.bridgeSessionLifecycle === lifecycleReader &&
+        upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(slot.journal) === journalText &&
+        canonicalJson(slot.launch) === slot.launchText && canonicalJson(preparation) === preparationText, "Current symbol baseline transferred owner changed.");
+    };
+    const revalidate = async (): Promise<void> => {
+      current(); await engine.assertBridgeDispatchAllowed(); current();
+      await engine.assertRecoveryOperationIsolated(operationId); current();
+      const persisted = await this.load(owner.openingOperationId); current();
+      requireValue(canonicalJson(persisted) === journalText, "Current symbol baseline persisted opening changed.");
+    };
+    current(); this.generations.delete(generation.operationId);
+    issuedBaselineOwners.set(owner, { value, current, revalidate }); return owner;
+  }
+
+  private issueGeneration(slot: Retained, engine: EasyedaControlEngine, runtime: WindowsControlRuntime, baselineOperationId?: string): CurrentDisposableOpenGeneration {
     this.current(slot);
     const journal = slot.journal, journalText = canonicalJson(journal), session = journal.bridgeSessionBeforeOrphan;
     requireValue(journal.state === "completed" && !journal.hardStop && !journal.orphanedCallPossible &&
@@ -221,6 +348,11 @@ export class CurrentDisposableOpenCoordinator {
     const current = (): void => {
       try {
         this.current(slot);
+        if (baselineOperationId === undefined) { CurrentDisposableOpenCoordinator.assertNotTransferred(runtime); }
+        else {
+          requireValue(this.baselines.has(baselineOperationId) && this.baselineJobs.has(slot.launch.jobId),
+            "Current symbol baseline generation lost its original reservation.");
+        }
         requireValue(this.generations.get(journal.operationId) === generation && canonicalJson(journal) === journalText &&
           engine.upstream === upstream && upstream.bridgeSessionLifecycle === reader, "Current symbol preparation retained opening or lifecycle reader changed.");
         const lifecycle = reader.call(engine.upstream);
@@ -269,6 +401,10 @@ export class CurrentDisposableOpenCoordinator {
       "Current disposable-open original supervised generation changed or was lost.");
   }
 
+  private currentUntransferred(slot: Retained): void {
+    this.current(slot); CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
+  }
+
   private async record(journal: OpenJournal, phase: string, value: unknown): Promise<void> {
     journal.sequence += 1;
     journal.artifacts.push(await this.services.writePhaseArtifact(journal.operationId, journal.sequence, phase, value));
@@ -289,16 +425,16 @@ export class CurrentDisposableOpenCoordinator {
   private async dispatch(slot: Retained, phase: Phase, failureContext: CurrentOpenFailureContext): Promise<Value> {
     const { engine } = this.options, journal = slot.journal;
     failureContext.phase = phase; failureContext.hostStage = "owner-check";
-    this.current(slot);
+    this.currentUntransferred(slot);
     failureContext.hostStage = "dispatch-guards";
-    await engine.assertBridgeDispatchAllowed();
-    await engine.assertRecoveryOperationIsolated(journal.operationId);
+    await engine.assertBridgeDispatchAllowed(); this.currentUntransferred(slot);
+    await engine.assertRecoveryOperationIsolated(journal.operationId); this.currentUntransferred(slot);
     const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
     requireValue(scope !== undefined, "Current disposable opening requires authenticated dispatch scopes.");
     failureContext.hostStage = "scope";
     const result: unknown = await scope.call(engine.upstream, async () => {
       failureContext.hostStage = "runtime-admission";
-      this.current(slot); await this.admission(journal.plan.expectedFingerprint); this.current(slot);
+      this.currentUntransferred(slot); await this.admission(journal.plan.expectedFingerprint); this.currentUntransferred(slot);
       const navigate = phase === "open-project" || phase === "open-document";
       failureContext.hostStage = "reserve-navigation";
       if (phase === "open-project") {
@@ -315,20 +451,20 @@ export class CurrentDisposableOpenCoordinator {
       journal.mutationMayHaveOccurred ||= navigate;
       journal.nextSafeAction = "Await this tracked phase; no project or document open may be replayed.";
       failureContext.hostStage = "write-intent";
-      await this.record(journal, `${phase}-intent`, { phase, codeSha256: sha256Text(code), navigationIntent: navigate });
+      await this.record(journal, `${phase}-intent`, { phase, codeSha256: sha256Text(code), navigationIntent: navigate }); this.currentUntransferred(slot);
       let parsed: Value | undefined;
       const toolTimeout = navigate ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS : 20_000;
       failureContext.hostStage = "tracked-dispatch";
       await engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: toolTimeout, confirmWrite: true }, toolTimeout + 10_000,
         async () => {
           failureContext.hostStage = "before-dispatch";
-          this.current(slot);
+          this.currentUntransferred(slot);
           await engine.assertRecoveryOperationIsolated(journal.operationId);
           if (phase === "open-project") {
             failureContext.hostStage = "checkpoint-reproof";
             await this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request));
           }
-          this.current(slot);
+          this.currentUntransferred(slot);
           failureContext.hostStage = "tracked-dispatch";
         },
         async (raw) => {
@@ -340,15 +476,17 @@ export class CurrentDisposableOpenCoordinator {
           parsed = validateCurrentDisposableOpenResult(journal.plan.intent.target, phase, decoded);
           failureContext.hostStage = "retain-result";
           await this.record(journal, `${phase}-return`, parsed);
+          this.currentUntransferred(slot);
           failureContext.hostStage = "tracked-dispatch";
         });
       failureContext.hostStage = "settled-result";
-      this.current(slot);
+      this.currentUntransferred(slot);
       requireValue(parsed !== undefined, "Current disposable-open settled result was not retained.");
       failureContext.hostStage = "post-admission";
-      await this.admission(journal.plan.expectedFingerprint); this.current(slot);
+      await this.admission(journal.plan.expectedFingerprint); this.currentUntransferred(slot);
       return parsed;
     });
+    this.currentUntransferred(slot);
     failureContext.hostStage = "settled-result";
     requireValue(isRecord(result), "Current disposable-open dispatch returned no exact result.");
     return result;
@@ -358,13 +496,17 @@ export class CurrentDisposableOpenCoordinator {
     const { engine } = this.options;
     this.options.assertOwner();
     const runtime = this.options.runtime(), status = runtime.status();
+    CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     requireValue(status.state === "owned", "Current disposable opening requires this facade's original supervised application.");
     const launch = launchSchema.parse(status.launch);
     await engine.assertBridgeDispatchAllowed(); await engine.assertNativeUiEditingAllowed();
+    CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     const operations = await this.services.listOperations();
+    CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     requireValue(!operations.some((operation) => operation["operationId"] === request.operationId), "Current disposable-open operation ID is consumed.");
     this.services.validateFingerprint(fingerprint);
     const checkpointProof = await this.services.prepareCheckpoint(targetOnly(request));
+    CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     const target = currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
       documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256, branchUuid: checkpointProof.targetEvidence.branchUuid });
     const plan: Plan = { profile: PROFILE, intent: { request, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION }, expectedFingerprint: fingerprint };
@@ -375,21 +517,23 @@ export class CurrentDisposableOpenCoordinator {
       projectDispatchConsumed: false, documentDispatchConsumed: false,
       nextSafeAction: "Run one current-profile disposable project/document open; normal open effects are accepted, not validated design changes." };
     const slot: Retained = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan) };
-    this.retained.set(request.operationId, slot); this.current(slot);
+    this.retained.set(request.operationId, slot); this.currentUntransferred(slot);
     await this.services.createOperation(journal);
     const failureContext: CurrentOpenFailureContext = { phase: "preflight", hostStage: "owner-check" };
     try {
-      await this.dispatch(slot, "preflight", failureContext);
-      const project = await this.dispatch(slot, "open-project", failureContext);
+      await this.dispatch(slot, "preflight", failureContext); this.currentUntransferred(slot);
+      const project = await this.dispatch(slot, "open-project", failureContext); this.currentUntransferred(slot);
       failureContext.hostStage = "project-acknowledgement";
       requireValue(project["publicResult"] === true && project["projectPresent"] === true, "Project opening did not acknowledge the exact target project.");
       // Project restoration may already have activated the selected PCB. A
       // Second ordinary open can Save again, so only observe that result.
       const document = project["documentPresent"] === true && project["activeTarget"] === true ? project : await this.dispatch(slot, "open-document", failureContext);
+      this.currentUntransferred(slot);
       journal.result = { ...document, outcome: observationOutcome(document) }; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Navigation attempt completed. Inspect target identity/readiness separately; no Save, persistence or writer authority is inferred.";
       failureContext.hostStage = "write-completion";
       await this.record(journal, "completed", { result: journal.result, replayAllowed: false, persistenceVerified: false, writerAuthority: false });
+      this.currentUntransferred(slot);
       return summary(journal);
     } catch (error) { return this.stop(journal, error, failureContext); }
   }
@@ -421,14 +565,16 @@ export class CurrentDisposableOpenCoordinator {
   private async observe(loaded: OpenJournal): Promise<Value> {
     requireValue(!loaded.orphanedCallPossible && loaded.state !== "plan-invalidated", "An uncertain or retired open cannot dispatch observations.");
     const slot = this.retainedJournal(loaded);
+    CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
     const journal = slot.journal;
     const failureContext: CurrentOpenFailureContext = { phase: "observe", hostStage: "owner-check" };
     try {
-      const observation = await this.dispatch(slot, "observe", failureContext);
+      const observation = await this.dispatch(slot, "observe", failureContext); this.currentUntransferred(slot);
       journal.result = { ...observation, outcome: observationOutcome(observation) }; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Read-only target observation completed. Earlier navigation outcome is not reconstructed and navigation remains consumed.";
       failureContext.hostStage = "write-completion";
       await this.record(journal, "observed", { observation, earlierNavigationOutcome: "not-inferred", replayAllowed: false });
+      this.currentUntransferred(slot);
       return summary(journal);
     } catch (error) { return this.stop(journal, error, failureContext); }
   }
@@ -436,8 +582,9 @@ export class CurrentDisposableOpenCoordinator {
   private async retire(loaded: OpenJournal): Promise<Value> {
     requireValue(!isTerminalOperation(loaded), "Current disposable-open attempt is already terminal.");
     const slot = this.retainedJournal(loaded);
+    CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
     const { engine } = this.options, journal = slot.journal;
-    await engine.assertRecoveryOperationIsolated(journal.operationId); this.current(slot);
+    await engine.assertRecoveryOperationIsolated(journal.operationId); this.currentUntransferred(slot);
     const authority = journal.executionAuthorityBeforeOrphan, binding = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
     requireValue(prior !== undefined && binding !== undefined && authority !== undefined &&
       authority.processes.some((process) => process.pid === slot.launch.root.pid && process.startIdentity === slot.launch.root.startIdentity && process.role === "easyeda-main") &&
@@ -445,12 +592,13 @@ export class CurrentDisposableOpenCoordinator {
     "Retirement lacks the operation's original retained launch/capture binding.");
     const observeClosure = engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
     requireValue(observeClosure !== undefined, "Closed bridge dispatch retirement proof is unavailable.");
-    const observation = terminationSchema.parse(await slot.runtime.observeLaunchTermination()); this.current(slot);
+    const observation = terminationSchema.parse(await slot.runtime.observeLaunchTermination()); this.currentUntransferred(slot);
     requireValue(observation.jobId === slot.launch.jobId && observation.helperInstance === slot.launch.helperInstance,
       "Retirement termination observation belongs to another original launch.");
     const closure = closedSessionSchema.parse(observeClosure.call(engine.upstream, binding, prior));
-    await engine.assertRecoveryOperationIsolated(journal.operationId); this.current(slot);
+    await engine.assertRecoveryOperationIsolated(journal.operationId); this.currentUntransferred(slot);
     requireValue(canonicalJson(await this.load(journal.operationId)) === canonicalJson(journal), "Disposable-open journal changed before retirement.");
+    this.currentUntransferred(slot);
     requireValue(canonicalJson(observeClosure.call(engine.upstream, binding, prior)) === canonicalJson(closure), "Original bridge closure changed before retirement.");
     const proof = { schema: "easyeda-pro-control.current-open-retirement.v1", operationId: journal.operationId, planHash: journal.planHash,
       originalLaunch: slot.launch, originalLaunchSha256: sha256Json(slot.launch), authoritySha256: authority.authoritySha256,
@@ -459,15 +607,16 @@ export class CurrentDisposableOpenCoordinator {
       continuationAuthorized: false, replacementAuthorityGranted: false, persistenceVerified: false, writerAuthority: false };
     // Publish complete proof while the original quarantine is still set. Only
     // This no-replay family consumes it; shared CAD recovery is unchanged.
-    await this.record(journal, "retirement-proof", proof); this.current(slot);
+    await this.record(journal, "retirement-proof", proof); this.currentUntransferred(slot);
     requireValue(canonicalJson(observeClosure.call(engine.upstream, binding, prior)) === canonicalJson(closure), "Original bridge closure changed after proof publication.");
-    await engine.assertRecoveryOperationIsolated(journal.operationId); this.current(slot);
+    await engine.assertRecoveryOperationIsolated(journal.operationId); this.currentUntransferred(slot);
     const hadOrphan = journal.orphanedCallPossible;
     const terminal: OpenJournal = { ...journal, state: "plan-invalidated", hardStop: false, orphanedCallPossible: false,
       result: { retired: true, ...proof }, updatedAt: new Date().toISOString(),
       nextSafeAction: "Attempt retired without replay or continuation. Unknown disposable file effects remain. Ordinary startup may be considered separately; no original design outcome was inferred." };
     delete terminal.runtimeRestartChallenge; delete terminal.runtimeRestartChallengeIssuedAt;
     await this.services.updateOperation(terminal);
+    this.currentUntransferred(slot);
     Object.assign(journal, terminal);
     delete journal.runtimeRestartChallenge; delete journal.runtimeRestartChallengeIssuedAt;
     if (hadOrphan) { await engine.executionAuthorityValidator?.releaseCapture?.(authority); }

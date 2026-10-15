@@ -6,6 +6,57 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: owned current symbol closed baseline
+
+Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
+The current opener now reserves a baseline operation and its retained Job once,
+collects a fresh owned metadata preparation, and transfers that original
+generation to a separate private owner. The old active-generation validator is
+not relaxed. Re-preparation and non-inspect opening actions on the reserved Job
+refuse, including from another coordinator sharing the same runtime. A reused
+baseline ID cannot replace a retained coordinator. Already-issued sibling
+generations and ordinary continuations also recheck that reservation after
+awaits; only the baseline's private generation can use its reserved Job.
+
+The internal baseline coordinator captures process authority inside the original
+authenticated scope, retains the actual capture before further checks, ends the
+scope, observes the owned window and records one normal-close intent before
+dispatch. It retains the close acknowledgment before checking or publishing it.
+Only a genuinely issued pending termination observation permits another probe;
+normal close and copy cannot repeat. Conflicting journal changes refuse without
+overwriting the changed history. Capture root/Job and original launch projection
+are independently correlated. Pending observations and completed-copy authority
+are rechecked after publication awaits. A stopped-record failure retains both
+the primary failure and the recording error.
+
+The separate copy stage uses the genuine original owner and termination proof.
+It creates a new checkpoint at the post-opening closed hash, retains a raw byte
+copy, reads the complete SQL inventory, and prepares metadata from the new
+checkpoint against the fresh closed-target observation. It verifies the exact
+project/branch/owner, undeleted active PCB, target symbol, checkpoint/copy file
+lineage and receipt, including the original source device/inode/birth time.
+All acquired evidence is retained before follow-up checks.
+The VACUUM checkpoint is not substituted for the raw full-SQL baseline.
+
+This is internal source implementation only. No MCP writer route or new public
+schema is enabled. Opening effects, before-write baseline, backend actor/clock,
+writer/inverse and complete disposable lifecycle remain unqualified. Captures
+remain retained; no automatic release, relaunch, Save/Discard selection or
+recovery from lost handles is added. Independent review accepts the final
+ownership and concurrency boundaries. The final focused runs passed28 tests
+with no failures or skips. They use real managed journals, process-proof issuers,
+checkpoint/copy/SQL readers and metadata decoding with synthetic native frames
+and private owner seams, not a connected editor. Full typecheck, whole-tree
+zero-warning type-aware lint, sanitizer/build, package/privacy/repository,
+774-method coverage and all seven official skill checks pass. Rebuilt source352
+SHAe1656bc3 and runtime3 SHA6a5c61f6 match their facade projections; external pins
+are unchanged. This payload's exact-commit CI is pending. Previous PR36 CI
+results below apply only to623fdb26.
+
+No live EasyEDA call, app launch, design access, Save or restoration occurred in
+this continuation. Installed140000 is unchanged and no restart is required.
+Production designs and their records remain excluded.
+
 ### In development: current symbol runtime witness and SQL effect profile
 
 Work continues on `feature/current-symbol-runtime-witness`. The restart was
@@ -46,7 +97,20 @@ that fix; legacy entry semantics are unchanged. Rebuilt source350 SHA0bea26c3
 and runtime3 SHA9ebda1c6; compatibility
 changes only the facade projections/review time, not external pins. New WS
 admission is a separately reviewed internal capability pin in source. Exact
-payload GitHub CI remains pending until the development branch is pushed.
+payload623fdb26bba82af25ec5c8a813c031a2bdc61007 is pushed in draft PR36:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36.
+Postcommit build reproduces both committed bundles exactly. Required
+CI38789639253 passed all ten jobs:9962 facade passes/five skips/zero failures
+and424 bridge passes.
+Windows38789638943 passed at that exact payload. The tested Git tree is
+69b0917454408171d3fabfda1117778bafbac760 and package subtree is
+00f24e78e7d2b7960441acfba64e75ffe34087e6. Keep this development PR unmerged
+until the remaining writer integration is complete or the user selects a
+smaller release boundary. This local continuation record is the only
+post-payload edit; preserve it in the next source change rather than triggering
+another CI run for a documentation-only checkpoint.
+Verification receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6200144534.
 The research and next-stage contract are in
 docs/current-symbol-writer-witness-research-2026-10-15.md. Next: transfer the
 original opening generation into a one-shot retained closure owner, capture a

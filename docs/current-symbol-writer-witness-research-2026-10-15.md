@@ -14,7 +14,10 @@ A separate current pure SQL profile now models DOCHEAD time, backend EDIT_HEAD
 time, SQLite history timestamps and the project's local timestamp explicitly.
 It requires the current `3.2.206` DOCHEAD transition and keeps document-clock
 bounds separate from backend-clock bounds. The legacy entry point retains its
-previous contract. Neither new stage enables a writer.
+previous contract. An internal owned-baseline stage now transfers the original
+opening owner through one normal close into a fresh checkpoint, raw copy and
+complete SQL inventory. That closed evidence is not yet a before-write baseline
+for a later opening. None of these stages enables a public writer.
 
 This research read installed application code as inert text and existing plugin
 source. The only machine-profile field read was `easyeda.assetsRoot`. It did not
@@ -167,7 +170,7 @@ single-project comparator must require exactly one project row beforehand and
 reject unrelated table changes. The existing whole-inventory comparison is
 needed even when source geometry is unchanged.
 
-## Implemented boundaries and remaining baseline work
+## Implemented baseline and remaining writer work
 
 The internal collector's strict `runtimeObservation` schema carries the actor,
 editor version and four clock samples. Its `backendActorVerified`,
@@ -183,43 +186,68 @@ generation-closure and persistence provenance flags remain false. Pure compariso
 proves a supplied input relation, not that the inputs came from an owned live
 operation. No collector-to-writer integration has been implemented.
 
-Existing closure/copy primitives support a small current-specific baseline stage:
+Three current-specific modules now implement the internal owned-baseline stage:
 
-1. Consume the original successful opening generation once, revalidate its
-   project/branch/session and collect the fresh closed-target observation.
-   Capture genuine `engine.captureClosedSessionAuthority` inside that same
-   authenticated scope. Retain the actual returned object, not JSON projections.
-2. Retain the exact observed HWND, prepare and record one normal-close intent,
-   and request normal close once. Retain its actual receipt; poll termination
-   without repeating close. Do not choose Save or Discard. Obtain the runtime's
-   branded closed-session proof before accessing closed project bytes.
-3. Before releasing the capture or launching again, checkpoint the original
-   disposable path at its new closed hash, then use `copyClosedProjectBytes`
-   and `readClosedCopySqlInventory` with that proof. Bind checkpoint/copy file
-   identity and decode the exact project/branch/owner/PCB/symbol inventory.
-   A VACUUM checkpoint alone is not the complete raw SQL baseline.
-4. Keep the opening journal immutable and issue a separate baseline record.
-   Transfer the consumed generation into a private retained closure slot before
-   close: the normal active-generation validator must reject it after its
-   original session exits. Capture release or relaunch changes the supervisor
-   lifecycle epoch and invalidates copy authority, so copying comes first.
+1. The [opening coordinator](../plugins/easyeda-pro-control/server/src/current-disposable-open-runtime.ts)
+   reserves the original Job before the first await and refuses a reused retained
+   baseline operation ID. It prepares fresh closed-target observations in the
+   original authenticated session, then transfers the original generation into
+   a privately issued baseline owner. The opening journal stays unchanged.
+   Subsequent preparation or non-inspect opener actions cannot reuse that Job.
+   Ordinary generation and dispatch rechecks also reject a reservation acquired
+   after their entry checks; already-dispatched work is never replayed.
+2. The [baseline coordinator](../plugins/easyeda-pro-control/server/src/current-symbol-baseline-runtime.ts)
+   creates a separate journal and captures genuine
+   `engine.captureClosedSessionAuthority` inside the same authenticated scope.
+   It retains the actual capture before fallible checks or scope settlement,
+   checks the exact root/Job and session, and publishes the capture result.
+   After leaving the scope, it observes the exact HWND, records one normal-close
+   intent and its consumed attempt, and requests close once. It retains the
+   acknowledgment before later checks. It does not choose Save or Discard.
+3. The same coordinator uses the runtime's genuine termination probe. Only
+   source-qualified native liveness refusals yield pending observations and
+   permit another probe. A terminated observation carries the original branded
+   proof. Missing acknowledgment, generic errors or lost ownership do not permit
+   close replay or turn into termination evidence. After close, owner validation
+   checks the retained opening, runtime and journal without reconnecting or
+   requiring the former session to remain active.
+4. The [closed-copy stage](../plugins/easyeda-pro-control/server/src/current-symbol-baseline-copy.ts)
+   checkpoints the original disposable path at its new closed hash, copies its
+   raw bytes under the retained closure proof, and reads the complete SQL
+   inventory. It binds checkpoint/copy file identity, checks the exact
+   project/branch/owner and undeleted PCB, and repeats symbol metadata preparation
+   against the fresh checkpoint and retained observation. Acquired evidence is
+   retained before later checks. The separate VACUUM checkpoint supplies native
+   history and metadata evidence; the raw copy supplies the full SQL baseline.
 
-That stage is not implemented. More importantly, a historical closed copy is
-not a before-write baseline after a future ordinary opening. A writer needs a
-fresh retained launch/authentication/opening generation, plus a model and check
+The baseline result keeps `beforeWriteBaselineVerified`, `openingEffectsVerified`,
+`writerReady` and `executionAuthorized` false. Its journal completion means the
+closed-baseline capture finished, not that a design mutation persisted. The
+original handles and proof stay in memory; disk projections cannot recreate
+them after restart. No public baseline or writer route, explicit Save, relaunch
+or connected validation was added by this implementation.
+
+A historical closed copy is not a before-write baseline after a future ordinary
+opening. A writer needs a fresh retained launch/authentication/opening generation,
+plus a model and check
 of that opening's SQL effects before any old copy can anchor its write. Repeating
 open/close cycles does not establish that relation. The original current opener
 also retains only a launch projection; later writer work must retain the genuine
 runtime launch object for launch-bound clock evidence.
 
 Backend actor/clock evidence and actual APP timezone/history-age qualification
-remain necessary before dispatch. After that, a disposable forward/inverse case
-must reuse owned close, process/Job termination, whole-file SQL comparison and
-fresh-generation readback. Notify-clock qualification does not drain the separate
-structure timer or upload cache described in the
+remain necessary before dispatch. Writer and inverse integration, capture-release
+and relaunch sequencing, and recovery from stopped or lost-owner baseline stages
+remain unfinished. Release or relaunch invalidates current copy authority;
+neither action may happen before the closed evidence has been captured and
+published. A later disposable forward/inverse case must prove owned close,
+process/Job termination, whole-file SQL effects and fresh-generation readback.
+Notify-clock qualification does not drain the separate structure timer or upload
+cache described in the
 [writer completion research](current-writer-completion-research-2026-10-15.md).
 
 The remaining concrete unknowns are the operation-owned APP actor/clock proof,
-current post-opening SQL baseline, fresh closure ownership across a writer
-dispatch, and the full persistence/inverse lifecycle. This note does not enable
-the writer or add live validation evidence.
+subsequent opening effects, fresh closure ownership across a writer dispatch,
+and the full persistence/inverse lifecycle. The implemented closed-baseline stage
+still needs connected validation as part of one complete disposable lifecycle.
+This note does not enable the writer or add live validation evidence.
