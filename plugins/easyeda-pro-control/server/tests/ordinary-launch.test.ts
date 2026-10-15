@@ -7,6 +7,8 @@ import { isRecord, sha256Json } from "../src/core.ts";
 import { ORDINARY_LAUNCH_PROFILE, OrdinaryLaunchCoordinator, parseOrdinaryLaunchRequest, queryOrdinaryLaunch,
   validateOrdinaryLaunchArguments, verifyOrdinaryLaunchInstallation } from "../src/ordinary-launch.ts";
 import type { OrdinaryLaunchOptions, OrdinaryLaunchRuntime } from "../src/ordinary-launch.ts";
+import { ORDINARY_LAUNCH_RECOVERY_HELPER } from "../src/ordinary-launch-recovery.ts";
+import type { observeOrdinaryLaunchRecovery } from "../src/ordinary-launch-recovery.ts";
 import type { WindowsAuthorityLaunch } from "../src/windows-authority.ts";
 
 const facadeSha256 = "a".repeat(64);
@@ -19,6 +21,10 @@ function abandonRequest(operationId: string, expectedLaunchedSha256: string): Re
 }
 function closeRequest(operationId: string, expectedLaunchedSha256: string): Record<string, unknown> {
   return { action: "normal-close", operationId, expectedLaunchedSha256, hwnd: "12345", confirmNormalClose: true };
+}
+function unknownRequest(operationId: string, expectedIntentSha256: string): Record<string, unknown> {
+  return { action: "abandon-unknown-launch", operationId, expectedIntentSha256,
+    confirmAbandonUnknownLaunch: true, acceptUnobservedDescendants: true };
 }
 async function state(coordinator: OrdinaryLaunchCoordinator, operationId: string): Promise<unknown> {
   const response = await coordinator.run({ action: "inspect", operationId });
@@ -35,6 +41,7 @@ function cleanup(context: TestContext, ...ids: string[]): void {
 }
 function fixture(operationId: string, behavior: { failure?: boolean; wrongTermination?: boolean; existing?: boolean;
   presenceChanged?: boolean; onAllowed?: (presenceSamples: number) => Promise<void>;
+  otherPowerShell?: boolean; recoveryApplication?: boolean; onRecovery?: () => Promise<void>;
   windowOutcome?: "available" | "unavailable" | "ambiguous"; wrongWindowOwner?: boolean; closeFailure?: boolean } = {}): {
   readonly options: OrdinaryLaunchOptions;
   readonly calls: string[];
@@ -105,7 +112,15 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   };
   // Only this offline coordinator fixture substitutes admission. Production has
   // No tool argument selecting dependencies, paths, hashes or another profile.
-  const coordinator = new OrdinaryLaunchCoordinator(options, { verifyInstallation: (): Promise<string> => { calls.push("verify"); return Promise.resolve(facadeSha256); } });
+  const coordinator = new OrdinaryLaunchCoordinator(options, {
+    verifyInstallation: (): Promise<string> => { calls.push("verify"); return Promise.resolve(facadeSha256); },
+    observeRecovery: async (): ReturnType<typeof observeOrdinaryLaunchRecovery> => {
+      calls.push("recovery");
+      await behavior.onRecovery?.();
+      return { schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1", helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256,
+        samples: 2, otherPowerShellPresent: behavior.otherPowerShell === true, sameNameProcessPresent: behavior.recoveryApplication === true };
+    },
+  });
   return { options, calls, coordinator, markTerminated: () => { terminated = true; }, markExistingClosed: () => { existing = false; } };
 }
 
@@ -137,7 +152,12 @@ void test("ordinary launch discovery and validation disclose effects and reject 
   const discovery = queryOrdinaryLaunch({ includeSchemas: true });
   assert.notEqual(discovery["requestSchema"], undefined);
   assert.match(JSON.stringify(discovery["limitations"]), /not an isolated/u);
-  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision"]);
+  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"]);
+  const unknown = unknownRequest(id, facadeSha256);
+  assert.equal(validateOrdinaryLaunchArguments(unknown)["valid"], true);
+  assert.equal(validateOrdinaryLaunchArguments({ ...unknown, confirmAbandonUnknownLaunch: false })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ ...unknown, acceptUnobservedDescendants: false })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ ...unknown, ignoredPid: 456 })["valid"], false);
 });
 
 void test("ordinary launch persists before dispatch, refuses restart replay, and permits a new operation after retained termination", async (context) => {
@@ -196,6 +216,112 @@ void test("ordinary launch rejects a different Job termination without releasing
   current.markTerminated();
   await assert.rejects(current.coordinator.run({ action: "observe-termination", operationId: id }), /another launch/u);
   assert.equal(await state(current.coordinator, id), "launched");
+});
+
+void test("unknown launch recovery excludes a delayed helper without rewriting intent or claiming termination", async (context) => {
+  const id = "ordinary-test-unknown-abandon", next = "ordinary-test-after-unknown";
+  cleanup(context, id, next);
+  const original = fixture(id, { failure: true });
+  await assert.rejects(original.coordinator.run(request(id)), /synthetic lost/u);
+  const before = await readFile(join(journal(id), "intent.json"));
+  const inspection = await original.coordinator.run({ action: "inspect", operationId: id });
+  const digest = inspection["intentSha256"];
+  assert.ok(typeof digest === "string");
+  assert.equal(inspection["helperBeforeIntentProtocol"], "recorded-v2");
+  const input = unknownRequest(id, digest);
+  await assert.rejects(original.coordinator.run(input), /uncertain/u);
+  const restarted = fixture(next);
+  const result = await restarted.coordinator.run(input);
+  assert.equal(result["state"], "unknown-launch-abandoned");
+  assert.equal(result["attemptConsumed"], true);
+  assert.equal(result["launchOutcome"], "unknown");
+  assert.equal(result["terminationProved"], false);
+  assert.equal(result["designExecutionAuthorized"], false);
+  assert.equal(result["launch"], undefined);
+  assert.equal(result["termination"], undefined);
+  const after = await readFile(join(journal(id), "intent.json")), names = await readdir(journal(id));
+  assert.deepEqual(after, before);
+  assert.deepEqual(names.toSorted(), ["intent.json", "unknown-abandonment.json"]);
+  assert.equal(restarted.calls.includes("allocate"), false);
+  assert.equal(restarted.calls.includes("launch"), false);
+  assert.equal(restarted.calls.filter((call) => call === "recovery").length, 1);
+  await assert.rejects(restarted.coordinator.run(input), /unresolved intent-only/u);
+  const later = fixture(next);
+  assert.equal(await state(later.coordinator, id), "unknown-launch-abandoned");
+  await assert.rejects(later.coordinator.run(request(id)), /consumed/u);
+  const nextLaunch = await later.coordinator.run(request(next));
+  assert.equal(nextLaunch["state"], "launched");
+});
+
+void test("unknown recovery blocks delayed helpers, live applications, digest drift and allocated runtimes", async (context) => {
+  const id = "ordinary-test-unknown-refusals";
+  cleanup(context, id);
+  await assert.rejects(fixture(id, { failure: true }).coordinator.run(request(id)), /synthetic lost/u);
+  const inspection = await fixture(id).coordinator.run({ action: "inspect", operationId: id });
+  const digest = inspection["intentSha256"];
+  assert.ok(typeof digest === "string");
+  const input = unknownRequest(id, digest);
+  for (const behavior of [{ otherPowerShell: true }, { recoveryApplication: true }]) {
+    const current = fixture(id, behavior);
+    await assert.rejects(current.coordinator.run(input), /absent other PowerShell/u);
+    assert.equal(current.calls.includes("launch"), false);
+  }
+  const stale = fixture(id);
+  const wrongDigest = "f".repeat(64);
+  await assert.rejects(stale.coordinator.run(unknownRequest(id, wrongDigest)), /intent digest differs/u);
+  assert.equal(stale.calls.includes("recovery"), false);
+  const allocated = fixture(id);
+  await allocated.coordinator.run({ action: "observe-application", operationId: id });
+  await assert.rejects(allocated.coordinator.run(input), /fresh coordinator/u);
+  assert.equal(allocated.calls.includes("recovery"), false);
+  assert.deepEqual(await readdir(journal(id)), ["intent.json"]);
+});
+
+void test("unknown recovery rejects quarantine and concurrent journal changes without downstream launch", async (context) => {
+  const id = "ordinary-test-unknown-change";
+  cleanup(context, id);
+  await assert.rejects(fixture(id, { failure: true }).coordinator.run(request(id)), /synthetic lost/u);
+  const path = join(journal(id), "intent.json");
+  const before = await readFile(path, "utf8");
+  const intent: unknown = JSON.parse(before);
+  assert.ok(isRecord(intent));
+  const input = unknownRequest(id, sha256Json(intent));
+  const guarded = fixture(id, { onAllowed: () => Promise.reject(new Error("synthetic quarantine")) });
+  await assert.rejects(guarded.coordinator.run(input), /synthetic quarantine/u);
+  assert.equal(guarded.calls.includes("recovery"), false);
+  const changed = fixture(id, { onRecovery: async () => {
+    await writeFile(path, JSON.stringify({ ...intent, facadeSha256: "b".repeat(64) }));
+  } });
+  await assert.rejects(changed.coordinator.run(input), /journal changed/u);
+  assert.equal(changed.calls.includes("launch"), false);
+  assert.deepEqual(await readdir(journal(id)), ["intent.json"]);
+});
+
+void test("legacy intent-only recovery admits the reviewed runtime hash, not a matching profile alone", async (context) => {
+  const id = "ordinary-test-unknown-legacy";
+  cleanup(context, id);
+  await assert.rejects(fixture(id, { failure: true }).coordinator.run(request(id)), /synthetic lost/u);
+  const path = join(journal(id), "intent.json");
+  const intent: unknown = JSON.parse(await readFile(path, "utf8"));
+  assert.ok(isRecord(intent));
+  const legacy = { schema: "easyeda-pro-control.ordinary-launch-intent.v1", operationId: id, profileSha256: intent["profileSha256"],
+    facadeSha256, createdAt: intent["createdAt"] };
+  await writeFile(path, JSON.stringify(legacy));
+  const refused = fixture(id);
+  const legacyDigest = sha256Json(legacy);
+  await assert.rejects(refused.coordinator.run(unknownRequest(id, legacyDigest)), /dispatch protocol is not reviewed/u);
+  assert.equal(refused.calls.includes("recovery"), false);
+  const foreignV2 = { ...legacy, schema: "easyeda-pro-control.ordinary-launch-intent.v2",
+    dispatchProtocol: "retained-helper-before-intent.v1", facadeSha256: "b".repeat(64) };
+  await writeFile(path, JSON.stringify(foreignV2));
+  const foreignDigest = sha256Json(foreignV2);
+  await assert.rejects(refused.coordinator.run(unknownRequest(id, foreignDigest)), /v2 producer differs/u);
+  assert.equal(refused.calls.includes("recovery"), false);
+  const reviewed = { ...legacy, facadeSha256: "d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7" };
+  await writeFile(path, JSON.stringify(reviewed));
+  const accepted = await fixture(id).coordinator.run(unknownRequest(id, sha256Json(reviewed)));
+  assert.equal(accepted["state"], "unknown-launch-abandoned");
+  assert.deepEqual(await readFile(path, "utf8"), JSON.stringify(reviewed));
 });
 
 void test("ordinary launch real installation admission refuses an unreviewed root before allocation", async () => {

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b9782915b5a9c7544445e6e1e3903aa2344f2c6d9afd80acaae32a6f7c607407";
+const __easyedaBundlePairId = "83df8272db7c4f7c51cc6b958a923418aa5b32a6b70e1d3e1b0d8b8cc6817b41";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -24587,11 +24587,11 @@ var require_codegen = __commonJS({
         const rhs = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
         return `${varKind} ${this.name}${rhs};` + _n;
       }
-      optimizeNames(names2, constants22) {
+      optimizeNames(names2, constants23) {
         if (!names2[this.name.str])
           return;
         if (this.rhs)
-          this.rhs = optimizeExpr(this.rhs, names2, constants22);
+          this.rhs = optimizeExpr(this.rhs, names2, constants23);
         return this;
       }
       get names() {
@@ -24608,10 +24608,10 @@ var require_codegen = __commonJS({
       render({ _n }) {
         return `${this.lhs} = ${this.rhs};` + _n;
       }
-      optimizeNames(names2, constants22) {
+      optimizeNames(names2, constants23) {
         if (this.lhs instanceof code_1.Name && !names2[this.lhs.str] && !this.sideEffects)
           return;
-        this.rhs = optimizeExpr(this.rhs, names2, constants22);
+        this.rhs = optimizeExpr(this.rhs, names2, constants23);
         return this;
       }
       get names() {
@@ -24672,8 +24672,8 @@ var require_codegen = __commonJS({
       optimizeNodes() {
         return `${this.code}` ? this : void 0;
       }
-      optimizeNames(names2, constants22) {
-        this.code = optimizeExpr(this.code, names2, constants22);
+      optimizeNames(names2, constants23) {
+        this.code = optimizeExpr(this.code, names2, constants23);
         return this;
       }
       get names() {
@@ -24702,12 +24702,12 @@ var require_codegen = __commonJS({
         }
         return nodes.length > 0 ? this : void 0;
       }
-      optimizeNames(names2, constants22) {
+      optimizeNames(names2, constants23) {
         const { nodes } = this;
         let i2 = nodes.length;
         while (i2--) {
           const n = nodes[i2];
-          if (n.optimizeNames(names2, constants22))
+          if (n.optimizeNames(names2, constants23))
             continue;
           subtractNames(names2, n.names);
           nodes.splice(i2, 1);
@@ -24760,12 +24760,12 @@ var require_codegen = __commonJS({
           return void 0;
         return this;
       }
-      optimizeNames(names2, constants22) {
+      optimizeNames(names2, constants23) {
         var _a3;
-        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants22);
-        if (!(super.optimizeNames(names2, constants22) || this.else))
+        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants23);
+        if (!(super.optimizeNames(names2, constants23) || this.else))
           return;
-        this.condition = optimizeExpr(this.condition, names2, constants22);
+        this.condition = optimizeExpr(this.condition, names2, constants23);
         return this;
       }
       get names() {
@@ -24788,10 +24788,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.iteration})` + super.render(opts);
       }
-      optimizeNames(names2, constants22) {
-        if (!super.optimizeNames(names2, constants22))
+      optimizeNames(names2, constants23) {
+        if (!super.optimizeNames(names2, constants23))
           return;
-        this.iteration = optimizeExpr(this.iteration, names2, constants22);
+        this.iteration = optimizeExpr(this.iteration, names2, constants23);
         return this;
       }
       get names() {
@@ -24827,10 +24827,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.varKind} ${this.name} ${this.loop} ${this.iterable})` + super.render(opts);
       }
-      optimizeNames(names2, constants22) {
-        if (!super.optimizeNames(names2, constants22))
+      optimizeNames(names2, constants23) {
+        if (!super.optimizeNames(names2, constants23))
           return;
-        this.iterable = optimizeExpr(this.iterable, names2, constants22);
+        this.iterable = optimizeExpr(this.iterable, names2, constants23);
         return this;
       }
       get names() {
@@ -24872,11 +24872,11 @@ var require_codegen = __commonJS({
         (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNodes();
         return this;
       }
-      optimizeNames(names2, constants22) {
+      optimizeNames(names2, constants23) {
         var _a3, _b;
-        super.optimizeNames(names2, constants22);
-        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants22);
-        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names2, constants22);
+        super.optimizeNames(names2, constants23);
+        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants23);
+        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names2, constants23);
         return this;
       }
       get names() {
@@ -25177,7 +25177,7 @@ var require_codegen = __commonJS({
     function addExprNames(names2, from) {
       return from instanceof code_1._CodeOrName ? addNames(names2, from.names) : names2;
     }
-    function optimizeExpr(expr, names2, constants22) {
+    function optimizeExpr(expr, names2, constants23) {
       if (expr instanceof code_1.Name)
         return replaceName(expr);
       if (!canOptimize(expr))
@@ -25192,14 +25192,14 @@ var require_codegen = __commonJS({
         return items;
       }, []));
       function replaceName(n) {
-        const c = constants22[n.str];
+        const c = constants23[n.str];
         if (c === void 0 || names2[n.str] !== 1)
           return n;
         delete names2[n.str];
         return c;
       }
       function canOptimize(e) {
-        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names2[c.str] === 1 && constants22[c.str] !== void 0);
+        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names2[c.str] === 1 && constants23[c.str] !== void 0);
       }
     }
     function subtractNames(names2, from) {
@@ -74248,14 +74248,14 @@ function parseRetainedMainReferenceTransport(input, requestSha256, intentSha256)
   need22(bytes(streams["rawStdoutBase64"]).length + bytes(streams["rawStderrBase64"]).length <= 131072);
   if (v2) {
     const state2 = streams["transportState"];
-    const spawn8 = streams["spawnReturnObserved"];
+    const spawn9 = streams["spawnReturnObserved"];
     const closed = streams["transportCloseObserved"];
     const guards = streams["observationGuardsComplete"];
     const containment = streams["containmentRequest"];
-    need22((state2 === "closed" || state2 === "unresolved") && typeof spawn8 === "boolean" && typeof closed === "boolean" && typeof guards === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
-    need22(state2 === (spawn8 && closed && guards ? "closed" : "unresolved"));
+    need22((state2 === "closed" || state2 === "unresolved") && typeof spawn9 === "boolean" && typeof closed === "boolean" && typeof guards === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
+    need22(state2 === (spawn9 && closed && guards ? "closed" : "unresolved"));
     need22(closed || code === null && signal === null);
-    need22(spawn8 || !closed && !guards && code === null && signal === null && containment === "not-requested" && failure2 === "start-failure");
+    need22(spawn9 || !closed && !guards && code === null && signal === null && containment === "not-requested" && failure2 === "start-failure");
     need22(failure2 !== null || state2 === "closed" && containment === "not-requested");
   }
   return Object.freeze({ profile, requestSha256, intentSha256, returnedEncoding: "base64-streams-v1", returned: streams });
@@ -83461,8 +83461,8 @@ function verifyWireRetainedSaveAuthority(journal, afterPhase, acknowledgment) {
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained wire Save/reopen acknowledgment is missing or does not match the target; do not repeat Save.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open33 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same34(guard["labels"], ["schematic-source"]) || !same34(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open33) || open33["profile"] !== "easyeda-pro-control.native-document-open.v1" || open33["tabId"] !== journal.context.document.tabId || open33["newFrameReady"] !== true || open33["exactContext"] !== true || open33["readinessSamples"] !== 2 || typeof open33["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open34 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same34(guard["labels"], ["schematic-source"]) || !same34(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open34) || open34["profile"] !== "easyeda-pro-control.native-document-open.v1" || open34["tabId"] !== journal.context.document.tabId || open34["newFrameReady"] !== true || open34["exactContext"] !== true || open34["readinessSamples"] !== 2 || typeof open34["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained wire Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -83524,7 +83524,7 @@ function buildSchematicLayoutPageLoadCode(value, pageUuid) {
   if (scope5.projectPath !== normalizeEasyedaProjectPath(scope5.projectPath) || scope5.activeTabId !== `${scope5.activePageUuid}@${scope5.projectUuid}` || new Set(scope5.pageUuids).size !== scope5.pageUuids.length || !scope5.pageUuids.includes(scope5.activePageUuid) || !scope5.pageUuids.includes(pageUuid)) {
     throw new Error("Schematic page loading target is outside the declared checkpoint scope.");
   }
-  const open33 = buildNativeDocumentOpenFunction({ projectUuid: scope5.projectUuid, documentUuid: pageUuid, documentType: 1 });
+  const open34 = buildNativeDocumentOpenFunction({ projectUuid: scope5.projectUuid, documentUuid: pageUuid, documentType: 1 });
   return `return await (async()=>{
 ${DEVICE_NATIVE_HOST_GUARD}
 const scope=${JSON.stringify(scope5)},pageUuid=${JSON.stringify(pageUuid)},targetTab=pageUuid+'@'+scope.projectUuid;
@@ -83556,7 +83556,7 @@ const activeMatches=async(id)=>{
 await owners();if(!await activeMatches(scope.activePageUuid))fail();
 if(pageUuid!==scope.activePageUuid){
  const present=(await bus.rpcCall('isOpenTab',[targetTab]))?.message;
- if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open33})(targetTab);}
+ if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open34})(targetTab);}
  else if(present!==true||!await frameReady(pageUuid))fail();
 }
 let deadline,pollTimer,rejectDeadline;
@@ -85346,8 +85346,8 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained layout Save/reopen receipt does not match the exact current target.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open33 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open33) || open33["profile"] !== "easyeda-pro-control.native-document-open.v1" || open33["tabId"] !== journal.context.document.tabId || open33["newFrameReady"] !== true || open33["exactContext"] !== true || open33["readinessSamples"] !== 2 || typeof open33["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open34 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open34) || open34["profile"] !== "easyeda-pro-control.native-document-open.v1" || open34["tabId"] !== journal.context.document.tabId || open34["newFrameReady"] !== true || open34["exactContext"] !== true || open34["readinessSamples"] !== 2 || typeof open34["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained layout Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -91663,11 +91663,570 @@ var init_shortcut_keys = __esm({
   }
 });
 
-// server/src/ordinary-launch.ts
+// server/src/windows-runtime.ts
 import { createHash as createHash29 } from "node:crypto";
 import { constants as constants17 } from "node:fs";
-import { lstat as lstat25, mkdir as mkdir4, open as open22, opendir as opendir3, realpath as realpath16 } from "node:fs/promises";
-import { join as join46, resolve as resolve11 } from "node:path";
+import { lstat as lstat25, open as open22, realpath as realpath16 } from "node:fs/promises";
+import path2 from "node:path";
+import process8 from "node:process";
+function canonicalHostPath(value) {
+  if (!path2.posix.isAbsolute(value) || path2.posix.normalize(value) !== value || value.includes("\\") || value.includes('"')) {
+    throw new Error("Windows runtime requires an absolute canonical host path.");
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.codePointAt(index);
+    if (code !== void 0 && (code < 32 || code === 127)) {
+      throw new Error("Windows runtime paths cannot contain control characters.");
+    }
+  }
+  return value;
+}
+function mountedWindowsPath(value) {
+  const match = /^\/mnt\/([a-z])\/(.+)$/u.exec(canonicalHostPath(value));
+  const drive = match?.[1];
+  const suffix = match?.[2];
+  if (drive === void 0 || suffix === void 0 || suffix.includes(":")) {
+    throw new Error("Windows runtime requires a canonical mounted Windows drive path.");
+  }
+  return `${drive.toUpperCase()}:\\${suffix.replaceAll("/", "\\")}`;
+}
+function deriveWindowsRuntimePaths(options) {
+  const assetsRoot = canonicalHostPath(options.assetsRoot);
+  mountedWindowsPath(assetsRoot);
+  if (!assetsRoot.endsWith("/resources/app/assets")) {
+    throw new Error("EasyEDA assets must belong to the reviewed installed resources/app/assets tree.");
+  }
+  const executablePath = path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe");
+  const executableWindowsPath = mountedWindowsPath(executablePath);
+  const helperPath = path2.posix.join(canonicalHostPath(options.pluginRoot), "scripts/windows-authority.ps1");
+  let helperWindowsPath;
+  if (/^\/mnt\/[a-z]\//u.test(helperPath)) {
+    helperWindowsPath = mountedWindowsPath(helperPath);
+  } else {
+    const distribution = options.wslDistribution ?? process8.env["WSL_DISTRO_NAME"];
+    if (distribution === void 0 || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/u.test(distribution)) {
+      throw new Error("A valid WSL distribution profile is required for the reviewed helper UNC path.");
+    }
+    helperWindowsPath = `\\\\wsl.localhost\\${distribution}${helperPath.replaceAll("/", "\\")}`;
+  }
+  const powershellExecutable = options.powershellExecutable ?? "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
+  mountedWindowsPath(powershellExecutable);
+  if (!powershellExecutable.endsWith("/powershell.exe")) {
+    throw new Error("Windows authority needs the configured PowerShell executable.");
+  }
+  return { assetsRoot, executablePath, executableWindowsPath, helperPath, helperWindowsPath, powershellExecutable };
+}
+async function hashInstalledExecutable(executablePath, assetsRoot) {
+  const directory = await lstat25(assetsRoot);
+  if (!directory.isDirectory() || directory.isSymbolicLink() || await realpath16(assetsRoot) !== assetsRoot || await realpath16(executablePath) !== executablePath || path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe") !== executablePath) {
+    throw new Error("EasyEDA executable and canonical installed assets do not agree.");
+  }
+  const handle = await open22(executablePath, constants17.O_RDONLY | constants17.O_NOFOLLOW);
+  try {
+    const before = await handle.stat();
+    if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
+      throw new Error("EasyEDA executable is not a bounded single-link regular file.");
+    }
+    const digest6 = createHash29("sha256");
+    for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      if (!Buffer.isBuffer(chunk)) {
+        throw new TypeError("Executable hashing returned non-binary data.");
+      }
+      digest6.update(chunk);
+    }
+    const after = await handle.stat();
+    const named = await lstat25(executablePath);
+    for (const candidate of [after, named]) {
+      if (!candidate.isFile() || candidate.nlink !== 1 || candidate.dev !== before.dev || candidate.ino !== before.ino || candidate.size !== before.size || candidate.mtimeMs !== before.mtimeMs || candidate.ctimeMs !== before.ctimeMs) {
+        throw new Error("EasyEDA executable changed during reviewed identity capture.");
+      }
+    }
+    if (await realpath16(executablePath) !== executablePath || await realpath16(assetsRoot) !== assetsRoot) {
+      throw new Error("EasyEDA installed paths changed during identity capture.");
+    }
+    return digest6.digest("hex");
+  } finally {
+    await handle.close();
+  }
+}
+function buildWindowsProcessProbeCode(session, probe) {
+  if (probe.schema !== "easyeda-pro-control.windows-process-probe.v1" || !HASH14.test(probe.bindingSha256) || !HASH14.test(probe.nonce) || !Number.isSafeInteger(probe.port) || probe.port <= 0 || probe.port > 65535) {
+    throw new Error("Windows process probe has an invalid fixed binding.");
+  }
+  const sessionSha256 = sha256Json(session);
+  return `return await new Promise((resolve, reject) => {
+    const expectedNonce = ${JSON.stringify(probe.nonce)};
+    const socketId = "easyeda-control-authority-probe-" + expectedNonce;
+    const timerId = socketId + "-deadline";
+    const socket = eda.sys_WebSocket;
+    const timers = eda.sys_Timer;
+    if (!socket || typeof socket.register !== "function" || typeof socket.close !== "function" || !timers || typeof timers.setTimeoutTimer !== "function" || typeof timers.clearTimeoutTimer !== "function") {
+      reject(new Error("WINDOWS_PROBE_NATIVE_API_UNAVAILABLE")); return;
+    }
+    let settled = false;
+    let timerInstalled = false;
+    let socketAttempted = false;
+    let opened = false;
+    const finish = (accepted) => {
+      if (settled) return;
+      settled = true;
+      let timerCleared = !timerInstalled;
+      let socketClosed = !socketAttempted;
+      try { if (timerInstalled) timerCleared = timers.clearTimeoutTimer(timerId) === true; } catch { timerCleared = false; }
+      try { if (socketAttempted) socketClosed = socket.close(socketId, 1000, "ownership-probe-complete") === undefined; } catch { socketClosed = false; }
+      if (!accepted || !opened || !timerCleared || !socketClosed) { reject(new Error("WINDOWS_PROBE_NOT_PROVEN")); return; }
+      resolve({schema:${JSON.stringify(PROBE_RESULT_SCHEMA)},bindingSha256:${JSON.stringify(probe.bindingSha256)},sessionSha256:${JSON.stringify(sessionSha256)},ok:true,socketClosed:true,timerCleared:true});
+    };
+    try {
+      timerInstalled = timers.setTimeoutTimer(timerId, 9000, () => finish(false)) === true;
+      if (!timerInstalled) { finish(false); return; }
+      socketAttempted = true;
+      socket.register(socketId, ${JSON.stringify(`ws://127.0.0.1:${probe.port}/${probe.nonce}`)}, (event) => {
+        if (settled) return;
+        const data = typeof event === "string" ? event : event && typeof event === "object" ? event.data : undefined;
+        if (typeof data !== "string" || data.length > 128) { finish(false); return; }
+        try {
+          const message = JSON.parse(data);
+          const accepted = message !== null && typeof message === "object" && !Array.isArray(message) && Object.keys(message).sort().join(",") === "kind,nonce" && message.kind === "easyeda-authority-probe" && message.nonce === expectedNonce;
+          finish(accepted);
+        } catch { finish(false); }
+      }, () => { if (!settled) opened = true; });
+    } catch { finish(false); }
+  });`;
+}
+function assertCurrentSession(upstream2, session) {
+  const lifecycle = upstream2.bridgeSessionLifecycle();
+  const active2 = lifecycle?.activeSession;
+  const binding2 = upstream2.currentAuthenticatedBridgeDispatchBinding();
+  if (lifecycle === void 0 || active2 === void 0 || active2 === null || binding2 === void 0 || lifecycle.gatewayInstanceId !== session.gatewayInstanceId || binding2.gatewayInstanceId !== session.gatewayInstanceId || binding2.sessionId !== session.sessionId || binding2.sessionSequence !== session.sequence || canonicalJson({ ...active2, gatewayInstanceId: lifecycle.gatewayInstanceId }) !== canonicalJson(session)) {
+    throw new Error("Windows process probe requires the exact current authenticated session and dispatch lease.");
+  }
+}
+async function performWindowsAuthenticatedProcessProbe(upstream2, session, probe) {
+  assertCurrentSession(upstream2, session);
+  const binding2 = upstream2.currentAuthenticatedBridgeDispatchBinding();
+  const code = buildWindowsProcessProbeCode(session, probe);
+  const result = await upstream2.callTool("easyeda_execute", { code, timeoutMs: 1e4, confirmWrite: true }, 12e3, binding2);
+  assertCurrentSession(upstream2, session);
+  const payload = extractToolPayload(result);
+  const expected3 = { schema: PROBE_RESULT_SCHEMA, bindingSha256: probe.bindingSha256, sessionSha256: sha256Json(session), ok: true, socketClosed: true, timerCleared: true };
+  if (canonicalJson(payload) !== canonicalJson(expected3)) {
+    throw new Error("Windows process probe did not return its exact nonce-free cleanup proof.");
+  }
+}
+var PROBE_RESULT_SCHEMA, HASH14, WindowsControlRuntime;
+var init_windows_runtime = __esm({
+  "server/src/windows-runtime.ts"() {
+    init_core3();
+    init_windows_authority();
+    PROBE_RESULT_SCHEMA = "easyeda-pro-control.windows-process-probe-result.v1";
+    HASH14 = /^[a-f0-9]{64}$/u;
+    WindowsControlRuntime = class {
+      options;
+      dependencies;
+      paths;
+      supervisor;
+      currentLaunch = null;
+      clockLaunches = /* @__PURE__ */ new WeakMap();
+      state = "not-launched";
+      executableSha256 = null;
+      closedSessionLaunches = /* @__PURE__ */ new Map();
+      constructor(options, dependencies3 = {}) {
+        if (!HASH14.test(options.reviewedExecutionScopeSha256)) {
+          throw new Error("Reviewed Windows execution scope identity is missing.");
+        }
+        if (options.expectedExecutableSha256 !== void 0 && !HASH14.test(options.expectedExecutableSha256)) {
+          throw new Error("Reviewed Windows executable identity is invalid.");
+        }
+        if (options.expectedHelperSha256 !== void 0 && !HASH14.test(options.expectedHelperSha256)) {
+          throw new Error("Reviewed Windows helper identity is invalid.");
+        }
+        this.options = options;
+        this.dependencies = dependencies3;
+        this.paths = deriveWindowsRuntimePaths(options);
+      }
+      /** Explicit launch only; constructor/status/capture never start an application. */
+      async launch() {
+        if (this.state === "released" || this.state === "launching" || this.state === "launch-unknown") {
+          throw new Error("Windows runtime cannot start another application from its current state.");
+        }
+        this.state = "launching";
+        try {
+          const supervisor = await this.ensureSupervisor();
+          const launch = await supervisor.launch({ confirmLaunch: true });
+          this.currentLaunch = structuredClone(launch);
+          this.state = "owned";
+          const returned = structuredClone(launch);
+          this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
+          return returned;
+        } catch (error51) {
+          this.state = "launch-unknown";
+          throw error51;
+        }
+      }
+      async ensureSupervisor() {
+        if (this.supervisor !== void 0) {
+          return this.supervisor;
+        }
+        const expectedState = this.state;
+        const hashExecutable2 = this.dependencies.hashExecutable ?? hashInstalledExecutable;
+        const executableSha256 = await hashExecutable2(this.paths.executablePath, this.paths.assetsRoot);
+        if (!HASH14.test(executableSha256)) {
+          throw new Error("Installed EasyEDA executable identity is invalid.");
+        }
+        if (this.options.expectedExecutableSha256 !== void 0 && executableSha256 !== this.options.expectedExecutableSha256) {
+          throw new Error("Installed EasyEDA executable differs from the reviewed launch profile.");
+        }
+        this.executableSha256 = executableSha256;
+        if (this.state !== expectedState) {
+          throw new Error("Windows runtime changed before helper startup.");
+        }
+        const start = this.dependencies.startSupervisor ?? startWindowsAuthoritySupervisor;
+        this.supervisor = await start({
+          powershellExecutable: this.paths.powershellExecutable,
+          helperPath: this.paths.helperPath,
+          helperWindowsPath: this.paths.helperWindowsPath,
+          expectedExecutable: this.paths.executableWindowsPath,
+          expectedExecutableSha256: executableSha256,
+          ...this.options.expectedHelperSha256 === void 0 ? {} : { expectedHelperSha256: this.options.expectedHelperSha256 },
+          reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256,
+          performAuthenticatedProcessProbe: (session, probe) => performWindowsAuthenticatedProcessProbe(this.options.upstream, session, probe)
+        });
+        if (this.state !== expectedState) {
+          const acquired = this.supervisor;
+          this.supervisor = void 0;
+          await acquired.release();
+          throw new Error("Windows runtime changed during helper startup.");
+        }
+        return this.supervisor;
+      }
+      /** Starts only the proof helper, not EasyEDA. Existing instances are observed
+       * without adoption, close, bridge calls or a consumed application attempt.
+       */
+      async observeExistingApplication() {
+        if (this.state !== "not-launched" && this.state !== "owned") {
+          throw new Error("Windows runtime cannot observe an existing application from its current state.");
+        }
+        const previousState = this.state;
+        const supervisor = await this.ensureSupervisor();
+        if (supervisor.observeExistingApplication === void 0) {
+          throw new Error("Existing application observation is unavailable.");
+        }
+        const observation2 = await supervisor.observeExistingApplication();
+        if (this.supervisor !== supervisor || this.state !== previousState || typeof observation2.running !== "boolean") {
+          throw new Error("Windows runtime changed during existing application observation.");
+        }
+        return observation2;
+      }
+      /** Exact original runtime return only. This reads a clock fact, never launches. */
+      async clockObservationForLaunch(launch) {
+        const slot = this.clockLaunches.get(launch);
+        const current2 = () => {
+          if (slot === void 0 || this.requireSupervisor() !== slot.supervisor || canonicalJson(launch) !== slot.snapshot || canonicalJson(this.currentLaunch) !== slot.snapshot) {
+            throw new Error("Runtime clock lookup requires the unchanged original current launch.");
+          }
+        };
+        current2();
+        if (slot === void 0) {
+          throw new Error("Original runtime clock launch is missing.");
+        }
+        const observation2 = await windowsClockObservationForResult(slot.original, "launch");
+        current2();
+        return observation2;
+      }
+      requireSupervisor() {
+        if (this.state !== "owned" || this.supervisor === void 0 || this.currentLaunch === null) {
+          throw new Error("Windows authority requires the explicitly launched supervised runtime.");
+        }
+        return this.supervisor;
+      }
+      capture(input) {
+        return this.requireSupervisor().capture(input);
+      }
+      proveTerminated(input) {
+        return this.requireSupervisor().proveTerminated(input);
+      }
+      releaseCapture(evidence) {
+        return this.requireSupervisor().releaseCapture(evidence);
+      }
+      /** Internal coordinator-only preparation; never starts a helper or application. */
+      async prepareClosedSessionClose(input) {
+        const bound2 = structuredClone(input);
+        const supervisor = this.requireSupervisor();
+        const launch = structuredClone(this.currentLaunch);
+        if (launch === null) {
+          throw new Error("Closed-session launch identity is missing.");
+        }
+        const intent = await supervisor.prepareClosedSessionClose({ ...bound2, launch });
+        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
+          throw new Error("Windows runtime ownership changed during closed-session preparation.");
+        }
+        this.closedSessionLaunches.set(intent.closeIntentSha256, { intent: structuredClone(intent), launch });
+        return intent;
+      }
+      closedSessionLaunch(intent) {
+        this.requireSupervisor();
+        const retained = this.closedSessionLaunches.get(intent.closeIntentSha256);
+        if (retained === void 0 || canonicalJson(retained.intent) !== canonicalJson(intent)) {
+          throw new Error("Closed-session intent was not prepared by this Windows runtime.");
+        }
+        return structuredClone(retained.launch);
+      }
+      requestClosedSessionNormalClose(input) {
+        const bound2 = structuredClone(input);
+        const launch = this.closedSessionLaunch(bound2.intent);
+        return this.requireSupervisor().requestClosedSessionNormalClose({ ...bound2, launch });
+      }
+      proveClosedSession(input) {
+        const bound2 = structuredClone(input);
+        const launch = this.closedSessionLaunch(bound2.intent);
+        return this.requireSupervisor().proveClosedSession({ ...bound2, launch });
+      }
+      async probeClosedSessionTermination(input) {
+        const bound2 = structuredClone(input), callerText = canonicalJson(input);
+        const launch = this.closedSessionLaunch(bound2.intent), supervisor = this.requireSupervisor();
+        const observation2 = await supervisor.probeClosedSessionTermination({ ...bound2, launch });
+        if (this.requireSupervisor() !== supervisor || canonicalJson(input) !== callerText || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || canonicalJson(this.closedSessionLaunch(bound2.intent)) !== canonicalJson(launch)) {
+          throw new Error("Windows runtime ownership changed during the closed-session probe.");
+        }
+        assertCurrentClosedSessionTerminationObservation(observation2);
+        return observation2;
+      }
+      async normalClose(windowHandle) {
+        const supervisor = this.requireSupervisor();
+        const launch = structuredClone(this.currentLaunch);
+        if (launch === null) {
+          throw new Error("Windows application launch identity is missing.");
+        }
+        await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle, launch });
+        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
+          throw new Error("Retained launch identity changed during normal close; do not repeat close.");
+        }
+      }
+      /** Read-only bounded window observation from the retained helper, without
+       * Computer Use, title disclosure, focus changes or launch adoption.
+       */
+      async observeApplicationWindow() {
+        const launch = structuredClone(this.currentLaunch), supervisor = this.requireSupervisor();
+        if (launch === null || supervisor.observeApplicationWindow === void 0) {
+          throw new Error("Retained application window observation is unavailable.");
+        }
+        const observation2 = await supervisor.observeApplicationWindow(launch);
+        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || Object.keys(observation2).toSorted().join(",") !== "helperInstance,hwnd,jobId,outcome" || observation2.jobId !== launch.jobId || observation2.helperInstance !== launch.helperInstance || observation2.outcome !== "available" && observation2.outcome !== "unavailable" && observation2.outcome !== "ambiguous" || (observation2.outcome === "available" ? typeof observation2.hwnd !== "string" || !/^[1-9]\d{0,18}$/u.test(observation2.hwnd) : observation2.hwnd !== null)) {
+          throw new Error("Retained launch identity or window changed during application window observation.");
+        }
+        return observation2;
+      }
+      /** Read only: a true result requires this helper's original root and Job to
+       * have exited. It never requests closure or reacquires lost process handles.
+       */
+      async observeLaunchTermination() {
+        const supervisor = this.requireSupervisor();
+        const launch = structuredClone(this.currentLaunch);
+        if (launch === null || supervisor.observeLaunchTermination === void 0) {
+          throw new Error("Retained launch termination observation is unavailable.");
+        }
+        const observation2 = await supervisor.observeLaunchTermination(launch);
+        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || observation2.jobId !== launch.jobId || observation2.helperInstance !== launch.helperInstance || typeof observation2.terminated !== "boolean") {
+          throw new Error("Retained launch identity changed during termination observation.");
+        }
+        return observation2;
+      }
+      async release() {
+        if (this.state === "launching") {
+          throw new Error("Cannot release Windows proof authority during launch.");
+        }
+        this.state = "released";
+        this.currentLaunch = null;
+        this.closedSessionLaunches.clear();
+        const supervisor = this.supervisor;
+        this.supervisor = void 0;
+        await supervisor?.release();
+      }
+      status() {
+        return { state: this.state, launch: structuredClone(this.currentLaunch), executableSha256: this.executableSha256, reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256 };
+      }
+    };
+  }
+});
+
+// server/src/ordinary-launch-recovery.ts
+import { spawn as spawn5 } from "node:child_process";
+import { createHash as createHash30 } from "node:crypto";
+import { constants as constants18 } from "node:fs";
+import { lstat as lstat26, open as open23, realpath as realpath17 } from "node:fs/promises";
+import { join as join46 } from "node:path";
+function refused(category) {
+  return new OrdinaryLaunchRecoveryError(category);
+}
+function sameFile3(left, right) {
+  return ["dev", "ino", "size", "mode", "uid", "gid", "nlink", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
+}
+async function verifyHelper(helperPath, expected3) {
+  if (await realpath17(helperPath) !== helperPath) {
+    throw new Error("Recovery helper source check failed.");
+  }
+  const handle = await open23(helperPath, constants18.O_RDONLY | constants18.O_NOFOLLOW | constants18.O_NONBLOCK);
+  try {
+    const before = await handle.stat({ bigint: true });
+    if (!before.isFile() || before.nlink !== 1n || before.size !== BigInt(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes) || expected3 !== void 0 && !sameFile3(before, expected3)) {
+      throw new Error("Recovery helper source check failed.");
+    }
+    const bytes2 = Buffer.alloc(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes + 1);
+    let count2 = 0;
+    while (count2 < bytes2.length) {
+      const result = await handle.read(bytes2, count2, bytes2.length - count2, count2);
+      if (result.bytesRead === 0) {
+        break;
+      }
+      count2 += result.bytesRead;
+    }
+    if (count2 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash30("sha256").update(bytes2.subarray(0, count2)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile3(before, await handle.stat({ bigint: true })) || !sameFile3(before, await lstat26(helperPath, { bigint: true })) || await realpath17(helperPath) !== helperPath) {
+      throw new Error("Recovery helper source check failed.");
+    }
+    return before;
+  } finally {
+    await handle.close();
+  }
+}
+async function invokeHelper(helperWindowsPath) {
+  let child;
+  try {
+    child = spawn5("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", [
+      "-NoLogo",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      helperWindowsPath
+    ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  } catch {
+    throw refused("spawn");
+  }
+  const chunks = [], completion = Promise.withResolvers();
+  let count2 = 0, settled = false;
+  function reject(category) {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    child.stdin.destroy();
+    child.stdout.destroy();
+    child.stderr.destroy();
+    child.unref();
+    completion.reject(refused(category));
+  }
+  child.stdout.on("data", (chunk) => {
+    if (settled) {
+      return;
+    }
+    if (!Buffer.isBuffer(chunk)) {
+      reject("output-schema");
+      return;
+    }
+    count2 += chunk.length;
+    if (count2 > 4096) {
+      reject("output-bound");
+      return;
+    }
+    chunks.push(chunk);
+  });
+  child.stderr.on("data", () => {
+    reject("stderr");
+  });
+  child.on("error", () => {
+    reject("spawn");
+  });
+  child.stdin.on("error", () => {
+    reject("stream");
+  });
+  child.stdout.on("error", () => {
+    reject("stream");
+  });
+  child.stderr.on("error", () => {
+    reject("stream");
+  });
+  child.on("close", (code, signal) => {
+    if (settled) {
+      return;
+    }
+    if (code !== 0 || signal !== null) {
+      reject("nonzero-exit");
+      return;
+    }
+    try {
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks, count2));
+      const result = nativeObservationSchema.parse(JSON.parse(decoded));
+      settled = true;
+      completion.resolve(result);
+    } catch {
+      reject("output-schema");
+    }
+  });
+  const deadline = setTimeout(() => {
+    reject("timeout");
+  }, 1e4);
+  child.stdin.end();
+  try {
+    return await completion.promise;
+  } finally {
+    clearTimeout(deadline);
+  }
+}
+async function observeOrdinaryLaunchRecovery(options) {
+  let before, helperPath, helperWindowsPath;
+  try {
+    const paths = deriveWindowsRuntimePaths(options);
+    helperPath = join46(options.pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
+    helperWindowsPath = paths.helperWindowsPath.replace(/windows-authority\.ps1$/u, "ordinary-launch-recovery.ps1");
+    before = await verifyHelper(helperPath);
+  } catch {
+    throw refused("pre-helper-source");
+  }
+  const observation2 = await invokeHelper(helperWindowsPath);
+  try {
+    await verifyHelper(helperPath, before);
+  } catch {
+    throw refused("post-helper-source");
+  }
+  return { ...observation2, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 };
+}
+var ORDINARY_LAUNCH_RECOVERY_HELPER, nativeObservationSchema, ordinaryLaunchRecoveryObservationSchema, OrdinaryLaunchRecoveryError;
+var init_ordinary_launch_recovery = __esm({
+  "server/src/ordinary-launch-recovery.ts"() {
+    init_zod();
+    init_windows_runtime();
+    ORDINARY_LAUNCH_RECOVERY_HELPER = Object.freeze({
+      relativePath: "scripts/ordinary-launch-recovery.ps1",
+      bytes: 2279,
+      sha256: "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c"
+    });
+    nativeObservationSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.ordinary-launch-recovery-observation.v1"),
+      samples: external_exports.literal(2),
+      otherPowerShellPresent: external_exports.boolean(),
+      sameNameProcessPresent: external_exports.boolean()
+    }).strict();
+    ordinaryLaunchRecoveryObservationSchema = nativeObservationSchema.extend({
+      helperSha256: external_exports.literal(ORDINARY_LAUNCH_RECOVERY_HELPER.sha256)
+    }).strict();
+    OrdinaryLaunchRecoveryError = class extends Error {
+      category;
+      constructor(category) {
+        super(`Ordinary launch recovery observation was not proven: ${category}; no recovery is authorized.`);
+        this.name = "OrdinaryLaunchRecoveryError";
+        this.category = category;
+      }
+    };
+  }
+});
+
+// server/src/ordinary-launch.ts
+import { createHash as createHash31 } from "node:crypto";
+import { constants as constants19 } from "node:fs";
+import { lstat as lstat27, mkdir as mkdir4, open as open24, opendir as opendir3, realpath as realpath18 } from "node:fs/promises";
+import { join as join47, resolve as resolve11 } from "node:path";
 function parseOrdinaryLaunchRequest(input) {
   return ordinaryLaunchRequestSchema.parse(input);
 }
@@ -91675,7 +92234,7 @@ function queryOrdinaryLaunch(input = {}) {
   const parsed2 = external_exports.object({ includeSchemas: external_exports.boolean().optional() }).strict().parse(input);
   return {
     tool: "easyeda_control_launch",
-    actions: ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision"],
+    actions: ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"],
     effect: "ordinary-existing-profile-application-startup",
     profile: ORDINARY_LAUNCH_PROFILE,
     limitations: limitations5,
@@ -91690,6 +92249,21 @@ function validateOrdinaryLaunchArguments(input) {
     issues: parsed2.error.issues.map((issue2) => ({ path: issue2.path.join("."), message: issue2.message }))
   };
 }
+function hasHelperBeforeIntentProtocol(intent) {
+  if (intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1") {
+    return intent.profileSha256 === HISTORICAL_UNKNOWN_LAUNCH.profileSha256 && intent.facadeSha256 === HISTORICAL_UNKNOWN_LAUNCH.facadeSha256;
+  }
+  return intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE);
+}
+function describeLaunchProtocol(intent) {
+  if (!hasHelperBeforeIntentProtocol(intent)) {
+    return "unsupported";
+  }
+  if (intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1") {
+    return "reviewed-v1";
+  }
+  return "recorded-v2";
+}
 function requireValue14(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -91698,16 +92272,16 @@ function requireValue14(condition, message) {
 function absent2(error51) {
   return error51 !== null && typeof error51 === "object" && "code" in error51 && error51.code === "ENOENT";
 }
-function sameFile3(left, right) {
+function sameFile4(left, right) {
   return ["dev", "ino", "size", "mode", "uid", "gid", "nlink", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 async function hashPinnedFile(absolute, sha256, bytes2) {
-  requireValue14(resolve11(absolute) === absolute && await realpath16(absolute) === absolute, "Ordinary launch file path is not canonical.");
-  const handle = await open22(absolute, constants17.O_RDONLY | constants17.O_NOFOLLOW | constants17.O_NONBLOCK);
+  requireValue14(resolve11(absolute) === absolute && await realpath18(absolute) === absolute, "Ordinary launch file path is not canonical.");
+  const handle = await open24(absolute, constants19.O_RDONLY | constants19.O_NOFOLLOW | constants19.O_NONBLOCK);
   try {
     const before = await handle.stat({ bigint: true });
     requireValue14(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= 1073741824n && (bytes2 === void 0 ? before.size <= 65536n : before.size === BigInt(bytes2)), "Ordinary launch pinned file size or kind differs.");
-    const hash35 = createHash29("sha256");
+    const hash35 = createHash31("sha256");
     let count2 = 0;
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       requireValue14(Buffer.isBuffer(chunk), "Ordinary launch hash requires bytes.");
@@ -91715,18 +92289,18 @@ async function hashPinnedFile(absolute, sha256, bytes2) {
       requireValue14(count2 <= Number(before.size), "Ordinary launch file grew during hashing.");
       hash35.update(chunk);
     }
-    requireValue14(count2 === Number(before.size) && hash35.digest("hex") === sha256 && sameFile3(before, await handle.stat({ bigint: true })) && sameFile3(before, await lstat25(absolute, { bigint: true })) && await realpath16(absolute) === absolute, "Ordinary launch pinned file identity differs.");
+    requireValue14(count2 === Number(before.size) && hash35.digest("hex") === sha256 && sameFile4(before, await handle.stat({ bigint: true })) && sameFile4(before, await lstat27(absolute, { bigint: true })) && await realpath18(absolute) === absolute, "Ordinary launch pinned file identity differs.");
   } finally {
     await handle.close();
   }
 }
 async function verifyOrdinaryLaunchInstallation(options) {
   requireValue14(
-    /^\/mnt\/[a-z]\/[^\r\n]+\/resources\/app\/assets$/u.test(options.assetsRoot) && resolve11(options.assetsRoot) === options.assetsRoot && await realpath16(options.assetsRoot) === options.assetsRoot,
+    /^\/mnt\/[a-z]\/[^\r\n]+\/resources\/app\/assets$/u.test(options.assetsRoot) && resolve11(options.assetsRoot) === options.assetsRoot && await realpath18(options.assetsRoot) === options.assetsRoot,
     "Ordinary launch requires the canonical installed Windows assets root."
   );
   requireValue14(
-    resolve11(options.pluginRoot) === options.pluginRoot && await realpath16(options.pluginRoot) === options.pluginRoot,
+    resolve11(options.pluginRoot) === options.pluginRoot && await realpath18(options.pluginRoot) === options.pluginRoot,
     "Ordinary launch requires the canonical plugin root."
   );
   const manifestIdentity = reviewedCompatibilityManifestFingerprint();
@@ -91746,13 +92320,13 @@ async function verifyOrdinaryLaunchInstallation(options) {
   for (const pin4 of ORDINARY_LAUNCH_PROFILE.installedFiles) {
     await hashPinnedFile(resolve11(options.assetsRoot, pin4.relativePath), pin4.sha256, pin4.bytes);
   }
-  await hashPinnedFile(join46(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath), ORDINARY_LAUNCH_PROFILE.helper.sha256);
+  await hashPinnedFile(join47(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath), ORDINARY_LAUNCH_PROFILE.helper.sha256);
   requireValue14(canonicalJson(manifestIdentity) === canonicalJson(reviewedCompatibilityManifestFingerprint()), "Ordinary launch manifest changed.");
   return actual.sha256;
 }
 async function readRecord(directory, name6) {
   const path5 = `/proc/self/fd/${directory.handle.fd}/${name6}`;
-  const handle = await open22(path5, constants17.O_RDONLY | constants17.O_NOFOLLOW | constants17.O_NONBLOCK).catch((error51) => {
+  const handle = await open24(path5, constants19.O_RDONLY | constants19.O_NOFOLLOW | constants19.O_NONBLOCK).catch((error51) => {
     if (absent2(error51)) {
       return null;
     }
@@ -91773,7 +92347,7 @@ async function readRecord(directory, name6) {
       }
       offset2 += read2.bytesRead;
     }
-    requireValue14(offset2 === Number(before.size) && sameFile3(before, await handle.stat({ bigint: true })) && sameFile3(before, await lstat25(path5, { bigint: true })), "Ordinary launch journal changed during read.");
+    requireValue14(offset2 === Number(before.size) && sameFile4(before, await handle.stat({ bigint: true })) && sameFile4(before, await lstat27(path5, { bigint: true })), "Ordinary launch journal changed during read.");
     return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, offset2)));
   } finally {
     await handle.close();
@@ -91790,7 +92364,7 @@ async function boundedEntries(directory, limit) {
 }
 async function inventory() {
   const root = await controlRootCapability(false);
-  const parent = await root.openDirectory(join46(controlDataDirectory(), JOURNAL_DIRECTORY), false).catch((error51) => {
+  const parent = await root.openDirectory(join47(controlDataDirectory(), JOURNAL_DIRECTORY), false).catch((error51) => {
     if (absent2(error51)) {
       return null;
     }
@@ -91804,36 +92378,40 @@ async function inventory() {
     const operations = [];
     for (const entry of entries3.toSorted((left, right) => left.name.localeCompare(right.name))) {
       requireValue14(entry.isDirectory() && operationIdSchema.safeParse(entry.name).success, "Ordinary launch inventory contains an unknown entry.");
-      const slot = await root.openDirectory(join46(parent.absolute, entry.name), false);
+      const slot = await root.openDirectory(join47(parent.absolute, entry.name), false);
       try {
-        const records2 = await boundedEntries(slot, 7);
-        requireValue14(records2.every((record7) => record7.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record7.name)), "Ordinary launch journal contains unknown records.");
+        const records2 = await boundedEntries(slot, 8);
+        requireValue14(records2.every((record7) => record7.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record7.name)), "Ordinary launch journal contains unknown records.");
         const intentRaw = await readRecord(slot, "intent.json"), launchedRaw = await readRecord(slot, "launched.json"), terminatedRaw = await readRecord(slot, "terminated.json");
         const refusedRaw = await readRecord(slot, "not-dispatched.json");
         const abandonedRaw = await readRecord(slot, "abandonment.json");
+        const unknownAbandonedRaw = await readRecord(slot, "unknown-abandonment.json");
         const closeAcknowledgmentRaw = await readRecord(slot, "close-acknowledged.json"), closeIntentRaw = await readRecord(slot, "close-intent.json");
         const intent = intentRaw === null ? void 0 : intentSchema2.parse(intentRaw);
         const launched = launchedRaw === null ? void 0 : launchedSchema.parse(launchedRaw);
         const terminated = terminatedRaw === null ? void 0 : terminatedSchema.parse(terminatedRaw);
-        const refused = refusedRaw === null ? void 0 : refusedSchema.parse(refusedRaw);
+        const refused2 = refusedRaw === null ? void 0 : refusedSchema.parse(refusedRaw);
         const abandoned = abandonedRaw === null ? void 0 : abandonedSchema.parse(abandonedRaw);
+        const unknownAbandoned = unknownAbandonedRaw === null ? void 0 : unknownAbandonedSchema.parse(unknownAbandonedRaw);
         const closeIntent = closeIntentRaw === null ? void 0 : closeIntentSchema.parse(closeIntentRaw);
         const closeAcknowledgment = closeAcknowledgmentRaw === null ? void 0 : closeAcknowledgmentSchema.parse(closeAcknowledgmentRaw);
         requireValue14(intent === void 0 || intent.operationId === entry.name, "Ordinary launch intent ID differs.");
         requireValue14(launched === void 0 || intent !== void 0 && launched.operationId === entry.name && launched.intentSha256 === sha256Json(intent), "Ordinary launch result is unbound.");
         requireValue14(terminated === void 0 || launched !== void 0 && terminated.operationId === entry.name && terminated.launchedSha256 === sha256Json(launched) && terminated.jobId === launched.launch.jobId && terminated.helperInstance === launched.launch.helperInstance, "Ordinary launch termination is unbound.");
-        requireValue14(refused === void 0 || intent !== void 0 && launched === void 0 && terminated === void 0 && refused.operationId === entry.name && refused.intentSha256 === sha256Json(intent), "Ordinary launch nondispatch receipt is unbound.");
-        requireValue14(abandoned === void 0 || intent !== void 0 && launched !== void 0 && terminated === void 0 && refused === void 0 && abandoned.operationId === entry.name && abandoned.intentSha256 === sha256Json(intent) && abandoned.launchedSha256 === sha256Json(launched) && abandoned.profileSha256 === intent.profileSha256, "Ordinary launch abandonment receipt is unbound or contradicts termination.");
-        requireValue14(closeIntent === void 0 || intent !== void 0 && launched !== void 0 && refused === void 0 && closeIntent.operationId === entry.name && closeIntent.intentSha256 === sha256Json(intent) && closeIntent.launchedSha256 === sha256Json(launched) && closeIntent.profileSha256 === intent.profileSha256 && closeIntent.facadeSha256 === intent.facadeSha256 && closeIntent.jobId === launched.launch.jobId && closeIntent.helperInstance === launched.launch.helperInstance, "Ordinary normal-close intent is unbound.");
+        requireValue14(refused2 === void 0 || intent !== void 0 && launched === void 0 && terminated === void 0 && refused2.operationId === entry.name && refused2.intentSha256 === sha256Json(intent), "Ordinary launch nondispatch receipt is unbound.");
+        requireValue14(abandoned === void 0 || intent !== void 0 && launched !== void 0 && terminated === void 0 && refused2 === void 0 && abandoned.operationId === entry.name && abandoned.intentSha256 === sha256Json(intent) && abandoned.launchedSha256 === sha256Json(launched) && abandoned.profileSha256 === intent.profileSha256, "Ordinary launch abandonment receipt is unbound or contradicts termination.");
+        requireValue14(unknownAbandoned === void 0 || intent !== void 0 && launched === void 0 && terminated === void 0 && refused2 === void 0 && abandoned === void 0 && closeIntent === void 0 && closeAcknowledgment === void 0 && unknownAbandoned.operationId === entry.name && unknownAbandoned.intentSha256 === sha256Json(intent) && (intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1" ? hasHelperBeforeIntentProtocol(intent) : unknownAbandoned.facadeSha256 === intent.facadeSha256) && unknownAbandoned.profileSha256 === intent.profileSha256, "Unknown-launch abandonment is unbound or contradicts another receipt.");
+        requireValue14(closeIntent === void 0 || intent !== void 0 && launched !== void 0 && refused2 === void 0 && closeIntent.operationId === entry.name && closeIntent.intentSha256 === sha256Json(intent) && closeIntent.launchedSha256 === sha256Json(launched) && closeIntent.profileSha256 === intent.profileSha256 && closeIntent.facadeSha256 === intent.facadeSha256 && closeIntent.jobId === launched.launch.jobId && closeIntent.helperInstance === launched.launch.helperInstance, "Ordinary normal-close intent is unbound.");
         requireValue14(closeAcknowledgment === void 0 || closeIntent !== void 0 && closeAcknowledgment.operationId === entry.name && closeAcknowledgment.closeIntentSha256 === sha256Json(closeIntent), "Ordinary normal-close acknowledgment is unbound.");
         operations.push({
           operationId: entry.name,
           ...intent === void 0 ? {} : { intent },
           ...launched === void 0 ? {} : { launched },
           ...terminated === void 0 ? {} : { terminated },
-          ...refused === void 0 ? {} : { refused },
+          ...refused2 === void 0 ? {} : { refused: refused2 },
           ...abandoned === void 0 ? {} : { abandoned },
           ...closeIntent === void 0 ? {} : { closeIntent },
+          ...unknownAbandoned === void 0 ? {} : { unknownAbandoned },
           ...closeAcknowledgment === void 0 ? {} : { closeAcknowledgment }
         });
       } finally {
@@ -91851,7 +92429,7 @@ async function publish(operationId3, name6, record7) {
 `);
   requireValue14(bytes2.length <= MAX_RECORD_BYTES, "Ordinary launch receipt exceeds its bound.");
   await publishManagedAttachmentExclusive(
-    join46(controlDataDirectory(), JOURNAL_DIRECTORY, operationId3, name6),
+    join47(controlDataDirectory(), JOURNAL_DIRECTORY, operationId3, name6),
     "Ordinary launch receipt",
     bytes2,
     ORDINARY_LAUNCH_PROFILE.schema
@@ -91873,6 +92451,9 @@ function describe3(operationId3, operation) {
     if (operation.abandoned !== void 0) {
       state2 = "supervision-abandoned";
     }
+    if (operation.unknownAbandoned !== void 0) {
+      state2 = "unknown-launch-abandoned";
+    }
   }
   return {
     operationId: operationId3,
@@ -91880,6 +92461,10 @@ function describe3(operationId3, operation) {
     attemptConsumed: operation !== void 0,
     ...claims,
     limitations: limitations5,
+    ...operation?.intent === void 0 ? {} : {
+      intentSha256: sha256Json(operation.intent),
+      helperBeforeIntentProtocol: describeLaunchProtocol(operation.intent)
+    },
     ...operation?.launched === void 0 ? {} : { launch: operation.launched.launch, launchedSha256: sha256Json(operation.launched) },
     ...operation?.terminated === void 0 ? {} : { termination: operation.terminated },
     ...operation?.closeIntent === void 0 ? {} : { normalClose: {
@@ -91894,18 +92479,26 @@ function describe3(operationId3, operation) {
       terminationProved: false,
       originalLaunchIdentityVerified: false,
       retainedLaunchAuthority: false
+    },
+    ...operation?.unknownAbandoned === void 0 ? {} : {
+      unknownLaunchAbandonment: operation.unknownAbandoned,
+      launchOutcome: "unknown",
+      terminationProved: false,
+      originalLaunchIdentityVerified: false,
+      retainedLaunchAuthority: false
     }
   };
 }
 function allowsNextLaunch(operation) {
-  return operation.terminated !== void 0 || operation.refused !== void 0 || operation.abandoned !== void 0;
+  return operation.terminated !== void 0 || operation.refused !== void 0 || operation.abandoned !== void 0 || operation.unknownAbandoned !== void 0;
 }
-var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, windowHandleSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, abandonedSchema, closeIntentSchema, closeAcknowledgmentSchema, windowObservationSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, HISTORICAL_ABANDONMENT_PROFILE_SHA256, OrdinaryLaunchCoordinator;
+var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, windowHandleSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentFields, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, abandonedSchema, unknownAbandonedSchema, closeIntentSchema, closeAcknowledgmentSchema, windowObservationSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, HISTORICAL_ABANDONMENT_PROFILE_SHA256, HISTORICAL_UNKNOWN_LAUNCH, OrdinaryLaunchCoordinator;
 var init_ordinary_launch = __esm({
   "server/src/ordinary-launch.ts"() {
     init_zod();
     init_artifacts();
     init_core3();
+    init_ordinary_launch_recovery();
     ORDINARY_LAUNCH_PROFILE = {
       schema: "easyeda-pro-control.ordinary-launch.v1",
       installedPackageVersion: "3.2.206.715d940d",
@@ -91941,6 +92534,13 @@ var init_ordinary_launch = __esm({
         expectedLaunchedSha256: digestSchema,
         confirmAbandonSupervision: external_exports.literal(true),
         acceptUnobservedDescendants: external_exports.literal(true)
+      }).strict(),
+      external_exports.object({
+        action: external_exports.literal("abandon-unknown-launch"),
+        operationId: operationIdSchema,
+        expectedIntentSha256: digestSchema,
+        confirmAbandonUnknownLaunch: external_exports.literal(true),
+        acceptUnobservedDescendants: external_exports.literal(true)
       }).strict()
     ]);
     limitations5 = [
@@ -91950,6 +92550,7 @@ var init_ordinary_launch = __esm({
       "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. A retained-Job termination receipt or explicit supervision abandonment permits consideration of a new ordinary startup; neither reuses the old operation ID. No PID-only adoption is supported.",
       "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority.",
       "Supervision abandonment requires a successful historical launch receipt, its exact digest, explicit acceptance of unobserved descendants, no current retained launch, and two absent same-name samples. It records relinquishment, not termination or saved-state proof. Original descendants or external work may remain. Only the ordinary-startup blocker changes; bridge/design quarantine and all design authority checks remain unchanged.",
+      "Unknown-launch abandonment requires a reviewed helper-before-intent protocol, the exact intent digest, a fresh coordinator without an allocated runtime, explicit acceptance of unobserved descendants, and two native samples with no other PowerShell process and no same-name application. The separate read-only helper excludes a delayed launch from the old helper; it does not determine whether launch previously occurred or prove descendant termination. Other PowerShell sessions conservatively block recovery. No process is adopted, closed or killed, and no design gate changes.",
       "Window observation requires the original retained launch and exact launch receipt digest. It exposes only a unique eligible root-owned application HWND, or unavailable/ambiguous status. An observation is not a persistent close permission and cannot adopt a historical process.",
       "Confirmed normal close reobserves that HWND, durably consumes one close intent for the original launch, then requests WM_CLOSE once. Missing acknowledgment or timeout never permits another close. No focus, keyboard, forced termination or Save/Discard choice is dispatched. The application may write data or display a prompt; acknowledgment proves neither termination nor saved contents. Inspect and retained termination observation remain available after close uncertainty, subject to unchanged quarantine gates."
     ];
@@ -91966,13 +92567,15 @@ var init_ordinary_launch = __esm({
       role: external_exports.literal("easyeda-main"),
       startIdentity: external_exports.string().regex(/^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u)
     }).strict() }).strict().refine((value) => value.root.startIdentity.endsWith(`:job:${value.jobId}`));
-    intentSchema2 = external_exports.object({
-      schema: external_exports.literal("easyeda-pro-control.ordinary-launch-intent.v1"),
-      operationId: operationIdSchema,
-      profileSha256: digestSchema,
-      facadeSha256: digestSchema,
-      createdAt: external_exports.iso.datetime()
-    }).strict();
+    intentFields = { operationId: operationIdSchema, profileSha256: digestSchema, facadeSha256: digestSchema, createdAt: external_exports.iso.datetime() };
+    intentSchema2 = external_exports.discriminatedUnion("schema", [
+      external_exports.object({ schema: external_exports.literal("easyeda-pro-control.ordinary-launch-intent.v1"), ...intentFields }).strict(),
+      external_exports.object({
+        schema: external_exports.literal("easyeda-pro-control.ordinary-launch-intent.v2"),
+        ...intentFields,
+        dispatchProtocol: external_exports.literal("retained-helper-before-intent.v1")
+      }).strict()
+    ]);
     launchedSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.ordinary-launched.v1"),
       operationId: operationIdSchema,
@@ -92010,6 +92613,26 @@ var init_ordinary_launch = __esm({
       retainedLaunchAuthority: external_exports.literal(false),
       designExecutionAuthorized: external_exports.literal(false)
     }).strict();
+    unknownAbandonedSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.ordinary-unknown-launch-abandoned.v1"),
+      operationId: operationIdSchema,
+      intentSha256: digestSchema,
+      profileSha256: digestSchema,
+      facadeSha256: digestSchema,
+      createdAt: external_exports.iso.datetime(),
+      confirmAbandonUnknownLaunch: external_exports.literal(true),
+      acceptUnobservedDescendants: external_exports.literal(true),
+      observation: ordinaryLaunchRecoveryObservationSchema,
+      pendingHelperLaunchExcluded: external_exports.literal(true),
+      launchOutcome: external_exports.literal("unknown"),
+      terminationProved: external_exports.literal(false),
+      originalLaunchIdentityVerified: external_exports.literal(false),
+      retainedLaunchAuthority: external_exports.literal(false),
+      designExecutionAuthorized: external_exports.literal(false)
+    }).strict().refine(
+      (value) => !value.observation.otherPowerShellPresent && !value.observation.sameNameProcessPresent,
+      "Unknown-launch abandonment requires absent helper and application samples."
+    );
     closeIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.ordinary-normal-close-intent.v1"),
       operationId: operationIdSchema,
@@ -92040,9 +92663,14 @@ var init_ordinary_launch = __esm({
     MAX_OPERATIONS = 4096;
     MAX_RECORD_BYTES = 8192;
     HISTORICAL_ABANDONMENT_PROFILE_SHA256 = "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314";
+    HISTORICAL_UNKNOWN_LAUNCH = {
+      profileSha256: "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad",
+      facadeSha256: "d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7"
+    };
     OrdinaryLaunchCoordinator = class {
       options;
       verify;
+      observeRecovery;
       runtime;
       retained;
       closeAttempts = /* @__PURE__ */ new Set();
@@ -92051,6 +92679,7 @@ var init_ordinary_launch = __esm({
       constructor(options, dependencies3 = {}) {
         this.options = options;
         this.verify = dependencies3.verifyInstallation ?? verifyOrdinaryLaunchInstallation;
+        this.observeRecovery = dependencies3.observeRecovery ?? observeOrdinaryLaunchRecovery;
       }
       async run(input) {
         const request2 = parseOrdinaryLaunchRequest(input);
@@ -92100,6 +92729,9 @@ var init_ordinary_launch = __esm({
           if (request2.action === "abandon-supervision") {
             return await this.abandon(request2, operation, operations);
           }
+          if (request2.action === "abandon-unknown-launch") {
+            return await this.abandonUnknown(request2, operation, operations);
+          }
           requireValue14(operation === void 0 && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
           requireValue14(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
           const facadeSha256 = digestSchema.parse(await this.verify(this.options));
@@ -92114,7 +92746,7 @@ var init_ordinary_launch = __esm({
             return { ...describe3(request2.operationId), state: "already-running", attemptConsumed: false };
           }
           const root = await controlRootCapability();
-          const parent = await root.openDirectory(join46(controlDataDirectory(), JOURNAL_DIRECTORY));
+          const parent = await root.openDirectory(join47(controlDataDirectory(), JOURNAL_DIRECTORY));
           try {
             await mkdir4(`/proc/self/fd/${parent.handle.fd}/${request2.operationId}`, { mode: 448 });
             this.uncertain = true;
@@ -92123,7 +92755,8 @@ var init_ordinary_launch = __esm({
             await parent.handle.close();
           }
           const intent = {
-            schema: "easyeda-pro-control.ordinary-launch-intent.v1",
+            schema: "easyeda-pro-control.ordinary-launch-intent.v2",
+            dispatchProtocol: "retained-helper-before-intent.v1",
             operationId: request2.operationId,
             profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE),
             facadeSha256,
@@ -92134,7 +92767,7 @@ var init_ordinary_launch = __esm({
           await this.options.assertAllowed();
           const current2 = await inventory();
           requireValue14(
-            current2.length === operations.length + 1 && current2.every((candidate) => candidate.operationId === request2.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
+            current2.length === operations.length + 1 && current2.every((candidate) => candidate.operationId === request2.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
             "Ordinary launch intent or inventory changed before dispatch."
           );
           requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary launch installation changed before dispatch.");
@@ -92148,13 +92781,13 @@ var init_ordinary_launch = __esm({
           return describe3(request2.operationId, { operationId: request2.operationId, intent, launched });
         } catch (error51) {
           if (publishedIntent !== void 0 && !launchInvoked) {
-            const refused = {
+            const refused2 = {
               schema: "easyeda-pro-control.ordinary-not-dispatched.v1",
               operationId: request2.operationId,
               intentSha256: sha256Json(publishedIntent),
               dispatchAttempted: false
             };
-            await publish(request2.operationId, "not-dispatched.json", refused);
+            await publish(request2.operationId, "not-dispatched.json", refused2);
             this.uncertain = false;
           }
           throw error51;
@@ -92328,6 +92961,55 @@ var init_ordinary_launch = __esm({
         await publish(request2.operationId, "abandonment.json", abandoned);
         this.uncertain = false;
         return describe3(request2.operationId, { ...operation, abandoned });
+      }
+      async abandonUnknown(request2, operation, operations) {
+        requireValue14(
+          operation?.intent !== void 0 && operation.launched === void 0 && !allowsNextLaunch(operation),
+          "Unknown-launch abandonment requires an unresolved intent-only attempt."
+        );
+        requireValue14(
+          this.retained === void 0 && this.runtime === void 0,
+          "Unknown-launch abandonment requires a fresh coordinator without an allocated runtime."
+        );
+        requireValue14(request2.expectedIntentSha256 === sha256Json(operation.intent), "Unknown-launch abandonment intent digest differs.");
+        requireValue14(hasHelperBeforeIntentProtocol(operation.intent), "Unknown-launch historical dispatch protocol is not reviewed.");
+        const facadeSha256 = digestSchema.parse(await this.verify(this.options));
+        requireValue14(
+          operation.intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1" || operation.intent.facadeSha256 === facadeSha256,
+          "Unknown-launch v2 producer differs from the currently reviewed facade."
+        );
+        await this.options.assertAllowed();
+        const observation2 = ordinaryLaunchRecoveryObservationSchema.parse(await this.observeRecovery(this.options));
+        requireValue14(
+          !observation2.otherPowerShellPresent && !observation2.sameNameProcessPresent,
+          "Unknown-launch abandonment requires absent other PowerShell and same-name application samples."
+        );
+        await this.options.assertAllowed();
+        requireValue14(await this.verify(this.options) === facadeSha256, "Unknown-launch recovery installation changed.");
+        await this.options.assertAllowed();
+        requireValue14(canonicalJson(await inventory()) === canonicalJson(operations), "Unknown-launch recovery journal changed.");
+        requireValue14(this.retained === void 0 && this.runtime === void 0, "Unknown-launch recovery runtime changed.");
+        const unknownAbandoned = {
+          schema: "easyeda-pro-control.ordinary-unknown-launch-abandoned.v1",
+          operationId: request2.operationId,
+          intentSha256: request2.expectedIntentSha256,
+          profileSha256: operation.intent.profileSha256,
+          facadeSha256,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          confirmAbandonUnknownLaunch: true,
+          acceptUnobservedDescendants: true,
+          observation: observation2,
+          pendingHelperLaunchExcluded: true,
+          launchOutcome: "unknown",
+          terminationProved: false,
+          originalLaunchIdentityVerified: false,
+          retainedLaunchAuthority: false,
+          designExecutionAuthorized: false
+        };
+        this.uncertain = true;
+        await publish(request2.operationId, "unknown-abandonment.json", unknownAbandoned);
+        this.uncertain = false;
+        return describe3(request2.operationId, { ...operation, unknownAbandoned });
       }
     };
   }
@@ -93256,9 +93938,9 @@ var init_current_pcb_geometry = __esm({
 });
 
 // server/src/current-disposable-open-profile.ts
-import { createHash as createHash30 } from "node:crypto";
-import { constants as constants18 } from "node:fs";
-import { lstat as lstat26, open as open23, realpath as realpath17 } from "node:fs/promises";
+import { createHash as createHash32 } from "node:crypto";
+import { constants as constants20 } from "node:fs";
+import { lstat as lstat28, open as open25, realpath as realpath19 } from "node:fs/promises";
 import { isAbsolute as isAbsolute20, resolve as resolve12 } from "node:path";
 function requirePinned(condition) {
   if (!condition) {
@@ -93266,16 +93948,16 @@ function requirePinned(condition) {
   }
 }
 async function verifyCurrentDisposableOpenImplementation(assetsRoot) {
-  requirePinned(isAbsolute20(assetsRoot) && await realpath17(assetsRoot) === assetsRoot);
+  requirePinned(isAbsolute20(assetsRoot) && await realpath19(assetsRoot) === assetsRoot);
   await verifyCurrentUiImplementation(assetsRoot);
   for (const pin4 of CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files) {
     const path5 = resolve12(assetsRoot, pin4.relativePath);
-    requirePinned(await realpath17(path5) === path5);
-    const handle = await open23(path5, constants18.O_RDONLY | constants18.O_NOFOLLOW | constants18.O_NONBLOCK);
+    requirePinned(await realpath19(path5) === path5);
+    const handle = await open25(path5, constants20.O_RDONLY | constants20.O_NOFOLLOW | constants20.O_NONBLOCK);
     try {
       const before = await handle.stat({ bigint: true });
       requirePinned(before.isFile() && before.size === BigInt(pin4.bytes));
-      const hash35 = createHash30("sha256");
+      const hash35 = createHash32("sha256");
       let bytes2 = 0;
       for await (const chunk of handle.createReadStream({ autoClose: false })) {
         requirePinned(Buffer.isBuffer(chunk));
@@ -93283,8 +93965,8 @@ async function verifyCurrentDisposableOpenImplementation(assetsRoot) {
         requirePinned(bytes2 <= pin4.bytes);
         hash35.update(chunk);
       }
-      const after = await handle.stat({ bigint: true }), named = await lstat26(path5, { bigint: true });
-      requirePinned(bytes2 === pin4.bytes && hash35.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath17(path5) === path5);
+      const after = await handle.stat({ bigint: true }), named = await lstat28(path5, { bigint: true });
+      requirePinned(bytes2 === pin4.bytes && hash35.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath19(path5) === path5);
     } finally {
       await handle.close();
     }
@@ -93994,7 +94676,7 @@ var offline_control_exports = {};
 __export(offline_control_exports, {
   startOfflineControlServer: () => startOfflineControlServer
 });
-import process8 from "node:process";
+import process9 from "node:process";
 function offlineResult(value) {
   const encoded = JSON.stringify(value);
   if (Buffer.byteLength(encoded) > 512 * 1024) {
@@ -94082,23 +94764,23 @@ async function startOfflineControlServer(code) {
     try {
       await close();
     } catch {
-      process8.stderr.write("EasyEDA offline control shutdown was incomplete.\n");
+      process9.stderr.write("EasyEDA offline control shutdown was incomplete.\n");
       exitCode = 1;
     }
-    process8.exit(exitCode);
+    process9.exit(exitCode);
   };
   const scheduleShutdown2 = () => {
     void closeAndExit();
   };
-  process8.once("SIGINT", scheduleShutdown2);
-  process8.once("SIGTERM", scheduleShutdown2);
-  process8.stdin.once("end", scheduleShutdown2);
+  process9.once("SIGINT", scheduleShutdown2);
+  process9.once("SIGTERM", scheduleShutdown2);
+  process9.stdin.once("end", scheduleShutdown2);
   try {
     await server2.connect(new StdioServerTransport());
   } catch (error51) {
-    process8.removeListener("SIGINT", scheduleShutdown2);
-    process8.removeListener("SIGTERM", scheduleShutdown2);
-    process8.stdin.removeListener("end", scheduleShutdown2);
+    process9.removeListener("SIGINT", scheduleShutdown2);
+    process9.removeListener("SIGTERM", scheduleShutdown2);
+    process9.stdin.removeListener("end", scheduleShutdown2);
     await close();
     throw error51;
   }
@@ -94136,15 +94818,15 @@ var init_legacy_recovery_family = __esm({
 
 // server/src/engine.ts
 import { randomUUID as randomUUID6 } from "node:crypto";
-import { dirname as dirname17, isAbsolute as isAbsolute21, join as join47 } from "node:path";
+import { dirname as dirname17, isAbsolute as isAbsolute21, join as join48 } from "node:path";
 async function checkpointAccessPolicy(source4) {
   const expectedSource = normalizeEasyedaProjectPath(source4);
   return {
     expectedSource,
     controlRoot: await controlRootCapability(),
     artifactRoots: [
-      join47(dirname17(expectedSource), "backups"),
-      join47(controlDataDirectory(), "checkpoints")
+      join48(dirname17(expectedSource), "backups"),
+      join48(controlDataDirectory(), "checkpoints")
     ]
   };
 }
@@ -98262,7 +98944,7 @@ var init_design_execute = __esm({
 });
 
 // server/src/check-execution.ts
-import { join as join48 } from "node:path";
+import { join as join49 } from "node:path";
 function binding(context3) {
   return nativeRuleCheckBindingSchema.parse({
     projectUuid: context3.project.uuid ?? context3.project.projectUuid,
@@ -98460,7 +99142,7 @@ var init_check_execution = __esm({
         await this.runtime(plan2, plan2.expectedContext);
         const expectedContext = structuredClone(plan2.expectedContext);
         const context3 = structuredClone(await this.engine.assertContext(expectedContext));
-        const checkpointDirectory = join48(controlDataDirectory(), "checkpoints");
+        const checkpointDirectory = join49(controlDataDirectory(), "checkpoints");
         const checkpoint = checkpointSchema5.parse(await this.engine.checkpoint({ source: context3.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
         const operationId3 = newOperationId();
         const journal = {
@@ -98629,7 +99311,7 @@ var init_check_execution = __esm({
 });
 
 // server/src/project-open-execution.ts
-import { join as join49 } from "node:path";
+import { join as join50 } from "node:path";
 function failureCategory(error51) {
   try {
     if (typeof error51 !== "object" || error51 === null) {
@@ -98642,7 +99324,7 @@ function failureCategory(error51) {
   }
 }
 async function checkpointPolicy(source4) {
-  return { expectedSource: source4, artifactRoots: [join49(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
+  return { expectedSource: source4, artifactRoots: [join50(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
 function targetContext(target5) {
   return { project: { uuid: target5.projectUuid, path: target5.projectPath }, document: { uuid: target5.documentUuid, documentType: target5.documentType } };
@@ -98824,7 +99506,7 @@ var init_project_open_execution = __esm({
           { checkpointSha256: journal.preCheckpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid }
         );
         const checkpoint = await this.services.createCheckpoint(
-          { source: journal.plan.target.projectPath, outputDir: join49(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
+          { source: journal.plan.target.projectPath, outputDir: join50(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         );
         const after = await this.readHistory(checkpoint, journal.plan.target);
@@ -98912,7 +99594,7 @@ var init_project_open_execution = __esm({
           throw new Error("Resolve the incomplete transaction before opening another target.");
         }
         await this.runtime(input.expectedFingerprint);
-        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join49(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
+        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join50(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
         const before = await this.readHistory(checkpoint, target5);
         const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target5.projectUuid });
         const context3 = targetContext(target5);
@@ -99905,393 +100587,6 @@ var init_tool_operation_envelope = __esm({
   }
 });
 
-// server/src/windows-runtime.ts
-import { createHash as createHash31 } from "node:crypto";
-import { constants as constants19 } from "node:fs";
-import { lstat as lstat27, open as open24, realpath as realpath18 } from "node:fs/promises";
-import path2 from "node:path";
-import process9 from "node:process";
-function canonicalHostPath(value) {
-  if (!path2.posix.isAbsolute(value) || path2.posix.normalize(value) !== value || value.includes("\\") || value.includes('"')) {
-    throw new Error("Windows runtime requires an absolute canonical host path.");
-  }
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.codePointAt(index);
-    if (code !== void 0 && (code < 32 || code === 127)) {
-      throw new Error("Windows runtime paths cannot contain control characters.");
-    }
-  }
-  return value;
-}
-function mountedWindowsPath(value) {
-  const match = /^\/mnt\/([a-z])\/(.+)$/u.exec(canonicalHostPath(value));
-  const drive = match?.[1];
-  const suffix = match?.[2];
-  if (drive === void 0 || suffix === void 0 || suffix.includes(":")) {
-    throw new Error("Windows runtime requires a canonical mounted Windows drive path.");
-  }
-  return `${drive.toUpperCase()}:\\${suffix.replaceAll("/", "\\")}`;
-}
-function deriveWindowsRuntimePaths(options) {
-  const assetsRoot = canonicalHostPath(options.assetsRoot);
-  mountedWindowsPath(assetsRoot);
-  if (!assetsRoot.endsWith("/resources/app/assets")) {
-    throw new Error("EasyEDA assets must belong to the reviewed installed resources/app/assets tree.");
-  }
-  const executablePath = path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe");
-  const executableWindowsPath = mountedWindowsPath(executablePath);
-  const helperPath = path2.posix.join(canonicalHostPath(options.pluginRoot), "scripts/windows-authority.ps1");
-  let helperWindowsPath;
-  if (/^\/mnt\/[a-z]\//u.test(helperPath)) {
-    helperWindowsPath = mountedWindowsPath(helperPath);
-  } else {
-    const distribution = options.wslDistribution ?? process9.env["WSL_DISTRO_NAME"];
-    if (distribution === void 0 || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/u.test(distribution)) {
-      throw new Error("A valid WSL distribution profile is required for the reviewed helper UNC path.");
-    }
-    helperWindowsPath = `\\\\wsl.localhost\\${distribution}${helperPath.replaceAll("/", "\\")}`;
-  }
-  const powershellExecutable = options.powershellExecutable ?? "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
-  mountedWindowsPath(powershellExecutable);
-  if (!powershellExecutable.endsWith("/powershell.exe")) {
-    throw new Error("Windows authority needs the configured PowerShell executable.");
-  }
-  return { assetsRoot, executablePath, executableWindowsPath, helperPath, helperWindowsPath, powershellExecutable };
-}
-async function hashInstalledExecutable(executablePath, assetsRoot) {
-  const directory = await lstat27(assetsRoot);
-  if (!directory.isDirectory() || directory.isSymbolicLink() || await realpath18(assetsRoot) !== assetsRoot || await realpath18(executablePath) !== executablePath || path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe") !== executablePath) {
-    throw new Error("EasyEDA executable and canonical installed assets do not agree.");
-  }
-  const handle = await open24(executablePath, constants19.O_RDONLY | constants19.O_NOFOLLOW);
-  try {
-    const before = await handle.stat();
-    if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
-      throw new Error("EasyEDA executable is not a bounded single-link regular file.");
-    }
-    const digest6 = createHash31("sha256");
-    for await (const chunk of handle.createReadStream({ autoClose: false })) {
-      if (!Buffer.isBuffer(chunk)) {
-        throw new TypeError("Executable hashing returned non-binary data.");
-      }
-      digest6.update(chunk);
-    }
-    const after = await handle.stat();
-    const named = await lstat27(executablePath);
-    for (const candidate of [after, named]) {
-      if (!candidate.isFile() || candidate.nlink !== 1 || candidate.dev !== before.dev || candidate.ino !== before.ino || candidate.size !== before.size || candidate.mtimeMs !== before.mtimeMs || candidate.ctimeMs !== before.ctimeMs) {
-        throw new Error("EasyEDA executable changed during reviewed identity capture.");
-      }
-    }
-    if (await realpath18(executablePath) !== executablePath || await realpath18(assetsRoot) !== assetsRoot) {
-      throw new Error("EasyEDA installed paths changed during identity capture.");
-    }
-    return digest6.digest("hex");
-  } finally {
-    await handle.close();
-  }
-}
-function buildWindowsProcessProbeCode(session, probe) {
-  if (probe.schema !== "easyeda-pro-control.windows-process-probe.v1" || !HASH14.test(probe.bindingSha256) || !HASH14.test(probe.nonce) || !Number.isSafeInteger(probe.port) || probe.port <= 0 || probe.port > 65535) {
-    throw new Error("Windows process probe has an invalid fixed binding.");
-  }
-  const sessionSha256 = sha256Json(session);
-  return `return await new Promise((resolve, reject) => {
-    const expectedNonce = ${JSON.stringify(probe.nonce)};
-    const socketId = "easyeda-control-authority-probe-" + expectedNonce;
-    const timerId = socketId + "-deadline";
-    const socket = eda.sys_WebSocket;
-    const timers = eda.sys_Timer;
-    if (!socket || typeof socket.register !== "function" || typeof socket.close !== "function" || !timers || typeof timers.setTimeoutTimer !== "function" || typeof timers.clearTimeoutTimer !== "function") {
-      reject(new Error("WINDOWS_PROBE_NATIVE_API_UNAVAILABLE")); return;
-    }
-    let settled = false;
-    let timerInstalled = false;
-    let socketAttempted = false;
-    let opened = false;
-    const finish = (accepted) => {
-      if (settled) return;
-      settled = true;
-      let timerCleared = !timerInstalled;
-      let socketClosed = !socketAttempted;
-      try { if (timerInstalled) timerCleared = timers.clearTimeoutTimer(timerId) === true; } catch { timerCleared = false; }
-      try { if (socketAttempted) socketClosed = socket.close(socketId, 1000, "ownership-probe-complete") === undefined; } catch { socketClosed = false; }
-      if (!accepted || !opened || !timerCleared || !socketClosed) { reject(new Error("WINDOWS_PROBE_NOT_PROVEN")); return; }
-      resolve({schema:${JSON.stringify(PROBE_RESULT_SCHEMA)},bindingSha256:${JSON.stringify(probe.bindingSha256)},sessionSha256:${JSON.stringify(sessionSha256)},ok:true,socketClosed:true,timerCleared:true});
-    };
-    try {
-      timerInstalled = timers.setTimeoutTimer(timerId, 9000, () => finish(false)) === true;
-      if (!timerInstalled) { finish(false); return; }
-      socketAttempted = true;
-      socket.register(socketId, ${JSON.stringify(`ws://127.0.0.1:${probe.port}/${probe.nonce}`)}, (event) => {
-        if (settled) return;
-        const data = typeof event === "string" ? event : event && typeof event === "object" ? event.data : undefined;
-        if (typeof data !== "string" || data.length > 128) { finish(false); return; }
-        try {
-          const message = JSON.parse(data);
-          const accepted = message !== null && typeof message === "object" && !Array.isArray(message) && Object.keys(message).sort().join(",") === "kind,nonce" && message.kind === "easyeda-authority-probe" && message.nonce === expectedNonce;
-          finish(accepted);
-        } catch { finish(false); }
-      }, () => { if (!settled) opened = true; });
-    } catch { finish(false); }
-  });`;
-}
-function assertCurrentSession(upstream2, session) {
-  const lifecycle = upstream2.bridgeSessionLifecycle();
-  const active2 = lifecycle?.activeSession;
-  const binding2 = upstream2.currentAuthenticatedBridgeDispatchBinding();
-  if (lifecycle === void 0 || active2 === void 0 || active2 === null || binding2 === void 0 || lifecycle.gatewayInstanceId !== session.gatewayInstanceId || binding2.gatewayInstanceId !== session.gatewayInstanceId || binding2.sessionId !== session.sessionId || binding2.sessionSequence !== session.sequence || canonicalJson({ ...active2, gatewayInstanceId: lifecycle.gatewayInstanceId }) !== canonicalJson(session)) {
-    throw new Error("Windows process probe requires the exact current authenticated session and dispatch lease.");
-  }
-}
-async function performWindowsAuthenticatedProcessProbe(upstream2, session, probe) {
-  assertCurrentSession(upstream2, session);
-  const binding2 = upstream2.currentAuthenticatedBridgeDispatchBinding();
-  const code = buildWindowsProcessProbeCode(session, probe);
-  const result = await upstream2.callTool("easyeda_execute", { code, timeoutMs: 1e4, confirmWrite: true }, 12e3, binding2);
-  assertCurrentSession(upstream2, session);
-  const payload = extractToolPayload(result);
-  const expected3 = { schema: PROBE_RESULT_SCHEMA, bindingSha256: probe.bindingSha256, sessionSha256: sha256Json(session), ok: true, socketClosed: true, timerCleared: true };
-  if (canonicalJson(payload) !== canonicalJson(expected3)) {
-    throw new Error("Windows process probe did not return its exact nonce-free cleanup proof.");
-  }
-}
-var PROBE_RESULT_SCHEMA, HASH14, WindowsControlRuntime;
-var init_windows_runtime = __esm({
-  "server/src/windows-runtime.ts"() {
-    init_core3();
-    init_windows_authority();
-    PROBE_RESULT_SCHEMA = "easyeda-pro-control.windows-process-probe-result.v1";
-    HASH14 = /^[a-f0-9]{64}$/u;
-    WindowsControlRuntime = class {
-      options;
-      dependencies;
-      paths;
-      supervisor;
-      currentLaunch = null;
-      clockLaunches = /* @__PURE__ */ new WeakMap();
-      state = "not-launched";
-      executableSha256 = null;
-      closedSessionLaunches = /* @__PURE__ */ new Map();
-      constructor(options, dependencies3 = {}) {
-        if (!HASH14.test(options.reviewedExecutionScopeSha256)) {
-          throw new Error("Reviewed Windows execution scope identity is missing.");
-        }
-        if (options.expectedExecutableSha256 !== void 0 && !HASH14.test(options.expectedExecutableSha256)) {
-          throw new Error("Reviewed Windows executable identity is invalid.");
-        }
-        if (options.expectedHelperSha256 !== void 0 && !HASH14.test(options.expectedHelperSha256)) {
-          throw new Error("Reviewed Windows helper identity is invalid.");
-        }
-        this.options = options;
-        this.dependencies = dependencies3;
-        this.paths = deriveWindowsRuntimePaths(options);
-      }
-      /** Explicit launch only; constructor/status/capture never start an application. */
-      async launch() {
-        if (this.state === "released" || this.state === "launching" || this.state === "launch-unknown") {
-          throw new Error("Windows runtime cannot start another application from its current state.");
-        }
-        this.state = "launching";
-        try {
-          const supervisor = await this.ensureSupervisor();
-          const launch = await supervisor.launch({ confirmLaunch: true });
-          this.currentLaunch = structuredClone(launch);
-          this.state = "owned";
-          const returned = structuredClone(launch);
-          this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
-          return returned;
-        } catch (error51) {
-          this.state = "launch-unknown";
-          throw error51;
-        }
-      }
-      async ensureSupervisor() {
-        if (this.supervisor !== void 0) {
-          return this.supervisor;
-        }
-        const expectedState = this.state;
-        const hashExecutable2 = this.dependencies.hashExecutable ?? hashInstalledExecutable;
-        const executableSha256 = await hashExecutable2(this.paths.executablePath, this.paths.assetsRoot);
-        if (!HASH14.test(executableSha256)) {
-          throw new Error("Installed EasyEDA executable identity is invalid.");
-        }
-        if (this.options.expectedExecutableSha256 !== void 0 && executableSha256 !== this.options.expectedExecutableSha256) {
-          throw new Error("Installed EasyEDA executable differs from the reviewed launch profile.");
-        }
-        this.executableSha256 = executableSha256;
-        if (this.state !== expectedState) {
-          throw new Error("Windows runtime changed before helper startup.");
-        }
-        const start = this.dependencies.startSupervisor ?? startWindowsAuthoritySupervisor;
-        this.supervisor = await start({
-          powershellExecutable: this.paths.powershellExecutable,
-          helperPath: this.paths.helperPath,
-          helperWindowsPath: this.paths.helperWindowsPath,
-          expectedExecutable: this.paths.executableWindowsPath,
-          expectedExecutableSha256: executableSha256,
-          ...this.options.expectedHelperSha256 === void 0 ? {} : { expectedHelperSha256: this.options.expectedHelperSha256 },
-          reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256,
-          performAuthenticatedProcessProbe: (session, probe) => performWindowsAuthenticatedProcessProbe(this.options.upstream, session, probe)
-        });
-        if (this.state !== expectedState) {
-          const acquired = this.supervisor;
-          this.supervisor = void 0;
-          await acquired.release();
-          throw new Error("Windows runtime changed during helper startup.");
-        }
-        return this.supervisor;
-      }
-      /** Starts only the proof helper, not EasyEDA. Existing instances are observed
-       * without adoption, close, bridge calls or a consumed application attempt.
-       */
-      async observeExistingApplication() {
-        if (this.state !== "not-launched" && this.state !== "owned") {
-          throw new Error("Windows runtime cannot observe an existing application from its current state.");
-        }
-        const previousState = this.state;
-        const supervisor = await this.ensureSupervisor();
-        if (supervisor.observeExistingApplication === void 0) {
-          throw new Error("Existing application observation is unavailable.");
-        }
-        const observation2 = await supervisor.observeExistingApplication();
-        if (this.supervisor !== supervisor || this.state !== previousState || typeof observation2.running !== "boolean") {
-          throw new Error("Windows runtime changed during existing application observation.");
-        }
-        return observation2;
-      }
-      /** Exact original runtime return only. This reads a clock fact, never launches. */
-      async clockObservationForLaunch(launch) {
-        const slot = this.clockLaunches.get(launch);
-        const current2 = () => {
-          if (slot === void 0 || this.requireSupervisor() !== slot.supervisor || canonicalJson(launch) !== slot.snapshot || canonicalJson(this.currentLaunch) !== slot.snapshot) {
-            throw new Error("Runtime clock lookup requires the unchanged original current launch.");
-          }
-        };
-        current2();
-        if (slot === void 0) {
-          throw new Error("Original runtime clock launch is missing.");
-        }
-        const observation2 = await windowsClockObservationForResult(slot.original, "launch");
-        current2();
-        return observation2;
-      }
-      requireSupervisor() {
-        if (this.state !== "owned" || this.supervisor === void 0 || this.currentLaunch === null) {
-          throw new Error("Windows authority requires the explicitly launched supervised runtime.");
-        }
-        return this.supervisor;
-      }
-      capture(input) {
-        return this.requireSupervisor().capture(input);
-      }
-      proveTerminated(input) {
-        return this.requireSupervisor().proveTerminated(input);
-      }
-      releaseCapture(evidence) {
-        return this.requireSupervisor().releaseCapture(evidence);
-      }
-      /** Internal coordinator-only preparation; never starts a helper or application. */
-      async prepareClosedSessionClose(input) {
-        const bound2 = structuredClone(input);
-        const supervisor = this.requireSupervisor();
-        const launch = structuredClone(this.currentLaunch);
-        if (launch === null) {
-          throw new Error("Closed-session launch identity is missing.");
-        }
-        const intent = await supervisor.prepareClosedSessionClose({ ...bound2, launch });
-        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
-          throw new Error("Windows runtime ownership changed during closed-session preparation.");
-        }
-        this.closedSessionLaunches.set(intent.closeIntentSha256, { intent: structuredClone(intent), launch });
-        return intent;
-      }
-      closedSessionLaunch(intent) {
-        this.requireSupervisor();
-        const retained = this.closedSessionLaunches.get(intent.closeIntentSha256);
-        if (retained === void 0 || canonicalJson(retained.intent) !== canonicalJson(intent)) {
-          throw new Error("Closed-session intent was not prepared by this Windows runtime.");
-        }
-        return structuredClone(retained.launch);
-      }
-      requestClosedSessionNormalClose(input) {
-        const bound2 = structuredClone(input);
-        const launch = this.closedSessionLaunch(bound2.intent);
-        return this.requireSupervisor().requestClosedSessionNormalClose({ ...bound2, launch });
-      }
-      proveClosedSession(input) {
-        const bound2 = structuredClone(input);
-        const launch = this.closedSessionLaunch(bound2.intent);
-        return this.requireSupervisor().proveClosedSession({ ...bound2, launch });
-      }
-      async probeClosedSessionTermination(input) {
-        const bound2 = structuredClone(input), callerText = canonicalJson(input);
-        const launch = this.closedSessionLaunch(bound2.intent), supervisor = this.requireSupervisor();
-        const observation2 = await supervisor.probeClosedSessionTermination({ ...bound2, launch });
-        if (this.requireSupervisor() !== supervisor || canonicalJson(input) !== callerText || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || canonicalJson(this.closedSessionLaunch(bound2.intent)) !== canonicalJson(launch)) {
-          throw new Error("Windows runtime ownership changed during the closed-session probe.");
-        }
-        assertCurrentClosedSessionTerminationObservation(observation2);
-        return observation2;
-      }
-      async normalClose(windowHandle) {
-        const supervisor = this.requireSupervisor();
-        const launch = structuredClone(this.currentLaunch);
-        if (launch === null) {
-          throw new Error("Windows application launch identity is missing.");
-        }
-        await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle, launch });
-        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
-          throw new Error("Retained launch identity changed during normal close; do not repeat close.");
-        }
-      }
-      /** Read-only bounded window observation from the retained helper, without
-       * Computer Use, title disclosure, focus changes or launch adoption.
-       */
-      async observeApplicationWindow() {
-        const launch = structuredClone(this.currentLaunch), supervisor = this.requireSupervisor();
-        if (launch === null || supervisor.observeApplicationWindow === void 0) {
-          throw new Error("Retained application window observation is unavailable.");
-        }
-        const observation2 = await supervisor.observeApplicationWindow(launch);
-        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || Object.keys(observation2).toSorted().join(",") !== "helperInstance,hwnd,jobId,outcome" || observation2.jobId !== launch.jobId || observation2.helperInstance !== launch.helperInstance || observation2.outcome !== "available" && observation2.outcome !== "unavailable" && observation2.outcome !== "ambiguous" || (observation2.outcome === "available" ? typeof observation2.hwnd !== "string" || !/^[1-9]\d{0,18}$/u.test(observation2.hwnd) : observation2.hwnd !== null)) {
-          throw new Error("Retained launch identity or window changed during application window observation.");
-        }
-        return observation2;
-      }
-      /** Read only: a true result requires this helper's original root and Job to
-       * have exited. It never requests closure or reacquires lost process handles.
-       */
-      async observeLaunchTermination() {
-        const supervisor = this.requireSupervisor();
-        const launch = structuredClone(this.currentLaunch);
-        if (launch === null || supervisor.observeLaunchTermination === void 0) {
-          throw new Error("Retained launch termination observation is unavailable.");
-        }
-        const observation2 = await supervisor.observeLaunchTermination(launch);
-        if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) || observation2.jobId !== launch.jobId || observation2.helperInstance !== launch.helperInstance || typeof observation2.terminated !== "boolean") {
-          throw new Error("Retained launch identity changed during termination observation.");
-        }
-        return observation2;
-      }
-      async release() {
-        if (this.state === "launching") {
-          throw new Error("Cannot release Windows proof authority during launch.");
-        }
-        this.state = "released";
-        this.currentLaunch = null;
-        this.closedSessionLaunches.clear();
-        const supervisor = this.supervisor;
-        this.supervisor = void 0;
-        await supervisor?.release();
-      }
-      status() {
-        return { state: this.state, launch: structuredClone(this.currentLaunch), executableSha256: this.executableSha256, reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256 };
-      }
-    };
-  }
-});
-
 // server/src/closed-symbol-operation-request.ts
 function assertClosedSymbolOperationValidated() {
   throw new Error("Ordinary closed-symbol metadata execution awaits successful disposable full-lifecycle validation.");
@@ -100331,7 +100626,7 @@ var init_closed_symbol_operation_request = __esm({
 });
 
 // server/src/closed-symbol-failure-diagnostic.ts
-import { createHash as createHash32 } from "node:crypto";
+import { createHash as createHash33 } from "node:crypto";
 import { types } from "node:util";
 function own(value, key) {
   if (value === null || typeof value !== "object" || types.isProxy(value)) {
@@ -100367,7 +100662,7 @@ function closedSymbolFailureDiagnostic(error51, stage, lastSuccessfulStage) {
     stage,
     lastSuccessfulStage: typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage) ? lastSuccessfulStage : null,
     errorCode: errorCode6,
-    messageSha256: message === void 0 ? null : createHash32("sha256").update(message).digest("hex"),
+    messageSha256: message === void 0 ? null : createHash33("sha256").update(message).digest("hex"),
     mismatchPaths: Object.freeze(errorCode6 === "RUNTIME_FINGERPRINT_MISMATCH" ? selectedPaths(error51) : [])
   });
 }
@@ -100843,38 +101138,38 @@ var init_closed_symbol_operation_tool = __esm({
 });
 
 // server/src/windows-native-ui.ts
-import { spawn as spawn5 } from "node:child_process";
-import { createHash as createHash33, randomUUID as randomUUID7 } from "node:crypto";
-import { constants as constants20 } from "node:fs";
-import { lstat as lstat28, open as open25, readFile as readFile5, realpath as realpath19 } from "node:fs/promises";
+import { spawn as spawn6 } from "node:child_process";
+import { createHash as createHash34, randomUUID as randomUUID7 } from "node:crypto";
+import { constants as constants21 } from "node:fs";
+import { lstat as lstat29, open as open26, readFile as readFile5, realpath as realpath20 } from "node:fs/promises";
 import path3 from "node:path";
 function nativeUiFailure(code, dispatched) {
   return Object.assign(new Error(code), { name: "NativeUiFailureError", dispatched });
 }
-async function verifyHelper(helperPath) {
-  const before = await lstat28(helperPath);
-  if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size === 0 || before.size > 128 * 1024 || await realpath19(helperPath) !== helperPath) {
+async function verifyHelper2(helperPath) {
+  const before = await lstat29(helperPath);
+  if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size === 0 || before.size > 128 * 1024 || await realpath20(helperPath) !== helperPath) {
     throw new Error("Native UI helper is not the canonical bounded packaged file.");
   }
 }
 async function hashExecutable(executablePath) {
-  if (await realpath19(executablePath) !== executablePath) {
+  if (await realpath20(executablePath) !== executablePath) {
     throw nativeUiFailure("native-ui-installed-path-not-canonical", false);
   }
-  const file3 = await open25(executablePath, constants20.O_RDONLY | constants20.O_NOFOLLOW);
+  const file3 = await open26(executablePath, constants21.O_RDONLY | constants21.O_NOFOLLOW);
   try {
     const before = await file3.stat();
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash35 = createHash33("sha256");
+    const hash35 = createHash34("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
       }
       hash35.update(chunk);
     }
-    for (const after of [await file3.stat(), await lstat28(executablePath)]) {
+    for (const after of [await file3.stat(), await lstat29(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
@@ -100886,7 +101181,7 @@ async function hashExecutable(executablePath) {
 }
 function invokeNativeUiHelper(input) {
   return new Promise((resolve19, reject) => {
-    const child = spawn5(input.powershellExecutable, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", input.helperWindowsPath], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    const child = spawn6(input.powershellExecutable, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", input.helperWindowsPath], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     const chunks = [];
     let size2 = 0;
     let failure2;
@@ -101039,9 +101334,9 @@ var init_windows_native_ui = __esm({
         const paths = deriveWindowsRuntimePaths(this.options);
         const helperPath = path3.join(this.options.pluginRoot, "scripts/native-ui-controller.ps1");
         const legacyHelperPath = path3.join(this.options.pluginRoot, "scripts/native-ui.ps1");
-        await (this.dependencies.verifyHelper ?? verifyHelper)(helperPath);
-        await (this.dependencies.verifyHelper ?? verifyHelper)(legacyHelperPath);
-        const legacySha256 = createHash33("sha256").update(await readFile5(legacyHelperPath)).digest("hex");
+        await (this.dependencies.verifyHelper ?? verifyHelper2)(helperPath);
+        await (this.dependencies.verifyHelper ?? verifyHelper2)(legacyHelperPath);
+        const legacySha256 = createHash34("sha256").update(await readFile5(legacyHelperPath)).digest("hex");
         const executableSha256 = runtime.state === "owned" ? runtime.executableSha256 : await (this.dependencies.hashExecutable ?? hashExecutable)(paths.executablePath);
         if (executableSha256 === null || !/^[a-f0-9]{64}$/u.test(executableSha256)) {
           throw nativeUiFailure("native-ui-installed-executable-invalid", false);
@@ -104283,7 +104578,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes14, createHash: createHash42 } = __require("crypto");
+    var { randomBytes: randomBytes14, createHash: createHash43 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -104951,7 +105246,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest6 = createHash42("sha1").update(key + GUID).digest("base64");
+        const digest6 = createHash43("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest6) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -105232,7 +105527,7 @@ var require_stream = __commonJS({
       };
       duplex._final = function(callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open33() {
+          ws.once("open", function open34() {
             duplex._final(callback);
           });
           return;
@@ -105253,7 +105548,7 @@ var require_stream = __commonJS({
       };
       duplex._write = function(chunk, encoding, callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open33() {
+          ws.once("open", function open34() {
             duplex._write(chunk, encoding, callback);
           });
           return;
@@ -105320,7 +105615,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash42 } = __require("crypto");
+    var { createHash: createHash43 } = __require("crypto");
     var extension3 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -105627,7 +105922,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest6 = createHash42("sha1").update(key + GUID).digest("base64");
+        const digest6 = createHash43("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -105998,7 +106293,7 @@ var init_backend_listener_authority = __esm({
 
 // server/src/authenticated-bridge-gateway.ts
 import {
-  createHash as createHash34,
+  createHash as createHash35,
   createHmac,
   randomBytes as randomBytes10,
   timingSafeEqual
@@ -106345,7 +106640,7 @@ var init_authenticated_bridge_gateway = __esm({
         if (!/^i[A-Za-z0-9_-]{43}$/u.test(options.expectedAuthenticatedIndexBuildId)) {
           throw new Error("The expected authenticated bridge build ID is invalid.");
         }
-        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash34("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
+        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash35("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
           throw new Error(
             "The expected authenticated bridge credential epoch does not match the configured key."
           );
@@ -106773,7 +107068,7 @@ var init_authenticated_bridge_gateway = __esm({
         );
         context3.session = {
           authenticatedAtEpochMs: this.#now(),
-          authenticationReceiptSha256: createHash34("sha256").update(serverReceipt, "utf8").digest("hex"),
+          authenticationReceiptSha256: createHash35("sha256").update(serverReceipt, "utf8").digest("hex"),
           sequence: this.#sessionSequence,
           sessionId
         };
@@ -107022,10 +107317,10 @@ var init_authenticated_bridge_gateway = __esm({
 });
 
 // server/src/authenticated-bridge-build-identity.ts
-import { createHash as createHash35 } from "node:crypto";
+import { createHash as createHash36 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
-import { lstat as lstat29, open as open26 } from "node:fs/promises";
-import { basename as basename20, dirname as dirname18, join as join50 } from "node:path";
+import { lstat as lstat30, open as open27 } from "node:fs/promises";
+import { basename as basename20, dirname as dirname18, join as join51 } from "node:path";
 import process11 from "node:process";
 function isRecord5(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -107045,12 +107340,12 @@ function assertPrivateOwnedDirectory(stat2, label) {
 }
 async function readStablePrivateChildFile(parent, name6, maximumBytes, label) {
   const descriptorPath = `/proc/self/fd/${parent.handle.fd}/${name6}`;
-  const before = await lstat29(descriptorPath);
+  const before = await lstat30(descriptorPath);
   if (before.isSymbolicLink() || before.size > maximumBytes) {
     throw new Error(`${label} is not a bounded regular file.`);
   }
   assertPrivateOwnedFile(before, label);
-  const handle = await open26(
+  const handle = await open27(
     descriptorPath,
     fsConstants6.O_RDONLY | fsConstants6.O_NOFOLLOW
   );
@@ -107065,7 +107360,7 @@ async function readStablePrivateChildFile(parent, name6, maximumBytes, label) {
     if (!sameIdentity3(opened, after) || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs || after.ctimeMs !== opened.ctimeMs) {
       throw new Error(`${label} changed while it was read.`);
     }
-    return { bytes: bytes2, path: join50(parent.path, name6), stat: after };
+    return { bytes: bytes2, path: join51(parent.path, name6), stat: after };
   } finally {
     await handle.close();
   }
@@ -107081,7 +107376,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
   let build;
   try {
     const opened = await controlRoot.openDirectory(
-      join50(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
+      join51(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
       false
     );
     build = {
@@ -107099,7 +107394,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       MAXIMUM_RECEIPT_BYTES,
       "Authenticated bridge build receipt"
     );
-    const authenticationKeySha256 = createHash35("sha256").update(authenticationKey, "utf8").digest("hex");
+    const authenticationKeySha256 = createHash36("sha256").update(authenticationKey, "utf8").digest("hex");
     const parsed2 = JSON.parse(receiptFile.bytes.toString("utf8"));
     if (!isRecord5(parsed2) || typeof parsed2["outputPath"] !== "string" || typeof parsed2["outputSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["outputSha256"])) {
       throw new Error(
@@ -107122,7 +107417,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       "Authenticated bridge archive generation"
     );
     await controlRoot.assertCurrent();
-    const archiveSha256 = createHash35("sha256").update(archive.bytes).digest("hex");
+    const archiveSha256 = createHash36("sha256").update(archive.bytes).digest("hex");
     const authentication = isRecord5(parsed2) && isRecord5(parsed2["authentication"]) ? parsed2["authentication"] : void 0;
     const endpoint2 = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
     const source4 = isRecord5(parsed2) && isRecord5(parsed2["source"]) ? parsed2["source"] : void 0;
@@ -107164,12 +107459,12 @@ var init_authenticated_bridge_build_identity = __esm({
 
 // server/src/upstream-environment.ts
 import { constants as fsConstants7 } from "node:fs";
-import { lstat as lstat30, open as open27 } from "node:fs/promises";
+import { lstat as lstat31, open as open28 } from "node:fs/promises";
 import {
   basename as basename21,
   dirname as dirname19,
   isAbsolute as isAbsolute22,
-  join as join51,
+  join as join52,
   relative as relative5,
   resolve as resolve13,
   sep as sep3
@@ -107177,7 +107472,7 @@ import {
 import process12 from "node:process";
 function configuredControlRootDirectory() {
   return resolve13(
-    process12.env["EASYEDA_CONTROL_DATA_DIR"] ?? join51(process12.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
+    process12.env["EASYEDA_CONTROL_DATA_DIR"] ?? join52(process12.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
   );
 }
 function isWithin3(root, candidate) {
@@ -107234,8 +107529,8 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
   const directory = await capability.openDirectory(dirname19(path5), false);
   const descriptorPath = `/proc/self/fd/${directory.handle.fd}/${basename21(path5)}`;
   try {
-    const pathInfo = await lstat30(descriptorPath);
-    const handle = await open27(
+    const pathInfo = await lstat31(descriptorPath);
+    const handle = await open28(
       descriptorPath,
       fsConstants7.O_RDONLY | fsConstants7.O_NOFOLLOW
     );
@@ -107253,7 +107548,7 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
           );
         }
         const currentPath = `/proc/self/fd/${currentDirectory.handle.fd}/${basename21(path5)}`;
-        const currentInfo = await lstat30(currentPath);
+        const currentInfo = await lstat31(currentPath);
         if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process12.getuid === "function" && currentInfo.uid !== process12.getuid()) {
           throw new Error("EASYEDA_BRIDGE_TOKEN_FILE changed while being read.");
         }
@@ -107329,7 +107624,7 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
   }
   const controlRoot = configuredControlRootDirectory();
   const dataDirectory = resolve13(
-    process12.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join51(controlRoot, "upstream")
+    process12.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join52(controlRoot, "upstream")
   );
   if (!isWithin3(controlRoot, dataDirectory)) {
     throw new Error(
@@ -113165,9 +113460,9 @@ var init_acorn = __esm({
 });
 
 // server/src/upstream-module-execution.ts
-import { createHash as createHash36 } from "node:crypto";
+import { createHash as createHash37 } from "node:crypto";
 import { constants as fsConstants8 } from "node:fs";
-import { lstat as lstat31, open as open28 } from "node:fs/promises";
+import { lstat as lstat32, open as open29 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
 import { dirname as dirname20, extname, isAbsolute as isAbsolute23, relative as relative6, resolve as resolve14, sep as sep4 } from "node:path";
 import { fileURLToPath as fileURLToPath2, pathToFileURL } from "node:url";
@@ -113266,7 +113561,7 @@ function dependenciesFor(format, source4) {
   });
 }
 function parseUpstreamModuleDependencies(format, executionBytes) {
-  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash36("sha256").update(executionBytes).digest("hex")}`;
+  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash37("sha256").update(executionBytes).digest("hex")}`;
   const cached2 = dependencyParseCache.get(key);
   if (cached2 !== void 0) {
     return cached2;
@@ -113299,7 +113594,7 @@ function assertTrustedModulePath(path5, info) {
 async function readSealedFile(path5, seals, capturedSeals) {
   let seal = seals.get(path5);
   if (seal === void 0) {
-    const info = await lstat31(path5);
+    const info = await lstat32(path5);
     assertTrustedModulePath(path5, info);
     seal = {
       ctimeMs: info.ctimeMs,
@@ -113316,7 +113611,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
   if (seal.kind !== "file") {
     throw new Error(`Resolved upstream module is not a sealed file: ${path5}`);
   }
-  const handle = await open28(path5, fsConstants8.O_RDONLY + fsConstants8.O_NOFOLLOW);
+  const handle = await open29(path5, fsConstants8.O_RDONLY + fsConstants8.O_NOFOLLOW);
   try {
     const opened = await handle.stat();
     if (!sameSeal(opened, seal)) {
@@ -113324,7 +113619,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
     }
     const bytes2 = await handle.readFile();
     const after = await handle.stat();
-    const sha256 = createHash36("sha256").update(bytes2).digest("hex");
+    const sha256 = createHash37("sha256").update(bytes2).digest("hex");
     if (!sameSeal(after, seal) || seal.sha256 !== void 0 && sha256 !== seal.sha256) {
       throw new Error(`Reviewed upstream module changed during descriptor capture: ${path5}`);
     }
@@ -113439,7 +113734,7 @@ function executionSourceFor(cwd, path5, source4) {
   }
   return {
     bytes: bytes2,
-    executionSha256: createHash36("sha256").update(bytes2).digest("hex"),
+    executionSha256: createHash37("sha256").update(bytes2).digest("hex"),
     transform: transform2
   };
 }
@@ -113621,7 +113916,7 @@ function graphFingerprint(cwd, entrypointUrl, modules, resolutions) {
     moduleCount: moduleRows.length,
     edgeCount: edgeRows.length,
     totalBytes: moduleRows.reduce((total, module) => total + module.bytes, 0),
-    sha256: createHash36("sha256").update(JSON.stringify(projection7)).digest("hex")
+    sha256: createHash37("sha256").update(JSON.stringify(projection7)).digest("hex")
   };
 }
 async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
@@ -113808,17 +114103,17 @@ var init_upstream_module_execution = __esm({
 });
 
 // server/src/upstream-trust.ts
-import { createHash as createHash37 } from "node:crypto";
-import { spawn as spawn6 } from "node:child_process";
+import { createHash as createHash38 } from "node:crypto";
+import { spawn as spawn7 } from "node:child_process";
 import { constants as fsConstants9 } from "node:fs";
 import {
-  lstat as lstat32,
-  open as open29,
+  lstat as lstat33,
+  open as open30,
   readdir as readdir5,
   readlink as readlink2,
-  realpath as realpath20
+  realpath as realpath21
 } from "node:fs/promises";
-import { dirname as dirname21, isAbsolute as isAbsolute24, join as join52, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
+import { dirname as dirname21, isAbsolute as isAbsolute24, join as join53, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
 import process13 from "node:process";
 function boundedTimingInteger(value) {
   return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value)));
@@ -113903,12 +114198,12 @@ function sameIdentity4(left, right) {
 async function hashOpenFile(path5, expected3) {
   let handle;
   try {
-    handle = await open29(path5, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
+    handle = await open30(path5, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
     const opened = await handle.stat();
     if (!opened.isFile() || !sameIdentity4(expected3, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash35 = createHash37("sha256");
+    const hash35 = createHash38("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
@@ -113932,9 +114227,9 @@ async function detectDependencyLock(cwd) {
     ["yarn", "yarn.lock"]
   ];
   for (const [type2, name6] of candidates) {
-    const path5 = join52(cwd, name6);
+    const path5 = join53(cwd, name6);
     try {
-      const info = await lstat32(path5);
+      const info = await lstat33(path5);
       if (info.isFile() && !info.isSymbolicLink()) {
         return [type2, path5];
       }
@@ -113947,8 +114242,8 @@ async function detectDependencyLock(cwd) {
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPath) {
-  const dependencyRoot = join52(cwd, "node_modules");
-  const packagePath = join52(cwd, "package.json");
+  const dependencyRoot = join53(cwd, "node_modules");
+  const packagePath = join53(cwd, "package.json");
   const roots = [implementationRoot, dependencyRoot, packagePath, dependencyLockPath].map((path5) => resolve15(path5)).toSorted();
   const entries3 = [];
   const seals = [];
@@ -113959,14 +114254,14 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     if (!isWithin5(cwd, absolute)) {
       throw new Error(`Upstream execution closure escapes its cwd: ${absolute}`);
     }
-    const info = await lstat32(absolute);
+    const info = await lstat33(absolute);
     assertTrustedOwnership(absolute, info);
     const relativePath = relative7(cwd, absolute).split(sep5).join("/");
     if (info.isSymbolicLink()) {
       const target5 = await readlink2(absolute);
       seals.push(sealFor(absolute, info, "symlink", target5));
       entries3.push({ path: relativePath, kind: "symlink", target: target5, bytes: 0 });
-      const resolvedTarget3 = await realpath20(absolute);
+      const resolvedTarget3 = await realpath21(absolute);
       if (!isWithin5(cwd, resolvedTarget3)) {
         throw new Error(
           `Upstream dependency symlink escapes its reviewed cwd: ${absolute}`
@@ -113976,7 +114271,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       return;
     }
     if (info.isDirectory()) {
-      const realDirectory = await realpath20(absolute);
+      const realDirectory = await realpath21(absolute);
       if (visitedDirectories.has(realDirectory)) {
         return;
       }
@@ -113985,7 +114280,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       entries3.push({ path: relativePath, kind: "directory", bytes: 0 });
       const children2 = await readdir5(absolute);
       for (const child of children2.toSorted()) {
-        await visit(join52(absolute, child));
+        await visit(join53(absolute, child));
       }
       return;
     }
@@ -114015,7 +114310,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     const pathOrder = left.path.localeCompare(right.path);
     return pathOrder === 0 ? left.kind.localeCompare(right.kind) : pathOrder;
   });
-  const closureHash = createHash37("sha256");
+  const closureHash = createHash38("sha256");
   for (const entry of sortedEntries) {
     closureHash.update(entry.kind);
     closureHash.update("\0");
@@ -114027,12 +114322,12 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     closureHash.update("\n");
   }
   const implementationFiles = sortedEntries.filter(
-    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join52(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
+    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join53(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
-  const implementationHash = createHash37("sha256");
+  const implementationHash = createHash38("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
-      relative7(implementationRoot, join52(cwd, entry.path)).split(sep5).join("/")
+      relative7(implementationRoot, join53(cwd, entry.path)).split(sep5).join("/")
     );
     implementationHash.update("\0");
     implementationHash.update(entry.sha256 ?? "");
@@ -114068,7 +114363,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   };
 }
 async function captureTrustedFile(path5, allowRootOwner = false) {
-  const info = await lstat32(path5);
+  const info = await lstat33(path5);
   if (info.isSymbolicLink() || !info.isFile()) {
     throw new Error(`Trusted launcher path must be a regular file: ${path5}`);
   }
@@ -114091,7 +114386,7 @@ async function sha256OpenHandle(handle, expected3, label) {
   if (!before.isFile() || !sameIdentity4(before, expected3)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash35 = createHash37("sha256");
+  const hash35 = createHash38("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -114115,7 +114410,7 @@ async function sha256OpenHandle(handle, expected3, label) {
 }
 async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve15(path5);
-  const pathInfo = await lstat32(absolute);
+  const pathInfo = await lstat33(absolute);
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(`${label} must be a regular non-symlink file.`);
   }
@@ -114125,7 +114420,7 @@ async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwn
     );
   }
   assertTrustedOwnership(absolute, pathInfo, allowRootOwner);
-  const handle = await open29(
+  const handle = await open30(
     absolute,
     fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW
   );
@@ -114135,7 +114430,7 @@ async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwn
       if (disposed) {
         throw new Error(`${label} descriptor is closed.`);
       }
-      const currentPath = await lstat32(absolute);
+      const currentPath = await lstat33(absolute);
       if (!sameIdentity4(pathInfo, currentPath) || await sha256OpenHandle(handle, pathInfo, label) !== expectedSha256) {
         throw new Error(`${label} changed after review.`);
       }
@@ -114175,7 +114470,7 @@ async function collectSandboxProbeOutput(stream, label) {
   return Buffer.concat(chunks, totalBytes).toString("utf8");
 }
 async function runSandboxProbe(executable, argument) {
-  const child = spawn6(executable.executionPath, [argument], {
+  const child = spawn7(executable.executionPath, [argument], {
     env: { LANG: "C.UTF-8", LC_ALL: "C.UTF-8", PATH: "/usr/bin:/bin" },
     killSignal: "SIGKILL",
     shell: false,
@@ -114279,18 +114574,18 @@ function openReviewedDescriptorSanitizerExecutable() {
   );
 }
 async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
-  const commandRealPath = await realpath20(commandPath);
-  const currentNodeRealPath = await realpath20(process13.execPath);
+  const commandRealPath = await realpath21(commandPath);
+  const currentNodeRealPath = await realpath21(process13.execPath);
   if (commandRealPath !== currentNodeRealPath) {
     throw new Error(
       "The reviewed upstream command must be the same Node executable running the facade."
     );
   }
   const entrypointPath = resolve15(args[0] ?? "");
-  if (await realpath20(cwd) !== cwd) {
+  if (await realpath21(cwd) !== cwd) {
     throw new Error("EASYEDA_UPSTREAM_CWD must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat32(cwd);
+  const cwdInfo = await lstat33(cwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("EASYEDA_UPSTREAM_CWD must be a real directory.");
   }
@@ -114298,7 +114593,7 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
   if (!isWithin5(cwd, entrypointPath)) {
     throw new Error("The upstream entrypoint must stay inside its reviewed cwd.");
   }
-  if (await realpath20(entrypointPath) !== entrypointPath) {
+  if (await realpath21(entrypointPath) !== entrypointPath) {
     throw new Error("The upstream entrypoint must not traverse a symbolic link.");
   }
   const [dependencyType, dependencyLockPath] = await detectDependencyLock(cwd);
@@ -114413,15 +114708,15 @@ async function captureLauncherAdmissionAt(expected3, command, cwd, entrypoint) {
       "The configured sandbox-launcher identity differs from review."
     );
   }
-  if (await realpath20(normalizedCommand) !== await realpath20(process13.execPath)) {
+  if (await realpath21(normalizedCommand) !== await realpath21(process13.execPath)) {
     throw new Error(
       "The reviewed upstream command must be the Node executable running the facade."
     );
   }
-  if (await realpath20(normalizedCwd) !== normalizedCwd) {
+  if (await realpath21(normalizedCwd) !== normalizedCwd) {
     throw new Error("The reviewed upstream cwd must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat32(normalizedCwd);
+  const cwdInfo = await lstat33(normalizedCwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("The reviewed upstream cwd must be a real directory.");
   }
@@ -114509,7 +114804,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   for (let offset2 = 0; offset2 < seals.length; offset2 += batchSize) {
     await Promise.all(
       seals.slice(offset2, offset2 + batchSize).map(async (seal) => {
-        const current2 = await lstat32(seal.path);
+        const current2 = await lstat33(seal.path);
         let currentKind = "unsupported";
         if (current2.isSymbolicLink()) {
           currentKind = "symlink";
@@ -114533,7 +114828,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   }
 }
 function launcherFingerprintSha256(value) {
-  return createHash37("sha256").update(canonicalJson(value)).digest("hex");
+  return createHash38("sha256").update(canonicalJson(value)).digest("hex");
 }
 var LOCAL_INTEGRITY_STAGES, LocalIntegrityTimings, DEFAULT_SANDBOX_COMMAND, REVIEWED_SANDBOX_VERSION, REQUIRED_SANDBOX_OPTIONS, runtimeSha256Schema, runtimeDescriptorSanitizerSchema, runtimeLauncherFingerprintSchema;
 var init_upstream_trust = __esm({
@@ -114732,9 +115027,9 @@ var init_upstream_bootstrap = __esm({
 });
 
 // server/src/private-runtime-payload.ts
-import { createHash as createHash38, randomUUID as randomUUID9 } from "node:crypto";
+import { createHash as createHash39, randomUUID as randomUUID9 } from "node:crypto";
 import { constants as fsConstants10 } from "node:fs";
-import { open as open30, unlink as unlink4 } from "node:fs/promises";
+import { open as open31, unlink as unlink4 } from "node:fs/promises";
 import process14 from "node:process";
 function permissionMode2(mode) {
   return Number(mode % 512n);
@@ -114789,7 +115084,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
   let writable;
   let readable;
   try {
-    writable = await open30(
+    writable = await open31(
       path5,
       fsConstants10.O_CREAT | fsConstants10.O_EXCL | fsConstants10.O_RDWR | fsConstants10.O_NOFOLLOW,
       384
@@ -114808,7 +115103,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       throw new Error("Private runtime payload changed before descriptor open.");
     }
     const captured = await readExact(readable, source4.length);
-    const sha256 = createHash38("sha256").update(captured).digest("hex");
+    const sha256 = createHash39("sha256").update(captured).digest("hex");
     if (!captured.equals(source4)) {
       throw new Error("Private runtime payload differs from its captured source bytes.");
     }
@@ -114826,7 +115121,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       const before = await readable.stat({ bigint: true });
       const current2 = await readExact(readable, source4.length);
       const after = await readable.stat({ bigint: true });
-      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash38("sha256").update(current2).digest("hex") !== sha256) {
+      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash39("sha256").update(current2).digest("hex") !== sha256) {
         throw new Error("Private runtime payload changed before sandbox spawn.");
       }
     };
@@ -114880,10 +115175,10 @@ var init_private_runtime_payload = __esm({
 });
 
 // server/src/sandboxed-stdio-client-transport.ts
-import { spawn as spawn7 } from "node:child_process";
+import { spawn as spawn8 } from "node:child_process";
 import { constants as fsConstants11 } from "node:fs";
 import { once } from "node:events";
-import { open as open31, readFile as readFile7 } from "node:fs/promises";
+import { open as open32, readFile as readFile7 } from "node:fs/promises";
 import { PassThrough, Readable, Writable } from "node:stream";
 import { setTimeout as wait2 } from "node:timers/promises";
 function protocolError(code, message) {
@@ -115162,7 +115457,7 @@ async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommand
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await open31(`/proc/${authority.pid}/exe`, fsConstants11.O_RDONLY);
+      executable = await open32(`/proc/${authority.pid}/exe`, fsConstants11.O_RDONLY);
       if (childHasClosed) {
         await closedBeforeIdentity;
       }
@@ -115478,7 +115773,7 @@ var init_sandboxed_stdio_client_transport = __esm({
           await this.options.beforeSpawn();
           await this.options.afterPreSpawnValidationForTesting?.();
           this.startupStage = "process-spawn";
-          const child = spawn7(
+          const child = spawn8(
             this.options.descriptorSanitizer.executionPath,
             [
               String(process.pid),
@@ -115727,18 +116022,18 @@ var init_sandboxed_stdio_client_transport = __esm({
 });
 
 // server/src/supervisor-execution.ts
-import { createHash as createHash39 } from "node:crypto";
+import { createHash as createHash40 } from "node:crypto";
 import { constants as fsConstants12 } from "node:fs";
 import {
-  lstat as lstat33,
-  open as open32,
-  realpath as realpath21
+  lstat as lstat34,
+  open as open33,
+  realpath as realpath22
 } from "node:fs/promises";
-import { basename as basename22, join as join53, resolve as resolve16 } from "node:path";
+import { basename as basename22, join as join54, resolve as resolve16 } from "node:path";
 import process15 from "node:process";
 function bundledSupervisorPath() {
   const bundleDirectory = basename22(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve16(import.meta.dirname, "..", "dist");
-  return join53(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
+  return join54(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
 }
 function reviewedSupervisorFingerprint() {
   const expected3 = loadReviewedCompatibilityManifest().facadeImplementation.bundle.files.find(
@@ -115795,12 +116090,12 @@ async function readStableHandle(handle, label) {
 }
 async function captureReviewedSupervisor(sourcePath, expected3) {
   const absolute = resolve16(sourcePath);
-  if (await realpath21(absolute) !== absolute) {
+  if (await realpath22(absolute) !== absolute) {
     throw new Error(
       "The upstream supervisor source must not traverse symbolic links."
     );
   }
-  const pathInfo = await lstat33(absolute, { bigint: true });
+  const pathInfo = await lstat34(absolute, { bigint: true });
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(
       "The upstream supervisor source must be a regular non-symlink file."
@@ -115814,14 +116109,14 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
       "The upstream supervisor source must not be group- or other-writable."
     );
   }
-  const handle = await open32(
+  const handle = await open33(
     absolute,
     fsConstants12.O_RDONLY + fsConstants12.O_NOFOLLOW
   );
   try {
     const captured = await readStableHandle(handle, "Upstream supervisor source");
     assertSameIdentity2(pathInfo, captured.info, "Upstream supervisor source");
-    const sha256 = createHash39("sha256").update(captured.bytes).digest("hex");
+    const sha256 = createHash40("sha256").update(captured.bytes).digest("hex");
     if (expected3.relativePath !== SUPERVISOR_BUNDLE_NAME || expected3.bytes !== captured.bytes.length || expected3.sha256 !== sha256) {
       throw new Error(
         "The upstream supervisor bytes do not match the reviewed facade bundle."
@@ -115998,10 +116293,10 @@ var init_upstream_seccomp = __esm({
 
 // server/src/upstream.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash as createHash40, randomBytes as randomBytes11 } from "node:crypto";
+import { createHash as createHash41, randomBytes as randomBytes11 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join as join54, resolve as resolve17 } from "node:path";
+import { join as join55, resolve as resolve17 } from "node:path";
 import process17 from "node:process";
 function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
   return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error51 : new UpstreamStartupError(
@@ -116012,7 +116307,7 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash35 = createHash40("sha256");
+  const hash35 = createHash41("sha256");
   const source4 = createReadStream(path5);
   for await (const chunk of source4) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
@@ -116031,7 +116326,7 @@ function requireVersionSegment(value, label) {
   return value;
 }
 function disconnectedLifecycleBoundarySha256(lifecycle) {
-  return createHash40("sha256").update(
+  return createHash41("sha256").update(
     JSON.stringify({
       gatewayInstanceId: lifecycle.gatewayInstanceId,
       publicEndpoint: lifecycle.publicEndpoint,
@@ -116132,7 +116427,7 @@ var init_upstream = __esm({
       connectPromise = null;
       tools = null;
       stderrBytes = 0;
-      stderrDigest = createHash40("sha256");
+      stderrDigest = createHash41("sha256");
       retainedProcessDiagnostics;
       startupLauncherAdmission = null;
       bridgeGateway = null;
@@ -116176,7 +116471,7 @@ var init_upstream = __esm({
       }
       async #connect() {
         this.stderrBytes = 0;
-        this.stderrDigest = createHash40("sha256");
+        this.stderrDigest = createHash41("sha256");
         const controlRoot = this.options.controlRoot;
         if (controlRoot === void 0) {
           throw new Error(
@@ -116404,7 +116699,7 @@ var init_upstream = __esm({
             transport2.startupDiagnostics()
           );
           this.stderrBytes = 0;
-          this.stderrDigest = createHash40("sha256");
+          this.stderrDigest = createHash41("sha256");
           const cleanupErrors = [];
           let clientClosed = true;
           let transportClosed = true;
@@ -116444,7 +116739,7 @@ var init_upstream = __esm({
           throw startupError;
         }
         this.stderrBytes = 0;
-        this.stderrDigest = createHash40("sha256");
+        this.stderrDigest = createHash41("sha256");
         this.startupLauncherAdmission = launcherAdmission;
         this.client = client;
         this.transport = transport2;
@@ -116651,16 +116946,16 @@ var init_upstream = __esm({
           process17.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
           "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
         );
-        const pcbImplementation = join54(
+        const pcbImplementation = join55(
           assetsRoot,
           "pro-pcb",
           pcbVersion,
           "js",
           "pcb.js"
         );
-        const apiImplementation = join54(assetsRoot, "pro-api", apiVersion, "api.js");
-        const apiAdapter = join54(assetsRoot, "pro-api", apiVersion, "api-types.js");
-        const apiDeclarations = join54(
+        const apiImplementation = join55(assetsRoot, "pro-api", apiVersion, "api.js");
+        const apiAdapter = join55(assetsRoot, "pro-api", apiVersion, "api-types.js");
+        const apiDeclarations = join55(
           assetsRoot,
           "pro-api",
           apiVersion,
@@ -116756,7 +117051,7 @@ var init_upstream = __esm({
         }
         this.startupLauncherAdmission = null;
         this.stderrBytes = 0;
-        this.stderrDigest = createHash40("sha256");
+        this.stderrDigest = createHash41("sha256");
         if (failures.length > 0) {
           throw new AggregateError(
             failures,
@@ -117814,7 +118109,7 @@ var init_current_pcb_layers_runtime = __esm({
 });
 
 // server/src/current-disposable-open-checkpoint.ts
-import { join as join55 } from "node:path";
+import { join as join56 } from "node:path";
 function normalizedSource(target5) {
   const raw = target5.rawWindowsPath, separator = raw[2];
   if (!/^[a-z]:[\\/]/iu.test(raw) || separator !== "\\" && separator !== "/" || raw.includes(separator === "\\" ? "/" : "\\") || target5.projectUuid !== sha256Text(raw)) {
@@ -117830,7 +118125,7 @@ async function accessPolicy(source4) {
   return {
     expectedSource: source4,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join55(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join56(controlDataDirectory(), "checkpoints")],
     maximumSourceBytes: MAX_SOURCE_BYTES
   };
 }
@@ -117880,7 +118175,7 @@ async function prepareCurrentDisposableOpenCheckpoint(input) {
   const inputText = canonicalJson(input), source4 = normalizedSource(target5);
   const checkpoint = await createCheckpoint({
     source: source4,
-    outputDir: join55(controlDataDirectory(), "checkpoints"),
+    outputDir: join56(controlDataDirectory(), "checkpoints"),
     label: "current-disposable-open"
   }, await accessPolicy(source4));
   assertSourceBinding(checkpoint, target5, source4);
@@ -119410,9 +119705,9 @@ var init_closed_symbol_disposable_entry = __esm({
 });
 
 // server/src/closed-symbol-operation-intent.ts
-import { closeSync as closeSync3, constants as constants21, fstatSync as fstatSync3, lstatSync as lstatSync3, openSync as openSync3, readSync as readSync2 } from "node:fs";
+import { closeSync as closeSync3, constants as constants22, fstatSync as fstatSync3, lstatSync as lstatSync3, openSync as openSync3, readSync as readSync2 } from "node:fs";
 import { mkdir as mkdir5 } from "node:fs/promises";
-import { join as join56 } from "node:path";
+import { join as join57 } from "node:path";
 function inputs2(rawRequest, rawPlan) {
   const request2 = parseClosedSymbolOperationRequest(rawRequest);
   const source4 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
@@ -119447,7 +119742,7 @@ function inputs2(rawRequest, rawPlan) {
   requireValue6(operation["id"] === request2.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request2.target.projectUuid && target5["uuid"] === request2.target.symbolUuid && patch2["name"] === request2.operation.patch.name && patch2["description"] === request2.operation.patch.description, "Ordinary operation does not match its request.");
   return Object.freeze({ request: request2, plan: plan2 });
 }
-function sameFile4(left, right) {
+function sameFile5(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 function finalDirectory2(path5, device, inode, uid) {
@@ -119468,7 +119763,7 @@ function finalReservation2(root, parent, slot, artifact2, expected3) {
   lineage();
   const named = lstatSync3(boundPath, { bigint: true });
   requireValue6(named.isFile() && named.dev.toString() === artifact2.identity.device && named.ino.toString() === artifact2.identity.inode, "Operation claim named identity changed.");
-  const descriptor9 = openSync3(boundPath, constants21.O_RDONLY | constants21.O_NOFOLLOW | constants21.O_NONBLOCK);
+  const descriptor9 = openSync3(boundPath, constants22.O_RDONLY | constants22.O_NOFOLLOW | constants22.O_NONBLOCK);
   let before;
   try {
     before = fstatSync3(descriptor9, { bigint: true });
@@ -119482,12 +119777,12 @@ function finalReservation2(root, parent, slot, artifact2, expected3) {
       }
       offset2 += count2;
     }
-    requireValue6(offset2 === expected3.length && bytes2.subarray(0, offset2).equals(expected3) && sameFile4(before, fstatSync3(descriptor9, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
+    requireValue6(offset2 === expected3.length && bytes2.subarray(0, offset2).equals(expected3) && sameFile5(before, fstatSync3(descriptor9, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
   } finally {
     closeSync3(descriptor9);
   }
   lineage();
-  requireValue6(sameFile4(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
+  requireValue6(sameFile5(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
 }
 async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   requireValue6(typeof process.getuid === "function", "Operation claim requires Linux UID support.");
@@ -119496,7 +119791,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     requireValue6(canonicalJson(inputs2(rawRequest, ownerPlan)) === seal, "Operation claim inputs changed during publication.");
   };
   const intentKey = sha256Json({ profile: PROFILE17, actionId: bound2.request.operation.id });
-  const parentPath = join56(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join56(parentPath, intentKey);
+  const parentPath = join57(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join57(parentPath, intentKey);
   const closedPlanSha256 = sha256Json(bound2.plan), markerSha256 = sha256Json(bound2.plan.marker), requestSha256 = sha256Json(bound2.request);
   const body4 = {
     profile: PROFILE17,
@@ -119521,7 +119816,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   let artifact2, retainedSlot;
   try {
     currentInputs();
-    await mkdir5(join56(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
+    await mkdir5(join57(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
     await parent.handle.sync();
     currentInputs();
     const slot = await root.openDirectory(reservationPath, false);
@@ -119529,7 +119824,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     try {
       await slot.handle.sync();
       currentInputs();
-      artifact2 = await publishManagedAttachmentExclusive(join56(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE17);
+      artifact2 = await publishManagedAttachmentExclusive(join57(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE17);
       currentInputs();
       await readExactUtf8Artifact({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 });
       currentInputs();
@@ -119900,7 +120195,7 @@ var init_closed_symbol_operation_entry = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash41 } from "node:crypto";
+import { createHash as createHash42 } from "node:crypto";
 import {
   basename as basename23,
   dirname as dirname22,
@@ -121898,7 +122193,7 @@ var init_src = __esm({
       "easyeda_control_launch",
       {
         title: "Launch, observe or normally close the reviewed EasyEDA application",
-        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Startup can load extensions/project lists, use the network and write preferences/cache; it is not isolated or project-free. Journals before dispatch and retains the original Windows root/Job. observe-window requires that current retained launch and its inspected launchedSha256; normal-close also requires its exact unique application HWND and confirmNormalClose:true. One durable close intent precedes the fixed WM_CLOSE request. Acknowledgment is not exit; observe-termination separately proves retained root/Job exit. No repeat close after uncertainty, prompt choice, force kill, design open or explicit Save. Normal closure can persist application data. inspect is local; observe-application reports same-name presence without identity or relaunch authority. After lost handles, abandon-supervision requires a successful historical launch digest, explicit acceptance and absent samples; it relinquishes supervision without proving termination. Quarantine and design gates remain unchanged. Use offline launch/launch-validate first. Successful startup is not authentication or Start Page readiness.",
+        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Startup can load extensions/project lists, use the network and write preferences/cache; it is not isolated or project-free. Journals before dispatch and retains the original Windows root/Job. observe-window requires that current retained launch and its inspected launchedSha256; normal-close also requires its exact unique application HWND and confirmNormalClose:true. One durable close intent precedes the fixed WM_CLOSE request. Acknowledgment is not exit; observe-termination separately proves retained root/Job exit. No repeat close after uncertainty, prompt choice, force kill, design open or explicit Save. Normal closure can persist application data. inspect is local; observe-application reports same-name presence without identity or relaunch authority. After lost handles, abandon-supervision requires a successful historical launch digest, explicit acceptance and absent samples. For a reviewed intent-only launch, abandon-unknown-launch requires its inspected intentSha256, confirmAbandonUnknownLaunch:true, acceptUnobservedDescendants:true and a fresh coordinator. Its separate read-only helper excludes delayed creation by requiring no other PowerShell process before sampling EasyEDA twice. Both routes record relinquishment without proving termination. Quarantine and design gates remain unchanged. Use offline launch/launch-validate first. Successful startup is not authentication or Start Page readiness.",
         inputSchema: { request: external_exports.unknown().pipe(ordinaryLaunchRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
@@ -122755,7 +123050,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash41("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash42("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);

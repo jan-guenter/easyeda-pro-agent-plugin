@@ -6,6 +6,100 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate 060000: intent-only ordinary startup recovery
+
+Continuation implements `abandon-unknown-launch`, a separate append-only
+abandonment for a reviewed intent-only launch. It requires the exact intent
+digest, a fresh coordinator without an allocated runtime, explicit acceptance
+of unobserved descendants, unchanged admission/inventory and two ordered native
+PowerShell-then-EasyEDA absence samples. The fixed read-only helper excludes only
+itself and never launches, closes, kills or adopts EasyEDA. The old launch helper
+and all external runtime pins remain unchanged. The v1 historical admission is
+the exact 020000 runtime/profile pair. New v2 intents record helper-before-intent
+ordering and require producer equality with the current verified facade.
+Completed recovery stays readable across later updates.
+
+Source review and implementation scope are in
+docs/ordinary-launch-recovery-source-review-2026-10-15.md and
+docs/ordinary-launch-recovery-release-2026-10-15.md. Focused coordinator and
+registration checks pass 22 tests; adapter checks pass 12 tests. Final combined
+focused run passes all 34. Types, targeted zero-warning lint, clean dependency
+install/tree, 151 signatures/40 attestations, zero vulnerabilities, build and
+repository/package/skill validators pass. Independent review accepted the final
+coordinator, native helper and adapter. Source344 SHA0f2d419e/runtime3b72fdde3;
+all external compatibility pins remain unchanged. The full local verify run was
+stopped deliberately at exit143 after the final receipt-reader adjustment; its
+partial log is /tmp/easyeda-060000-local-verify.log, not full-suite acceptance.
+Final full-suite acceptance will use the existing complete GitHub CI. No extra
+local full rerun. Publication/install and CI results remain pending.
+
+Three read-only native adapter attempts refused: one original generic refusal,
+then timeout from the WSL source path and timeout from an exact Windows-local
+helper copy. No observation was accepted; no process absence or exit is proved.
+The adapter now reports fixed private-safe failure categories without Windows
+exception text. No journal, launch or recovery action occurred. The separate
+Windows launch recovery CI workflow checks only PowerShell5.1 script execution
+and detection of its waiting parent, not local WSL integration or recovery.
+Keep these validation scopes separate. Diagnostic helpers were not killed.
+
+The retained ordinary-startup-020000-20261015 intent remains unchanged and
+unresolved. No recovery or relaunch was attempted. Actual facade 1306/parent419/
+startTicks6189 still loads 020000 from the now-pruned old cache; installed040000
+is intact but not the running host. Previous main CI38668484067 passed all ten
+jobs. Do not kill or hotpatch that host. New source work and later official
+installation do not settle the old attempt. Production and its records remain
+excluded and untouched.
+
+### Delivered040000; current writers and intent-only startup recovery remain
+
+PR32 merged through the protected route as main
+5ef0a463369f0f8f98a2964239916504e9b5d410. Final payload
+cf4b30950d29700c975a62ff302c77d7eb2f0954 passed all ten jobs in CI38667428488:
+9919 facade passes/five skips/zero failures and424 bridge passes. Types,
+zero-warning lint, dependency/privacy checks and builds passed. The two review
+findings are fixed and resolved. The initial local full run failed and the two
+superseded CI runs are not acceptance; see the implementation record below.
+Merged fulltree571a20e1e5a792d898cb85fc08ed585e9a64bb11 and package subtree
+db3b6f5bed4d6e8f3f5eb6a7f3def416fcf14b67 equal the final tested payload exactly.
+
+Official Git marketplace upgrade completed errors[] under umask022. Installed
+and enabled0.3.0+codex.20261015040000 comes from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Independent
+pre/post-probe verification matches1183files/23134442bytes,42directories including
+root/all0755,seven skills,1182files100644/one100755. No extras, symlinks,
+hardlinks or mode mismatch. Git-tree-order inventorySHA
+3a2b841b45f83b56ec316fb0b114dcb624b175ac7df4239c733522836d9452f1 uses path NUL
+Gitmode NUL bytes NUL SHA256 LF. Source3432fc93d41/runtime3ccbcc79c and native
+helperfa5cff83 remain exact. Marketplace marker/snapshot HEAD equal merged main.
+
+Installed configured offline startup passes ambientNode26.11.1 to pinned24.18,
+16tools, project-symbol discovery/valid arguments and11geometry methods. Ten
+process samples show no upstream child/nonstdio socket, stderr0; normal client
+close completed. Synthetic profile only, no live control/CAD access. Proof is
+/tmp/easyeda-installed-040000-final-QsQ1TY/proof.json,1612bytes SHA
+794a5103a9f7219b9d31ae6fce593efe925f6f9b89d04ec73e62f90dc3910c8d.
+The earlier99line probe in easyeda-installed-040000-qhJdi0 stopped before
+transport construction because ambientNode had changed from26.7 to26.11.1.
+Its files remain preserved; the successful copy changes only the fresh scratch
+path and directly observed ambient version. Pinned runtime checks are unchanged.
+
+Public delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/32#issuecomment-6182676652.
+Postmerge CI38668484067 is running on the identical tested tree; check its
+outcome next continuation without manually rerunning successful checks. Loaded
+facade1306 remains020000. No owner termination, cache hotpatch or further live
+call. A fresh Codex chat loads the new catalog but does not settle the earlier
+launch-unknown intent. Production designs and records were not accessed.
+
+The current reader has source/CI/offline evidence, not connected validation.
+Do not repeat ordinary-startup-020000-20261015 under any ID or edit its journal.
+The intent-only recovery blocker described below remains unresolved. Next:
+implement a maintained recovery path for that case, then complete current
+closed-symbol rename preparation, owned lifecycle/SQL proof and one disposable
+rename/inverse verification. The broader implementation backlog is in
+docs/current-symbol-metadata-release-2026-10-15.md. Preserve this local delivery
+checkpoint for the next source commit; no extra docs-only release is needed.
+
 ### Current symbol metadata implementation; interrupted020000 launch
 
 Fresh020000 facade828513/parent826773/start221761542 passed independent installed

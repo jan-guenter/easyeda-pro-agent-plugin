@@ -120,6 +120,38 @@ design-authority claims false. A repeated abandonment is refused; inspect its
 original ID after a lost reply. An intent-only `launch-unknown`, unreadable record,
 current uncertain launch or current retained owner cannot use this route.
 
+### Intent-only launch after a restart
+
+An old launcher can finish a delayed `CreateProcess` after its facade disappears.
+EasyEDA absence alone therefore cannot resolve an intent-only `launch-unknown`.
+Use a fresh coordinator and inspect the original operation before calling
+`observe-application` or anything else that allocates its Windows runtime.
+If `helperBeforeIntentProtocol` is `unsupported`, this recovery is unavailable.
+`recorded-v2` still requires the original producer to match the currently verified
+facade. A different historical v2 build needs a separate source review.
+
+When the task allows ordinary-startup recovery and accepts unobserved descendants,
+validate and call once with the inspected `intentSha256`:
+
+```json
+{"action":"abandon-unknown-launch","operationId":"<original-operation-id>","expectedIntentSha256":"<inspected-intentSha256>","confirmAbandonUnknownLaunch":true,"acceptUnobservedDescendants":true}
+```
+
+This route covers the exact reviewed historical launcher and new v2 intents whose
+protocol starts and observes the retained helper before publishing intent. It
+starts a separate pinned read-only helper. In each of two samples, that helper
+requires no other PowerShell process anywhere on Windows before checking for
+EasyEDA. This order excludes the old helper's delayed launch. Unrelated PowerShell
+sessions also block recovery; do not terminate them automatically. Enumeration
+errors, missing replies, a running EasyEDA instance or changed admission fail closed.
+
+Success appends `unknown-abandonment.json`; the original intent remains unchanged
+and consumed. State becomes `unknown-launch-abandoned`. Launch outcome stays
+unknown, and no termination, saved-state, original-identity or design authority
+is claimed. Other-named descendants and external work may remain. After a lost
+reply inspect the same operation; never remove records or repeat the launch.
+The diagnostic closes itself without adopting, closing or killing EasyEDA.
+
 Abandonment changes only the ordinary-startup prerequisite. A separate new-ID
 launch still needs both startup confirmations and checks for an existing app
 again immediately before native creation. Never reuse the old ID or use this
