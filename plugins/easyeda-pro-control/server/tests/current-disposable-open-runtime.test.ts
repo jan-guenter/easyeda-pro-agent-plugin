@@ -421,15 +421,19 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
   assert.deepEqual(dispatches(isolated), [...beforeDispatches, "dispatch:observe"]);
 });
 
-void test("owned baseline transfer consumes the original opening without losing post-close ownership or replacing its stage", async (t) => {
+void test("owned baseline transfer reserves the runtime across Jobs and stops in-flight ordinary continuations", async (t) => {
   const input = await preparationCheckpoint(t), isolated = fixture("baseline-transfer");
-  let active = false, constructed = 0, observed = 0, sessionClosed = false;
+  let active = false, constructed = 0, observed = 0, relaunched = 0, sessionClosed = false;
   let retainedOwner: CurrentSymbolBaselineOwner | undefined;
+  let currentLaunch = structuredClone(LAUNCH);
+  const runtime = isolated.options.runtime(), transition = Promise.withResolvers<Value>();
+  const originalStatus = runtime.status.bind(runtime);
+  runtime.status = (): ReturnType<typeof originalStatus> => ({ ...originalStatus(), launch: structuredClone(currentLaunch) });
   const baselineId = "current-symbol-baseline-transfer", sqlRuntime = { nodeExecutable: "/synthetic/not-invoked", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
   class SyntheticBaseline {
     private readonly ordinal: number;
-    public constructor(engine: unknown, runtime: unknown, sql: unknown) {
-      assert.equal(engine, isolated.options.engine); assert.equal(runtime, isolated.options.runtime()); assert.deepEqual(sql, sqlRuntime);
+    public constructor(engine: unknown, retainedRuntime: unknown, sql: unknown) {
+      assert.equal(engine, isolated.options.engine); assert.equal(retainedRuntime, isolated.options.runtime()); assert.deepEqual(sql, sqlRuntime);
       constructed += 1; this.ordinal = constructed;
     }
     public capture(owner: CurrentSymbolBaselineOwner): Promise<void> {
@@ -441,6 +445,12 @@ void test("owned baseline transfer consumes the original opening without losing 
     }
     public observe(operationId: string): Promise<Value> {
       assert.equal(operationId, baselineId); observed += 1; return Promise.resolve({ state: "awaiting-termination", stageOrdinal: this.ordinal });
+    }
+    public relaunch(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); assert.equal(relaunched, 0); relaunched += 1;
+      const jobId = "9".repeat(32);
+      currentLaunch = { ...LAUNCH, jobId, root: { ...LAUNCH.root, pid: 4321, startIdentity: `win32:134000000000000001:job:${jobId}` } };
+      return transition.promise;
     }
     public stopAfterScopeFailure(): Promise<void> { return Promise.reject(new Error(`Unexpected synthetic scope failure in stage ${String(this.ordinal)}`)); }
   }
@@ -503,4 +513,19 @@ void test("owned baseline transfer consumes the original opening without losing 
   await assert.rejects(sibling.run({ ...isolated.input, operationId: "another-opening" }, FINGERPRINT), /transferred/u);
   const observation = await coordinator.observeSymbolBaseline(baselineId);
   assert.equal(observation["stageOrdinal"], 1); assert.equal(constructed, 1); assert.equal(observed, 1);
+  const beforeRelaunch = dispatches(isolated), relaunch = coordinator.relaunchSymbolBaseline(baselineId);
+  assert.equal(runtime.status().launch?.jobId, "9".repeat(32)); assert.equal(relaunched, 1);
+  await assert.rejects(coordinator.observeSymbolBaseline(baselineId), /busy/u);
+  await assert.rejects(coordinator.relaunchSymbolBaseline(baselineId), /busy/u);
+  await assert.rejects(sibling.run({ ...isolated.input, operationId: "after-relaunch-opening" }, FINGERPRINT), /transferred/u);
+  await assert.rejects(preparingSibling.beginSymbolBaseline(siblingInput.operationId, { ...request, operationId: "after-relaunch-sibling-baseline" }, sqlRuntime), /transferred/u);
+  transition.resolve({ state: "relaunched", stageOrdinal: 1 });
+  const relaunchedResult = await relaunch;
+  assert.equal(relaunchedResult["stageOrdinal"], 1);
+  assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
+  await assert.rejects(coordinator.relaunchSymbolBaseline("unknown-baseline"), /unavailable/u);
+  // Neither a completed transition nor a later null launch returns this runtime
+  // To ordinary ownership. The reservation lasts for the runtime's lifetime.
+  runtime.status = (): ReturnType<typeof originalStatus> => ({ ...originalStatus(), launch: null });
+  await assert.rejects(sibling.run({ ...isolated.input, operationId: "null-launch-opening" }, FINGERPRINT), /transferred/u);
 });

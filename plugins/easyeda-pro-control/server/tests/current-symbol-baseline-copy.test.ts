@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
-import { chmod, lstat, mkdir, mkdtemp, readFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, readFile, rename, writeFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -15,7 +15,7 @@ import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import { captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
-import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, assertOriginalCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
+import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, assertOriginalCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import { prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "../src/engine.ts";
@@ -47,6 +47,7 @@ function replaceHistory(path: string, raw: string): void {
 interface Loaded {
   capture: typeof captureCurrentSymbolBaselineCopy;
   original: typeof assertOriginalCurrentSymbolBaselineCopy;
+  revalidate: typeof revalidateCurrentSymbolBaselineCopy;
 }
 interface Fixture {
   source: string;
@@ -122,13 +123,13 @@ async function fixture(): Promise<Fixture> {
   const sourceText = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-copy.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
   const scope = vm.createContext({ Object, String, Number, Buffer, lstat, join, controlDataDirectory, controlRootCapability, operationPath, readArtifact,
-    createCheckpoint, verifyCheckpoint, copyClosedProjectBytes, readClosedCopySqlInventory, canonicalJson, isRecord, sha256Json,
+    createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes, readClosedCopySqlInventory, readerCompletion, canonicalJson, isRecord, sha256Json,
     normalizeEasyedaProjectPath: (raw: string): string => { assert.equal(raw, RAW_PATH); return source; },
     assertCurrentSymbolBaselineOwner: assertOwner, revalidateCurrentSymbolBaselineOwner: (candidate: unknown, candidateEngine: unknown) => Promise.resolve(assertOwner(candidate, candidateEngine)),
     currentClosedSymbolMetadataProjection, prepareCurrentSymbolMetadata, isNativeDocumentDeleted, readNativeHistoryCheckpoint,
     assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority });
-  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy});`, scope);
-  assert.ok(isRecord(exports) && typeof exports["capture"] === "function" && typeof exports["original"] === "function");
+  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,revalidate:revalidateCurrentSymbolBaselineCopy});`, scope);
+  assert.ok(isRecord(exports) && typeof exports["capture"] === "function" && typeof exports["original"] === "function" && typeof exports["revalidate"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked functions come from the maintained source in the private test realm, never from plugin input.
   const loaded = exports as unknown as Loaded;
   const input = { owner, capture, intent, closeReceipt, proof, runtime: await syntheticSqlRuntime() };
@@ -226,4 +227,51 @@ void test("late source change and lost closure owner refuse after retaining fres
     assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory", "preparation"]);
     await assert.rejects(value.run(), /consumed/u);
   }
+});
+
+void test("current baseline revalidation accepts original copy and current proof without changing source", async () => {
+  const value = await fixture();
+  const result = await value.run();
+  const before = await readFile(value.source);
+  await value.loaded.revalidate(value.engine, result, value.input.proof);
+  assert.deepEqual(await readFile(value.source), before);
+  assert.equal(result.beforeWriteBaselineVerified, false); assert.equal(result.executionAuthorized, false);
+  assert.equal(value.events.length, 4); assert.equal(value.retained.requests.filter((request) => request["action"] === "normal-close").length, 1);
+});
+
+void test("current baseline revalidation refuses source edits, checkpoint substitution and a resealed replacement-source receipt", async () => {
+  for (const fault of ["source-edit", "checkpoint", "resealed-receipt"] as const) {
+    const value = await fixture();
+    const result = await value.run();
+    if (fault === "source-edit") {
+      const before = await lstat(value.source, { bigint: true }), database = new DatabaseSync(value.source);
+      try { database.exec("INSERT INTO synthetic_open_effect VALUES('after baseline')"); } finally { database.close(); }
+      const after = await lstat(value.source, { bigint: true }); assert.equal(after.ino, before.ino);
+    } else {
+      const path = fault === "checkpoint" ? result.checkpoint.checkpoint : value.source;
+      const bytes = await readFile(path);
+      await rename(path, `${path}.retained`); await writeFile(path, bytes, { flag: "wx", mode: 0o600 });
+      if (fault === "resealed-receipt") {
+        const stat = await lstat(path, { bigint: true });
+        const { receiptSha256: originalReceiptSha256, ...receiptCore } = result.checkpoint;
+        const core = { ...receiptCore, sourceIdentity: { dev: stat.dev.toString(), ino: stat.ino.toString(),
+          birthtimeNs: stat.birthtimeNs.toString(), ctimeNs: stat.ctimeNs.toString() } };
+        const resealed = { ...core, receiptSha256: sha256Text(canonicalJson(core)) };
+        assert.notEqual(resealed.receiptSha256, originalReceiptSha256);
+        await writeFile(result.checkpoint.receiptPath, JSON.stringify(resealed));
+        const verified = await verifyCheckpoint(result.checkpoint.receiptPath, { expectedSource: value.source,
+          artifactRoots: [join(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability(), maximumSourceBytes: 268_435_456 });
+        assert.equal(verified.ok, true, "A valid self-hash does not make a substituted receipt the original baseline");
+      }
+    }
+    await assert.rejects(value.loaded.revalidate(value.engine, result, value.input.proof), /changed/u);
+    assert.equal(value.events.length, 4);
+  }
+});
+
+void test("current baseline revalidation rejects a cloned result before admitting its unchanged files", async () => {
+  const value = await fixture();
+  const result = await value.run();
+  await assert.rejects(value.loaded.revalidate(value.engine, structuredClone(result), value.input.proof), /not issued/u);
+  await value.loaded.revalidate(value.engine, result, value.input.proof);
 });

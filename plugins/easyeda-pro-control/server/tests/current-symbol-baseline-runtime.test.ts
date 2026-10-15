@@ -14,7 +14,7 @@ import type { CurrentSymbolBaselineCoordinator } from "../src/current-symbol-bas
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
-import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation } from "../src/windows-authority.ts";
+import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "../src/windows-authority.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
 import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
 import { qualifiedNativeFixture } from "./helpers/windows-pending-fixture.ts";
@@ -34,14 +34,17 @@ async function fixture(context: TestContext): Promise<{
   coordinator: CurrentSymbolBaselineCoordinator; restart: () => CurrentSymbolBaselineCoordinator;
   owner: CurrentSymbolBaselineOwner; native: Awaited<ReturnType<typeof qualifiedNativeFixture>>;
   runtime: WindowsControlRuntime;
-  state: { scope: boolean; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
-    afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined };
+  state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
+    copied: unknown; proof: unknown;
+    afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
+    afterClockAssert: (() => Promise<void>) | undefined };
   calls: (action: string) => number;
 }> {
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
-  const state = { scope: true, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
+  const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
+    copied: undefined as unknown, proof: undefined as unknown,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
-    afterStopped: undefined as (() => Promise<void>) | undefined };
+    afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined };
   const session = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 1,
     authenticationReceiptSha256: "2".repeat(64), authenticatedAtEpochMs: 1000 };
   const binding: AuthenticatedBridgeDispatchBinding = { schema: "easyeda-pro-control.bridge-dispatch-lease.v1", gatewayInstanceId: session.gatewayInstanceId,
@@ -55,8 +58,12 @@ async function fixture(context: TestContext): Promise<{
     },
     currentAuthenticatedBridgeDispatchBinding: () => state.scope ? binding : undefined,
     bridgeSessionLifecycle: () => ({ schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1", gatewayInstanceId: session.gatewayInstanceId,
-      activeSession: { sessionId: session.sessionId, sequence: session.sequence, authenticationReceiptSha256: session.authenticationReceiptSha256,
-        authenticatedAtEpochMs: session.authenticatedAtEpochMs }, publicEndpoint: { host: "127.0.0.1", port: 49_100 }, recentClosedSessions: [] }),
+      activeSession: state.activeSession ? { sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sequence: state.sessionSequence,
+        authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs } : null,
+      publicEndpoint: { host: "127.0.0.1", port: 49_100 },
+      recentClosedSessions: !state.activeSession || state.sessionSequence > 1 ? [{ sessionId: session.sessionId, sequence: session.sequence,
+        authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs,
+        closedAtEpochMs: 2000, closeReason: "synthetic normal close" }] : [] }),
   };
   const runtime = new WindowsControlRuntime({ upstream, pluginRoot: "/opt/synthetic-control", assetsRoot: "/mnt/c/Synthetic/resources/app/assets",
     wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: native.options.reviewedExecutionScopeSha256 }, {
@@ -64,6 +71,10 @@ async function fixture(context: TestContext): Promise<{
     startSupervisor: (): Promise<typeof native.supervisor> => Promise.resolve(native.supervisor),
   });
   const launch = await runtime.launch();
+  native.behavior.mutateResponse = (request, response): void => {
+    // A release addresses its retained old capture, not the new current Job.
+    if (request["action"] === "release-capture") { response["jobId"] = request["jobId"]; }
+  };
   context.mock.method(runtime, "observeApplicationWindow", () => {
     assert.equal(state.scope, false); state.events.push("window");
     return Promise.resolve({ jobId: launch.jobId, helperInstance: launch.helperInstance, outcome: "available" as const, hwnd: "12345" });
@@ -100,7 +111,17 @@ async function fixture(context: TestContext): Promise<{
     },
     assertCurrentSymbolBaselineOwner: checkOwner,
     revalidateCurrentSymbolBaselineOwner: (owner: unknown, receivedEngine: unknown) => Promise.resolve(checkOwner(owner, receivedEngine)),
-    assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation,
+    assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, windowsClockObservationForResult,
+    assertIssuedWindowsClockObservation: async (value: unknown): ReturnType<typeof assertIssuedWindowsClockObservation> => {
+      const originalClock = await assertIssuedWindowsClockObservation(value); await state.afterClockAssert?.(); return originalClock;
+    },
+    assertOriginalCurrentSymbolBaselineCopy: (copy: unknown, receivedEngine: unknown): void => {
+      assert.equal(receivedEngine, engine); assert.equal(copy, state.copied);
+    },
+    revalidateCurrentSymbolBaselineCopy: async (receivedEngine: unknown, copy: unknown, proof: unknown): Promise<void> => {
+      assert.equal(receivedEngine, engine); assert.equal(copy, state.copied); assert.equal(proof, state.proof);
+      assert.equal(await assertClosedSessionCopyAuthority(proof), proof); state.events.push("copy-revalidated");
+    },
     captureCurrentSymbolBaselineCopy: async (receivedEngine: unknown, input: unknown, onEvidence: (event: unknown) => void): Promise<unknown> => {
       assert.equal(receivedEngine, engine); assert.ok(isRecord(input)); assert.equal(input["owner"], ownerData); assert.equal(state.scope, false);
       assert.deepEqual(input["runtime"], SQL_RUNTIME); assert.ok(isRecord(input["capture"]));
@@ -110,9 +131,11 @@ async function fixture(context: TestContext): Promise<{
       assert.ok(last !== undefined); assert.match(basename(last.path), /-copy-intent\.json$/u);
       state.copies += 1; state.events.push("copy");
       if (state.copyFailure) { throw new Error("synthetic copy failure"); }
-      const checkpoint = { checkpointSha256: HASH }, copy = { sha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
+      const checkpoint = { checkpointSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
-      return { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true } };
+      state.proof = input["proof"];
+      const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true } };
+      state.copied = result; return result;
     },
   });
   const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator });`, scope);
@@ -233,4 +256,98 @@ void test("current baseline rechecks the retained proof epoch at final pending a
       assert.equal(f.calls("normal-close"), 1); assert.equal(f.calls("clocked-prove-terminated"), 1); assert.equal(f.state.copies, pending ? 0 : 1);
     });
   }
+});
+
+async function completedBaseline(context: TestContext): Promise<Awaited<ReturnType<typeof fixture>>> {
+  const f = await fixture(context); await f.coordinator.capture(f.owner); f.state.scope = false;
+  await f.coordinator.close(f.owner); await f.coordinator.observe(f.owner.operationId);
+  f.state.activeSession = false; return f;
+}
+
+void test("current baseline relaunch retains the actual new launch and its clock after releasing the old capture", async (context) => {
+  const f = await completedBaseline(context);
+  const oldClock = await windowsClockObservationForResult(f.state.proof, "termination");
+  const launch = f.runtime.launch.bind(f.runtime);
+  let originalLaunch: Awaited<ReturnType<typeof launch>> | undefined;
+  context.mock.method(f.runtime, "launch", async (): ReturnType<typeof launch> => {
+    originalLaunch = await launch(); f.state.activeSession = true; f.state.sessionSequence = 2; return originalLaunch;
+  });
+  const result = await f.coordinator.relaunch(f.owner.operationId);
+  assert.equal(result["state"], "relaunched"); assert.equal(result["launchAcknowledged"], true);
+  assert.equal(result["captureReleased"], true); assert.equal(result["nativeLaunchClockStatus"], "observed");
+  for (const key of ["beforeWriteBaselineVerified", "openingEffectsVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
+    assert.equal(result[key], false);
+  }
+  assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+  assert.ok(f.state.events.indexOf("journal:relaunch-dispatching") < f.state.events.indexOf("native:clocked-launch"));
+  assert.ok(f.state.events.indexOf("native:clocked-launch") < f.state.events.indexOf("native:release-capture"));
+  assert.ok(originalLaunch !== undefined);
+  const newClock = await f.runtime.clockObservationForLaunch(originalLaunch);
+  assert.equal(await assertIssuedWindowsClockObservation(newClock), newClock);
+  await assert.rejects(f.runtime.clockObservationForLaunch(structuredClone(originalLaunch)), /unchanged original current launch/u);
+  await assert.rejects(assertClosedSessionCopyAuthority(f.state.proof));
+  await assert.rejects(assertIssuedWindowsClockObservation(oldClock), /launched generation changed/u);
+  await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+  await assert.rejects(f.restart().relaunch(f.owner.operationId));
+  assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+});
+
+void test("current baseline relaunch records an unavailable native launch clock without manufacturing clock authority", async (context) => {
+  const f = await completedBaseline(context); f.native.behavior.clockMode = "unavailable";
+  const result = await f.coordinator.relaunch(f.owner.operationId);
+  assert.equal(result["state"], "relaunched"); assert.equal(result["nativeLaunchClockStatus"], "unavailable");
+  assert.equal(result["captureReleased"], true); assert.equal(result["writerReady"], false); assert.equal(result["executionAuthorized"], false);
+  assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+});
+
+void test("current baseline consumes ambiguous relaunch and old-capture release attempts", async (context) => {
+  for (const failedAction of ["clocked-launch", "release-capture"]) {
+    await context.test(failedAction, async (childContext) => {
+      const f = await completedBaseline(childContext); f.native.behavior.errorAction = failedAction;
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+      const stopped = await f.coordinator.inspect(f.owner.operationId); assert.equal(stopped["state"], "stopped");
+      assert.equal(stopped["launchAcknowledged"], failedAction === "release-capture"); assert.equal(stopped["captureReleased"], false);
+      assert.equal(stopped["releaseAttempted"], failedAction === "release-capture");
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+      await assert.rejects(f.restart().relaunch(f.owner.operationId));
+      assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), failedAction === "release-capture" ? 1 : 0);
+      assert.equal(f.calls("normal-close"), 1); assert.equal(f.state.copies, 1);
+    });
+  }
+});
+
+void test("current baseline preserves a journal advanced during launch or final clock validation", async (context) => {
+  for (const phase of ["launch", "final-clock"]) {
+    await context.test(phase, async (childContext) => {
+      const f = await completedBaseline(childContext), launch = f.runtime.launch.bind(f.runtime);
+      let external: Buffer | undefined;
+      const advance = async (): Promise<void> => {
+        const journal = await loadOperation(f.owner.operationId);
+        journal["nextSafeAction"] = "Synthetic external relaunch advance; preserve this journal.";
+        await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+      };
+      if (phase === "launch") {
+        childContext.mock.method(f.runtime, "launch", async (): ReturnType<typeof launch> => {
+          const original = await launch(); await advance(); return original;
+        });
+      } else {
+        let observations = 0;
+        f.state.afterClockAssert = async (): Promise<void> => { observations += 1; if (observations === 2) { await advance(); } };
+      }
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId), /journal changed/u);
+      assert.ok(external !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+      const retained = await f.coordinator.inspect(f.owner.operationId); assert.equal(retained["launchAcknowledged"], true);
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+      assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+      assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), phase === "final-clock" ? 1 : 0);
+      assert.equal(f.runtime.status().state, "owned");
+    });
+  }
+});
+
+void test("current baseline refuses relaunch while the prior authenticated session remains active", async (context) => {
+  const f = await completedBaseline(context); f.state.activeSession = true;
+  await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+  await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+  assert.equal(f.calls("clocked-launch"), 1); assert.equal(f.calls("release-capture"), 0);
 });

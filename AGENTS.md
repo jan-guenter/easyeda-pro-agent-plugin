@@ -6,6 +6,49 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: retained current symbol relaunch
+
+Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
+The original completed baseline now has an internal one-shot relaunch path.
+It requires the original disconnected gateway session, ended dispatch scope,
+unchanged checkpoint receipt/source lineage and genuine termination authority.
+The intent is journaled before launch. The actual new launch return and its
+issued native clock are retained; no old owner or closure proof is checked
+after launch invalidates that generation. The old capture is released once
+through its original engine, after a separate durable intent. The runtime and
+new Job remain owned; runtime.release is never called. Unavailable native clock
+data is reported, not fabricated or retried. Launch/release ambiguity and
+publication drift consume the attempt while preserving acquired evidence and
+foreign journal history. Final clock validation is followed by a journal check.
+
+The opening transfer now reserves the runtime for its entire lifetime, not
+only the old Job. A new Job or null launch cannot reopen ordinary navigation
+or allow a sibling coordinator to take over. No public schema or MCP route
+has been added. Authenticated new-session admission, opening-effect proof,
+backend actor/clock, writer/inverse and a disposable complete lifecycle remain
+unfinished. This internal checkpoint is not an installed release.
+
+Source research in docs/current-reopen-effects-research-2026-10-15.md identifies
+cache replay, asynchronous project startup and detached PCB Save paths. The
+next opening profile should be project-only for metadata, with both target
+upload caches absent before opening and independently established no-restore,
+current-version/nonempty-project premises. It must still qualify relevant
+startup producers; a resolved open promise or repeated stable snapshots do not
+do that. Backend request-user identity remains distinct from observed UI actors.
+No native semantics or persistence guards were weakened.
+
+The 36 focused tests pass with no failures or skips. They exercise real managed
+journals, engine/native proof issuers, checkpoint/copy readers and SQL with
+synthetic native frames/private owner seams, not a connected editor. Full
+types and whole-tree zero-warning type-aware lint pass. Build/sanitizer,
+compatibility, package/privacy/repository, 774-method coverage and all seven
+official skill checks pass. Rebuilt source352 SHA99bae0e3/runtime3 SHA3ebba5ec
+change only facade projections; external pins stay unchanged. Independent
+runtime review accepts the transition; final payload CI remains pending.
+No live EasyEDA call, app launch, design access, Save, restoration or installation occurred.
+Installed140000 is unchanged; no restart is required for this source work.
+Production designs and their records remain excluded.
+
 ### In development: owned current symbol closed baseline
 
 Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
@@ -50,8 +93,20 @@ and private owner seams, not a connected editor. Full typecheck, whole-tree
 zero-warning type-aware lint, sanitizer/build, package/privacy/repository,
 774-method coverage and all seven official skill checks pass. Rebuilt source352
 SHAe1656bc3 and runtime3 SHA6a5c61f6 match their facade projections; external pins
-are unchanged. This payload's exact-commit CI is pending. Previous PR36 CI
-results below apply only to623fdb26.
+are unchanged. Exact payload7a90164c4eecc26234938c2170dd4f46b050af15 is pushed
+to draft PR36. Required CI38799413869 passed all ten jobs:9979 facade passes,
+five skips, zero failures, and424 bridge passes. Windows38799413640 also passed.
+Postcommit build reproduces both bundles exactly. Tested full tree
+b0785d474ca79e4fa7a49206c16cd32b6b863921 and package subtree
+f89b64d374413ce59de44a8f1011de34f8dd08d3 identify this checkpoint.
+Receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6201445983.
+Keep the PR draft/unmerged until writer integration is complete or the user
+selects a smaller release boundary. This final local continuation record is the
+only post-payload change; preserve it in the next source commit instead of
+starting another CI run for documentation alone. Next implementation is
+subsequent-opening effects and backend actor/clock qualification, then the
+writer/inverse and retained release/relaunch/recovery lifecycle described in the
+research note. Do not repeat historical application operations.
 
 No live EasyEDA call, app launch, design access, Save or restoration occurred in
 this continuation. Installed140000 is unchanged and no restart is required.

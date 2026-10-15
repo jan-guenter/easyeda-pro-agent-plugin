@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "33c85090829b1bb315d8c4cf3d7267753a03a3e49590e8ace3ddf9cdc3247774";
+const __easyedaBundlePairId = "5acd87d9836459e364545084e8b711413ce2cf71b262f8656c9f472cef8da774";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -118899,6 +118899,65 @@ function need44(condition, message) {
     throw new Error(message);
   }
 }
+function assertOriginalCurrentSymbolBaselineCopy(value, engine2) {
+  const original2 = issued5.get(value);
+  need44(
+    original2 !== void 0 && original2.engine === engine2 && original2.text === canonicalJson(value),
+    "Current symbol baseline copy was not issued unchanged by this engine."
+  );
+}
+async function revalidateCurrentSymbolBaselineCopy(engine2, value, proof) {
+  const current2 = () => {
+    assertOriginalCurrentSymbolBaselineCopy(value, engine2);
+    assertCurrentSymbolBaselineOwner(value.owner, engine2);
+    assertIssuedClosedFileCopy(value.copy);
+    assertCurrentClosedSessionCopyAuthority(proof);
+    const completion = readerCompletion(value.inventory);
+    need44(
+      completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null && value.copy.closureProofSha256 === proof.proofSha256 && value.copy.sha256 === value.checkpoint.sourceSha256 && value.inventory.checkpointSha256 === value.copy.sha256 && value.copy.source === value.checkpoint.source,
+      "Current symbol relaunch baseline lineage or reader completion differs."
+    );
+  };
+  current2();
+  need44(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority.");
+  current2();
+  await revalidateCurrentSymbolBaselineOwner(value.owner, engine2);
+  current2();
+  const root = await controlRootCapability();
+  current2();
+  const receiptCurrent = async () => {
+    const receipt2 = await readArtifact(value.checkpoint.receiptPath, 0, 65536);
+    current2();
+    need44(
+      receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(value.checkpoint),
+      "Current symbol relaunch checkpoint receipt changed."
+    );
+  };
+  await receiptCurrent();
+  current2();
+  const verified = await verifyCheckpoint(value.checkpoint.receiptPath, {
+    expectedSource: value.copy.source,
+    artifactRoots: [join58(controlDataDirectory(), "checkpoints")],
+    controlRoot: root,
+    maximumSourceBytes: 268435456
+  });
+  current2();
+  const checkpoint = value.checkpoint;
+  need44(
+    verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
+    "Current symbol relaunch checkpoint or source changed."
+  );
+  await receiptCurrent();
+  current2();
+  for (const [path5, identity28] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
+    const stat2 = await lstat36(path5, { bigint: true });
+    current2();
+    need44(
+      stat2.isFile() && !stat2.isSymbolicLink() && stat2.nlink === 1n && stat2.dev.toString() === identity28.dev && stat2.ino.toString() === identity28.ino && stat2.birthtimeNs.toString() === identity28.birthtimeNs && stat2.ctimeNs.toString() === identity28.ctimeNs,
+      "Current symbol relaunch source or checkpoint lineage changed."
+    );
+  }
+}
 function closeBinding(input, source4) {
   const { owner, capture: capture3, intent, closeReceipt, proof } = input;
   const authority = capture3.executionAuthority, launch = source4.launchProjection;
@@ -119060,6 +119119,7 @@ var init_current_symbol_baseline_copy = __esm({
     init_current_symbol_closed_target();
     init_current_symbol_metadata_preparation();
     init_native_history();
+    init_sqlite_inventory();
     init_windows_authority();
     consumed = /* @__PURE__ */ new WeakSet();
     issued5 = /* @__PURE__ */ new WeakMap();
@@ -119072,6 +119132,9 @@ function need45(condition, message) {
     throw new Error(message);
   }
 }
+function relaunchMethods(engine2, runtime) {
+  return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture, engine2.releaseClosedSessionAuthority];
+}
 function summary6(slot) {
   return {
     operationId: slot.owner.operationId,
@@ -119080,9 +119143,16 @@ function summary6(slot) {
     closeAttempted: slot.closeAttempted,
     closeAcknowledged: slot.closeReceipt !== void 0,
     copyAttempted: slot.copyAttempted,
-    baselineCaptured: slot.journal.state === "completed",
+    baselineCaptured: slot.baselineCaptured,
+    relaunchAttempted: slot.relaunchAttempted,
+    launchAcknowledged: slot.launch !== void 0,
+    releaseAttempted: slot.releaseAttempted,
+    captureReleased: slot.captureReleased,
+    nativeLaunchClockStatus: slot.launchClock?.clock.status ?? "not-observed",
     beforeWriteBaselineVerified: false,
     openingEffectsVerified: false,
+    backendActorVerified: false,
+    backendClockVerified: false,
     writerReady: false,
     executionAuthorized: false,
     explicitSaveDispatched: false,
@@ -119150,13 +119220,24 @@ var init_current_symbol_baseline_runtime = __esm({
       static async stopped(slot, phase4) {
         slot.journal.state = "stopped";
         slot.journal.hardStop = true;
-        slot.journal.nextSafeAction = "Inspect this consumed baseline attempt. Do not repeat close, copy, Save or navigation; retain the original facade and process handles.";
+        slot.journal.relaunchAttempted = slot.relaunchAttempted;
+        slot.journal.releaseAttempted = slot.releaseAttempted;
+        slot.journal.nextSafeAction = "Inspect this consumed attempt. Do not repeat close, copy, launch, release, Save or navigation; retain the original facade and process handles.";
         if (slot.created) {
           const persisted = await loadOperation(slot.owner.operationId);
           if (canonicalJson(persisted) !== slot.journalText) {
             return;
           }
-          await _CurrentSymbolBaselineCoordinator.record(slot, "stopped", { phase: phase4, replayAllowed: false, closeAttempted: slot.closeAttempted, copyAttempted: slot.copyAttempted });
+          await _CurrentSymbolBaselineCoordinator.record(slot, "stopped", {
+            phase: phase4,
+            replayAllowed: false,
+            closeAttempted: slot.closeAttempted,
+            copyAttempted: slot.copyAttempted,
+            relaunchAttempted: slot.relaunchAttempted,
+            launchAcknowledged: slot.launch !== void 0,
+            releaseAttempted: slot.releaseAttempted,
+            captureReleased: slot.captureReleased
+          });
         }
       }
       static async fail(slot, phase4, error51) {
@@ -119199,6 +119280,8 @@ var init_current_symbol_baseline_runtime = __esm({
           artifacts: [],
           closeAttempted: false,
           copyAttempted: false,
+          relaunchAttempted: false,
+          releaseAttempted: false,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
           nextSafeAction: "Retain one closed-session capture in the original authenticated scope before normal close."
@@ -119211,6 +119294,10 @@ var init_current_symbol_baseline_runtime = __esm({
           created: false,
           closeAttempted: false,
           copyAttempted: false,
+          baselineCaptured: false,
+          relaunchAttempted: false,
+          releaseAttempted: false,
+          captureReleased: false,
           evidence: /* @__PURE__ */ new Map()
         };
         this.slots.set(owner.operationId, slot);
@@ -119380,9 +119467,161 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.unchanged(slot);
           this.outsideScope(slot);
           assertCurrentClosedSessionCopyAuthority(proof);
+          slot.baselineCaptured = true;
           return summary6(slot);
         } catch (error51) {
           return await _CurrentSymbolBaselineCoordinator.fail(slot, "termination-or-copy", error51);
+        } finally {
+          this.busy = false;
+        }
+      }
+      /** Owned subsequent launch only. Consumes the attempt before any await and
+       * keeps actual return objects even when publication or handle release fails.
+       * There is deliberately no authenticated admission, project-open or writer.
+       */
+      async relaunch(operationId3) {
+        const slot = this.slots.get(operationId3);
+        need45(
+          !this.busy && slot !== void 0 && slot.journal.state === "completed" && slot.baselineCaptured && slot.copy !== void 0 && slot.proof !== void 0 && slot.capture !== void 0 && !slot.relaunchAttempted,
+          "Current symbol relaunch needs its original completed baseline and unused attempt."
+        );
+        this.busy = true;
+        slot.relaunchAttempted = true;
+        const { copy, proof, capture: capture3 } = slot;
+        try {
+          this.outsideScope(slot);
+          await this.unchanged(slot);
+          this.outsideScope(slot);
+          const source4 = assertCurrentSymbolBaselineOwner(slot.owner, this.engine).source;
+          const upstream2 = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
+          const lifecycleReader = upstream2.bridgeSessionLifecycle, scopeReader = upstream2.currentAuthenticatedBridgeDispatchBinding;
+          need45(
+            typeof scopeReader === "function" && typeof lifecycleReader === "function" && validator === this.runtime,
+            "Current symbol relaunch needs its original runtime validator and lifecycle readers."
+          );
+          const methods4 = relaunchMethods(this.engine, this.runtime);
+          const captureText = canonicalJson(capture3), priorLaunch = canonicalJson(source4.launchProjection);
+          const endpoint2 = lifecycleReader.call(upstream2), priorSession = source4.bridgeSession;
+          const priorSessionText = canonicalJson(priorSession);
+          need45(isRecord(endpoint2), "Current symbol relaunch lifecycle is unavailable.");
+          const endpointText = canonicalJson(endpoint2["publicEndpoint"]);
+          let replacementSessionText;
+          const infrastructure = (launched2) => {
+            need45(
+              this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === methods4[index]) && scopeReader.call(upstream2) === void 0 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source4.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText,
+              "Current symbol relaunch infrastructure, capture or ended scope changed."
+            );
+            assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+            const lifecycle = lifecycleReader.call(upstream2);
+            need45(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && lifecycle["gatewayInstanceId"] === priorSession.gatewayInstanceId && canonicalJson(lifecycle["publicEndpoint"]) === endpointText && Array.isArray(lifecycle["recentClosedSessions"]), "Current symbol relaunch gateway changed.");
+            const closed = lifecycle["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === priorSession.sessionId);
+            const old = closed[0];
+            need45(
+              closed.length === 1 && isRecord(old) && old["sequence"] === priorSession.sequence && old["authenticationReceiptSha256"] === priorSession.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === priorSession.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= priorSession.authenticatedAtEpochMs,
+              "Current symbol relaunch lacks its original disconnected session."
+            );
+            const active2 = lifecycle["activeSession"];
+            if (!launched2) {
+              need45(active2 === null, "Current symbol relaunch requires a disconnected bridge before launch.");
+            } else if (active2 !== null) {
+              need45(
+                isRecord(active2) && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > priorSession.sequence && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== priorSession.sessionId,
+                "Current symbol relaunch observed an invalid replacement session."
+              );
+              replacementSessionText ??= canonicalJson(active2);
+            }
+            need45(
+              replacementSessionText === void 0 || canonicalJson(active2) === replacementSessionText,
+              "Current symbol relaunch replacement session changed."
+            );
+          };
+          const previous = () => {
+            infrastructure(false);
+            this.outsideScope(slot);
+            need45(canonicalJson(this.runtime.status().launch) === priorLaunch, "Current symbol relaunch prior launch changed.");
+            assertCurrentClosedSessionCopyAuthority(proof);
+          };
+          previous();
+          await revalidateCurrentSymbolBaselineCopy(this.engine, copy, proof);
+          previous();
+          slot.terminationClock = await windowsClockObservationForResult(proof, "termination");
+          previous();
+          slot.journal.relaunchAttempted = true;
+          slot.journal.state = "relaunch-dispatching";
+          slot.journal.hardStop = true;
+          slot.journal.nextSafeAction = "Retain this one launch result; never repeat launch after an uncertain return.";
+          await _CurrentSymbolBaselineCoordinator.record(slot, "relaunch-intent", {
+            copyReceiptSha256: copy.copy.receiptSha256,
+            checkpoint: copy.checkpoint,
+            proof,
+            terminationClock: slot.terminationClock
+          });
+          previous();
+          await revalidateCurrentSymbolBaselineCopy(this.engine, copy, proof);
+          previous();
+          await this.unchanged(slot);
+          previous();
+          const launch = await this.runtime.launch();
+          slot.launch = launch;
+          const launchText = canonicalJson(launch);
+          const launched = () => {
+            infrastructure(true);
+            const status2 = this.runtime.status();
+            need45(
+              status2.state === "owned" && canonicalJson(status2.launch) === launchText && canonicalJson(launch) === launchText && launch.helperInstance === source4.launchProjection.helperInstance && launch.jobId !== source4.launchProjection.jobId && launch.root.startIdentity !== source4.launchProjection.root.startIdentity,
+              "Current symbol relaunch original result or new generation changed."
+            );
+          };
+          const journalCurrent = async () => {
+            launched();
+            const journal = await loadOperation(operationId3);
+            launched();
+            need45(
+              canonicalJson(journal) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
+              "Current symbol relaunch journal changed."
+            );
+          };
+          launched();
+          await journalCurrent();
+          slot.journal.state = "relaunch-acknowledged";
+          await _CurrentSymbolBaselineCoordinator.record(slot, "relaunch-result", { launch, admissionProved: false, executionAuthorized: false });
+          launched();
+          await journalCurrent();
+          slot.launchClock = await this.runtime.clockObservationForLaunch(launch);
+          launched();
+          await journalCurrent();
+          need45(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch clock issuer changed.");
+          launched();
+          await journalCurrent();
+          slot.releaseAttempted = true;
+          slot.journal.releaseAttempted = true;
+          await _CurrentSymbolBaselineCoordinator.record(slot, "capture-release-intent", { captureSha256: sha256Json(capture3), launch, launchClock: slot.launchClock });
+          launched();
+          await journalCurrent();
+          await this.engine.releaseClosedSessionAuthority(capture3);
+          slot.captureReleased = true;
+          launched();
+          await journalCurrent();
+          slot.journal.state = "relaunched";
+          slot.journal.nextSafeAction = "New launch retained. Admit its new authenticated session and qualify startup/opening effects and backend actor/clock before any writer. Do not relaunch or release again.";
+          await _CurrentSymbolBaselineCoordinator.record(slot, "capture-release-result", {
+            captureReleased: true,
+            launchClock: slot.launchClock,
+            admissionProved: false,
+            beforeWriteBaselineVerified: false,
+            openingEffectsVerified: false,
+            backendActorVerified: false,
+            backendClockVerified: false,
+            executionAuthorized: false
+          });
+          launched();
+          await journalCurrent();
+          need45(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch final clock issuer changed.");
+          launched();
+          await journalCurrent();
+          return summary6(slot);
+        } catch (error51) {
+          return await _CurrentSymbolBaselineCoordinator.fail(slot, "relaunch-or-release", error51);
         } finally {
           this.busy = false;
         }
@@ -119393,7 +119632,9 @@ var init_current_symbol_baseline_runtime = __esm({
           isRecord(journal.plan) && journal.plan["profile"] === PROFILE16 && journal.operationId === operationId3,
           "Current symbol baseline history has another profile."
         );
+        const slot = this.slots.get(operationId3);
         return {
+          ...slot === void 0 ? {} : summary6(slot),
           operationId: operationId3,
           state: journal["state"],
           journalPath: journal["journalPath"],
@@ -119491,7 +119732,7 @@ function summary7(journal) {
     artifacts: journal.artifacts
   };
 }
-var PROFILE17, digest5, launchSchema2, terminationSchema, closedSessionSchema, defaults, issuedGenerations, issuedBaselineOwners, baselineJobReservations, CurrentDisposableOpenCoordinator;
+var PROFILE17, digest5, launchSchema2, terminationSchema, closedSessionSchema, defaults, issuedGenerations, issuedBaselineOwners, baselineRuntimeReservations, CurrentDisposableOpenCoordinator;
 var init_current_disposable_open_runtime = __esm({
   "server/src/current-disposable-open-runtime.ts"() {
     init_zod();
@@ -119537,7 +119778,7 @@ var init_current_disposable_open_runtime = __esm({
     };
     issuedGenerations = /* @__PURE__ */ new WeakMap();
     issuedBaselineOwners = /* @__PURE__ */ new WeakMap();
-    baselineJobReservations = /* @__PURE__ */ new WeakMap();
+    baselineRuntimeReservations = /* @__PURE__ */ new WeakSet();
     CurrentDisposableOpenCoordinator = class _CurrentDisposableOpenCoordinator {
       options;
       services;
@@ -119631,15 +119872,10 @@ var init_current_disposable_open_runtime = __esm({
         const engine2 = this.options.engine, slot = this.retained.get(openingOperationId);
         requireValue15(slot !== void 0 && slot.runtime instanceof WindowsControlRuntime, "Current symbol baseline needs the original retained opening and runtime.");
         const runtime = slot.runtime;
-        this.current(slot);
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
+        this.current(slot);
+        baselineRuntimeReservations.add(runtime);
         this.baselineJobs.add(slot.launch.jobId);
-        let reservations = baselineJobReservations.get(slot.runtime);
-        if (reservations === void 0) {
-          reservations = /* @__PURE__ */ new Set();
-          baselineJobReservations.set(slot.runtime, reservations);
-        }
-        reservations.add(slot.launch.jobId);
         this.generations.clear();
         this.busy = true;
         const stage = new CurrentSymbolBaselineCoordinator(engine2, runtime, sqlRuntime);
@@ -119688,9 +119924,19 @@ var init_current_disposable_open_runtime = __esm({
           this.busy = false;
         }
       }
+      /** Internal continuation only; the public opener schema has no relaunch route. */
+      async relaunchSymbolBaseline(operationId3) {
+        const stage = this.baselines.get(operationId3);
+        requireValue15(!this.busy && stage !== void 0, "Current symbol baseline original coordinator is unavailable or busy.");
+        this.busy = true;
+        try {
+          return await stage.relaunch(operationId3);
+        } finally {
+          this.busy = false;
+        }
+      }
       static assertNotTransferred(runtime) {
-        const launch = runtime.status().launch;
-        requireValue15(launch === null || baselineJobReservations.get(runtime)?.has(launch.jobId) !== true, "Current disposable opening was transferred to a one-shot baseline owner.");
+        requireValue15(!baselineRuntimeReservations.has(runtime), "Current disposable opening was transferred to a one-shot baseline owner.");
       }
       transferBaseline(slot, engine2, generation5, preparation3, operationId3) {
         const original2 = assertOriginalCurrentOwnedSymbolPreparation(preparation3, engine2);

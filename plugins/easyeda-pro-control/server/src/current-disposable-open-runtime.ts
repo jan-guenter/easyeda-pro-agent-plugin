@@ -104,7 +104,9 @@ export interface CurrentSymbolBaselineOwnerSource {
 const issuedBaselineOwners = new WeakMap<object, {
   readonly value: CurrentSymbolBaselineOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
 }>();
-const baselineJobReservations = new WeakMap<object, Set<string>>();
+// The transfer owns the runtime, not just its current Job. A later owned launch
+// Must not reopen ordinary navigation or let a sibling baseline take over.
+const baselineRuntimeReservations = new WeakSet<object>();
 
 /** One-way transfer out of an active generation. This checks the original
  * opening, runtime and validator, but deliberately not a now-closed session.
@@ -260,11 +262,9 @@ export class CurrentDisposableOpenCoordinator {
     const engine = this.options.engine, slot = this.retained.get(openingOperationId);
     requireValue(slot !== undefined && slot.runtime instanceof WindowsControlRuntime, "Current symbol baseline needs the original retained opening and runtime.");
     const runtime = slot.runtime;
-    this.current(slot); CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
+    CurrentDisposableOpenCoordinator.assertNotTransferred(runtime); this.current(slot);
+    baselineRuntimeReservations.add(runtime);
     this.baselineJobs.add(slot.launch.jobId);
-    let reservations = baselineJobReservations.get(slot.runtime);
-    if (reservations === undefined) { reservations = new Set(); baselineJobReservations.set(slot.runtime, reservations); }
-    reservations.add(slot.launch.jobId);
     this.generations.clear(); this.busy = true;
     const stage = new CurrentSymbolBaselineCoordinator(engine, runtime, sqlRuntime);
     this.baselines.set(request.operationId, stage);
@@ -303,9 +303,17 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
+  /** Internal continuation only; the public opener schema has no relaunch route. */
+  public async relaunchSymbolBaseline(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.relaunch(operationId); }
+    finally { this.busy = false; }
+  }
+
   private static assertNotTransferred(runtime: Retained["runtime"]): void {
-    const launch = runtime.status().launch;
-    requireValue(launch === null || baselineJobReservations.get(runtime)?.has(launch.jobId) !== true, "Current disposable opening was transferred to a one-shot baseline owner.");
+    requireValue(!baselineRuntimeReservations.has(runtime), "Current disposable opening was transferred to a one-shot baseline owner.");
   }
 
   private transferBaseline(slot: Retained, engine: EasyedaControlEngine, generation: CurrentDisposableOpenGeneration,

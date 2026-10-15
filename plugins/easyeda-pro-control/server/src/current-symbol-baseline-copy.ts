@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { controlDataDirectory, controlRootCapability, operationPath, readArtifact } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointReceipt } from "./checkpoint.ts";
-import { copyClosedProjectBytes } from "./closed-file-copy.ts";
+import { assertIssuedClosedFileCopy, copyClosedProjectBytes } from "./closed-file-copy.ts";
 import type { ClosedFileCopyReceipt } from "./closed-file-copy.ts";
 import { readClosedCopySqlInventory } from "./closed-file-sql.ts";
 import { canonicalJson, isRecord, normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
@@ -20,6 +20,7 @@ import type { CurrentSymbolMetadataPreparationResult } from "./current-symbol-me
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { isNativeDocumentDeleted, readNativeHistoryCheckpoint } from "./native-history.ts";
+import { readerCompletion } from "./sqlite-inventory.ts";
 import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority } from "./windows-authority.ts";
 import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationProof } from "./windows-authority.ts";
 
@@ -65,6 +66,50 @@ export function assertOriginalCurrentSymbolBaselineCopy(value: CurrentSymbolBase
   const original = issued.get(value);
   need(original !== undefined && original.engine === engine && original.text === canonicalJson(value),
     "Current symbol baseline copy was not issued unchanged by this engine.");
+}
+
+/** Last closed-source check before a subsequent launch consumes the old proof.
+ * The original in-memory inventory remains historical evidence. This does not
+ * admit reopening effects or promise freshness of a later artifact-path read.
+ */
+export async function revalidateCurrentSymbolBaselineCopy(engine: EasyedaControlEngine, value: CurrentSymbolBaselineCopy,
+  proof: ClosedSessionTerminationProof): Promise<void> {
+  const current = (): void => {
+    assertOriginalCurrentSymbolBaselineCopy(value, engine);
+    assertCurrentSymbolBaselineOwner(value.owner, engine);
+    assertIssuedClosedFileCopy(value.copy);
+    assertCurrentClosedSessionCopyAuthority(proof);
+    const completion = readerCompletion(value.inventory);
+    need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
+      value.copy.closureProofSha256 === proof.proofSha256 && value.copy.sha256 === value.checkpoint.sourceSha256 &&
+      value.inventory.checkpointSha256 === value.copy.sha256 && value.copy.source === value.checkpoint.source,
+    "Current symbol relaunch baseline lineage or reader completion differs.");
+  };
+  current();
+  need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority."); current();
+  await revalidateCurrentSymbolBaselineOwner(value.owner, engine); current();
+  const root = await controlRootCapability(); current();
+  const receiptCurrent = async (): Promise<void> => {
+    const receipt = await readArtifact(value.checkpoint.receiptPath, 0, 65_536); current();
+    need(receipt.eof && canonicalJson(JSON.parse(receipt.text) as unknown) === canonicalJson(value.checkpoint),
+      "Current symbol relaunch checkpoint receipt changed.");
+  };
+  await receiptCurrent(); current();
+  const verified = await verifyCheckpoint(value.checkpoint.receiptPath, { expectedSource: value.copy.source,
+    artifactRoots: [join(controlDataDirectory(), "checkpoints")], controlRoot: root, maximumSourceBytes: 268_435_456 }); current();
+  const checkpoint = value.checkpoint;
+  need(verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged &&
+    verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath &&
+    verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 &&
+    verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
+  "Current symbol relaunch checkpoint or source changed.");
+  await receiptCurrent(); current();
+  for (const [path, identity] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]] as const) {
+    const stat = await lstat(path, { bigint: true }); current();
+    need(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n && stat.dev.toString() === identity.dev && stat.ino.toString() === identity.ino &&
+      stat.birthtimeNs.toString() === identity.birthtimeNs && stat.ctimeNs.toString() === identity.ctimeNs,
+    "Current symbol relaunch source or checkpoint lineage changed.");
+  }
 }
 
 function closeBinding(input: CurrentSymbolBaselineCopyInput, source: ReturnType<typeof assertCurrentSymbolBaselineOwner>["source"]): void {
