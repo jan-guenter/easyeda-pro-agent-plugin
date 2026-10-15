@@ -76,6 +76,13 @@ reviewed policy; it cannot supply original retained-handle or Job exit proof.
 Processes with other names, unobserved descendants, and an external application
 start after a snapshot remain outside this argument. The attempt stays consumed.
 
+Execution must consume the exact captured and verified helper bytes. Hashing a
+descriptor and later passing its path to `-File` leaves a substitution window,
+including replacement of a parent directory. Decode the verified UTF-8 bytes
+strictly and encode that same text as UTF-16LE Base64 for
+[`-EncodedCommand`][encoded-command]. Post-execution path checks detect drift;
+they do not make a prior path reopen safe.
+
 For future v2 intents, a protocol marker alone does not establish source review.
 Before a recovery probe, require `intent.facadeSha256` to equal the independently
 verified current facade digest. A completed v2 sidecar must bind its recovery
@@ -86,8 +93,11 @@ Future protocols need their own retained invariant. This v1 review covers only t
 
 ## Focused Windows execution check
 
-The separate `windows-launch-recovery.yml` workflow runs the fixed read-only
-script in a Windows PowerShell 5.1 child. Its waiting PowerShell parent must be
+The separate `windows-launch-recovery.yml` workflow verifies the helper's
+2279-byte length and SHA-256
+`d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c`, then runs
+those captured bytes through `-EncodedCommand` in a Windows PowerShell 5.1 child.
+Its waiting PowerShell parent must be
 reported as present; the fresh runner must report no EasyEDA process. It checks
 the child exit code and exact observation fields, without installing or starting
 CAD. GitHub lists [`windows-2025` as a fresh hosted VM][hosted-runners]. This is
@@ -109,3 +119,4 @@ termination or design validation. Its CI result must be recorded separately.
 [manager-route]: https://github.com/microsoft/referencesource/blob/ec9fa9ae770d522a5b5f0607898044b7478574a3/System/services/monitoring/system/diagnosticts/ProcessManager.cs#L169-L180
 [manager-query]: https://github.com/microsoft/referencesource/blob/ec9fa9ae770d522a5b5f0607898044b7478574a3/System/services/monitoring/system/diagnosticts/ProcessManager.cs#L1063-L1202
 [hosted-runners]: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+[encoded-command]: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe?view=powershell-5.1

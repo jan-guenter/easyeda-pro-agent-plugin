@@ -36,7 +36,7 @@ function sameFile(left: BigIntStats, right: BigIntStats): boolean {
   return (["dev", "ino", "size", "mode", "uid", "gid", "nlink", "mtimeNs", "ctimeNs"] as const).every((key) => left[key] === right[key]);
 }
 
-async function verifyHelper(helperPath: string, expected?: BigIntStats): Promise<BigIntStats> {
+async function verifyHelper(helperPath: string, expected?: BigIntStats): Promise<{ readonly stat: BigIntStats; readonly command: string }> {
   if (await realpath(helperPath) !== helperPath) { throw new Error("Recovery helper source check failed."); }
   // oxlint-disable-next-line no-bitwise -- Read only and refuse links or blocking nonregular descriptors.
   const handle = await open(helperPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -55,16 +55,18 @@ async function verifyHelper(helperPath: string, expected?: BigIntStats): Promise
         createHash("sha256").update(bytes.subarray(0, count)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 ||
         !sameFile(before, await handle.stat({ bigint: true })) || !sameFile(before, await lstat(helperPath, { bigint: true })) ||
         await realpath(helperPath) !== helperPath) { throw new Error("Recovery helper source check failed."); }
-    return before;
+    // Execute the descriptor-verified bytes, never reopen the mutable pathname in Windows.
+    const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count));
+    return { stat: before, command: Buffer.from(source, "utf16le").toString("base64") };
   } finally { await handle.close(); }
 }
 
 /** Fixed, short-lived diagnostic invocation. No stdin requests or application authority. */
-async function invokeHelper(helperWindowsPath: string): Promise<z.infer<typeof nativeObservationSchema>> {
+async function invokeHelper(command: string): Promise<z.infer<typeof nativeObservationSchema>> {
   let child: ChildProcessWithoutNullStreams;
   try {
     child = spawn("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", [
-      "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", helperWindowsPath,
+      "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", command,
     ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   } catch { throw refused("spawn"); }
   const chunks: Buffer[] = [], completion = Promise.withResolvers<z.infer<typeof nativeObservationSchema>>();
@@ -107,14 +109,13 @@ async function invokeHelper(helperWindowsPath: string): Promise<z.infer<typeof n
 export async function observeOrdinaryLaunchRecovery(options: {
   readonly pluginRoot: string; readonly assetsRoot: string;
 }): Promise<z.infer<typeof ordinaryLaunchRecoveryObservationSchema>> {
-  let before: BigIntStats, helperPath: string, helperWindowsPath: string;
+  let before: Awaited<ReturnType<typeof verifyHelper>>, helperPath: string;
   try {
-    const paths = deriveWindowsRuntimePaths(options);
+    deriveWindowsRuntimePaths(options);
     helperPath = join(options.pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
-    helperWindowsPath = paths.helperWindowsPath.replace(/windows-authority\.ps1$/u, "ordinary-launch-recovery.ps1");
     before = await verifyHelper(helperPath);
   } catch { throw refused("pre-helper-source"); }
-  const observation = await invokeHelper(helperWindowsPath);
-  try { await verifyHelper(helperPath, before); } catch { throw refused("post-helper-source"); }
+  const observation = await invokeHelper(before.command);
+  try { await verifyHelper(helperPath, before.stat); } catch { throw refused("post-helper-source"); }
   return { ...observation, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 };
 }

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "83df8272db7c4f7c51cc6b958a923418aa5b32a6b70e1d3e1b0d8b8cc6817b41";
+const __easyedaBundlePairId = "aa3254b359f2523d648e26f81255d820ce1d69abbca70f705ce2f309a0d469de";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -92084,12 +92084,13 @@ async function verifyHelper(helperPath, expected3) {
     if (count2 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash30("sha256").update(bytes2.subarray(0, count2)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile3(before, await handle.stat({ bigint: true })) || !sameFile3(before, await lstat26(helperPath, { bigint: true })) || await realpath17(helperPath) !== helperPath) {
       throw new Error("Recovery helper source check failed.");
     }
-    return before;
+    const source4 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count2));
+    return { stat: before, command: Buffer.from(source4, "utf16le").toString("base64") };
   } finally {
     await handle.close();
   }
 }
-async function invokeHelper(helperWindowsPath) {
+async function invokeHelper(command) {
   let child;
   try {
     child = spawn5("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", [
@@ -92098,8 +92099,8 @@ async function invokeHelper(helperWindowsPath) {
       "-NonInteractive",
       "-ExecutionPolicy",
       "Bypass",
-      "-File",
-      helperWindowsPath
+      "-EncodedCommand",
+      command
     ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   } catch {
     throw refused("spawn");
@@ -92175,18 +92176,17 @@ async function invokeHelper(helperWindowsPath) {
   }
 }
 async function observeOrdinaryLaunchRecovery(options) {
-  let before, helperPath, helperWindowsPath;
+  let before, helperPath;
   try {
-    const paths = deriveWindowsRuntimePaths(options);
+    deriveWindowsRuntimePaths(options);
     helperPath = join46(options.pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
-    helperWindowsPath = paths.helperWindowsPath.replace(/windows-authority\.ps1$/u, "ordinary-launch-recovery.ps1");
     before = await verifyHelper(helperPath);
   } catch {
     throw refused("pre-helper-source");
   }
-  const observation2 = await invokeHelper(helperWindowsPath);
+  const observation2 = await invokeHelper(before.command);
   try {
-    await verifyHelper(helperPath, before);
+    await verifyHelper(helperPath, before.stat);
   } catch {
     throw refused("post-helper-source");
   }

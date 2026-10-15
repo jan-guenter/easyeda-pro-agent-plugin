@@ -30,9 +30,20 @@ jobs:
           }
           $executable = Join-Path $PSHOME 'powershell.exe'
           $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\ordinary-launch-recovery.ps1'
+          $bytes = [IO.File]::ReadAllBytes($script)
+          if ($bytes.Length -ne 2279) { throw 'Recovery helper byte count differs from the reviewed pin.' }
+          $sha256 = [Security.Cryptography.SHA256]::Create()
+          try { $digest = ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant() }
+          finally { $sha256.Dispose() }
+          if ($digest -cne 'd68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c') {
+            throw 'Recovery helper bytes differ from the reviewed pin.'
+          }
+          $decoder = [Text.UTF8Encoding]::new($false, $true)
+          $source = $decoder.GetString($bytes)
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($source))
           # The waiting parent guarantees a second powershell process. The
-          # child runs only the fixed read-only script, never the CAD app.
-          $output = @(& "$executable" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$script")
+          # child executes the verified bytes, not a later path reopen.
+          $output = @(& "$executable" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand "$encoded")
           $childExitCode = $LASTEXITCODE
           if ($childExitCode -ne 0) { throw "Recovery helper exited with code $childExitCode." }
           if ($output.Count -ne 1 -or $output[0] -isnot [string]) {

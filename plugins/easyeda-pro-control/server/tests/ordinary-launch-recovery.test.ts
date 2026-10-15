@@ -1,7 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Exercise the real filesystem admission with a synthetic child transport, never Windows. */
 import assert from "node:assert/strict";
 import childProcess, { ChildProcess } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,12 +23,14 @@ async function fixture(context: TestContext): Promise<{
   readonly error: PassThrough;
   readonly input: PassThrough;
   readonly spawned: Promise<null>;
+  readonly invocation: { args: string[] };
   readonly counts: { spawn: number; kill: number; unref: number };
 }> {
   const pluginRoot = await mkdtemp(join(tmpdir(), "ordinary-launch-recovery-test-"));
   await mkdir(join(pluginRoot, "scripts"));
   const helperPath = join(pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
   await copyFile(fileURLToPath(new URL("../../scripts/ordinary-launch-recovery.ps1", import.meta.url)), helperPath);
+  const invocation = { args: [] as string[] }, original = await readFile(helperPath, "utf8");
   const distribution = process.env["WSL_DISTRO_NAME"];
   process.env["WSL_DISTRO_NAME"] = "RecoveryTest";
   const child = new ChildProcess(), counts = { spawn: 0, kill: 0, unref: 0 }, error = new PassThrough(),
@@ -39,8 +41,9 @@ async function fixture(context: TestContext): Promise<{
   const intercept = ((executable: string, args: string[], options: unknown): ChildProcess => {
     counts.spawn += 1;
     assert.equal(executable, "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe");
-    assert.deepEqual(args, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
-      `\\\\wsl.localhost\\RecoveryTest${helperPath.replaceAll("/", "\\")}`]);
+    assert.deepEqual(args, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand",
+      Buffer.from(original, "utf16le").toString("base64")]);
+    invocation.args = args;
     assert.deepEqual(options, { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     spawned.resolve(null);
     return child;
@@ -54,7 +57,7 @@ async function fixture(context: TestContext): Promise<{
     await rm(pluginRoot, { recursive: true, force: true });
   });
   return { helperPath, options: { pluginRoot, assetsRoot: "/mnt/c/Reviewed/resources/app/assets" },
-    child, output, error, input, spawned: spawned.promise, counts };
+    child, output, error, input, spawned: spawned.promise, invocation, counts };
 }
 
 void test("recovery adapter uses only fixed read-only helper and awaits successful close", async (context) => {
@@ -71,6 +74,25 @@ void test("recovery adapter uses only fixed read-only helper and awaits successf
   f.error.end(); f.child.emit("close", 0, null);
   assert.deepEqual(await observed, { ...NATIVE_RESULT, otherPowerShellPresent: true,
     helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 });
+  assert.deepEqual(f.counts, { spawn: 1, kill: 0, unref: 0 });
+});
+
+void test("recovery executes verified bytes despite parent directory substitution and restoration", async (context) => {
+  const f = await fixture(context), original = await readFile(f.helperPath, "utf8"),
+    pending = observeOrdinaryLaunchRecovery(f.options), retained = join(f.options.pluginRoot, "retained-scripts"),
+    scripts = join(f.options.pluginRoot, "scripts"), substitute = join(f.options.pluginRoot, "substitute-scripts");
+  await f.spawned;
+  await rename(scripts, retained);
+  await mkdir(scripts);
+  await writeFile(f.helperPath, "throw 'substituted helper'");
+  // The pathname now points to hostile bytes while the child consumes its argv.
+  assert.notEqual(await readFile(f.helperPath, "utf8"), original);
+  assert.equal(f.invocation.args[5], "-EncodedCommand");
+  assert.equal(Buffer.from(f.invocation.args[6] ?? "", "base64").toString("utf16le"), original);
+  await rename(scripts, substitute);
+  await rename(retained, scripts);
+  f.output.end(JSON.stringify(NATIVE_RESULT)); f.error.end(); f.child.emit("close", 0, null);
+  assert.deepEqual(await pending, { ...NATIVE_RESULT, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 });
   assert.deepEqual(f.counts, { spawn: 1, kill: 0, unref: 0 });
 });
 

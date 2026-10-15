@@ -19,6 +19,11 @@ Other PowerShell processes conservatively block recovery, even when unrelated.
 Errors, incomplete output and missing successful helper exit refuse recovery.
 No process is closed, killed or adopted.
 
+The adapter executes the descriptor-verified helper bytes through PowerShell's
+encoded command argument. It never reopens the helper pathname for execution.
+This fixes the reviewed parent-directory substitution race; post-execution
+file checks remain drift detection, not the source of execution identity.
+
 The historical v1 route admits only the reviewed 020000 facade/profile pair.
 New launches write v2 intents recording the helper-before-intent protocol;
 their recovery also requires the original facade to match the current verified
@@ -41,7 +46,8 @@ request without starting Windows or touching live journals.
 
 Focused coordinator/registration tests pass, including exact historical
 admission, delayed-helper refusal, original-intent preservation and no replay.
-The helper adapter has focused bounded-transport tests. All 34 focused checks,
+The helper adapter has focused bounded-transport tests and a parent-directory
+swap/restore regression. All 35 focused checks,
 types, targeted zero-warning lint, dependency audits, build and package/repository/
 skill validation pass. A partial local full-suite run was stopped after the final
 receipt-reader adjustment. Full-suite acceptance uses existing complete GitHub

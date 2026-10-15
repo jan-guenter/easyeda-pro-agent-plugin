@@ -8,6 +8,16 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ### Candidate 060000: intent-only ordinary startup recovery
 
+PR33 review found a real helper-path TOCTOU after initial CI38671526233 passed.
+The adapter now executes the exact descriptor-verified bytes through fixed
+PowerShell EncodedCommand, rather than reopening the pathname with File.
+The parent-directory swap/restore regression passes. The unchanged native
+helper hash remains d68a8029. Rebuilt source344 SHA1944371e/runtime3 SHA0a80e364
+replace the initial projections below; external pins remain unchanged. Focused
+final checks total35, types and zero-warning targeted lint pass. The updated
+Windows workflow must validate the encoded invocation. No local native retry
+or live recovery.
+
 Continuation implements `abandon-unknown-launch`, a separate append-only
 abandonment for a reviewed intent-only launch. It requires the exact intent
 digest, a fresh coordinator without an allocated runtime, explicit acceptance
@@ -43,10 +53,12 @@ and detection of its waiting parent, not local WSL integration or recovery.
 Keep these validation scopes separate. Diagnostic helpers were not killed.
 
 The retained ordinary-startup-020000-20261015 intent remains unchanged and
-unresolved. No recovery or relaunch was attempted. Actual facade 1306/parent419/
-startTicks6189 still loads 020000 from the now-pruned old cache; installed040000
-is intact but not the running host. Previous main CI38668484067 passed all ten
-jobs. Do not kill or hotpatch that host. New source work and later official
+unresolved. No recovery or relaunch was attempted. Initial admission observed
+facade1306/parent419/startTicks6189 loading020000 from the pruned old cache.
+It later disappeared from Linux process inspection; no replacement admission,
+Windows absence or termination follows. Installed040000 remains intact.
+Previous main CI38668484067 passed all ten jobs. Do not kill or hotpatch an
+owner. New source work and later official
 installation do not settle the old attempt. Production and its records remain
 excluded and untouched.
 
