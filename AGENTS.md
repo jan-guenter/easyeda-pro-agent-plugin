@@ -8,6 +8,18 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ### Candidate090000: symbol checkpoint preparation integrated; startup recovery transport fixed
 
+PR34 initial payload7fe72359 passed all ten CI38709292917 jobs:9944facade
+passes/five skips/zero failures and424bridge passes. Windows38709292945 passed.
+Automated review found a real missed registration in offline-control.ts: the
+offline-only fallback advertised preparation but still called queryOfflineApi.
+It now uses runOfflineApi, and both real entrypoint registration slices are
+tested; all seven focused preparation/routing checks, strict types and targeted
+zero-warning lint pass. All five existing bundled startup tests pass, including
+missing-installation fallback; repository179 checks pass after rebuild.
+Corrected source345 SHAddda3b74/runtime3 SHA925427cb replace the initial values
+below. Initial CI is not final-payload acceptance. Final CI and official delivery
+remain pending. No further live call.
+
 Fresh060000 owner165394/parent163591/startTicks2803482 independently matches
 the installed1186files and344source/3runtime projections below. Previous1306 is
 absent. Prior mainCI38673729256 completed all ten jobs successfully. No status,
@@ -53,7 +65,7 @@ required Safety-gated description phrase; restored. Final repository179/package7
 checks and all seven packaged skill checks pass; Windows workflow actionlint
 and diff whitespace checks pass. Main and independent source review accept the
 offline preparation and recovery-transport scope; connected validation remains separate.
-Source345 SHAb0b5a026/runtime3 SHA5a48cb82; external pins unchanged. Full existing
+Initial source345 SHAb0b5a026/runtime3 SHA5a48cb82; external pins unchanged. Full existing
 GitHub CI, publication and installation remain pending; no full-local-suite
 success or live writer validation is claimed. Scope and implementation backlog:
 docs/current-symbol-preparation-release-2026-10-15.md. Prior local delivery

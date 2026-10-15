@@ -31,21 +31,27 @@ void test("symbol checkpoint preparation is discoverable and strictly validates 
     !/Unknown offline API|asynchronous offline API handler/u.test(error.message));
 });
 
-void test("the registered offline API callback awaits preparation without allocating a live gate", async () => {
-  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-  const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_api",');
-  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_discover",', start);
+for (const entry of ["index", "offline-control"] as const) {
+void test(`${entry} registers asynchronous preparation without allocating a live gate`, async () => {
+  const source = await readFile(new URL(`../src/${entry}.ts`, import.meta.url), "utf8");
+  const start = source.indexOf(entry === "index" ? 'registerFacadeTool(\n  "easyeda_control_api",' : 'server.registerTool("easyeda_control_api",');
+  const end = source.indexOf(entry === "index" ? 'registerFacadeTool(\n  "easyeda_control_discover",' : 'server.registerTool("easyeda_control_status",', start);
   assert.ok(start > 0 && end > start);
   type Request = z.infer<typeof apiRequestSchema>;
   type Callback = (input: { request: Request }) => Promise<unknown>;
   let invoke: Callback | undefined;
   const calls: unknown[] = [], completion = Promise.withResolvers<unknown>();
-  const scope = vm.createContext({ offlineApiToolConfiguration,
+  const register = (name: string, config: unknown, handler: Callback): void => {
+    assert.equal(name, "easyeda_control_api");
+    assert.ok(config !== null && typeof config === "object" && "inputSchema" in config);
+    assert.equal(config.inputSchema, offlineApiToolConfiguration.inputSchema);
+    invoke = handler;
+  };
+  const scope = vm.createContext({ offlineApiToolConfiguration, outputSchema: {},
     guarded: (handler: Callback): Callback => handler,
+    offlineGuard: (handler: Callback): Callback => handler,
     runOfflineApi: (request: Request): Promise<unknown> => { calls.push(request); return completion.promise; },
-    registerFacadeTool: (name: string, config: unknown, handler: Callback): void => {
-      assert.equal(name, "easyeda_control_api"); assert.equal(config, offlineApiToolConfiguration); invoke = handler;
-    },
+    registerFacadeTool: register, server: { registerTool: register },
   });
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(invoke);
@@ -56,3 +62,4 @@ void test("the registered offline API callback awaits preparation without alloca
   completion.resolve(result);
   assert.equal(await pending, result);
 });
+}

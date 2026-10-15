@@ -14,8 +14,10 @@ It verifies the complete selected linked-history branch, exact project/branch/
 owner/symbol identity, supported ordinary SYMBOL metadata and peer-name
 collisions. Output retains before/after name and description, unchanged tags
 and template source, header/history evidence and a complete selected-branch
-record hash. The actual asynchronous offline tool handler invokes it without
-allocating a bridge, runtime or live admission gate.
+record hash. Both the configured server and missing-installation fallback use
+the asynchronous offline handler without allocating a bridge, runtime or live
+admission gate. The latter registration was corrected after PR review; the
+initial passing CI payload is not final release acceptance.
 
 Reads use retained managed directories and file descriptors, exact size/hash,
 owner-only single-link files, sidecar refusal and post-read stability checks.

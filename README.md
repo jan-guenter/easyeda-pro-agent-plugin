@@ -200,7 +200,7 @@ Seven skills remain included. See the
 
 When a trusted machine profile selects missing or invalid external
 installation files, startup instead exposes three offline-only tools: API
-reference, local discovery and bounded startup status. Live execution and
+reference with existing managed-checkpoint preparation, local discovery and bounded startup status. Live execution and
 recovery are unavailable in that process, even if the files are later repaired.
 See the [upgrade-resilient startup report](docs/offline-startup-release-2026-10-13.md).
 

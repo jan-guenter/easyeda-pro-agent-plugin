@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "d4889eafd5702a44fa6e346fee21837a49e75d5cf17e3b29d34fa7b57e352708";
+const __easyedaBundlePairId = "cf1ad97e1e2445fdabdb1455566644d7e91ed5583908d0db0a935a655a063594";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -94976,13 +94976,13 @@ async function startOfflineControlServer(code) {
   await assertSelfSoftCoreLimitZero();
   const server2 = new McpServer({ name: "easyeda-pro-control", version: CONTROL_VERSION }, {
     capabilities: { tools: {} },
-    instructions: "Offline-only mode: the configured external installation is unavailable. Only bundled API reference, argument validation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode."
+    instructions: "Offline-only mode: the configured external installation is unavailable. Bundled API reference, argument validation, existing managed-checkpoint symbol preparation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode."
   });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   server2.registerTool(
     "easyeda_control_api",
     { ...offlineApiToolConfiguration, outputSchema },
-    offlineGuard(({ request: request2 }) => queryOfflineApi(request2))
+    offlineGuard(({ request: request2 }) => runOfflineApi(request2))
   );
   server2.registerTool("easyeda_control_status", {
     title: "Report offline-only EasyEDA startup status",
@@ -94997,7 +94997,7 @@ async function startOfflineControlServer(code) {
     installation: { ready: false, code },
     restartRequired: true,
     availableTools: ["easyeda_control_api", "easyeda_control_discover", "easyeda_control_status"],
-    capabilityScope: "Bundled reference only; no claim about the current EasyEDA installation."
+    capabilityScope: "Bundled reference and existing managed-checkpoint preparation only; no claim about the current EasyEDA installation."
   })));
   server2.registerTool("easyeda_control_discover", {
     title: "Discover the local EasyEDA reference catalog",
