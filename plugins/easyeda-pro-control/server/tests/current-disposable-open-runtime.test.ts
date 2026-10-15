@@ -423,6 +423,7 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
 
 void test("owned baseline transfer reserves the runtime across Jobs and stops in-flight ordinary continuations", async (t) => {
   const input = await preparationCheckpoint(t), isolated = fixture("baseline-transfer");
+  const followups: string[] = [];
   let active = false, admitted = 0, cacheReads = 0, constructed = 0, observed = 0, relaunched = 0, sessionClosed = false;
   let retainedOwner: CurrentSymbolBaselineOwner | undefined;
   let currentLaunch = structuredClone(LAUNCH);
@@ -459,6 +460,22 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
     public observeCaches(operationId: string): Promise<Value> {
       assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); cacheReads += 1;
       return Promise.resolve({ state: "caches-observed", stageOrdinal: this.ordinal });
+    }
+    public openProject(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("open-project");
+      return Promise.resolve({ state: "project-only-opened", stageOrdinal: this.ordinal, writerAuthority: false });
+    }
+    public finishNormalClose(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("finish-close");
+      return Promise.resolve({ state: "awaiting-finish-termination", stageOrdinal: this.ordinal });
+    }
+    public observeFinish(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("observe-finish");
+      return Promise.resolve({ state: "retired", stageOrdinal: this.ordinal, executionAuthorized: false });
+    }
+    public inspect(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("inspect");
+      return Promise.resolve({ state: "retired", stageOrdinal: this.ordinal, executionAuthorized: false });
     }
     public stopAfterScopeFailure(): Promise<void> { return Promise.reject(new Error(`Unexpected synthetic scope failure in stage ${String(this.ordinal)}`)); }
   }
@@ -519,14 +536,15 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   await assert.rejects(coordinator.beginSymbolBaseline(isolated.input.operationId, { ...request, operationId: "another-baseline" }, sqlRuntime), /transferred/u);
   const sibling = new loaded.Coordinator(isolated.options);
   await assert.rejects(sibling.run({ ...isolated.input, operationId: "another-opening" }, FINGERPRINT), /transferred/u);
-  const observation = await coordinator.observeSymbolBaseline(baselineId);
+  const observation = await coordinator.run({ action: "baseline-observe-termination", operationId: baselineId });
   assert.equal(observation["stageOrdinal"], 1); assert.equal(constructed, 1); assert.equal(observed, 1);
-  const beforeRelaunch = dispatches(isolated), relaunch = coordinator.relaunchSymbolBaseline(baselineId);
+  const beforeRelaunch = dispatches(isolated), relaunch = coordinator.run({ action: "baseline-relaunch", operationId: baselineId, acceptNormalOpenEffects: true });
   assert.equal(runtime.status().launch?.jobId, "9".repeat(32)); assert.equal(relaunched, 1);
   await assert.rejects(coordinator.observeSymbolBaseline(baselineId), /busy/u);
   await assert.rejects(coordinator.relaunchSymbolBaseline(baselineId), /busy/u);
   await assert.rejects(coordinator.admitSymbolBaseline(baselineId), /busy/u);
   await assert.rejects(coordinator.observeSymbolBaselineCaches(baselineId), /busy/u);
+  await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true }), /in progress/u);
   await assert.rejects(sibling.run({ ...isolated.input, operationId: "after-relaunch-opening" }, FINGERPRINT), /transferred/u);
   await assert.rejects(preparingSibling.beginSymbolBaseline(siblingInput.operationId, { ...request, operationId: "after-relaunch-sibling-baseline" }, sqlRuntime), /transferred/u);
   transition.resolve({ state: "relaunched", stageOrdinal: 1 });
@@ -534,12 +552,25 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   assert.equal(relaunchedResult["stageOrdinal"], 1);
   assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
   await assert.rejects(coordinator.relaunchSymbolBaseline("unknown-baseline"), /unavailable/u);
-  const admission = await coordinator.admitSymbolBaseline(baselineId);
+  const admission = await coordinator.run({ action: "baseline-admit", operationId: baselineId });
   assert.equal(admission["stageOrdinal"], 1); assert.equal(admitted, 1);
   await assert.rejects(coordinator.admitSymbolBaseline("unknown-baseline"), /unavailable/u);
-  const caches = await coordinator.observeSymbolBaselineCaches(baselineId);
+  const caches = await coordinator.run({ action: "baseline-observe-caches", operationId: baselineId });
   assert.equal(caches["stageOrdinal"], 1); assert.equal(cacheReads, 1);
   await assert.rejects(coordinator.observeSymbolBaselineCaches("unknown-baseline"), /unavailable/u);
+  await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true }, FINGERPRINT), /cannot replace/u);
+  const opened = await coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true });
+  assert.equal(opened["stageOrdinal"], 1); assert.equal(opened["writerAuthority"], false);
+  const finished = await coordinator.run({ action: "baseline-finish-close", operationId: baselineId, confirmNormalClose: true, acceptUnknownFileEffects: true });
+  assert.equal(finished["stageOrdinal"], 1);
+  const terminal = await coordinator.run({ action: "baseline-observe-finish", operationId: baselineId });
+  assert.equal(terminal["stageOrdinal"], 1); assert.equal(terminal["executionAuthorized"], false);
+  isolated.state.quarantine = true;
+  const baselineInspection = await coordinator.run({ action: "baseline-inspect", operationId: baselineId });
+  assert.equal(baselineInspection["stageOrdinal"], 1); assert.equal(baselineInspection["executionAuthorized"], false);
+  isolated.state.quarantine = false;
+  assert.deepEqual(followups, ["open-project", "finish-close", "observe-finish", "inspect"]);
+  assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
   // Neither a completed transition nor a later null launch returns this runtime
   // To ordinary ownership. The reservation lasts for the runtime's lifetime.
   runtime.status = (): ReturnType<typeof originalStatus> => ({ ...originalStatus(), launch: null });

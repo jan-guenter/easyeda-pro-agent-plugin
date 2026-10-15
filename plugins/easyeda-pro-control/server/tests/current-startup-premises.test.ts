@@ -56,7 +56,7 @@ void test("current startup report retains only a historical subset, with metadat
 });
 
 void test("startup subset reports concrete migration, metadata and active-page blockers", async () => {
-  for (const [options, blocker] of [[{ oldVersion: true }, "database-migration-required"], [{ meta: "missing" }, "target-pcb-count-witness-unavailable"],
+  for (const [options, blocker] of [[{ oldVersion: true }, "unsupported-database-version"], [{ meta: "missing" }, "target-pcb-count-witness-unavailable"],
     [{ meta: "wrong-title" }, "target-pcb-count-witness-unavailable"], [{ page: "active" }, "active-schematic-pages"]] as const) {
     const value = await input(options);
     const report = await assessCurrentStartupPremises(value.request);

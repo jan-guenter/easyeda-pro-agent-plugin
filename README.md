@@ -19,7 +19,12 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015140000` connects retained disposable-project
+Update `0.3.0+codex.20261016013000` exposes retained disposable baseline validation, project-only
+reopening and normal-close completion without enabling a writer. It binds the
+post-opening closed file, fresh cache checks and the original process/session.
+See the [lifecycle scope and remaining tasks](docs/current-project-only-lifecycle-release-2026-10-16.md).
+
+Published update `0.3.0+codex.20261015140000` connects retained disposable-project
 opening to internal checkpoint-bound symbol preparation. It rejects hidden
 editor containers and lost ownership without enabling a writer. It also removes
 a redundant full-journal scan from local launch inspection, identifies blocked

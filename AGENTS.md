@@ -6,6 +6,54 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: usable disposable baseline validation
+
+The current turn continues until completion or the necessary fresh-session
+boundary for an installed plugin update, per the user's latest instruction.
+This payload exposes the retained baseline through strict baseline-* actions on
+the existing project-open tool, without enabling any writer. It adds one
+project-only opening with the original closed baseline, fresh raw-source hash,
+registration and cache observations, a retained startup-prefix event listener,
+and separate new-generation normal-close/termination finish actions. Public
+continuations cannot supply targets, code, runtime overrides or fingerprints.
+Historical inspection does not adopt owners. The new raw reader never attaches
+SQLite to the original source after relaunch. Its hash/sidecar observations are
+point-in-time, not atomic continuity.
+
+The project-only implementation additionally pins the reviewed SCH initializer.
+Its Start/hidden-blank transition opens no document. loadProjectCompleted has
+no producer identity and is not full startup completion. Startup, before-write,
+opening-effect, backend actor/clock and writer flags remain false. Unknown
+database versions now report unsupported-database-version, not an inferred
+migration. The control skill documents this exact workflow and its stop states.
+
+Independent source reviews accept the compiler, raw-source reader and terminal
+lifecycle. Local checks pass74 focused tests, zero failures/skips, clean npm ci,
+full facade/bridge types and whole-tree strict type-aware lint with zero warnings.
+Build/sanitizer, compatibility, repository/privacy, package,774-method coverage,
+actionlint and all seven official skill checks pass. Audit verifies151 signatures,
+40 attestations and zero vulnerabilities. Source359 SHA0cdef251/runtime3
+SHAe0608c1b are frozen; external compatibility pins are unchanged. These are
+offline synthetic checks, not live qualification. Full exact-payload CI,
+postcommit reproducibility, publication and installation are pending; do not
+reuse the prior payload's CI. Installed140000 remains unchanged for now.
+
+Offline doctor reports the known legacy installed-bundle mismatch and restricted
+16-tool catalog instead of the full41-tool catalog. Those two checks are not
+passes; separately pinned current capabilities and the isolated installed probe
+must be evaluated independently. No compatibility restriction was relaxed.
+
+This is a scoped validation release so the actual workflow can be exercised
+through a fresh installed facade. The older keep-draft-until-writer text below
+describes the previous slice, not a claim that this payload finishes editing.
+After installation stop for a fresh Codex session. Remaining work is installed
+disposable lifecycle qualification, producer-specific reopening/actor/clock
+proof, fixed writer/inverse integration and saved forward/inverse validation.
+No live EasyEDA call, app launch, design access, Save or restoration has occurred
+in this turn. Production designs and their records remain untouched.
+
+Scope: docs/current-project-only-lifecycle-release-2026-10-16.md.
+
 ### In development: historical startup premises
 
 The closed-copy stage now retains a startupPremises report inside its original
@@ -33,7 +81,19 @@ compatibility, package/privacy/repository,774-method coverage and all seven
 official skill validators pass. Audit verifies151 signatures/40 attestations
 and0 vulnerabilities. Independent review accepts the scoped implementation.
 Frozen projections: source357 SHA185b8bcc, runtime3 SHA7cd7e82a; only facade
-projections/review timestamp changed. Publication and final CI are pending.
+projections/review timestamp changed. Payload
+1ab7d3fdb48cfe8fb6656dc321cdd1eecc692a17 is pushed to draft PR36.
+Postcommit rebuild reproduces both bundles exactly. Full tree
+671a386efbfd35070ce9ec8374fee703fa162f04, package subtree
+1fcb6f491b3e4076ea3acba3d8f9f42599904d4a. Windows38818614236 passed;
+main CI38818614218 passed all ten jobs at this exact head:10030 facade passes,
+five skips and zero failures;424 bridge passes across28 files.
+Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203757053.
+Final same-head CI receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203952087.
+This post-payload record accompanies the next source change; do not create a
+record-only commit that repeats the full CI run.
 
 Next: carry the retained historical subset and inactive-cache observation into
 one project-only opening with fresh owner/source continuity, qualify remaining
@@ -43,6 +103,26 @@ lifecycle before release/install. Keep draft PR36 unmerged and installed
 0.3.0+codex.20261015140000 unchanged. No live EasyEDA call, launch, design access,
 Save, restoration or installation occurred. Production designs and their records
 remain untouched. Research details: docs/current-startup-premises-research-2026-10-16.md.
+
+Next-slice read-only plan: use a separate project-only compiler/decoder and one
+private baseline continuation; do not call the reserved ordinary opener, which
+can open a PCB. Bind fresh source continuity to copy.checkpoint/sourceSha256,
+not the older initial-opening target hash or invalidated old termination proof.
+Carry exact session/capture/clock and journal ownership. Fresh registry/path and
+inactive-cache samples belong inside the new single navigation attempt, followed
+by the final synchronous guard and one openProject call. cachesObserved alone
+cannot bridge that gap. Allow the native Start/blank-tab transition, not editor
+tabs: UI16424893 createBlankTab creates hidden tab0 and can activate it. Do not
+reuse the pre-open Start Page guard unchanged after project/URL transition.
+Resolve exam-path reachability before adding a cache probe. UI glt is called at
+15246044/15251262 and generic xr tab creation15256604; getExamProjectStatus also
+has menu/permission/close callsites15102848/15130853/15859927/15955114/16424816/
+16686367. No-PCB alone is not a complete exclusion. ON_OPENED16667083 restores
+tabs asynchronously; second subscriber16737077 populates detail cache. These
+offsets are inert-source planning only, not a new executor, pin or live result.
+Before exposing the report, rename its private database-migration-required code
+to unsupported-database-version: any nonterminal literal blocks this profile,
+but an unknown literal need not actually select a native migration script.
 
 ### In development: owned current cache observation
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { sha256Text } from "./core.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
 
 export const CURRENT_DISPOSABLE_OPEN_MAX_BYTES = 16_384;
 // The pinned upstream easyeda_execute schema caps timeoutMs at 60 seconds.
@@ -28,7 +29,19 @@ export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action",
   z.object({ action: z.literal("observe"), operationId }).strict(),
   z.object({ action: z.literal("inspect"), operationId }).strict(),
   z.object({ action: z.literal("retire-after-termination"), operationId, confirmRetire: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
-]).refine((value) => value.action !== "open" || sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.");
+  z.object({ action: z.literal("baseline-begin"), operationId, openingOperationId: operationId,
+    preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
+    confirmNormalClose: z.literal(true), confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("baseline-observe-termination"), operationId }).strict(),
+  z.object({ action: z.literal("baseline-relaunch"), operationId, acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("baseline-admit"), operationId }).strict(),
+  z.object({ action: z.literal("baseline-observe-caches"), operationId }).strict(),
+  z.object({ action: z.literal("baseline-open-project"), operationId, acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("baseline-finish-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("baseline-observe-finish"), operationId }).strict(),
+  z.object({ action: z.literal("baseline-inspect"), operationId }).strict(),
+]).refine((value) => value.action !== "open" || sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.")
+  .refine((value) => value.action !== "baseline-begin" || value.operationId !== value.openingOperationId, "The baseline needs a distinct operation ID.");
 export type CurrentDisposableOpenRequest = z.infer<typeof currentDisposableOpenRequestSchema>;
 export function parseCurrentDisposableOpenRequest(input: unknown): CurrentDisposableOpenRequest { return currentDisposableOpenRequestSchema.parse(input); }
 export function parseCurrentDisposableOpenTarget(input: unknown): CurrentDisposableOpenTarget { return currentDisposableOpenTargetSchema.parse(input); }
@@ -50,15 +63,19 @@ const limitations = [
   "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
   "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
   "Complete bounded registry observations require an initially empty editor, then target-only project tabs and the sealed branch. Public methods route through global state: samples are not an atomic lock against an intervening switch away and back.",
-  "Final retained-frame/native identity is not rendering, restoration completion, persistence or writer authority. No explicit Save, close, discard, restoration, settings change or CAD edit is requested by this adapter.",
+  "Final retained-frame/native identity is not rendering, restoration completion, persistence or writer authority. Ordinary open/observe actions request no explicit Save, close, discard, restoration, settings change or CAD edit; baseline actions separately request normal application closure.",
   "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
+  "baseline-* actions validate a retained disposable opening lifecycle only. Begin consumes its original opening owner, prepares one closed symbol, requests normal application close and captures a complete closed baseline after original termination. Relaunch/admission/cache/project-only opening remain separate one-shot stages. Continuations cannot supply paths, source hashes, code, runtime overrides or replacement owners.",
+  "Project-only reopening requires a supported historical closed baseline, a fresh raw-source hash, exact registered path and fresh inactive upload-cache observations. It opens no editor document. A project-open return is not full startup completion, persistence, backend actor/clock qualification or writer authority; writers remain disabled. Finish requests normal close without Save/Discard and observes the original new generation's termination. Unknown disposable file effects are retained, not accepted as an intended edit.",
+  "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Pre-admission launch failures and unsupported stopped states remain review-only.",
 ] as const;
 
 export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
   const query = currentDisposableOpenQuerySchema.parse(input);
   return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
     action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
-    actions: ["open", "observe", "inspect", "retire-after-termination"], limitations: [...limitations],
+    actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-relaunch",
+      "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect"], limitations: [...limitations],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentDisposableOpenRequestSchema) } : {}),
   }] };
 }

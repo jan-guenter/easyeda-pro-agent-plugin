@@ -7,7 +7,7 @@ import { selectCurrentStartupSql } from "./current-startup-sql.ts";
 import type { CurrentStartupSqlInput } from "./current-startup-sql.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
 
-type Blocker = "unsupported-sql-schema" | "database-migration-required" | "target-pcb-count-witness-unavailable" | "active-schematic-pages";
+type Blocker = "unsupported-sql-schema" | "unsupported-database-version" | "target-pcb-count-witness-unavailable" | "active-schematic-pages";
 export interface CurrentStartupPremises {
   readonly profile: "private.current-startup-premises.v1";
   readonly scope: "historical-closed-default-branch";
@@ -58,7 +58,7 @@ export async function assessCurrentStartupPremises(input: CurrentStartupSqlInput
   const activePages = input.history.documents.filter((document) => document.docType === "SCH_PAGE" && !isNativeDocumentDeleted(document)).length;
   const blockers: Blocker[] = [];
   if (!sql.supported) { blockers.push("unsupported-sql-schema"); }
-  else if (sql.databaseVersion !== "25.10.31.1") { blockers.push("database-migration-required"); }
+  else if (sql.databaseVersion !== "25.10.31.1") { blockers.push("unsupported-database-version"); }
   if (!counted) { blockers.push("target-pcb-count-witness-unavailable"); }
   if (activePages !== 0) { blockers.push("active-schematic-pages"); }
   return Object.freeze({ profile: "private.current-startup-premises.v1", scope: "historical-closed-default-branch",

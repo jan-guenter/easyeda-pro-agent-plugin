@@ -8,12 +8,13 @@ import type { TestContext } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
-import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json } from "../src/core.ts";
+import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import type { CurrentSymbolBaselineCoordinator } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
 import { CURRENT_UPLOAD_QUEUE_PROFILE, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "../src/current-upload-queue-read.ts";
+import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "../src/current-project-only-open.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
@@ -27,7 +28,9 @@ import { retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.t
 const HASH = "a".repeat(64);
 const SQL_RUNTIME = { nodeExecutable: "/synthetic/no-sql-child", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
 const FINGERPRINT = { synthetic: true, installedBundles: { assetsRoot: "/synthetic/current-cache-assets" } };
-const CACHE_TARGET = { projectUuid: "b".repeat(64), branchUuid: "d".repeat(32) };
+const RAW_PATH = String.raw`C:\Fixtures\Disposable.eprj2`;
+const CACHE_TARGET = { projectUuid: sha256Text(RAW_PATH), branchUuid: "d".repeat(32) };
+const OPEN_TARGET = { ...CACHE_TARGET, rawWindowsPath: RAW_PATH, documentUuid: "c".repeat(16), expectedSourceSha256: HASH };
 type Upstream = WindowsControlRuntimeOptions["upstream"];
 
 /** Private owner/copy and installed-source qualification are synthetic seams.
@@ -42,6 +45,8 @@ async function fixture(context: TestContext): Promise<{
   engine: EasyedaControlEngine;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
+    opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
+    afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
     afterCache: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
     afterClockAssert: (() => Promise<void>) | undefined; beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
@@ -50,6 +55,8 @@ async function fixture(context: TestContext): Promise<{
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
   const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
     copied: undefined as unknown, proof: undefined as unknown, cacheReads: 0, cacheTimeout: false, statusDrift: false,
+    opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
+    afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
     afterCache: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
     afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined,
@@ -58,11 +65,20 @@ async function fixture(context: TestContext): Promise<{
     authenticationReceiptSha256: "2".repeat(64), authenticatedAtEpochMs: 1000 };
   const binding: AuthenticatedBridgeDispatchBinding = { schema: "easyeda-pro-control.bridge-dispatch-lease.v1", gatewayInstanceId: session.gatewayInstanceId,
     sessionId: session.sessionId, sessionSequence: 1, begunAtEpochMs: 1001, leaseId: "l".repeat(43), bindingReceipt: "b".repeat(43) };
-  const upstream: Upstream & Pick<EasyedaControlEngine["upstream"], "findTool" | "withAuthenticatedBridgeDispatchScope"> = {
+  const upstream: Upstream & Pick<EasyedaControlEngine["upstream"], "findTool" | "withAuthenticatedBridgeDispatchScope" | "assertClosedAuthenticatedBridgeDispatchReleased"> = {
     findTool: () => Promise.resolve({ name: "easyeda_execute" }),
     callTool: async (name, args, timeout, dispatch) => {
       assert.equal(name, "easyeda_execute"); assert.equal(state.scope, true);
       assert.ok(args !== undefined);
+      if (args["code"] === buildCurrentProjectOnlyOpenProgram(OPEN_TARGET)) {
+        state.opens += 1; state.events.push("project-only-open");
+        assert.equal(args["timeoutMs"], CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS);
+        assert.equal(timeout, CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS + 10_000); assert.equal(args["confirmWrite"], true);
+        assert.equal(dispatch?.sessionSequence, 2);
+        const journal = await loadOperation(operationId);
+        assert.equal(journal["orphanedCallPossible"], true); assert.equal(journal["projectOpenAttempted"], true);
+        await state.afterOpen?.(); return state.openReply;
+      }
       if (args["code"] === buildCurrentUploadQueueReadProgram(CACHE_TARGET)) {
         state.cacheReads += 1; state.events.push("cache-read");
         assert.equal(args["timeoutMs"], CURRENT_UPLOAD_QUEUE_TIMEOUT_MS + 5000);
@@ -89,13 +105,23 @@ async function fixture(context: TestContext): Promise<{
     },
     currentAuthenticatedBridgeDispatchBinding: () => state.scope ? { ...binding,
       sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sessionSequence: state.sessionSequence } : undefined,
+    assertClosedAuthenticatedBridgeDispatchReleased: (dispatch, prior) => {
+      assert.equal(state.scope, false); assert.equal(state.activeSession, false); assert.equal(state.sessionSequence, 2);
+      assert.equal(dispatch.sessionSequence, 2); assert.equal(dispatch.sessionId, "n".repeat(43));
+      assert.equal(prior.sessionId, dispatch.sessionId); assert.equal(prior.sequence, dispatch.sessionSequence);
+      return { sessionId: prior.sessionId, sequence: prior.sequence, authenticationReceiptSha256: prior.authenticationReceiptSha256,
+        authenticatedAtEpochMs: prior.authenticatedAtEpochMs, closedAtEpochMs: 2000, closeReason: "synthetic normal close" };
+    },
     bridgeSessionLifecycle: () => ({ schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1", gatewayInstanceId: session.gatewayInstanceId,
       activeSession: state.activeSession ? { sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sequence: state.sessionSequence,
         authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs } : null,
       publicEndpoint: { host: "127.0.0.1", port: 49_100 },
       recentClosedSessions: !state.activeSession || state.sessionSequence > 1 ? [{ sessionId: session.sessionId, sequence: session.sequence,
         authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs,
-        closedAtEpochMs: 2000, closeReason: "synthetic normal close" }] : [] }),
+        closedAtEpochMs: 2000, closeReason: "synthetic normal close" },
+      ...(!state.activeSession && state.sessionSequence === 2 ? [{ sessionId: "n".repeat(43), sequence: 2,
+        authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs,
+        closedAtEpochMs: 2000, closeReason: "synthetic normal close" }] : [])] : [] }),
   };
   const runtime = new WindowsControlRuntime({ upstream, pluginRoot: "/opt/synthetic-control", assetsRoot: "/mnt/c/Synthetic/resources/app/assets",
     wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: native.options.reviewedExecutionScopeSha256 }, {
@@ -109,18 +135,20 @@ async function fixture(context: TestContext): Promise<{
   };
   context.mock.method(runtime, "observeApplicationWindow", () => {
     assert.equal(state.scope, false); state.events.push("window");
-    return Promise.resolve({ jobId: launch.jobId, helperInstance: launch.helperInstance, outcome: "available" as const, hwnd: "12345" });
+    const current = runtime.status().launch; assert.ok(current !== null);
+    return Promise.resolve({ jobId: current.jobId, helperInstance: current.helperInstance, outcome: "available" as const, hwnd: "12345" });
   });
   native.state.onFrame = (action): void => {
     state.events.push(`native:${action}`);
     if (action === "normal-close" || action === "clocked-prove-terminated") { assert.equal(state.scope, false); }
+    if (action === "normal-close" && state.sessionSequence === 2) { state.activeSession = false; }
   };
   const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: runtime });
   await engine.controlFingerprintPromise;
   context.mock.method(engine, "status", () => Promise.resolve({ stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } }));
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
-    target: { rawWindowsPath: "C:\\Fixtures\\Disposable.eprj2", projectUuid: "b".repeat(64), documentUuid: "c".repeat(16), branchUuid: "d".repeat(32), expectedSourceSha256: HASH },
+    target: { ...OPEN_TARGET, expectedSourceSha256: "f".repeat(64) },
     expectedFingerprint: structuredClone(FINGERPRINT) }, preparation: { preparationSha256: HASH } };
   const ownerText = canonicalJson(ownerData);
   const checkOwner = (owner: unknown, receivedEngine: unknown): typeof original => {
@@ -132,7 +160,7 @@ async function fixture(context: TestContext): Promise<{
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const scope = vm.createContext({ z, Buffer, Object, Date, Reflect, structuredClone,
     OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema,
-    assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS,
+    assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS,
     // Only cross-realm JSON arguments are normalized at these VM boundaries;
     // Actual engine journals, original captures and native issuers stay unchanged.
     assertCurrentSymbolCacheMark: (...args: Parameters<typeof assertCurrentSymbolCacheMark>): void => {
@@ -144,10 +172,22 @@ async function fixture(context: TestContext): Promise<{
     buildCurrentUploadQueueReadProgram: (target: unknown): string => buildCurrentUploadQueueReadProgram(structuredClone(target)),
     decodeCurrentUploadQueueReadReply: (raw: unknown, target: unknown): ReturnType<typeof decodeCurrentUploadQueueReadReply> =>
       decodeCurrentUploadQueueReadReply(raw, structuredClone(target)),
+    buildCurrentProjectOnlyOpenProgram: (target: unknown): string => buildCurrentProjectOnlyOpenProgram(structuredClone(target)),
+    decodeCurrentProjectOnlyOpenReply: (raw: unknown, target: unknown): ReturnType<typeof decodeCurrentProjectOnlyOpenReply> =>
+      decodeCurrentProjectOnlyOpenReply(raw, structuredClone(target)),
+    verifyCurrentSymbolPreopenSource: async (receivedEngine: unknown, copy: unknown): Promise<unknown> => {
+      assert.equal(receivedEngine, engine); assert.equal(copy, state.copied); state.sourceChecks += 1;
+      state.events.push("source-continuity"); await state.afterSource?.();
+      assert.equal(state.sourceDrift, false, "synthetic source changed");
+      return { profile: "synthetic.preopen-source", sourceSha256: HASH, pointInTimeOnly: true };
+    },
     assertExpectedFingerprint: (value: unknown): void => { assert.ok(isRecord(value)); assert.equal(value["synthetic"], true); },
     validateSdkLocalRuntimeFingerprint: (value: unknown): void => { assertSubset(value, FINGERPRINT, "Synthetic current cache runtime"); },
     verifyCurrentDisposableOpenImplementation: (root: unknown): Promise<void> => {
       assert.equal(root, FINGERPRINT.installedBundles.assetsRoot); state.events.push("source-pin"); return Promise.resolve();
+    },
+    verifyCurrentProjectOnlyOpenImplementation: (root: unknown): Promise<void> => {
+      assert.equal(root, FINGERPRINT.installedBundles.assetsRoot); state.events.push("project-only-source-pin"); return Promise.resolve();
     },
     createOperation, operationPath, writePhaseArtifact,
     loadOperation: async (id: string): ReturnType<typeof loadOperation> => {
@@ -181,11 +221,11 @@ async function fixture(context: TestContext): Promise<{
       assert.ok(last !== undefined); assert.match(basename(last.path), /-copy-intent\.json$/u);
       state.copies += 1; state.events.push("copy");
       if (state.copyFailure) { throw new Error("synthetic copy failure"); }
-      const checkpoint = { checkpointSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
+      const checkpoint = { checkpointSha256: HASH, sourceSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
       state.proof = input["proof"];
       const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
-        startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: false, startupQualified: false } };
+        startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false } };
       state.copied = result; return result;
     },
   });
@@ -315,8 +355,8 @@ void test("current baseline rechecks the retained proof epoch at final pending a
   }
 });
 
-async function completedBaseline(context: TestContext): Promise<Awaited<ReturnType<typeof fixture>>> {
-  const f = await fixture(context); await f.coordinator.capture(f.owner); f.state.scope = false;
+async function completedBaseline(context: TestContext, historicalSubset = false): Promise<Awaited<ReturnType<typeof fixture>>> {
+  const f = await fixture(context); f.state.historicalSubset = historicalSubset; await f.coordinator.capture(f.owner); f.state.scope = false;
   await f.coordinator.close(f.owner); await f.coordinator.observe(f.owner.operationId);
   f.state.activeSession = false; return f;
 }
@@ -496,8 +536,8 @@ void test("current admission rejects capture mutation after scope settlement and
   }
 });
 
-async function admittedBaseline(context: TestContext): ReturnType<typeof fixture> {
-  const f = await completedBaseline(context); await f.coordinator.relaunch(f.owner.operationId);
+async function admittedBaseline(context: TestContext, historicalSubset = false): ReturnType<typeof fixture> {
+  const f = await completedBaseline(context, historicalSubset); await f.coordinator.relaunch(f.owner.operationId);
   f.state.activeSession = true; f.state.sessionSequence = 2; await f.coordinator.admit(f.owner.operationId); return f;
 }
 
@@ -577,4 +617,152 @@ void test("current cache pre-dispatch conflict vetoes cleanup before any cache r
   assert.equal(f.state.cacheReads, 0); assert.equal(f.calls("release-capture"), 1);
   await assert.rejects(f.coordinator.observeCaches(f.owner.operationId));
   assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+});
+
+async function projectReadyBaseline(context: TestContext): ReturnType<typeof fixture> {
+  const f = await admittedBaseline(context, true); await f.coordinator.observeCaches(f.owner.operationId);
+  f.state.openReply = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope({
+    ok: true, kind: "current-project-only-open", ...CACHE_TARGET, projectPathMatched: true, projectPresent: true, publicResult: true,
+    navigationDispatched: true, inactiveUploadCachesObserved: true, noEditorTabsObserved: true, restoreSetEmptyObserved: true,
+    loadProjectCompletedObserved: true, prefixEventProducerVerified: false,
+    urlCommandAbsentObserved: true, currentTabId: "0", documentNavigationDispatched: false, explicitSaveDispatched: false,
+    restorationCompletionVerified: false, runtimeExamStateVerified: false, startupQualified: false, openingEffectsVerified: false,
+    persistenceVerified: false, writerAuthority: false, executionAuthorized: false,
+  }) } };
+  return f;
+}
+
+void test("current project-only continuation binds the post-opening hash and owns exactly one settled navigation", async (context) => {
+  const f = await projectReadyBaseline(context), result = await f.coordinator.openProject(f.owner.operationId);
+  assert.equal(result["state"], "project-only-opened"); assert.equal(result["projectOpened"], true);
+  assert.equal(result["projectOpenReplyRetained"], true); assert.equal(result["projectOpenAttempted"], true);
+  assert.equal(f.state.opens, 1); assert.equal(f.state.sourceChecks, 2); assert.equal(f.state.cacheReads, 1);
+  assert.ok(f.state.events.lastIndexOf("source-continuity") < f.state.events.indexOf("project-only-open"));
+  assert.ok(f.state.events.lastIndexOf("project-only-source-pin") > f.state.events.indexOf("project-only-open"));
+  for (const key of ["startupQualified", "openingEffectsVerified", "beforeWriteBaselineVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized"]) {
+    assert.equal(result[key], false);
+  }
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["orphanedCallPossible"], false);
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original qualified baseline/u);
+  await assert.rejects(f.restart().openProject(f.owner.operationId), /original qualified baseline/u);
+  assert.equal(f.state.opens, 1);
+});
+
+void test("current finish closes its admitted new generation once, polls pending, and retires without writer claims", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  const close = await f.coordinator.finishNormalClose(f.owner.operationId);
+  assert.equal(close["state"], "awaiting-finish-termination"); assert.equal(close["finishCloseAcknowledged"], true);
+  assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.activeSession, false);
+  f.native.state.code = "authority-prior-job-not-empty"; f.native.state.remaining = 1;
+  const pending = await f.coordinator.observeFinish(f.owner.operationId);
+  assert.equal(pending["termination"], "pending"); assert.equal(pending["retired"], false);
+  const done = await f.coordinator.observeFinish(f.owner.operationId);
+  assert.equal(done["state"], "plan-invalidated"); assert.equal(done["termination"], "terminated"); assert.equal(done["retired"], true);
+  assert.equal(done["finishCaptureReleased"], true); assert.equal(done["durableEffects"], "unknown-and-accepted");
+  for (const key of ["startupQualified", "openingEffectsVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
+    assert.equal(done[key], false);
+  }
+  const journal = await loadOperation(f.owner.operationId);
+  assert.equal(journal["orphanedCallPossible"], false); assert.equal(journal["hardStop"], false);
+  assert.ok(f.state.events.indexOf("journal:finish-close-dispatching") < f.state.events.lastIndexOf("native:normal-close"));
+  await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /original acknowledged close/u);
+  const historical = await f.restart().inspect(f.owner.operationId); assert.equal(historical["originalOwnerRetained"], false);
+  await assert.rejects(f.restart().finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+  assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1);
+});
+
+void test("current finish retires only its own orphan after genuine new-generation termination and lease closure", async (context) => {
+  const f = await admittedBaseline(context); f.state.cacheTimeout = true;
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId));
+  const quarantined = await loadOperation(f.owner.operationId); assert.equal(quarantined["orphanedCallPossible"], true);
+  const captures = f.calls("clocked-capture"), reads = f.state.cacheReads;
+  await f.coordinator.finishNormalClose(f.owner.operationId);
+  const closed = await loadOperation(f.owner.operationId); assert.equal(closed["orphanedCallPossible"], true);
+  const done = await f.coordinator.observeFinish(f.owner.operationId);
+  assert.equal(done["retired"], true); assert.equal(done["state"], "plan-invalidated");
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["orphanedCallPossible"], false);
+  assert.equal(f.state.cacheReads, reads); assert.equal(f.calls("clocked-capture"), captures); assert.equal(f.state.opens, 0);
+  assert.equal(f.calls("release-capture"), 3); await f.engine.assertBridgeDispatchAllowed();
+});
+
+void test("current finish consumes uncertain close and preserves foreign journal history", async (context) => {
+  for (const mode of ["uncertain-close", "foreign-history"] as const) {
+    await context.test(mode, async (childContext) => {
+      const f = await admittedBaseline(childContext);
+      if (mode === "uncertain-close") {
+        f.native.behavior.errorAction = "normal-close";
+        await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId));
+      } else {
+        await f.coordinator.finishNormalClose(f.owner.operationId);
+        let external: Buffer | undefined;
+        f.state.afterLoad = async (): Promise<void> => {
+          if (external !== undefined) { return; }
+          const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Synthetic foreign finish history must remain.";
+          await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+        };
+        await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /finish journal changed/u);
+        assert.ok(external !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+      }
+      await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+      await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /original acknowledged close/u);
+      await assert.rejects(f.restart().observeFinish(f.owner.operationId), /original acknowledged close/u);
+      assert.equal(f.calls("normal-close"), 2); assert.equal(f.calls("release-capture"), 1);
+    });
+  }
+});
+
+void test("current project-only opening refuses an unsupported historical subset without consuming navigation", async (context) => {
+  const f = await admittedBaseline(context); await f.coordinator.observeCaches(f.owner.operationId);
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original qualified baseline/u);
+  assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
+  const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["projectOpenAttempted"], false);
+});
+
+void test("current project-only source drift or session loss refuses before native navigation", async (context) => {
+  for (const phase of ["source-drift", "source-await-session-loss", "last-source-drift"]) {
+    await context.test(phase, async (childContext) => {
+      const f = await projectReadyBaseline(childContext);
+      if (phase === "source-drift") { f.state.sourceDrift = true; }
+      else { f.state.afterSource = (): Promise<void> => {
+        if (phase === "source-await-session-loss") { f.state.activeSession = false; }
+        else if (f.state.sourceChecks === 2) { f.state.sourceDrift = true; }
+        return Promise.resolve();
+      }; }
+      await assert.rejects(f.coordinator.openProject(f.owner.operationId));
+      const result = await f.coordinator.inspect(f.owner.operationId);
+      assert.equal(f.state.opens, 0); assert.equal(result["projectOpenAttempted"], true);
+      await assert.rejects(f.coordinator.openProject(f.owner.operationId));
+    });
+  }
+});
+
+void test("current project-only ambiguous response remains quarantined and is not replayed", async (context) => {
+  const f = await projectReadyBaseline(context);
+  f.state.openReply = { content: [], structuredContent: { ok: false, error: { message: "CURRENT_PROJECT_ONLY_OPEN_FAILED:TIMEOUT" } } };
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId));
+  const result = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(result["projectOpenReplyRetained"], true); assert.equal(result["projectOpened"], false);
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["orphanedCallPossible"], true);
+  await assert.rejects(f.engine.assertBridgeDispatchAllowed());
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId)); assert.equal(f.state.opens, 1);
+});
+
+void test("current project-only return cannot overwrite conflicting history or skip scope settlement", async (context) => {
+  for (const phase of ["conflicting-history", "scope-settlement", "runtime-drift"]) {
+    await context.test(phase, async (childContext) => {
+      const f = await projectReadyBaseline(childContext); let external: Buffer | undefined;
+      if (phase === "scope-settlement") { f.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic scope failed")); }
+      else { f.state.afterOpen = async (): Promise<void> => {
+        if (phase === "runtime-drift") { f.state.statusDrift = true; return; }
+        const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Synthetic external project-only history; preserve.";
+        await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+      }; }
+      await assert.rejects(f.coordinator.openProject(f.owner.operationId));
+      const result = await f.coordinator.inspect(f.owner.operationId);
+      assert.equal(result["projectOpenReplyRetained"], true); assert.equal(result["projectOpened"], false);
+      if (external !== undefined) { assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external); }
+      await assert.rejects(f.coordinator.openProject(f.owner.operationId)); assert.equal(f.state.opens, 1);
+    });
+  }
 });

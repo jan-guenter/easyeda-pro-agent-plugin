@@ -1,6 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This operation composes fixed checkpoint, current implementation, retained runtime and shared journal boundaries. */
 import { z } from "zod";
-import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { controlDataDirectory, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "./core.ts";
 import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram, currentDisposableOpenSealedTargetSchema,
@@ -20,8 +20,9 @@ import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 // oxlint-disable-next-line import/no-cycle -- The fixed preparation stage consumes this module's private original-object issuer after initialization.
 import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
 import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
-// oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; neither module exposes a public route.
+// oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
 import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema } from "./current-symbol-baseline-runtime.ts";
+import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 
 type Value = Record<string, unknown>;
@@ -205,6 +206,33 @@ export class CurrentDisposableOpenCoordinator {
   public async run(input: unknown, expectedFingerprint?: Value): Promise<Value> {
     const request = parseCurrentDisposableOpenRequest(structuredClone(input));
     requireValue(!this.busy, "Current disposable opening is already in progress.");
+    if (request.action === "baseline-begin") {
+      requireValue(expectedFingerprint === undefined, "Baseline validation derives its runtime from the original opening; do not supply a replacement fingerprint.");
+      requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine && this.retained.has(request.openingOperationId),
+        "Baseline validation requires its original production opening owner.");
+      this.busy = true;
+      let configured: Awaited<ReturnType<typeof loadRuntimeMachineProfile>>;
+      try { configured = await loadRuntimeMachineProfile(); }
+      finally { this.busy = false; }
+      requireValue(configured.profile.controlDirectory === controlDataDirectory() &&
+        configured.profile.easyeda.assetsRoot === process.env["EASYEDA_ASSETS_ROOT"], "Baseline machine configuration differs from the active facade.");
+      return this.beginSymbolBaseline(request.openingOperationId, { operationId: request.operationId,
+        preparation: request.preparation, confirmNormalClose: true }, configured.profile.runtime);
+    }
+    if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination") {
+      requireValue(expectedFingerprint === undefined, "Baseline continuation cannot replace its original runtime fingerprint.");
+      switch (request.action) {
+        case "baseline-observe-termination": { return this.observeSymbolBaseline(request.operationId); }
+        case "baseline-relaunch": { return this.relaunchSymbolBaseline(request.operationId); }
+        case "baseline-admit": { return this.admitSymbolBaseline(request.operationId); }
+        case "baseline-observe-caches": { return this.observeSymbolBaselineCaches(request.operationId); }
+        case "baseline-open-project": { return this.openSymbolBaselineProject(request.operationId); }
+        case "baseline-finish-close": { return this.finishSymbolBaseline(request.operationId); }
+        case "baseline-observe-finish": { return this.observeSymbolBaselineFinish(request.operationId); }
+        case "baseline-inspect": { return this.inspectSymbolBaseline(request.operationId); }
+        default: { throw new Error("Unsupported baseline continuation."); }
+      }
+    }
     this.busy = true;
     if (request.action !== "inspect") { this.generations.clear(); }
     try {
@@ -249,7 +277,7 @@ export class CurrentDisposableOpenCoordinator {
     } finally { this.busy = false; }
   }
 
-  /** Internal owned baseline only. The public opener schema has no route here.
+  /** Owned baseline stage, reached only through the fixed validation request.
    * Consumes this Job before the first await, transfers a fresh preparation,
    * then requests one normal close outside its authenticated scope.
    */
@@ -303,7 +331,7 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
-  /** Internal continuation only; the public opener schema has no relaunch route. */
+  /** Fixed continuation on the original retained baseline; no owner adoption. */
   public async relaunchSymbolBaseline(operationId: string): Promise<Value> {
     const stage = this.baselines.get(operationId);
     requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
@@ -312,7 +340,7 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
-  /** Internal new-session admission; never an ordinary opener or writer route. */
+  /** New-session admission; never an ordinary opener or writer route. */
   public async admitSymbolBaseline(operationId: string): Promise<Value> {
     const stage = this.baselines.get(operationId);
     requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
@@ -321,13 +349,52 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
-  /** Internal cache-only continuation; public requests cannot supply code or targets. */
+  /** Cache-only continuation; public requests cannot supply code or targets. */
   public async observeSymbolBaselineCaches(operationId: string): Promise<Value> {
     const stage = this.baselines.get(operationId);
     requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
     this.busy = true;
     try { return await stage.observeCaches(operationId); }
     finally { this.busy = false; }
+  }
+
+  /** Project-only continuation on the retained replacement generation. */
+  public async openSymbolBaselineProject(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.openProject(operationId); }
+    finally { this.busy = false; }
+  }
+
+  public async finishSymbolBaseline(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.finishNormalClose(operationId); }
+    finally { this.busy = false; }
+  }
+
+  public async observeSymbolBaselineFinish(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.observeFinish(operationId); }
+    finally { this.busy = false; }
+  }
+
+  public async inspectSymbolBaseline(operationId: string): Promise<Value> {
+    requireValue(!this.busy, "Current symbol baseline coordinator is busy.");
+    this.busy = true;
+    try {
+      const stage = this.baselines.get(operationId);
+      if (stage !== undefined) { return await stage.inspect(operationId); }
+      const journal = await this.services.loadOperation(operationId);
+      requireValue(journal.operationId === operationId && isRecord(journal.plan) &&
+        journal.plan["profile"] === "easyeda-pro-control.current-symbol-closed-baseline.v1", "Current symbol baseline history has another profile.");
+      return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
+        nextSafeAction: journal["nextSafeAction"], originalOwnerRetained: false, writerReady: false, executionAuthorized: false };
+    } finally { this.busy = false; }
   }
 
   private static assertNotTransferred(runtime: Retained["runtime"]): void {

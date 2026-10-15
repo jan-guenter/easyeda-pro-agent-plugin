@@ -120,3 +120,60 @@ operation for a separately supported recovery procedure.
 This adapter is source-tested. Connected opening and persistence validation
 must be reported separately; the current release makes no writer-lifecycle
 claim.
+
+## Retained baseline validation
+
+The `baseline-*` actions collect bounded startup evidence on the disposable project selected by
+the original `open`. They do not execute the prepared name/description patch.
+Check the installed offline schema first. Older snapshots do not expose them.
+
+Keep this facade alive throughout. Start only after the original opener reports
+the exact active PCB and native identity. The source project must contain an
+ordinary symbol that is closed in every editor. Use its existing managed
+checkpoint descriptor and exact project, branch, owner and symbol IDs to assemble
+`preparation`. Do not supply `observationProjection`; the coordinator collects
+its own observation. Preparation still does not authorize editing.
+
+1. `baseline-begin` takes a new `operationId`, the original `openingOperationId`,
+   `preparation`, and all three confirmations: `confirmNormalClose`,
+   `confirmDisposableProject`, `acceptNormalOpenEffects`. It transfers ownership
+   from the opener, captures the original session and requests normal closure
+   once. It never chooses Save/Discard or forces exit.
+2. `baseline-observe-termination` checks the original process and Job. A qualified
+   pending result permits another observation, never another close. After proven
+   termination it captures a raw closed-file SQL baseline and a separate native
+   history checkpoint. Their hashes need not be equal.
+3. Inspect `startupPremises`. `historicalSubsetSatisfied` requires the reviewed
+   database version, a nondeleted PCB metadata count witness and no active
+   schematic pages. A blocker is not permission to edit the fixture around the
+   guard. Other fixtures need a separately qualified startup profile.
+4. `baseline-relaunch` requires `acceptNormalOpenEffects:true`. It launches one
+   new retained generation. `baseline-admit` then captures its authenticated
+   session. An authentication-pending result permits another admission check,
+   not another launch.
+5. `baseline-observe-caches` records one inactive-target upload-cache observation.
+   `baseline-open-project`, with `acceptNormalOpenEffects:true`, independently
+   rechecks raw source bytes, registration and caches before one project open.
+   It accepts only the native Start/hidden-blank transition and no editor tabs.
+   It observes the operation-local `loadProjectCompleted` event under the exact
+   target context. That event has no producer identity and is only a startup
+   prefix, not proof that every background callback finished.
+6. `baseline-finish-close` requires `confirmNormalClose:true` and
+   `acceptUnknownFileEffects:true`. It uses the retained new generation's
+   capture to request normal closure. Follow with `baseline-observe-finish`.
+   A terminal retirement invalidates this attempt without replay or a claim
+   about intended file changes. Use the returned state, not a close
+   acknowledgment, to distinguish pending closure from proved termination.
+
+Continuation requests take only their operation ID and listed confirmations.
+Do not pass a replacement top-level fingerprint, target, runtime or code.
+`baseline-inspect` stays local after restart, but historical JSON cannot restore
+lost handles or authorize continuation. A pre-admission launch failure, uncertain
+close without its actual receipt, conflicting history or lost owner requires
+review. Do not restart Codex mid-validation to try to clear those conditions.
+
+`startupQualified`, `openingEffectsVerified`, `beforeWriteBaselineVerified`,
+backend actor/clock qualification and writer authority remain false. The raw
+source check is a point-in-time observation, not a file lock. Ordinary opening
+can still have automatic effects. Never issue an extra Save, open a document,
+confirm an update dialog, or run the prepared patch to complete this validation.

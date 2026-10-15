@@ -235,3 +235,165 @@ This source-only research adds no implementation or test result. It does not
 change native persistence, open a project, run a writer, publish a release, or
 install an update. The research and extension-development skills kept the
 findings tied to exact installed producers and separate from live validation.
+
+## Continuation: project-only completion and backend evidence
+
+This continuation rechecked the APP, UI, MGR, WORKER and SCH hashes above.
+It also reviewed [WS](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.184.355087e9/js/ws-service.js>),
+855142 bytes, SHA-256
+`7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453`.
+The same source-only restrictions apply. Recommendations below are not new
+execution support, new pins, or observations of a running application.
+
+### The generic document opener does not create the blank project tab
+
+UI `xr` at 15254890 is the ordinary document-tab opener. It obtains document
+data, calls `J8o` to create the tab, then awaits `glt` at 15256604 before its
+editor/import steps. This includes lazy document tabs. Its two other direct
+`glt` callsites at 15246044 and 15251262 belong to PCB opening.
+
+The main project `ON_OPENED` subscriber at UI 16667083 reaches `xr` inside
+the restored-document loop at 16669200 through 16670240. A genuinely empty
+retained `sessionStorageTabs` set excludes that loop. Its later `urlCmd`
+dispatch must also be absent. The separate temporary-project subscriber at
+16670635 does open a first document, so the conclusion does not apply to
+temporary/imported projects.
+
+`createBlankTab` at UI 16424893 directly uses `vt.addTab` and may activate the
+hidden blank tab. It does not call `xr` or `glt`. Thus ordinary project-only
+opening with no restoration, URL command or later document navigation excludes
+these exam-autosave registrations without querying or changing exam settings.
+Other callers of `getExamProjectStatus` remain, so this is a call-path
+exclusion, not `runtimeExamStateVerified:true`.
+
+The single-object `vt.addTab` path at UI 15675019 appends the blank entry with
+`tabs.push`, preserving the existing container-info object, tabs array and
+Start-tab object. `render` at 15673102 updates active order and React-renders
+the view without replacing those owners. Other addTab branches can replace
+the array, so this preservation claim applies only to ordinary blank creation.
+It does not promise that React retains every DOM node. `createBlankTab` does
+not await `simulateClick`; a later observer may still see Start or blank active.
+
+### A useful owned stage, not a global idle signal
+
+The main subscriber awaits `prjInit`, `dko` and any `JP.flushTasks` before it
+publishes `loadProjectCompleted` at UI 16669194. That event is later than
+`openProjectInitCompleted`, which it publishes at 16667751 before those awaits.
+Neither event waits for the second ON_OPENED subscriber at 16737077, which
+fetches project details and fills the renderer cache separately.
+
+An operation-local listener registered before the single open dispatch can
+observe `loadProjectCompleted` as evidence that this native subscriber reached
+that prefix. The event carries no project ID, so a future fixed observer must
+retain the exact root, bus and listener; recheck target, branch and owned
+opening generation at delivery; reject duplicate or foreign transitions; and
+cancel only its own registration. It must not replace native callbacks or
+publish a synthetic completion event. Timeout consumes navigation, not a retry.
+
+The binding is source-backed. UI `kFo` at 16956605 assigns the root
+`_MSG_BUS_`/`gVars.messageBus` to `dde.MessageBus`; `dde` at 8102091 imports WU,
+whose export at 1643547 selects `Zcn`. Its `subscribe` at 1649345 returns a
+`v2t` task. The task implementation at 1648690 makes `cancel()` clear its
+callback and running flag. It does not immediately splice the task from the
+subscription array; a later publish removes the inert entry. `publish` at
+1649137 calls subscribers synchronously, without awaiting returned promises.
+Task execution catches thrown callback errors, so a fixed observer must retain
+failure in its own state or promise rather than rely on a throw escaping the
+publisher. The reviewed local event sends `null` and no bridge/source arguments.
+The payload cannot authenticate its producer. Keep that limitation explicit
+even when the operation observes the expected event under its retained context.
+
+`me.isOpenProjectDoc` is unsuitable as the sole signal. UI 16445348 initializes
+it false once, but Start Page initialization at 15080752 already sets it true
+when there is no initial project URL. The ordinary opening code does not
+reset it. Its later assignment in `Promise.all(restoredOpeners).finally` at
+16670244 also occurs after failed restored openers. Do not require an invented
+false-to-true transition or promote a sampled true value to success.
+
+After the event, the empty restored-opener array still has a detached `finally`
+that calls layout and assembly-variant initialization. `restoreLayout` at UI
+16422020 returns immediately if the originally retained `initContainerTree`
+is null. SCH's `assemblyVariantInit` handler at 6229033 calls `Qs.init`; the
+implementation at 5554589 reads variant/group lists into memory and publishes
+`initSortVariantEnd`. This reviewed initialization body has no native project
+write call. The event is not a barrier for unrelated or future subscribers.
+
+### Remaining producers are specific, not one undifferentiated queue
+
+| Producer | Reviewed scope and remaining condition |
+| --- | --- |
+| `JP` startup tasks | UI 10169377 awaits each queued function. The only two `JP.addTaskItem` sites, 10179733 and 10180316, are import-to-existing-project flows. Fresh non-import opening excludes those producers by provenance; do not clear the queue to manufacture emptiness. |
+| Initial project settings | UI `ace.init` at 15068746 initializes its consistency reader and fills absent defaults in memory. Its separate `save` and `fEo` paths perform uploads. The positive native-count witness excludes the `dko` call to `fEo`. |
+| Startup library-update notice | UI 16668775 invokes `VW` with `needUpdateSymbolData:false`. `S0i` at 8151752 then skips the updater `FORCE` request, reads updater results and may open the update dialog through `openCore` at 15630970. Actual library mutation is in `confirmUpdate` at 15632576. Do not confirm that dialog during this operation. |
+| Worker updater | WORKER 2107714 does not await `updateData.mount`. The updater at 1964467 reads origin data into its own caches and publishes notifications. The reviewed device/footprint/symbol/PCB/block-symbol update bodies at 1947714, 1949977, 1959479, 1952403 and 1962140 do not call target metadata setters. Origin lookups can still access other libraries/projects, so this is not a claim that all its reads are within the disposable target. |
+| Offline synchronization | WORKER `syncCloud` at 2031829 loads history into memory and caches under `isSyncing`; it remains detached and recurring through `checkProject` at 2126981. `applySnap` at 2024968 returns immediately for `Fe`, the client non-online mode defined at 1654779. Empty upload caches exclude pre-existing replay, not every future upload producer. |
+| Structure persistence | WORKER 2103200 checks ready/read-only/syncing state before scheduling structure work. Initial parse or sync is not interchangeable with a fresh local change. The existing 300 ms debounce still matters after any real metadata change; sampled empty task sets are not a drain operation. |
+| SCH project construction | SCH 6148653 constructs `Tj`. Its constructor at 5918477 starts detached instance-attribute and version reads. `loadAll` at 5880985 assigns fetched attributes to memory. The abnormal detector near 5889200 only inspects an active schematic document, excluded by the project-only tab contract. Zero active sheets excludes the previously traced linked-sheet initializer. |
+
+These source findings avoid waiting for harmless UI/cache work merely because
+it is asynchronous. They do not prove every downstream notification subscriber
+or backend request write-free. Preserve the distinction between a target-file
+write, a shared cache/profile effect, a read of another library and a UI update.
+No shared preferences need to be toggled to use the exclusions above.
+
+There is also a concrete database-lifetime gap. APP `Sy` at 1319660 uses its
+own initialization connection for `journal_mode=delete`, resolves without
+awaiting that callback, then calls `a.close()` in `finally`. APP `xt` at
+1319235 creates another connection after waiting for `Y5`; `y` at 1318983
+caches handles only in the current request. The router at 2620057 creates a
+fresh `n.db={}` per request. A later project GET is therefore not a same-queue
+barrier for the initialization PRAGMA. If a future profile relies on this
+being a harmless same-mode operation, qualify that exact premise separately;
+do not report the callback as observed complete.
+
+### Backend actor and clock have different producers
+
+APP `wC` at 2620025 creates `rC` once. `rC` at 2573782 awaits `Wa` once and
+retains the license result in its middleware closure. `eC` at 2574653 selects
+the system user by that retained license username for each request. If the row
+is missing, it can insert one before reselecting it. APP `T0.login` at 2220292
+returns UUID, username and nickname from that system table.
+
+For persisted EDIT_HEAD, APP `L3` at 2602467 uses the request user's UUID but
+looks up username and nickname in the target project's users table. A missing
+target row produces empty names. Neither UI user object is this exact producer.
+An actual operation-bound response from the local user endpoint could establish
+the request user's projection, followed by correlation with the retained target
+users table. That is a candidate for a small fixed actor observer, not an
+implemented passive read. The route at APP 2478354 also reads preferences and
+distinct-ID data, and its middleware can insert a system user. Any future use
+must classify those effects, select only bounded needed fields for retention,
+bind the actual local route and process generation, and keep the no-intervening
+account-change premise explicit. No such request was made in this research.
+
+WS 851427 through 851621 exposes `/pro-mgr/serverTime/now` as `Date.now()+Jd`
+in the notify module. It is not an APP request-clock endpoint. APP EDIT_HEAD
+at 2602792 uses its own `Date.now`; project timestamps at 2601230 use APP local
+calendar formatting; SQL history defaults use SQLite UTC whole seconds. No
+fixed passive APP clock endpoint was identified in the reviewed routes.
+
+The practical next clock work is to reuse original supervisor-issued launch,
+capture and termination clock observations, separately bracket the document
+clock, and validate each stored timestamp according to its actual producer.
+The existing native clock transport and endpoint/closed-clock comparators are
+reusable components, not proof by themselves. A helper observation does not
+expose APP's `Date` receiver or continuously lock the OS clock. Keep the common
+OS clock, timezone and no-intervening-change assumptions explicit; refuse a
+mismatch rather than silently widening the timestamp interval. Do not create
+an arbitrary APP evaluator or reuse the notify clock as the backend clock.
+
+### Smallest useful implementation outcome
+
+The next bounded result can be one owned project-only opening, with fresh
+source/cache continuity and an operation-local observation of the native
+startup prefix. Require the original empty restoration state, no command and
+no editor tabs throughout. Retain actual returns and stage observations on
+failure; never repeat navigation. This is useful progress without claiming
+global idle, backend actor/clock verification, or writer readiness.
+
+To enable the writer, combine the specific no-write exclusions with fresh
+consistent SQL/native evidence and the retained original generation. Resolve
+the remaining producer-specific gaps rather than starting another generic
+idle detector or repeated opening/closing cycle. A point-in-time snapshot can
+show equality, but cannot observe a hidden callback's completion. This report
+adds no code, live validation, account/design access, publication or install.

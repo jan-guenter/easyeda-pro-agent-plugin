@@ -27,6 +27,19 @@ export const CURRENT_SYMBOL_CLOCK_IMPLEMENTATION = Object.freeze({
   sha256: "7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453",
 });
 
+/** The project-only profile relies on the no-active-sheet startup exclusion.
+ * Pin the implementation that owns that initialization, not just its caller.
+ */
+export const CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION = Object.freeze({
+  relativePath: "pro-sch/3.2.192.b79ad524/js/sch-main.js", bytes: 6_289_422,
+  sha256: "d9d6a955bf40d57daf9f27f31e0fff3191715ff50582418ad0922beb71b424bd",
+});
+
+export async function verifyCurrentProjectOnlyOpenImplementation(assetsRoot: string): Promise<void> {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION]);
+}
+
 function requirePinned(condition: boolean): asserts condition {
   if (!condition) { throw new Error("Current disposable-open implementation differs from its reviewed profile."); }
 }
