@@ -64,6 +64,7 @@ function summary(slot: Slot): Value {
     admissionAttempted: slot.admissionAttempted, admissionCaptureRetained: slot.admissionCapture !== undefined, admissionProved: slot.admissionProved,
     nativeAdmissionClockStatus: slot.admissionClock?.clock.status ?? "not-observed",
     cacheAttempted: slot.cacheAttempted, cacheReplyRetained: slot.cacheReplyRetained, cachesObserved: slot.cachesObserved,
+    startupPremises: slot.copy?.startupPremises ?? null,
     nativeCacheClockStatus: slot.cacheClock?.clock.status ?? "not-observed", startupQualified: false,
     beforeWriteBaselineVerified: false, openingEffectsVerified: false, backendActorVerified: false, backendClockVerified: false,
     writerReady: false, executionAuthorized: false, explicitSaveDispatched: false, replayAllowed: false,
@@ -246,6 +247,7 @@ export class CurrentSymbolBaselineCoordinator {
       slot.journal.state = "completed"; slot.journal.hardStop = false;
       slot.journal.nextSafeAction = "Closed baseline captured. Qualify later opening effects and backend actor/clock before any writer; no before-write baseline or persistence completion is inferred.";
       await CurrentSymbolBaselineCoordinator.record(slot, "copy-result", { checkpoint: result.checkpoint, copy: result.copy, preparation: result.preparation, targetEvidence: result.targetEvidence,
+        startupPremises: result.startupPremises,
         sql: { checkpointSha256: result.inventory.checkpointSha256, schemaSha256: result.inventory.schemaSha256, logicalSha256: result.inventory.logicalSha256 },
         beforeWriteBaselineVerified: false, openingEffectsVerified: false, writerReady: false, executionAuthorized: false });
       this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);

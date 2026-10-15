@@ -219,6 +219,14 @@ Three current-specific modules now implement the internal owned-baseline stage:
    against the fresh checkpoint and retained observation. Acquired evidence is
    retained before later checks. The separate VACUUM checkpoint supplies native
    history and metadata evidence; the raw copy supplies the full SQL baseline.
+5. The copy stage now retains a historical startup-premises report from those
+   same in-memory inputs. It checks the source-backed SQLite version key and
+   exact branch/history selection, and records a conservative PCB-count witness
+   and active-sheet count. It neither rereads the original source after relaunch
+   nor qualifies startup. The [2026-10-16 source review](current-startup-premises-research-2026-10-16.md)
+   corrects the earlier project-version assumption and documents remaining live
+   checks. Only the original enclosing copy, not standalone report JSON, retains
+   the issued baseline identity.
 
 The baseline result keeps `beforeWriteBaselineVerified`, `openingEffectsVerified`,
 `writerReady` and `executionAuthorized` false. Its journal completion means the

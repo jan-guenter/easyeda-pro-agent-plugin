@@ -14,6 +14,7 @@ import { assertIssuedClosedFileCopy, copyClosedProjectBytes } from "../src/close
 import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
+import { assessCurrentStartupPremises } from "../src/current-startup-premises.ts";
 import { captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
 import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, assertOriginalCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
@@ -126,7 +127,7 @@ async function fixture(): Promise<Fixture> {
     createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes, readClosedCopySqlInventory, readerCompletion, canonicalJson, isRecord, sha256Json,
     normalizeEasyedaProjectPath: (raw: string): string => { assert.equal(raw, RAW_PATH); return source; },
     assertCurrentSymbolBaselineOwner: assertOwner, revalidateCurrentSymbolBaselineOwner: (candidate: unknown, candidateEngine: unknown) => Promise.resolve(assertOwner(candidate, candidateEngine)),
-    currentClosedSymbolMetadataProjection, prepareCurrentSymbolMetadata, isNativeDocumentDeleted, readNativeHistoryCheckpoint,
+    currentClosedSymbolMetadataProjection, prepareCurrentSymbolMetadata, assessCurrentStartupPremises, isNativeDocumentDeleted, readNativeHistoryCheckpoint,
     assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority });
   const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,revalidate:revalidateCurrentSymbolBaselineCopy});`, scope);
   assert.ok(isRecord(exports) && typeof exports["capture"] === "function" && typeof exports["original"] === "function" && typeof exports["revalidate"] === "function");
@@ -141,8 +142,11 @@ async function fixture(): Promise<Fixture> {
 void test("current closed baseline captures new source bytes, real SQL and metadata without writer admission", async () => {
   const value = await fixture();
   const before = await readFile(value.source), result = await value.run();
-  assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory", "preparation"]);
-  assert.equal(value.events[1]?.value, result.copy); assert.equal(value.events[2]?.value, result.inventory); assert.equal(value.events[3]?.value, result.preparation);
+  assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory", "startup-premises", "preparation"]);
+  assert.equal(value.events[1]?.value, result.copy); assert.equal(value.events[2]?.value, result.inventory);
+  assert.equal(value.events[3]?.value, result.startupPremises); assert.equal(value.events[4]?.value, result.preparation);
+  assert.deepEqual(result.startupPremises.blockers, ["unsupported-sql-schema"]);
+  assert.equal(result.startupPremises.historicalSubsetSatisfied, false); assert.equal(result.startupPremises.startupQualified, false);
   assert.equal(result.copy.sha256, digest(before)); assert.equal(result.checkpoint.sourceSha256, digest(before));
   assert.equal(result.inventory.checkpointSha256, result.copy.sha256); assert.equal(readerCompletion(result.inventory).exitCode, 0);
   assertIssuedClosedFileCopy(result.copy); value.loaded.original(result, value.engine);
@@ -192,11 +196,13 @@ void test("same-byte source replacement before or after checkpoint refuses exact
 });
 
 void test("callback failure retains completed evidence and consumes the only baseline attempt", async () => {
-  const value = await fixture();
-  await assert.rejects(value.run((event) => { if (event.kind === "inventory") { throw new Error("synthetic evidence publication failed"); } }), /publication failed/u);
-  assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory"]);
-  const inventory = value.events[2]; assert.ok(inventory?.kind === "inventory"); assert.equal(readerCompletion(inventory.value).exitCode, 0);
-  await assert.rejects(value.run(), /consumed/u);
+  for (const phase of ["inventory", "startup-premises"] as const) {
+    const value = await fixture();
+    await assert.rejects(value.run((event) => { if (event.kind === phase) { throw new Error("synthetic evidence publication failed"); } }), /publication failed/u);
+    assert.deepEqual(value.events.map((event) => event.kind), phase === "inventory" ? ["checkpoint", "copy", "inventory"] : ["checkpoint", "copy", "inventory", "startup-premises"]);
+    const inventory = value.events[2]; assert.ok(inventory?.kind === "inventory"); assert.equal(readerCompletion(inventory.value).exitCode, 0);
+    await assert.rejects(value.run(), /consumed/u);
+  }
 });
 
 void test("fresh closed baseline requires the retained PCB, exact owner and observed symbol metadata", async () => {
@@ -209,7 +215,7 @@ void test("fresh closed baseline requires the retained PCB, exact owner and obse
       try { database.prepare("UPDATE projects SET owner_uuid=?").run("9".repeat(32)); } finally { database.close(); }
     }
     await assert.rejects(value.run(), /PCB|not proven/u);
-    assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory"]);
+    assert.deepEqual(value.events.map((event) => event.kind), fault === "metadata" ? ["checkpoint", "copy", "inventory", "startup-premises"] : ["checkpoint", "copy", "inventory"]);
   }
 });
 
@@ -224,7 +230,7 @@ void test("late source change and lost closure owner refuse after retaining fres
         try { database.exec("INSERT INTO synthetic_open_effect VALUES('late change')"); } finally { database.close(); }
       }
     }), /changed|helper/u);
-    assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory", "preparation"]);
+    assert.deepEqual(value.events.map((event) => event.kind), ["checkpoint", "copy", "inventory", "startup-premises", "preparation"]);
     await assert.rejects(value.run(), /consumed/u);
   }
 });
@@ -236,7 +242,7 @@ void test("current baseline revalidation accepts original copy and current proof
   await value.loaded.revalidate(value.engine, result, value.input.proof);
   assert.deepEqual(await readFile(value.source), before);
   assert.equal(result.beforeWriteBaselineVerified, false); assert.equal(result.executionAuthorized, false);
-  assert.equal(value.events.length, 4); assert.equal(value.retained.requests.filter((request) => request["action"] === "normal-close").length, 1);
+  assert.equal(value.events.length, 5); assert.equal(value.retained.requests.filter((request) => request["action"] === "normal-close").length, 1);
 });
 
 void test("current baseline revalidation refuses source edits, checkpoint substitution and a resealed replacement-source receipt", async () => {
@@ -265,7 +271,7 @@ void test("current baseline revalidation refuses source edits, checkpoint substi
       }
     }
     await assert.rejects(value.loaded.revalidate(value.engine, result, value.input.proof), /changed/u);
-    assert.equal(value.events.length, 4);
+    assert.equal(value.events.length, 5);
   }
 });
 

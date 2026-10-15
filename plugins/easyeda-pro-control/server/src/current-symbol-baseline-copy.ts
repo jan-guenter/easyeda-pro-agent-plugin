@@ -14,6 +14,8 @@ import { canonicalJson, isRecord, normalizeEasyedaProjectPath, sha256Json } from
 // oxlint-disable-next-line import/no-cycle -- Only the retained opening coordinator can issue the owner consumed by its closed-copy stage; no alternate issuer or caller verifier is exposed.
 import { assertCurrentSymbolBaselineOwner, revalidateCurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
+import { assessCurrentStartupPremises } from "./current-startup-premises.ts";
+import type { CurrentStartupPremises } from "./current-startup-premises.ts";
 import { currentClosedSymbolMetadataProjection } from "./current-symbol-closed-target.ts";
 import { prepareCurrentSymbolMetadata } from "./current-symbol-metadata-preparation.ts";
 import type { CurrentSymbolMetadataPreparationResult } from "./current-symbol-metadata-preparation.ts";
@@ -37,6 +39,7 @@ export type CurrentSymbolBaselineCopyEvidence =
   Readonly<{ kind: "checkpoint"; value: CheckpointReceipt }> |
   Readonly<{ kind: "copy"; value: ClosedFileCopyReceipt }> |
   Readonly<{ kind: "inventory"; value: SqlInventory }> |
+  Readonly<{ kind: "startup-premises"; value: CurrentStartupPremises }> |
   Readonly<{ kind: "preparation"; value: CurrentSymbolMetadataPreparationResult }>;
 export interface CurrentSymbolBaselineCopy {
   readonly profile: "private.current-symbol-baseline-copy.v1";
@@ -45,6 +48,7 @@ export interface CurrentSymbolBaselineCopy {
   readonly copy: ClosedFileCopyReceipt;
   readonly inventory: SqlInventory;
   readonly preparation: CurrentSymbolMetadataPreparationResult;
+  readonly startupPremises: CurrentStartupPremises;
   readonly targetEvidence: Readonly<{
     projectUuid: string; branchUuid: string; ownerUuid: string; documentUuid: string; docType: "PCB";
     documentSemanticSha256: string; historySemanticSha256: string; headHistoryUuid: string;
@@ -219,6 +223,9 @@ export async function captureCurrentSymbolBaselineCopy(engine: EasyedaControlEng
   const targetEvidence = Object.freeze({ projectUuid: history.projectUuid, branchUuid: history.branchUuid, ownerUuid: history.projectOwnerUuid,
     documentUuid: document.uuid, docType: "PCB" as const, documentSemanticSha256: document.semanticSha256,
     historySemanticSha256: history.semanticSha256, headHistoryUuid: history.headHistoryUuid });
+  const startupPremises = await assessCurrentStartupPremises({ inventory, sourceSha256: copy.sha256,
+    checkpointSha256: checkpoint.checkpointSha256, history, target, documentUuid: document.uuid });
+  retain({ kind: "startup-premises", value: startupPremises }); await current();
   const checkpointInfo = await lstat(checkpoint.checkpoint, { bigint: true }); await current();
   const preparation = await prepareCurrentSymbolMetadata({ checkpoint: { path: checkpoint.checkpoint, bytes: Number(checkpointInfo.size), sha256: checkpoint.checkpointSha256 },
     target, patch: previous.checkpointPreparation.patch, observationProjection: currentClosedSymbolMetadataProjection(previous.closedTargetWitness.observation) });
@@ -231,7 +238,7 @@ export async function captureCurrentSymbolBaselineCopy(engine: EasyedaControlEng
   need(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint &&
     verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === checkpoint.sourceSha256 &&
     verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol baseline source or checkpoint changed during capture.");
-  const result: CurrentSymbolBaselineCopy = Object.freeze({ profile: "private.current-symbol-baseline-copy.v1", owner, checkpoint, copy, inventory, preparation, targetEvidence,
+  const result: CurrentSymbolBaselineCopy = Object.freeze({ profile: "private.current-symbol-baseline-copy.v1", owner, checkpoint, copy, inventory, preparation, targetEvidence, startupPremises,
     postOpeningClosedCopyCaptured: true, beforeWriteBaselineVerified: false, openingEffectsVerified: false, writerReady: false, executionAuthorized: false });
   assertCurrentClosedSessionCopyAuthority(proof); unchanged();
   issued.set(result, { engine, text: canonicalJson(result) });

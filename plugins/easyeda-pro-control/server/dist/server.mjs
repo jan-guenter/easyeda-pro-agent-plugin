@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "5213a5584daa3bfff00986a4edb89dc01ca04397a841c4f6309d3fa3f44bea62";
+const __easyedaBundlePairId = "cebe22463de8790b5b25c600fc9f188a5a8baff77478b43cc068bd3c70b1c3de";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -7382,8 +7382,8 @@ var capitalizeFirstCharacter, error28;
 var init_lt = __esm({
   "node_modules/zod/v4/locales/lt.js"() {
     init_util();
-    capitalizeFirstCharacter = (text25) => {
-      return text25.charAt(0).toUpperCase() + text25.slice(1);
+    capitalizeFirstCharacter = (text26) => {
+      return text26.charAt(0).toUpperCase() + text26.slice(1);
     };
     error28 = () => {
       const Sizable = {
@@ -28802,7 +28802,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text25, msg) => text25 + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text26, msg) => text26 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -34453,17 +34453,17 @@ function validateSchematicPrimitiveStates(value, input) {
   if (rows2.length !== wanted.length || rows2.some((row6, index) => row6.primitiveId !== wanted[index])) {
     throw new Error("Primitive observation differs from the exact ordered selectors.");
   }
-  const text25 = rows2.filter((row6) => row6.modelType === "Text").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
+  const text26 = rows2.filter((row6) => row6.modelType === "Text").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
   const groups2 = rows2.filter((row6) => row6.modelType === "NetGroup").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
-  schematicTextStatesSchema.parse(text25);
+  schematicTextStatesSchema.parse(text26);
   schematicNetGroupStatesSchema.parse(groups2);
-  const allIds = [...text25.map((row6) => row6.primitiveId), ...groups2.flatMap((row6) => [
+  const allIds = [...text26.map((row6) => row6.primitiveId), ...groups2.flatMap((row6) => [
     row6.primitiveId,
     ...row6.lines.map((line6) => line6.primitiveId),
     ...row6.names.map((name6) => name6.primitiveId),
     ...row6.customAttributeIds
   ])];
-  const characters = text25.reduce((sum, row6) => sum + row6.value.length + (row6.color?.length ?? 0) + (row6.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row6) => sum + row6.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row6.lines.reduce((count2, line6) => count2 + (line6.color?.length ?? 0), 0), 0);
+  const characters = text26.reduce((sum, row6) => sum + row6.value.length + (row6.color?.length ?? 0) + (row6.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row6) => sum + row6.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row6.lines.reduce((count2, line6) => count2 + (line6.color?.length ?? 0), 0), 0);
   if (new Set(allIds).size !== allIds.length || characters > 262144) {
     throw new Error("Primitive observation has aliased identities or exceeds the combined string bound.");
   }
@@ -35308,10 +35308,10 @@ function upstreamFailureCategory(normalized2) {
   let value = normalized2.structuredContent;
   if (!isRecord(value)) {
     const textItem = normalized2.content.find((item2) => isRecord(item2) && item2["type"] === "text");
-    const text25 = isRecord(textItem) ? textItem["text"] : void 0;
-    if (typeof text25 === "string" && text25.length <= 16384) {
+    const text26 = isRecord(textItem) ? textItem["text"] : void 0;
+    if (typeof text26 === "string" && text26.length <= 16384) {
       try {
-        value = JSON.parse(text25);
+        value = JSON.parse(text26);
       } catch {
       }
     }
@@ -35362,12 +35362,12 @@ function extractToolPayload(result) {
     const textItem = normalized2.content.find(
       (item2) => isRecord(item2) && item2["type"] === "text"
     );
-    const text25 = isRecord(textItem) ? textItem["text"] : void 0;
-    if (typeof text25 === "string") {
+    const text26 = isRecord(textItem) ? textItem["text"] : void 0;
+    if (typeof text26 === "string") {
       try {
-        value = JSON.parse(text25);
+        value = JSON.parse(text26);
       } catch {
-        value = { text: text25 };
+        value = { text: text26 };
       }
     }
   }
@@ -35458,32 +35458,32 @@ function filterTools(tools, options = {}) {
   });
 }
 function normalizeEasyedaProjectPath(value) {
-  let text25 = stringValue(value).trim();
-  if (!text25) {
+  let text26 = stringValue(value).trim();
+  if (!text26) {
     throw new Error("EasyEDA project path is required.");
   }
-  if (/^file:\/\//iu.test(text25)) {
+  if (/^file:\/\//iu.test(text26)) {
     try {
-      text25 = decodeURIComponent(text25.replace(/^file:\/+/iu, "/"));
+      text26 = decodeURIComponent(text26.replace(/^file:\/+/iu, "/"));
     } catch {
       throw new Error("EasyEDA project file URI contains invalid escaping.");
     }
   }
-  text25 = text25.replaceAll("\\", "/");
-  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/u.exec(text25);
+  text26 = text26.replaceAll("\\", "/");
+  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/u.exec(text26);
   if (uriDrive?.[1] !== void 0 && uriDrive[2] !== void 0) {
-    text25 = `${uriDrive[1]}:/${uriDrive[2]}`;
+    text26 = `${uriDrive[1]}:/${uriDrive[2]}`;
   }
-  const drive = /^([a-zA-Z]):\/(.*)$/u.exec(text25);
+  const drive = /^([a-zA-Z]):\/(.*)$/u.exec(text26);
   if (drive?.[1] !== void 0 && drive[2] !== void 0) {
-    text25 = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
+    text26 = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
   }
-  if (!isAbsolute3(text25)) {
+  if (!isAbsolute3(text26)) {
     throw new Error(
       "EasyEDA project path must be an absolute POSIX or Windows path."
     );
   }
-  const normalized2 = resolve3(text25);
+  const normalized2 = resolve3(text26);
   if (!/\.eprj2$/iu.test(normalized2)) {
     throw new Error("EasyEDA project path must identify an .eprj2 database.");
   }
@@ -37137,9 +37137,9 @@ function assertReservationIdentity(reservation) {
     throw new Error("A valid evidence reservation is required.");
   }
 }
-function isReservationMarker(text25, reservation) {
+function isReservationMarker(text26, reservation) {
   try {
-    const parsed2 = JSON.parse(text25);
+    const parsed2 = JSON.parse(text26);
     return isRecord(parsed2) && parsed2["schema"] === "easyeda-pro-control.evidence-reservation.v1" && parsed2["token"] === reservation.token && parsed2["createdAt"] === reservation.createdAt;
   } catch {
     return false;
@@ -37190,8 +37190,8 @@ async function releaseEvidenceReservation(reservation) {
     let file3;
     try {
       file3 = await openSafeManagedFile(path5, "Evidence reservation");
-      const text25 = await readOpenManagedText(file3, "Evidence reservation");
-      if (!isReservationMarker(text25, reservation)) {
+      const text26 = await readOpenManagedText(file3, "Evidence reservation");
+      if (!isReservationMarker(text26, reservation)) {
         throw new Error(
           "A finalized or changed evidence file cannot be released as a reservation."
         );
@@ -37221,7 +37221,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
   assertReservationIdentity(reservation);
   assertManagedJsonByteLimit(Buffer.byteLength(resultText), "Evidence result");
   assertManagedJsonByteLimit(Buffer.byteLength(receiptText), "Evidence receipt");
-  const replaceReservation = async (path5, text25) => {
+  const replaceReservation = async (path5, text26) => {
     const current2 = await openSafeManagedFile(path5, "Evidence reservation");
     let temporary;
     let failure2;
@@ -37232,7 +37232,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
         current2,
         "Evidence reservation"
       );
-      if (existing !== text25) {
+      if (existing !== text26) {
         if (!isReservationMarker(existing, reservation)) {
           throw new Error(
             "Evidence reservation identity changed before final publication."
@@ -37243,7 +37243,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
           temporaryPath,
           "Evidence publication temporary"
         );
-        await temporary.handle.writeFile(text25, "utf8");
+        await temporary.handle.writeFile(text26, "utf8");
         await temporary.handle.sync();
         if (current2.directory.info.dev !== temporary.directory.info.dev || current2.directory.info.ino !== temporary.directory.info.ino) {
           throw new Error(
@@ -37820,13 +37820,13 @@ async function createOperation(operation) {
   }
   const path5 = operationPath(operationId3);
   const sealed = sealOperation(operation);
-  const text25 = Buffer.from(`${JSON.stringify(sealed, null, 2)}
+  const text26 = Buffer.from(`${JSON.stringify(sealed, null, 2)}
 `);
-  assertManagedJsonByteLimit(text25.length, "Operation journal");
+  assertManagedJsonByteLimit(text26.length, "Operation journal");
   await publishManagedBytesExclusive(
     path5,
     "Operation journal",
-    text25,
+    text26,
     false
   );
   Object.assign(operation, sealed);
@@ -37986,16 +37986,16 @@ async function writePhaseArtifact(operationId3, sequence, phase5, value) {
     directory,
     `${sequence.toString().padStart(2, "0")}-${safePhase}.json`
   );
-  const text25 = `${JSON.stringify(value)}
+  const text26 = `${JSON.stringify(value)}
 `;
-  assertManagedJsonByteLimit(Buffer.byteLength(text25), "Operation phase artifact");
+  assertManagedJsonByteLimit(Buffer.byteLength(text26), "Operation phase artifact");
   await publishManagedBytesExclusive(
     path5,
     "Operation phase artifact",
-    Buffer.from(text25),
+    Buffer.from(text26),
     false
   );
-  return { path: path5, sha256: sha256Text(text25), bytes: Buffer.byteLength(text25) };
+  return { path: path5, sha256: sha256Text(text26), bytes: Buffer.byteLength(text26) };
 }
 async function listOperationIds() {
   const directory = await openSafeManagedDirectory(OPERATIONS_DIR);
@@ -38198,12 +38198,12 @@ async function readExactUtf8Artifact(descriptor9) {
     if (bytes2.length !== expectedBytes || sha256 !== expectedSha256) {
       throw new Error(`${label} raw bytes failed the expected SHA-256 or length.`);
     }
-    const text25 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+    const text26 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
     const final = await opened.handle.stat();
     assertFileStayedUnchanged(after, final, label);
     assertManagedFileAuthority(final, label);
-    return Object.freeze({ path: opened.absolute, bytes: bytes2.length, sha256, text: text25 });
+    return Object.freeze({ path: opened.absolute, bytes: bytes2.length, sha256, text: text26 });
   } finally {
     await closeManagedFile(opened);
   }
@@ -38333,14 +38333,14 @@ function readPrivateRecordTextSync(path5, label) {
     if (!sameIdentity2(opened, identityOf(pathInformation))) {
       throw new Error(`${label} changed before descriptor open.`);
     }
-    const text25 = readFileSync2(descriptor9, "utf8");
+    const text26 = readFileSync2(descriptor9, "utf8");
     const after = fstatSync(descriptor9, { bigint: true });
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(after, label);
     assertPrivateLeaseFile(currentPath, label);
     assertStablePrivateLeaseFile(opened, after, label);
     assertStablePrivateLeaseFile(after, currentPath, label);
-    return { identity: identityOf(after), text: text25 };
+    return { identity: identityOf(after), text: text26 };
   } finally {
     closeSync(descriptor9);
   }
@@ -38365,7 +38365,7 @@ async function readPrivateRecordText(path5, label) {
     if (!sameIdentity2(opened, identityOf(pathInformation))) {
       throw new Error(`${label} changed before descriptor open.`);
     }
-    const text25 = await handle.readFile("utf8");
+    const text26 = await handle.readFile("utf8");
     const [after, currentPath] = await Promise.all([
       handle.stat({ bigint: true }),
       lstat4(path5, { bigint: true })
@@ -38374,7 +38374,7 @@ async function readPrivateRecordText(path5, label) {
     assertPrivateLeaseFile(currentPath, label);
     assertStablePrivateLeaseFile(opened, after, label);
     assertStablePrivateLeaseFile(after, currentPath, label);
-    result = { identity: identityOf(after), text: text25 };
+    result = { identity: identityOf(after), text: text26 };
   } catch (error51) {
     operationFailure = error51;
   }
@@ -38564,8 +38564,8 @@ async function syncControlRoot(root) {
   await root.assertCurrent();
   await root.handle.sync();
 }
-function decodeLease(text25) {
-  const value = JSON.parse(text25);
+function decodeLease(text26) {
+  const value = JSON.parse(text26);
   if (!isRecord2(value) || value["schema"] !== "easyeda-pro-control.facade-lease.v1" || typeof value["pid"] !== "number" || !Number.isInteger(value["pid"]) || value["pid"] <= 0 || typeof value["token"] !== "string" || value["token"].length < 16 || !(value["pidStartTime"] === void 0 || typeof value["pidStartTime"] === "string" && /^\d+$/u.test(value["pidStartTime"])) || !(value["childPid"] === void 0 && value["childStartTime"] === void 0 || typeof value["childPid"] === "number" && Number.isInteger(value["childPid"]) && value["childPid"] > 0 && (value["childStartTime"] === void 0 || typeof value["childStartTime"] === "string" && /^\d+$/u.test(value["childStartTime"])))) {
     throw new Error(
       "The EasyEDA facade lease is corrupt; refusing to remove it automatically."
@@ -52645,7 +52645,7 @@ function nativeRuleContext(family2, row6, before) {
         if (!Array.isArray(cells) || cells.length !== length) {
           throw new Error("Spacing matrix triangle shape changed.");
         }
-        return cells.map((cell6) => distance2(cell6));
+        return cells.map((cell7) => distance2(cell7));
       });
       return { layerId: layer2(key, before), isOpen: status(value["status"]), content, columnNames: [] };
     });
@@ -52672,7 +52672,7 @@ function nativeRuleContext(family2, row6, before) {
     }
     return { unit, creepageDistance: distance2(form["creepageDistance"]), ignoreLayer: form["ignoreLayer"] };
   }
-  const table7 = (input, mode) => {
+  const table8 = (input, mode) => {
     const value = object3(input, "layer table");
     keys(value, ["status", "data"]);
     const content = Object.entries(object3(value["data"], "layer rows")).map(([id9, entry]) => {
@@ -52697,18 +52697,18 @@ function nativeRuleContext(family2, row6, before) {
     return { isOpen: status(value["status"]), content };
   };
   if (family2 === "TRACK") {
-    return { unit, track: table7(form, "width") };
+    return { unit, track: table8(form, "width") };
   }
   if (family2 === "DIFFER_ENTAIL") {
     keys(form, ["strokeWidthTables", "diffPairSpacingTables", "differentailPairLenTolerMax"]);
-    return { unit, stroWidth: table7(form["strokeWidthTables"], "width"), spacing: table7(form["diffPairSpacingTables"], "spacing"), differPairLenTolerMax: distance2(form["differentailPairLenTolerMax"]) };
+    return { unit, stroWidth: table8(form["strokeWidthTables"], "width"), spacing: table8(form["diffPairSpacingTables"], "spacing"), differPairLenTolerMax: distance2(form["differentailPairLenTolerMax"]) };
   }
   if (family2 === "PLANE") {
-    return { unit, mulPad: table7(form, "thermal") };
+    return { unit, mulPad: table8(form, "thermal") };
   }
   if (family2 === "COPPER") {
     keys(form, ["singleLayerPadModel", "multiLayerPadModel", "trackConnectModel"]);
-    return { unit, sglPad: table7(form["singleLayerPadModel"], "thermal"), mulPad: table7(form["multiLayerPadModel"], "thermal"), track: table7(form["trackConnectModel"], "track") };
+    return { unit, sglPad: table8(form["singleLayerPadModel"], "thermal"), mulPad: table8(form["multiLayerPadModel"], "thermal"), track: table8(form["trackConnectModel"], "track") };
   }
   throw new Error("Unreviewed native rule configuration family.");
 }
@@ -57330,9 +57330,9 @@ function decodeModelTransform(value) {
   if (typeof value !== "string" || value.length === 0 || value.length > 4096) {
     throw new Error("Model transform baseline must be a bounded native string.");
   }
-  const text25 = value.trim();
-  if (text25.startsWith("v2:")) {
-    const values3 = JSON.parse(text25.slice(3));
+  const text26 = value.trim();
+  if (text26.startsWith("v2:")) {
+    const values3 = JSON.parse(text26.slice(3));
     if (!Array.isArray(values3) || values3.length !== 12 || values3.some((entry) => typeof entry !== "number" || !Number.isFinite(entry))) {
       throw new Error("Native v2 model transform requires exactly twelve finite numbers.");
     }
@@ -57343,7 +57343,7 @@ function decodeModelTransform(value) {
       translationMil: { x: numbers[9], y: numbers[10], z: numbers[11] }
     });
   }
-  const fields8 = text25.split(",");
+  const fields8 = text26.split(",");
   if (fields8.length !== 9 || fields8.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
     throw new Error("Native legacy model transform requires exactly nine numeric fields.");
   }
@@ -64025,8 +64025,8 @@ function parseCompletedOutput(output, expectedSha256) {
   requireValue3(record4(result) && Object.keys(result).length === 1 && validInventory(result["inventory"]), "Reader inventory shape refused.");
   const value = result["inventory"];
   requireValue3(value.checkpointSha256 === expectedSha256 && value.schemaSha256 === sha256Json2(value.schema) && value.logicalSha256 === sha256Json2({ schema: value.schema, properties: value.properties, tables: value.tables }), "Reader inventory digest refused.");
-  for (const table7 of value.tables) {
-    const { sha256, ...body4 } = table7;
+  for (const table8 of value.tables) {
+    const { sha256, ...body4 } = table8;
     requireValue3(sha256Json2(body4) === sha256, "Reader table digest refused.");
   }
   return freezeDeep(value);
@@ -67217,10 +67217,10 @@ async function captureClosedSymbolJournalBytes(input) {
       position += read2.bytesRead;
     }
     let raw;
-    let text25;
+    let text26;
     try {
-      text25 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
-      raw = JSON.parse(text25);
+      text26 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+      raw = JSON.parse(text26);
     } catch {
       throw new ClosureEvidenceChangedError("closure-journal-json-invalid");
     }
@@ -67234,7 +67234,7 @@ async function captureClosedSymbolJournalBytes(input) {
       }
     }
     requireEvidence(sha256Json(raw) === journalSemanticSha256, "closure-journal-semantic-changed");
-    if (text25 !== `${JSON.stringify(raw, null, 2)}
+    if (text26 !== `${JSON.stringify(raw, null, 2)}
 `) {
       throw new ClosureIneligibleError("closure-journal-producer-encoding");
     }
@@ -70711,10 +70711,10 @@ async function compareCompleteClosedSql(left, right) {
       const actual = observed2.rows[rowIndex];
       need12(actual !== void 0 && sameCell(row6.rowid, actual.rowid) && row6.cells.length === actual.cells.length);
       cells += 1;
-      for (const [index, cell6] of row6.cells.entries()) {
-        need12(sameCell(cell6, actual.cells[index]));
+      for (const [index, cell7] of row6.cells.entries()) {
+        need12(sameCell(cell7, actual.cells[index]));
         cells += 1;
-        encodedBytes += cellBytes(cell6);
+        encodedBytes += cellBytes(cell7);
         if (cells >= 128 || encodedBytes >= 65536) {
           cells = 0;
           encodedBytes = 0;
@@ -70753,11 +70753,11 @@ async function indexHistoryChunkUuids(owner) {
   let bytes2 = 0;
   let rows2 = 0;
   for (const row6 of owner.rows) {
-    const cell6 = row6.cells[column];
-    if (cell6?.kind !== "text") {
+    const cell7 = row6.cells[column];
+    if (cell7?.kind !== "text") {
       throw new Error("Expected SQL TEXT.");
     }
-    const hex3 = cell6.hex;
+    const hex3 = cell7.hex;
     const size2 = hex3.length / 2;
     if (rows2 > 0 && bytes2 + size2 > BYTE_BATCH) {
       await yieldProofEventLoop();
@@ -70839,10 +70839,10 @@ function sqlCell(value) {
 }
 function patch(owner, row6, values2) {
   need13(Object.keys(values2).every((key) => owner.columns.some((column) => column["name"] === key)), "Projection names an unknown column.");
-  return { ...row6, cells: row6.cells.map((cell6, index) => {
+  return { ...row6, cells: row6.cells.map((cell7, index) => {
     const name6 = owner.columns[index]?.["name"];
     need13(typeof name6 === "string", "SQL column name missing.");
-    return Object.hasOwn(values2, name6) ? sqlCell(values2[name6] ?? null) : cell6;
+    return Object.hasOwn(values2, name6) ? sqlCell(values2[name6] ?? null) : cell7;
   }) };
 }
 function inserted(owner, id9, values2) {
@@ -71155,8 +71155,8 @@ async function exactRows(expected3, observed2, name6) {
     const wanted = pending.get(row6.rowid.decimal);
     need13(wanted !== void 0 && wanted.cells.length === row6.cells.length, `Full SQL row identity differs in relation ${name6}.`);
     for (let index = 0; index < wanted.cells.length; index += 1) {
-      const cell6 = wanted.cells[index];
-      need13(cell6 !== void 0 && sameCell2(cell6, row6.cells[index]), `Full SQL delta differs in relation ${name6}.`);
+      const cell7 = wanted.cells[index];
+      need13(cell7 !== void 0 && sameCell2(cell7, row6.cells[index]), `Full SQL delta differs in relation ${name6}.`);
       cells += 1;
       if (cells >= 128) {
         cells = 0;
@@ -73372,12 +73372,12 @@ function utcCalendar(value) {
 }
 function validateClockControlScope(input) {
   const value = exact10(input, ["createdAtLiteral", "referenceUtcMs"]);
-  const text25 = value["createdAtLiteral"];
-  if (typeof text25 !== "string" || !/^(?:19[7-9]\d|[2-9]\d{3})-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(text25)) {
+  const text26 = value["createdAtLiteral"];
+  if (typeof text26 !== "string" || !/^(?:19[7-9]\d|[2-9]\d{3})-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(text26)) {
     bad2();
   }
-  calendar([...text25.split(/[- :]/u).map(Number), 0]);
-  return Object.freeze({ createdAtLiteral: text25, referenceUtcMs: integer5(value["referenceUtcMs"], 0, 253402214399999) });
+  calendar([...text26.split(/[- :]/u).map(Number), 0]);
+  return Object.freeze({ createdAtLiteral: text26, referenceUtcMs: integer5(value["referenceUtcMs"], 0, 253402214399999) });
 }
 function controlInputs(scope6) {
   return {
@@ -76733,7 +76733,7 @@ var init_closed_symbol_coordinator = __esm({
           ...mainReference === void 0 ? {} : { mainReference }
         });
         assertFullStageOriginals(bindings2, this.engine, value.operationId);
-        const text25 = fullEvidenceText(value, bindings2);
+        const text26 = fullEvidenceText(value, bindings2);
         const current2 = () => {
           this.outside();
           need32(
@@ -76745,7 +76745,7 @@ var init_closed_symbol_coordinator = __esm({
           }
         };
         current2();
-        fullEvidenceOwners.set(value, { engine: this.engine, operationId: value.operationId, value, bindings: bindings2, text: text25, current: current2, headEligibility });
+        fullEvidenceOwners.set(value, { engine: this.engine, operationId: value.operationId, value, bindings: bindings2, text: text26, current: current2, headEligibility });
         return value;
       }
       /** Original internal objects, including successful stages before a later error.
@@ -77930,8 +77930,8 @@ async function reconstructRecordedSavedRead(input) {
   );
   const bytes2 = Buffer.from(encoded, "base64");
   need34(bytes2.length === size2 && bytes2.toString("base64") === encoded, "Terminal saved-read base64/byte count differs.");
-  const text25 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
-  const rawSha256 = sha256Text(text25);
+  const text26 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+  const rawSha256 = sha256Text(text26);
   same26(envelope2, {
     profile: "private.closed-symbol-saved-read-raw.v1",
     operationId: journal.operationId,
@@ -77942,7 +77942,7 @@ async function reconstructRecordedSavedRead(input) {
     rawReturnBase64: encoded
   }, "saved-read raw envelope");
   same26(result, { rawArtifact, rawReturnSha256: rawSha256, rawReturnBytes: size2, sourceSha256: source4.sourceSha256 }, "saved-read result descriptor");
-  const observation2 = bag6(extractToolPayload(JSON.parse(text25)));
+  const observation2 = bag6(extractToolPayload(JSON.parse(text26)));
   need34(Reflect.ownKeys(observation2).length === 9 && observation2["profile"] === "private.saved-symbol-content-observation.v1" && observation2["projectUuid"] === source4.projectUuid && observation2["targetUuid"] === source4.targetUuid && observation2["maximumTicket"] === source4.maximumTicket && typeof observation2["workerClient"] === "string" && /^[a-f0-9]{16}$/u.test(observation2["workerClient"]) && typeof observation2["content"] === "string" && Buffer.byteLength(observation2["content"]) <= 65536 && observation2["executionAuthorized"] === false && observation2["producerBindingVerified"] === false && observation2["completionProved"] === false, "Terminal saved-read observation scope differs.");
   const relation = Object.freeze({
     ...verifySavedSymbolContent(input.projection, observation2),
@@ -85963,7 +85963,7 @@ var init_design_execution = __esm({
         if (descriptor9 === void 0) {
           return void 0;
         }
-        let text25 = "";
+        let text26 = "";
         let offset2 = 0;
         while (offset2 < descriptor9.bytes) {
           let length = Math.min(256 * 1024, descriptor9.bytes - offset2);
@@ -85975,13 +85975,13 @@ var init_design_execution = __esm({
           if (chunk.size !== descriptor9.bytes || chunk.offset !== offset2 || chunk.bytesRead < 1 || Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead) {
             throw new Error("Retained design phase changed or its UTF-8 chunk boundary is unsupported.");
           }
-          text25 += chunk.text;
+          text26 += chunk.text;
           offset2 += chunk.bytesRead;
         }
-        if (sha256Text(text25) !== descriptor9.sha256) {
+        if (sha256Text(text26) !== descriptor9.sha256) {
           throw new Error("Retained design phase hash changed.");
         }
-        const value = JSON.parse(text25);
+        const value = JSON.parse(text26);
         return value;
       }
       static async libraryPersistence(journal, input) {
@@ -88039,7 +88039,7 @@ async function readBoundedLibraryRecoveryArtifact(descriptor9, read2, maxBytes) 
   if (!Number.isSafeInteger(descriptor9.bytes) || descriptor9.bytes < 1 || descriptor9.bytes > maxBytes) {
     throw new Error("Library recovery artifact exceeds its reviewed bound.");
   }
-  let offset2 = 0, text25 = "";
+  let offset2 = 0, text26 = "";
   while (offset2 < descriptor9.bytes) {
     let length = Math.min(256 * 1024, descriptor9.bytes - offset2), page;
     for (let retry = 0; retry < 4; retry += 1) {
@@ -88056,13 +88056,13 @@ async function readBoundedLibraryRecoveryArtifact(descriptor9, read2, maxBytes) 
     if (page === void 0 || page.bytesRead < 1) {
       throw new Error("Library recovery artifact UTF-8 is invalid.");
     }
-    text25 += page.text;
+    text26 += page.text;
     offset2 += page.bytesRead;
   }
-  if (sha256Text(text25) !== descriptor9.sha256) {
+  if (sha256Text(text26) !== descriptor9.sha256) {
     throw new Error("Library recovery artifact hash mismatch.");
   }
-  return JSON.parse(text25);
+  return JSON.parse(text26);
 }
 function uniqueLibraryRecoveryArtifact(artifacts, phase5) {
   const matches = artifacts.filter((entry) => new RegExp(`^[0-9]+-${phase5}\\.json$`, "u").test(basename18(entry.path)));
@@ -100131,10 +100131,10 @@ function rule(source4, family2, reference2) {
   return { id: selected2[0].id, context: bodyRecord(selected2[0].body["ruleContext"]) };
 }
 function widthResult(segment2, selected2, tableName, authority2) {
-  const table7 = selected2 === null ? null : selected2.context[tableName];
+  const table8 = selected2 === null ? null : selected2.context[tableName];
   let row6;
-  if (isRecord(table7) && Array.isArray(table7["content"])) {
-    const rows2 = table7["content"].map(bodyRecord);
+  if (isRecord(table8) && Array.isArray(table8["content"])) {
+    const rows2 = table8["content"].map(bodyRecord);
     row6 = rows2.find((entry) => entry["layerId"] === segment2.layer) ?? rows2.find((entry) => entry["layerId"] === 1);
   }
   const min = row6?.["stroMin"];
@@ -100739,8 +100739,8 @@ var init_route_audit_execution = __esm({
 });
 
 // server/src/transaction-error-output.ts
-function printableInstruction(text25) {
-  for (const character of text25) {
+function printableInstruction(text26) {
+  for (const character of text26) {
     const code = character.codePointAt(0) ?? 0;
     if (code === 127 || code < 32 && ![9, 10, 13].includes(code)) {
       return false;
@@ -101000,8 +101000,8 @@ function closedSymbolFailureDiagnosticText(value) {
     }
     mismatchPaths.push(path5);
   }
-  const text25 = JSON.stringify({ profile: PROFILE14, stage, lastSuccessfulStage, errorCode: errorCode6, messageSha256, mismatchPaths });
-  return Buffer.byteLength(text25) <= 2048 ? [{ type: "text", text: text25 }] : [];
+  const text26 = JSON.stringify({ profile: PROFILE14, stage, lastSuccessfulStage, errorCode: errorCode6, messageSha256, mismatchPaths });
+  return Buffer.byteLength(text26) <= 2048 ? [{ type: "text", text: text26 }] : [];
 }
 var PROFILE14, STAGES, SUCCESSFUL, CODES2, SAFE_CODES, PATHS;
 var init_closed_symbol_failure_diagnostic = __esm({
@@ -101113,7 +101113,7 @@ function parseClosedSymbolDisposableInput(input) {
 function boundedOwnData(input) {
   let nodes = 0, textBytes = 0;
   const visited = /* @__PURE__ */ new Set();
-  function text25(value) {
+  function text26(value) {
     if (value.length > MAX_RESPONSE_BYTES2 || !value.isWellFormed()) {
       throw new Error("Disposable response string refused.");
     }
@@ -101128,7 +101128,7 @@ function boundedOwnData(input) {
       throw new Error("Disposable response structure refused.");
     }
     if (typeof value === "string") {
-      text25(value);
+      text26(value);
       return;
     }
     if (value === null || typeof value === "boolean") {
@@ -101150,7 +101150,7 @@ function boundedOwnData(input) {
       if (typeof key !== "string" || descriptor9 === void 0 || !Object.hasOwn(descriptor9, "value") || descriptor9.enumerable !== true) {
         throw new Error("Disposable response accessors or hidden fields refused.");
       }
-      text25(key);
+      text26(key);
       visit(descriptor9.value, depth + 1);
     }
   }
@@ -106565,9 +106565,9 @@ async function establishedServerSocketInode(socket) {
   const expectedRemote = `${ipv4LoopbackHex(socket.localAddress)}:${portHex(socket.localPort)}`;
   const tables = ["/proc/net/tcp", "/proc/net/tcp6"];
   const matches = [];
-  for (const table7 of tables) {
-    const text25 = await readFile6(table7, "utf8");
-    for (const line6 of text25.split(/\r?\n/u).slice(1)) {
+  for (const table8 of tables) {
+    const text26 = await readFile6(table8, "utf8");
+    for (const line6 of text26.split(/\r?\n/u).slice(1)) {
       const fields8 = line6.trim().split(/\s+/u);
       if (fields8.length >= 10 && fields8[1] === expectedLocal && fields8[2] === expectedRemote && fields8[3] === "01" && fields8[9] !== void 0) {
         matches.push(fields8[9]);
@@ -106695,8 +106695,8 @@ function dispatchLeaseTranscript(gatewayInstanceId, leaseId, sessionId, sessionS
     begunAtEpochMs
   ]);
 }
-function parseClientHello(text25) {
-  const value = JSON.parse(text25);
+function parseClientHello(text26) {
+  const value = JSON.parse(text26);
   if (!isRecord4(value) || !exactKeys(value, ["clientNonce", "protocol", "type"]) || value["type"] !== "auth.client_hello" || value["protocol"] !== BRIDGE_AUTHENTICATION_PROTOCOL || !validNonce(value["clientNonce"])) {
     throw new Error("The first frame is not a strict bridge client hello.");
   }
@@ -106706,8 +106706,8 @@ function parseClientHello(text25) {
     type: "auth.client_hello"
   };
 }
-function parseClientProof(text25) {
-  const value = JSON.parse(text25);
+function parseClientProof(text26) {
+  const value = JSON.parse(text26);
   if (!isRecord4(value) || !exactKeys(value, [
     "clientNonce",
     "clientProof",
@@ -107282,17 +107282,17 @@ var init_authenticated_bridge_gateway = __esm({
         if (bytes2.byteLength === 0 || bytes2.byteLength > maximumBytes) {
           throw new Error("Bridge frame exceeds its phase-specific size limit.");
         }
-        const text25 = strictUtf8(bytes2);
+        const text26 = strictUtf8(bytes2);
         if (context3.phase === "awaiting-client-hello") {
-          this.#handleClientHello(context3, text25);
+          this.#handleClientHello(context3, text26);
           return;
         }
         if (context3.phase === "awaiting-client-proof") {
-          this.#handleClientProof(context3, text25);
+          this.#handleClientProof(context3, text26);
           return;
         }
         if (context3.phase === "awaiting-upstream-handshake") {
-          this.#forwardUpstreamHandshake(context3, text25);
+          this.#forwardUpstreamHandshake(context3, text26);
           return;
         }
         if (context3.phase === "connecting-backend" || context3.phase === "awaiting-upstream-hello") {
@@ -107305,8 +107305,8 @@ var init_authenticated_bridge_gateway = __esm({
           context3.backend.send(bytes2, { binary: false });
         }
       }
-      #handleClientHello(context3, text25) {
-        const message = parseClientHello(text25);
+      #handleClientHello(context3, text26) {
+        const message = parseClientHello(text26);
         this.#pruneReplayCache();
         if (this.#replayCache.has(message.clientNonce)) {
           throw new Error("Bridge client nonce replay rejected.");
@@ -107341,8 +107341,8 @@ var init_authenticated_bridge_gateway = __esm({
           })
         );
       }
-      #handleClientProof(context3, text25) {
-        const message = parseClientProof(text25);
+      #handleClientProof(context3, text26) {
+        const message = parseClientProof(text26);
         if (context3.clientNonce === null || context3.serverNonce === null || message.clientNonce !== context3.clientNonce || message.serverNonce !== context3.serverNonce) {
           throw new Error("Bridge proof does not match the live challenge.");
         }
@@ -107468,8 +107468,8 @@ var init_authenticated_bridge_gateway = __esm({
           })
         );
       }
-      #forwardUpstreamHandshake(context3, text25) {
-        const value = JSON.parse(text25);
+      #forwardUpstreamHandshake(context3, text26) {
+        const value = JSON.parse(text26);
         if (!isRecord4(value) || value["type"] !== "handshake" || Object.hasOwn(value, "sessionToken") || context3.backend?.readyState !== wrapper_default.OPEN) {
           throw new Error("The first authenticated application frame is not a handshake.");
         }
@@ -108224,10 +108224,10 @@ function getOptions(opts) {
   return options;
 }
 function pushComment(options, array4) {
-  return function(block, text25, start, end, startLoc, endLoc) {
+  return function(block, text26, start, end, startLoc, endLoc) {
     var comment = {
       type: block ? "Block" : "Line",
-      value: text25,
+      value: text26,
       start,
       end
     };
@@ -113864,11 +113864,11 @@ function dependenciesFor(format, source4) {
     }
   }
   visit(program5);
-  const unique3 = /* @__PURE__ */ new Map();
+  const unique4 = /* @__PURE__ */ new Map();
   for (const dependency of dependencies3) {
-    unique3.set(`${dependency.mode}\0${dependency.specifier}`, dependency);
+    unique4.set(`${dependency.mode}\0${dependency.specifier}`, dependency);
   }
-  return [...unique3.values()].toSorted((left, right) => {
+  return [...unique4.values()].toSorted((left, right) => {
     const modeOrder = left.mode.localeCompare(right.mode);
     return modeOrder === 0 ? left.specifier.localeCompare(right.specifier) : modeOrder;
   });
@@ -114026,20 +114026,20 @@ function executionSourceFor(cwd, path5, source4) {
   let bytes2 = source4;
   let transform2 = "none";
   if (relativePath === "dist/utils/logger.js") {
-    const text25 = source4.toString("utf8");
-    const first = text25.indexOf(PINO_WORKER_OPTION);
-    if (first === -1 || first !== text25.lastIndexOf(PINO_WORKER_OPTION)) {
+    const text26 = source4.toString("utf8");
+    const first = text26.indexOf(PINO_WORKER_OPTION);
+    if (first === -1 || first !== text26.lastIndexOf(PINO_WORKER_OPTION)) {
       throw new Error(
         "The reviewed upstream logger no longer has its exact worker-transport option; refusing an unreviewed execution transform."
       );
     }
-    const construction = text25.indexOf(PINO_LOGGER_CONSTRUCTION);
-    if (construction === -1 || construction !== text25.lastIndexOf(PINO_LOGGER_CONSTRUCTION)) {
+    const construction = text26.indexOf(PINO_LOGGER_CONSTRUCTION);
+    if (construction === -1 || construction !== text26.lastIndexOf(PINO_LOGGER_CONSTRUCTION)) {
       throw new Error(
         "The reviewed upstream logger no longer has its exact logger construction; refusing an unreviewed execution transform."
       );
     }
-    bytes2 = Buffer.from(text25.replace(PINO_WORKER_OPTION, "").replace(
+    bytes2 = Buffer.from(text26.replace(PINO_WORKER_OPTION, "").replace(
       PINO_LOGGER_CONSTRUCTION,
       "pino(pinoOpts, pino.destination({ dest: 2, sync: true }))"
     ), "utf8");
@@ -118908,17 +118908,239 @@ var init_current_symbol_owned_preparation = __esm({
   }
 });
 
+// server/src/current-startup-sql.ts
+function need44(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+function text25(value, maximum = 128) {
+  need44(value.kind === "text" && value.hex.length <= maximum * 2, "Startup SQL requires bounded TEXT.");
+  const bytes2 = Buffer.from(value.hex, "hex"), decoded = bytes2.toString("utf8");
+  need44(Buffer.from(decoded).equals(bytes2), "Startup SQL TEXT is not exact UTF8.");
+  return decoded;
+}
+function integer6(value) {
+  need44(value.kind === "integer", "Startup SQL requires INTEGER.");
+  return BigInt(value.decimal);
+}
+function table7(inventory2, name6) {
+  const matches = inventory2.tables.filter((entry) => entry.name === name6);
+  need44(matches.length === 1 && matches[0] !== void 0, "Startup SQL table is not unique.");
+  return matches[0];
+}
+function cell6(owner, row6, name6) {
+  const index = owner.columns.findIndex((column) => column["name"] === name6), value = row6.cells[index];
+  need44(index !== -1 && value !== void 0, "Startup SQL column is missing.");
+  return value;
+}
+function unique3(owner, name6, expected3) {
+  const rows2 = owner.rows.filter((entry) => text25(cell6(owner, entry, name6)) === expected3);
+  need44(rows2.length === 1 && rows2[0] !== void 0, "Startup SQL identity is not unique.");
+  return rows2[0];
+}
+function rowId(owner, row6) {
+  const id9 = integer6(cell6(owner, row6, "id"));
+  need44(id9 > 0n && row6.rowid?.kind === "integer" && row6.rowid.decimal === id9.toString(), "Startup SQL ID/rowid differs.");
+  return id9;
+}
+async function selectCurrentStartupSql(input) {
+  const { inventory: inventory2, history, sourceSha256, checkpointSha256 } = input;
+  const { projectUuid: projectUuid4, branchUuid: branchUuid2, ownerUuid } = input.target;
+  const completion = readerCompletion(inventory2);
+  need44(
+    completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null,
+    "Startup SQL requires its original completed inventory."
+  );
+  need44(
+    typeof sourceSha256 === "string" && HASH15.test(sourceSha256) && typeof checkpointSha256 === "string" && HASH15.test(checkpointSha256) && typeof projectUuid4 === "string" && /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid4) && typeof branchUuid2 === "string" && UUID4.test(branchUuid2) && typeof ownerUuid === "string" && UUID4.test(ownerUuid) && inventory2.checkpointSha256 === sourceSha256 && history.checkpointSha256 === checkpointSha256 && history.profile === "easyeda.native-history.linear-gcm-gzip.v1" && history.projectUuid === projectUuid4 && history.branchUuid === branchUuid2 && history.projectOwnerUuid === ownerUuid && typeof history.headHistoryUuid === "string" && UUID4.test(history.headHistoryUuid),
+    "Startup SQL source, checkpoint or history identity differs."
+  );
+  const { headHistoryUuid, historyRowCount, chunkCount } = history;
+  need44(
+    Number.isSafeInteger(historyRowCount) && historyRowCount > 0 && historyRowCount <= MAX_HISTORY && Number.isSafeInteger(chunkCount) && chunkCount > 0 && chunkCount <= MAX_HISTORY,
+    "Startup SQL decoded history counts are outside the bound."
+  );
+  if (canonicalJson(inventory2.schema) !== canonicalJson(nativeProjectSymbolSqlSchema(branchUuid2).entries)) {
+    return Object.freeze({ supported: false, reason: "unsupported-sql-schema" });
+  }
+  need44(inventory2.properties["encoding"] === "UTF-8", "Startup SQL requires UTF8 encoding.");
+  const branches = table7(inventory2, "branches"), projects = table7(inventory2, "projects");
+  need44(projects.rows.length === 1, "Startup SQL requires exactly one project.");
+  const branch = unique3(branches, "uuid", branchUuid2), project3 = unique3(projects, "uuid", projectUuid4);
+  need44(
+    text25(cell6(projects, project3, "branch_uuid")) === branchUuid2 && text25(cell6(projects, project3, "owner_uuid")) === ownerUuid && text25(cell6(branches, branch, "project_uuid")) === projectUuid4 && text25(cell6(branches, branch, "history_uuid")) === headHistoryUuid && integer6(cell6(branches, branch, "delete_status")) === 0n && integer6(cell6(branches, branch, "node")) === 0n,
+    "Startup SQL project, default branch, owner or head differs."
+  );
+  const parent = cell6(branches, branch, "parent_uuid");
+  if (parent.kind !== "null") {
+    const parentUuid = text25(parent);
+    need44(UUID4.test(parentUuid) && parentUuid !== branchUuid2, "Startup SQL branch parent differs.");
+    const start = unique3(branches, "uuid", parentUuid);
+    need44(
+      text25(cell6(branches, start, "name")) === "start" && text25(cell6(branches, start, "project_uuid")) === projectUuid4 && integer6(cell6(branches, start, "node")) === 1n && integer6(cell6(branches, start, "delete_status")) === 0n && cell6(branches, start, "parent_uuid").kind === "null" && cell6(branches, start, "history_uuid").kind === "null",
+      "Startup SQL permits only the terminal empty start-node parent."
+    );
+  }
+  const versions = table7(inventory2, "db_versions");
+  const version4 = unique3(versions, "key", "sqlite");
+  const databaseVersion = text25(cell6(versions, version4, "value"));
+  need44(databaseVersion.length > 0, "Startup SQL database version is empty.");
+  const histories = table7(inventory2, `project_history_${branchUuid2}`), indexed = /* @__PURE__ */ new Map();
+  need44(histories.rows.length === historyRowCount, "Startup SQL complete history row count differs.");
+  for (const [index, row6] of histories.rows.entries()) {
+    const uuid11 = text25(cell6(histories, row6, "uuid"));
+    need44(UUID4.test(uuid11) && !indexed.has(uuid11), "Startup SQL history UUID is invalid or duplicated.");
+    rowId(histories, row6);
+    indexed.set(uuid11, row6);
+    if (index % 128 === 0) {
+      await yieldProofEventLoop();
+    }
+  }
+  const seen = /* @__PURE__ */ new Set(), selected2 = [];
+  let next = headHistoryUuid;
+  while (next !== null) {
+    need44(UUID4.test(next) && !seen.has(next) && selected2.length < MAX_HISTORY, "Startup SQL history chain is cyclic or outside the bound.");
+    const row6 = indexed.get(next);
+    need44(row6 !== void 0, "Startup SQL history parent is missing.");
+    need44(
+      cell6(histories, row6, "snapshot").kind === "null" && integer6(cell6(histories, row6, "snapshot_num")) === 0n,
+      "Startup SQL history snapshots are unsupported."
+    );
+    const previous = selected2.at(-1);
+    need44(previous === void 0 || rowId(histories, row6) < rowId(histories, previous), "Startup SQL native history ID order differs.");
+    seen.add(next);
+    selected2.push(row6);
+    const prior = cell6(histories, row6, "parent");
+    next = prior.kind === "null" ? null : text25(prior);
+  }
+  need44(selected2.length === histories.rows.length, "Startup SQL linked history differs from the complete native ID range.");
+  const data3 = table7(inventory2, "history_data");
+  const chunkIndex = await indexHistoryChunkUuids(data3);
+  let chunks = 0;
+  for (const row6 of selected2.toReversed()) {
+    const historyUuid = text25(cell6(histories, row6, "uuid")), num = integer6(cell6(histories, row6, "num"));
+    need44(num >= 0n && num <= 1024n && chunks + Number(num) + 1 <= MAX_HISTORY, "Startup SQL history chunk count is outside the bound.");
+    for (let ordinal = 0; ordinal <= Number(num); ordinal += 1) {
+      const chunk = chunkIndex.get(ordinal === 0 ? historyUuid : `${historyUuid}-${ordinal}`);
+      need44(
+        chunk !== void 0 && chunk !== null && text25(cell6(data3, chunk, "history_uuid")) === historyUuid,
+        "Startup SQL history chunk selection is missing, duplicated or foreign."
+      );
+      rowId(data3, chunk);
+      chunks += 1;
+      if (chunks % 128 === 0) {
+        await yieldProofEventLoop();
+      }
+    }
+  }
+  need44(chunks === chunkCount, "Startup SQL decoded history chunk count differs.");
+  return Object.freeze({
+    supported: true,
+    databaseVersion,
+    projectUuid: projectUuid4,
+    branchUuid: branchUuid2,
+    ownerUuid,
+    headHistoryUuid,
+    historyRows: selected2.length,
+    chunks,
+    sourceSha256,
+    checkpointSha256,
+    sqlLogicalSha256: inventory2.logicalSha256
+  });
+}
+var UUID4, HASH15, MAX_HISTORY;
+var init_current_startup_sql = __esm({
+  "server/src/current-startup-sql.ts"() {
+    init_core3();
+    init_cooperative_proof();
+    init_native_project_sql_schema();
+    init_sqlite_inventory();
+    init_symbol_history_chunk_index();
+    UUID4 = /^[a-f0-9]{32}$/u;
+    HASH15 = /^[a-f0-9]{64}$/u;
+    MAX_HISTORY = 4096;
+  }
+});
+
+// server/src/current-startup-premises.ts
+async function assessCurrentStartupPremises(input) {
+  if (!/^[a-f0-9]{64}$/u.test(input.target.projectUuid)) {
+    throw new Error("Current startup premises require a local path-hash project.");
+  }
+  const sql3 = await selectCurrentStartupSql(input);
+  if (!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(input.documentUuid)) {
+    throw new Error("Current startup PCB identity is invalid.");
+  }
+  const matches = input.history.documents.filter((document3) => document3.uuid === input.documentUuid);
+  const pcb2 = matches[0];
+  if (matches.length !== 1 || pcb2?.docType !== "PCB" || isNativeDocumentDeleted(pcb2)) {
+    throw new Error("Current startup baseline requires its exact undeleted PCB.");
+  }
+  const metadata8 = pcb2.records.filter((record7) => record7.id === "META" || record7.type === "META");
+  const meta3 = metadata8[0];
+  const counted = metadata8.length === 1 && meta3?.id === "META" && meta3.type === "META" && typeof meta3.body["title"] === "string";
+  const activePages = input.history.documents.filter((document3) => document3.docType === "SCH_PAGE" && !isNativeDocumentDeleted(document3)).length;
+  const blockers = [];
+  if (!sql3.supported) {
+    blockers.push("unsupported-sql-schema");
+  } else if (sql3.databaseVersion !== "25.10.31.1") {
+    blockers.push("database-migration-required");
+  }
+  if (!counted) {
+    blockers.push("target-pcb-count-witness-unavailable");
+  }
+  if (activePages !== 0) {
+    blockers.push("active-schematic-pages");
+  }
+  return Object.freeze({
+    profile: "private.current-startup-premises.v1",
+    scope: "historical-closed-default-branch",
+    implementationProfileSha256: sha256Json(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION),
+    sourceSha256: input.sourceSha256,
+    checkpointSha256: input.checkpointSha256,
+    sqlLogicalSha256: input.inventory.logicalSha256,
+    historySemanticSha256: input.history.semanticSha256,
+    projectUuid: input.target.projectUuid,
+    branchUuid: input.target.branchUuid,
+    documentUuid: input.documentUuid,
+    sqlSchemaSupported: sql3.supported,
+    databaseVersion: sql3.supported ? sql3.databaseVersion : null,
+    targetPcbSuppliesNonzeroNativeCount: counted,
+    activeSchematicPages: activePages,
+    historicalSubsetSatisfied: blockers.length === 0,
+    blockers: Object.freeze(blockers),
+    // APP2373856 ignores the UI's truthy editorVersion-only update. APP2317612
+    // Omits exam_info; neither fact establishes the renderer's later cache.
+    localEditorVersionUpdate: "source-reviewed-backend-no-op",
+    localProjectDetailExamInfo: "source-reviewed-field-omitted",
+    runtimeExamStateVerified: false,
+    preOpeningContinuityVerified: false,
+    startupQualified: false,
+    openingEffectsVerified: false,
+    executionAuthorized: false
+  });
+}
+var init_current_startup_premises = __esm({
+  "server/src/current-startup-premises.ts"() {
+    init_core3();
+    init_current_disposable_open_profile();
+    init_current_startup_sql();
+    init_native_history();
+  }
+});
+
 // server/src/current-symbol-baseline-copy.ts
 import { lstat as lstat36 } from "node:fs/promises";
 import { join as join58 } from "node:path";
-function need44(condition, message) {
+function need45(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
 }
 function assertOriginalCurrentSymbolBaselineCopy(value, engine2) {
   const original2 = issued5.get(value);
-  need44(
+  need45(
     original2 !== void 0 && original2.engine === engine2 && original2.text === canonicalJson(value),
     "Current symbol baseline copy was not issued unchanged by this engine."
   );
@@ -118930,13 +119152,13 @@ async function revalidateCurrentSymbolBaselineCopy(engine2, value, proof) {
     assertIssuedClosedFileCopy(value.copy);
     assertCurrentClosedSessionCopyAuthority(proof);
     const completion = readerCompletion(value.inventory);
-    need44(
+    need45(
       completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null && value.copy.closureProofSha256 === proof.proofSha256 && value.copy.sha256 === value.checkpoint.sourceSha256 && value.inventory.checkpointSha256 === value.copy.sha256 && value.copy.source === value.checkpoint.source,
       "Current symbol relaunch baseline lineage or reader completion differs."
     );
   };
   current2();
-  need44(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority.");
+  need45(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority.");
   current2();
   await revalidateCurrentSymbolBaselineOwner(value.owner, engine2);
   current2();
@@ -118945,7 +119167,7 @@ async function revalidateCurrentSymbolBaselineCopy(engine2, value, proof) {
   const receiptCurrent = async () => {
     const receipt2 = await readArtifact(value.checkpoint.receiptPath, 0, 65536);
     current2();
-    need44(
+    need45(
       receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(value.checkpoint),
       "Current symbol relaunch checkpoint receipt changed."
     );
@@ -118960,7 +119182,7 @@ async function revalidateCurrentSymbolBaselineCopy(engine2, value, proof) {
   });
   current2();
   const checkpoint = value.checkpoint;
-  need44(
+  need45(
     verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "Current symbol relaunch checkpoint or source changed."
   );
@@ -118969,7 +119191,7 @@ async function revalidateCurrentSymbolBaselineCopy(engine2, value, proof) {
   for (const [path5, identity28] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat2 = await lstat36(path5, { bigint: true });
     current2();
-    need44(
+    need45(
       stat2.isFile() && !stat2.isSymbolicLink() && stat2.nlink === 1n && stat2.dev.toString() === identity28.dev && stat2.ino.toString() === identity28.ino && stat2.birthtimeNs.toString() === identity28.birthtimeNs && stat2.ctimeNs.toString() === identity28.ctimeNs,
       "Current symbol relaunch source or checkpoint lineage changed."
     );
@@ -118981,14 +119203,14 @@ function closeBinding(input, source4) {
   const { authoritySha256, ...authorityPayload } = authority2;
   const { closeIntentSha256, ...intentPayload } = intent;
   const { closeReceiptSha256, ...receiptPayload } = closeReceipt;
-  need44(
+  need45(
     capture3.operationId === owner.operationId && capture3.phase === "closed-baseline" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === canonicalJson(source4.bridgeSession) && authoritySha256 === sha256Json(authorityPayload) && authority2.processTreeSha256 === sha256Json(authority2.processes) && intent.schema === "easyeda-pro-control.closed-session-close-intent.v1" && closeIntentSha256 === sha256Json(intentPayload) && intent.operationId === owner.operationId && intent.phase === "closed-baseline" && intent["challengeAttempt"] === 1 && intent.authoritySha256 === authority2.authoritySha256 && intent["captureBindingSha256"] === authority2.bindingSha256 && intent.launchSha256 === sha256Json(launch) && intent.bridgeSessionSha256 === sha256Json(capture3.bridgeSession) && intent.runtimeIdentitySha256 === sha256Json(capture3.runtimeIdentity) && intent.helperInstance === launch.helperInstance && intent.jobId === launch.jobId && intent.policyId === authority2.policyId && intent.policySha256 === authority2.policySha256 && closeReceipt.schema === "easyeda-pro-control.closed-session-close-dispatch.v1" && closeReceiptSha256 === sha256Json(receiptPayload) && closeReceipt.closeIntentSha256 === closeIntentSha256 && closeReceipt.closeDispatched && !closeReceipt.saveOrDiscardSelected && !closeReceipt.terminationProved && proof["operationId"] === owner.operationId && proof["phase"] === "closed-baseline" && proof["challengeAttempt"] === 1 && proof.closeIntentSha256 === closeIntentSha256 && proof.closeReceiptSha256 === closeReceiptSha256 && proof.authoritySha256 === authority2.authoritySha256 && proof.launchSha256 === intent.launchSha256 && proof["bridgeSessionSha256"] === intent.bridgeSessionSha256 && proof["runtimeIdentitySha256"] === intent.runtimeIdentitySha256 && proof["helperInstance"] === launch.helperInstance && proof["jobId"] === launch.jobId && proof["policyId"] === authority2.policyId && proof["policySha256"] === authority2.policySha256,
     "Current symbol baseline closure does not bind its owner, capture, session, runtime and launch."
   );
 }
 function copyLineage(checkpoint, copy) {
   const lineage = checkpoint.sourceIdentity, source4 = copy.sourceIdentity, stat2 = checkpoint["sourceStatAfter"];
-  need44(
+  need45(
     copy.source === checkpoint.source && copy.sha256 === checkpoint.sourceSha256 && String(copy.bytes) === source4.size && lineage.dev === source4.device && lineage.ino === source4.inode && lineage.birthtimeNs === source4.birthtimeNs && lineage.ctimeNs === source4.ctimeNs && isRecord(stat2) && stat2["size"] === source4.size && stat2["mtimeNs"] === source4.mtimeNs && stat2["ctimeNs"] === source4.ctimeNs,
     "Current symbol baseline copy source lineage changed after checkpoint."
   );
@@ -118996,18 +119218,18 @@ function copyLineage(checkpoint, copy) {
 async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   const { owner, proof } = input;
   const original2 = assertCurrentSymbolBaselineOwner(owner, engine2), { source: source4, preparation: previous } = original2;
-  need44(!consumed.has(owner), "Current symbol baseline copy attempt already consumed.");
+  need45(!consumed.has(owner), "Current symbol baseline copy attempt already consumed.");
   consumed.add(owner);
   const inputText = canonicalJson(input), originalText = canonicalJson({ target: source4.target, previous });
   const sourcePath = source4.preNavigationCheckpoint.checkpoint.source;
-  need44(sourcePath === normalizeEasyedaProjectPath(source4.target.rawWindowsPath), "Current symbol baseline source differs from its original opening target.");
+  need45(sourcePath === normalizeEasyedaProjectPath(source4.target.rawWindowsPath), "Current symbol baseline source differs from its original opening target.");
   const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
-  need44(typeof scopeReader === "function", "Current symbol baseline cannot inspect its bridge scope.");
+  need45(typeof scopeReader === "function", "Current symbol baseline cannot inspect its bridge scope.");
   const evidence = [];
   const unchanged3 = () => {
     const retained = assertCurrentSymbolBaselineOwner(owner, engine2);
-    need44(retained.source === source4 && retained.preparation === previous && canonicalJson(input) === inputText && canonicalJson({ target: source4.target, previous }) === originalText && source4.preNavigationCheckpoint.checkpoint.source === sourcePath && evidence.every((item2) => canonicalJson(item2.value) === item2.text), "Current symbol baseline input or retained evidence changed.");
-    need44(
+    need45(retained.source === source4 && retained.preparation === previous && canonicalJson(input) === inputText && canonicalJson({ target: source4.target, previous }) === originalText && source4.preNavigationCheckpoint.checkpoint.source === sourcePath && evidence.every((item2) => canonicalJson(item2.value) === item2.text), "Current symbol baseline input or retained evidence changed.");
+    need45(
       engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine2.upstream) === void 0,
       "Current symbol baseline cannot run inside an unknown or authenticated bridge scope."
     );
@@ -119020,10 +119242,10 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   };
   const current2 = async () => {
     unchanged3();
-    need44(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol baseline termination proof changed.");
+    need45(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol baseline termination proof changed.");
     unchanged3();
     const retained = await revalidateCurrentSymbolBaselineOwner(owner, engine2);
-    need44(retained.source === source4 && retained.preparation === previous, "Current symbol baseline owner changed.");
+    need45(retained.source === source4 && retained.preparation === previous, "Current symbol baseline owner changed.");
     unchanged3();
     assertCurrentClosedSessionCopyAuthority(proof);
   };
@@ -119040,7 +119262,7 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   retain({ kind: "checkpoint", value: checkpoint });
   await current2();
   const openingIdentity = source4.preNavigationCheckpoint.checkpoint.sourceIdentity;
-  need44(
+  need45(
     checkpoint.sourceIdentity.dev === openingIdentity.dev && checkpoint.sourceIdentity.ino === openingIdentity.ino && checkpoint.sourceIdentity.birthtimeNs === openingIdentity.birthtimeNs,
     "Current symbol baseline source lineage changed since its original opening checkpoint."
   );
@@ -119056,9 +119278,9 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   const inventory2 = await readClosedCopySqlInventory({ copy, runtime: input.runtime });
   retain({ kind: "inventory", value: inventory2 });
   await current2();
-  need44(inventory2.checkpointSha256 === copy.sha256, "Current symbol baseline inventory does not bind its raw copy.");
+  need45(inventory2.checkpointSha256 === copy.sha256, "Current symbol baseline inventory does not bind its raw copy.");
   const target5 = previous.checkpointPreparation.target;
-  need44(
+  need45(
     target5.projectUuid === source4.target.projectUuid && target5.branchUuid === source4.target.branchUuid && target5.symbolUuid !== source4.target.documentUuid && previous.openingOperationId === owner.openingOperationId,
     "Current symbol baseline metadata target differs from its original opening."
   );
@@ -119071,7 +119293,7 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   await current2();
   const matches = history.documents.filter((document4) => document4.uuid === source4.target.documentUuid);
   const document3 = matches[0];
-  need44(
+  need45(
     history.projectUuid === target5.projectUuid && history.branchUuid === target5.branchUuid && history.projectOwnerUuid === target5.ownerUuid && matches.length === 1 && document3?.docType === "PCB" && !isNativeDocumentDeleted(document3),
     "Current symbol baseline active target is not its exact undeleted default-branch PCB."
   );
@@ -119085,6 +119307,16 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
     historySemanticSha256: history.semanticSha256,
     headHistoryUuid: history.headHistoryUuid
   });
+  const startupPremises = await assessCurrentStartupPremises({
+    inventory: inventory2,
+    sourceSha256: copy.sha256,
+    checkpointSha256: checkpoint.checkpointSha256,
+    history,
+    target: target5,
+    documentUuid: document3.uuid
+  });
+  retain({ kind: "startup-premises", value: startupPremises });
+  await current2();
   const checkpointInfo = await lstat36(checkpoint.checkpoint, { bigint: true });
   await current2();
   const preparation3 = await prepareCurrentSymbolMetadata({
@@ -119095,16 +119327,16 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   });
   retain({ kind: "preparation", value: preparation3 });
   await current2();
-  need44(
+  need45(
     preparation3.history.headHistoryUuid === history.headHistoryUuid && preparation3.history.documents === history.documents.length,
     "Current symbol baseline metadata and active PCB history disagree."
   );
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
   await current2();
-  need44(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "Current symbol baseline checkpoint receipt changed.");
+  need45(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "Current symbol baseline checkpoint receipt changed.");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, policy2);
   await current2();
-  need44(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === checkpoint.sourceSha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol baseline source or checkpoint changed during capture.");
+  need45(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === checkpoint.sourceSha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol baseline source or checkpoint changed during capture.");
   const result = Object.freeze({
     profile: "private.current-symbol-baseline-copy.v1",
     owner,
@@ -119113,6 +119345,7 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
     inventory: inventory2,
     preparation: preparation3,
     targetEvidence: targetEvidence2,
+    startupPremises,
     postOpeningClosedCopyCaptured: true,
     beforeWriteBaselineVerified: false,
     openingEffectsVerified: false,
@@ -119133,6 +119366,7 @@ var init_current_symbol_baseline_copy = __esm({
     init_closed_file_sql();
     init_core3();
     init_current_disposable_open_runtime();
+    init_current_startup_premises();
     init_current_symbol_closed_target();
     init_current_symbol_metadata_preparation();
     init_native_history();
@@ -119145,7 +119379,7 @@ var init_current_symbol_baseline_copy = __esm({
 
 // server/src/current-symbol-cache-journal.ts
 import { isDeepStrictEqual } from "node:util";
-function need45(value, detail) {
+function need46(value, detail) {
   if (!value) {
     throw new Error(`Current symbol cache journal ${detail} refused.`);
   }
@@ -119154,12 +119388,12 @@ function exactBoolean(value, expected3) {
   return value === expected3;
 }
 function data2(value) {
-  need45(Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null, "object");
+  need46(Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null, "object");
   const result = {};
   for (const key of Reflect.ownKeys(value)) {
-    need45(typeof key === "string", "symbol field");
+    need46(typeof key === "string", "symbol field");
     const descriptor9 = Object.getOwnPropertyDescriptor(value, key);
-    need45(descriptor9 !== void 0 && descriptor9.enumerable === true && Object.hasOwn(descriptor9, "value") && descriptor9.value !== void 0, "own data field");
+    need46(descriptor9 !== void 0 && descriptor9.enumerable === true && Object.hasOwn(descriptor9, "value") && descriptor9.value !== void 0, "own data field");
     Object.defineProperty(result, key, { value: descriptor9.value, enumerable: true, configurable: true });
   }
   return result;
@@ -119167,7 +119401,7 @@ function data2(value) {
 function seal(value) {
   const core = data2(value), hash35 = core["journalSha256"];
   delete core["journalSha256"];
-  need45(typeof hash35 === "string" && HASH15.test(hash35) && hash35 === sha256Json(core), "self-seal");
+  need46(typeof hash35 === "string" && HASH16.test(hash35) && hash35 === sha256Json(core), "self-seal");
 }
 function unchanged2(before, after, permitted) {
   const left = data2(before), right = data2(after);
@@ -119175,41 +119409,41 @@ function unchanged2(before, after, permitted) {
     Reflect.deleteProperty(left, key);
     Reflect.deleteProperty(right, key);
   }
-  need45(isDeepStrictEqual(left, right), "invariant projection");
+  need46(isDeepStrictEqual(left, right), "invariant projection");
 }
 function timestamp8(value) {
-  need45(typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value), "timestamp");
+  need46(typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value), "timestamp");
   const parsed2 = Date.parse(value);
-  need45(Number.isFinite(parsed2) && new Date(parsed2).toISOString() === value, "timestamp");
+  need46(Number.isFinite(parsed2) && new Date(parsed2).toISOString() === value, "timestamp");
   return parsed2;
 }
 function attempt(value) {
-  need45(typeof value === "number" && Number.isSafeInteger(value) && value >= 0, "attempt");
+  need46(typeof value === "number" && Number.isSafeInteger(value) && value >= 0, "attempt");
   return value;
 }
 function phase4(value) {
-  need45(typeof value === "string" && value.length <= 160 && /^[A-Za-z0-9._:-]+$/u.test(value), "phase");
+  need46(typeof value === "string" && value.length <= 160 && /^[A-Za-z0-9._:-]+$/u.test(value), "phase");
 }
 function markedFields(value, expectedPhase) {
   phase4(expectedPhase);
-  need45(exactBoolean(value.orphanedCallPossible, true) && value.orphanedCallPhase === expectedPhase && !Object.hasOwn(value, "orphanedCallReturnedAt") && !Object.hasOwn(value, "runtimeRestartBoundary"), "marked state");
+  need46(exactBoolean(value.orphanedCallPossible, true) && value.orphanedCallPhase === expectedPhase && !Object.hasOwn(value, "orphanedCallReturnedAt") && !Object.hasOwn(value, "runtimeRestartBoundary"), "marked state");
   const ordinal = attempt(value.runtimeRestartChallengeAttempt);
-  need45(ordinal > 0 && typeof value.operationId === "string" && value.operationId.length <= 160 && /^[A-Za-z0-9._:-]+$/u.test(value.operationId), "operation");
+  need46(ordinal > 0 && typeof value.operationId === "string" && value.operationId.length <= 160 && /^[A-Za-z0-9._:-]+$/u.test(value.operationId), "operation");
   const prefix3 = `EASYEDA_RESTARTED_AND_RECONNECTED:${value.operationId}:${expectedPhase}:${String(ordinal)}:`;
   const challenge = value.runtimeRestartChallenge;
-  need45(typeof challenge === "string" && challenge.startsWith(prefix3) && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(challenge.slice(prefix3.length)), "challenge");
-  need45(timestamp8(value.orphanedCallMarkedAt) <= timestamp8(value.runtimeRestartChallengeIssuedAt) && timestamp8(value.runtimeRestartChallengeIssuedAt) <= timestamp8(value.updatedAt), "marked timestamp order");
+  need46(typeof challenge === "string" && challenge.startsWith(prefix3) && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(challenge.slice(prefix3.length)), "challenge");
+  need46(timestamp8(value.orphanedCallMarkedAt) <= timestamp8(value.runtimeRestartChallengeIssuedAt) && timestamp8(value.runtimeRestartChallengeIssuedAt) <= timestamp8(value.updatedAt), "marked timestamp order");
 }
 function authority(value, launch) {
   const payload = data2(value);
   const hash35 = payload["authoritySha256"];
   delete payload["authoritySha256"];
-  need45(value.schema === "easyeda-pro-control.execution-authority.v1" && typeof hash35 === "string" && HASH15.test(hash35) && hash35 === sha256Json(payload) && typeof value.bindingSha256 === "string" && HASH15.test(value.bindingSha256) && typeof value.policySha256 === "string" && HASH15.test(value.policySha256) && typeof value.policyId === "string" && /^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value.policyId) && typeof value.capturedAt === "string" && Number.isFinite(Date.parse(value.capturedAt)), "execution authority");
-  need45(typeof launch.jobId === "string" && /^[a-f0-9]{32}$/u.test(launch.jobId) && typeof launch.helperInstance === "string" && /^[a-f0-9]{32}$/u.test(launch.helperInstance) && launch.root.role === "easyeda-main", "launch");
+  need46(value.schema === "easyeda-pro-control.execution-authority.v1" && typeof hash35 === "string" && HASH16.test(hash35) && hash35 === sha256Json(payload) && typeof value.bindingSha256 === "string" && HASH16.test(value.bindingSha256) && typeof value.policySha256 === "string" && HASH16.test(value.policySha256) && typeof value.policyId === "string" && /^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value.policyId) && typeof value.capturedAt === "string" && Number.isFinite(Date.parse(value.capturedAt)), "execution authority");
+  need46(typeof launch.jobId === "string" && /^[a-f0-9]{32}$/u.test(launch.jobId) && typeof launch.helperInstance === "string" && /^[a-f0-9]{32}$/u.test(launch.helperInstance) && launch.root.role === "easyeda-main", "launch");
   const processes2 = value.processes;
-  need45(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512 && processes2.every((process20) => typeof process20.pid === "number" && Number.isSafeInteger(process20.pid) && process20.pid > 0 && typeof process20.role === "string" && /^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(process20.role) && typeof process20.startIdentity === "string" && /^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u.test(process20.startIdentity) && process20.startIdentity.endsWith(`:job:${launch.jobId}`)) && new Set(processes2.map((process20) => process20.pid)).size === processes2.length && value.processTreeSha256 === sha256Json(processes2), "process tree");
+  need46(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512 && processes2.every((process20) => typeof process20.pid === "number" && Number.isSafeInteger(process20.pid) && process20.pid > 0 && typeof process20.role === "string" && /^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(process20.role) && typeof process20.startIdentity === "string" && /^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u.test(process20.startIdentity) && process20.startIdentity.endsWith(`:job:${launch.jobId}`)) && new Set(processes2.map((process20) => process20.pid)).size === processes2.length && value.processTreeSha256 === sha256Json(processes2), "process tree");
   const roots = processes2.filter((process20) => process20.role === "easyeda-main");
-  need45(roots.length === 1 && isDeepStrictEqual(roots[0], launch.root), "root or Job");
+  need46(roots.length === 1 && isDeepStrictEqual(roots[0], launch.root), "root or Job");
 }
 function assertCurrentSymbolCacheMark(before, marked, expected3) {
   seal(before);
@@ -119217,17 +119451,17 @@ function assertCurrentSymbolCacheMark(before, marked, expected3) {
   unchanged2(before, marked, MARK_FIELDS);
   markedFields(marked, expected3.phase);
   const previousAttempt = attempt(before.runtimeRestartChallengeAttempt ?? 0);
-  need45(exactBoolean(before.orphanedCallPossible, false) && previousAttempt < Number.MAX_SAFE_INTEGER && marked.runtimeRestartChallengeAttempt === previousAttempt + 1 && timestamp8(before.updatedAt) <= timestamp8(marked.orphanedCallMarkedAt), "fresh mark");
+  need46(exactBoolean(before.orphanedCallPossible, false) && previousAttempt < Number.MAX_SAFE_INTEGER && marked.runtimeRestartChallengeAttempt === previousAttempt + 1 && timestamp8(before.updatedAt) <= timestamp8(marked.orphanedCallMarkedAt), "fresh mark");
   const { bridgeDispatch, capture: capture3, launch } = expected3;
   const runtime = capture3.runtimeIdentity, session = capture3.bridgeSession;
-  need45(capture3.operationId === before.operationId && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && isDeepStrictEqual(marked.bridgeSessionBeforeOrphan, session) && isDeepStrictEqual(marked.runtimeIdentityBeforeOrphan, runtime) && isDeepStrictEqual(marked.bridgeDispatchBeforeOrphan, bridgeDispatch), "selected capture or scope");
-  need45(typeof session.gatewayInstanceId === "string" && ID2.test(session.gatewayInstanceId) && typeof session.sessionId === "string" && ID2.test(session.sessionId) && typeof session.authenticationReceiptSha256 === "string" && HASH15.test(session.authenticationReceiptSha256) && Number.isSafeInteger(session.sequence) && session.sequence > 0 && Number.isSafeInteger(session.authenticatedAtEpochMs) && session.authenticatedAtEpochMs > 0 && bridgeDispatch.schema === "easyeda-pro-control.bridge-dispatch-lease.v1" && bridgeDispatch.gatewayInstanceId === session.gatewayInstanceId && bridgeDispatch.sessionId === session.sessionId && bridgeDispatch.sessionSequence === session.sequence && Number.isSafeInteger(bridgeDispatch.begunAtEpochMs) && bridgeDispatch.begunAtEpochMs >= session.authenticatedAtEpochMs && typeof bridgeDispatch.leaseId === "string" && ID2.test(bridgeDispatch.leaseId) && typeof bridgeDispatch.bindingReceipt === "string" && ID2.test(bridgeDispatch.bindingReceipt), "session or scope");
-  need45(runtime.kind === "runtime-identity" && typeof runtime.generation === "string" && runtime.generation.length >= 24 && typeof runtime.timeOrigin === "number" && Number.isFinite(runtime.timeOrigin) && runtime.timeOrigin > 0 && (runtime.processId === null || typeof runtime.processId === "number" && Number.isSafeInteger(runtime.processId) && runtime.processId > 0), "runtime identity");
+  need46(capture3.operationId === before.operationId && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && isDeepStrictEqual(marked.bridgeSessionBeforeOrphan, session) && isDeepStrictEqual(marked.runtimeIdentityBeforeOrphan, runtime) && isDeepStrictEqual(marked.bridgeDispatchBeforeOrphan, bridgeDispatch), "selected capture or scope");
+  need46(typeof session.gatewayInstanceId === "string" && ID2.test(session.gatewayInstanceId) && typeof session.sessionId === "string" && ID2.test(session.sessionId) && typeof session.authenticationReceiptSha256 === "string" && HASH16.test(session.authenticationReceiptSha256) && Number.isSafeInteger(session.sequence) && session.sequence > 0 && Number.isSafeInteger(session.authenticatedAtEpochMs) && session.authenticatedAtEpochMs > 0 && bridgeDispatch.schema === "easyeda-pro-control.bridge-dispatch-lease.v1" && bridgeDispatch.gatewayInstanceId === session.gatewayInstanceId && bridgeDispatch.sessionId === session.sessionId && bridgeDispatch.sessionSequence === session.sequence && Number.isSafeInteger(bridgeDispatch.begunAtEpochMs) && bridgeDispatch.begunAtEpochMs >= session.authenticatedAtEpochMs && typeof bridgeDispatch.leaseId === "string" && ID2.test(bridgeDispatch.leaseId) && typeof bridgeDispatch.bindingReceipt === "string" && ID2.test(bridgeDispatch.bindingReceipt), "session or scope");
+  need46(runtime.kind === "runtime-identity" && typeof runtime.generation === "string" && runtime.generation.length >= 24 && typeof runtime.timeOrigin === "number" && Number.isFinite(runtime.timeOrigin) && runtime.timeOrigin > 0 && (runtime.processId === null || typeof runtime.processId === "number" && Number.isSafeInteger(runtime.processId) && runtime.processId > 0), "runtime identity");
   const evidence = marked.executionAuthorityBeforeOrphan;
-  need45(evidence !== void 0, "missing execution authority");
+  need46(evidence !== void 0, "missing execution authority");
   authority(evidence, launch);
   authority(capture3.executionAuthority, launch);
-  need45(evidence.bindingSha256 === sha256Json({
+  need46(evidence.bindingSha256 === sha256Json({
     schema: "easyeda-pro-control.execution-authority-binding.v1",
     operationId: marked.operationId,
     orphanPhase: expected3.phase,
@@ -119242,13 +119476,13 @@ function assertCurrentSymbolCacheClear(marked, cleared, expectedPhase) {
   seal(cleared);
   markedFields(marked, expectedPhase);
   unchanged2(marked, cleared, CLEAR_FIELDS);
-  need45(exactBoolean(cleared.orphanedCallPossible, false) && cleared.orphanedCallPhase === expectedPhase && !Object.hasOwn(cleared, "runtimeRestartChallenge") && !Object.hasOwn(cleared, "runtimeRestartChallengeIssuedAt") && timestamp8(marked.updatedAt) <= timestamp8(cleared.orphanedCallReturnedAt) && timestamp8(cleared.orphanedCallReturnedAt) <= timestamp8(cleared.updatedAt), "cleared state");
+  need46(exactBoolean(cleared.orphanedCallPossible, false) && cleared.orphanedCallPhase === expectedPhase && !Object.hasOwn(cleared, "runtimeRestartChallenge") && !Object.hasOwn(cleared, "runtimeRestartChallengeIssuedAt") && timestamp8(marked.updatedAt) <= timestamp8(cleared.orphanedCallReturnedAt) && timestamp8(cleared.orphanedCallReturnedAt) <= timestamp8(cleared.updatedAt), "cleared state");
 }
-var HASH15, ID2, MARK_FIELDS, CLEAR_FIELDS;
+var HASH16, ID2, MARK_FIELDS, CLEAR_FIELDS;
 var init_current_symbol_cache_journal = __esm({
   "server/src/current-symbol-cache-journal.ts"() {
     init_core3();
-    HASH15 = /^[a-f0-9]{64}$/u;
+    HASH16 = /^[a-f0-9]{64}$/u;
     ID2 = /^[A-Za-z0-9_-]{43}$/u;
     MARK_FIELDS = [
       "runtimeIdentityBeforeOrphan",
@@ -119437,7 +119671,7 @@ var init_current_upload_queue_read = __esm({
 });
 
 // server/src/current-symbol-baseline-runtime.ts
-function need46(condition, message) {
+function need47(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
@@ -119486,6 +119720,7 @@ function summary6(slot) {
     cacheAttempted: slot.cacheAttempted,
     cacheReplyRetained: slot.cacheReplyRetained,
     cachesObserved: slot.cachesObserved,
+    startupPremises: slot.copy?.startupPremises ?? null,
     nativeCacheClockStatus: slot.cacheClock?.clock.status ?? "not-observed",
     startupQualified: false,
     beforeWriteBaselineVerified: false,
@@ -119541,7 +119776,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       current(slot) {
         const original2 = assertCurrentSymbolBaselineOwner(slot.owner, this.engine);
-        need46(
+        need47(
           this.slots.get(slot.owner.operationId) === slot && canonicalJson(slot.owner) === slot.ownerText && original2.source.runtime === this.runtime,
           "Current symbol baseline original owner changed."
         );
@@ -119549,7 +119784,7 @@ var init_current_symbol_baseline_runtime = __esm({
       outsideScope(slot) {
         this.current(slot);
         const reader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
-        need46(reader !== void 0 && reader.call(this.engine.upstream) === void 0, "Current symbol baseline close/copy requires the ended authenticated scope.");
+        need47(reader !== void 0 && reader.call(this.engine.upstream) === void 0, "Current symbol baseline close/copy requires the ended authenticated scope.");
       }
       async unchanged(slot) {
         this.current(slot);
@@ -119557,7 +119792,7 @@ var init_current_symbol_baseline_runtime = __esm({
         this.current(slot);
         const persisted = await loadOperation(slot.owner.operationId);
         this.current(slot);
-        need46(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText, "Current symbol baseline journal changed.");
+        need47(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText, "Current symbol baseline journal changed.");
       }
       static async record(slot, phase5, value) {
         const journal = slot.journal;
@@ -119608,9 +119843,9 @@ var init_current_symbol_baseline_runtime = __esm({
        * already consumed that opening, even if capture or scope settlement fails.
        */
       async capture(owner) {
-        need46(!this.busy && !this.slots.has(owner.operationId), "Current symbol baseline is busy or already consumed.");
+        need47(!this.busy && !this.slots.has(owner.operationId), "Current symbol baseline is busy or already consumed.");
         const original2 = assertCurrentSymbolBaselineOwner(owner, this.engine), source4 = original2.source;
-        need46(source4.runtime === this.runtime, "Current symbol baseline has another runtime.");
+        need47(source4.runtime === this.runtime, "Current symbol baseline has another runtime.");
         const plan2 = {
           profile: PROFILE16,
           openingOperationId: owner.openingOperationId,
@@ -119667,13 +119902,13 @@ var init_current_symbol_baseline_runtime = __esm({
         this.busy = true;
         try {
           const reader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
-          need46(reader !== void 0, "Current symbol baseline cannot inspect its authenticated scope.");
+          need47(reader !== void 0, "Current symbol baseline cannot inspect its authenticated scope.");
           const scope6 = reader.call(this.engine.upstream), session = source4.bridgeSession;
-          need46(scope6 !== void 0 && scope6.gatewayInstanceId === session.gatewayInstanceId && scope6.sessionId === session.sessionId && scope6.sessionSequence === session.sequence, "Current symbol baseline scope differs from its opening.");
+          need47(scope6 !== void 0 && scope6.gatewayInstanceId === session.gatewayInstanceId && scope6.sessionId === session.sessionId && scope6.sessionSequence === session.sequence, "Current symbol baseline scope differs from its opening.");
           const scopeText = canonicalJson(scope6);
           const inside = () => {
             this.current(slot);
-            need46(
+            need47(
               this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === reader && canonicalJson(reader.call(this.engine.upstream)) === scopeText,
               "Current symbol baseline authenticated scope changed."
             );
@@ -119694,9 +119929,9 @@ var init_current_symbol_baseline_runtime = __esm({
             executionAuthority: capture3.executionAuthority
           };
           inside();
-          need46(capture3.operationId === owner.operationId && capture3.phase === "closed-baseline" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === canonicalJson(source4.bridgeSession), "Current symbol baseline capture binding differs.");
+          need47(capture3.operationId === owner.operationId && capture3.phase === "closed-baseline" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === canonicalJson(source4.bridgeSession), "Current symbol baseline capture binding differs.");
           const launch = source4.launchProjection, roots = capture3.executionAuthority.processes.filter((process20) => process20.role === "easyeda-main");
-          need46(
+          need47(
             roots.length === 1 && canonicalJson(roots[0]) === canonicalJson(launch.root) && capture3.executionAuthority.processes.every((process20) => process20.startIdentity.endsWith(`:job:${launch.jobId}`)),
             "Current symbol baseline capture differs from its original root or Job."
           );
@@ -119721,7 +119956,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       async close(owner) {
         const slot = this.slots.get(owner.operationId);
-        need46(
+        need47(
           !this.busy && slot !== void 0 && slot.owner === owner && slot.journal.state === "captured" && slot.capture !== void 0 && slot.binding !== void 0,
           "Current symbol baseline close needs its original completed capture."
         );
@@ -119732,7 +119967,7 @@ var init_current_symbol_baseline_runtime = __esm({
           this.outsideScope(slot);
           const window = await this.runtime.observeApplicationWindow();
           this.outsideScope(slot);
-          need46(window.outcome === "available" && window.hwnd !== null, "Current symbol baseline has no exact owned application window.");
+          need47(window.outcome === "available" && window.hwnd !== null, "Current symbol baseline has no exact owned application window.");
           const intent = await this.runtime.prepareClosedSessionClose({ ...slot.binding, windowHandle: window.hwnd });
           slot.intent = intent;
           this.outsideScope(slot);
@@ -119763,7 +119998,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       async observe(operationId3) {
         const slot = this.slots.get(operationId3);
-        need46(
+        need47(
           !this.busy && slot !== void 0 && slot.journal.state === "awaiting-termination" && slot.binding !== void 0 && slot.intent !== void 0 && slot.closeReceipt !== void 0 && !slot.copyAttempted,
           "Current symbol baseline observation needs its original acknowledged close."
         );
@@ -119797,7 +120032,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.unchanged(slot);
           this.outsideScope(slot);
           const capture3 = slot.capture;
-          need46(capture3 !== void 0, "Current symbol baseline capture was lost.");
+          need47(capture3 !== void 0, "Current symbol baseline capture was lost.");
           const result = await captureCurrentSymbolBaselineCopy(this.engine, {
             owner: slot.owner,
             capture: capture3,
@@ -119820,6 +120055,7 @@ var init_current_symbol_baseline_runtime = __esm({
             copy: result.copy,
             preparation: result.preparation,
             targetEvidence: result.targetEvidence,
+            startupPremises: result.startupPremises,
             sql: { checkpointSha256: result.inventory.checkpointSha256, schemaSha256: result.inventory.schemaSha256, logicalSha256: result.inventory.logicalSha256 },
             beforeWriteBaselineVerified: false,
             openingEffectsVerified: false,
@@ -119844,7 +120080,7 @@ var init_current_symbol_baseline_runtime = __esm({
        */
       async relaunch(operationId3) {
         const slot = this.slots.get(operationId3);
-        need46(
+        need47(
           !this.busy && slot !== void 0 && slot.journal.state === "completed" && slot.baselineCaptured && slot.copy !== void 0 && slot.proof !== void 0 && slot.capture !== void 0 && !slot.relaunchAttempted,
           "Current symbol relaunch needs its original completed baseline and unused attempt."
         );
@@ -119859,7 +120095,7 @@ var init_current_symbol_baseline_runtime = __esm({
           slot.source = source4;
           const upstream2 = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
           const lifecycleReader = upstream2.bridgeSessionLifecycle, scopeReader = upstream2.currentAuthenticatedBridgeDispatchBinding;
-          need46(
+          need47(
             typeof scopeReader === "function" && typeof lifecycleReader === "function" && validator === this.runtime,
             "Current symbol relaunch needs its original runtime validator and lifecycle readers."
           );
@@ -119868,35 +120104,35 @@ var init_current_symbol_baseline_runtime = __esm({
           const sourceText = canonicalJson({ target: source4.target, expectedFingerprint: source4.expectedFingerprint, preNavigationCheckpoint: source4.preNavigationCheckpoint });
           const endpoint2 = lifecycleReader.call(upstream2), priorSession = source4.bridgeSession;
           const priorSessionText = canonicalJson(priorSession);
-          need46(isRecord(endpoint2), "Current symbol relaunch lifecycle is unavailable.");
+          need47(isRecord(endpoint2), "Current symbol relaunch lifecycle is unavailable.");
           const endpointText = canonicalJson(endpoint2["publicEndpoint"]);
           let replacementSessionText;
           const infrastructure = (launched2, scopeText) => {
             const scope6 = scopeReader.call(upstream2);
-            need46(
+            need47(
               this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === methods4[index]) && (scopeText === void 0 ? scope6 === void 0 : scope6 !== void 0 && canonicalJson(scope6) === scopeText) && this.slots.get(operationId3) === slot && slot.source === source4 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source4.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText && canonicalJson({ target: source4.target, expectedFingerprint: source4.expectedFingerprint, preNavigationCheckpoint: source4.preNavigationCheckpoint }) === sourceText,
               "Current symbol relaunch infrastructure, capture or ended scope changed."
             );
             assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
             const lifecycle = lifecycleReader.call(upstream2);
-            need46(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && lifecycle["gatewayInstanceId"] === priorSession.gatewayInstanceId && canonicalJson(lifecycle["publicEndpoint"]) === endpointText && Array.isArray(lifecycle["recentClosedSessions"]), "Current symbol relaunch gateway changed.");
+            need47(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && lifecycle["gatewayInstanceId"] === priorSession.gatewayInstanceId && canonicalJson(lifecycle["publicEndpoint"]) === endpointText && Array.isArray(lifecycle["recentClosedSessions"]), "Current symbol relaunch gateway changed.");
             const closed = lifecycle["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === priorSession.sessionId);
             const old = closed[0];
-            need46(
+            need47(
               closed.length === 1 && isRecord(old) && old["sequence"] === priorSession.sequence && old["authenticationReceiptSha256"] === priorSession.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === priorSession.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= priorSession.authenticatedAtEpochMs,
               "Current symbol relaunch lacks its original disconnected session."
             );
             const active2 = lifecycle["activeSession"];
             if (!launched2) {
-              need46(active2 === null, "Current symbol relaunch requires a disconnected bridge before launch.");
+              need47(active2 === null, "Current symbol relaunch requires a disconnected bridge before launch.");
             } else if (active2 !== null) {
-              need46(
+              need47(
                 isRecord(active2) && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > priorSession.sequence && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== priorSession.sessionId,
                 "Current symbol relaunch observed an invalid replacement session."
               );
               replacementSessionText ??= canonicalJson(active2);
             }
-            need46(
+            need47(
               replacementSessionText === void 0 || canonicalJson(active2) === replacementSessionText,
               "Current symbol relaunch replacement session changed."
             );
@@ -119904,7 +120140,7 @@ var init_current_symbol_baseline_runtime = __esm({
           const previous = () => {
             infrastructure(false);
             this.outsideScope(slot);
-            need46(canonicalJson(this.runtime.status().launch) === priorLaunch, "Current symbol relaunch prior launch changed.");
+            need47(canonicalJson(this.runtime.status().launch) === priorLaunch, "Current symbol relaunch prior launch changed.");
             assertCurrentClosedSessionCopyAuthority(proof);
           };
           previous();
@@ -119933,7 +120169,7 @@ var init_current_symbol_baseline_runtime = __esm({
           const launched = (scopeText) => {
             infrastructure(true, scopeText);
             const status2 = this.runtime.status();
-            need46(
+            need47(
               status2.state === "owned" && canonicalJson(status2.launch) === launchText && canonicalJson(launch) === launchText && launch.helperInstance === source4.launchProjection.helperInstance && launch.jobId !== source4.launchProjection.jobId && launch.root.startIdentity !== source4.launchProjection.root.startIdentity,
               "Current symbol relaunch original result or new generation changed."
             );
@@ -119943,7 +120179,7 @@ var init_current_symbol_baseline_runtime = __esm({
             launched();
             const journal = await loadOperation(operationId3);
             launched();
-            need46(
+            need47(
               canonicalJson(journal) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
               "Current symbol relaunch journal changed."
             );
@@ -119957,7 +120193,7 @@ var init_current_symbol_baseline_runtime = __esm({
           slot.launchClock = await this.runtime.clockObservationForLaunch(launch);
           launched();
           await journalCurrent();
-          need46(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch clock issuer changed.");
+          need47(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch clock issuer changed.");
           launched();
           await journalCurrent();
           slot.releaseAttempted = true;
@@ -119983,7 +120219,7 @@ var init_current_symbol_baseline_runtime = __esm({
           });
           launched();
           await journalCurrent();
-          need46(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch final clock issuer changed.");
+          need47(await assertIssuedWindowsClockObservation(slot.launchClock) === slot.launchClock, "Current symbol relaunch final clock issuer changed.");
           launched();
           await journalCurrent();
           return summary6(slot);
@@ -119999,7 +120235,7 @@ var init_current_symbol_baseline_runtime = __esm({
        */
       async admit(operationId3) {
         const slot = this.slots.get(operationId3);
-        need46(
+        need47(
           !this.busy && slot !== void 0 && slot.journal.state === "relaunched" && slot.captureReleased && slot.launch !== void 0 && slot.launchClock !== void 0 && slot.currentLaunch !== void 0 && !slot.admissionAttempted,
           "Current symbol admission needs its original retained relaunch and unused attempt."
         );
@@ -120009,14 +120245,14 @@ var init_current_symbol_baseline_runtime = __esm({
           currentLaunch();
           const upstream2 = this.engine.upstream;
           const reader = upstream2.bridgeSessionLifecycle, scope6 = upstream2.withAuthenticatedBridgeDispatchScope;
-          need46(typeof scope6 === "function" && typeof reader === "function", "Current symbol admission lacks its original scope or lifecycle reader.");
+          need47(typeof scope6 === "function" && typeof reader === "function", "Current symbol admission lacks its original scope or lifecycle reader.");
           const lifecycle = reader.call(upstream2);
-          need46(isRecord(lifecycle), "Current symbol admission lifecycle is unavailable.");
+          need47(isRecord(lifecycle), "Current symbol admission lifecycle is unavailable.");
           const unchanged3 = async (scopeText) => {
             currentLaunch(scopeText);
             const persisted = await loadOperation(operationId3);
             currentLaunch(scopeText);
-            need46(
+            need47(
               canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
               "Current symbol admission journal changed."
             );
@@ -120031,12 +120267,12 @@ var init_current_symbol_baseline_runtime = __esm({
           let captureText, retainedCapture;
           const sessionCurrent = (scopeText) => {
             currentLaunch(scopeText);
-            need46(
+            need47(
               slot.admissionCapture === retainedCapture && (retainedCapture === void 0 || canonicalJson(retainedCapture) === captureText),
               "Current symbol admission original capture changed."
             );
             const now2 = reader.call(upstream2);
-            need46(
+            need47(
               isRecord(now2) && isRecord(now2["activeSession"]) && canonicalJson({ ...now2["activeSession"], gatewayInstanceId: now2["gatewayInstanceId"] }) === sessionText,
               "Current symbol admission selected session changed."
             );
@@ -120047,7 +120283,7 @@ var init_current_symbol_baseline_runtime = __esm({
             sessionCurrent(scopeText);
           };
           await current2();
-          need46(await assertIssuedWindowsClockObservation(launchClock) === launchClock, "Current symbol admission launch clock changed.");
+          need47(await assertIssuedWindowsClockObservation(launchClock) === launchClock, "Current symbol admission launch clock changed.");
           await current2();
           await this.engine.assertBridgeDispatchAllowed();
           await current2();
@@ -120062,7 +120298,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await scope6.call(upstream2, async (binding2) => {
             const scopeText = canonicalJson(binding2);
             sessionCurrent(scopeText);
-            need46(
+            need47(
               binding2.gatewayInstanceId === session.gatewayInstanceId && binding2.sessionId === session.sessionId && binding2.sessionSequence === session.sequence,
               "Current symbol admission scope differs from its selected session."
             );
@@ -120075,14 +120311,14 @@ var init_current_symbol_baseline_runtime = __esm({
             captureText = canonicalJson(capture3);
             const captured = () => {
               sessionCurrent(scopeText);
-              need46(canonicalJson(capture3) === captureText, "Current symbol admission original capture changed.");
+              need47(canonicalJson(capture3) === captureText, "Current symbol admission original capture changed.");
             };
             captured();
             await current2(scopeText);
             captured();
-            need46(capture3.operationId === operationId3 && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === sessionText, "Current symbol admission capture identity differs.");
+            need47(capture3.operationId === operationId3 && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === sessionText, "Current symbol admission capture identity differs.");
             const roots = capture3.executionAuthority.processes.filter((process20) => process20.role === "easyeda-main");
-            need46(
+            need47(
               roots.length === 1 && canonicalJson(roots[0]) === canonicalJson(launch.root) && capture3.executionAuthority.processes.every((process20) => process20.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "Current symbol admission capture differs from its relaunched root or Job."
             );
@@ -120090,12 +120326,12 @@ var init_current_symbol_baseline_runtime = __esm({
             captured();
             await current2(scopeText);
             captured();
-            need46(canonicalJson(identity28) === canonicalJson(capture3.runtimeIdentity), "Current symbol admission native runtime changed.");
+            need47(canonicalJson(identity28) === canonicalJson(capture3.runtimeIdentity), "Current symbol admission native runtime changed.");
             slot.admissionClock = await this.engine.clockObservationForClosedCapture(capture3);
             captured();
             await current2(scopeText);
             captured();
-            need46(await assertIssuedWindowsClockObservation(slot.admissionClock) === slot.admissionClock, "Current symbol admission capture clock changed.");
+            need47(await assertIssuedWindowsClockObservation(slot.admissionClock) === slot.admissionClock, "Current symbol admission capture clock changed.");
             captured();
             await current2(scopeText);
             captured();
@@ -120112,10 +120348,10 @@ var init_current_symbol_baseline_runtime = __esm({
             completed3 = true;
           });
           await current2();
-          need46(completed3 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0, "Current symbol admission callback did not complete.");
+          need47(completed3 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0, "Current symbol admission callback did not complete.");
           const finalClock = await this.engine.clockObservationForClosedCapture(slot.admissionCapture);
           await current2();
-          need46(
+          need47(
             finalClock === slot.admissionClock && await assertIssuedWindowsClockObservation(finalClock) === finalClock,
             "Current symbol admission settled capture clock changed."
           );
@@ -120130,7 +120366,7 @@ var init_current_symbol_baseline_runtime = __esm({
             executionAuthorized: false
           });
           await current2();
-          need46(await assertIssuedWindowsClockObservation(finalClock) === finalClock, "Current symbol admission final capture clock changed.");
+          need47(await assertIssuedWindowsClockObservation(finalClock) === finalClock, "Current symbol admission final capture clock changed.");
           await current2();
           slot.admissionProved = true;
           slot.sessionCurrent = sessionCurrent;
@@ -120147,7 +120383,7 @@ var init_current_symbol_baseline_runtime = __esm({
        */
       async observeCaches(operationId3) {
         const slot = this.slots.get(operationId3);
-        need46(
+        need47(
           !this.busy && slot !== void 0 && slot.journal.state === "admitted" && slot.admissionProved && slot.source !== void 0 && slot.sessionCurrent !== void 0 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0 && slot.launch !== void 0 && !slot.cacheAttempted,
           "Current symbol cache observation needs its original admitted session and unused attempt."
         );
@@ -120159,7 +120395,7 @@ var init_current_symbol_baseline_runtime = __esm({
             sessionCurrent(scopeText);
             const persisted = await loadOperation(operationId3);
             sessionCurrent(scopeText);
-            need46(
+            need47(
               canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
               "Current symbol cache journal changed."
             );
@@ -120168,7 +120404,7 @@ var init_current_symbol_baseline_runtime = __esm({
             await current2(scopeText);
             const clock7 = await this.engine.clockObservationForClosedCapture(admissionCapture);
             await current2(scopeText);
-            need46(
+            need47(
               clock7 === admissionClock && await assertIssuedWindowsClockObservation(clock7) === clock7,
               "Current symbol cache admission clock changed."
             );
@@ -120190,7 +120426,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await original2();
           const target5 = { projectUuid: source4.target.projectUuid, branchUuid: source4.target.branchUuid };
           const code = buildCurrentUploadQueueReadProgram(target5), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
-          need46(typeof scope6 === "function", "Current symbol cache observation lacks its owned scope.");
+          need47(typeof scope6 === "function", "Current symbol cache observation lacks its owned scope.");
           slot.journal.cacheAttempted = true;
           slot.journal.state = "cache-dispatching";
           slot.journal.nextSafeAction = "Retain this single inactive-target cache observation; do not repeat, navigate, Save or write.";
@@ -120210,7 +120446,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await scope6.call(this.engine.upstream, async (binding2) => {
             const scopeText = canonicalJson(binding2);
             sessionCurrent(scopeText);
-            need46(
+            need47(
               binding2.gatewayInstanceId === admissionCapture.bridgeSession.gatewayInstanceId && binding2.sessionId === admissionCapture.bridgeSession.sessionId && binding2.sessionSequence === admissionCapture.bridgeSession.sequence,
               "Current symbol cache scope differs from its admitted session."
             );
@@ -120228,7 +120464,7 @@ var init_current_symbol_baseline_runtime = __esm({
                 assertCurrentSymbolCacheMark(before, slot.journal, { phase: CACHE_PHASE, bridgeDispatch: binding2, capture: admissionCapture, launch });
                 const markedText = canonicalJson(slot.journal), persisted2 = await loadOperation(operationId3);
                 sessionCurrent(scopeText);
-                need46(
+                need47(
                   canonicalJson(persisted2) === markedText && canonicalJson(slot.journal) === markedText,
                   "Current symbol cache marked journal changed."
                 );
@@ -120236,7 +120472,7 @@ var init_current_symbol_baseline_runtime = __esm({
                 marked = structuredClone(slot.journal);
                 slot.cacheClock = await this.engine.clockObservationForTrackedDispatch(slot.journal, CACHE_PHASE);
                 await current2(scopeText);
-                need46(
+                need47(
                   await assertIssuedWindowsClockObservation(slot.cacheClock) === slot.cacheClock,
                   "Current symbol cache dispatch clock changed."
                 );
@@ -120252,19 +120488,19 @@ var init_current_symbol_baseline_runtime = __esm({
                 await original2(scopeText);
               },
               async () => {
-                need46(marked !== void 0, "Current symbol cache mark was not accepted; cleanup refused.");
+                need47(marked !== void 0, "Current symbol cache mark was not accepted; cleanup refused.");
                 await current2(scopeText);
               }
             );
             sessionCurrent(scopeText);
-            need46(
+            need47(
               marked !== void 0 && slot.cacheReplyRetained && slot.cacheObservation !== void 0,
               "Current symbol cache dispatch returned without retained evidence."
             );
             assertCurrentSymbolCacheClear(marked, slot.journal, CACHE_PHASE);
             const clearedText = canonicalJson(slot.journal), persisted = await loadOperation(operationId3);
             sessionCurrent(scopeText);
-            need46(
+            need47(
               canonicalJson(persisted) === clearedText && canonicalJson(slot.journal) === clearedText,
               "Current symbol cache cleared journal changed."
             );
@@ -120273,7 +120509,7 @@ var init_current_symbol_baseline_runtime = __esm({
             completed3 = true;
           });
           await original2();
-          need46(completed3 && slot.cacheObservation !== void 0, "Current symbol cache scope did not complete.");
+          need47(completed3 && slot.cacheObservation !== void 0, "Current symbol cache scope did not complete.");
           await this.engine.assertBridgeDispatchAllowed();
           await current2();
           await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
@@ -120282,7 +120518,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await current2();
           const final = finalStatus.stableFingerprint;
           validateSdkLocalRuntimeFingerprint(final);
-          need46(canonicalJson(final) === canonicalJson(initial), "Current symbol cache runtime changed around observation.");
+          need47(canonicalJson(final) === canonicalJson(initial), "Current symbol cache runtime changed around observation.");
           slot.journal.state = "caches-observed";
           slot.journal.nextSafeAction = "Cache absence observed only at the recorded samples. Qualify pre-opening continuity, startup producers and backend actor/clock; no opening or writer is authorized.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "cache-result", {
@@ -120305,7 +120541,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       async inspect(operationId3) {
         const journal = await loadOperation(operationId3);
-        need46(
+        need47(
           isRecord(journal.plan) && journal.plan["profile"] === PROFILE16 && journal.operationId === operationId3,
           "Current symbol baseline history has another profile."
         );
@@ -121524,8 +121760,8 @@ var init_current_symbol_metadata_runtime = __esm({
 function dataText(value) {
   let bytes2 = 0, nodes = 0;
   const seen = /* @__PURE__ */ new Set();
-  function string5(text26) {
-    bytes2 += Buffer.byteLength(text26);
+  function string5(text27) {
+    bytes2 += Buffer.byteLength(text27);
     if (bytes2 > MAX_BYTES5) {
       throw new Error("Expected fingerprint exceeds its data bound.");
     }
@@ -121567,11 +121803,11 @@ function dataText(value) {
     }
   }
   visit(value, 0);
-  const text25 = JSON.stringify(value);
-  if (Buffer.byteLength(text25) + 1 > MAX_BYTES5) {
+  const text26 = JSON.stringify(value);
+  if (Buffer.byteLength(text26) + 1 > MAX_BYTES5) {
     throw new Error("Expected fingerprint plus artifact newline exceeds 256 KiB.");
   }
-  return text25;
+  return text26;
 }
 function freezeData(value) {
   if (value !== null && typeof value === "object") {
@@ -121706,7 +121942,7 @@ __export(closed_symbol_disposable_entry_exports, {
   ClosedSymbolDisposableEntry: () => ClosedSymbolDisposableEntry
 });
 import { randomBytes as randomBytes12 } from "node:crypto";
-function need47(value, message) {
+function need48(value, message) {
   if (!value) {
     throw new Error(message);
   }
@@ -121716,26 +121952,26 @@ function method3(owner, key) {
   for (let depth = 0; current2 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current2, key);
     if (item2 !== void 0) {
-      need47(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Disposable entry owner method changed.");
+      need48(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Disposable entry owner method changed.");
       return item2.value;
     }
     const parent = Object.getPrototypeOf(current2);
-    need47(parent === null || typeof parent === "object", "Disposable entry owner prototype changed.");
+    need48(parent === null || typeof parent === "object", "Disposable entry owner prototype changed.");
     current2 = parent;
   }
   throw new Error("Disposable entry owner method is unavailable.");
 }
 function descriptor7(value) {
-  need47(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Disposable result descriptor refused.");
+  need48(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Disposable result descriptor refused.");
   return Object.freeze({ path: value.path, bytes: value.bytes, sha256: value.sha256 });
 }
 function response(value) {
-  need47(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Disposable result exceeds 16 KiB.");
+  need48(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Disposable result exceeds 16 KiB.");
   return Object.freeze(value);
 }
 function planFor(request2, expected3) {
   const nonces = [randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex")];
-  need47(new Set(nonces).size === 3, "Disposable marker nonce collision; no regeneration.");
+  need48(new Set(nonces).size === 3, "Disposable marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
     projectUuid: request2.target.projectUuid,
@@ -121798,7 +122034,7 @@ var init_closed_symbol_disposable_entry = __esm({
       facadePromise;
       owners;
       constructor(engine2, upstream2, runtime, nativeUi, gate) {
-        need47(engine2.upstream === upstream2, "Disposable entry engine/upstream owner differs.");
+        need48(engine2.upstream === upstream2, "Disposable entry engine/upstream owner differs.");
         this.engine = engine2;
         this.upstream = upstream2;
         this.runtime = runtime;
@@ -121834,15 +122070,15 @@ var init_closed_symbol_disposable_entry = __esm({
         ];
       }
       owner() {
-        need47(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Disposable entry owners changed.");
-        need47(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Disposable entry requires no enclosing authenticated scope.");
+        need48(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Disposable entry owners changed.");
+        need48(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Disposable entry requires no enclosing authenticated scope.");
       }
       fresh() {
         this.owner();
         const status2 = this.runtime.status();
         const lifecycle = this.upstream.bridgeSessionLifecycle();
-        need47(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Disposable entry runtime is not fresh.");
-        need47(lifecycle === void 0 || lifecycle.activeSession === null, "Disposable entry cannot adopt an authenticated session.");
+        need48(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Disposable entry runtime is not fresh.");
+        need48(lifecycle === void 0 || lifecycle.activeSession === null, "Disposable entry cannot adopt an authenticated session.");
       }
       /** Internal diagnostics only. Never serialize this bag through MCP or use it to
        * choose a terminal. Earlier exact objects survive later refusal/publication failure.
@@ -121904,7 +122140,7 @@ var init_closed_symbol_disposable_entry = __esm({
         try {
           request2 = parseClosedSymbolValidationRequest(rawRequest);
           this.request = request2;
-          need47(request2.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
+          need48(request2.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
           requestText = canonicalJson(request2);
           this.owner();
         } catch (error51) {
@@ -121913,7 +122149,7 @@ var init_closed_symbol_disposable_entry = __esm({
         }
         const current2 = () => {
           this.owner();
-          need47(this.request === request2 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Disposable entry request changed.");
+          need48(this.request === request2 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Disposable entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -121937,7 +122173,7 @@ var init_closed_symbol_disposable_entry = __esm({
             const expected3 = this.expected;
             current2();
             this.fresh();
-            need47(
+            need48(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Disposable runtime scope differs from the actual facade expectation."
             );
@@ -121946,7 +122182,7 @@ var init_closed_symbol_disposable_entry = __esm({
             let claim3, coordinator;
             const planned = () => {
               current2();
-              need47(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Disposable retained preparation or plan changed.");
+              need48(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Disposable retained preparation or plan changed.");
             };
             this.phase = "construction";
             const coordinatorModule = await Promise.resolve().then(() => (init_closed_symbol_coordinator(), closed_symbol_coordinator_exports));
@@ -121968,39 +122204,39 @@ var init_closed_symbol_disposable_entry = __esm({
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need47(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
+            need48(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
-            need47(this.coordinator === coordinator, "Disposable coordinator owner changed.");
+            need48(this.coordinator === coordinator, "Disposable coordinator owner changed.");
             const full = this.full;
             const kind = coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
             this.phase = "terminal";
             if (kind === "locked") {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_terminal(), closed_symbol_terminal_exports));
               planned();
-              need47(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Disposable terminal kind changed.");
+              need48(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Disposable terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need47(this.terminal === terminal, "Disposable terminal owner changed.");
+              need48(this.terminal === terminal, "Disposable terminal owner changed.");
               const assertLockedCompletion = terminalModule.assertOriginalClosedSymbolCompletion;
               assertLockedCompletion(this.completion, this.engine, full.operationId);
             } else {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_aged_terminal(), closed_symbol_aged_terminal_exports));
               planned();
-              need47(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Disposable terminal kind changed.");
+              need48(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Disposable terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolAgedTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need47(this.terminal === terminal, "Disposable terminal owner changed.");
+              need48(this.terminal === terminal, "Disposable terminal owner changed.");
               const assertAgedCompletion = terminalModule.assertOriginalAgedClosedSymbolCompletion;
               assertAgedCompletion(this.completion, this.engine, full.operationId);
             }
             this.phase = "projection";
-            need47(
+            need48(
               this.full === full && this.coordinator === coordinator && this.completion.operationId === full.operationId,
               "Disposable final original references changed."
             );
@@ -122207,7 +122443,7 @@ __export(closed_symbol_operation_entry_exports, {
   ClosedSymbolOperationEntry: () => ClosedSymbolOperationEntry
 });
 import { randomBytes as randomBytes13 } from "node:crypto";
-function need48(value, message) {
+function need49(value, message) {
   if (!value) {
     throw new Error(message);
   }
@@ -122217,26 +122453,26 @@ function method4(owner, key) {
   for (let depth = 0; current2 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current2, key);
     if (item2 !== void 0) {
-      need48(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Ordinary entry owner method changed.");
+      need49(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Ordinary entry owner method changed.");
       return item2.value;
     }
     const parent = Object.getPrototypeOf(current2);
-    need48(parent === null || typeof parent === "object", "Ordinary entry owner prototype changed.");
+    need49(parent === null || typeof parent === "object", "Ordinary entry owner prototype changed.");
     current2 = parent;
   }
   throw new Error("Ordinary entry owner method is unavailable.");
 }
 function descriptor8(value) {
-  need48(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Ordinary result descriptor refused.");
+  need49(typeof value.path === "string" && value.path.length <= 4096 && value.path.startsWith("/") && !/[\0\r\n]/u.test(value.path) && Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 131072 && /^[a-f0-9]{64}$/u.test(value.sha256), "Ordinary result descriptor refused.");
   return Object.freeze({ path: value.path, bytes: value.bytes, sha256: value.sha256 });
 }
 function response2(value) {
-  need48(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Ordinary result exceeds 16 KiB.");
+  need49(Buffer.byteLength(JSON.stringify(value)) <= 16384, "Ordinary result exceeds 16 KiB.");
   return Object.freeze(value);
 }
 function planFor2(request2, expected3) {
   const nonces = [randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex")];
-  need48(new Set(nonces).size === 3, "Ordinary marker nonce collision; no regeneration.");
+  need49(new Set(nonces).size === 3, "Ordinary marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
     projectUuid: request2.target.projectUuid,
@@ -122286,7 +122522,7 @@ var init_closed_symbol_operation_entry = __esm({
       facadePromise;
       owners;
       constructor(engine2, upstream2, runtime, nativeUi, gate) {
-        need48(engine2.upstream === upstream2, "Ordinary entry engine/upstream owner differs.");
+        need49(engine2.upstream === upstream2, "Ordinary entry engine/upstream owner differs.");
         this.engine = engine2;
         this.upstream = upstream2;
         this.runtime = runtime;
@@ -122322,15 +122558,15 @@ var init_closed_symbol_operation_entry = __esm({
         ];
       }
       owner() {
-        need48(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Ordinary entry owners changed.");
-        need48(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Ordinary entry requires no enclosing authenticated scope.");
+        need49(this.engine === this.owners.engine && this.upstream === this.owners.upstream && this.runtime === this.owners.runtime && this.nativeUi === this.owners.nativeUi && this.gate === this.owners.gate && this.engine.upstream === this.upstream && this.engine.controlFingerprintPromise === this.facadePromise && this.ownerMethods().every((value, index) => value === this.methods[index]), "Ordinary entry owners changed.");
+        need49(this.upstream.currentAuthenticatedBridgeDispatchBinding() === void 0, "Ordinary entry requires no enclosing authenticated scope.");
       }
       fresh() {
         this.owner();
         const status2 = this.runtime.status();
         const lifecycle = this.upstream.bridgeSessionLifecycle();
-        need48(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Ordinary entry runtime is not fresh.");
-        need48(lifecycle === void 0 || lifecycle.activeSession === null, "Ordinary entry cannot adopt an authenticated session.");
+        need49(status2.state === "not-launched" && status2.launch === null && status2.executableSha256 === null, "Ordinary entry runtime is not fresh.");
+        need49(lifecycle === void 0 || lifecycle.activeSession === null, "Ordinary entry cannot adopt an authenticated session.");
       }
       /** Internal diagnostics only. Never serialize this bag through MCP or use it to
        * choose a terminal. Earlier exact objects survive later refusal/publication failure.
@@ -122394,7 +122630,7 @@ var init_closed_symbol_operation_entry = __esm({
         try {
           request2 = parseClosedSymbolOperationRequest(rawRequest);
           this.request = request2;
-          need48((request2.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
+          need49((request2.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
           requestText = canonicalJson(request2);
           this.owner();
         } catch (error51) {
@@ -122403,7 +122639,7 @@ var init_closed_symbol_operation_entry = __esm({
         }
         const current2 = () => {
           this.owner();
-          need48(this.request === request2 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Ordinary entry request changed.");
+          need49(this.request === request2 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Ordinary entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -122427,7 +122663,7 @@ var init_closed_symbol_operation_entry = __esm({
             const expected3 = this.expected;
             current2();
             this.fresh();
-            need48(
+            need49(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Ordinary runtime scope differs from the actual facade expectation."
             );
@@ -122436,7 +122672,7 @@ var init_closed_symbol_operation_entry = __esm({
             let claim3, coordinator;
             const planned = () => {
               current2();
-              need48(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Ordinary retained preparation or plan changed.");
+              need49(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Ordinary retained preparation or plan changed.");
             };
             this.phase = "construction";
             const coordinatorModule = await Promise.resolve().then(() => (init_closed_symbol_coordinator(), closed_symbol_coordinator_exports));
@@ -122458,39 +122694,39 @@ var init_closed_symbol_operation_entry = __esm({
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need48(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
+            need49(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
-            need48(this.coordinator === coordinator, "Ordinary coordinator owner changed.");
+            need49(this.coordinator === coordinator, "Ordinary coordinator owner changed.");
             const full = this.full;
             const kind = coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId);
             this.phase = "terminal";
             if (kind === "locked") {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_terminal(), closed_symbol_terminal_exports));
               planned();
-              need48(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Ordinary terminal kind changed.");
+              need49(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "locked", "Ordinary terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need48(this.terminal === terminal, "Ordinary terminal owner changed.");
+              need49(this.terminal === terminal, "Ordinary terminal owner changed.");
               const assertLockedCompletion = terminalModule.assertOriginalClosedSymbolCompletion;
               assertLockedCompletion(this.completion, this.engine, full.operationId);
             } else {
               const terminalModule = await Promise.resolve().then(() => (init_closed_symbol_aged_terminal(), closed_symbol_aged_terminal_exports));
               planned();
-              need48(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Ordinary terminal kind changed.");
+              need49(coordinatorModule.originalClosedSymbolFullEvidenceKind(full, this.engine, full.operationId) === "aged-unlocked", "Ordinary terminal kind changed.");
               const terminal = new terminalModule.ClosedSymbolAgedTerminalStage(this.engine, sqlRuntime);
               this.terminal = terminal;
               this.completion = await terminal.complete(full);
               planned();
-              need48(this.terminal === terminal, "Ordinary terminal owner changed.");
+              need49(this.terminal === terminal, "Ordinary terminal owner changed.");
               const assertAgedCompletion = terminalModule.assertOriginalAgedClosedSymbolCompletion;
               assertAgedCompletion(this.completion, this.engine, full.operationId);
             }
             this.phase = "projection";
-            need48(
+            need49(
               this.full === full && this.coordinator === coordinator && this.completion.operationId === full.operationId,
               "Ordinary final original references changed."
             );
@@ -122823,14 +123059,14 @@ function isJsonValue(value) {
   return isRecord(value) && Object.values(value).every((item2) => isJsonValue(item2));
 }
 function jsonSafe(value) {
-  const text25 = JSON.stringify(
+  const text26 = JSON.stringify(
     value,
     (_key, item2) => typeof item2 === "bigint" ? item2.toString() : item2
   );
-  if (text25 === void 0) {
+  if (text26 === void 0) {
     return null;
   }
-  const parsed2 = JSON.parse(text25);
+  const parsed2 = JSON.parse(text26);
   if (!isJsonValue(parsed2)) {
     throw new TypeError("JSON serialization produced a non-JSON value.");
   }

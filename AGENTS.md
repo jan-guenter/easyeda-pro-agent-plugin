@@ -6,6 +6,44 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: historical startup premises
+
+The closed-copy stage now retains a startupPremises report inside its original
+issued baseline, copy-result artifact and internal summary. A new SQL selector
+uses the original completed raw-copy inventory and the actual separately hashed
+checkpoint history. It checks exact schema, sole project/default branch/owner,
+complete linear native history selection and numbered chunk membership. It
+selects db_versions['sqlite'], never PRAGMA schema_version. Exact unsupported
+schema produces a fixed blocker; inconsistent supported-schema evidence fails
+capture. The report does not carry independent authority or authenticate a
+caller-supplied history object. Future consumers must retain the original copy.
+
+The historical subset requires terminal migration version25.10.31.1, a
+nondeleted PCB META count witness and no active SCH_PAGE documents. Missing META
+does not prove an empty native project. The source review corrected an earlier
+assumption: local APP project detail omits editorVersion and exam_info, and the
+truthy editorVersion-only update returns without project mutation. No persisted
+project version or exam flag is invented. Renderer exam state, pre-opening
+continuity, startup/opening effects and execution remain unproved/false. SCH
+initialization and version.txt were researched but are not new execution pins.
+
+Local verification passes60 focused tests, zero failures/skips, full types and
+whole-tree strict type-aware lint with zero warnings. Build/sanitizer,
+compatibility, package/privacy/repository,774-method coverage and all seven
+official skill validators pass. Audit verifies151 signatures/40 attestations
+and0 vulnerabilities. Independent review accepts the scoped implementation.
+Frozen projections: source357 SHA185b8bcc, runtime3 SHA7cd7e82a; only facade
+projections/review timestamp changed. Publication and final CI are pending.
+
+Next: carry the retained historical subset and inactive-cache observation into
+one project-only opening with fresh owner/source continuity, qualify remaining
+startup producers and renderer exam state, then backend actor/clock,
+writer/inverse, stopped/lost-owner recovery and one complete disposable
+lifecycle before release/install. Keep draft PR36 unmerged and installed
+0.3.0+codex.20261015140000 unchanged. No live EasyEDA call, launch, design access,
+Save, restoration or installation occurred. Production designs and their records
+remain untouched. Research details: docs/current-startup-premises-research-2026-10-16.md.
+
 ### In development: owned current cache observation
 
 The retained baseline now has an internal observeSymbolBaselineCaches
@@ -43,12 +81,36 @@ official skill validators pass. Dependency audit verifies 151 signatures and 40
 attestations with 0 vulnerabilities. Independent reviews accept the final source
 within the documented limits. Frozen projections: source 355 SHA31020556,
 runtime 3 SHA19279146; only facade projections/review timestamp changed, not
-external pins. Final publication/CI checks are pending. Keep draft PR36 unmerged
-and installed140000 unchanged. Next: pre-opening continuity and
+external pins. Payload e6cddf9b9f057db6e829925130b8d5c082e5a6f7 is pushed
+to draft PR36. Postcommit builds reproduce both bundles exactly. Full tree
+d5b0372bd719d25c86dbe6f9dd875af0880a7937, package subtree
+6e00894f93eb1649aa3d869aab34bf19c9f64369. Windows38814626990 passed;
+main CI38814626893 passed all ten jobs at this exact head: 10021 facade passes,
+five skips and zero failures; 424 bridge passes across 28 files. Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203243573.
+This post-payload record should accompany the next source change, not cause a
+second full CI run by itself. Keep draft PR36 unmerged and installed140000
+unchanged. Next: pre-opening continuity and
 project-only startup qualification, backend actor/clock, writer/inverse, and one
-complete disposable lifecycle before release/install. No live EasyEDA call,
+complete disposable lifecycle, including stopped/lost-owner recovery, before
+release/install. No live EasyEDA call,
 launch, design access, Save, restore or installation occurred in this slice.
 Production designs and their records remain outside scope.
+
+Next-slice source review: a current-only historical-premises selector can reuse
+the original closed-copy issuer, completed full SQL inventory and hash-bound
+native-history reader. The existing copy stage materializes selected history but
+retains only counts/hashes and target evidence, not all document types/settings.
+Do not treat its document count as the native startup count, SYMBOL editVersion
+as project editorVersion, or SQLite schema_version as the app migration version.
+Source-backed mappings for project editorVersion, UI editorMainVersion,
+migration-version key and isExamProject are still needed. A conservative profile
+with no active SCH_PAGE documents is a candidate for excluding linked-sheet
+startup, not yet an implemented acceptance predicate. After relaunch use the
+retained session/capture/clock; never call the old-owner/termination-dependent
+copy revalidation. Historical premises and cache absence still do not prove
+pre-opening continuity or startup completion. No code or live work was added
+by this final read-only planning review.
 
 ### In development: new-session admission and current cache observer
 

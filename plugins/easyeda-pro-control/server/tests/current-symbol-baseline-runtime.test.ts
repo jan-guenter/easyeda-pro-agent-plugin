@@ -184,7 +184,8 @@ async function fixture(context: TestContext): Promise<{
       const checkpoint = { checkpointSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
       state.proof = input["proof"];
-      const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true } };
+      const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
+        startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: false, startupQualified: false } };
       state.copied = result; return result;
     },
   });
@@ -218,6 +219,12 @@ void test("current baseline owns one capture and close, polls pending, then copi
   assert.equal(pending["termination"], "pending"); assert.equal(pending["state"], "awaiting-termination"); assert.equal(f.state.copies, 0);
   const done = await f.coordinator.observe(f.owner.operationId);
   assert.equal(done["state"], "completed"); assert.equal(done["baselineCaptured"], true);
+  assert.deepEqual(done["startupPremises"], { syntheticCopySink: true, historicalSubsetSatisfied: false, startupQualified: false });
+  const copied = await loadOperation(f.owner.operationId), copiedArtifact = copied.artifacts?.at(-1);
+  assert.ok(copiedArtifact !== undefined);
+  const copiedEvidence: unknown = JSON.parse(await readFile(copiedArtifact.path, "utf8"));
+  assert.ok(isRecord(copiedEvidence));
+  assert.deepEqual(copiedEvidence["startupPremises"], done["startupPremises"]);
   for (const key of ["beforeWriteBaselineVerified", "openingEffectsVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
     assert.equal(done[key], false);
   }

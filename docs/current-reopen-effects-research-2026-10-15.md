@@ -75,6 +75,18 @@ qualification, backend actor/clock, writer/inverse integration and a complete
 disposable lifecycle remain pending. Future consumers must revalidate original
 captures and clocks; neither journal JSON nor `admissionProved` grants authority.
 
+The closed-copy stage now retains a bounded historical startup-premises report
+inside the original issued baseline and its `copy-result` artifact. It selects
+the completed raw-copy SQL inventory, correlates the default branch and complete
+linear history with the separately hashed checkpoint, and reports migration,
+PCB-count-witness and active-sheet blockers. An unsupported schema leaves the
+baseline copy available with a blocked report. Malformed or inconsistent data
+under the supported schema fails capture; it is not downgraded to an unknown
+schema. A standalone report or supplied history object does not carry the
+original baseline's provenance. All runtime exam, pre-opening continuity,
+startup, opening-effect and execution flags remain false. See the
+[source mappings and corrected assumptions](current-startup-premises-research-2026-10-16.md).
+
 ## Source identities
 
 Files were hashed on 2026-10-15. Paths below are relative to the installed
@@ -169,13 +181,20 @@ cleanup as probes: the reviewed local-history paths themselves reach replay.
 UI `a3e.compare` at 16592601 obtains the project `editorVersion` and the
 current `editorMainVersion` meta value. Equal values take its no-update
 branch. Otherwise it can call `PROJECT.UPDATE`; a later-version warning is
-not a generic no-write criterion. A new current profile can require exact
-equality using independently bound baseline/runtime data.
+not a generic no-write criterion. The 2026-10-16 local-backend review corrects
+the proposed equality requirement: APP project detail omits `editorVersion`,
+and APP2373856 treats a truthy `editorVersion` update as a no-op. Do not invent
+a persisted project version from SYMBOL `editVersion`. This applies only to
+the reviewed local route, not cloud project updates.
 
 UI `dko` at 15766745 checks document count before creating a blank board and
 saving default settings. An existing nonempty project takes its early return
 under either permission branch. The baseline must prove actual nonempty
-document content; an arbitrary truthy caller count is not sufficient.
+native count; an arbitrary truthy caller count is not sufficient. Native count
+uses seven getter-filtered maps, not geometry or the complete materialized
+history count. A nondeleted PCB with a valid META title is a conservative
+nonzero witness. META is not natively required for every counted entry, so a
+missing witness does not prove the project empty.
 
 For APP initialization, exact terminal schema version `25.10.31.1` excludes
 the reviewed migration scripts. Native journal-mode setup remains. These
