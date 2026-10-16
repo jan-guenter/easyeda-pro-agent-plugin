@@ -33,11 +33,13 @@ export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action",
     preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
     confirmNormalClose: z.literal(true), confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-observe-termination"), operationId }).strict(),
+  z.object({ action: z.literal("baseline-prepare-clock"), operationId, acceptScratchProcessEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-relaunch"), operationId, acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-admit"), operationId }).strict(),
   z.object({ action: z.literal("baseline-observe-caches"), operationId }).strict(),
   z.object({ action: z.literal("baseline-open-project"), operationId, acceptNormalOpenEffects: z.literal(true),
     acceptUnqualifiedSchematicStartupEffects: z.literal(true).optional() }).strict(),
+  z.object({ action: z.literal("baseline-observe-clock"), operationId }).strict(),
   z.object({ action: z.literal("baseline-finish-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-observe-finish"), operationId }).strict(),
   z.object({ action: z.literal("baseline-inspect"), operationId }).strict(),
@@ -71,14 +73,15 @@ const limitations = [
   "Only baseline-open-project accepts optional acceptUnqualifiedSchematicStartupEffects:true for disposable observation-only opening when active schematic pages are the sole historical blocker. Schematic initialization may rewrite documents or queue persistence. The active-page blocker and historicalSubsetSatisfied:false remain recorded; every other historical prerequisite remains mandatory. Omitting this acceptance keeps the strict no-active-page gate. Acceptance never grants startup, opening-effect, persistence or writer authority.",
   "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
   "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Pre-admission launch failures and unsupported stopped states remain review-only.",
+  "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
 ] as const;
 
 export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
   const query = currentDisposableOpenQuerySchema.parse(input);
   return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
     action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
-    actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-relaunch",
-      "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect"], limitations: [...limitations],
+    actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch",
+      "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect"], limitations: [...limitations],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentDisposableOpenRequestSchema) } : {}),
   }] };
 }

@@ -10,8 +10,9 @@ import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
-import type { CurrentSymbolBaselineCoordinator } from "../src/current-symbol-baseline-runtime.ts";
+import type { CurrentSymbolBaselineCoordinator, assertCurrentProjectOnlySymbolGeneration, revalidateCurrentProjectOnlySymbolGeneration } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
+import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from "../src/current-symbol-clock-evidence.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
 import { qualifyCurrentSymbolClockRelation } from "../src/current-symbol-clock-relation.ts";
 import { CURRENT_UPLOAD_QUEUE_PROFILE, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "../src/current-upload-queue-read.ts";
@@ -19,7 +20,7 @@ import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgra
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
-import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "../src/windows-authority.ts";
+import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertCurrentIssuedWindowsClockObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "../src/windows-authority.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
 import { assertWindowsRuntimeValidator, createWindowsRuntimeValidator } from "../src/windows-runtime-validator.ts";
 import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
@@ -46,12 +47,16 @@ async function fixture(context: TestContext): Promise<{
   owner: CurrentSymbolBaselineOwner; native: Awaited<ReturnType<typeof qualifiedNativeFixture>>;
   runtime: WindowsControlRuntime;
   engine: EasyedaControlEngine;
+  assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration;
+  revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
     finishSnapshots: number; finishSnapshotFailure: boolean; afterFinishSnapshot: (() => Promise<void>) | undefined;
     validatorRuntime: WindowsControlRuntime | undefined;
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
     activeSchematicPages: number; startupBlockers: readonly string[];
+    referenceAttempts: number; referenceFailure: boolean; clockObservations: number; clockFailure: boolean;
+    afterReference: (() => Promise<void>) | undefined; afterAgedClock: (() => Promise<void>) | undefined;
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
     afterCache: (() => Promise<void>) | undefined; afterStatus: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
@@ -66,6 +71,8 @@ async function fixture(context: TestContext): Promise<{
     validatorRuntime: undefined as WindowsControlRuntime | undefined,
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
     activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
+    referenceAttempts: 0, referenceFailure: false, clockObservations: 0, clockFailure: false,
+    afterReference: undefined as (() => Promise<void>) | undefined, afterAgedClock: undefined as (() => Promise<void>) | undefined,
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
     afterCache: undefined as (() => Promise<void>) | undefined, afterStatus: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
@@ -191,9 +198,35 @@ async function fixture(context: TestContext): Promise<{
   };
   const source = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
+  let originalReference: unknown;
   const scope = vm.createContext({ z, Buffer, Object, Date, Reflect, structuredClone,
     OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema, assertWindowsRuntimeValidator,
     assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS,
+    currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence, currentAgedSqlCollectionEvidence: (): undefined => undefined,
+    CurrentAgedSqlReferenceStage: class {
+      private readonly receivedEngine: unknown;
+      public constructor(receivedEngine: unknown) { this.receivedEngine = receivedEngine; }
+      public originalReturn(): undefined { assert.equal(this.receivedEngine, engine); return undefined; }
+      public async runOnce(input: { baseline: unknown; proof: unknown }): Promise<unknown> {
+        assert.equal(this.receivedEngine, engine);
+        assert.equal(input.baseline, state.copied); assert.equal(input.proof, state.proof); assert.equal(state.scope, false);
+        state.referenceAttempts += 1; await state.afterReference?.();
+        assert.equal(state.referenceFailure, false, "synthetic reference refused");
+        originalReference = Object.freeze({ profile: "synthetic-original-clock-reference", operationId }); return originalReference;
+      }
+    },
+    assertOriginalCurrentAgedSqlReference: (reference: unknown, receivedEngine: unknown, baseline: unknown): unknown => {
+      assert.equal(reference, originalReference); assert.equal(receivedEngine, engine); assert.equal(baseline, state.copied); return reference;
+    },
+    revalidateOriginalCurrentAgedSqlReference: (reference: unknown, receivedEngine: unknown, baseline: unknown): Promise<unknown> => {
+      assert.equal(reference, originalReference); assert.equal(receivedEngine, engine); assert.equal(baseline, state.copied); return Promise.resolve(reference);
+    },
+    collectCurrentAgedSqlClock: async (receivedEngine: unknown, generation: unknown, reference: unknown): Promise<unknown> => {
+      assert.equal(receivedEngine, engine); assert.equal(reference, originalReference); assert.equal(state.scope, true); assert.ok(isRecord(generation));
+      assert.equal(generation["operationId"], operationId); state.clockObservations += 1; await state.afterAgedClock?.();
+      assert.equal(state.clockFailure, false, "synthetic clock observation refused");
+      return Object.freeze({ profile: "synthetic-original-aged-clock", operationId, executionAuthorized: false });
+    },
     // Only cross-realm JSON arguments are normalized at these VM boundaries;
     // Actual engine journals, original captures and native issuers stay unchanged.
     assertCurrentSymbolCacheMark: (...args: Parameters<typeof assertCurrentSymbolCacheMark>): void => {
@@ -240,7 +273,7 @@ async function fixture(context: TestContext): Promise<{
     },
     assertCurrentSymbolBaselineOwner: checkOwner,
     revalidateCurrentSymbolBaselineOwner: (owner: unknown, receivedEngine: unknown) => Promise.resolve(checkOwner(owner, receivedEngine)),
-    assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, windowsClockObservationForResult,
+    assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertCurrentIssuedWindowsClockObservation, windowsClockObservationForResult,
     assertIssuedWindowsClockObservation: async (value: unknown): ReturnType<typeof assertIssuedWindowsClockObservation> => {
       const originalClock = await assertIssuedWindowsClockObservation(value); await state.afterClockAssert?.(); return originalClock;
     },
@@ -283,10 +316,12 @@ async function fixture(context: TestContext): Promise<{
         openingEffectsVerified: false, persistenceVerified: false, writerReady: false, executionAuthorized: false };
     },
   });
-  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator });`, scope);
-  assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function");
+  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator, assertGeneration: assertCurrentProjectOnlySymbolGeneration, revalidateGeneration: revalidateCurrentProjectOnlySymbolGeneration });`, scope);
+  assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["assertGeneration"] === "function" && typeof loaded["revalidateGeneration"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked export is the unchanged maintained coordinator evaluated in this private test scope.
   const Coordinator = loaded["Coordinator"] as typeof CurrentSymbolBaselineCoordinator;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These checked exports are the unchanged fixed issuers evaluated beside their private coordinator in this test VM.
+  const generation = loaded as { assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration; revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration };
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only this VM's fixed owner lookup admits this synthetic original; no production issuer is modified.
   const owner = ownerData as unknown as CurrentSymbolBaselineOwner;
   const restart = (): CurrentSymbolBaselineCoordinator => new Coordinator(engine, runtime, SQL_RUNTIME);
@@ -296,6 +331,7 @@ async function fixture(context: TestContext): Promise<{
     await retireSyntheticJournal(operationId);
   });
   return { coordinator: restart(), restart, owner, native, runtime, engine, state,
+    assertGeneration: generation.assertGeneration, revalidateGeneration: generation.revalidateGeneration,
     calls: (action): number => native.requests.filter((request) => request["action"] === action).length };
 }
 
@@ -618,8 +654,10 @@ void test("current admission rejects capture mutation after scope settlement and
   }
 });
 
-async function admittedBaseline(context: TestContext, historicalSubset: StartupCase = false): ReturnType<typeof fixture> {
-  const f = await completedBaseline(context, historicalSubset); await f.coordinator.relaunch(f.owner.operationId);
+async function admittedBaseline(context: TestContext, historicalSubset: StartupCase = false, clockReference = false): ReturnType<typeof fixture> {
+  const f = await completedBaseline(context, historicalSubset);
+  if (clockReference) { await f.coordinator.prepareClockReference(f.owner.operationId); }
+  await f.coordinator.relaunch(f.owner.operationId);
   f.state.activeSession = true; f.state.sessionSequence = 2; await f.coordinator.admit(f.owner.operationId); return f;
 }
 
@@ -705,8 +743,8 @@ void test("current cache pre-dispatch conflict vetoes cleanup before any cache r
   assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
 });
 
-async function projectReadyBaseline(context: TestContext, historicalSubset: StartupCase = true): ReturnType<typeof fixture> {
-  const f = await admittedBaseline(context, historicalSubset); await f.coordinator.observeCaches(f.owner.operationId);
+async function projectReadyBaseline(context: TestContext, historicalSubset: StartupCase = true, clockReference = false): ReturnType<typeof fixture> {
+  const f = await admittedBaseline(context, historicalSubset, clockReference); await f.coordinator.observeCaches(f.owner.operationId);
   f.state.openReply = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope({
     ok: true, kind: "current-project-only-open", ...CACHE_TARGET, projectPathMatched: true, projectPresent: true, publicResult: true,
     navigationDispatched: true, inactiveUploadCachesObserved: true, noEditorTabsObserved: true, restoreSetEmptyObserved: true,
@@ -736,6 +774,142 @@ void test("current project-only continuation binds the post-opening hash and own
   await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original closed baseline/u);
   await assert.rejects(f.restart().openProject(f.owner.operationId), /original closed baseline/u);
   assert.equal(f.state.opens, 1);
+});
+
+void test("current project-only generation binds the original replacement and rejects JSON, another engine and a new coordinator", async (context) => {
+  const f = await projectReadyBaseline(context);
+  assert.throws(() => f.coordinator.getProjectOnlyGeneration(f.owner.operationId), /original settled opening/u);
+  await f.coordinator.openProject(f.owner.operationId);
+  const token = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+  const original = f.assertGeneration(token, f.engine);
+  assert.equal(token.operationId, f.owner.operationId); assert.equal(Object.isFrozen(token), true);
+  assert.equal(Object.isFrozen(original), true); assert.equal(Object.isFrozen(original.source), true);
+  assert.equal(original.baseline, f.state.copied); assert.equal(original.source.engine, f.engine); assert.equal(original.source.runtime, f.runtime);
+  assert.equal(original.source.launchProjection, original.launch); assert.deepEqual(original.launch, f.runtime.status().launch);
+  assert.equal(original.source.bridgeSession, original.capture.bridgeSession); assert.equal(original.source.bridgeSession.sequence, 2);
+  assert.equal(await f.revalidateGeneration(token, f.engine), original);
+  assert.equal(f.coordinator.getProjectOnlyGeneration(f.owner.operationId), token);
+  assert.throws(() => f.assertGeneration(structuredClone(token), f.engine), /retained coordinator/u);
+  const otherEngine = new EasyedaControlEngine(f.engine.upstream);
+  assert.throws(() => f.assertGeneration(token, otherEngine), /retained coordinator/u);
+  assert.throws(() => f.restart().getProjectOnlyGeneration(f.owner.operationId), /original settled opening/u);
+  f.state.scope = true;
+  assert.throws(() => f.assertGeneration(token, f.engine), /ended scope/u);
+  const binding = f.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.(); assert.ok(binding !== undefined);
+  const scopeText = canonicalJson(binding);
+  assert.equal(f.assertGeneration(token, f.engine, scopeText), original);
+  assert.equal(await f.revalidateGeneration(token, f.engine, scopeText), original);
+  assert.throws(() => f.assertGeneration(token, f.engine, "{}"), /ended scope/u);
+  f.state.scope = false;
+  assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1);
+});
+
+void test("current project-only generation rejects replaced session and methods without minting new authority", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  const token = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+  f.state.sessionSequence = 3;
+  assert.throws(() => f.assertGeneration(token, f.engine), /replacement session|selected session/u);
+  f.state.sessionSequence = 2;
+  const mock = context.mock.method(f.engine, "clockObservationForClosedCapture");
+  assert.throws(() => f.assertGeneration(token, f.engine), /infrastructure/u); mock.mock.restore();
+  await f.coordinator.finishNormalClose(f.owner.operationId);
+  assert.throws(() => f.assertGeneration(token, f.engine), /changed, stopped or retired/u);
+  await assert.rejects(f.revalidateGeneration(token, f.engine), /changed, stopped or retired/u);
+  assert.throws(() => f.coordinator.getProjectOnlyGeneration(f.owner.operationId), /changed, stopped or retired/u);
+  assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.opens, 1);
+});
+
+void test("current project-only generation revalidation catches owner drift after awaited journal and helper checks", async (context) => {
+  for (const boundary of ["journal", "clock"] as const) {
+    await context.test(boundary, async (childContext) => {
+      const f = await projectReadyBaseline(childContext); await f.coordinator.openProject(f.owner.operationId);
+      const token = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+      const drift = (): Promise<void> => { f.state.sessionSequence = 3; return Promise.resolve(); };
+      if (boundary === "journal") { f.state.afterLoad = drift; } else { f.state.afterClockAssert = drift; }
+      await assert.rejects(f.revalidateGeneration(token, f.engine), /replacement session|selected session/u);
+      assert.equal(f.state.opens, 1); assert.equal(f.calls("normal-close"), 1);
+    });
+  }
+});
+
+void test("current project-only generation revalidation refuses changed durable history", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  const token = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+  const journal = await loadOperation(f.owner.operationId);
+  journal["nextSafeAction"] = "synthetic external history advance"; await updateOperation(journal);
+  await assert.rejects(f.revalidateGeneration(token, f.engine), /journal changed/u);
+  assert.equal(f.state.opens, 1);
+});
+
+void test("current project-only generation is never issued after failed opening settlement", async (context) => {
+  const failed = await projectReadyBaseline(context);
+  failed.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic opening scope settlement failed"));
+  await assert.rejects(failed.coordinator.openProject(failed.owner.operationId), /scope settlement failed/u);
+  assert.throws(() => failed.coordinator.getProjectOnlyGeneration(failed.owner.operationId), /original settled opening/u);
+  assert.equal(failed.state.opens, 1);
+});
+
+void test("current optional clock stages keep the original baseline phases and consume each issuer once", async (context) => {
+  const f = await projectReadyBaseline(context, true, true);
+  assert.equal(f.state.referenceAttempts, 1);
+  await assert.rejects(f.coordinator.prepareClockReference(f.owner.operationId), /unused pre-launch attempt/u);
+  await f.coordinator.openProject(f.owner.operationId);
+  const before = await readFile(operationPath(f.owner.operationId));
+  const result = await f.coordinator.observeAgedClock(f.owner.operationId);
+  assert.equal(result["clockReferenceAccepted"], true); assert.equal(result["agedClockAccepted"], true);
+  assert.equal(result["startupQualified"], false); assert.equal(result["writerReady"], false); assert.equal(result["executionAuthorized"], false);
+  assert.equal(f.state.clockObservations, 1); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), before);
+  await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), /unused observation attempt/u);
+  await assert.rejects(f.restart().observeAgedClock(f.owner.operationId), /original accepted reference/u);
+  await f.coordinator.finishNormalClose(f.owner.operationId); await f.coordinator.observeFinish(f.owner.operationId);
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["sequence"], 24); assert.equal(journal.artifacts?.length, 24);
+  assert.equal(f.state.referenceAttempts, 1); assert.equal(f.state.clockObservations, 1); assert.equal(f.state.opens, 1);
+});
+
+void test("current optional clock reference refusal consumes the attempt and blocks replacement launch", async (context) => {
+  const f = await completedBaseline(context, true);
+  const before = await readFile(operationPath(f.owner.operationId));
+  f.state.referenceFailure = true;
+  await assert.rejects(f.coordinator.prepareClockReference(f.owner.operationId), /synthetic reference refused/u);
+  await assert.rejects(f.coordinator.prepareClockReference(f.owner.operationId), /unused pre-launch attempt/u);
+  await assert.rejects(f.coordinator.relaunch(f.owner.operationId), /original completed baseline/u);
+  assert.equal(f.state.referenceAttempts, 1); assert.equal(f.calls("clocked-launch"), 1);
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), before);
+  const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["clockReferenceAccepted"], false);
+  assert.ok(isRecord(result["clockEvidence"]) && isRecord(result["clockEvidence"]["referenceFailure"]));
+});
+
+void test("current optional clock sidecar remains readable after owner loss without restoring authority", async (context) => {
+  const f = await completedBaseline(context, true); f.state.referenceFailure = true;
+  await assert.rejects(f.coordinator.prepareClockReference(f.owner.operationId), /synthetic reference refused/u);
+  const restarted = f.restart(), result = await restarted.inspect(f.owner.operationId);
+  assert.equal(result["originalOwnerRetained"], false);
+  const sidecar = result["clockSidecar"]; assert.ok(isRecord(sidecar));
+  assert.equal(sidecar["status"], "retained-bytes-only"); assert.equal(sidecar["originalAuthorityReconstructed"], false);
+  assert.equal(sidecar["continuationAuthorized"], false); assert.equal(sidecar["replayAllowed"], false);
+  const artifacts = sidecar["artifacts"]; assert.ok(Array.isArray(artifacts)); assert.equal(artifacts.length, 1);
+  await assert.rejects(restarted.prepareClockReference(f.owner.operationId), /original closed baseline/u);
+  await writePhaseArtifact(currentSymbolClockEvidenceId(f.owner.operationId), 0, "foreign-clock-evidence", { synthetic: true });
+  await assert.rejects(restarted.inspect(f.owner.operationId), /sidecar inspection refused/u);
+  assert.equal(f.state.referenceAttempts, 1); assert.equal(f.calls("clocked-launch"), 1);
+});
+
+void test("current optional clock observation requires reference and accepts no result before lease settlement", async (context) => {
+  for (const reference of [false, true]) {
+    await context.test(reference ? "failed settlement" : "missing reference", async (childContext) => {
+      const f = await projectReadyBaseline(childContext, true, reference); await f.coordinator.openProject(f.owner.operationId);
+      if (reference) { f.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic clock scope settlement failed")); }
+      await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), reference ? /scope settlement failed/u : /original accepted reference/u);
+      const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["agedClockAccepted"], false);
+      assert.equal(f.state.clockObservations, reference ? 1 : 0);
+      if (reference) {
+        await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), /unused observation attempt/u);
+        f.state.afterScope = undefined;
+      }
+      await f.coordinator.finishNormalClose(f.owner.operationId);
+      assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.opens, 1);
+    });
+  }
 });
 
 void test("current cache and project-only status awaits retain original session checks before success", async (context) => {

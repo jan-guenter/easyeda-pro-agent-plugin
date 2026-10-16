@@ -6666,18 +6666,20 @@
           "tool": "easyeda_control_library",
           "selector": "library.symbol.modify",
           "implementation": "native-task-equivalent",
-          "scope": "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
+          "scope": "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The current-version fixed compiler additionally checks immutable clock windows and exact live metadata but is private and unregistered; its lifecycle coordinator and disposable persistence validation remain unfinished.",
           "source": [
             "project-symbol-metadata.ts",
             "library-execution.ts",
             "library-recovery-state.ts",
             "editor-tabs.ts",
+            "current-symbol-write-program.ts",
             "library-execution-lifecycle.ts"
           ],
           "tests": [
             "project-symbol-metadata.test.ts",
             "project-symbol-transaction.test.ts",
-            "library-recovery.test.ts"
+            "library-recovery.test.ts",
+            "current-symbol-write-program.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",

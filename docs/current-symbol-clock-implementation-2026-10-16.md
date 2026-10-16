@@ -118,6 +118,11 @@ consolidation; do not race a timeout against a still-running owned lifecycle.
 
 ## Remaining work
 
+The [124500 compiler/clock update](current-symbol-writer-compiler-release-2026-10-16.md)
+supersedes items 1 and the compiler portion of item 2 below. Their original
+scratch/renderer issuers and fixed compiler are now implemented. Connected
+validation, writer coordination and the other obligations remain open.
+
 1. Bind the fixed current aged-head programs to an original, source-qualified
    scratch process and renderer generation. Collect the exact unlocked before
    literal before arming; do not reuse historical-source authority or infer age

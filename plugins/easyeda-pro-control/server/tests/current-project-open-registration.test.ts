@@ -4,10 +4,12 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { createOperation } from "../src/artifacts.ts";
+import { createOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash } from "../src/core.ts";
 import { currentDisposableOpenRequestSchema, queryCurrentDisposableOpen } from "../src/current-disposable-open.ts";
 import { CurrentDisposableOpenCoordinator } from "../src/current-disposable-open-runtime.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise the actual public callback with both managed journal and sidecar issuers, not a reimplemented path hash.
+import { currentSymbolClockEvidenceId } from "../src/current-symbol-clock-evidence.ts";
 
 void test("actual project-open registration keeps strict lifecycle inputs and local baseline inspection during quarantine", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -40,6 +42,8 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
   const operationId = "current-baseline-local-inspection", plan = { profile: "easyeda-pro-control.current-symbol-closed-baseline.v1" };
   await createOperation({ schema: OPERATION_SCHEMA, operationId, plan, planHash: buildPlanHash(plan), state: "stopped",
     artifacts: [], orphanedCallPossible: true, nextSafeAction: "Inspect only; synthetic original owner is absent." });
+  const clockArtifact = await writePhaseArtifact(currentSymbolClockEvidenceId(operationId), 0, "coordinator-reference-refused",
+    { profile: "synthetic-clock-refusal", attemptConsumed: true, executionAuthorized: false });
   const request = { action: "baseline-inspect", operationId };
   for (const invalid of [{ ...request, code: "caller()" }, { ...request, target: {} }, { ...request, runtime: {} },
     { ...request, sourceSha256: "a".repeat(64) }, { ...request, action: "baseline-writer" }, { ...request, acceptUnqualifiedSchematicStartupEffects: true }]) {
@@ -47,8 +51,12 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
   }
   await assert.rejects(invoke({ request, expectedFingerprint: {} }), /cannot replace/u);
   const result = await invoke({ request: requestSchema.parse(request) });
+  const artifactSchema = z.object({ path: z.literal(clockArtifact.path), bytes: z.literal(clockArtifact.bytes), sha256: z.literal(clockArtifact.sha256) });
+  const clockSidecarSchema = z.object({ status: z.literal("retained-bytes-only"), originalAuthorityReconstructed: z.literal(false),
+    continuationAuthorized: z.literal(false), replayAllowed: z.literal(false), executionAuthorized: z.literal(false), artifacts: z.array(artifactSchema).length(1) });
   const resultSchema = z.object({ result: z.object({ operationId: z.literal(operationId), state: z.literal("stopped"),
     projectOpeningMode: z.null(), unqualifiedSchematicStartupEffectsAccepted: z.literal(false),
+    clockSidecar: clockSidecarSchema,
     originalOwnerRetained: z.literal(false), writerReady: z.literal(false), executionAuthorized: z.literal(false) }) });
   assert.ok(resultSchema.safeParse(result).success);
   const observedOperationId = "current-baseline-observation-inspection";
@@ -56,15 +64,31 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
     projectOpeningMode: "unqualified-schematic-startup-observation", artifacts: [], orphanedCallPossible: false,
     nextSafeAction: "Synthetic retired observation; effects remain unknown." });
   const historical = await invoke({ request: requestSchema.parse({ action: "baseline-inspect", operationId: observedOperationId }) });
+  const absentSidecarSchema = z.object({ status: z.literal("absent"), originalAuthorityReconstructed: z.literal(false), artifacts: z.array(z.unknown()).length(0) });
   const historicalSchema = z.object({ result: z.object({ operationId: z.literal(observedOperationId), state: z.literal("plan-invalidated"),
     projectOpeningMode: z.literal("unqualified-schematic-startup-observation"), unqualifiedSchematicStartupEffectsAccepted: z.literal(true),
+    clockSidecar: absentSidecarSchema,
     originalOwnerRetained: z.literal(false), writerReady: z.literal(false), executionAuthorized: z.literal(false) }) });
   assert.ok(historicalSchema.safeParse(historical).success);
   assert.equal(nativeOwners, 0); assert.equal(quarantineChecks, 0);
-  for (const continuation of ["baseline-observe-termination", "baseline-admit", "baseline-observe-caches", "baseline-observe-finish"]) {
+  for (const continuation of ["baseline-observe-termination", "baseline-admit", "baseline-observe-caches", "baseline-observe-clock", "baseline-observe-finish"]) {
     await assert.rejects(invoke({ request: { action: continuation, operationId } }), /unavailable/u);
   }
+  await assert.rejects(invoke({ request: { action: "baseline-prepare-clock", operationId, acceptScratchProcessEffects: true } }), /unavailable/u);
   assert.equal(nativeOwners, 0); assert.equal(quarantineChecks, 0);
+});
+
+void test("optional current clock stages accept only original operation identity and explicit scratch effects", () => {
+  const operationId = "baseline-clock-schema-only";
+  const prepare = { action: "baseline-prepare-clock", operationId, acceptScratchProcessEffects: true };
+  const observe = { action: "baseline-observe-clock", operationId };
+  assert.equal(currentDisposableOpenRequestSchema.safeParse(prepare).success, true);
+  assert.equal(currentDisposableOpenRequestSchema.safeParse(observe).success, true);
+  for (const invalid of [{ action: prepare.action, operationId }, { ...prepare, acceptScratchProcessEffects: false },
+    { ...observe, acceptScratchProcessEffects: true }, { ...prepare, createdAt: "2026-01-01 00:00:00" },
+    { ...observe, reference: {} }, { ...observe, target: {} }, { ...prepare, executable: "caller" }, { ...observe, code: "caller()" }]) {
+    assert.equal(currentDisposableOpenRequestSchema.safeParse(invalid).success, false);
+  }
 });
 
 void test("public baseline preparation requires distinct IDs and every approval, rejecting caller observations and continuation overrides", () => {

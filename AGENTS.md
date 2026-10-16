@@ -6,7 +6,163 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Resumed120000: fixed compiler and original clock stages
+
+The restarted actual facade555422 was independently admitted on installed
+`0.3.0+codex.20261016120000`: all1,236package files/24,435,622bytes and modes
+match main18ad47e4; source370/runtime3 and manifest projections match. Its
+pinnedNode24.18.0 process was stable, without children or non-stdio sockets.
+This was package/host admission, not connected runtime or writer validation.
+Previous mainCI38896484272 and Windows38896484349 both passed. No live EasyEDA
+call, launch, edit, Save or restoration occurred in this continuation; the
+earlier disposable lifecycle remains terminal. Production records untouched.
+
+Candidate `0.3.0+codex.20261016124500` implements an original project-only
+generation issuer, fresh Windows sampling through its retained closed capture,
+source-qualified scratch Date comparison and original renderer comparison.
+Typed optional baseline-prepare-clock and baseline-observe-clock expose the
+preparation workflow, not a writer. Separate append-only sidecars preserve the
+baseline's24phase layout. Scratch failures consume the attempt and block
+replacement relaunch; renderer failures do not prevent normal finish. Original
+handles, methods, session, capture and journal are required; JSON cannot adopt
+them. The scratch result explicitly does not retain the full scan wire payload.
+
+A new private fixed symbol name/non-null-description compiler checks exact
+metadata/project/permission/dualUIactors/client/tickets, retains its receivers
+within one invocation and samples clocks before/after the sole native write.
+Observed backward time and expired immutable windows refuse before mutation.
+The final full registry check precedes the final timestamp, with no intervening
+await before dispatch. No Save, retry or public modifier. It remains unregistered
+and uncalled by live tools; source/test coverage is not writer enablement.
+Outerbus retention is not internalworker identity or atomic compare-and-swap.
+
+Main/independent review fixed reply retention before follow-up clock checks,
+restart-visible sidecars through the actual public fallback, and deterministic
+writer output overflow before any RPC/mutation. The output bound includes both
+JSON escaping layers and multibyte strings. Focused compiler/registration11,
+generation/lifecycle12 plus owner-loss1, issuer8 and closed-clock/related76
+checks passed; the latter include18newcases. Earlier issuer/clock/transport40
+also passed. Whole types and strict type-aware lint are clean with zero warnings;
+build/sanitizer/SQL-reader, compatibility/API coverage and package/repository
+validators pass. All seven official skill validators pass. Audits verify151
+registry signatures/40attestations and zero vulnerabilities. Source377 SHA
+48e08d66/runtime3 SHAa34f267d. Protected CI publication and official marketplace
+installation are pending; no duplicate full local test matrix was run.
+No current clock live validation is claimed. Next work after installation:
+fresh disposable clock lifecycle, provenance-owning writer coordinator,
+startup/source qualification, full closedSQL/native comparison and both inactive
+upload-cache exclusions, then forward/inverse persistence and recovery. Broader
+blocked/omitted API families remain separate. See
+docs/current-symbol-writer-compiler-release-2026-10-16.md.
+
+### Delivered120000: internal clock plan; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016120000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Payload `ca19217f7df53d502cb04207ac5ebe13c437e310` merged through protected PR41
+as main `18ad47e4dc42f3f142150131d785bcc64d94b932`. Full tree
+`e15ad1f2d4e463032f9637a49ffca1a73c36718f` and package tree
+`11d2b45a080b1b9a487bfcd9d47a8a06f4b1ad6e` match the tested payload exactly.
+Required CI38895106811 passed all ten jobs: 10,332 facade passes, five platform
+skips, zero failures/cancellations; 424 bridge passes across28files. Windows
+38895106887 passed. Audits verified151registry signatures/40attestations and
+zero vulnerabilities. Types, strict type-aware lint with zero warnings, builds,
+compatibility, coverage, package/privacy/repository checks passed; all seven
+official skill validators passed locally and were unavailable on the CI runner.
+Automatic main CI38896484272 is pending; main Windows38896484349 passed.
+No duplicate full local suite. Copilot failed before review with "Prompt too big
+after adding system message"; main/independent source reviews remain separate.
+
+The official named marketplace upgrade under022 returned errors[] and no stderr.
+CLI confirms120000 installed/enabled; marketplace HEAD equals merged main.
+Main and independent installed inventories match all1,236files/24,435,622bytes:
+42directories0755,1,235files0644/one0755,seven skills,no extras/symlinks/hardlinks.
+Inventory3330522b; source370 SHAd4de698f/runtime3 SHA887d981b;
+compatibility manifest2e783c06. Actual configured offline startup hands ambient
+Node26.11.1 to pinnedNode24.18.0 without installed module ancestors. Catalog lists
+16tools and selected strict offline schema checks pass; no upstream child, non-stdio socket
+or journal starts. Synthetic probe549874 exited0 through stdinEOF, no signals,
+stderr0/profile unchanged. Private proof:
+`/tmp/easyeda-installed-120000-hiTEGbf1/proof.json`,3,530bytes SHA
+`e400ff661fc43e9213adb79b149d796683ec29ee28f849bd852e48a038ac5f9a`.
+Public receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/41#issuecomment-6214908825.
+
+Installed103000 separately passed the new project-only symbol reader once;
+independent retained-evidence comparison matches its exact new01 witness,
+including version/ticket. Both original ordinary launcher and replacement
+disposable lifecycle are fully retired. Normal closure, retained final snapshot
+and complete offline comparison preserve raw bytes, all35SQLtables and all18
+native documents/provenance. Details below. Do not repeat launch, navigation,
+read validation, close or Save merely to reproduce completed evidence. No CAD
+edit or explicit Save was issued. Production designs and their records were
+not accessed. No operation or tool is pending.
+
+New private supervisor sampling, runtime/engine forwarding, current aged-head
+controls and one-shot persisted-timestamp comparison are implemented. No new
+public writer or current connected clock proof is claimed. The old whole-Job
+clock contract and full SQL comparator remain unchanged. The current source
+profile pins helper507fdea3; historical helpers/profile admission stay data-only.
+Next implementation: original current scratch-reference/renderer issuer, fixed
+metadata compiler and coordinator with dispatch/clock provenance, startup and
+source qualification, both inactive upload-cache exclusions, then disposable
+forward/inverse persistence and failure recovery. Performance backlog is bounded
+phase timing before consolidating source qualification; no quarantine check was
+removed. See docs/current-symbol-clock-implementation-2026-10-16.md.
+
+Loaded facade521945 still holds103000 and was neither terminated nor patched.
+Start a fresh Codex session for independent120000 actual-host admission before
+new live work. Check automatic main CI read-only, then continue implementation;
+do not restart an old retired lifecycle. Local main equals origin/main. This
+delivery checkpoint remains uncommitted for the next actual source change, not
+a record-only CI cycle. All earlier pending publication/install wording below
+is historical.
+
 ### Resumed103000: host admitted; current clock implementation
+
+LIVE103000 IS FINISHED. Observe-finish91 proved replacement root/Job exit,
+captured final closedsnapshot22 SHA79893b30,retirement23 SHA4a5c053b, and
+released originalcaptures. Stateplan-invalidated/retiredtrue/all24phasesretained.
+Offline baseline-analyze94 independently reports unchanged raw598,016/SHA970d21b3,
+checkpoint561,152/SHA4ed9ca7c, all35SQLtables and all18native documents/provenance.
+Journalf00be9f0/evidence28e1d282,SQLlogical4d01daaf/history20b0b062. No Save/edit
+or restoration was dispatched. Both originalordinarylauncher and replacement
+lifecycle are terminal; never repeat launch/navigation/close/Save. No further
+livecall needed before installation. Earlier pending91 wording below historical.
+
+Candidate120000 payloadca19217f7df53d502cb04207ac5ebe13c437e310 is in protectedPR41,
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/41. Fulltreee15ad1f2/
+packagetree11d2b45a. RequiredCI38895106811 is pending; verify-build and Windows
+38895106887 pass. Copilot38895114476 failed with "Prompt too big after adding
+system message" and did not review. Main/independent source reviews are separate.
+Both committed bundles reproduce; prepared unrun
+installed proof is /tmp/easyeda-installed-120000-hiTEGbf1, main-read old scripts
+and exact new diff. Do not install until the original live lifecycle below is
+fully retired; no owner termination or cache modification.
+
+Baseline observation54 completed and retained06 SHAfa095a29: raw970d21b3,
+checkpoint4ed9ca7c,SQLlogical4d01daaf/history20b0b062. Its solehistoricalblocker
+is two active schematic pages; observation-only opt-in is within approvedscope.
+Ordinary launch termination76 completed with exact originalb7ef19dc digest
+before replacing its Job. Baseline-relaunch77 completed and originalcapture
+released; new-session admission79 passed,14 SHA65caac8c. Cacheobservation84 is
+running once. Never repeat launch/admission or an uncertain cache dispatch.
+Original baseline owner/facade521945 must remain alive through finish.
+Expected symbol metadata was selected from this new01 witness, version1791659256039/
+ticket755; exact offline project-symbol-preflight validation passed. Reader notyet
+dispatched. Later pending-baseline54 wording below is historical.
+
+Cache84 completed16 SHAd1afb2c4; project-only open87 completed18 SHA0501f4b2,
+no document navigation. New project-only symbol reader89 PASSED once: both
+metadata samples matched exact01-witness expectations, no editor/hidden/dirty
+tabs, four client-ticket/renderer-notify samples, mutation/explicitSavefalse.
+Observation97a78c41/fingerprint0a400e80. Private full evidence is
+/tmp/easyeda-release-120000-1ldrRHWj/project-symbol-preflight-103000.json,
+SHAdd482bcd. This is installed103000 read evidence, not candidate120000 writer
+or backend clock validation. Finish-close90 acknowledged once,20 SHA62e9faf8;
+observe-finish91 runs. Never repeat close or select Save/Discard. Original
+replacement capture/facade must remain through snapshot and retirement.
+Earlier reader-pending wording above is historical.
 
 Actual facade521945, parent520207, startTicks12434729 loads installed103000
 on pinnedNode24.18.0. Independent read-only admission matches all1,229files/
