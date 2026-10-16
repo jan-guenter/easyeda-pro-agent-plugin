@@ -13,7 +13,7 @@ import { assertOriginalCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselin
 import type { CurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { MAIN_REFERENCE_PROFILE, validateMainReferenceRequest } from "./closed-symbol-main-reference-program.ts";
-import { RUNTIME_PINS } from "./closed-symbol-main-reference-runtime.ts";
+import { CURRENT_MAIN_REFERENCE_RUNTIME_PINS } from "./current-main-reference-helper-identity.ts";
 import { compileCurrentAgedSqlReferenceTransport, invokeMainReferenceTransport } from "./closed-symbol-main-reference-transport.ts";
 import type { MainReferenceTransportOutcome } from "./closed-symbol-main-reference-transport.ts";
 import { validateMainReferenceTransportV3Result } from "./closed-symbol-main-reference-v3-result.ts";
@@ -120,7 +120,7 @@ export class CurrentAgedSqlReferenceStage {
       // Retained binding digest ties it to the actual current operation ID.
       operationId: newOperationId(), closedPlanSha256: sha256Json(binding), baselineCopyReceiptSha256: baseline.copy.receiptSha256,
       baselineLogicalSha256: baseline.inventory.logicalSha256, baselineClosureClockSha256: sha256Json(clock),
-      nativePinsSha256: sha256Json({ parser: CURRENT_AGED_SQL_DATE_PARSER_SOURCE, runtime: RUNTIME_PINS }), ...head,
+      nativePinsSha256: sha256Json({ parser: CURRENT_AGED_SQL_DATE_PARSER_SOURCE, runtime: CURRENT_MAIN_REFERENCE_RUNTIME_PINS }), ...head,
       referenceUtcMs: Number((BigInt(clock.clock.after.utcBeforeTicks) - 621_355_968_000_000_000n) / 10_000n) });
     const invocation = await compileCurrentAgedSqlReferenceTransport(request); await current();
     need(canonicalJson(await loadOperation(operationId)) === journalText); unchanged();

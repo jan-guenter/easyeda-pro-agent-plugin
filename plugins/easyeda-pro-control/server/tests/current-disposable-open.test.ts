@@ -156,6 +156,14 @@ void test("disposable schemas and result checks reject injected arguments and fa
   }
   const catalog = queryCurrentDisposableOpen({ includeSchemas: true }); assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(catalog), /inputSchema/u);
+  const clock = catalog["clockPreparation"]; assert.ok(clock !== null && typeof clock === "object");
+  assert.equal(Reflect.get(clock, "connectedValidation"), false); assert.equal(Reflect.get(clock, "writerAuthority"), false);
+  assert.deepEqual(Reflect.get(clock, "runtimeVersions"), { electron: "41.2.1-jlc-sa-win-x64.5", chrome: "146.0.7680.188", node: "24.14.1" });
+  const pins: unknown = Reflect.get(clock, "runtimePins"); assert.ok(pins !== null && typeof pins === "object");
+  assert.equal(Object.keys(pins).length, 18);
+  assert.equal(Reflect.get(pins, "easyeda-pro.exe"), "e59d159f0f7bb5ac4832ce6583622251750ede7b839050f3aabe774cadfd1f55");
+  Reflect.set(pins, "easyeda-pro.exe", "mutated-return-value");
+  assert.doesNotMatch(JSON.stringify(queryCurrentDisposableOpen()), /mutated-return-value/u);
   const raw: unknown = decodeExactReadEnvelope(await environment().run("preflight")); assert.ok(raw !== null && typeof raw === "object");
   for (const invalid of [{ ...raw, dispatchAttempted: true }, { ...raw, nativeIdentityVerified: true }, { ...raw, branchUuid: target.branchUuid },
     { ...raw, publicResult: true }, { ...raw, writerAuthority: true }, { ...raw, extra: "PRIVATE" }]) {

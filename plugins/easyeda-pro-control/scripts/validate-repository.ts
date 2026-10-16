@@ -14,6 +14,7 @@ import {
 } from "../server/src/core.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
+import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
 import { validateCiWorkflow } from "./ci-contract.ts";
 
@@ -53,6 +54,7 @@ const authenticatedBridgeDistPrefix = `${authenticatedBridgeDistPath}/`;
 const descriptorSanitizerRelativePath =
   `plugins/easyeda-pro-control/server/bin/${DESCRIPTOR_SANITIZER_FILE_NAME}`;
 const mainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll";
+const currentMainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
 const MAX_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
@@ -200,6 +202,9 @@ const required = [
   "scripts/main-reference-build.json",
   "server/bin/Easyeda.MainReference.dll",
   "server/bin/Easyeda.MainReference.build.json",
+  "scripts/main-reference-current-runtime.json",
+  "server/bin/Easyeda.CurrentMainReference.dll",
+  "server/bin/Easyeda.CurrentMainReference.build.json",
   "scripts/plugin-contract.ts",
   "scripts/configure-machine.ts",
   "scripts/launch-machine.ts",
@@ -472,6 +477,16 @@ check("main-reference-helper-reviewed-identity",
   createHash("sha256").update(mainReferenceHelperBytes).digest("hex") === MAIN_REFERENCE_HELPER_IDENTITY.sha256);
 check("main-reference-helper-gitattributes",
   gitAttributesSource.split(/\r?\n/u).includes(`${mainReferenceHelperRelativePath} binary`));
+const currentMainReferenceHelperPath = join(root, currentMainReferenceHelperRelativePath);
+const currentMainReferenceHelperInformation = await lstat(currentMainReferenceHelperPath);
+const currentMainReferenceHelperBytes = await readFile(currentMainReferenceHelperPath);
+check("current-main-reference-helper-reviewed-identity",
+  currentMainReferenceHelperInformation.isFile() && !currentMainReferenceHelperInformation.isSymbolicLink() &&
+  currentMainReferenceHelperInformation.nlink === 1 && currentMainReferenceHelperInformation.mode % 4096 === 0o644 &&
+  currentMainReferenceHelperBytes.length === CURRENT_MAIN_REFERENCE_HELPER_IDENTITY.bytes &&
+  createHash("sha256").update(currentMainReferenceHelperBytes).digest("hex") === CURRENT_MAIN_REFERENCE_HELPER_IDENTITY.sha256);
+check("current-main-reference-helper-gitattributes",
+  gitAttributesSource.split(/\r?\n/u).includes(`${currentMainReferenceHelperRelativePath} binary`));
 check("plugin-license-self-contained", pluginLicenseSource === rootLicenseSource);
 check(
   "vendored-bridge-license-exact",
@@ -1232,6 +1247,7 @@ const allowedBinaryPaths = [
   "plugins/easyeda-pro-control/easyeda-bridge-extension/images/logo.png",
   descriptorSanitizerRelativePath,
   mainReferenceHelperRelativePath,
+  currentMainReferenceHelperRelativePath,
 ].toSorted();
 check(
   "only-reviewed-release-binaries",

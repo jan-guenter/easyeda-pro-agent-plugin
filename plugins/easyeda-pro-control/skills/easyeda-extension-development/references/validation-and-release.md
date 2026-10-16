@@ -97,6 +97,14 @@ review changed signatures/source paths and test against a disposable project.
 Use fixed bounded validation calls until the new tuple is admitted; no raw-code
 fallback. Never update a checksum solely because an admission check refused it.
 
+Trace helper runtime dependencies as well as the calling adapter. A new Date
+compiler can still invoke a native scratch helper pinned to an older Electron
+executable and DLL set. Check the complete fixed runtime inventory and version
+assertions before a one-shot live attempt. Keep historical helper bytes and
+evidence validators intact when adding a new runtime profile; reproduce the
+new helper separately in CI. Passing schema/compiler tests does not establish
+that its process can start on the installed application version.
+
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its

@@ -229,6 +229,13 @@ confirm an update dialog, or run the prepared patch to complete this validation.
 Use these stages only when qualifying the current metadata writer's date parsing.
 They are not required to repeat an already completed opening or reader check.
 Confirm the installed `project-open` schema includes both actions.
+Read its offline `clockPreparation` entry before reserving a scratch attempt.
+It lists the fixed helper, runtime versions and complete 18-file runtime hash
+inventory. Compare those expectations with read-only installed-runtime evidence;
+the entry itself does not observe the workstation or claim connected validation.
+A mismatch needs a separately reviewed helper/profile update, not a retry or
+an edit to historical pins. The 124500 release retained old scratch runtime pins;
+do not use that release for this stage.
 
 After `baseline-observe-termination` has captured the closed baseline, but before
 `baseline-relaunch`, call `baseline-prepare-clock` with the original baseline

@@ -25,6 +25,7 @@ import {
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
+import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 interface CheckResult {
@@ -194,6 +195,9 @@ const required = [
   "scripts/main-reference-build.json",
   "server/bin/Easyeda.MainReference.dll",
   "server/bin/Easyeda.MainReference.build.json",
+  "scripts/main-reference-current-runtime.json",
+  "server/bin/Easyeda.CurrentMainReference.dll",
+  "server/bin/Easyeda.CurrentMainReference.build.json",
   "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
@@ -247,6 +251,15 @@ check("main-reference-helper-reviewed-identity",
   mainReferenceHelperInformation.mode % 4096 === 0o644 &&
   mainReferenceHelperBytes.length === MAIN_REFERENCE_HELPER_IDENTITY.bytes &&
   mainReferenceHelperSha256 === MAIN_REFERENCE_HELPER_IDENTITY.sha256);
+const currentMainReferenceHelperPath = join(pluginRoot, "server/bin/Easyeda.CurrentMainReference.dll");
+const currentMainReferenceHelperInformation = await lstat(currentMainReferenceHelperPath);
+const currentMainReferenceHelperBytes = await readFile(currentMainReferenceHelperPath);
+const currentMainReferenceHelperSha256 = Buffer.from(await globalThis.crypto.subtle.digest("SHA-256", currentMainReferenceHelperBytes)).toString("hex");
+check("current-main-reference-helper-reviewed-identity",
+  currentMainReferenceHelperInformation.isFile() && !currentMainReferenceHelperInformation.isSymbolicLink() &&
+  currentMainReferenceHelperInformation.nlink === 1 && currentMainReferenceHelperInformation.mode % 4096 === 0o644 &&
+  currentMainReferenceHelperBytes.length === CURRENT_MAIN_REFERENCE_HELPER_IDENTITY.bytes &&
+  currentMainReferenceHelperSha256 === CURRENT_MAIN_REFERENCE_HELPER_IDENTITY.sha256);
 
 const manifestText = await readFile(manifestPath, "utf8");
 const manifest = pluginManifestSchema.parse(JSON.parse(manifestText));

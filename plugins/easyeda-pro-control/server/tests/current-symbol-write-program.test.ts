@@ -8,6 +8,7 @@ const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), symbol
 const actor = { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" };
 const before = { name: "Original", description: "Description", tagsJson: '["Exact"]', source: "template", version: "900000", ticket: 12 };
 const input = { target, expectedBefore: before, desired: { name: "Renamed", description: "Changed\nmetadata" }, peerNames: ["Peer"], expectedActor: actor,
+  startup: { sheetUuids: ["2".repeat(16)], templates: [] },
   expectedWorker: { client: "f".repeat(16), maxTicket: 14 }, rendererTimezoneOffsetMinutes: 0,
   backendWindow: { minimumMs: 1_000_000, maximumMs: 1_060_000 }, documentWindow: { minimumMs: 1_000_000, maximumMs: 1_060_000 } };
 function reply(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: value } }; }
@@ -41,6 +42,9 @@ globalThis.structuredCloneLocal=value=>JSON.parse(JSON.stringify(value));
 class Permission{constructor(){this._isConcurrentStrictMode=false;this.readOnly=false;}get isConcurrentStrictMode(){return this._isConcurrentStrictMode;}set isConcurrentStrictMode(value){this._isConcurrentStrictMode=value;}getIframeDisableStatusPanelPcb(){return{disable:this.readOnly};}}
 globalThis.gVars={currentProject:{projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false},isHistoryMode:false,messageBus:new Bus(),sessionStorageTabs:new Set(),urlCmd:null,globalVariableCookieData:{userInfo:${JSON.stringify(actor)}},loginedUserInfo:${JSON.stringify(actor)}};
 globalThis.UI={gVars,tabBar:Tabs,concurrentDesign:new Permission()};globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40',lib_Symbol:{modify:()=>denied('public-modify')},sch_Document:{save:()=>denied('save')}};
+globalThis.projectMgr={uuid:target.projectUuid};projectMgr.componentCache={projectMgr,symbolTemplate:{}};
+globalThis.actionRunner={_currentAction:null};actionRunner.realTimeSyncActionManager={transactionRunner:actionRunner,_isRunning:false,_runnerSet:{_idMap:new Map()},_runTimer:{_mark:-1},_localActionOnceDidRunSubscription:null};
+globalThis.docMemory={docMap:new Map(),_docFetchPromiseMap:new Map()};globalThis.SCH={gVars:{projectMgr,actionRunner},get docMemoryManager(){return docMemory;}};
 class ClockBus{async rpcCall(...args){if(this!==gVars.concurrentBus||args.length!==1||args[0]!=='/pro-mgr/serverTime/now')return denied('clock-receiver');clockCalls++;await Promise.resolve();${options.afterClock ?? ""}return tick++;}}
 gVars.concurrentBus=new ClockBus();globalThis['/'+_TAB_ID_+'/notify']=gVars.concurrentBus;
 globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[]};

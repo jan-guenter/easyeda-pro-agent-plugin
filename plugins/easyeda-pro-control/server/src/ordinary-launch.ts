@@ -9,6 +9,9 @@ import type { ControlRootDirectory } from "./control-root.ts";
 import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "./core.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
+// oxlint-disable-next-line import/max-dependencies -- Keep passive timing bookkeeping outside the authority and journal implementation.
+import { OrdinaryLaunchTimings } from "./ordinary-launch-timings.ts";
+import type { OrdinaryLaunchTimingStage } from "./ordinary-launch-timings.ts";
 
 /** Ordinary startup of the existing profile, not project-free or isolated startup. */
 export const ORDINARY_LAUNCH_PROFILE = {
@@ -56,6 +59,7 @@ const limitations = [
   "Unknown-launch abandonment requires a reviewed helper-before-intent protocol, the exact intent digest, a fresh coordinator without an allocated runtime, explicit acceptance of unobserved descendants, and two native samples with no other PowerShell process and no same-name application. The separate read-only helper excludes a delayed launch from the old helper; it does not determine whether launch previously occurred or prove descendant termination. Other PowerShell sessions conservatively block recovery. No process is adopted, closed or killed, and no design gate changes.",
   "Window observation requires the original retained launch and exact launch receipt digest. It exposes only a unique eligible root-owned application HWND, or unavailable/ambiguous status. An observation is not a persistent close permission and cannot adopt a historical process.",
   "Confirmed normal close reobserves that HWND, durably consumes one close intent for the original launch, then requests WM_CLOSE once. Missing acknowledgment or timeout never permits another close. No focus, keyboard, forced termination or Save/Discard choice is dispatched. The application may write data or display a prompt; acknowledgment proves neither termination nor saved contents. Inspect and retained termination observation remain available after close uncertainty, subject to unchanged quarantine gates.",
+  "Launch phase timings are passive diagnostics retained for the first 32 distinct launch requests in this coordinator. Successful launch results and local inspect can expose them after a failure; they are unavailable after a host restart and never authorize execution or retry. Repeated requests do not overwrite the original timings.",
 ] as const;
 const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed", profileIsolated: false,
   startupQualified: false, projectArgumentsSupplied: false, designExecutionAuthorized: false } as const;
@@ -154,6 +158,7 @@ interface RetainedLaunch { readonly operationId: string; readonly launch: Window
 const JOURNAL_DIRECTORY = "ordinary-launch-v1";
 const MAX_OPERATIONS = 4096;
 const MAX_RECORD_BYTES = 8192;
+const MAX_TIMED_LAUNCHES = 32;
 // This exact prior profile permits historical supervision relinquishment only.
 // It never admits the former helper for launch, adoption, close or exit proof.
 const HISTORICAL_ABANDONMENT_PROFILE_SHA256 = "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314";
@@ -364,6 +369,7 @@ export class OrdinaryLaunchCoordinator {
   private runtime: OrdinaryLaunchRuntime | undefined;
   private retained: RetainedLaunch | undefined;
   private readonly closeAttempts = new Set<string>();
+  private readonly launchTimings = new Map<string, OrdinaryLaunchTimings>();
   private busy = false;
   private uncertain = false;
 
@@ -379,17 +385,24 @@ export class OrdinaryLaunchCoordinator {
     this.busy = true;
     let publishedIntent: Intent | undefined;
     let launchInvoked = false;
+    // Preserve the first request's diagnostics on replay refusal. Refuse new
+    // Diagnostic admissions at the cap without changing launch semantics.
+    const timings = request.action === "launch" && !this.launchTimings.has(request.operationId) && this.launchTimings.size < MAX_TIMED_LAUNCHES
+      ? new OrdinaryLaunchTimings() : undefined;
+    if (timings !== undefined) { this.launchTimings.set(request.operationId, timings); }
+    const measure = <Value,>(stage: OrdinaryLaunchTimingStage, action: () => Promise<Value>): Promise<Value> =>
+      timings === undefined ? action() : timings.measure(stage, action);
     try {
-      const operations = await inventory();
+      const operations = await measure("inventory-initial", inventory);
       const operation = operations.find((candidate) => candidate.operationId === request.operationId);
       if (request.action === "inspect") {
-        return { ...describe(request.operationId, operation),
+        return { ...describe(request.operationId, operation), ...this.timingSummary(request.operationId),
           ...(this.closeAttempts.has(request.operationId) && operation?.closeIntent === undefined ? {
             normalClose: { attemptConsumed: true, requestAcknowledged: false, intentPublicationUncertain: true,
               terminationProved: operation?.terminated !== undefined },
           } : {}) };
       }
-      await this.options.assertAllowed();
+      await measure("admission-initial", () => this.options.assertAllowed());
       requireValue(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
       if (request.action === "observe-application") { return await this.observeApplication(request.operationId, operation, operations); }
       if (request.action === "observe-termination") { return await this.observe(request.operationId, operation); }
@@ -403,49 +416,57 @@ export class OrdinaryLaunchCoordinator {
       if (request.action === "abandon-unknown-launch") { return await this.abandonUnknown(request, operation, operations); }
       requireValue(operation === undefined && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
       requireValue(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
-      const facadeSha256 = digestSchema.parse(await this.verify(this.options));
-      await this.options.assertAllowed();
+      const facadeSha256 = digestSchema.parse(await measure("installation-initial", () => this.verify(this.options)));
+      await measure("admission-before-helper", () => this.options.assertAllowed());
       this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
         expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
         reviewedExecutionScopeSha256: facadeSha256 });
-      const existing = z.object({ running: z.boolean() }).strict().parse(await this.runtime.observeExistingApplication());
-      if (existing.running) { return { ...describe(request.operationId), state: "already-running", attemptConsumed: false }; }
-      const root = await controlRootCapability();
-      const parent = await root.openDirectory(join(controlDataDirectory(), JOURNAL_DIRECTORY));
-      try {
-        // Never remove this exclusive reservation, even when publication fails.
-        await mkdir(`/proc/self/fd/${parent.handle.fd}/${request.operationId}`, { mode: 0o700 });
-        this.uncertain = true;
-        await parent.handle.sync();
-      } finally { await parent.handle.close(); }
+      const runtime = this.runtime;
+      const existing = z.object({ running: z.boolean() }).strict().parse(await measure("helper-presence", () => runtime.observeExistingApplication()));
+      if (existing.running) { return { ...describe(request.operationId), state: "already-running", attemptConsumed: false, ...this.timingSummary(request.operationId) }; }
+      await measure("reservation", async () => {
+        const root = await controlRootCapability();
+        const parent = await root.openDirectory(join(controlDataDirectory(), JOURNAL_DIRECTORY));
+        try {
+          // Never remove this exclusive reservation, even when publication fails.
+          await mkdir(`/proc/self/fd/${parent.handle.fd}/${request.operationId}`, { mode: 0o700 });
+          this.uncertain = true;
+          await parent.handle.sync();
+        } finally { await parent.handle.close(); }
+      });
       const intent: Intent = { schema: "easyeda-pro-control.ordinary-launch-intent.v2", dispatchProtocol: "retained-helper-before-intent.v1", operationId: request.operationId,
         profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE), facadeSha256, createdAt: new Date().toISOString() };
-      await publish(request.operationId, "intent.json", intent);
+      await measure("intent-publication", () => publish(request.operationId, "intent.json", intent));
       publishedIntent = intent;
-      await this.options.assertAllowed();
-      const current = await inventory();
+      await measure("admission-after-intent", () => this.options.assertAllowed());
+      const current = await measure("inventory-before-dispatch", inventory);
       requireValue(current.length === operations.length + 1 && current.every((candidate) => candidate.operationId === request.operationId ?
         canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === undefined && candidate.terminated === undefined && candidate.refused === undefined &&
           candidate.abandoned === undefined && candidate.unknownAbandoned === undefined && candidate.closeIntent === undefined && candidate.closeAcknowledgment === undefined : allowsNextLaunch(candidate)),
       "Ordinary launch intent or inventory changed before dispatch.");
-      requireValue(await this.verify(this.options) === facadeSha256, "Ordinary launch installation changed before dispatch.");
-      await this.options.assertAllowed();
+      requireValue(await measure("installation-before-dispatch", () => this.verify(this.options)) === facadeSha256, "Ordinary launch installation changed before dispatch.");
+      await measure("admission-before-dispatch", () => this.options.assertAllowed());
       launchInvoked = true;
-      const launch = launchSchema.parse(await this.runtime.launch());
+      const launch = launchSchema.parse(await measure("launch-dispatch", () => runtime.launch()));
       const launched: Launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request.operationId, intentSha256: sha256Json(intent), launch };
       this.retained = { operationId: request.operationId, launch, launched };
-      await publish(request.operationId, "launched.json", launched);
+      await measure("launched-publication", () => publish(request.operationId, "launched.json", launched));
       this.uncertain = false;
-      return describe(request.operationId, { operationId: request.operationId, intent, launched });
+      return { ...describe(request.operationId, { operationId: request.operationId, intent, launched }), ...this.timingSummary(request.operationId) };
     } catch (error) {
       if (publishedIntent !== undefined && !launchInvoked) {
         const refused: Refused = { schema: "easyeda-pro-control.ordinary-not-dispatched.v1", operationId: request.operationId,
           intentSha256: sha256Json(publishedIntent), dispatchAttempted: false };
-        await publish(request.operationId, "not-dispatched.json", refused);
+        await measure("nondispatch-publication", () => publish(request.operationId, "not-dispatched.json", refused));
         this.uncertain = false;
       }
       throw error;
     } finally { this.busy = false; }
+  }
+
+  private timingSummary(operationId: string): Readonly<Record<string, unknown>> {
+    const timings = this.launchTimings.get(operationId);
+    return timings === undefined ? {} : { launchTimings: timings.snapshot() };
   }
 
   private async readWindow(request: { readonly operationId: string; readonly expectedLaunchedSha256: string },

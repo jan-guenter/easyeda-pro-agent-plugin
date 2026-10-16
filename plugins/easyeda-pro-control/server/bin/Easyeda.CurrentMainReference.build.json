@@ -1,0 +1,284 @@
+{
+  "schema": "easyeda.current-main-reference-build.v1",
+  "file": "Easyeda.CurrentMainReference.dll",
+  "bytes": 175104,
+  "sha256": "57e6144cfb4f3f2d6b3b84f699902b209f85af671ef221e38ba40ce1f5a33870",
+  "recipeSha256": "3d872e05c67cc690815787f79529f59334c4358e495cbe53fb31a3d6c0f47ac8",
+  "sdk": {
+    "version": "10.0.111",
+    "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.111/dotnet-sdk-10.0.111-linux-x64.tar.gz",
+    "bytes": 239732427,
+    "algorithm": "sha512",
+    "digest": "aae221be96a3b510d5b6fffefc69d8ad2fa595a1430299419316bb71c65f260a457ca9af24d044e1709b28a9118798caafec535ccfe58f7767c5acb735c00392"
+  },
+  "referencePackage": {
+    "name": "Microsoft.NETFramework.ReferenceAssemblies.net48",
+    "version": "1.0.3",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net48/1.0.3/microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg",
+    "bytes": 20997929,
+    "algorithm": "sha256",
+    "digest": "8a7e348538e7eb91351696911689f49e3d4f63f8bab517432bbe159b8b1104a2"
+  },
+  "references": {
+    "mscorlib.dll": {
+      "bytes": 2731056,
+      "sha256": "6b35530467b914b0b195146ca1d1485ddd219afaad6461103f16f54e952f75a9"
+    },
+    "System.dll": {
+      "bytes": 1477168,
+      "sha256": "2fe343569f794f2ca92ee14a41875571a9f21bf92637b8f8ee86306534209cca"
+    },
+    "System.Core.dll": {
+      "bytes": 256560,
+      "sha256": "94a1fc97eb0d36f13acd209bb7207da504c8be10caf7e5096b2c46e671dc6fe2"
+    },
+    "System.Web.Extensions.dll": {
+      "bytes": 1393712,
+      "sha256": "7512218c4a6a83de0cdbb8a25240b8b5ee542f93ff9b31acfbf9f7399394450e"
+    }
+  },
+  "declaredCompileAssemblyReferenceNames": [
+    "mscorlib",
+    "System",
+    "System.Core",
+    "System.Web.Extensions"
+  ],
+  "sources": [
+    {
+      "name": "AssemblyInfo.cs",
+      "bytes": 517,
+      "sha256": "689c3b56364ab7575b3a93b721c3662062e7a94ecbaf9bbae78137fdd446c4b8"
+    },
+    {
+      "name": "AncestryCalls.Native.cs",
+      "bytes": 18715,
+      "sha256": "0c381413e52587d7d48600b5b87dede4ed626ac8853df1e5f01960e22b5e042f"
+    },
+    {
+      "name": "AncestryData.cs",
+      "bytes": 8427,
+      "sha256": "9ed8f3919911a5d295da42696c7d3b847d3580454d87cc8dfaab36e18c6584ed"
+    },
+    {
+      "name": "AncestryDirectoryOpenFrame.cs",
+      "bytes": 7788,
+      "sha256": "8242910c91e05318ae5b822c873a6547d816e0dac5c9312ef1234d326ad3e99e"
+    },
+    {
+      "name": "AncestryNative.cs",
+      "bytes": 5182,
+      "sha256": "135d9b1739f3492d1b5f17eec1b794e46edeb8f260b104500e3785b264a38294"
+    },
+    {
+      "name": "AncestryNativeData.cs",
+      "bytes": 6311,
+      "sha256": "d580101e904dda7892d1d207b2e4e3a39fcb35d190af926edf5f5d21580e7199"
+    },
+    {
+      "name": "ChildEvidenceData.cs",
+      "bytes": 4540,
+      "sha256": "264d97c4ac395e0767f121f184bdd71a00088abdd9e71800ed89b284f67a95bf"
+    },
+    {
+      "name": "EasyedaClockObservation.cs",
+      "bytes": 3658,
+      "sha256": "97449e83f75b1c724717708c5a630669577f60cf7af142db66022cc73b4e656c"
+    },
+    {
+      "name": "EasyedaMainReferenceSession.cs",
+      "bytes": 23625,
+      "sha256": "3c421d720e28ab92261e89bac6f495e11b01fe1f5bbfeb580ea7af641a573274"
+    },
+    {
+      "name": "FixedChildEvidencePolicy.cs",
+      "bytes": 2021,
+      "sha256": "c76f1e865a2df3dab40f9ae8e94d2b53a9d59c5de44b909b5bd58cef5ebe3505"
+    },
+    {
+      "name": "FixedFileBackend.cs",
+      "bytes": 46764,
+      "sha256": "45c3a6a4131720021311014d0044f23adfab76aa792e5d9f79b48257e7629c19"
+    },
+    {
+      "name": "FixedFileBackendPolicy.cs",
+      "bytes": 1694,
+      "sha256": "fe52a59158a5c517f96727e3e42180a14c6ba8d7bbbfd130014ba69d08639a70"
+    },
+    {
+      "name": "FixedFileCreateRequest.cs",
+      "bytes": 1201,
+      "sha256": "fe00e65585983ae8cf53dc6da169d596e4aec8f8d61a0973f6f9728597bcb8da"
+    },
+    {
+      "name": "FixedFileData.cs",
+      "bytes": 13315,
+      "sha256": "2e5172908e20e70dc20b0b028fbcafdd7563dba6db4f381b70a18b2632fa311d"
+    },
+    {
+      "name": "FixedFileIoStorage.cs",
+      "bytes": 5509,
+      "sha256": "35b98498b20f6c7422e781b50904da4cc940a952971ec515e36bd49eda9e02e0"
+    },
+    {
+      "name": "FixedFileNative.cs",
+      "bytes": 4981,
+      "sha256": "970ba0ad461e5fc7a677ee682e36b0fb97355af9fe870b69dcaa074e5c19bd35"
+    },
+    {
+      "name": "FixedFileSession.cs",
+      "bytes": 11229,
+      "sha256": "c4a732f432f15e444c1cc96530f29ea946867d52713838704e82a8c9a89c2149"
+    },
+    {
+      "name": "FixedLaunchPlatform.Native.cs",
+      "bytes": 564,
+      "sha256": "3284556da9b4ece6fd85faaa11e8f89571f8ed289ac3b7503bbcf11f4ef99a26"
+    },
+    {
+      "name": "FixedLaunchRecord.cs",
+      "bytes": 13718,
+      "sha256": "e423b3be19fd00796e58925cdc4630fdfa70c76913e0f3e1de06785624ad23f8"
+    },
+    {
+      "name": "FixedLayoutBackend.Native.cs",
+      "bytes": 8244,
+      "sha256": "751b4fdb2acee94cf510114d016b76f19ef600e5a6c837993727ea0b8fe8c248"
+    },
+    {
+      "name": "FixedLayoutContext.cs",
+      "bytes": 20212,
+      "sha256": "a330d0d7ba65ab935a8da66754a3e1e26ef2ee5286326f89a48e23c08cc7cb0f"
+    },
+    {
+      "name": "FixedLayoutNative.cs",
+      "bytes": 2795,
+      "sha256": "4dd0f386e6141d2377ecd5c81cb606ca3179fdaa349b2b64af8a66b5d3343a48"
+    },
+    {
+      "name": "FixedMainReferenceFiles.cs",
+      "bytes": 28810,
+      "sha256": "5bbc55b8196a9000e3b4af957c011c8ca0f64d31f5a533005f2a5afb3cebe5ad"
+    },
+    {
+      "name": "FixedOwnerSecurity.cs",
+      "bytes": 13303,
+      "sha256": "791e25b401ccd5ec453c1092e56982ec1306156ee2ae77bb2f55ba19f1f58569"
+    },
+    {
+      "name": "FixedReadOpenRequest.cs",
+      "bytes": 657,
+      "sha256": "dfceddd54c123be28c9cfab35b9ba21b6efa8805432c27dceed329905da579f0"
+    },
+    {
+      "name": "FixedScratchLayout.cs",
+      "bytes": 16946,
+      "sha256": "83a20b9aba0af5fa3bd6071ab7d47ab3326eadb830e10de443a27f97a05aa172"
+    },
+    {
+      "name": "FixedSourceAncestry.cs",
+      "bytes": 16402,
+      "sha256": "32e03f17c53923440ed6d0ddd118f004ef1fd7743cd9815b65d3dd1dc9b29c70"
+    },
+    {
+      "name": "FixedSourceOpenRecord.cs",
+      "bytes": 4531,
+      "sha256": "edfbb04cc5bd956fb3e60564480edc320d2a1282d30d2630e5674b9330d4cb9f"
+    },
+    {
+      "name": "FullLayoutData.cs",
+      "bytes": 5478,
+      "sha256": "de0f8e1872b2e9faf9d71dbdd14465b0c04a1761883f9563b57713eb31a4a4c1"
+    },
+    {
+      "name": "MainReferenceEvidence.cs",
+      "bytes": 9318,
+      "sha256": "4b3c274fb55964cf61a6d1d3ebea67e84b713e4c02971ffa96e11fe801dae7e8"
+    },
+    {
+      "name": "NativeFileFrameCalls.Backend.cs",
+      "bytes": 2453,
+      "sha256": "cbec29715ef33997f99b92d41f00e8ee9a905046d361aff0d37ce1ad657ee3b7"
+    },
+    {
+      "name": "NativeFixedFileCreateFrame.cs",
+      "bytes": 19181,
+      "sha256": "19c48168a0e1df93d1484165d53e2ebc3d741fdefcdd5a558af97e8cb001bf4d"
+    },
+    {
+      "name": "NativeFixedReadOpenFrame.cs",
+      "bytes": 16162,
+      "sha256": "92d1bef50f232e407c0f400fcbe3ceb6054a5ebf928840ca7552f26fb0e2008d"
+    },
+    {
+      "name": "NativeFrameCalls.Layout.cs",
+      "bytes": 4721,
+      "sha256": "850fa29f30d0189e204cdbb115ecbf9a284b2423b4403a713b2f7d357b4a2cac"
+    },
+    {
+      "name": "NativeReadFrameCalls.Backend.cs",
+      "bytes": 1952,
+      "sha256": "777b057cccd0e1a0dac81252afab6b8bf71530dd2f701df864c4319f43939b85"
+    },
+    {
+      "name": "NativeRelativeCreateFrame.cs",
+      "bytes": 19790,
+      "sha256": "3797972236f0e0d467bfc6fc59947784c80f2746fe945f8f4742ca5af1a67ac9"
+    },
+    {
+      "name": "OwnedSyntheticJob.cs",
+      "bytes": 21792,
+      "sha256": "e426dbcb9dd1ad646d63ad88b665381c08ee940c7c3159df19d71a2e24eaa727"
+    },
+    {
+      "name": "OwnerSecurityCalls.Native.cs",
+      "bytes": 6122,
+      "sha256": "53c3c24f0ea801e4b3fcdd43fffca9b2985953eb14459aef70fd1ef8e1838953"
+    },
+    {
+      "name": "OwnerSecurityData.cs",
+      "bytes": 5863,
+      "sha256": "a15b362e134ce6d8bbebad24b0313db507b9d1a6aa06e91b27c18a711d5abfc9"
+    }
+  ],
+  "sourcesSha256": "c8fa3c75faa65c860dc13a11d6dba9e44cf6067c2ddb47f0b6bb6efb6a06de7b",
+  "independentBuildsEqual": true,
+  "assemblyLoaded": false,
+  "runtimeProfile": {
+    "schema": "easyeda.current-main-reference-runtime.v1",
+    "sourcePins": {
+      "FixedFileData.cs": "84dfeb7d3837c1ce53db085d84e831bafcdf66917366b7678bab3d7797c72007",
+      "MainReferenceEvidence.cs": "0f2b6169c84755419e3eec8e7862e4604316e2bf8dac6f34a2af0dee0e16fa7f"
+    },
+    "versions": {
+      "electron": "41.2.1-jlc-sa-win-x64.5",
+      "chrome": "146.0.7680.188",
+      "node": "24.14.1"
+    },
+    "runtimePins": {
+      "easyeda-pro.exe": "e59d159f0f7bb5ac4832ce6583622251750ede7b839050f3aabe774cadfd1f55",
+      "libGLESv2.dll": "94da824df3f269ab93937c5d43008db2565b8ad91129628b04069f553c052935",
+      "libEGL.dll": "623326198a89d1fdac4b614a044729ac2713123cabc834cb2df324723faaf60c",
+      "icudtl.dat": "1cf67874b5a87a8363a86fb3f81e3cbbed54d389062dab8fb52308d5cf8c8612",
+      "ffmpeg.dll": "981e8e3d168a8ce1c9a43ba24778dfc5001f9beb052af80a0558b47fe30f91d3",
+      "dxil.dll": "fda4dde92222ddb8564c3173ce48faa56f7e1c7b46b0b67dada1182ee07a4123",
+      "dxcompiler.dll": "eeceedc3e6887706cdd897ca2c3357ab32b4d6c2e1b2399b0daa347519806b5c",
+      "d3dcompiler_47.dll": "e407b9ffadef47e87994dc488214f75405cf04ee99589f2315fc7ab99fd1dfe2",
+      "chrome_200_percent.pak": "581c8d53199c10512d31a340699f9ad269f8eea5fe6bc49e05c1bde98ee612aa",
+      "chrome_100_percent.pak": "34433fa04ddf5eb78b3b4e9c64a3af626e28641907ad7a6086614eb6a8f00a07",
+      "snapshot_blob.bin": "ed719d078977be84118c45420df70a0cc46dd32ae326559c9e6d9a909aeda099",
+      "resources.pak": "b05c3c66b777f107cf31a9bdbad28690bd9734e6ee876b9b986e7039d98a1ad7",
+      "vulkan-1.dll": "114b5d6c6feb68cc78d1872ecee8ed00058304d57b7d2595f58b93b17d8e74b7",
+      "vk_swiftshader_icd.json": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9",
+      "vk_swiftshader.dll": "e3dcc580ed83446a1b958603d4774527f0d97c3adea57a39b30e896ef1b923f9",
+      "v8_context_snapshot.bin": "c321440b5b893fabf4cb983c46c325e6b1959536b7c98a3f1f0200df8ad61a33",
+      "locales\\en-US.pak": "a02518efe75c630a1b5419af5ffdb1b16636b939139bccd7710e37f36ad9d55c",
+      "version": "4b5566737e2923f6b0baf6016ce081fa415797a794d0e453427ce5d1e28b8df0"
+    }
+  },
+  "runtimeProfileSha256": "e7015f317636f7b55e1a02f4cf26d6b4fb4facb097ecb4c736a8edb19272adaa",
+  "historicalSourcesUnchanged": true,
+  "transformedSources": [
+    "FixedFileData.cs",
+    "MainReferenceEvidence.cs"
+  ]
+}
