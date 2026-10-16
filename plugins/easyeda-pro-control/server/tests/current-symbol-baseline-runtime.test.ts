@@ -53,7 +53,7 @@ async function fixture(context: TestContext): Promise<{
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
     activeSchematicPages: number; startupBlockers: readonly string[];
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
-    afterCache: (() => Promise<void>) | undefined;
+    afterCache: (() => Promise<void>) | undefined; afterStatus: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
     afterClockAssert: (() => Promise<void>) | undefined; afterClockRelation: (() => Promise<void>) | undefined;
     beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
@@ -67,7 +67,7 @@ async function fixture(context: TestContext): Promise<{
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
     activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
-    afterCache: undefined as (() => Promise<void>) | undefined,
+    afterCache: undefined as (() => Promise<void>) | undefined, afterStatus: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
     afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined,
     afterClockRelation: undefined as (() => Promise<void>) | undefined,
@@ -169,7 +169,16 @@ async function fixture(context: TestContext): Promise<{
     assert.ok(state.validatorRuntime !== undefined); return state.validatorRuntime;
   }) });
   await engine.controlFingerprintPromise;
-  context.mock.method(engine, "status", () => Promise.resolve({ stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } }));
+  context.mock.method(engine, "status", async () => {
+    // Production status calls three bridge tools. An active session without
+    // Its authenticated lease refuses those probes, not just design dispatch.
+    assert.equal(state.scope, true, "live status requires its authenticated dispatch scope");
+    assert.equal(state.activeSession, true);
+    const dispatch = upstream.currentAuthenticatedBridgeDispatchBinding?.();
+    assert.equal(dispatch?.sessionId, "n".repeat(43)); assert.equal(dispatch?.sessionSequence, 2);
+    state.events.push("status"); await state.afterStatus?.();
+    return { stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } };
+  });
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
     target: { ...OPEN_TARGET, expectedSourceSha256: "f".repeat(64) },
@@ -631,6 +640,9 @@ void test("current cache continuation owns one tracked read and settles without 
   assert.equal(journal["cacheAttempted"], true); assert.equal(f.state.scope, false);
   assert.ok(f.state.events.indexOf("source-pin") < f.state.events.indexOf("cache-read"));
   assert.ok(f.state.events.lastIndexOf("source-pin") > f.state.events.indexOf("cache-read"));
+  assert.equal(f.state.events.filter((event) => event === "status").length, 2);
+  assert.ok(f.state.events.indexOf("status") < f.state.events.indexOf("cache-read"));
+  assert.ok(f.state.events.lastIndexOf("status") > f.state.events.indexOf("cache-read"));
   await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /original admitted session/u);
   await assert.rejects(f.restart().observeCaches(f.owner.operationId), /original admitted session/u);
   assert.equal(f.state.cacheReads, 1); assert.equal(f.calls("clocked-launch"), 2);
@@ -715,6 +727,8 @@ void test("current project-only continuation binds the post-opening hash and own
   assert.equal(f.state.opens, 1); assert.equal(f.state.sourceChecks, 2); assert.equal(f.state.cacheReads, 1);
   assert.ok(f.state.events.lastIndexOf("source-continuity") < f.state.events.indexOf("project-only-open"));
   assert.ok(f.state.events.lastIndexOf("project-only-source-pin") > f.state.events.indexOf("project-only-open"));
+  assert.equal(f.state.events.filter((event) => event === "status").length, 4);
+  assert.ok(f.state.events.lastIndexOf("status") > f.state.events.indexOf("project-only-open"));
   for (const key of ["startupQualified", "openingEffectsVerified", "beforeWriteBaselineVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized"]) {
     assert.equal(result[key], false);
   }
@@ -722,6 +736,30 @@ void test("current project-only continuation binds the post-opening hash and own
   await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original closed baseline/u);
   await assert.rejects(f.restart().openProject(f.owner.operationId), /original closed baseline/u);
   assert.equal(f.state.opens, 1);
+});
+
+void test("current cache and project-only status awaits retain original session checks before success", async (context) => {
+  for (const stage of ["cache", "project-only"] as const) {
+    for (const boundary of ["initial", "final"] as const) {
+      await context.test(`${stage} ${boundary}`, async (childContext) => {
+        const f = stage === "cache" ? await admittedBaseline(childContext) : await projectReadyBaseline(childContext);
+        let statusReads = 0;
+        f.state.afterStatus = (): Promise<void> => {
+          statusReads += 1;
+          if (statusReads === (boundary === "initial" ? 1 : 2)) { f.state.sessionSequence = 3; }
+          return Promise.resolve();
+        };
+        const run = (): Promise<Record<string, unknown>> => stage === "cache"
+          ? f.coordinator.observeCaches(f.owner.operationId) : f.coordinator.openProject(f.owner.operationId);
+        await assert.rejects(run());
+        const stopped = await f.coordinator.inspect(f.owner.operationId);
+        assert.equal(stopped["state"], "stopped");
+        assert.equal(stopped[stage === "cache" ? "cachesObserved" : "projectOpened"], false);
+        assert.equal(stage === "cache" ? f.state.cacheReads : f.state.opens, boundary === "initial" ? 0 : 1);
+        assert.equal(f.state.scope, false); await assert.rejects(run());
+      });
+    }
+  }
 });
 
 void test("current finish closes its admitted new generation once, polls pending, and retires without writer claims", async (context) => {

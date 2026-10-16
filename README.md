@@ -21,7 +21,8 @@ repeatable through reconciliation or runtime rebinding.
 
 Update `0.3.0+codex.20261016090000` adds offline `baseline-analyze` for complete retained SQL/native
 snapshot comparisons, process-bound clock reporting at retirement, and fewer
-redundant history scans. These diagnostics do not enable a writer. See the
+redundant history scans. It also fixes authenticated status checks around cache
+observation and project-only opening. These diagnostics do not enable a writer. See the
 [implementation scope and remaining tasks](docs/current-project-only-lifecycle-release-2026-10-16.md).
 
 Update `0.3.0+codex.20261016073000` preserves final closed-file SQL and native

@@ -6,7 +6,30 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
-### Resumed073000: historical recovery complete, disposable baseline underway
+### Resumed073000: safely retired; authenticated scope fix ready
+
+Latest live checkpoint: replacement admission completed70. One cache observation76
+stopped before cache-intent, retaining15-stopped SHA174b1451, no orphan/cache
+reply/project opening. Core fingerprint validation refused malformed status.
+Source diagnosis identifies both cache/project-only initial and final status
+reads outside an authenticated scope: upstream correctly refuses those probes,
+engine.status retains missing payloads, and the SDK validator correctly rejects.
+Do not weaken that validator or repeat this cache attempt. Candidate090000/PR39
+now keeps initial/final status and dispatch in the same authenticated lease.
+All fingerprint, source, owner, journal and post-settlement checks remain.
+Independent review accepts the fix;24 focused cache/project tests, facade
+typecheck and strict type-aware targeted lint pass with zero warnings.
+
+Maintained finish-close acknowledged once,16–17 retained. Functions86 completed
+original replacement termination, final snapshot and capture release. Terminal
+state is plan-invalidated, retired true, hardStop/orphan false; journal file
+SHA4638e861. All21 phases remain, retirement proof20 SHA351072e2. Both raw copies
+are byte-identical598,016bytes/SHA970d21b3; both native checkpoints are identical
+561,152bytes/SHA4ed9ca7c. SQLlogical4d01daaf and nativehistory20b0b062 agree.
+Never repeat close, cache observation or navigation. Original ordinary-launch
+termination is already complete; no launcher abandonment is needed.
+This early21-phase retirement is not the new analyzer's successful24-phase
+profile, startup-effect qualification or live clock/writer validation.
 
 Actual facade444390, parent442773, startTicks11448948 loads installed073000 on
 pinned Node24.18.0. Independent read-only admission matches all1,217files,
@@ -37,9 +60,9 @@ nativehistory20b0b062. Its sole startup blocker is two active schematic pages.
 Original ordinary-launch termination was separately recorded before replacing
 its Job; launchdigest027b330d matches. One baseline-relaunch completed64 and
 released the old capture, retaining its new launch/observed native clock. The
-new session admission is running in functions70. Never repeat launch/release.
-Keep the same facade through cache/project-only opening and final closed
-snapshot/retirement.
+new session admission completed70; the scope refusal and safe retirement are
+recorded above. Never repeat launch/release. No cache reply or project-only
+opening occurred. This lifecycle is finished, not pending continuation.
 No symbol writer, explicit Save or restoration has run.
 
 Source-only090000 work on `feature/closed-startup-analysis` adds offline retained
@@ -52,8 +75,10 @@ opener and6offline-registration/preparation passes; final changed receipt subset
 writer evidence. Whole-tree facade/bridge types, strict type-aware lint with
 zero warnings, build/sanitizer, compatibility,774-method inventory, package/
 privacy/repository checks, actionlint and all seven official skill validators
-pass. Frozen source363 SHA43c6014b/runtime3 SHA66a4415f; external pins unchanged.
-Required full CI is next, not a duplicated full local suite. Dependencies are
+pass. Initial payload476c0401 carried source363 SHA43c6014b/runtime3 SHA66a4415f;
+the scope fix rebuild now has source363 SHA5f7a89b0/runtime3 SHA788d810d.
+Build/sanitizer, compatibility and package/seven-skill validators pass. External
+pins stay unchanged. Final exact-head CI is next, not a duplicated full local suite. Dependencies are
 unchanged from073000; CI rechecks their clean install and audit. Backend
 actor/producer-clock qualification and writer/inverse remain open.
 

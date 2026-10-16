@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "e5e97f0476d779e0d7253779f0616dcfc568d084b9587335181ad20107357232";
+const __easyedaBundlePairId = "1f9c74c520c445c649d80de6e79a53d65a1fa7b000cfeb928651ae046d39355e";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -122303,34 +122303,11 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertRecoveryOperationIsolated(operationId3);
           await current3();
           validateSdkLocalRuntimeFingerprint(source4.expectedFingerprint);
-          const initialStatus = await this.engine.status();
-          await current3();
-          const initial = structuredClone(initialStatus.stableFingerprint);
-          validateSdkLocalRuntimeFingerprint(initial);
-          assertExpectedFingerprint(initial);
-          assertSubset(initial, source4.expectedFingerprint, "Current symbol cache runtime");
-          await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
-          await original2();
           const target6 = { projectUuid: source4.target.projectUuid, branchUuid: source4.target.branchUuid };
           const code = buildCurrentUploadQueueReadProgram(target6), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need51(typeof scope6 === "function", "Current symbol cache observation lacks its owned scope.");
-          slot.journal.cacheAttempted = true;
-          slot.journal.state = "cache-dispatching";
-          slot.journal.nextSafeAction = "Retain this single inactive-target cache observation; do not repeat, navigate, Save or write.";
-          await _CurrentSymbolBaselineCoordinator.record(slot, "cache-intent", {
-            target: target6,
-            programSha256: sha256Json({ code }),
-            runtimeFingerprintSha256: sha256Json(initial),
-            startupQualified: false,
-            executionAuthorized: false
-          });
-          await original2();
-          await this.engine.assertBridgeDispatchAllowed();
-          await current3();
-          await this.engine.assertRecoveryOperationIsolated(operationId3);
-          await current3();
           let completed3 = false;
-          await scope6.call(this.engine.upstream, async (binding2) => {
+          const initial = await scope6.call(this.engine.upstream, async (binding2) => {
             const scopeText = canonicalJson(binding2);
             sessionCurrent(scopeText);
             need51(
@@ -122338,6 +122315,29 @@ var init_current_symbol_baseline_runtime = __esm({
               "Current symbol cache scope differs from its admitted session."
             );
             await original2(scopeText);
+            const initialStatus = await this.engine.status();
+            await current3(scopeText);
+            const fingerprint = structuredClone(initialStatus.stableFingerprint);
+            validateSdkLocalRuntimeFingerprint(fingerprint);
+            assertExpectedFingerprint(fingerprint);
+            assertSubset(fingerprint, source4.expectedFingerprint, "Current symbol cache runtime");
+            await verifyCurrentDisposableOpenImplementation(fingerprint.installedBundles.assetsRoot);
+            await original2(scopeText);
+            slot.journal.cacheAttempted = true;
+            slot.journal.state = "cache-dispatching";
+            slot.journal.nextSafeAction = "Retain this single inactive-target cache observation; do not repeat, navigate, Save or write.";
+            await _CurrentSymbolBaselineCoordinator.record(slot, "cache-intent", {
+              target: target6,
+              programSha256: sha256Json({ code }),
+              runtimeFingerprintSha256: sha256Json(fingerprint),
+              startupQualified: false,
+              executionAuthorized: false
+            });
+            await original2(scopeText);
+            await this.engine.assertBridgeDispatchAllowed();
+            await current3(scopeText);
+            await this.engine.assertRecoveryOperationIsolated(operationId3);
+            await current3(scopeText);
             const before = structuredClone(slot.journal);
             let marked;
             await this.engine.dispatchWithOrphanTracking(
@@ -122393,19 +122393,22 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             slot.journalText = clearedText;
             await original2(scopeText);
+            await this.engine.assertBridgeDispatchAllowed();
+            await current3(scopeText);
+            await verifyCurrentDisposableOpenImplementation(fingerprint.installedBundles.assetsRoot);
+            await original2(scopeText);
+            const finalStatus = await this.engine.status();
+            await current3(scopeText);
+            const final = finalStatus.stableFingerprint;
+            validateSdkLocalRuntimeFingerprint(final);
+            need51(canonicalJson(final) === canonicalJson(fingerprint), "Current symbol cache runtime changed around observation.");
             completed3 = true;
+            return fingerprint;
           });
           await original2();
           need51(completed3 && slot.cacheObservation !== void 0, "Current symbol cache scope did not complete.");
           await this.engine.assertBridgeDispatchAllowed();
           await current3();
-          await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
-          await original2();
-          const finalStatus = await this.engine.status();
-          await current3();
-          const final = finalStatus.stableFingerprint;
-          validateSdkLocalRuntimeFingerprint(final);
-          need51(canonicalJson(final) === canonicalJson(initial), "Current symbol cache runtime changed around observation.");
           slot.journal.state = "caches-observed";
           slot.journal.nextSafeAction = "Cache absence is point-in-time only. Use baseline-open-project with explicit opening-effect acceptance for its fresh source, registry and cache checks. Startup, backend actor/clock and writer authority remain unqualified. Do not open a document or Save.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "cache-result", {
@@ -122474,43 +122477,11 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertRecoveryOperationIsolated(operationId3);
           await current3();
           validateSdkLocalRuntimeFingerprint(source4.expectedFingerprint);
-          const initialStatus = await this.engine.status();
-          await current3();
-          const initial = structuredClone(initialStatus.stableFingerprint);
-          validateSdkLocalRuntimeFingerprint(initial);
-          assertExpectedFingerprint(initial);
-          assertSubset(initial, source4.expectedFingerprint, "Current project-only runtime");
-          await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-          await original2();
-          slot.preopenSource = await verifyCurrentSymbolPreopenSource(this.engine, copy);
-          await original2();
           const target6 = { ...source4.target, expectedSourceSha256: copy.checkpoint.sourceSha256 };
           const code = buildCurrentProjectOnlyOpenProgram(target6), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need51(typeof scope6 === "function", "Current project-only opening lacks its owned scope.");
-          slot.journal.projectOpenAttempted = true;
-          slot.journal.state = "project-only-dispatching";
-          slot.journal.projectOpeningMode = observeSchematicEffects ? "unqualified-schematic-startup-observation" : "historical-subset";
-          slot.journal.mutationMayHaveOccurred = true;
-          slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
-          await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", {
-            target: target6,
-            programSha256: sha256Json({ code }),
-            source: slot.preopenSource,
-            startupPremises: copy.startupPremises,
-            runtimeFingerprintSha256: sha256Json(initial),
-            projectOpeningMode: slot.journal.projectOpeningMode,
-            unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
-            schematicStartupEffects: observeSchematicEffects ? "native-document-rewrites-and-queued-persistence-may-occur" : "linked-sheet-loop-excluded",
-            startupQualified: false,
-            executionAuthorized: false
-          });
-          await original2();
-          await this.engine.assertBridgeDispatchAllowed();
-          await current3();
-          await this.engine.assertRecoveryOperationIsolated(operationId3);
-          await current3();
           let completed3 = false;
-          await scope6.call(this.engine.upstream, async (binding2) => {
+          const initial = await scope6.call(this.engine.upstream, async (binding2) => {
             const scopeText = canonicalJson(binding2);
             sessionCurrent(scopeText);
             need51(
@@ -122518,6 +122489,38 @@ var init_current_symbol_baseline_runtime = __esm({
               "Current project-only scope differs from its admitted session."
             );
             await original2(scopeText);
+            const initialStatus = await this.engine.status();
+            await current3(scopeText);
+            const fingerprint = structuredClone(initialStatus.stableFingerprint);
+            validateSdkLocalRuntimeFingerprint(fingerprint);
+            assertExpectedFingerprint(fingerprint);
+            assertSubset(fingerprint, source4.expectedFingerprint, "Current project-only runtime");
+            await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot);
+            await original2(scopeText);
+            slot.preopenSource = await verifyCurrentSymbolPreopenSource(this.engine, copy);
+            await original2(scopeText);
+            slot.journal.projectOpenAttempted = true;
+            slot.journal.state = "project-only-dispatching";
+            slot.journal.projectOpeningMode = observeSchematicEffects ? "unqualified-schematic-startup-observation" : "historical-subset";
+            slot.journal.mutationMayHaveOccurred = true;
+            slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
+            await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", {
+              target: target6,
+              programSha256: sha256Json({ code }),
+              source: slot.preopenSource,
+              startupPremises: copy.startupPremises,
+              runtimeFingerprintSha256: sha256Json(fingerprint),
+              projectOpeningMode: slot.journal.projectOpeningMode,
+              unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
+              schematicStartupEffects: observeSchematicEffects ? "native-document-rewrites-and-queued-persistence-may-occur" : "linked-sheet-loop-excluded",
+              startupQualified: false,
+              executionAuthorized: false
+            });
+            await original2(scopeText);
+            await this.engine.assertBridgeDispatchAllowed();
+            await current3(scopeText);
+            await this.engine.assertRecoveryOperationIsolated(operationId3);
+            await current3(scopeText);
             const before = structuredClone(slot.journal);
             let marked;
             await this.engine.dispatchWithOrphanTracking(
@@ -122575,19 +122578,22 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             slot.journalText = clearedText;
             await original2(scopeText);
+            await this.engine.assertBridgeDispatchAllowed();
+            await current3(scopeText);
+            await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot);
+            await original2(scopeText);
+            const finalStatus = await this.engine.status();
+            await current3(scopeText);
+            const final = finalStatus.stableFingerprint;
+            validateSdkLocalRuntimeFingerprint(final);
+            need51(canonicalJson(final) === canonicalJson(fingerprint), "Current project-only runtime changed around navigation.");
             completed3 = true;
+            return fingerprint;
           });
           await original2();
           need51(completed3 && slot.projectOpenObservation !== void 0, "Current project-only scope did not complete.");
           await this.engine.assertBridgeDispatchAllowed();
           await current3();
-          await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-          await original2();
-          const finalStatus = await this.engine.status();
-          await current3();
-          const final = finalStatus.stableFingerprint;
-          validateSdkLocalRuntimeFingerprint(final);
-          need51(canonicalJson(final) === canonicalJson(initial), "Current project-only runtime changed around navigation.");
           slot.journal.state = "project-only-opened";
           slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Use baseline-finish-close then baseline-observe-finish for retained normal closure. Do not navigate again, Save or write.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", {

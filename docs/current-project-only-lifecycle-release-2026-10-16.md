@@ -42,13 +42,37 @@ warnings, build, compatibility, API inventory, package/privacy and repository
 checks. Independent review accepted the corrected receipt and runtime bindings.
 Required full CI and installed-package verification remain release steps.
 
+The final source fix keeps both initial and final runtime-status probes inside
+the exact admitted session's authenticated dispatch scope for cache observation
+and project-only opening. Status itself dispatches health and registry probes;
+calling it outside that scope produced an incomplete fingerprint. The SDK and
+shared fingerprint validators are unchanged. Quarantine and isolation checks
+still precede scope acquisition, and original owner, session, capture and journal
+checks surround awaited work and scope settlement. The fix passes 24 focused
+tests and independent review; it is not yet connected execution evidence.
+
 The resumed073000 session completed historical abandonment of the previous
 pre-relaunch failure, then automatically launched and authenticated EasyEDA.
 The disposable PCB open, normal closure, original termination and raw/SQL/native
 baseline capture succeeded with the original file hash unchanged. The original
 ordinary launcher separately recorded its exit before baseline relaunch. The
-new relaunch succeeded and replacement-session admission is in progress. No
-symbol patch, explicit Save or restoration ran.
+new relaunch and replacement-session admission succeeded. Cache observation
+then refused before its intent or cache dispatch because its runtime-status
+probes lacked the authenticated scope described above. No project-only opening
+ran, and the consumed cache attempt was not repeated.
+
+Maintained normal-close and termination actions retired that same 073000 attempt:
+finish86 returned `plan-invalidated`, `retired:true`, `termination:terminated`
+and `finishSnapshotCaptured:true`, with the process captures released. This is
+a 21-phase early retirement, not the successful 24-phase lifecycle required by
+`baseline-analyze`. Both retained raw snapshots are 598,016 bytes with SHA-256
+prefix `970d21b3`; both native checkpoints are 561,152 bytes with prefix `4ed9ca7c`.
+Their complete SQL logical commitments (prefix `4d01daaf`) and native-history
+commitments (prefix `20b0b062`) also match. These retained comparisons do not
+qualify startup producers, current source contents, the new clock report or a
+writer. The strict analyzer was not weakened to accept the early retirement.
+No symbol patch, explicit Save or restoration ran. The 073000 operation is fully
+retired and the 060000 operation historically abandoned; neither may be replayed.
 Final live and delivery results belong in the release receipt and engineering
 record; these source tests do not qualify the new clock report on a live run.
 
@@ -70,8 +94,8 @@ A separate local history action qualifies only the exact stopped seven-phase
 baseline before its relaunch intent. It preserves the original journal, verifies
 the retained evidence and publishes an exclusive abandonment sidecar. It grants
 no current process, source, replay or writer authority. The060000 stopped
-operation must use that action after a fresh session loads this update; do not
-repeat its relaunch request.
+operation received that historical abandonment during the 073000 session; do not
+repeat its abandonment or relaunch request.
 
 `finishSnapshotStatus` distinguishes captured evidence from a failed or absent
 attempt. A failure retains partial artifacts and the original terminal proof.
@@ -115,8 +139,8 @@ still precede the startup-prefix event. Existing navigation, context, source,
 cache, retained-owner, quarantine and normal-close guards remain unchanged.
 
 The060000 live baseline and prelaunch refusal are recorded above. Project-only
-reopening remains unvalidated; the new073000 fixes are source-tested only until
-a fresh session loads the published snapshot. Do not replay earlier operations. The
+reopening remains unvalidated; the 073000 attempt reached admission but retired
+early after the status-scope refusal recorded above. Do not replay earlier operations. The
 control reference was updated using skill-creator guidance to keep this opt-in
 next to the existing workflow, without adding a general-purpose bypass.
 
@@ -200,12 +224,14 @@ separate release requirements; their receipts must identify the actual payload.
 
 ## Remaining tasks
 
-- Finish the current073000 disposable lifecycle, including final closed snapshot
-  and retirement. The older pre-relaunch history has been qualified; do not
-  abandon or replay it again. Retain any new refusal without replay.
-- Run the new offline comparison on successful retained evidence after installing
-  the update. A changed report identifies affected tables/documents, not their
-  producer or an accepted startup transformation.
+- After release verification, installation and restart, run a new disposable
+  lifecycle with the corrected scoped status probes, through project-only
+  opening, final closed snapshot and retirement. The 073000 attempt is fully
+  retired and 060000 historically abandoned; do not replay either. Retain any
+  new refusal without replay.
+- Run the new offline comparison on that successful 24-phase retained evidence.
+  The 073000 early retirement is ineligible. A changed report identifies affected
+  tables/documents, not their producer or an accepted startup transformation.
 - Qualify remaining startup producers and reopening effects against actual
   closed SQL/native evidence. The prefix event is not a global idle barrier.
 - Implement the effect-classified backend actor observation and producer-specific
