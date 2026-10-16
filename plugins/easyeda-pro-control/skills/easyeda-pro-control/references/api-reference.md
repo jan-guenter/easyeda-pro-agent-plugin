@@ -469,6 +469,22 @@ template source; it does not compare ticket or version.
 branch storage preparation, not all-branch/SQL proof, hidden-editor absence,
 current actor/worker identity or permission to execute the legacy writer.
 
+### Retained baseline comparison
+
+Query `baseline-analysis` with `includeSchemas:true`, validate with
+`baseline-analysis-validate`, then call `baseline-analyze`. Both validation and
+execution take `query:{request:{operationId}}`. No caller path, runtime or code
+is accepted. The command requires a successfully retired 24-phase disposable
+baseline lifecycle with both closed snapshots captured.
+
+It compares complete logical SQL plus selected-branch native records and
+provenance using only retained managed files. It returns bounded table/document
+hashes and counts, not raw contents, and refuses oversized results without
+truncating comparisons. It writes nothing and does not open the original
+project. Follow the [snapshot analysis workflow](current-project-opening.md#compare-retained-snapshots)
+to distinguish historical equality from startup classification, current state
+and writer authority.
+
 ## Local historical abandonment
 
 Query `history` with `includeSchemas:true`, then validate the request using

@@ -128,11 +128,18 @@ function fixture(suffix: string): Fixture {
   const engine: CurrentDisposableOpenOptions["engine"] = {
     status: () => Promise.resolve({ stableFingerprint: structuredClone(FINGERPRINT) }),
     assertBridgeDispatchAllowed: () => {
+      calls.push("guard:bridge");
       assert.equal(state.quarantine, false, "fixture global quarantine");
       assert.equal([...journals.values()].some((item) => item["orphanedCallPossible"] === true), false, "fixture orphan quarantine"); return Promise.resolve(true);
     },
+    assertBridgeAndRecoveryAdmission: (operationId) => {
+      calls.push(`guard:combined:${operationId}`);
+      assert.equal(state.quarantine, false, "fixture combined admission quarantine");
+      assert.equal([...journals.values()].some((item) => item["orphanedCallPossible"] === true), false, "fixture orphan quarantine");
+      return Promise.resolve(true);
+    },
     assertNativeUiEditingAllowed: () => Promise.resolve(true),
-    assertRecoveryOperationIsolated: () => { assert.equal(state.quarantine, false, "fixture unrelated quarantine"); return Promise.resolve(true); },
+    assertRecoveryOperationIsolated: () => { calls.push("guard:recovery"); assert.equal(state.quarantine, false, "fixture unrelated quarantine"); return Promise.resolve(true); },
     upstream: {
       callTool: () => Promise.reject(new Error("Only tracked fixture dispatch is allowed")),
       withAuthenticatedBridgeDispatchScope: (run) => { calls.push("scope"); return Promise.resolve(run(BINDING)); },
@@ -200,6 +207,39 @@ void test("restored active PCB skips redundant open; null document acknowledgeme
   await empty.coordinator.run({ action: "observe", operationId: empty.input.operationId });
   assert.deepEqual(dispatches(empty), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document", "dispatch:observe"]);
 });
+
+void test("each ordinary opening dispatch uses one combined admission and retains later tracked-dispatch isolation", async () => {
+  for (const restored of [false, true]) {
+    const value = fixture(`combined-${String(restored)}`); value.state.restored = restored;
+    const opened = await value.coordinator.run(value.input, FINGERPRINT);
+    assert.equal(opened["state"], "completed");
+    const count = restored ? 2 : 3;
+    assert.equal(value.calls.filter((call) => call === "guard:bridge").length, 1);
+    assert.equal(value.calls.filter((call) => call === `guard:combined:${value.input.operationId}`).length, count);
+    assert.equal(value.calls.filter((call) => call === "guard:recovery").length, count);
+    await value.coordinator.run({ action: "observe", operationId: value.input.operationId });
+    assert.equal(value.calls.filter((call) => call === `guard:combined:${value.input.operationId}`).length, count + 1);
+    assert.equal(value.calls.filter((call) => call === "guard:recovery").length, count + 1);
+    assert.equal(dispatches(value).length, count + 1);
+  }
+});
+
+for (const failure of ["quarantine", "owner-drift"] as const) {
+  void test(`combined opener admission ${failure} refuses before scope or tracked dispatch`, async () => {
+    const value = fixture(`combined-${failure}`);
+    value.options.engine.assertBridgeAndRecoveryAdmission = async (operationId): Promise<true> => {
+      assert.equal(operationId, value.input.operationId);
+      await Promise.resolve();
+      if (failure === "quarantine") { throw new Error("synthetic combined quarantine"); }
+      value.state.ownerLost = true;
+      return true;
+    };
+    const result = await value.coordinator.run(value.input, FINGERPRINT);
+    assert.equal(result["state"], "plan-invalidated");
+    assert.equal(value.calls.includes("scope"), false);
+    assert.deepEqual(dispatches(value), []);
+  });
+}
 
 void test("pre-navigation admission failure consumes only its plan; uncertain open blocks replay and restart adoption", async () => {
   const clean = fixture("predispatch"); clean.state.failImplementation = true;
@@ -410,7 +450,12 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
   await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /quarantine/u);
   assert.equal(scopeEntries, beforeScopes); assert.equal(reads, 0);
   isolated.state.quarantine = false;
+  const beforeCombined = isolated.calls.filter((call) => call === `guard:combined:${isolated.input.operationId}`).length;
+  const beforeSeparate = isolated.calls.filter((call) => call === "guard:bridge" || call === "guard:recovery").length;
   const beforeDispatches = dispatches(isolated), prepared = await coordinator.prepareSymbolMetadata(isolated.input.operationId, input);
+  // Entry plus both original-generation revalidations each perform one scan.
+  assert.equal(isolated.calls.filter((call) => call === `guard:combined:${isolated.input.operationId}`).length, beforeCombined + 3);
+  assert.equal(isolated.calls.filter((call) => call === "guard:bridge" || call === "guard:recovery").length, beforeSeparate);
   assert.equal(prepared.checkpointPreparation.metadata.after.name, "Changed");
   assert.equal(reads, 1); assert.equal(prepared.closedTargetWitness.observation.hiddenEditorsVerified, true);
   assert.equal(prepared.checkpointPreparation.correlation.metadataMatches, true); assert.equal(prepared.checkpointPreparation.correlation.freshnessVerified, false);
@@ -535,7 +580,9 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the private source-evaluation scope regards this fixture engine as its synthetic engine class.
   const engine = isolated.options.engine as EasyedaControlEngine;
   let combinedAdmissions = 0;
+  const originalCombinedAdmission = engine.assertBridgeAndRecoveryAdmission.bind(engine);
   engine.assertBridgeAndRecoveryAdmission = (operationId: string): Promise<true> => {
+    if (operationId !== baselineId) { return originalCombinedAdmission(operationId); }
     assert.equal(operationId, baselineId); combinedAdmissions += 1;
     assert.equal(isolated.state.quarantine, false, "fixture combined admission quarantine");
     return Promise.resolve(true);

@@ -19,8 +19,11 @@ import { currentSymbolMetadataQuerySchema, queryCurrentSymbolMetadata, validateC
 import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, queryCurrentSymbolMetadataPreparation,
   validateCurrentSymbolMetadataPreparationArguments } from "./current-symbol-metadata-preparation.ts";
 import { historicalAbandonmentRequestSchema } from "./historical-abandonment.ts";
+import { analyzeCurrentSymbolBaseline } from "./current-symbol-baseline-analysis.ts";
+import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
+const baselineAnalysisRequestSchema = z.object({ operationId: z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u) }).strict();
 
 export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
@@ -52,6 +55,9 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("project-symbol-prepare-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-symbol-prepare"), query: z.object({ request: currentSymbolMetadataPreparationRequestSchema }).strict() }).strict(),
+  z.object({ action: z.literal("baseline-analysis"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("baseline-analysis-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("baseline-analyze"), query: z.object({ request: baselineAnalysisRequestSchema }).strict() }).strict(),
   z.object({ action: z.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -62,7 +68,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Checkpoint preparation does not prove current state or enable editing. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Compare retained baseline/final snapshots of a completed disposable lifecycle with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state, qualify startup effects or enable editing. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -73,6 +79,10 @@ type ApiRequest = z.infer<typeof apiRequestSchema>;
 export async function runOfflineApi(request: ApiRequest): Promise<{ offline: true; result: unknown }> {
   if (request.action === "project-symbol-prepare") {
     return { offline: true, result: await prepareCurrentSymbolMetadata(request.query.request) };
+  }
+  if (request.action === "baseline-analyze") {
+    const { profile } = await loadRuntimeMachineProfile();
+    return { offline: true, result: await analyzeCurrentSymbolBaseline(request.query.request.operationId, profile.runtime) };
   }
   return queryOfflineApi(request);
 }
@@ -109,6 +119,24 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "project-symbol-preparation": { result = queryCurrentSymbolMetadataPreparation(request.query ?? {}); break; }
     case "project-symbol-prepare-validate": { result = validateCurrentSymbolMetadataPreparationArguments(request.query.request); break; }
     case "project-symbol-prepare": { throw new Error("Checkpoint preparation requires the asynchronous offline API handler."); }
+    case "baseline-analysis": {
+      result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+        action: "baseline-analyze", tool: "easyeda_control_api", effect: "local-retained-snapshot-comparison",
+        ...(request.query?.includeSchemas === true ? { inputSchema: z.toJSONSchema(baselineAnalysisRequestSchema) } : {}),
+        limitations: ["Only a completed, retired 24-phase current closed-baseline lifecycle with both snapshots captured. Missing, failed or conflicting evidence refuses.",
+          "Reads only managed journal evidence, retained raw copies and native checkpoints. Never reads the original project, writes files or calls the application.",
+          "Compares complete logical SQL and all selected-branch native records/provenance. Bounded table/document hashes and counts are returned, not detailed cell or record values; oversized reports refuse without truncation.",
+          "Historical consistency and equality are not startup classification, current state, process closure, persistence, backend actor/clock qualification, restored authority or permission to replay or edit."],
+      }] }; break;
+    }
+    case "baseline-analysis-validate": {
+      const parsed = baselineAnalysisRequestSchema.safeParse(request.query.request);
+      result = parsed.success ? { valid: true, request: parsed.data, executionAuthorized: false } : {
+        valid: false, executionAuthorized: false,
+        issues: parsed.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),
+      }; break;
+    }
+    case "baseline-analyze": { throw new Error("Retained baseline analysis requires the asynchronous offline API handler."); }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 2, entries: [{
         action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",

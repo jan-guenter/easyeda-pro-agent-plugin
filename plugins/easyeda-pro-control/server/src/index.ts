@@ -231,6 +231,7 @@ function disposableIndexMethods(): readonly unknown[] {
   if (authority === null || typeof authority !== "object") { throw new Error("Disposable index engine authority owner is unavailable."); }
   return [
     disposableOwnerMethod(bridgeGate, "run"), disposableOwnerMethod(engine, "assertBridgeDispatchAllowed"),
+    disposableOwnerMethod(engine, "assertBridgeAndRecoveryAdmission"),
     disposableOwnerMethod(engine, "assertNativeUiEditingAllowed"),
     ...["capture", "proveTerminated", "releaseCapture"].map(key => disposableOwnerMethod(authority, key)),
     ...["currentAuthenticatedBridgeDispatchBinding", "bridgeSessionLifecycle", "launcherFingerprint", "installedEasyedaBundles",

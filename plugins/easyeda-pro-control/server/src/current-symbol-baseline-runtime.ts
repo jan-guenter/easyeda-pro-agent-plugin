@@ -10,6 +10,8 @@ import type { CurrentDisposableOpenGenerationSource, CurrentSymbolBaselineOwner 
 import { assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
+import { qualifyCurrentSymbolClockRelation } from "./current-symbol-clock-relation.ts";
+import type { CurrentSymbolClockRelation } from "./current-symbol-clock-relation.ts";
 import { CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "./current-upload-queue-read.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "./current-project-only-open.ts";
 // oxlint-disable-next-line import/no-cycle -- The source reader reuses the original copy issuer; it cannot replace the retained coordinator's ownership.
@@ -71,7 +73,7 @@ function relaunchMethods(engine: EasyedaControlEngine, runtime: WindowsControlRu
   /* oxlint-disable typescript/unbound-method -- Identity comparison only; every invocation retains its actual runtime or engine receiver. */
   return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture, engine.releaseClosedSessionAuthority,
     runtime.capture, runtime.proveTerminated, engine.captureClosedSessionAuthority, engine.clockObservationForClosedCapture, engine.runtimeIdentity,
-    engine.assertBridgeDispatchAllowed, engine.assertRecoveryOperationIsolated, engine.upstream.withAuthenticatedBridgeDispatchScope,
+    engine.assertBridgeDispatchAllowed, engine.assertRecoveryOperationIsolated, engine.assertBridgeAndRecoveryAdmission, engine.upstream.withAuthenticatedBridgeDispatchScope,
     engine.status, engine.dispatchWithOrphanTracking, engine.markOrphanedCallRisk, engine.clearOrphanedCallRisk,
     engine.clockObservationForTrackedDispatch, engine.upstream.callTool, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased,
     runtime.observeApplicationWindow, runtime.prepareClosedSessionClose, runtime.requestClosedSessionNormalClose,
@@ -904,6 +906,37 @@ export class CurrentSymbolBaselineCoordinator {
         need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol finish retirement lost its original terminal proof.");
         await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
       }
+      let terminationClock: IssuedWindowsClockObservation | undefined;
+      let relation: CurrentSymbolClockRelation | undefined;
+      let clockReason: "missing-stage-observations" | "clock-observation-unavailable" | "clock-relation-refused" | null = "missing-stage-observations";
+      try { terminationClock = await windowsClockObservationForResult(proof, "termination"); }
+      catch { clockReason = "clock-observation-unavailable"; }
+      // Optional clock evidence must never swallow a changed owner, journal or
+      // Original terminal proof. These checks remain outside its refusal catch.
+      await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+      need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol clock observation lost its original terminal proof.");
+      await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+      if (terminationClock !== undefined && slot.launchClock !== undefined && slot.admissionClock !== undefined &&
+          slot.cacheClock !== undefined && slot.projectOpenClock !== undefined) {
+        if ([slot.launchClock, slot.admissionClock, slot.cacheClock, slot.projectOpenClock, terminationClock]
+          .some((clock) => clock.clock.status !== "observed")) {
+          clockReason = "clock-observation-unavailable";
+        } else {
+          try {
+            relation = await qualifyCurrentSymbolClockRelation({ operationId, runtime: this.runtime, launch, launchClock: slot.launchClock,
+              admissionClock: slot.admissionClock, cacheClock: slot.cacheClock, projectOpenClock: slot.projectOpenClock,
+              terminationClock, finishProof: proof });
+            clockReason = null;
+          } catch { clockReason = "clock-relation-refused"; }
+          await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+          need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol clock relation lost its original terminal proof.");
+          await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+        }
+      }
+      const clockRelation = { status: relation === undefined ? "not-qualified" : "observed", reason: clockReason,
+        terminationClock: terminationClock ?? null, relation: relation ?? null,
+        backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false,
+        persistenceVerified: false, executionAuthorized: false };
       if (!slot.finishSnapshotAttempted) {
         slot.finishSnapshotAttempted = true; journal.finishSnapshotAttempted = true;
         try {
@@ -932,6 +965,7 @@ export class CurrentSymbolBaselineCoordinator {
         authoritySha256: authority?.authoritySha256 ?? null, priorOrphan: hadOrphan, durableEffects: "unknown-and-accepted",
         finishSnapshotStatus: slot.finishSnapshotCaptured ? "captured" : "failed", finishSnapshotCaptured: slot.finishSnapshotCaptured,
         finishSnapshotEvidence: CurrentSymbolBaselineCoordinator.finishEvidence(slot),
+        clockRelation,
         navigationOutcome: "not-inferred", replayAllowed: false, continuationAuthorized: false, persistenceVerified: false, writerAuthority: false };
       await CurrentSymbolBaselineCoordinator.record(slot, "finish-retirement-proof", retirement); await this.finishUnchanged(slot); closedDispatch();
       assertCurrentClosedSessionCopyAuthority(proof);

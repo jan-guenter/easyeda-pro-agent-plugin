@@ -2119,8 +2119,7 @@ export class EasyedaControlEngine {
     if (this.closedCaptureAttempts.has(attemptKey)) { throw new Error("Closed-session capture attempt was already consumed."); }
     // Reserve synchronously, before the admission scan or any native await.
     this.closedCaptureAttempts.add(attemptKey);
-    await this.assertBridgeDispatchAllowed();
-    await this.assertRecoveryOperationIsolated(operationId);
+    await this.assertBridgeAndRecoveryAdmission(operationId);
     const bridgeSession = structuredClone(this.authenticatedBridgeSession());
     const bridgeDispatch = authenticatedBridgeDispatchPayload(
       this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession,
