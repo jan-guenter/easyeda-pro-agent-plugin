@@ -60,7 +60,7 @@ interface Retained {
   readonly planText: string;
 }
 export interface CurrentDisposableOpenOptions {
-  readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertNativeUiEditingAllowed" | "assertRecoveryOperationIsolated" |
+  readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertNativeUiEditingAllowed" | "assertRecoveryOperationIsolated" | "assertBridgeAndRecoveryAdmission" |
     "dispatchWithOrphanTracking" | "executionAuthorityValidator" | "upstream"> & {
       readonly status: () => Promise<{ stableFingerprint: Value }>;
     };
@@ -264,8 +264,8 @@ export class CurrentDisposableOpenCoordinator {
       const runtime = slot.runtime;
       // Scope acquisition can connect the upstream.
       // Refuse quarantine before entering, not only inside the callback.
-      await engine.assertBridgeDispatchAllowed(); this.currentUntransferred(slot);
-      await engine.assertRecoveryOperationIsolated(operationId); this.currentUntransferred(slot);
+      this.currentUntransferred(slot);
+      await engine.assertBridgeAndRecoveryAdmission(operationId); this.currentUntransferred(slot);
       const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
       requireValue(scope !== undefined, "Current symbol preparation requires an authenticated dispatch scope.");
       const result: unknown = await scope.call(engine.upstream, async () => {
@@ -300,8 +300,8 @@ export class CurrentDisposableOpenCoordinator {
     try {
       const loaded = await this.load(openingOperationId);
       requireValue(this.retainedJournal(loaded) === slot, "Current symbol baseline original opening changed.");
-      await engine.assertBridgeDispatchAllowed(); this.current(slot);
-      await engine.assertRecoveryOperationIsolated(openingOperationId); this.current(slot);
+      this.current(slot);
+      await engine.assertBridgeAndRecoveryAdmission(openingOperationId); this.current(slot);
       const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
       requireValue(scope !== undefined, "Current symbol baseline needs an authenticated scope.");
       try {
@@ -462,8 +462,7 @@ export class CurrentDisposableOpenCoordinator {
       launchProjection: slot.launch, bridgeSession: session, preNavigationCheckpoint: journal.checkpointProof });
     const revalidate = async (): Promise<void> => {
       try {
-        current(); await engine.assertBridgeDispatchAllowed(); current();
-        await engine.assertRecoveryOperationIsolated(journal.operationId); current();
+        current(); await engine.assertBridgeAndRecoveryAdmission(journal.operationId); current();
         await this.admission(source.expectedFingerprint); current();
         const persisted = await this.load(journal.operationId); current();
         requireValue(canonicalJson(persisted) === journalText, "Current symbol preparation persisted opening changed.");
@@ -524,8 +523,7 @@ export class CurrentDisposableOpenCoordinator {
     failureContext.phase = phase; failureContext.hostStage = "owner-check";
     this.currentUntransferred(slot);
     failureContext.hostStage = "dispatch-guards";
-    await engine.assertBridgeDispatchAllowed(); this.currentUntransferred(slot);
-    await engine.assertRecoveryOperationIsolated(journal.operationId); this.currentUntransferred(slot);
+    await engine.assertBridgeAndRecoveryAdmission(journal.operationId); this.currentUntransferred(slot);
     const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
     requireValue(scope !== undefined, "Current disposable opening requires authenticated dispatch scopes.");
     failureContext.hostStage = "scope";

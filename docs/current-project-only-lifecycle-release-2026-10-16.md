@@ -1,5 +1,83 @@
 # Current project-only lifecycle validation
 
+## Retained analysis and clock reporting
+
+Update `0.3.0+codex.20261016090000` adds `baseline-analyze` to the offline API. It accepts only an
+operation ID and requires the successful 24-phase lifecycle, final snapshot and
+terminal retirement. Discovery and exact validation are available as
+`baseline-analysis` and `baseline-analysis-validate`.
+
+The analyzer rereads both retained raw SQL copies and both native checkpoints.
+It compares every logical table, schema, database property, rowid and typed
+cell, plus all selected-branch materialized native records and their provenance.
+The response contains table/document hashes and counts, not private cell or
+record contents. Reports over512KiB refuse without truncation. The original
+project is never read, and no artifact, journal or application state is written.
+An unchanged result means historical logical equality, not unchanged physical
+SQLite layout, current source contents, qualified startup effects or permission
+to write. Receipt hashes establish historical consistency, not authenticated
+provenance against an attacker able to rewrite the entire retained history.
+
+Retirement also records the relationship among original native launch,
+admission, cache, project-open and termination clock observations. These are
+issuer-bound observations from the same process generation. UTC and monotonic
+durations are reported separately. Missing stages or a refused comparison remain
+explicitly unqualified and do not obstruct otherwise-valid cleanup. Owner,
+journal and original termination-proof failures still stop retirement. The
+report neither observes the backend actor nor binds document timestamp
+producers. It does not widen the separate60-second writer comparison window.
+
+Five more call sites share one fresh history scan between adjacent bridge and
+recovery predicates. They cover closed capture, preparation, baseline entry,
+generation revalidation and opening dispatch. Synchronous owner checks remain
+on both sides; pairs separated by awaited journal revalidation are unchanged.
+Synthetic counts show2–3 fewer full scans per ordinary open and3 fewer per
+metadata preparation. There is no cross-call cache or measured live speed claim.
+
+The control skill uses its existing opening reference for the new analysis and
+clock limits, following skill-creator guidance. No additional general skill or
+duplicate execution schema was added. The new implementation passes focused
+tests, full facade/bridge typechecks, whole-tree strict type-aware lint with zero
+warnings, build, compatibility, API inventory, package/privacy and repository
+checks. Independent review accepted the corrected receipt and runtime bindings.
+Required full CI and installed-package verification remain release steps.
+
+The final source fix keeps both initial and final runtime-status probes inside
+the exact admitted session's authenticated dispatch scope for cache observation
+and project-only opening. Status itself dispatches health and registry probes;
+calling it outside that scope produced an incomplete fingerprint. The SDK and
+shared fingerprint validators are unchanged. Quarantine and isolation checks
+still precede scope acquisition, and original owner, session, capture and journal
+checks surround awaited work and scope settlement. The fix passes 24 focused
+tests and independent review; it is not yet connected execution evidence.
+
+The resumed073000 session completed historical abandonment of the previous
+pre-relaunch failure, then automatically launched and authenticated EasyEDA.
+The disposable PCB open, normal closure, original termination and raw/SQL/native
+baseline capture succeeded with the original file hash unchanged. The original
+ordinary launcher separately recorded its exit before baseline relaunch. The
+new relaunch and replacement-session admission succeeded. Cache observation
+then refused before its intent or cache dispatch because its runtime-status
+probes lacked the authenticated scope described above. No project-only opening
+ran, and the consumed cache attempt was not repeated.
+
+Maintained normal-close and termination actions retired that same 073000 attempt:
+finish86 returned `plan-invalidated`, `retired:true`, `termination:terminated`
+and `finishSnapshotCaptured:true`, with the process captures released. This is
+a 21-phase early retirement, not the successful 24-phase lifecycle required by
+`baseline-analyze`. Both retained raw snapshots are 598,016 bytes with SHA-256
+prefix `970d21b3`; both native checkpoints are 561,152 bytes with prefix `4ed9ca7c`.
+Their complete SQL logical commitments (prefix `4d01daaf`) and native-history
+commitments (prefix `20b0b062`) also match. These retained comparisons do not
+qualify startup producers, current source contents, the new clock report or a
+writer. The strict analyzer was not weakened to accept the early retirement.
+No symbol patch, explicit Save or restoration ran. The 073000 operation is fully
+retired and the 060000 operation historically abandoned; neither may be replayed.
+Final live and delivery results belong in the release receipt and engineering
+record; these source tests do not qualify the new clock report on a live run.
+
+## Previous073000 update
+
 Update `0.3.0+codex.20261016073000` retains a final closed-file snapshot before
 releasing the replacement generation's process captures. The result includes
 the raw byte-copy receipt, complete SQL inventory commitments and a separate
@@ -16,8 +94,8 @@ A separate local history action qualifies only the exact stopped seven-phase
 baseline before its relaunch intent. It preserves the original journal, verifies
 the retained evidence and publishes an exclusive abandonment sidecar. It grants
 no current process, source, replay or writer authority. The060000 stopped
-operation must use that action after a fresh session loads this update; do not
-repeat its relaunch request.
+operation received that historical abandonment during the 073000 session; do not
+repeat its abandonment or relaunch request.
 
 `finishSnapshotStatus` distinguishes captured evidence from a failed or absent
 attempt. A failure retains partial artifacts and the original terminal proof.
@@ -61,8 +139,8 @@ still precede the startup-prefix event. Existing navigation, context, source,
 cache, retained-owner, quarantine and normal-close guards remain unchanged.
 
 The060000 live baseline and prelaunch refusal are recorded above. Project-only
-reopening remains unvalidated; the new073000 fixes are source-tested only until
-a fresh session loads the published snapshot. Do not replay earlier operations. The
+reopening remains unvalidated; the 073000 attempt reached admission but retired
+early after the status-scope refusal recorded above. Do not replay earlier operations. The
 control reference was updated using skill-creator guidance to keep this opt-in
 next to the existing workflow, without adding a general-purpose bypass.
 
@@ -146,11 +224,14 @@ separate release requirements; their receipts must identify the actual payload.
 
 ## Remaining tasks
 
-- After a fresh session loads 073000, qualify the preserved pre-relaunch failure
-  through its exact local history action. The ordinary launcher already recorded
-  genuine termination; do not abandon or replay that completed launch.
-- Run a new installed lifecycle on the explicitly disposable fixture, including
-  final closed snapshot evidence. Retain any refusal and do not replay.
+- After release verification, installation and restart, run a new disposable
+  lifecycle with the corrected scoped status probes, through project-only
+  opening, final closed snapshot and retirement. The 073000 attempt is fully
+  retired and 060000 historically abandoned; do not replay either. Retain any
+  new refusal without replay.
+- Run the new offline comparison on that successful 24-phase retained evidence.
+  The 073000 early retirement is ineligible. A changed report identifies affected
+  tables/documents, not their producer or an accepted startup transformation.
 - Qualify remaining startup producers and reopening effects against actual
   closed SQL/native evidence. The prefix event is not a global idle barrier.
 - Implement the effect-classified backend actor observation and producer-specific
@@ -161,7 +242,8 @@ separate release requirements; their receipts must identify the actual payload.
 - Keep other blocked writer families and broader API omissions visible in the
   maintained coverage inventory. This workflow does not lift their restrictions.
 
-No production project is part of this work. Live work used only the existing
-disposable fixture. Its initial PCB open, normal closure and closed baseline
-succeeded, with the original file hash unchanged. Relaunch stopped before its
-intent or native dispatch. No metadata writer, explicit Save or restoration ran.
+No production project is part of this work. The earlier060000 live attempt used
+only the existing disposable fixture. Its initial PCB open, normal closure and
+closed baseline succeeded with the original file hash unchanged. Its relaunch
+stopped before intent or native dispatch, then received exact historical
+abandonment on073000. No metadata writer, explicit Save or restoration ran.

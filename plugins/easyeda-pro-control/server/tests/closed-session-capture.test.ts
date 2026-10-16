@@ -77,6 +77,21 @@ void test("missing authenticated scope refuses without native capture or runtime
   await assert.rejects(engine.captureClosedSessionAuthority(operationId, "closed-edit", 1), /exact authenticated/u);
   assert.equal(requests(authority, "capture"), 0); assert.equal(state.runtimeReads, 0);
 });
+void test("closed capture uses one combined guard before any probe and never calls separate guards", async (context) => {
+  const { engine, authority, state } = await fixture();
+  const combined = engine.assertBridgeAndRecoveryAdmission.bind(engine);
+  let admissions = 0;
+  context.mock.method(engine, "assertBridgeAndRecoveryAdmission", (id: string): Promise<true> => {
+    assert.equal(id, operationId); assert.equal(state.runtimeReads, 0);
+    admissions += 1;
+    return combined(id);
+  });
+  context.mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not separately scan bridge admission."); });
+  context.mock.method(engine, "assertRecoveryOperationIsolated", (): never => { throw new Error("Do not separately scan recovery admission."); });
+  const receipt = await engine.captureClosedSessionAuthority(operationId, "closed-edit", 1);
+  assert.equal(admissions, 1); assert.equal(state.runtimeReads, 2); assert.equal(requests(authority, "capture"), 1);
+  await engine.releaseClosedSessionAuthority(receipt);
+});
 void test("settled per-call orphan cleanup releases its own capture, not normal-completion authority", async () => {
   const { engine, authority } = await fixture();
   const id = "synthetic-closed-capture-tracked", plan = { synthetic: "closed-preopen" };

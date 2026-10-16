@@ -6,6 +6,135 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Resumed073000: safely retired; authenticated scope fix ready
+
+Latest live checkpoint: replacement admission completed70. One cache observation76
+stopped before cache-intent, retaining15-stopped SHA174b1451, no orphan/cache
+reply/project opening. Core fingerprint validation refused malformed status.
+Source diagnosis identifies both cache/project-only initial and final status
+reads outside an authenticated scope: upstream correctly refuses those probes,
+engine.status retains missing payloads, and the SDK validator correctly rejects.
+Do not weaken that validator or repeat this cache attempt. Candidate090000/PR39
+now keeps initial/final status and dispatch in the same authenticated lease.
+All fingerprint, source, owner, journal and post-settlement checks remain.
+Independent review accepts the fix;24 focused cache/project tests, facade
+typecheck and strict type-aware targeted lint pass with zero warnings.
+
+Maintained finish-close acknowledged once,16–17 retained. Functions86 completed
+original replacement termination, final snapshot and capture release. Terminal
+state is plan-invalidated, retired true, hardStop/orphan false; journal file
+SHA4638e861. All21 phases remain, retirement proof20 SHA351072e2. Both raw copies
+are byte-identical598,016bytes/SHA970d21b3; both native checkpoints are identical
+561,152bytes/SHA4ed9ca7c. SQLlogical4d01daaf and nativehistory20b0b062 agree.
+Never repeat close, cache observation or navigation. Original ordinary-launch
+termination is already complete; no launcher abandonment is needed.
+This early21-phase retirement is not the new analyzer's successful24-phase
+profile, startup-effect qualification or live clock/writer validation.
+
+Actual facade444390, parent442773, startTicks11448948 loads installed073000 on
+pinned Node24.18.0. Independent read-only admission matches all1,217files,
+24,036,272bytes and modes against main3df3303d. Automatic mainCI38872349640
+passed. Completed release tests were not rerun. Production designs and their
+records remain untouched.
+
+Offline schema/argument validation and original baseline inspection completed.
+The new exact `abandon-baseline-before-relaunch` action completed once for
+`current-baseline-060000-20261016`. Sidecar22,934bytes SHAac175a52 preserves
+the original seven phases and stored-journal SHAe020ddfe, with all current
+authority, replay, completion and persistence flags false. No application call
+or original-source read belongs to that recovery. Ordinary060000 separately
+inspects as terminated, so no launcher abandonment is needed.
+
+Fresh status on073000 completed with no incomplete operations. Ordinary launch
+`ordinary-startup-073000-20261016` succeeded once, retaining root6008,
+Jobeef1e97e92174711a99d944187fcc054/helper4947c542c716433292208b8b24e93242.
+The bridge authenticated automatically and exact context proved empty StartPage.
+One `current-pcb-open-073000-20261016` completed with exact PCB/native identity,
+no hard stop/orphan or explicit Save. Its terminal07 is4933cddb. The disposable
+source alone was rehashed before opening and remained970d21b3.
+
+`current-baseline-073000-20261016` begin normally closed root6008 once; original
+termination and closed baseline capture completed in functions51. Raw source
+970d21b3 remains exact, checkpoint4ed9ca7c/561,152bytes, SQLlogical4d01daaf,
+nativehistory20b0b062. Its sole startup blocker is two active schematic pages.
+Original ordinary-launch termination was separately recorded before replacing
+its Job; launchdigest027b330d matches. One baseline-relaunch completed64 and
+released the old capture, retaining its new launch/observed native clock. The
+new session admission completed70; the scope refusal and safe retirement are
+recorded above. Never repeat launch/release. No cache reply or project-only
+opening occurred. This lifecycle is finished, not pending continuation.
+No symbol writer, explicit Save or restoration has run.
+
+Source-only090000 work on `feature/closed-startup-analysis` adds offline retained
+baseline/final SQL/native snapshot comparison, original-generation clock relation
+reporting and five more adjacent admission-scan reductions. Independent review
+accepted corrections for complete checkpoint/copy/closure binding and the actual
+runtime launch wrapper. Focused tests:38analysis,31clock,12finish,54admission/
+opener and6offline-registration/preparation passes; final changed receipt subset
+7/7 and affected admission counts2/2 pass. These are synthetic, not connected
+writer evidence. Whole-tree facade/bridge types, strict type-aware lint with
+zero warnings, build/sanitizer, compatibility,774-method inventory, package/
+privacy/repository checks, actionlint and all seven official skill validators
+pass. Initial payload476c0401 carried source363 SHA43c6014b/runtime3 SHA66a4415f;
+the scope fix rebuild now has source363 SHA5f7a89b0/runtime3 SHA788d810d.
+Build/sanitizer, compatibility and package/seven-skill validators pass. External
+pins stay unchanged. Final exact-head CI is next, not a duplicated full local suite. Dependencies are
+unchanged from073000; CI rechecks their clean install and audit. Backend
+actor/producer-clock qualification and writer/inverse remain open.
+
+### Delivered073000: relaunch binding, final snapshot and historical recovery
+
+Published and installed/enabled `0.3.0+codex.20261016073000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Payload `c3623e36c1627a13610ea0d899625ba12fe80893` merged through protected PR38
+as main `3df3303d05470c6da2dddd7b808083f2e8bf3d33`. The merged full tree
+`5625d9eccf4df170cb836b7f08dc3444c7dfc6ca` and package tree
+`1858164fd90827ff73d79dded7e7d9ea31e037da` exactly match the tested payload.
+Both postcommit bundles reproduce. Required PR CI38870864703 passed all ten
+jobs:10,093 facade passes/five skips/zero failures or cancellations and424 bridge
+passes across28 files. Windows38870864701 passed. Postmerge Windows38872349595 passed, while
+automatic main CI38872349640 remains in progress on that identical tree.
+Copilot reported an inability to review, not an approval; the independent
+source reviews and focused verification are recorded below.
+
+Official named marketplace upgrade under022 returned errors[]. CLI confirms
+073000 installed/enabled; marketplace HEAD equals merged main. Before/after
+inventories match all1,217files/24,036,272bytes,42directories0755,
+1,216files0644/one0755 and seven skills, with no extras/symlinks/hardlinks.
+Inventory06ec6d94; source361 SHA79df7e69/runtime3 SHA1edce0d9/manifest67def304.
+The actual configured offline launcher hands Node26.11.1 to pinnedNode24.18.0
+without installed node_modules ancestors. Its16-tool catalog accepts the
+default and explicit project-opening opt-in, rejects false/other-action use,
+and validates both history actions without granting execution authority.
+Three isolation samples show no upstream child or non-stdio socket. No
+operation journal was created. Probe435617 closed normally through stdinEOF,
+zero stderr; the synthetic profile and installed cache remain unchanged.
+Proof `/tmp/easyeda-installed-073000-ZL6yJ0/proof.json`,3,071bytes,
+SHA `bc7213381860d96b3c7d889897f8a8cd5402a2e106c50abc8a145cf9f3255081`.
+This proves offline installation, not live lifecycle behavior.
+Public release receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/38#issuecomment-6211193589.
+
+STOP for a fresh Codex session before live validation, following the packaged
+release workflow. No agent-issued owner termination, cache hotpatch or live
+EasyEDA call followed installation. A read-only process lookup no longer found
+the former060000 facade399701 after official upgrade; this is not admission of
+a replacement facade. Production designs and their records remain untouched.
+This local delivery record belongs with the next source change, not another
+record-only CI/release cycle.
+
+Next: admit the actual073000 owner and use the new local history action
+`abandon-baseline-before-relaunch` for `current-baseline-060000-20261016`, with
+`confirmDisposableProject:true` and exact confirmation
+`current-baseline-060000-20261016:abandoned-before-relaunch`. No such sidecar has
+yet been published. Preserve its original seven phases and copy evidence;
+never repeat its relaunch, close, copy or navigation. The original ordinary
+launch already proved termination and needs no abandonment. Then run one new
+same-facade lifecycle on the retained disposable fixture, including the final
+closed snapshot. Startup effects, backend actor/clock, symbol writer/inverse,
+persistence/failure recovery and wider API families remain open. Full scope:
+`docs/current-project-only-lifecycle-release-2026-10-16.md`.
+
 ### Resumed060000: disposable lifecycle and final closed snapshot
 
 The restarted facade399701, parent397621, startTicks10710325 loads the exact

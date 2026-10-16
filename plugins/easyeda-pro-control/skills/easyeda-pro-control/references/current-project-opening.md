@@ -144,6 +144,13 @@ its own observation. Preparation still does not authorize editing.
    pending result permits another observation, never another close. After proven
    termination it captures a raw closed-file SQL baseline and a separate native
    history checkpoint. Their hashes need not be equal.
+
+   Before `baseline-relaunch`, also use the ordinary launcher's
+   `observe-termination` with the original ordinary launch operation ID.
+   Require `terminated` and the matching original launch digest. This records
+   the old launcher's exit while its original Job is still selected. The baseline
+   relaunch replaces that Job, so defer neither this observation nor its receipt
+   until afterward. Do not request another close or abandon a proved exit.
 3. Inspect `startupPremises`. `historicalSubsetSatisfied` requires the reviewed
    database version, a nondeleted PCB metadata count witness and no active
    schematic pages. Do not delete pages or edit the fixture to satisfy this guard.
@@ -192,6 +199,14 @@ its own observation. Preparation still does not authorize editing.
    retained proof. It never repeats the snapshot, termination probe or close.
    Other errors, owner loss or conflicting evidence still require review.
 
+   Newer retirement proofs also include a retained clock relation. It compares
+   genuine launch, admission, cache, project-open and termination observations
+   before releasing the original process captures. A missing stage or failed
+   comparison reports unavailable evidence; it does not turn cleanup into a
+   new startup attempt. This report describes sampled Windows clocks, not the
+   APP backend actor or the clocks that produced document records. Durations
+   longer than a minute do not extend the separate writer comparison window.
+
 Continuation requests take only their operation ID and listed confirmations.
 Do not pass a replacement top-level fingerprint, target, runtime or code.
 `baseline-inspect` stays local after restart, but historical JSON cannot restore
@@ -208,3 +223,33 @@ backend actor/clock qualification and writer authority remain false. The raw
 source check is a point-in-time observation, not a file lock. Ordinary opening
 can still have automatic effects. Never issue an extra Save, open a document,
 confirm an update dialog, or run the prepared patch to complete this validation.
+
+## Compare retained snapshots
+
+Use offline `easyeda_control_api` after a successful terminal retirement with
+`finishSnapshotStatus:captured`. First query `baseline-analysis` with
+`includeSchemas:true`, then validate the exact request using
+`baseline-analysis-validate`. Run `baseline-analyze` with
+`query:{request:{operationId:"the-original-baseline-id"}}`.
+The only input is that operation ID. Do not supply file paths, a runtime or code.
+
+The analyzer requires the complete 24-phase lifecycle and both managed raw
+copies and native checkpoints. It verifies their receipts and rereads the
+evidence around the comparison. Incomplete, stopped, conflicting or corrupted
+history refuses; do not manufacture missing records or repeat the lifecycle
+just to make analysis pass. A failed final snapshot cannot be reconstructed
+from the retirement proof.
+
+The report compares all logical SQLite tables, schema, properties, rowids and
+typed cells, plus all selected-branch native records and their provenance.
+Table and document hashes/counts identify where differences occurred without
+returning raw cell or record contents. Oversized reports refuse rather than
+silently omit comparisons. Global history and other branches are covered by
+the complete SQL comparison, not by the selected-branch native projection.
+
+`classification:unchanged` means those retained logical states match. Raw
+SQLite bytes can still differ due to physical layout. `classification:changed`
+does not identify the producer or approve the change. Neither result proves
+current source contents, startup completion, backend identity, safe editing
+or saved-write verification. The original project is never read by this
+analysis, and it performs no application calls or file writes.

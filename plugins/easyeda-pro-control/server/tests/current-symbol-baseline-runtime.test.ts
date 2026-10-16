@@ -13,6 +13,7 @@ import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-
 import type { CurrentSymbolBaselineCoordinator } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
+import { qualifyCurrentSymbolClockRelation } from "../src/current-symbol-clock-relation.ts";
 import { CURRENT_UPLOAD_QUEUE_PROFILE, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "../src/current-upload-queue-read.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "../src/current-project-only-open.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
@@ -52,9 +53,10 @@ async function fixture(context: TestContext): Promise<{
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
     activeSchematicPages: number; startupBlockers: readonly string[];
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
-    afterCache: (() => Promise<void>) | undefined;
+    afterCache: (() => Promise<void>) | undefined; afterStatus: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
-    afterClockAssert: (() => Promise<void>) | undefined; beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
+    afterClockAssert: (() => Promise<void>) | undefined; afterClockRelation: (() => Promise<void>) | undefined;
+    beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
   calls: (action: string) => number;
 }> {
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
@@ -65,9 +67,10 @@ async function fixture(context: TestContext): Promise<{
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
     activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
-    afterCache: undefined as (() => Promise<void>) | undefined,
+    afterCache: undefined as (() => Promise<void>) | undefined, afterStatus: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
     afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined,
+    afterClockRelation: undefined as (() => Promise<void>) | undefined,
     beforeScope: undefined as (() => void) | undefined, afterScope: undefined as (() => Promise<void>) | undefined };
   const session = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 1,
     authenticationReceiptSha256: "2".repeat(64), authenticatedAtEpochMs: 1000 };
@@ -140,6 +143,16 @@ async function fixture(context: TestContext): Promise<{
   native.behavior.mutateResponse = (request, response): void => {
     // A release addresses its retained old capture, not the new current Job.
     if (request["action"] === "release-capture") { response["jobId"] = request["jobId"]; }
+    // Unlike the generic child's fixed timestamps, actual capturedAt/checkedAt
+    // Values fall inside the corresponding native clock observation.
+    const base = response["base"], clock = response["clock"];
+    if (isRecord(base) && isRecord(clock) && isRecord(clock["before"])) {
+      const ticks = clock["before"]["utcBeforeTicks"]; assert.ok(typeof ticks === "string");
+      const epochMs = Number((BigInt(ticks) - 621_355_968_000_000_000n) / 10_000n);
+      const timestamp = new Date(epochMs).toISOString();
+      if (Object.hasOwn(base, "capturedAt")) { base["capturedAt"] = timestamp; }
+      if (Object.hasOwn(base, "checkedAt")) { base["checkedAt"] = timestamp; }
+    }
   };
   context.mock.method(runtime, "observeApplicationWindow", () => {
     assert.equal(state.scope, false); state.events.push("window");
@@ -156,7 +169,16 @@ async function fixture(context: TestContext): Promise<{
     assert.ok(state.validatorRuntime !== undefined); return state.validatorRuntime;
   }) });
   await engine.controlFingerprintPromise;
-  context.mock.method(engine, "status", () => Promise.resolve({ stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } }));
+  context.mock.method(engine, "status", async () => {
+    // Production status calls three bridge tools. An active session without
+    // Its authenticated lease refuses those probes, not just design dispatch.
+    assert.equal(state.scope, true, "live status requires its authenticated dispatch scope");
+    assert.equal(state.activeSession, true);
+    const dispatch = upstream.currentAuthenticatedBridgeDispatchBinding?.();
+    assert.equal(dispatch?.sessionId, "n".repeat(43)); assert.equal(dispatch?.sessionSequence, 2);
+    state.events.push("status"); await state.afterStatus?.();
+    return { stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } };
+  });
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
     target: { ...OPEN_TARGET, expectedSourceSha256: "f".repeat(64) },
@@ -186,6 +208,12 @@ async function fixture(context: TestContext): Promise<{
     buildCurrentProjectOnlyOpenProgram: (target: unknown): string => buildCurrentProjectOnlyOpenProgram(structuredClone(target)),
     decodeCurrentProjectOnlyOpenReply: (raw: unknown, target: unknown): ReturnType<typeof decodeCurrentProjectOnlyOpenReply> =>
       decodeCurrentProjectOnlyOpenReply(raw, structuredClone(target)),
+    // Normalize only the cross-realm container, preserving every original token.
+    qualifyCurrentSymbolClockRelation: async (input: Parameters<typeof qualifyCurrentSymbolClockRelation>[0]): ReturnType<typeof qualifyCurrentSymbolClockRelation> => {
+      state.events.push("clock-relation");
+      try { return await qualifyCurrentSymbolClockRelation({ ...input }); }
+      finally { await state.afterClockRelation?.(); }
+    },
     verifyCurrentSymbolPreopenSource: async (receivedEngine: unknown, copy: unknown): Promise<unknown> => {
       assert.equal(receivedEngine, engine); assert.equal(copy, state.copied); state.sourceChecks += 1;
       state.events.push("source-continuity"); await state.afterSource?.();
@@ -612,6 +640,9 @@ void test("current cache continuation owns one tracked read and settles without 
   assert.equal(journal["cacheAttempted"], true); assert.equal(f.state.scope, false);
   assert.ok(f.state.events.indexOf("source-pin") < f.state.events.indexOf("cache-read"));
   assert.ok(f.state.events.lastIndexOf("source-pin") > f.state.events.indexOf("cache-read"));
+  assert.equal(f.state.events.filter((event) => event === "status").length, 2);
+  assert.ok(f.state.events.indexOf("status") < f.state.events.indexOf("cache-read"));
+  assert.ok(f.state.events.lastIndexOf("status") > f.state.events.indexOf("cache-read"));
   await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /original admitted session/u);
   await assert.rejects(f.restart().observeCaches(f.owner.operationId), /original admitted session/u);
   assert.equal(f.state.cacheReads, 1); assert.equal(f.calls("clocked-launch"), 2);
@@ -696,6 +727,8 @@ void test("current project-only continuation binds the post-opening hash and own
   assert.equal(f.state.opens, 1); assert.equal(f.state.sourceChecks, 2); assert.equal(f.state.cacheReads, 1);
   assert.ok(f.state.events.lastIndexOf("source-continuity") < f.state.events.indexOf("project-only-open"));
   assert.ok(f.state.events.lastIndexOf("project-only-source-pin") > f.state.events.indexOf("project-only-open"));
+  assert.equal(f.state.events.filter((event) => event === "status").length, 4);
+  assert.ok(f.state.events.lastIndexOf("status") > f.state.events.indexOf("project-only-open"));
   for (const key of ["startupQualified", "openingEffectsVerified", "beforeWriteBaselineVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized"]) {
     assert.equal(result[key], false);
   }
@@ -703,6 +736,30 @@ void test("current project-only continuation binds the post-opening hash and own
   await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original closed baseline/u);
   await assert.rejects(f.restart().openProject(f.owner.operationId), /original closed baseline/u);
   assert.equal(f.state.opens, 1);
+});
+
+void test("current cache and project-only status awaits retain original session checks before success", async (context) => {
+  for (const stage of ["cache", "project-only"] as const) {
+    for (const boundary of ["initial", "final"] as const) {
+      await context.test(`${stage} ${boundary}`, async (childContext) => {
+        const f = stage === "cache" ? await admittedBaseline(childContext) : await projectReadyBaseline(childContext);
+        let statusReads = 0;
+        f.state.afterStatus = (): Promise<void> => {
+          statusReads += 1;
+          if (statusReads === (boundary === "initial" ? 1 : 2)) { f.state.sessionSequence = 3; }
+          return Promise.resolve();
+        };
+        const run = (): Promise<Record<string, unknown>> => stage === "cache"
+          ? f.coordinator.observeCaches(f.owner.operationId) : f.coordinator.openProject(f.owner.operationId);
+        await assert.rejects(run());
+        const stopped = await f.coordinator.inspect(f.owner.operationId);
+        assert.equal(stopped["state"], "stopped");
+        assert.equal(stopped[stage === "cache" ? "cachesObserved" : "projectOpened"], false);
+        assert.equal(stage === "cache" ? f.state.cacheReads : f.state.opens, boundary === "initial" ? 0 : 1);
+        assert.equal(f.state.scope, false); await assert.rejects(run());
+      });
+    }
+  }
 });
 
 void test("current finish closes its admitted new generation once, polls pending, and retires without writer claims", async (context) => {
@@ -723,6 +780,12 @@ void test("current finish closes its admitted new generation once, polls pending
   }
   const journal = await loadOperation(f.owner.operationId);
   assert.equal(journal["orphanedCallPossible"], false); assert.equal(journal["hardStop"], false);
+  assert.ok(isRecord(journal["result"]) && isRecord(journal["result"]["clockRelation"]));
+  const clock = journal["result"]["clockRelation"];
+  assert.equal(clock["status"], "observed"); assert.equal(clock["reason"], null);
+  assert.ok(isRecord(clock["relation"])); assert.equal(clock["relation"]["executionAuthorized"], false);
+  assert.equal(journal.artifacts?.length, 24);
+  assert.ok(f.state.events.indexOf("clock-relation") < f.state.events.lastIndexOf("native:release-capture"));
   assert.ok(f.state.events.indexOf("journal:finish-close-dispatching") < f.state.events.lastIndexOf("native:normal-close"));
   await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
   await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /original acknowledged close/u);
@@ -731,6 +794,65 @@ void test("current finish closes its admitted new generation once, polls pending
   await assert.rejects(f.restart().finishNormalClose(f.owner.operationId), /original admitted new generation/u);
   assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1);
 });
+
+void test("current finish records missing clock stages without blocking otherwise valid early retirement", async (context) => {
+  const f = await admittedBaseline(context);
+  await f.coordinator.finishNormalClose(f.owner.operationId);
+  const done = await f.coordinator.observeFinish(f.owner.operationId); assert.equal(done["retired"], true);
+  const journal = await loadOperation(f.owner.operationId);
+  assert.ok(isRecord(journal["result"]) && isRecord(journal["result"]["clockRelation"]));
+  const clock = journal["result"]["clockRelation"];
+  assert.equal(clock["status"], "not-qualified"); assert.equal(clock["reason"], "missing-stage-observations");
+  assert.equal(clock["relation"], null); assert.ok(isRecord(clock["terminationClock"]));
+  assert.equal(clock["executionAuthorized"], false); assert.equal(f.state.events.includes("clock-relation"), false);
+});
+
+for (const condition of ["unavailable", "inconsistent"] as const) {
+  void test(`current finish records ${condition} clock evidence without another action or qualification`, async (context) => {
+    const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+    await f.coordinator.finishNormalClose(f.owner.operationId);
+    const mutate = f.native.behavior.mutateResponse;
+    f.native.behavior.mutateResponse = (request, response): void => {
+      mutate?.(request, response);
+      if (request["action"] !== "clocked-prove-terminated") { return; }
+      if (condition === "unavailable") { response["clock"] = { status: "unavailable", reason: "clock-sample" }; return; }
+      const clock = response["clock"]; assert.ok(isRecord(clock));
+      for (const field of ["before", "after"]) {
+        const sample = clock[field]; assert.ok(isRecord(sample)); sample["zoneRulesSha256"] = "a".repeat(64);
+      }
+    };
+    const closes = f.calls("normal-close"), probes = f.calls("clocked-prove-terminated");
+    const done = await f.coordinator.observeFinish(f.owner.operationId); assert.equal(done["retired"], true);
+    const journal = await loadOperation(f.owner.operationId);
+    assert.ok(isRecord(journal["result"]) && isRecord(journal["result"]["clockRelation"]));
+    const clock = journal["result"]["clockRelation"];
+    assert.equal(clock["status"], "not-qualified"); assert.equal(clock["relation"], null);
+    assert.equal(clock["reason"], condition === "unavailable" ? "clock-observation-unavailable" : "clock-relation-refused");
+    for (const flag of ["backendActorVerified", "backendClockVerified", "clockProducerOwnershipVerified", "persistenceVerified", "executionAuthorized"]) {
+      assert.equal(clock[flag], false);
+    }
+    assert.equal(f.calls("normal-close"), closes); assert.equal(f.calls("clocked-prove-terminated"), probes + 1);
+    assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1); assert.equal(journal.artifacts?.length, 24);
+  });
+}
+
+for (const drift of ["journal", "helper"] as const) {
+  void test(`current finish cannot suppress ${drift} drift during optional clock qualification`, async (context) => {
+    const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+    await f.coordinator.finishNormalClose(f.owner.operationId);
+    let foreign: Buffer | undefined;
+    f.state.afterClockRelation = async (): Promise<void> => {
+      if (drift === "helper") { await writeFile(f.native.helperPath, "synthetic helper drift", { mode: 0o600 }); return; }
+      const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Foreign clock qualification history";
+      await updateOperation(journal); foreign = await readFile(operationPath(f.owner.operationId));
+    };
+    const releases = f.calls("release-capture");
+    await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), drift === "journal" ? /finish journal changed/u : /helper source changed/u);
+    assert.equal(f.calls("release-capture"), releases);
+    if (foreign === undefined) { const journal = await loadOperation(f.owner.operationId); assert.equal(journal["state"], "stopped"); }
+    else { assert.deepEqual(await readFile(operationPath(f.owner.operationId)), foreign); }
+  });
+}
 
 void test("current finish snapshot failure retains original closure for retirement without another copy, close or probe", async (context) => {
   const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
