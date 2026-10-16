@@ -9,8 +9,8 @@ import type { OriginalCurrentAgedSqlClock } from "./current-aged-sql-issuer.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
 import { buildCurrentProjectOnlySymbolPreflightProgram, currentProjectOnlySymbolPreflightRequestSchema, decodeCurrentProjectOnlySymbolPreflightReply } from "./current-project-only-symbol-preflight.ts";
 import type { CurrentProjectOnlySymbolPreflightResult } from "./current-project-only-symbol-preflight.ts";
-import { captureCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
-import type { CurrentSymbolFinishSnapshotEvidence } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+import type { CurrentSymbolFinishSnapshot, CurrentSymbolFinishSnapshotEvidence } from "./current-symbol-baseline-copy.ts";
 import { assertCurrentProjectOnlySymbolGeneration, assertCurrentSymbolWriterOwner, revalidateCurrentProjectOnlySymbolGeneration, transferCurrentProjectOnlySymbolGeneration } from "./current-symbol-baseline-runtime.ts";
 import type { CurrentProjectOnlySymbolGeneration, CurrentSymbolWriterOwner, CurrentSymbolWriterOwnerSource } from "./current-symbol-baseline-runtime.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
@@ -42,8 +42,56 @@ interface Slot {
   termination?: ClosedSessionTerminationObservation; snapshotAttempted: boolean; snapshotComplete: boolean;
   readonly snapshotEvidence: Map<CurrentSymbolFinishSnapshotEvidence["kind"], CurrentSymbolFinishSnapshotEvidence["value"]>;
   snapshotInventory?: Extract<CurrentSymbolFinishSnapshotEvidence, { kind: "inventory" }>["value"];
+  snapshot?: CurrentSymbolFinishSnapshot; continuation?: CurrentSymbolWriterContinuation;
   comparisonAttempted: boolean; comparison?: Readonly<Record<string, unknown>>;
   releaseAttempted: boolean; retired: boolean;
+}
+export interface CurrentSymbolWriterContinuation {
+  readonly profile: "private.current-symbol-writer-continuation.v1";
+  readonly operationId: string;
+}
+export interface CurrentSymbolWriterContinuationSource {
+  readonly operationId: string;
+  readonly snapshot: CurrentSymbolFinishSnapshot;
+  readonly clockPlan: CurrentSymbolTransactionClockPlan;
+  readonly dispatchOwner: object;
+  readonly writeInput: CurrentSymbolWriteProgramInput;
+  readonly original: CurrentSymbolWriterOwnerSource["original"];
+  readonly sqlRuntime: CurrentSymbolWriterOwnerSource["sqlRuntime"];
+  readonly journal: Journal;
+}
+const continuations = new WeakMap<object, { readonly engine: EasyedaControlEngine;
+  readonly source: CurrentSymbolWriterContinuationSource; readonly current: () => void;
+  readonly journalText: () => string; consumed: boolean }>();
+
+/** A successful original writer alone issues this continuation. JSON copies,
+ * failed writes and partial retirement never acquire reopening authority.
+ */
+export function assertOriginalCurrentSymbolWriterContinuation(value: unknown,
+  engine: EasyedaControlEngine): CurrentSymbolWriterContinuationSource {
+  need(value !== null && typeof value === "object", "Current symbol verification needs its original writer continuation.");
+  const issued = continuations.get(value);
+  need(issued !== undefined && issued.engine === engine, "Current symbol verification continuation was not issued by this engine.");
+  issued.current(); return issued.source;
+}
+export async function revalidateCurrentSymbolWriterContinuation(value: CurrentSymbolWriterContinuation,
+  engine: EasyedaControlEngine): Promise<CurrentSymbolWriterContinuationSource> {
+  const source = assertOriginalCurrentSymbolWriterContinuation(value, engine);
+  const issued = continuations.get(value);
+  need(issued !== undefined && !issued.consumed, "Current symbol verification transfer already consumed.");
+  const disk = await loadOperation(source.operationId);
+  need(assertOriginalCurrentSymbolWriterContinuation(value, engine) === source && !issued.consumed &&
+    canonicalJson(disk) === issued.journalText() && canonicalJson(source.journal) === issued.journalText(),
+  "Current symbol verification original retired journal changed.");
+  return source;
+}
+export function transferCurrentSymbolWriterContinuation(value: CurrentSymbolWriterContinuation,
+  engine: EasyedaControlEngine): CurrentSymbolWriterContinuationSource {
+  const source = assertOriginalCurrentSymbolWriterContinuation(value, engine);
+  const issued = continuations.get(value);
+  need(issued !== undefined && !issued.consumed && canonicalJson(source.journal) === issued.journalText(),
+    "Current symbol verification transfer already consumed or changed.");
+  issued.consumed = true; return source;
 }
 function need(condition: boolean, message = "Current symbol writer owner or evidence changed."): asserts condition { if (!condition) { throw new Error(message); } }
 function methods(engine: EasyedaControlEngine): readonly unknown[] {
@@ -67,7 +115,8 @@ function summary(slot: Slot): Readonly<Record<string, unknown>> {
     postRecorded: slot.postRecorded, closeAttempted: slot.closeAttempted, closeAcknowledged: slot.closeReceipt !== undefined,
     snapshotAttempted: slot.snapshotAttempted, snapshotComplete: slot.snapshotComplete,
     comparisonAttempted: slot.comparisonAttempted, comparison: slot.comparison ?? null,
-    failed: slot.failed, retired: slot.retired, dispatchCaptureCleanupUncertain: slot.dispatchCaptureCleanupUncertain,
+    failed: slot.failed, retired: slot.retired, verificationContinuationRetained: slot.continuation !== undefined,
+    dispatchCaptureCleanupUncertain: slot.dispatchCaptureCleanupUncertain,
     replayAllowed: false, explicitSaveDispatched: false,
     persistentUploadReplayExcluded: false, reopened: false, inverseValidated: false, executionAuthorized: false });
 }
@@ -343,6 +392,7 @@ export class CurrentSymbolWriterCoordinator {
         const snapshot = await captureCurrentSymbolFinishSnapshot(this.engine, { baseline: original.baseline, capture: original.capture,
           intent: slot.closeIntent, closeReceipt: slot.closeReceipt, proof, launch: original.launch, runtime: slot.source.sqlRuntime },
         (event) => { slot.snapshotEvidence.set(event.kind, event.value); if (event.kind === "inventory") { slot.snapshotInventory = event.value; } });
+        slot.snapshot = snapshot;
         await this.unchanged(slot); this.closedDispatch(slot); assertCurrentClosedSessionCopyAuthority(proof);
         await this.record(slot, "writer-snapshot-result", snapshot);
         slot.snapshotComplete = true;
@@ -355,6 +405,12 @@ export class CurrentSymbolWriterCoordinator {
         await this.unchanged(slot); this.closedDispatch(slot);
         await this.record(slot, "writer-comparison", { comparison: slot.comparison, originalDispatchOwned: true,
           originalDocumentSamplesRetained: true, persistenceLifecycleComplete: false, persistentUploadReplayExcluded: false, reopened: false });
+      }
+      if (!slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== undefined &&
+        slot.writeAcknowledged && slot.postRecorded) {
+        need(slot.snapshot !== undefined);
+        await revalidateCurrentSymbolFinishSnapshot(this.engine, slot.snapshot); await this.unchanged(slot); this.closedDispatch(slot);
+        this.issueContinuation(slot);
       }
       await this.record(slot, "writer-retirement-intent", { proof, comparison: slot.comparison ?? null, ...summary(slot) });
       this.closedDispatch(slot); assertCurrentClosedSessionCopyAuthority(proof);
@@ -374,6 +430,36 @@ export class CurrentSymbolWriterCoordinator {
       slot.source.retire(); slot.retired = true; return Object.freeze({ ...summary(slot), termination: "terminated" });
     } catch (error) { await this.stop(slot, "termination-or-comparison"); throw error; }
     finally { this.busy = false; }
+  }
+
+  private issueContinuation(slot: Slot): void {
+    const { snapshot, clockPlan, writeInput } = slot;
+    need(snapshot !== undefined && clockPlan !== undefined && writeInput !== undefined && slot.continuation === undefined);
+    const observed = assertOriginalCurrentSymbolFinishSnapshot(snapshot, this.engine);
+    need(observed.inventory === slot.snapshotInventory);
+    const token: CurrentSymbolWriterContinuation = Object.freeze({ profile: "private.current-symbol-writer-continuation.v1", operationId: slot.owner.operationId });
+    const source: CurrentSymbolWriterContinuationSource = Object.freeze({ operationId: token.operationId, snapshot, clockPlan,
+      dispatchOwner: slot.dispatchOwner, writeInput, original: slot.source.original, sqlRuntime: slot.source.sqlRuntime, journal: slot.journal });
+    const projection = (): unknown => ({ snapshot, clockPlan, writeInput, target: source.original.source.target,
+      expectedFingerprint: source.original.source.expectedFingerprint, launch: source.original.launch,
+      capture: source.original.capture, sqlRuntime: source.sqlRuntime });
+    const frozen = canonicalJson(projection());
+    const current = (): void => {
+      need(this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed &&
+        !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== undefined && slot.writeAcknowledged && slot.postRecorded &&
+        slot.snapshot === snapshot && slot.clockPlan === clockPlan && slot.writeInput === writeInput &&
+        methods(this.engine).every((method, index) => method === slot.methods[index]) &&
+        canonicalJson(projection()) === frozen,
+      "Current symbol verification continuation was changed or its writer did not retire successfully.");
+      need(assertOriginalCurrentSymbolFinishSnapshot(snapshot, this.engine).inventory === slot.snapshotInventory);
+    };
+    slot.continuation = token;
+    continuations.set(token, { engine: this.engine, source, current, journalText: () => slot.journalText, consumed: false });
+  }
+
+  public getVerificationContinuation(operationId: string): CurrentSymbolWriterContinuation {
+    const slot = this.slots.get(operationId); need(slot?.continuation !== undefined);
+    assertOriginalCurrentSymbolWriterContinuation(slot.continuation, this.engine); return slot.continuation;
   }
 
   private closedDispatch(slot: Slot): void {

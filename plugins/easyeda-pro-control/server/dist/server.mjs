@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "59d273d5f7fe16ad2d65e4afa50cdc3d3f81fdbfa1e27696576c1db42933015d";
+const __easyedaBundlePairId = "32a636f086f60eb37293ad439e1b8c394e7334120db94f8794e192055e00a1b2";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -41376,7 +41376,7 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
   if (documents.size === 0) {
     fail2();
   }
-  const snapshots = [];
+  const snapshots2 = [];
   for (const document3 of [...documents.values()].toSorted((left, right) => left.uuid.localeCompare(right.uuid))) {
     const records2 = [];
     const budget = { records: 0, bytes: 0 };
@@ -41428,10 +41428,10 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
         Object.assign(completed3, { pcbTextReloadHistory: sealPcbTextReloadHistory(document3.pcbTextReloadHistory, checkpointSha256, document3.uuid) });
       }
     }
-    snapshots.push(completed3);
+    snapshots2.push(completed3);
     yield;
   }
-  return snapshots;
+  return snapshots2;
 }
 async function materializeNativeHistoryCooperatively(plaintextChunks, checkpointSha256, options = {}) {
   const steps = materializeNativeHistorySteps([...plaintextChunks], checkpointSha256, { ...options });
@@ -121403,13 +121403,37 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
   issued6.set(result, { engine: engine2, text: canonicalJson(result), closedLaunch: structuredClone(source4.launchProjection), closedSession: structuredClone(input.capture.bridgeSession) });
   return result;
 }
+function originalSnapshot(value2, engine2) {
+  const issuedSnapshot = snapshots.get(value2);
+  need48(issuedSnapshot !== void 0 && issuedSnapshot.engine === engine2 && issuedSnapshot.text === canonicalJson(value2) && issuedSnapshot.originalText === canonicalJson(issuedSnapshot.original), "Current symbol snapshot was not issued unchanged by this engine.");
+  assertOriginalCurrentSymbolBaselineCopy(issuedSnapshot.original.baseline, engine2);
+  return issuedSnapshot.original;
+}
+function assertOriginalCurrentSymbolFinishSnapshot(value2, engine2) {
+  need48(value2.profile === "private.current-symbol-finish-snapshot.v1", "Current symbol post-edit snapshot profile differs.");
+  return originalSnapshot(value2, engine2);
+}
 async function captureCurrentSymbolFinishSnapshot(engine2, input, onEvidence) {
+  const snapshot8 = await captureSnapshot(engine2, input, onEvidence);
+  need48(snapshot8.profile === "private.current-symbol-finish-snapshot.v1", "Current symbol finish snapshot profile changed.");
+  return snapshot8;
+}
+async function captureSnapshot(engine2, input, onEvidence, predecessor) {
   const { baseline: baseline2, capture: capture3, proof, launch } = input;
   assertOriginalCurrentSymbolBaselineCopy(baseline2, engine2);
-  const origin = issued6.get(baseline2);
-  need48(origin !== void 0, "Current symbol finish snapshot lost its baseline issuer.");
-  need48(!finishAttempts.has(baseline2), "Current symbol finish snapshot attempt already consumed.");
-  finishAttempts.add(baseline2);
+  const baselineOrigin = issued6.get(baseline2);
+  need48(baselineOrigin !== void 0, "Current symbol finish snapshot lost its baseline issuer.");
+  const previous = predecessor === void 0 ? void 0 : assertOriginalCurrentSymbolFinishSnapshot(predecessor, engine2);
+  const origin = previous === void 0 ? baselineOrigin : { closedLaunch: previous.launch, closedSession: previous.capture.bridgeSession };
+  if (predecessor === void 0) {
+    need48(!finishAttempts.has(baseline2), "Current symbol finish snapshot attempt already consumed.");
+    finishAttempts.add(baseline2);
+  } else {
+    need48(previous?.baseline === baseline2 && !verificationAttempts.has(predecessor), "Current symbol verification snapshot attempt consumed or baseline changed.");
+    verificationAttempts.add(predecessor);
+  }
+  const phase5 = predecessor === void 0 ? "closed-edit" : "closed-verification";
+  const priorCopy = predecessor?.copy ?? baseline2.copy;
   const inputText = canonicalJson(input), sourcePath = baseline2.checkpoint.source;
   const reader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
   need48(typeof reader === "function", "Current symbol finish snapshot cannot inspect bridge scope.");
@@ -121417,10 +121441,13 @@ async function captureCurrentSymbolFinishSnapshot(engine2, input, onEvidence) {
   const evidence2 = [];
   const unchanged3 = () => {
     assertOriginalCurrentSymbolBaselineCopy(baseline2, engine2);
+    if (predecessor !== void 0) {
+      need48(assertOriginalCurrentSymbolFinishSnapshot(predecessor, engine2) === previous, "Current symbol verification predecessor changed.");
+    }
     need48(canonicalJson(input) === inputText && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === reader && reader.call(engine2.upstream) === void 0 && engine2.clockObservationForClosedCapture === clockReader && evidence2.every((item2) => canonicalJson(item2.value) === item2.text), "Current symbol finish snapshot inputs or evidence changed.");
-    closeBinding({ ...input, owner: baseline2.owner }, { launchProjection: launch, bridgeSession: capture3.bridgeSession }, "closed-edit");
+    closeBinding({ ...input, owner: baseline2.owner }, { launchProjection: launch, bridgeSession: capture3.bridgeSession }, phase5);
     need48(
-      proof.proofSha256 !== baseline2.copy.closureProofSha256 && baseline2.copy.source === sourcePath && launch.helperInstance === origin.closedLaunch.helperInstance && launch.jobId !== origin.closedLaunch.jobId && capture3.bridgeSession.gatewayInstanceId === origin.closedSession.gatewayInstanceId && capture3.bridgeSession.sessionId !== origin.closedSession.sessionId && capture3.bridgeSession.sequence > origin.closedSession.sequence,
+      proof.proofSha256 !== priorCopy.closureProofSha256 && priorCopy.source === sourcePath && launch.helperInstance === origin.closedLaunch.helperInstance && launch.jobId !== origin.closedLaunch.jobId && capture3.bridgeSession.gatewayInstanceId === origin.closedSession.gatewayInstanceId && capture3.bridgeSession.sessionId !== origin.closedSession.sessionId && capture3.bridgeSession.sequence > origin.closedSession.sequence,
       "Current symbol finish snapshot reused its old closure or changed source."
     );
     assertCurrentClosedSessionCopyAuthority(proof);
@@ -121489,8 +121516,8 @@ async function captureCurrentSymbolFinishSnapshot(engine2, input, onEvidence) {
   const verified = await verifyCheckpoint(checkpoint.receiptPath, policy2);
   await current3();
   need48(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === copy.sha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol finish source or checkpoint changed during capture.");
-  return Object.freeze({
-    profile: "private.current-symbol-finish-snapshot.v1",
+  const result = Object.freeze({
+    ...predecessor === void 0 ? { profile: "private.current-symbol-finish-snapshot.v1" } : { profile: "private.current-symbol-verification-snapshot.v1", posteditCopyReceiptSha256: predecessor.copy.receiptSha256 },
     checkpoint,
     copy,
     sql: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 },
@@ -121511,8 +121538,11 @@ async function captureCurrentSymbolFinishSnapshot(engine2, input, onEvidence) {
     writerReady: false,
     executionAuthorized: false
   });
+  const original2 = Object.freeze({ baseline: baseline2, inventory: inventory2, capture: capture3, proof, launch });
+  snapshots.set(result, { engine: engine2, original: original2, text: canonicalJson(result), originalText: canonicalJson(original2) });
+  return result;
 }
-var consumed, issued6, finishAttempts;
+var consumed, issued6, finishAttempts, snapshots, verificationAttempts;
 var init_current_symbol_baseline_copy = __esm({
   "server/src/current-symbol-baseline-copy.ts"() {
     init_artifacts();
@@ -121530,6 +121560,8 @@ var init_current_symbol_baseline_copy = __esm({
     consumed = /* @__PURE__ */ new WeakSet();
     issued6 = /* @__PURE__ */ new WeakMap();
     finishAttempts = /* @__PURE__ */ new WeakSet();
+    snapshots = /* @__PURE__ */ new WeakMap();
+    verificationAttempts = /* @__PURE__ */ new WeakSet();
   }
 });
 
@@ -122201,7 +122233,7 @@ function assertCurrentSymbolCacheMark(before, marked, expected3) {
   need54(exactBoolean(before.orphanedCallPossible, false) && previousAttempt < Number.MAX_SAFE_INTEGER && marked.runtimeRestartChallengeAttempt === previousAttempt + 1 && timestamp8(before.updatedAt) <= timestamp8(marked.orphanedCallMarkedAt), "fresh mark");
   const { bridgeDispatch, capture: capture3, launch } = expected3;
   const runtime = capture3.runtimeIdentity, session = capture3.bridgeSession;
-  need54(capture3.operationId === before.operationId && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && isDeepStrictEqual(marked.bridgeSessionBeforeOrphan, session) && isDeepStrictEqual(marked.runtimeIdentityBeforeOrphan, runtime) && isDeepStrictEqual(marked.bridgeDispatchBeforeOrphan, bridgeDispatch), "selected capture or scope");
+  need54(capture3.operationId === before.operationId && (capture3.phase === "closed-edit" || capture3.phase === "closed-verification") && capture3.challengeAttempt === 1 && isDeepStrictEqual(marked.bridgeSessionBeforeOrphan, session) && isDeepStrictEqual(marked.runtimeIdentityBeforeOrphan, runtime) && isDeepStrictEqual(marked.bridgeDispatchBeforeOrphan, bridgeDispatch), "selected capture or scope");
   need54(typeof session.gatewayInstanceId === "string" && ID2.test(session.gatewayInstanceId) && typeof session.sessionId === "string" && ID2.test(session.sessionId) && typeof session.authenticationReceiptSha256 === "string" && HASH16.test(session.authenticationReceiptSha256) && Number.isSafeInteger(session.sequence) && session.sequence > 0 && Number.isSafeInteger(session.authenticatedAtEpochMs) && session.authenticatedAtEpochMs > 0 && bridgeDispatch.schema === "easyeda-pro-control.bridge-dispatch-lease.v1" && bridgeDispatch.gatewayInstanceId === session.gatewayInstanceId && bridgeDispatch.sessionId === session.sessionId && bridgeDispatch.sessionSequence === session.sequence && Number.isSafeInteger(bridgeDispatch.begunAtEpochMs) && bridgeDispatch.begunAtEpochMs >= session.authenticatedAtEpochMs && typeof bridgeDispatch.leaseId === "string" && ID2.test(bridgeDispatch.leaseId) && typeof bridgeDispatch.bindingReceipt === "string" && ID2.test(bridgeDispatch.bindingReceipt), "session or scope");
   need54(runtime.kind === "runtime-identity" && typeof runtime.generation === "string" && runtime.generation.length >= 24 && typeof runtime.timeOrigin === "number" && Number.isFinite(runtime.timeOrigin) && runtime.timeOrigin > 0 && (runtime.processId === null || typeof runtime.processId === "number" && Number.isSafeInteger(runtime.processId) && runtime.processId > 0), "runtime identity");
   const evidence2 = marked.executionAuthorityBeforeOrphan;
@@ -122851,6 +122883,11 @@ async function verifyCurrentSymbolPreopenSource(engine2, copy) {
   const current3 = () => {
     assertOriginalCurrentSymbolBaselineCopy(copy, engine2);
   };
+  const observed2 = await verifySource(copy, current3);
+  current3();
+  return Object.freeze({ ...observed2, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
+}
+async function verifySource(copy, current3) {
   current3();
   const { source: source4, sourceSha256 } = copy.checkpoint;
   need56(
@@ -122898,13 +122935,11 @@ async function verifyCurrentSymbolPreopenSource(engine2, copy) {
       "Current preopen source descriptor or path changed during reading."
     );
     observation2 = Object.freeze({
-      profile: "private.current-symbol-preopen-source.v1",
       scope: "point-in-time-before-project-opening",
       source: source4,
       sourceSha256,
       bytes: Number(before.size),
       sourceIdentity: Object.freeze({ ...copy.copy.sourceIdentity }),
-      sourceMatchesClosedBaseline: true,
       sidecarsObservedAbsent: true,
       ongoingSourceContinuity: false,
       startupQualified: false,

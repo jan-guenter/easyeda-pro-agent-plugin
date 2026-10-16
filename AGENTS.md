@@ -6,6 +6,116 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate173000: private post-write reopen verification
+
+Candidate `0.3.0+codex.20261016173000` implements the original verification
+continuation after successful writer retirement. It retains the complete
+post-edit checkpoint/copy/inventory and original successful clock plan, checks
+the actual post-edit bytes before launch/open, admits a fresh generation,
+excludes both inactive upload-cache namespaces and reopens only the project.
+The new fixed no-editor reader compares two saved-symbol content samples with
+the original complete current-plan history. Normal closure and a separate
+original snapshot feed complete SQL equality against the post-edit inventory.
+Failed writes, incomplete snapshots and uncertain dispatch cleanup cannot
+issue a continuation. Old copy authority is revalidated before release and is
+never revived afterward. Nothing here enables a public writer.
+
+Main and independent review corrected the inherited orphan-marker cleanup,
+saved-read authenticated scope/runtime checks and a pre-capture close gap.
+An original launch can now close normally after early clock/admission failure;
+lost acknowledgment cannot repeat close. Its termination observation grants no
+copy or saved-state proof. Capture-acquisition uncertainty remains explicit.
+Focused runs pass snapshot/preopen20, writer/cache20, verification12 and
+saved-read/compiler/SQL/clock42 cases. Whole types and strict type-aware lint
+pass without diagnostics. Build, sanitizer/SQL reader, compatibility,
+774-method coverage, package/repository/privacy and seven official skill
+validators pass. Dependency audit verifies151signatures/40attestations with
+zero vulnerabilities. Required GitHub CI will run the full matrix; no duplicate
+full local suite. No live EasyEDA call, launch, CAD edit,
+Save or restoration occurred. Production designs and records are untouched.
+The actual140000 facade619323/parent617159/startTicks14410828 was independently
+admitted before source work; all1,263files/25,001,382bytes/modes match main7ddad972.
+Both automatic main runs38915396913/38915396904 passed. The prior124500
+opening/normal-close lifecycle is terminal and must never be replayed.
+
+Remaining implementation: scoped validation-only invocation and inverse/recovery
+orchestration. Current clocks/startup holders and disposable forward/inverse
+persistence/failure handling need connected validation before deliberate narrow
+registration. The broader774-method inventory and availability counts remain
+unchanged. See docs/current-symbol-writer-owner-release-2026-10-16.md for scope,
+source evidence, vendor-read limits and the current backlog. Publication and
+installation are pending at this checkpoint.
+
+### Delivered140000: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016140000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR43 merged payload7d11476e as
+main7ddad97271686bfade85684d99db5d1e62026321. Whole tree
+cd532a4da575747c6feda9d297f08d71a1123f60 and plugin tree
+acc267c72035737b4e45813454be4442809eb10c equal the tested payload. All11 PR
+checks passed: CI38913596671 and Windows38913596214 succeeded. Full CI reports
+10,414 facade passes/five platform skips/zero failures, cancellations or todos;
+424 bridge passes across28files. Strict type-aware lint has zero diagnostics.
+Automatic main Windows38915396904 passed; main CI38915396913 remains in
+progress at handoff. No duplicate full local suite or record-only CI cycle.
+
+Official named marketplace upgrade under umask022 returned errors[]/stderr0.
+CLI confirms140000 installed/enabled; cached marketplace HEAD equals merged
+main. Main and independent inventories match all1,263files/25,001,382bytes,
+42directories0755,1,262files0644/one0755,seven skills, no extras or links.
+Inventory SHA b37ff77c63094c3b66d5fbc9e1f2be887f00dbccf8279195c6d4145847102a20;
+source384 SHA f7c76da8/runtime3 SHA b0a13c4b/manifest ef949d6a.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 without module ancestors, upstream child or nonstdio socket.
+Catalog16tools; new helper/all18runtime pins match discovery. Two valid clock
+shapes and14 malformed refusals pass, followed by another valid query. Existing
+history/analysis/symbol-schema checks pass. Synthetic profile unchanged,
+stderr0; facade611208 exited0 through stdinEOF, no signals or live calls.
+Private proof `/tmp/easyeda-installed-140000-cq3hncIZ/proof.json`,4109bytes SHA
+4654b5a29f5c6a8c0e4c2bd57a7ad95b545f5e1aafd31fa2f5fcc2db0979c39b.
+An early read-only inventory attempt preceded installer completion and refused
+ENOENT before synthetic directories/profile/facade creation; its note remains
+beside the successful proof. No cache repair or manual cache edits occurred.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/43#issuecomment-6217636735
+
+Loaded actual facade586722 still holds124500 and was left untouched. A fresh
+Codex session is required before live use of140000. Independently admit the
+actual new facade and check main CI first. The124500 opening/normal-close
+lifecycle below is terminal; no baseline/scratch/renderer/writer stage ran.
+Never replay it or the retired103000 lifecycle. No pending tool or CAD work.
+Production designs and their records remain untouched. The symbol writer is
+still private and disabled; publication is not connected validation.
+
+Next implementation should finish the original verification continuation before
+another disposable lifecycle so an update does not lose its retained owner:
+
+1. In `CurrentSymbolWriterCoordinator.observeFinish()`, after complete successful
+   closed SQL comparison and before retirement, retain/transfer the original
+   post-edit checkpoint, copy and inventory into a verification continuation.
+   Do not reconstruct authority from journal JSON or grant it to failed writes.
+2. Reuse baseline launch/admission and `buildCurrentUploadQueueReadProgram()`.
+   In a fresh inactive generation exclude both `project_<uuid>_v6` and
+   `localProject_<uuid>_v1` branch upload entries. Reuse the immediate pre-open
+   cache checks in `buildCurrentProjectOnlyOpenProgram()`.
+3. Bind reopening to the original post-edit result, not the baseline.
+   `verifyCurrentSymbolPreopenSource()` needs a narrow original-result binding.
+4. Add current no-editor saved-content collection using
+   `prepareSavedSymbolProjection()`/`verifySavedSymbolContent()`. Do not reuse
+   legacy `ClosedSymbolSavedReadStage`, which requires an old journal and active
+   companion PCB. Add original-plan history decoding to the current SQL registry.
+5. Normally close the verification generation, capture its closed inventory and
+   use `compareCompleteClosedSql()` to verify reopen/readback invariance. Then
+   validate current clocks/native holder shapes, disposable forward/inverse
+   persistence and ambiguous-failure handling before deliberate narrow public
+   registration. Cache absence is point-in-time, not global upload completion.
+
+Broader774-method inventory remains212 public subsets/29 native/82 blocked/
+451 omitted;332 guarded routes/94 blocked/two partial unchanged. Schematic/PCB
+structure, geometry/library and manufacturing work remains in the release
+document backlog. This handoff is intentionally left uncommitted for the next
+source change rather than creating another record-only release cycle.
+
 ### Candidate140000: current scratch runtime and private writer ownership
 
 Candidate `0.3.0+codex.20261016140000` corrects the current scratch compiler's

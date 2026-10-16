@@ -50,6 +50,16 @@ void test("cache journal permits only the executor's exact sealed mark and clear
   assert.deepEqual({ before, marked, cleared, expected }, snapshot);
 });
 
+void test("cache mark admits the exact verification capture phase but not a baseline or invented phase", () => {
+  const { before, marked, expected } = fixture();
+  const verify = structuredClone(expected); Reflect.set(verify.capture, "phase", "closed-verification");
+  assertCurrentSymbolCacheMark(before, marked, verify);
+  for (const phase of ["closed-baseline", "closed-verify", "foreign"]) {
+    const wrong = structuredClone(expected); Reflect.set(wrong.capture, "phase", phase);
+    assert.throws(() => { assertCurrentSymbolCacheMark(before, marked, wrong); }, /selected capture/u);
+  }
+});
+
 void test("cache mark refuses resealed unrelated changes and invalid transition fields", () => {
   const { before, marked, expected } = fixture();
   const faults: readonly ((value: Journal) => void)[] = [

@@ -61,6 +61,17 @@ resource, retain the primary error and report required cleanup failures. Keep
 the original process and Job handles until their exit observations are captured.
 An empty Job observation alone does not substitute for the original root's exit.
 
+For post-write reopening, retain the successful operation's actual closed
+checkpoint, raw copy and complete SQL inventory before retiring its owner.
+Revalidate the closed source before releasing captures: release advances the
+native lifecycle and invalidates the old copy authority. After release, the
+original snapshot remains historical evidence, not permission to reuse those
+handles. A new verification owner must bind its pre-open raw-byte check to that
+post-edit snapshot, exclude both persistent upload-cache namespaces, and collect
+saved content in the newly admitted generation. Compare its final closed SQL
+inventory with the post-edit inventory. A failed write or partial snapshot must
+not receive a continuation, and a copied journal cannot reconstruct one.
+
 The ordinary launcher's `observe-application` action is a separate diagnostic
 for a named historical operation after restart. Its two matching same-name
 presence samples cannot restore original handles or prove termination. Keep

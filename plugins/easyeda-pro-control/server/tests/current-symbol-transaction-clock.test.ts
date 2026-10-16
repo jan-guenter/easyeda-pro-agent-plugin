@@ -5,7 +5,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import timerPromises from "node:timers/promises";
 import { isRecord } from "../src/core.ts";
-import { prepareCurrentSymbolTransactionClock, recordCurrentSymbolTransactionClockPost, verifyCurrentSymbolTransactionClock } from "../src/current-symbol-transaction-clock.ts";
+import { decodeCompletedCurrentSymbolTransactionHistory, prepareCurrentSymbolTransactionClock, recordCurrentSymbolTransactionClockPost, verifyCurrentSymbolTransactionClock } from "../src/current-symbol-transaction-clock.ts";
 import type { CurrentSymbolDocumentClockSample, CurrentSymbolTransactionClockInput } from "../src/current-symbol-transaction-clock.ts";
 import { windowsClockObservationForResult } from "../src/windows-authority.ts";
 import { INPUT } from "./helpers/windows-closed-session-fixture.ts";
@@ -110,6 +110,13 @@ void test("clock plan owns full SQL comparison with independent immutable window
   }
   assert.equal(result["commonOsClockAndNoInterveningChangeRequired"], true);
   assert.ok(Object.isFrozen(f.plan) && Object.isFrozen(f.plan.backendWindow) && Object.isFrozen(result));
+  const saved = await decodeCompletedCurrentSymbolTransactionHistory(f.plan, f.input.dispatchOwner, after);
+  assert.equal(saved.comparison, result); assert.equal(saved.expectedTicket, 101);
+  assert.equal(saved.expectedDocumentEditVersion, "3.2.206"); assert.deepEqual(saved.expectedActor, ACTOR);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(f.plan, {}, after), /original successful/u);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(structuredClone(f.plan), f.input.dispatchOwner, after), /original successful/u);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(f.plan, f.input.dispatchOwner, structuredClone(after)), /original successful/u);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(f.plan, f.input.dispatchOwner, await inventory(f.data.path)), /original successful/u);
   await assert.rejects(verifyCurrentSymbolTransactionClock(f.plan, { dispatchOwner: f.input.dispatchOwner, terminationProof: f.proof, after }), /unconsumed/u);
 });
 
@@ -122,9 +129,11 @@ void test("clock preparation rejects copied Windows tokens and consumes the owne
 void test("clock plan rejects JSON plan reconstruction and forged after inventory", async (context) => {
   const f = await completed(context);
   const after = await inventory(f.data.path);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(f.plan, f.input.dispatchOwner, after), /original successful/u);
   await assert.rejects(verifyCurrentSymbolTransactionClock(structuredClone(f.plan), { dispatchOwner: f.input.dispatchOwner, terminationProof: f.proof, after }), /original unconsumed/u);
   await assert.rejects(verifyCurrentSymbolTransactionClock(f.plan, { dispatchOwner: f.input.dispatchOwner, terminationProof: f.proof, after: structuredClone(after) }), /original inventory/u);
   await assert.rejects(verifyCurrentSymbolTransactionClock(f.plan, { dispatchOwner: f.input.dispatchOwner, terminationProof: f.proof, after }), /unconsumed/u);
+  await assert.rejects(decodeCompletedCurrentSymbolTransactionHistory(f.plan, f.input.dispatchOwner, after), /original successful/u);
 });
 
 void test("clock post consumes failed owner binding before any later post attempt", async (context) => {

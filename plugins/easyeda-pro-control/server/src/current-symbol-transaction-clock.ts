@@ -1,6 +1,6 @@
 /** Conditional persisted-value comparison. No dispatch issuer or writer authority. */
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
-import { prepareCurrentSymbolTransactionActor, verifyCurrentSymbolTransactionActor } from "./current-symbol-transaction-actor.ts";
+import { decodeCurrentSymbolTransactionActorHistory, prepareCurrentSymbolTransactionActor, verifyCurrentSymbolTransactionActor } from "./current-symbol-transaction-actor.ts";
 import type { CurrentSymbolTransactionActorInput, CurrentSymbolTransactionActorPlan } from "./current-symbol-transaction-actor.ts";
 import { assertCurrentIssuedWindowsClockObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { IssuedWindowsClockObservation } from "./windows-authority.ts";
@@ -51,6 +51,7 @@ interface Prepared {
   readonly documentBefore: CurrentSymbolDocumentClockSample; readonly actorPlan: CurrentSymbolTransactionActorPlan;
   stage: "armed" | "post-consumed" | "post-recorded" | "verification-consumed";
   post?: Readonly<{ clock: Clock; document: CurrentSymbolDocumentClockSample }>;
+  completed?: Readonly<{ after: Inventory; afterText: string; comparison: Readonly<Record<string, unknown>>; comparisonText: string }>;
 }
 const plans = new WeakMap<CurrentSymbolTransactionClockPlan, Prepared>();
 const owners = new WeakSet<object>();
@@ -258,11 +259,32 @@ export async function verifyCurrentSymbolTransactionClock(plan: CurrentSymbolTra
   // Do not try to revive the already-closed live tokens.
   need(await windowsClockObservationForResult(proof, "termination") === termination);
   assertCurrentIssuedWindowsClockObservation(termination);
-  return Object.freeze({ profile: "easyeda-pro-control.current-symbol-transaction-clock-effect.v1", operationId: plan.operationId,
+  const comparison = Object.freeze({ profile: "easyeda-pro-control.current-symbol-transaction-clock-effect.v1", operationId: plan.operationId,
     beforeSqlSha256: plan.beforeSqlSha256, afterSqlSha256: afterInventory.logicalSha256, targetUuid: plan.targetUuid,
     ownerBindingSha256: plan.ownerBindingSha256, backendWindow: plan.backendWindow, documentWindow: plan.documentWindow,
     documentBeforeSha256: plan.documentBeforeSha256, documentAfterSha256: sha256Json(post.document),
     windowsObservationSha256s: Object.freeze([prepared.launch, prepared.capture, prepared.before, prepared.armed, post.clock, exit].map((clock) => sha256Json(clock.token))),
     transactionTimestampsWithinPlannedWindows: true, originalWindowsObservationsRetained: true,
     fullActorSqlEffect, ...ASSUMPTIONS, ...LIMITS });
+  prepared.completed = Object.freeze({ after: afterInventory, afterText: canonicalJson(afterInventory), comparison, comparisonText: canonicalJson(comparison) });
+  return comparison;
+}
+
+/** Only the original successful comparison can select post-edit native history.
+ * A failed consumed comparison, copied plan or equivalent re-read cannot issue
+ * this relation. It grants no launch, dispatch or persistence authority.
+ */
+export async function decodeCompletedCurrentSymbolTransactionHistory(plan: CurrentSymbolTransactionClockPlan,
+  dispatchOwner: object, after: Inventory): Promise<Awaited<ReturnType<typeof decodeCurrentSymbolTransactionActorHistory>> & Readonly<{ comparison: Bag }>> {
+  const prepared = plans.get(plan);
+  const completed = prepared?.completed;
+  need(prepared !== undefined && completed !== undefined && prepared.stage === "verification-consumed" &&
+    prepared.dispatchOwner === dispatchOwner && completed.after === after && completed.afterText === canonicalJson(after) &&
+    completed.comparisonText === canonicalJson(completed.comparison),
+  "Saved history requires its original successful clock comparison and inventory.");
+  const decoded = await decodeCurrentSymbolTransactionActorHistory(prepared.actorPlan, after);
+  need(plans.get(plan) === prepared && prepared.completed === completed && completed.after === after &&
+    completed.afterText === canonicalJson(after) && completed.comparisonText === canonicalJson(completed.comparison),
+    "Saved history completed comparison changed.");
+  return Object.freeze({ ...decoded, comparison: completed.comparison });
 }
