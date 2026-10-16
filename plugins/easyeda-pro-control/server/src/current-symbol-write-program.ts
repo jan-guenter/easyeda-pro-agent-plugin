@@ -7,6 +7,8 @@ import { assertUpstreamReplySettled, canonicalJson, extractToolPayload } from ".
 import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
 import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbol-guard.ts";
+import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.ts";
+import { buildCurrentSymbolStartupGuard } from "./current-symbol-startup-guard.ts";
 import { ACTOR_NAME_MAX_CODE_UNITS, SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE } from "./symbol-dual-actor.ts";
 
 export const CURRENT_SYMBOL_WRITE_TIMEOUT_MS = 15_000;
@@ -25,6 +27,7 @@ export const currentSymbolWriteProgramInputSchema = currentProjectOnlySymbolPref
   expectedActor: actorSchema,
   expectedWorker: z.object({ client: z.string().regex(/^[a-f0-9]{16}$/u), maxTicket: integer.max(Number.MAX_SAFE_INTEGER - 1) }).strict(),
   backendWindow: windowSchema, documentWindow: windowSchema, rendererTimezoneOffsetMinutes: offset,
+  startup: currentSymbolStartupExpectationSchema,
 }).strict().refine((value) => value.expectedBefore.ticket <= value.expectedWorker.maxTicket &&
   (value.desired.name !== value.expectedBefore.name || value.desired.description !== value.expectedBefore.description) &&
   value.peerNames.every((name) => name.trim().toLowerCase() !== value.desired.name.trim().toLowerCase()) &&
@@ -126,6 +129,8 @@ const integer=value=>{if(typeof value!=='number'||!Number.isSafeInteger(value)||
 try{
  const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
  ${buildCurrentProjectOnlySymbolGuard()}
+ const startupExpected=selected.startup;
+ ${buildCurrentSymbolStartupGuard()}
  const host=projectOnly.host,bus=own(host,'messageBus'),rpc=method(bus,'rpcCall'),edaOwner=eda;
  ${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
  if(!actorEqual(cachedActorProjection,selected.expectedActor)||!actorEqual(startupActorProjection,selected.expectedActor))bad();
@@ -135,7 +140,7 @@ try{
  const iso=own(datePrototype,'toISOString'),zone=own(datePrototype,'getTimezoneOffset');
  if(typeof nativeDate!=='function'||typeof dateNow!=='function'||typeof iso!=='function'||typeof zone!=='function')bad();
  const same=()=>{
-  projectOnly.check();checkDualActor();methodCheck(rpc);methodCheck(clockRpc);
+  projectOnly.check();startup.check();checkDualActor();methodCheck(rpc);methodCheck(clockRpc);
   if(expired||own(host,'messageBus')!==bus||own(host,'concurrentBus')!==concurrent||own(root,notifyKey)!==concurrent||own(root,'_TAB_ID_')!==notifyTab||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
   if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow||own(nativeDate,'prototype')!==datePrototype||own(datePrototype,'toISOString')!==iso||own(datePrototype,'getTimezoneOffset')!==zone)bad();
  };

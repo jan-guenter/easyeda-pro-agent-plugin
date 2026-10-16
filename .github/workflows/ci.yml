@@ -121,6 +121,7 @@ jobs:
         shell: bash
         run: |
           python3 -I -B scripts/build-main-reference-helper.py --check
+          python3 -I -B scripts/build-main-reference-helper.py --check --current-runtime
 
       - name: Type-check TypeScript
         working-directory: plugins/easyeda-pro-control
@@ -215,6 +216,9 @@ jobs:
           git diff --exit-code -- plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.build.json plugins/easyeda-pro-control/server/src/main-reference-helper-identity.ts
           test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.build.json plugins/easyeda-pro-control/server/src/main-reference-helper-identity.ts)"
           test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll | awk '{print $1}')" = "100644"
+          git diff --exit-code -- plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.build.json plugins/easyeda-pro-control/server/src/current-main-reference-helper-identity.ts
+          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.build.json plugins/easyeda-pro-control/server/src/current-main-reference-helper-identity.ts)"
+          test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll | awk '{print $1}')" = "100644"
           git diff --exit-code -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
           test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
           test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer | awk '{print $1}')" = "100755"

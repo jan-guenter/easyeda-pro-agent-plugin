@@ -157,28 +157,69 @@ def publish(path, body):
     os.replace(temporary, path)
 
 
+def current_runtime_sources(originals, profile):
+    """Fixed two-file build variant. Historical source files are never changed."""
+    require(set(profile) == {"schema", "sourcePins", "versions", "runtimePins"} and
+            profile["schema"] == "easyeda.current-main-reference-runtime.v1", "Current runtime profile shape")
+    require(set(profile["sourcePins"]) == {"FixedFileData.cs", "MainReferenceEvidence.cs"}, "Current source selection")
+    for name, pin in profile["sourcePins"].items():
+        require(digest(originals[name]) == pin, "Historical source differs from the current transform input")
+    require(profile["versions"] == {"electron": "41.2.1-jlc-sa-win-x64.5", "chrome": "146.0.7680.188",
+                                    "node": "24.14.1"}, "Current runtime version selection")
+    sources = dict(originals)
+    file_source = sources["FixedFileData.cs"].decode("utf-8")
+    names_match = re.search(r'private static readonly string\[\] names = \{(.*?) \};', file_source, re.S)
+    hashes_match = re.search(r'private static readonly string\[\] runtimeHashes = \{(.*?) \};', file_source, re.S)
+    require(names_match is not None and hashes_match is not None, "Fixed runtime arrays missing")
+    names = re.findall(r'"([^"]+)"', names_match.group(1))[:18]
+    names[16] = "locales\\" + names[16]
+    old_hashes = re.findall(r'"([a-f0-9]{64})"', hashes_match.group(1))
+    require(len(old_hashes) == len(names) == 18 and list(profile["runtimePins"]) == names and
+            all(re.fullmatch(r"[a-f0-9]{64}", pin) for pin in profile["runtimePins"].values()), "Current runtime pin inventory")
+    for name, old_hash in zip(names, old_hashes):
+        require(file_source.count(old_hash) == 1, "Historical runtime hash substitution is ambiguous")
+        file_source = file_source.replace(old_hash, profile["runtimePins"][name])
+    sources["FixedFileData.cs"] = file_source.encode("utf-8")
+    evidence = sources["MainReferenceEvidence.cs"]
+    before = b'Equal(value, "electron", "41.2.1-jlc-sa-win-x64.2")'
+    after = b'Equal(value, "electron", "41.2.1-jlc-sa-win-x64.5")'
+    require(evidence.count(before) == 1, "Historical Electron assertion substitution is ambiguous")
+    sources["MainReferenceEvidence.cs"] = evidence.replace(before, after)
+    require({name for name in sources if sources[name] != originals[name]} == set(profile["sourcePins"]),
+            "Current runtime transform changed an unexpected source")
+    return sources
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--write", action="store_true")
+    parser.add_argument("--current-runtime", action="store_true")
     parser.add_argument("--sdk-archive", type=Path)
     parser.add_argument("--reference-package", type=Path)
     parser.add_argument("--sdk-a", type=Path)
     parser.add_argument("--sdk-b", type=Path)
     parser.add_argument("--source-directory", type=Path, default=PLUGIN / "scripts/main-reference/native")
     parser.add_argument("--output-directory", type=Path, default=PLUGIN / "server/bin")
-    parser.add_argument("--identity-file", type=Path, default=PLUGIN / "server/src/main-reference-helper-identity.ts")
+    parser.add_argument("--identity-file", type=Path)
     args = parser.parse_args()
     require(platform.system() == "Linux" and platform.machine() == "x86_64", "Build requires Linux x64")
     require((args.sdk_a is None) == (args.sdk_b is None), "Both independent SDK roots are required")
     os.umask(0o077)
     recipe_bytes = read_file(HERE / "main-reference-build.json", 65536)
     recipe = json.loads(recipe_bytes)
+    runtime_profile_bytes = read_file(HERE / "main-reference-current-runtime.json", 16384) if args.current_runtime else None
+    runtime_profile = json.loads(runtime_profile_bytes) if runtime_profile_bytes is not None else None
+    if args.current_runtime:
+        recipe = {**recipe, "output": "Easyeda.CurrentMainReference.dll"}
+    identity_file = args.identity_file or PLUGIN / ("server/src/current-main-reference-helper-identity.ts" if args.current_runtime
+                                                  else "server/src/main-reference-helper-identity.ts")
     names = recipe["sources"]
     require(names and len(names) == len(set(names)) and all(re.fullmatch(r"[A-Za-z][A-Za-z0-9.]*\.cs", n) for n in names),
             "Incomplete fixed source list")
-    sources = {name: read_file(args.source_directory / name, 262144) for name in names}
+    originals = {name: read_file(args.source_directory / name, 262144) for name in names}
+    sources = current_runtime_sources(originals, runtime_profile) if args.current_runtime else originals
     require({p.name for p in args.source_directory.glob("*.cs")} == set(names), "Unselected helper source")
     work = Path(tempfile.mkdtemp(prefix="easyeda-helper-build-"))
     print("Retaining build work at " + str(work), flush=True)
@@ -199,9 +240,11 @@ def main():
         sdk_tree(sdk_archive, sdk, supplied is not None)
         outputs.append(compile_once(root, sdk, sources, references, recipe))
     require(outputs[0] == outputs[1], "Independent helper builds differ")
-    for name, original in sources.items():
+    for name, original in originals.items():
         require(read_file(args.source_directory / name, 262144) == original, "Helper source changed during build")
     require(read_file(HERE / "main-reference-build.json", 65536) == recipe_bytes, "Build recipe changed")
+    if args.current_runtime:
+        require(read_file(HERE / "main-reference-current-runtime.json", 16384) == runtime_profile_bytes, "Current runtime profile changed")
     source_identity = [{"name": n, "sha256": digest(sources[n])} for n in sorted(sources)]
     sources_hash = digest(json.dumps(source_identity, separators=(",", ":"), ensure_ascii=True).encode())
     identity = ("// Generated by scripts/build-main-reference-helper.py from two equal builds.\n"
@@ -213,23 +256,40 @@ def main():
                 "  bytes: " + format(len(outputs[0]), "_d") + ",\n"
                 "  sha256: \"" + digest(outputs[0]) + "\",\n"
                 "  sourcesSha256: \"" + sources_hash + "\",\n};\n").encode()
+    if args.current_runtime:
+        identity = ("// Generated by scripts/build-main-reference-helper.py --current-runtime from two equal builds.\n"
+                    "import type { MainReferenceHelperIdentity } from \"./main-reference-helper-identity.ts\";\n\n"
+                    "export const CURRENT_MAIN_REFERENCE_HELPER_IDENTITY: Readonly<MainReferenceHelperIdentity> = Object.freeze({\n"
+                    "  profile: \"private.main-reference-helper.v1\",\n"
+                    "  bytes: " + format(len(outputs[0]), "_d") + ",\n"
+                    "  sha256: \"" + digest(outputs[0]) + "\",\n"
+                    "  sourcesSha256: \"" + sources_hash + "\",\n});\n"
+                    "export const CURRENT_MAIN_REFERENCE_RUNTIME_PINS: Readonly<Record<string, string>> = Object.freeze(" +
+                    json.dumps(runtime_profile["runtimePins"], indent=2) + ");\n"
+                    "export const CURRENT_MAIN_REFERENCE_VERSIONS = Object.freeze(" + json.dumps(runtime_profile["versions"], indent=2) + ");\n"
+                    "export const CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256 = \"" + digest(runtime_profile_bytes) + "\";\n").encode()
     manifest = {"schema": "easyeda.main-reference-build.v1", "file": recipe["output"], "bytes": len(outputs[0]),
                 "sha256": digest(outputs[0]), "recipeSha256": digest(recipe_bytes),
                 "sdk": recipe["sdk"], "referencePackage": recipe["referencePackage"],
                 "references": recipe["references"], "declaredCompileAssemblyReferenceNames": recipe["declaredCompileAssemblyReferenceNames"],
                 "sources": [{"name": n, "bytes": len(b), "sha256": digest(b)} for n, b in sources.items()],
                 "sourcesSha256": sources_hash, "independentBuildsEqual": True, "assemblyLoaded": False}
+    if args.current_runtime:
+        manifest = {**manifest, "schema": "easyeda.current-main-reference-build.v1", "runtimeProfile": runtime_profile,
+                    "runtimeProfileSha256": digest(runtime_profile_bytes),
+                    "historicalSourcesUnchanged": True, "transformedSources": list(runtime_profile["sourcePins"])}
     body = (json.dumps(manifest, indent=2) + "\n").encode()
     destination = args.output_directory.resolve()
     require(destination.is_dir(), "Output directory is missing")
-    dll, record = destination / recipe["output"], destination / "Easyeda.MainReference.build.json"
+    dll = destination / recipe["output"]
+    record = destination / ("Easyeda.CurrentMainReference.build.json" if args.current_runtime else "Easyeda.MainReference.build.json")
     if args.check:
         require(read_file(dll, 1048576) == outputs[0] and read_file(record, 65536) == body, "Committed helper or build manifest differs")
-        require(read_file(args.identity_file, 8192) == identity, "Compiled helper identity module differs")
+        require(read_file(identity_file, 8192) == identity, "Compiled helper identity module differs")
     else:
         publish(dll, outputs[0])
         publish(record, body)
-        publish(args.identity_file, identity)
+        publish(identity_file, identity)
     print(json.dumps({"file": recipe["output"], "bytes": len(outputs[0]), "sha256": digest(outputs[0]), "reproducible": True}))
 
 

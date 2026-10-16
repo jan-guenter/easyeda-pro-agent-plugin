@@ -6,6 +6,113 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate140000: current scratch runtime and private writer ownership
+
+Candidate `0.3.0+codex.20261016140000` corrects the current scratch compiler's
+historical runtime mismatch without changing historical helpers or source.
+New helper57e6144c/175,104bytes and18-file profilee7015f31 reproduce in two
+independent builds; old helper378f82d9 also reproduces unchanged. CI checks both.
+Offline project-open discovery exposes the exact fixed runtime expectations.
+Ordinary launch adds bounded14-stage passive timings for the first32 requests,
+including same-owner failure inspection, without changing admission ordering.
+
+Private startup qualification implements the complete-history no-part-repair
+predicate and fixed native-holder checks. Private writer integration transfers
+the original baseline's close ownership under the same journal identity,
+retains original clocks/dispatch, and implements one-shot normal closure,
+closed snapshot/comparison and retirement. No public writer was enabled.
+Main/independent review found and fixed a real mark/clear cleanup failure that
+stranded closure. Exact retained transition checks preserve quarantine and
+foreign-journal refusal. Dispatch-capture cleanup uncertainty remains explicit;
+retirement does not prove all native handles released or permit a cleanup retry.
+Partial snapshots cannot qualify comparison; ambiguous attempts cannot replay.
+
+Focused writer/compiler/clock22, baseline-transfer2, startup9, current/historical
+scratch63, timing/launch30 and discovery8 checks passed in their scoped runs.
+Whole types and strict type-aware lint pass with zero diagnostics. Build and
+sanitizer/SQL-reader checks pass. Seven official skill validators pass; audit
+verifies151registry signatures/40attestations with zero vulnerabilities.
+Source384 SHA f7c76da8/runtime3 SHA b0a13c4b; external compatibility pins unchanged.
+Compatibility,774-method coverage and package/repository/privacy checks pass.
+Protected CI publication and official installation are pending at this
+checkpoint; no duplicate local full test matrix.
+
+Actual124500 disposable opening/normal-close lifecycle is terminal below;
+no pending tool or CAD operation. No baseline/scratch/renderer/writer stage ran.
+Production designs and their records remain untouched. See
+docs/current-symbol-writer-owner-release-2026-10-16.md and
+docs/current-symbol-startup-qualification-2026-10-16.md for exact implementation,
+source evidence and remaining cache/reopen/inverse/live-validation/API backlog.
+
+### Resumed124500: disposable opening closed; runtime correction underway
+
+Actual facade586722/parent585058/startTicks13311408 independently admitted on
+installed124500, pinnedNode24.18.0; complete1,247file/24,647,688byte inventory and
+modes match main4abdcf46. Source37748e08d66/runtime3a34f267d/manifest8b62c476
+match. No children/nonstdio sockets at admission. Automatic mainCI38904036905
+completed successfully; mainWindows38904036701 already passed.
+New ordinary launch `clock-124500-20261016-launch` and disposable opening
+`clock-124500-20261016-open` both completed once. Native target identity passed;
+opening journal is terminal. Normal close was acknowledged once and the original
+Job48bfc39a/helperd52fc2f5/root20976 termination was retained. Closed disposable
+file remains598,016bytes/SHA970d21b3 with no sidecars. No edit, explicit Save,
+Save/Discard choice, force termination or baseline/clock stage occurred.
+Never replay this lifecycle. No pending tool or CAD operation.
+Source review caught the current scratch compiler still admitting historical
+Electron.2/runtime pins against installedElectron.5. That known-bad check was
+not dispatched. A separate current helper/profile preserves historical files.
+Private writer integration/startup source work proceeds separately. Prior103000
+lifecycle remains terminal. Production designs/records untouched.
+
+### Delivered124500: clock stages and compiler; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016124500` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Payloadf0e2f3b34f0645e2edffaaff75437348b06b8715 merged through protectedPR42
+as main4abdcf467d0fe0b0d4a1e2cd5a75ec7e00800da7. Fulltree0c6118ba0af6b063ec04211b85a72f84afaba924
+and packagetreea39cb4c2f4108cd777fedcb9df31538afd70661d equal the tested payload.
+RequiredCI38902440642 passed:10,379facade passes/fiveplatformskips/zero failures
+or cancellations;424bridge passes across28files. All11PRchecks passed, including
+Windows38902440565. Strict type-aware lint zero warnings/errors; type/build,
+reproducible helper/bundles, compatibility/coverage/package/privacy/repository
+checks pass. Seven official skill validators passed locally, unavailable on CI.
+External compatibility pins unchanged. Copilot failed to review; main and
+independent reviews found and fixed issues before publication. Automatic main
+CI38904036905 is pending; mainWindows38904036701 passed. No duplicate local
+full suite or extra CI record-only cycle.
+
+Official named upgrade under022 returned errors[]/stderr0; CLI confirms124500
+installed/enabled and cached marketplaceHEAD equals main4abdcf46. Main and
+independent inventories match all1,247files/24,647,688bytes:42directories0755,
+1,246files0644/one0755,seven skills,no extras/symlinks/hardlinks. Inventory
+6bbc716e; source377 SHA48e08d66/runtime3 SHAa34f267d; manifest8b62c476.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinnedNode24.18.0
+without module ancestors, upstream child or non-stdio socket. Catalog16tools;
+both clock-action shapes pass,14injected/malformed cases refuse, later valid
+queries still pass. No reference/renderer action executed. Probe580977 exited0
+through stdinEOF/no signals; profile unchanged/stderr0. Private proof
+`/tmp/easyeda-installed-124500-QtGpLdTF/proof.json`,3971bytes SHA
+6d949cee9d4bb33d56c3f816f446f0dc72a4c9c5731733360b853c597d52d6ab.
+
+This delivery adds original clock preparation and a private fixed compiler,
+not writer enablement. The control skill now gives exact optional action order,
+one-shot refusal handling and restart-visible historical sidecar inspection.
+Loaded facade555422 still holds120000; processchecked after installation and
+left untouched. No live EasyEDA call/launch/edit/Save/restoration or production
+record access occurred. Earlier disposable lifecycle remains fully retired;
+never replay it merely to reproduce evidence. No tool or CAD operation pending.
+
+Next: start a fresh Codex session; independently admit actual124500 host and
+check automatic mainCI. Run new clock stages only in a new original disposable
+lifecycle, then finish/compare it. Continue provenance-owning writer coordinator,
+startup and current source qualification, full closedSQL/native comparison,
+both inactive upload-cache exclusions, forward/inverse persistence and recovery.
+SQLite dependency admission already exists; do not repeat that solved gap from
+the earlier research note. Broader API families and phase-timing improvements
+remain in docs/current-symbol-writer-compiler-release-2026-10-16.md.
+This delivery checkpoint remains uncommitted for the next actual source change.
+All earlier pending publication/install statements below are historical.
+
 ### Resumed120000: fixed compiler and original clock stages
 
 The restarted actual facade555422 was independently admitted on installed

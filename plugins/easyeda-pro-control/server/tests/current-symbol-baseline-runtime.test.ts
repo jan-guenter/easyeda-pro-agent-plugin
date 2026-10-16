@@ -10,7 +10,7 @@ import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
-import type { CurrentSymbolBaselineCoordinator, assertCurrentProjectOnlySymbolGeneration, revalidateCurrentProjectOnlySymbolGeneration } from "../src/current-symbol-baseline-runtime.ts";
+import type { CurrentSymbolBaselineCoordinator, assertCurrentProjectOnlySymbolGeneration, assertCurrentSymbolWriterOwner, revalidateCurrentProjectOnlySymbolGeneration, transferCurrentProjectOnlySymbolGeneration } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from "../src/current-symbol-clock-evidence.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
@@ -49,6 +49,8 @@ async function fixture(context: TestContext): Promise<{
   engine: EasyedaControlEngine;
   assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration;
   revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration;
+  transferGeneration: typeof transferCurrentProjectOnlySymbolGeneration;
+  assertWriterOwner: typeof assertCurrentSymbolWriterOwner;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
     finishSnapshots: number; finishSnapshotFailure: boolean; afterFinishSnapshot: (() => Promise<void>) | undefined;
@@ -316,12 +318,13 @@ async function fixture(context: TestContext): Promise<{
         openingEffectsVerified: false, persistenceVerified: false, writerReady: false, executionAuthorized: false };
     },
   });
-  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator, assertGeneration: assertCurrentProjectOnlySymbolGeneration, revalidateGeneration: revalidateCurrentProjectOnlySymbolGeneration });`, scope);
+  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator, assertGeneration: assertCurrentProjectOnlySymbolGeneration, revalidateGeneration: revalidateCurrentProjectOnlySymbolGeneration, transferGeneration: transferCurrentProjectOnlySymbolGeneration, assertWriterOwner: assertCurrentSymbolWriterOwner });`, scope);
   assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["assertGeneration"] === "function" && typeof loaded["revalidateGeneration"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked export is the unchanged maintained coordinator evaluated in this private test scope.
   const Coordinator = loaded["Coordinator"] as typeof CurrentSymbolBaselineCoordinator;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These checked exports are the unchanged fixed issuers evaluated beside their private coordinator in this test VM.
-  const generation = loaded as { assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration; revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration };
+  const generation = loaded as { assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration; revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration;
+    transferGeneration: typeof transferCurrentProjectOnlySymbolGeneration; assertWriterOwner: typeof assertCurrentSymbolWriterOwner };
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only this VM's fixed owner lookup admits this synthetic original; no production issuer is modified.
   const owner = ownerData as unknown as CurrentSymbolBaselineOwner;
   const restart = (): CurrentSymbolBaselineCoordinator => new Coordinator(engine, runtime, SQL_RUNTIME);
@@ -332,6 +335,7 @@ async function fixture(context: TestContext): Promise<{
   });
   return { coordinator: restart(), restart, owner, native, runtime, engine, state,
     assertGeneration: generation.assertGeneration, revalidateGeneration: generation.revalidateGeneration,
+    transferGeneration: generation.transferGeneration, assertWriterOwner: generation.assertWriterOwner,
     calls: (action): number => native.requests.filter((request) => request["action"] === action).length };
 }
 
@@ -802,6 +806,58 @@ void test("current project-only generation binds the original replacement and re
   assert.throws(() => f.assertGeneration(token, f.engine, "{}"), /ended scope/u);
   f.state.scope = false;
   assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1);
+});
+
+void test("current writer transfer consumes baseline closure without copying its original capture or rewriting phase artifacts", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  const generation = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+  const original = f.assertGeneration(generation, f.engine);
+  const before = await loadOperation(f.owner.operationId);
+  const artifacts = canonicalJson(before.artifacts);
+  assert.throws(() => f.transferGeneration(structuredClone(generation), f.engine), /retained coordinator/u);
+  const token = f.transferGeneration(generation, f.engine), transfer = f.assertWriterOwner(token, f.engine);
+  assert.equal(transfer.original, original); assert.equal(transfer.original.capture, original.capture);
+  assert.equal(transfer.generation, generation); assert.equal(transfer.journal.operationId, f.owner.operationId);
+  assert.equal(canonicalJson(transfer.journal.artifacts), artifacts);
+  assert.throws(() => f.assertWriterOwner(structuredClone(token), f.engine), /not issued/u);
+  assert.throws(() => f.coordinator.getProjectOnlyGeneration(f.owner.operationId), /before ownership transfer/u);
+  await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /original acknowledged close/u);
+  assert.equal(canonicalJson(await loadOperation(f.owner.operationId)), canonicalJson(before));
+  transfer.journal.plan = { profile: "easyeda-pro-control.current-symbol-writer.v1", baselinePlan: before.plan };
+  transfer.journal.planHash = buildPlanHash(transfer.journal.plan); transfer.journal.state = "writer-preparing";
+  await updateOperation(transfer.journal);
+  assert.equal(await f.revalidateGeneration(generation, f.engine), original);
+  assert.throws(() => f.transferGeneration(generation, f.engine), /already consumed/u);
+  assert.equal(canonicalJson(transfer.journal.artifacts), artifacts);
+  const { capture } = original;
+  const binding = { operationId: capture.operationId, phase: capture.phase, challengeAttempt: capture.challengeAttempt,
+    bridgeSession: capture.bridgeSession, runtimeIdentity: capture.runtimeIdentity, executionAuthority: capture.executionAuthority };
+  const window = await f.runtime.observeApplicationWindow(); assert.ok(window.hwnd !== null);
+  const intent = await f.runtime.prepareClosedSessionClose({ ...binding, windowHandle: window.hwnd });
+  transfer.beginFinish(); assert.throws(() => { transfer.beginFinish(); }, /already consumed/u);
+  assert.throws(() => f.assertGeneration(generation, f.engine), /retired/u);
+  assert.equal(f.assertWriterOwner(token, f.engine), transfer);
+  const closeReceipt = await f.runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  assert.equal(f.assertWriterOwner(token, f.engine), transfer);
+  const ended = await f.runtime.probeClosedSessionTermination({ ...binding, intent, closeReceipt });
+  assert.equal(ended.status, "terminated");
+  if (ended.status !== "terminated") { throw new Error("Synthetic writer did not terminate"); }
+  assert.equal(await assertClosedSessionCopyAuthority(ended.proof), ended.proof);
+  await f.engine.releaseClosedSessionAuthority(capture); transfer.retire();
+  assert.throws(() => f.assertWriterOwner(token, f.engine), /retired/u);
+  assert.equal(f.calls("normal-close"), 2);
+});
+
+void test("current transferred writer rejects a replacement authenticated session and never restores baseline closure", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  const generation = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+  const owner = f.transferGeneration(generation, f.engine), transfer = f.assertWriterOwner(owner, f.engine);
+  f.state.sessionSequence = 3;
+  assert.throws(() => f.assertWriterOwner(owner, f.engine), /replacement session/u);
+  assert.throws(() => { transfer.beginFinish(); }, /replacement session/u);
+  await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+  assert.equal(f.calls("normal-close"), 1);
 });
 
 void test("current project-only generation rejects replaced session and methods without minting new authority", async (context) => {

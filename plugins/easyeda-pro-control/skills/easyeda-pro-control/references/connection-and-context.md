@@ -166,6 +166,15 @@ after that interval can distinguish slow reconnect from an unchanged failure;
 do not poll indefinitely. Auto-Connect OFF, explicit Disconnect and uncertain
 cleanup intentionally stop reconnect.
 
+Newer launch results and same-host `inspect` can include `launchTimings`.
+Its fixed stages separate journal inventory, admission, installation hashing,
+native launch and receipt publication. These are passive monotonic timings,
+not progress, timeout, termination or retry authority. They cover the first
+32 distinct launch requests per coordinator, retain a failed request's timings
+without overwriting them on replay, and disappear after a host restart.
+A slow admission stage is not evidence that the native application hung.
+Keep the original call alive; do not issue concurrent launch/status retries.
+
 Once authenticated, the fixed `easyeda_control_editor_shell` observer returns
 container/tab counts and registered Start Page flags without names, paths or
 document IDs. Query `editor-shell` and validate with `editor-shell-validate`.

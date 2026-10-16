@@ -48,8 +48,9 @@ export const CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION = Object.freeze({
     "../node_modules/sqlite3/lib/sqlite3"]),
 });
 
-/** The project-only profile relies on the no-active-sheet startup exclusion.
- * Pin the implementation that owns that initialization, not just its caller.
+/** Pin the implementation that owns linked-sheet initialization, not just its
+ * caller. The private writer separately requires its exact no-repair predicate;
+ * this shared source profile alone does not admit active-sheet startup effects.
  */
 export const CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION = Object.freeze({
   relativePath: "pro-sch/3.2.192.b79ad524/js/sch-main.js", bytes: 6_289_422,

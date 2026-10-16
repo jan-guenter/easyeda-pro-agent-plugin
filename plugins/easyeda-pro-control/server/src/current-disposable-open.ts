@@ -3,6 +3,8 @@ import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { sha256Text } from "./core.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
+import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY, CURRENT_MAIN_REFERENCE_RUNTIME_PINS, CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256,
+  CURRENT_MAIN_REFERENCE_VERSIONS } from "./current-main-reference-helper-identity.ts";
 
 export const CURRENT_DISPOSABLE_OPEN_MAX_BYTES = 16_384;
 // The pinned upstream easyeda_execute schema caps timeoutMs at 60 seconds.
@@ -78,7 +80,14 @@ const limitations = [
 
 export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
   const query = currentDisposableOpenQuerySchema.parse(input);
-  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+  return { offline: true, invocationEnabledByDiscovery: false, total: 1,
+    clockPreparation: {
+      helper: { ...CURRENT_MAIN_REFERENCE_HELPER_IDENTITY, file: "Easyeda.CurrentMainReference.dll" },
+      runtimeProfileSha256: CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256,
+      runtimeVersions: { ...CURRENT_MAIN_REFERENCE_VERSIONS }, runtimePins: { ...CURRENT_MAIN_REFERENCE_RUNTIME_PINS },
+      connectedValidation: false, writerAuthority: false,
+      limitation: "Fixed packaged expectations only, not an observation of the installed runtime. Compare the complete runtime inventory before reserving the one-shot scratch stage; discovery grants no execution authority.",
+    }, entries: [{
     action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
     actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch",
       "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect"], limitations: [...limitations],

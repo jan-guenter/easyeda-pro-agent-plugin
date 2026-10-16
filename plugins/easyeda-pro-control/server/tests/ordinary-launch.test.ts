@@ -208,6 +208,65 @@ void test("ordinary launch ambiguous dispatch remains consumed across hosts and 
   assert.equal(restarted.calls.includes("allocate"), false);
 });
 
+void test("ordinary launch exposes passive phase timings without changing guard order or durable receipts", async (context) => {
+  const id = "ordinary-test-timing-success";
+  cleanup(context, id);
+  const current = fixture(id), result = await current.coordinator.run(request(id));
+  assert.deepEqual(current.calls, ["guard", "verify", "guard", "allocate", "existing", "guard", "verify", "guard", "launch"]);
+  const timings = result["launchTimings"];
+  assert.ok(isRecord(timings)); assert.equal(timings["schema"], "easyeda-pro-control.ordinary-launch-timings.v1");
+  const stages = timings["stages"];
+  assert.ok(Array.isArray(stages)); assert.equal(stages.length, 13);
+  for (const stage of stages) {
+    assert.ok(isRecord(stage)); assert.equal(stage["completedCount"], 1); assert.equal(stage["failedCount"], 0);
+    assert.ok(typeof stage["totalElapsedMs"] === "number" && Number.isSafeInteger(stage["totalElapsedMs"]) && stage["totalElapsedMs"] >= 0);
+  }
+  const inspected = await current.coordinator.run({ action: "inspect", operationId: id });
+  assert.deepEqual(inspected["launchTimings"], timings);
+  const names = await readdir(journal(id));
+  assert.deepEqual(names.toSorted(), ["intent.json", "launched.json"]);
+  const intent = await readFile(join(journal(id), "intent.json"), "utf8");
+  assert.doesNotMatch(intent, /timings|elapsed/iu);
+  current.markTerminated(); await current.coordinator.run({ action: "observe-termination", operationId: id });
+});
+
+void test("ordinary launch failure timings survive same-host inspection and replay refusal without granting recovery", async (context) => {
+  const id = "ordinary-test-timing-failure";
+  cleanup(context, id);
+  const current = fixture(id, { failure: true });
+  await assert.rejects(current.coordinator.run(request(id)), /synthetic lost/u);
+  const inspection = await current.coordinator.run({ action: "inspect", operationId: id }), timings = inspection["launchTimings"];
+  assert.ok(isRecord(timings)); const stages = timings["stages"]; assert.ok(Array.isArray(stages));
+  const dispatch: unknown = stages.find((value: unknown) => isRecord(value) && value["stage"] === "launch-dispatch");
+  assert.ok(isRecord(dispatch)); assert.equal(dispatch["failedCount"], 1);
+  assert.equal(inspection["state"], "launch-unknown"); assert.equal(inspection["designExecutionAuthorized"], false);
+  await assert.rejects(current.coordinator.run(request(id)), /uncertain/u);
+  const repeated = await current.coordinator.run({ action: "inspect", operationId: id });
+  assert.deepEqual(repeated["launchTimings"], timings);
+  assert.equal(current.calls.filter((call) => call === "launch").length, 1);
+  const restarted = fixture(id);
+  const historical = await restarted.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(historical["launchTimings"], undefined);
+  await assert.rejects(restarted.coordinator.run({ action: "observe-termination", operationId: id }), /retained owner/u);
+});
+
+void test("ordinary timing inventory declines new entries at its cap and malformed requests create none", async () => {
+  const current = fixture("ordinary-test-timing-cap", { onAllowed: (): Promise<never> => Promise.reject(new Error("synthetic quarantine")) });
+  const invalid = "ordinary-test-timing-invalid";
+  await assert.rejects(current.coordinator.run({ ...request(invalid), suppliedTiming: {} }));
+  const invalidInspection = await current.coordinator.run({ action: "inspect", operationId: invalid });
+  assert.equal(invalidInspection["launchTimings"], undefined);
+  for (let index = 0; index < 33; index += 1) {
+    await assert.rejects(current.coordinator.run(request(`ordinary-test-timing-cap-${index}`)), /synthetic quarantine/u);
+  }
+  const first = await current.coordinator.run({ action: "inspect", operationId: "ordinary-test-timing-cap-0" });
+  assert.ok(isRecord(first["launchTimings"]));
+  const overCap = await current.coordinator.run({ action: "inspect", operationId: "ordinary-test-timing-cap-32" });
+  assert.equal(overCap["launchTimings"], undefined);
+  assert.equal(current.calls.filter((call) => call === "guard").length, 33);
+  assert.equal(current.calls.includes("allocate"), false);
+});
+
 void test("ordinary launch rejects a different Job termination without releasing the operation", async (context) => {
   const id = "ordinary-test-wrong-job";
   cleanup(context, id);
@@ -402,6 +461,8 @@ void test("ordinary application observation after restart preserves history and 
   cleanup(context, first, second);
   const original = fixture(first);
   const historical = await original.coordinator.run(request(first));
+  // Process-local diagnostics are deliberately absent from historical state.
+  delete historical["launchTimings"];
   const names = await readdir(journal(first));
   const before = await Promise.all(names.map((name) => readFile(join(journal(first), name))));
   const restarted = fixture(second, { existing: true });
