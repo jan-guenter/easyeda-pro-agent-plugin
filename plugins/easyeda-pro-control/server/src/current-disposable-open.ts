@@ -36,7 +36,8 @@ export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action",
   z.object({ action: z.literal("baseline-relaunch"), operationId, acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-admit"), operationId }).strict(),
   z.object({ action: z.literal("baseline-observe-caches"), operationId }).strict(),
-  z.object({ action: z.literal("baseline-open-project"), operationId, acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("baseline-open-project"), operationId, acceptNormalOpenEffects: z.literal(true),
+    acceptUnqualifiedSchematicStartupEffects: z.literal(true).optional() }).strict(),
   z.object({ action: z.literal("baseline-finish-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-observe-finish"), operationId }).strict(),
   z.object({ action: z.literal("baseline-inspect"), operationId }).strict(),
@@ -67,6 +68,7 @@ const limitations = [
   "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
   "baseline-* actions validate a retained disposable opening lifecycle only. Begin consumes its original opening owner, prepares one closed symbol, requests normal application close and captures a complete closed baseline after original termination. Relaunch/admission/cache/project-only opening remain separate one-shot stages. Continuations cannot supply paths, source hashes, code, runtime overrides or replacement owners.",
   "Project-only reopening requires a supported historical closed baseline, a fresh raw-source hash, exact registered path and fresh inactive upload-cache observations. It opens no editor document. A project-open return is not full startup completion, persistence, backend actor/clock qualification or writer authority; writers remain disabled. Finish requests normal close without Save/Discard and observes the original new generation's termination. Unknown disposable file effects are retained, not accepted as an intended edit.",
+  "Only baseline-open-project accepts optional acceptUnqualifiedSchematicStartupEffects:true for disposable observation-only opening when active schematic pages are the sole historical blocker. Schematic initialization may rewrite documents or queue persistence. The active-page blocker and historicalSubsetSatisfied:false remain recorded; every other historical prerequisite remains mandatory. Omitting this acceptance keeps the strict no-active-page gate. Acceptance never grants startup, opening-effect, persistence or writer authority.",
   "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Pre-admission launch failures and unsupported stopped states remain review-only.",
 ] as const;
 

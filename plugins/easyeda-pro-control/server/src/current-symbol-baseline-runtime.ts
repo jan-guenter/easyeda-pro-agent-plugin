@@ -25,6 +25,7 @@ type Value = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.current-symbol-closed-baseline.v1";
 const CACHE_PHASE = "current-symbol-inactive-caches";
 const OPEN_PHASE = "current-symbol-project-only-open";
+type ProjectOpeningMode = "historical-subset" | "unqualified-schematic-startup-observation";
 const activeSessionSchema = z.object({ sessionId: z.string().regex(/^[A-Za-z0-9_-]{43}$/u), sequence: z.number().int().positive(),
   authenticationReceiptSha256: z.string().regex(/^[a-f0-9]{64}$/u), authenticatedAtEpochMs: z.number().int().positive() }).strict();
 const closedSessionSchema = activeSessionSchema.extend({ closedAtEpochMs: z.number().int().positive(), closeReason: z.string().min(1).max(160) }).strict();
@@ -34,6 +35,7 @@ interface Journal extends TrackedDispatchOperationJournal {
   plan: Value & { profile: typeof PROFILE }; closeAttempted: boolean; copyAttempted: boolean;
   relaunchAttempted: boolean; releaseAttempted: boolean; admissionAttempted: boolean; cacheAttempted: boolean;
   projectOpenAttempted: boolean; finishCloseAttempted: boolean; finishReleaseAttempted: boolean;
+  projectOpeningMode?: ProjectOpeningMode;
 }
 type CopyResult = Awaited<ReturnType<typeof captureCurrentSymbolBaselineCopy>>;
 type Binding = Omit<Parameters<WindowsControlRuntime["prepareClosedSessionClose"]>[0], "windowHandle">;
@@ -80,6 +82,8 @@ function summary(slot: Slot): Value {
     nativeAdmissionClockStatus: slot.admissionClock?.clock.status ?? "not-observed",
     cacheAttempted: slot.cacheAttempted, cacheReplyRetained: slot.cacheReplyRetained, cachesObserved: slot.cachesObserved,
     projectOpenAttempted: slot.projectOpenAttempted, projectOpenReplyRetained: slot.projectOpenReplyRetained, projectOpened: slot.projectOpened,
+    projectOpeningMode: slot.journal.projectOpeningMode ?? null,
+    unqualifiedSchematicStartupEffectsAccepted: slot.journal.projectOpeningMode === "unqualified-schematic-startup-observation",
     finishCloseAttempted: slot.finishCloseAttempted, finishCloseAcknowledged: slot.finishReceipt !== undefined,
     finishReleaseAttempted: slot.finishReleaseAttempted, finishCaptureReleased: slot.finishCaptureReleased, retired: slot.finished,
     nativeProjectOpenClockStatus: slot.projectOpenClock?.clock.status ?? "not-observed",
@@ -625,16 +629,24 @@ export class CurrentSymbolBaselineCoordinator {
 
   /** One project-only navigation from the admitted generation. Historical
    * premises and a fresh source hash are admission inputs, not startup
-   * completion. The generated program repeats inactive-cache observations
-   * within this attempt and never opens an editor document.
+   * completion. Explicit disposable observation can accept the sole active-page
+   * blocker without qualifying initialization effects. The generated program
+   * repeats inactive-cache observations and never opens an editor document.
    */
-  public async openProject(operationId: string): Promise<Value> {
+  public async openProject(operationId: string, acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
     const slot = this.slots.get(operationId);
     need(!this.busy && slot !== undefined && slot.journal.state === "caches-observed" && slot.cachesObserved &&
-      slot.admissionProved && slot.copy !== undefined && slot.copy.startupPremises.historicalSubsetSatisfied &&
+      slot.admissionProved && slot.copy !== undefined &&
       slot.source !== undefined && slot.sessionCurrent !== undefined && slot.admissionCapture !== undefined &&
       slot.admissionClock !== undefined && slot.launch !== undefined && !slot.projectOpenAttempted,
-    "Current project-only opening needs its original qualified baseline, admitted session and unused attempt.");
+    "Current project-only opening needs its original closed baseline, admitted session and unused attempt.");
+    const premises = slot.copy.startupPremises;
+    // Explicit disposable observation may accept this sole historical blocker,
+    // Not unsupported schema/version/count evidence or a qualified writer baseline.
+    const observeSchematicEffects = acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied &&
+      premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages";
+    need(premises.historicalSubsetSatisfied || observeSchematicEffects,
+      "Current project-only opening needs its original qualified baseline, or explicit acceptance of its sole active-schematic-pages blocker for observation only.");
     this.busy = true; slot.projectOpenAttempted = true;
     const { source, copy, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
     try {
@@ -666,10 +678,13 @@ export class CurrentSymbolBaselineCoordinator {
       const code = buildCurrentProjectOnlyOpenProgram(target), scope = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
       need(typeof scope === "function", "Current project-only opening lacks its owned scope.");
       slot.journal.projectOpenAttempted = true; slot.journal.state = "project-only-dispatching";
+      slot.journal.projectOpeningMode = observeSchematicEffects ? "unqualified-schematic-startup-observation" : "historical-subset";
       slot.journal.mutationMayHaveOccurred = true;
       slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
       await CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", { target, programSha256: sha256Json({ code }),
         source: slot.preopenSource, startupPremises: copy.startupPremises, runtimeFingerprintSha256: sha256Json(initial),
+        projectOpeningMode: slot.journal.projectOpeningMode, unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
+        schematicStartupEffects: observeSchematicEffects ? "native-document-rewrites-and-queued-persistence-may-occur" : "linked-sheet-loop-excluded",
         startupQualified: false, executionAuthorized: false }); await original();
       await this.engine.assertBridgeDispatchAllowed(); await current();
       await this.engine.assertRecoveryOperationIsolated(operationId); await current();
@@ -731,6 +746,8 @@ export class CurrentSymbolBaselineCoordinator {
       await CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", { observation: slot.projectOpenObservation,
         observationSha256: sha256Json(slot.projectOpenObservation), dispatchClock: slot.projectOpenClock,
         sourceBeforeDispatch: slot.preopenSource, runtimeFingerprintSha256: sha256Json(initial),
+        projectOpeningMode: slot.journal.projectOpeningMode, unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
+        startupPremises: copy.startupPremises,
         startupQualified: false, persistenceVerified: false, executionAuthorized: false }); await original();
       slot.projectOpened = true;
       return summary(slot);
@@ -886,6 +903,8 @@ export class CurrentSymbolBaselineCoordinator {
       "Current symbol baseline history has another profile.");
     const slot = this.slots.get(operationId);
     return { ...(slot === undefined ? {} : summary(slot)), operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
+      projectOpeningMode: journal["projectOpeningMode"] ?? null,
+      unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
       nextSafeAction: journal["nextSafeAction"], originalOwnerRetained: this.slots.has(operationId), writerReady: false, executionAuthorized: false };
   }
 }

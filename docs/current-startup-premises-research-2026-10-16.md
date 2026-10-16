@@ -22,6 +22,7 @@ offsets or minified line numbers. Hashes were rechecked on this date.
 | --- | ---: | --- |
 | [APP](</mnt/c/Program Files/easyeda-pro/resources/app/app.js>) | 2657192 | `52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c` |
 | [UI](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-ui/3.2.196.26ed3d6c/js/ui.js>) | 17456671 | `3823ed6eb2798c5ff4bdd7f2428dad07282115914da70a1852710542e0e6ad0a` |
+| [API](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-api/0.3.50.ab46409c/api.js>) | 1964920 | `021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76` |
 | [MGR](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.184.355087e9/js/pro-mgr.js>) | 2196400 | `005584e02cd9b2d49fdb387b2f997c1c8d3f88b0c48a7531c8097c483ed0bd2e` |
 | [WORKER](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-mgr/3.2.184.355087e9/js/project-worker.js>) | 2181284 | `b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928` |
 | [SCH](</mnt/c/Program Files/easyeda-pro/resources/app/assets/pro-sch/3.2.192.b79ad524/js/sch-main.js>) | 6289422 | `d9d6a955bf40d57daf9f27f31e0fff3191715ff50582418ad0922beb71b424bd` |
@@ -357,14 +358,70 @@ returns UUID, username and nickname from that system table.
 For persisted EDIT_HEAD, APP `L3` at 2602467 uses the request user's UUID but
 looks up username and nickname in the target project's users table. A missing
 target row produces empty names. Neither UI user object is this exact producer.
-An actual operation-bound response from the local user endpoint could establish
-the request user's projection, followed by correlation with the retained target
-users table. That is a candidate for a small fixed actor observer, not an
-implemented passive read. The route at APP 2478354 also reads preferences and
-distinct-ID data, and its middleware can insert a system user. Any future use
-must classify those effects, select only bounded needed fields for retention,
-bind the actual local route and process generation, and keep the no-intervening
-account-change premise explicit. No such request was made in this research.
+A response from the local user endpoint would describe that request's system
+user, not automatically the names in a future EDIT_HEAD. Further effect review
+also rules out treating that endpoint as a passive local observation. No such
+request was made, and no backend actor observer was implemented in this slice.
+
+#### Actor endpoint exclusion after effect review
+
+APP registers `/api/user` at 2621374 through `op` at 2478795, whose GET handler
+is `yd.user` at 2478354. The handler calls `T0.getByUuid` at 2220445, reads the
+system user's preferences, then calls `np` at 2477979 with
+`ctx.license.customer_code`. On a cache miss, `np` sends that identifier in
+the query string of `I.onlineService + '/api/client/cascode?customerCode='`.
+It adds the returned identifier to the full user response. The helper has no
+editor-offline or network-mode guard. A registered local route therefore does
+not mean all its effects stay local.
+
+The private `md` cache at APP 2477969 retains successful results. A failed
+lookup returns false without filling the cache, so another request can repeat
+the network lookup. A previously loaded UI user object cannot establish that
+this backend cache is warm or that its contents are current. The request
+middleware also opens the shared system-user database and may initialize or
+migrate it; `eC` can insert the license-selected user when absent. Project-only
+target isolation does not exclude those shared effects. Returning only three
+actor fields to the agent would reduce the outward projection, not remove the
+underlying reads, bookkeeping or network request.
+
+The `timeout:5000` option is not a five-second total or cancellation guarantee.
+APP `l0` at 1359741 races the HTTP response-header promise against a timer; it
+does not abort the request. The later `.json()` body read in `np` is outside
+that race and buffers the response without a size bound. A wrapper timeout
+therefore cannot prove backend quiescence or safely justify an automatic retry.
+This is a concrete omission reason, not missing test coverage.
+
+The reviewed narrower alternatives do not expose the request actor:
+
+| Candidate | Actual producer and limitation |
+| --- | --- |
+| `/pro-ui/loginUser/get`, UI 16957385 | Projects `w.loginedUserInfo`, an existing renderer cache. It does not ask APP for the actor of a new request. |
+| SDK `sys_Environment.getUserInfo`, API 1803246 | Returns `T.globalVariableUserInfo`. RPC services `user.setUserInfo` at 1945109 and `user.clearUserInfo` at 1945673 replace or clear that extension cache. This is a third cached object, not `ctx.user`. |
+| UI user refresh `zZt`, UI 16470169 | Calls the user endpoint, then applies preferences and other UI state before retaining `w.loginedUserInfo` at 16471483. It adds effects rather than providing a narrower observer. |
+| APP `JF` at 1322374 and `Ya` at 1322575 | The former only formats supplied rows and has no callsite in this bundle; the latter extracts the request UUID but its reviewed callers perform branch/history mutations. Neither is a registered passive actor getter. |
+
+No narrower fresh request-actor getter was identified in the reviewed local
+router and request-user callsites. This is a bounded source finding, not a
+claim about every possible vendor interface. API was read only for this cache
+distinction; its hash above does not add it to an executable profile.
+
+The next actor route must make an explicit choice. One option is a fixed,
+effect-classified `/api/user` operation that acknowledges shared user-database
+work and the customer-code network request, binds the actual native process
+and request lifetime, retains only bounded needed fields, and does not retry
+an ambiguous request. Its results would still need correlation with the target
+project's users table and an explicit no-intervening-account-change premise.
+The other option is a vendor-supported passive request-context API or a
+producer-owned actor receipt from the intended backend transaction itself.
+Neither is implemented here. Do not create an arbitrary APP evaluator, read
+license/user databases directly, warm or suppress the native cache, or perform
+a mutation solely to discover the actor.
+
+Existing closed-history EDIT_HEAD records can identify an earlier persisted
+actor; they cannot authenticate the next write. Keep backend actor and producer
+binding flags false. Caller-supplied comparator inputs and matching UI caches
+do not close that gap, and even a genuine actor observation would not establish
+backend-clock continuity or authorize a writer.
 
 WS 851427 through 851621 exposes `/pro-mgr/serverTime/now` as `Date.now()+Jd`
 in the notify module. It is not an APP request-clock endpoint. APP EDIT_HEAD

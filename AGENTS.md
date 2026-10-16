@@ -6,6 +6,104 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development060000: explicit schematic-startup observation
+
+The fresh facade is013000, PID380158/parent378278/start10416930, exact cached
+Node24.18.0 entrypoint. Read-only admission matches all1,213 files/23,877,152
+bytes and committed modes against maina6dcc1e; inventory322d4749,
+source3597ebe0085/runtime38b7cd10d. Offline project-open discovery exposes all
+nine baseline actions. Local latest-launch inspection reports090000 terminated;
+no historical launch, close or navigation was replayed. Prior postmerge
+CI38825397107 now passed. No live status/gateway, app launch or original project
+read occurred in this turn. Production designs and their records are untouched.
+
+Retained disposable checkpoint evidence establishes two active SCH_PAGEs. Thus
+the013000 no-active-page gate cannot complete its project-only reopening on this
+fixture. The new optional literal acceptUnqualifiedSchematicStartupEffects:true
+on baseline-open-project admits only that sole historical blocker for disposable
+observation. All other historical prerequisites, original ownership, source/cache
+continuity, tab guards, one-shot dispatch, quarantine and finish remain intact.
+The original report stays historicalSubsetSatisfied:false. Intent/result and
+both live/historical public inspection retain the selected mode and acceptance.
+No startup, opening-effect, persistence, backend actor/clock or writer flag is
+promoted. Native initialization may rewrite documents and queue persistence;
+this is not a passive read or a qualified writer baseline.
+
+Source research identifies sheet decoding/deletion/template repair and automatic
+save paths even without editor tabs, with caught decode errors before the prefix
+event. A general already-initialized-page predicate is not established. Separate
+actor review found that /api/user can alter shared user state and send a customer
+identifier online; its header timeout neither aborts the request nor bounds the
+body. No such request was made or exposed as a passive actor observer. Concrete
+omission reasons and next options are in the two startup research reports.
+
+Independent review accepted the scoped route after correcting early journal
+mutation and public restart-inspection omission. Focused lifecycle/route checks
+pass; full types and strict type-aware lint pass with zero warnings. Build,
+sanitizer, compatibility,774-method inventory, skill/package/repository/privacy
+checks and all seven official skill validators pass. Audit verifies151 signatures,
+40 attestations and zero vulnerabilities. Full suite runs once in required CI,
+not redundantly locally, following the user's request to limit extra testing.
+Frozen source359 SHA2b095c52/runtime3 SHA0b0e0446; external pins unchanged.
+Payload060000 publication/CI/install remain pending. Loaded013000 is untouched.
+After installation a fresh session must load the new field before live validation.
+Do not launch solely to hit the old known blocker or delete fixture pages.
+
+Next: use the exact retained disposable fixture in one same-facade baseline
+lifecycle with explicit startup-effects acceptance, then retained normal-close
+and termination finish. Startup effect qualification, backend actor/clock,
+writer/inverse integration, full persistence/failure recovery and wider API
+families remain open. See docs/current-project-only-lifecycle-release-2026-10-16.md.
+
+### Delivered013000: retained disposable lifecycle, fresh session required
+
+Release `0.3.0+codex.20261016013000` is published and installed/enabled through
+the existing Git marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Final payload d9e07aef065e8685ea2d147f937f5ae9dbeb4ef3 merged through protected
+PR36 as main a6dcc1e073caf7d1bfa67042ccecf6e59558a8c9. The merged full tree is
+the tested 027106568c44662429413f4cf9cb77a16152a021, package subtree
+465d25e9c586898992956b93ff12e82d65581f02. Both postcommit bundles reproduce.
+Required CI38824008215 passed all ten jobs:10,058 facade passes/five skips/zero
+failures or cancellations, plus424 bridge passes across28 files. Same-payload
+Windows38824008196 passed. Local checks and known legacy-doctor limitations
+are recorded below. Do not rerun the completed release checks.
+
+Official named marketplace upgrade under022 returned errors[]. Marketplace
+HEAD equals merged main. Before/after installed inventories match all1,213
+files/23,877,152bytes,42 directories0755,1,212 files0644 and one file0755,
+with no extras. Inventory322d4749; source359 SHA7ebe0085/runtime3 SHA8b7cd10d.
+The actual cached launcher hands ambientNode26.11.1 to pinnedNode24.18.0.
+Restricted16-tool and missing-software3-tool modes both expose all nine baseline
+actions through offline discovery/validation, accepting9 and rejecting32 cases
+each without execution authority. Both reproduce the same synthetic two-document
+checkpoint preparation. No upstream child/non-stdio socket is observed; the
+probe's own children exit through stdin EOF, with no signals or adoption.
+Installed cache, synthetic checkpoint and profile remain unchanged.
+Proof `/tmp/easyeda-installed-013000-6Xruz1/proof.json`,5195bytes,
+SHA8d9eac1b8c876981227f2147b5a90de6d2dc7687d1fbe2e3d2d4d3596114e554.
+Publication/install receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6204657470.
+
+Postmerge Windows38825397039 and automatic main CI38825397107 passed on the
+identical tested tree; the latter was verified read-only in the next session.
+Do not restart successful CI. This local delivery record
+belongs with the next source change, not a record-only commit/release loop.
+Local main now equals merged main apart from this record.
+
+STOP for a fresh Codex session before live calls: this chat's loaded tools still
+belong to140000. No loaded owner was terminated, no cache was hotpatched and no
+live EasyEDA call, app launch, design access, Save or restoration occurred.
+Production designs and their records remain untouched. No baseline operation
+was created or dispatched by this turn. Next, verify the newly loaded facade
+and inspect retained recovery state before starting the documented disposable
+lifecycle. Keep that facade alive throughout. Repeat baseline-observe-finish
+only after termination:pending; success is plan-invalidated/retired:true/
+termination:terminated. Stopped/errors require inspection, not a retry.
+The updated control skill names the fixed project-only and finish continuations.
+Startup producers/reopening effects, backend actor/clock, fixed writer/inverse
+integration, full disposable persistence/failure recovery and remaining API
+families stay open. Scope:docs/current-project-only-lifecycle-release-2026-10-16.md.
+
 ### In development: usable disposable baseline validation
 
 The current turn continues until completion or the necessary fresh-session

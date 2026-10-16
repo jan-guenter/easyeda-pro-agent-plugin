@@ -1,5 +1,27 @@
 # Current project-only lifecycle validation
 
+Update `0.3.0+codex.20261016060000` adds an explicit observation-only mode to
+`baseline-open-project`. Its optional `acceptUnqualifiedSchematicStartupEffects:true`
+accepts only the original baseline's sole `active-schematic-pages` blocker;
+schema, database-version and PCB-count requirements are unchanged. Default
+behavior still requires the historical subset. Intent, result and inspection
+retain the selected mode and acceptance; the historical blocker remains intact.
+No writer, startup-completion or persistence claim is added.
+
+The retained fixture has active schematic pages, so the preceding snapshot could
+not perform its project-only continuation. The new mode permits observing that
+ordinary startup without deleting pages or calling the prepared symbol writer.
+[Installed-source research](current-schematic-startup-effects-research-2026-10-16.md)
+shows why effects must remain unqualified: closed-tab sheet decoding can rewrite
+native records and queue persistence, and caught initialization failures can
+still precede the startup-prefix event. Existing navigation, context, source,
+cache, retained-owner, quarantine and normal-close guards remain unchanged.
+
+This follow-up is source-tested only. Its live lifecycle must run after a fresh
+session loads the published snapshot; do not replay earlier operations. The
+control reference was updated using skill-creator guidance to keep this opt-in
+next to the existing workflow, without adding a general-purpose bypass.
+
 Update `0.3.0+codex.20261016013000` turns the retained baseline work into a fixed disposable validation
 workflow in `easyeda_control_project_open`. It does not enable a symbol writer.
 The GitHub payload, CI result and installed snapshot are recorded in the PR36

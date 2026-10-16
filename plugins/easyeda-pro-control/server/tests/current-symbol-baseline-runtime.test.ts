@@ -32,6 +32,7 @@ const RAW_PATH = String.raw`C:\Fixtures\Disposable.eprj2`;
 const CACHE_TARGET = { projectUuid: sha256Text(RAW_PATH), branchUuid: "d".repeat(32) };
 const OPEN_TARGET = { ...CACHE_TARGET, rawWindowsPath: RAW_PATH, documentUuid: "c".repeat(16), expectedSourceSha256: HASH };
 type Upstream = WindowsControlRuntimeOptions["upstream"];
+type StartupCase = boolean | Readonly<{ activeSchematicPages: number; blockers: readonly string[] }>;
 
 /** Private owner/copy and installed-source qualification are synthetic seams.
  * The unchanged coordinator, managed storage, engine capture/tracked dispatch,
@@ -46,6 +47,7 @@ async function fixture(context: TestContext): Promise<{
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
+    activeSchematicPages: number; startupBlockers: readonly string[];
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
     afterCache: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
@@ -56,6 +58,7 @@ async function fixture(context: TestContext): Promise<{
   const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
     copied: undefined as unknown, proof: undefined as unknown, cacheReads: 0, cacheTimeout: false, statusDrift: false,
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
+    activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
     afterCache: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
@@ -225,7 +228,8 @@ async function fixture(context: TestContext): Promise<{
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
       state.proof = input["proof"];
       const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
-        startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false } };
+        startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false,
+          activeSchematicPages: state.activeSchematicPages, blockers: [...state.startupBlockers] } };
       state.copied = result; return result;
     },
   });
@@ -259,7 +263,8 @@ void test("current baseline owns one capture and close, polls pending, then copi
   assert.equal(pending["termination"], "pending"); assert.equal(pending["state"], "awaiting-termination"); assert.equal(f.state.copies, 0);
   const done = await f.coordinator.observe(f.owner.operationId);
   assert.equal(done["state"], "completed"); assert.equal(done["baselineCaptured"], true);
-  assert.deepEqual(done["startupPremises"], { syntheticCopySink: true, historicalSubsetSatisfied: false, startupQualified: false });
+  assert.deepEqual(done["startupPremises"], { syntheticCopySink: true, historicalSubsetSatisfied: false, startupQualified: false,
+    activeSchematicPages: 0, blockers: ["unsupported-sql-schema"] });
   const copied = await loadOperation(f.owner.operationId), copiedArtifact = copied.artifacts?.at(-1);
   assert.ok(copiedArtifact !== undefined);
   const copiedEvidence: unknown = JSON.parse(await readFile(copiedArtifact.path, "utf8"));
@@ -355,8 +360,12 @@ void test("current baseline rechecks the retained proof epoch at final pending a
   }
 });
 
-async function completedBaseline(context: TestContext, historicalSubset = false): Promise<Awaited<ReturnType<typeof fixture>>> {
-  const f = await fixture(context); f.state.historicalSubset = historicalSubset; await f.coordinator.capture(f.owner); f.state.scope = false;
+async function completedBaseline(context: TestContext, historicalSubset: StartupCase = false): Promise<Awaited<ReturnType<typeof fixture>>> {
+  const f = await fixture(context); f.state.historicalSubset = historicalSubset === true;
+  f.state.activeSchematicPages = typeof historicalSubset === "boolean" ? 0 : historicalSubset.activeSchematicPages;
+  if (typeof historicalSubset === "boolean") { f.state.startupBlockers = historicalSubset ? [] : ["unsupported-sql-schema"]; }
+  else { f.state.startupBlockers = historicalSubset.blockers; }
+  await f.coordinator.capture(f.owner); f.state.scope = false;
   await f.coordinator.close(f.owner); await f.coordinator.observe(f.owner.operationId);
   f.state.activeSession = false; return f;
 }
@@ -536,7 +545,7 @@ void test("current admission rejects capture mutation after scope settlement and
   }
 });
 
-async function admittedBaseline(context: TestContext, historicalSubset = false): ReturnType<typeof fixture> {
+async function admittedBaseline(context: TestContext, historicalSubset: StartupCase = false): ReturnType<typeof fixture> {
   const f = await completedBaseline(context, historicalSubset); await f.coordinator.relaunch(f.owner.operationId);
   f.state.activeSession = true; f.state.sessionSequence = 2; await f.coordinator.admit(f.owner.operationId); return f;
 }
@@ -620,8 +629,8 @@ void test("current cache pre-dispatch conflict vetoes cleanup before any cache r
   assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
 });
 
-async function projectReadyBaseline(context: TestContext): ReturnType<typeof fixture> {
-  const f = await admittedBaseline(context, true); await f.coordinator.observeCaches(f.owner.operationId);
+async function projectReadyBaseline(context: TestContext, historicalSubset: StartupCase = true): ReturnType<typeof fixture> {
+  const f = await admittedBaseline(context, historicalSubset); await f.coordinator.observeCaches(f.owner.operationId);
   f.state.openReply = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope({
     ok: true, kind: "current-project-only-open", ...CACHE_TARGET, projectPathMatched: true, projectPresent: true, publicResult: true,
     navigationDispatched: true, inactiveUploadCachesObserved: true, noEditorTabsObserved: true, restoreSetEmptyObserved: true,
@@ -638,6 +647,7 @@ void test("current project-only continuation binds the post-opening hash and own
   assert.equal(result["state"], "project-only-opened"); assert.equal(result["projectOpened"], true);
   assert.match(String(result["nextSafeAction"]), /baseline-finish-close then baseline-observe-finish/u);
   assert.equal(result["projectOpenReplyRetained"], true); assert.equal(result["projectOpenAttempted"], true);
+  assert.equal(result["projectOpeningMode"], "historical-subset"); assert.equal(result["unqualifiedSchematicStartupEffectsAccepted"], false);
   assert.equal(f.state.opens, 1); assert.equal(f.state.sourceChecks, 2); assert.equal(f.state.cacheReads, 1);
   assert.ok(f.state.events.lastIndexOf("source-continuity") < f.state.events.indexOf("project-only-open"));
   assert.ok(f.state.events.lastIndexOf("project-only-source-pin") > f.state.events.indexOf("project-only-open"));
@@ -645,8 +655,8 @@ void test("current project-only continuation binds the post-opening hash and own
     assert.equal(result[key], false);
   }
   const journal = await loadOperation(f.owner.operationId); assert.equal(journal["orphanedCallPossible"], false);
-  await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original qualified baseline/u);
-  await assert.rejects(f.restart().openProject(f.owner.operationId), /original qualified baseline/u);
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original closed baseline/u);
+  await assert.rejects(f.restart().openProject(f.owner.operationId), /original closed baseline/u);
   assert.equal(f.state.opens, 1);
 });
 
@@ -719,6 +729,51 @@ void test("current project-only opening refuses an unsupported historical subset
   await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original qualified baseline/u);
   assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
   const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["projectOpenAttempted"], false);
+});
+
+void test("current project-only schematic observation requires explicit acceptance and preserves unqualified evidence through retirement", async (context) => {
+  const f = await projectReadyBaseline(context, { activeSchematicPages: 2, blockers: ["active-schematic-pages"] });
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId), /explicit acceptance/u);
+  assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
+  const initial = await f.coordinator.inspect(f.owner.operationId); assert.equal(initial["projectOpenAttempted"], false);
+  const result = await f.coordinator.openProject(f.owner.operationId, true);
+  assert.equal(result["projectOpeningMode"], "unqualified-schematic-startup-observation");
+  assert.equal(result["unqualifiedSchematicStartupEffectsAccepted"], true); assert.equal(f.state.opens, 1);
+  assert.deepEqual(result["startupPremises"], { syntheticCopySink: true, historicalSubsetSatisfied: false,
+    startupQualified: false, activeSchematicPages: 2, blockers: ["active-schematic-pages"] });
+  const journal = await loadOperation(f.owner.operationId);
+  const intent = journal.artifacts?.find((artifact) => basename(artifact.path).endsWith("-project-only-intent.json"));
+  assert.ok(intent !== undefined);
+  const value: unknown = JSON.parse(await readFile(intent.path, "utf8")); assert.ok(isRecord(value));
+  assert.equal(value["schematicStartupEffects"], "native-document-rewrites-and-queued-persistence-may-occur");
+  assert.equal(value["unqualifiedSchematicStartupEffectsAccepted"], true);
+  for (const key of ["startupQualified", "openingEffectsVerified", "beforeWriteBaselineVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized"]) {
+    assert.equal(result[key], false);
+  }
+  await assert.rejects(f.coordinator.openProject(f.owner.operationId, true)); assert.equal(f.state.opens, 1);
+  await f.coordinator.finishNormalClose(f.owner.operationId);
+  const done = await f.coordinator.observeFinish(f.owner.operationId); assert.equal(done["retired"], true);
+  assert.equal(done["unqualifiedSchematicStartupEffectsAccepted"], true); assert.equal(done["writerReady"], false);
+  const historical = await f.restart().inspect(f.owner.operationId);
+  assert.equal(historical["originalOwnerRetained"], false);
+  assert.equal(historical["projectOpeningMode"], "unqualified-schematic-startup-observation");
+  assert.equal(historical["unqualifiedSchematicStartupEffectsAccepted"], true);
+  await assert.rejects(f.restart().openProject(f.owner.operationId, true)); assert.equal(f.state.opens, 1);
+});
+
+void test("schematic observation acceptance cannot bypass other or contradictory historical blockers", async (context) => {
+  for (const selected of [
+    { activeSchematicPages: 2, blockers: ["active-schematic-pages", "unsupported-database-version"] },
+    { activeSchematicPages: 2, blockers: ["unsupported-sql-schema"] },
+    { activeSchematicPages: 0, blockers: ["active-schematic-pages"] },
+  ]) {
+    await context.test(JSON.stringify(selected), async (childContext) => {
+      const f = await projectReadyBaseline(childContext, selected);
+      await assert.rejects(f.coordinator.openProject(f.owner.operationId, true), /original qualified baseline/u);
+      assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
+      const refused = await f.coordinator.inspect(f.owner.operationId); assert.equal(refused["projectOpenAttempted"], false);
+    });
+  }
 });
 
 void test("current project-only source drift or session loss refuses before native navigation", async (context) => {

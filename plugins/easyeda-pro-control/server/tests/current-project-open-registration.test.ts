@@ -6,7 +6,7 @@ import vm from "node:vm";
 import { z } from "zod";
 import { createOperation } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash } from "../src/core.ts";
-import { currentDisposableOpenRequestSchema } from "../src/current-disposable-open.ts";
+import { currentDisposableOpenRequestSchema, queryCurrentDisposableOpen } from "../src/current-disposable-open.ts";
 import { CurrentDisposableOpenCoordinator } from "../src/current-disposable-open-runtime.ts";
 
 void test("actual project-open registration keeps strict lifecycle inputs and local baseline inspection during quarantine", async () => {
@@ -42,14 +42,24 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
     artifacts: [], orphanedCallPossible: true, nextSafeAction: "Inspect only; synthetic original owner is absent." });
   const request = { action: "baseline-inspect", operationId };
   for (const invalid of [{ ...request, code: "caller()" }, { ...request, target: {} }, { ...request, runtime: {} },
-    { ...request, sourceSha256: "a".repeat(64) }, { ...request, action: "baseline-writer" }]) {
+    { ...request, sourceSha256: "a".repeat(64) }, { ...request, action: "baseline-writer" }, { ...request, acceptUnqualifiedSchematicStartupEffects: true }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false); await assert.rejects(invoke({ request: invalid }));
   }
   await assert.rejects(invoke({ request, expectedFingerprint: {} }), /cannot replace/u);
   const result = await invoke({ request: requestSchema.parse(request) });
   const resultSchema = z.object({ result: z.object({ operationId: z.literal(operationId), state: z.literal("stopped"),
+    projectOpeningMode: z.null(), unqualifiedSchematicStartupEffectsAccepted: z.literal(false),
     originalOwnerRetained: z.literal(false), writerReady: z.literal(false), executionAuthorized: z.literal(false) }) });
   assert.ok(resultSchema.safeParse(result).success);
+  const observedOperationId = "current-baseline-observation-inspection";
+  await createOperation({ schema: OPERATION_SCHEMA, operationId: observedOperationId, plan, planHash: buildPlanHash(plan), state: "plan-invalidated",
+    projectOpeningMode: "unqualified-schematic-startup-observation", artifacts: [], orphanedCallPossible: false,
+    nextSafeAction: "Synthetic retired observation; effects remain unknown." });
+  const historical = await invoke({ request: requestSchema.parse({ action: "baseline-inspect", operationId: observedOperationId }) });
+  const historicalSchema = z.object({ result: z.object({ operationId: z.literal(observedOperationId), state: z.literal("plan-invalidated"),
+    projectOpeningMode: z.literal("unqualified-schematic-startup-observation"), unqualifiedSchematicStartupEffectsAccepted: z.literal(true),
+    originalOwnerRetained: z.literal(false), writerReady: z.literal(false), executionAuthorized: z.literal(false) }) });
+  assert.ok(historicalSchema.safeParse(historical).success);
   assert.equal(nativeOwners, 0); assert.equal(quarantineChecks, 0);
   for (const continuation of ["baseline-observe-termination", "baseline-admit", "baseline-observe-caches", "baseline-observe-finish"]) {
     await assert.rejects(invoke({ request: { action: continuation, operationId } }), /unavailable/u);
@@ -80,4 +90,23 @@ void test("public baseline preparation requires distinct IDs and every approval,
     confirmNormalClose: true, acceptUnknownFileEffects: true }).success, true);
   assert.equal(currentDisposableOpenRequestSchema.safeParse({ action: "baseline-finish-close", operationId: request.operationId,
     confirmNormalClose: true }).success, false);
+});
+
+void test("schematic-startup acceptance is a literal opt-in only on project-only navigation and grants no catalog authority", () => {
+  const request = { action: "baseline-open-project", operationId: "baseline-optional-startup", acceptNormalOpenEffects: true };
+  assert.equal(currentDisposableOpenRequestSchema.safeParse(request).success, true);
+  assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...request, acceptUnqualifiedSchematicStartupEffects: true }).success, true);
+  for (const value of [false, "true", 1, null, {}]) {
+    assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...request, acceptUnqualifiedSchematicStartupEffects: value }).success, false);
+  }
+  for (const action of ["baseline-relaunch", "baseline-admit", "baseline-observe-caches", "baseline-observe-termination", "baseline-inspect", "baseline-observe-finish"]) {
+    const other = action === "baseline-relaunch" ? { action, operationId: request.operationId, acceptNormalOpenEffects: true } : { action, operationId: request.operationId };
+    assert.equal(currentDisposableOpenRequestSchema.safeParse(other).success, true);
+    assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...other, acceptUnqualifiedSchematicStartupEffects: true }).success, false);
+  }
+  const catalog = queryCurrentDisposableOpen({ includeSchemas: true });
+  assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  const serialized = JSON.stringify(catalog);
+  assert.ok(serialized.includes("Schematic initialization may rewrite documents or queue persistence."));
+  assert.ok(serialized.includes("Acceptance never grants startup, opening-effect, persistence or writer authority."));
 });
