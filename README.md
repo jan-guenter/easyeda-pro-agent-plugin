@@ -19,21 +19,30 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016173000` completes the private post-write
+Candidate `0.3.0+codex.20261016190000` adds a disposable-only forward/inverse
+symbol-metadata workflow through `project-open`'s `validation-*` actions.
+It retains the prepared baseline and actual writer/verifier owners, requires
+an exact phase on every continuation, and derives the inverse only from the
+verified forward result and original metadata. Closed recovery classifications
+never authorize retries or blind inversion. Normal writers remain disabled;
+connected forward/inverse validation is the next step, not a claimed result.
+See the [workflow and backlog](docs/current-symbol-writer-owner-release-2026-10-16.md).
+
+Update `0.3.0+codex.20261016173000` completed the private post-write
 verification workflow: original post-edit snapshot transfer, a fresh admitted
 generation, both inactive upload-cache exclusions, project-only reopening,
 exact saved-symbol content comparison, normal closure and complete SQL
 invariance checks. Failed writes do not receive reopening authority. These
-paths are not public writer enablement or connected validation. Disposable
-forward/inverse validation and a deliberate validation entrypoint remain open.
+paths were not public writer enablement or connected validation. The190000
+entrypoint supersedes the implementation gap; connected validation remains open.
 See the [implementation and backlog](docs/current-symbol-writer-owner-release-2026-10-16.md).
 
 Update `0.3.0+codex.20261016140000` corrects the scratch helper's runtime
 profile, exposes its complete expected runtime in offline discovery, and adds
 bounded launch-stage timing diagnostics. It also integrates a private symbol
 writer coordinator with startup checks, original clock ownership, normal closure
-and complete closed-file comparison. The writer remains unregistered: inactive
-upload-cache exclusions, reopen/inverse validation and recovery are still open.
+and complete closed-file comparison. Later updates implement its private
+cache/reopen and inverse/recovery workflow; live validation remains separate.
 See the [scope and remaining work](docs/current-symbol-writer-owner-release-2026-10-16.md).
 
 Update `0.3.0+codex.20261016124500` adds two optional, one-shot clock-preparation

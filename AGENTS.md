@@ -6,6 +6,146 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate190000: disposable forward/inverse orchestration
+
+Branch `feature/current-symbol-validation-orchestration` starts at mainaccf1e83.
+Actual installed173000 host648739/parent647044/startTicks14830751 was
+independently admitted: exact1,270files/25,162,269bytes/modes, no child or
+nonstdio socket. Main CI38941226908 and Windows38941227214 both passed.
+Prior disposable lifecycles remain terminal; no new live tool, EasyEDA launch,
+CAD edit, Save or restoration has occurred. Production designs and records are
+untouched. There is no pending CAD operation.
+
+Candidate190000 connects retained baseline/writer/verifier owners, exact
+expected-phase validation requests, internally derived inverse ownership and
+diagnostic-only closed recovery. It retains real verified snapshots and initial
+metadata, qualifies fresh inverse clocks and reuses the existing writer/verifier.
+Early inverse failures preserve original-owner normal closure or held-proof
+retirement. Ordinary design writers remain disabled; the new validation-only
+route explicitly permits its sealed disposable metadata mutations. Copied JSON,
+failed writers and missing post-dispatch evidence grant no continuation/inverse.
+
+Main and independent review fixed fabricated-result registration, mutable
+transferred-journal comparison, pre-capture inverse cleanup, missing child-journal
+diagnostics and primary-error preservation. Public diagnostics omit raw child
+errors. Only narrowly justified import-cycle exceptions were added; lint remains
+strict. The unlocked history head must still be at least61seconds old at the
+writer's fresh backend clock. Do not attempt an early inverse or relax the gate.
+
+Focused local runs passed114 baseline/writer/verifier cases,32 snapshot/clock/
+held-verifier cases,42 inverse/orchestration/writer cases and9 actual callback/
+saved-reader cases. These groups overlap and are not a unique-test total. Whole
+types and strict type-aware lint have zero diagnostics. Build, sanitizer/SQL
+reader, compatibility,774-method coverage, package/privacy/repository and all
+seven skill checks pass. Dependency audit verifies151signatures/40attestations
+with zero vulnerabilities. One build correctly refused a concurrent source edit;
+the subsequent frozen build passed. Source392 SHA36c9c2c1, runtime3 SHA5ed06570;
+only facade projections/review timestamp changed, no external runtime pins.
+
+Initial PR45 CI38945866941 found one stale source-shape assertion: the historical
+baseline test scanned newly added inverse adoption/cleanup methods as if they
+were historical lifecycle phases. The runtime analyzer still requires its exact
+24-phase historical sequence. The test now enumerates the exact2adoption,
+24historical and7cleanup phases and rejects an inverse descriptor substituted
+at the same artifact count. All40focused cases pass; types and targeted strict
+lint are clean. Runtime and bundle are unchanged; no guard is relaxed. The first
+CI reports10,474passes/one diagnosed failure/fiveskips and424bridge passes.
+Publication remains blocked until the corrected exact head passes required CI.
+
+Publication and installation are pending. Required GitHub CI will run the full
+matrix; no duplicate full local suite. After install and fresh-session admission,
+run one new disposable forward/inverse lifecycle, then deliberately register only
+the validated narrow writer. Broader schematic/PCB structure, geometry/library,
+manufacturing and preparation-timing backlog is unchanged. No connected writer
+validation is claimed. The delivered173000 handoff below is historical; its
+implementation items1–4 are superseded by this candidate, not its live-test item5.
+
+### Delivered173000: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016173000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR44 merged payload2f71a8665b4ed0fe8e4795436fd4666b4acf57d7 as
+mainaccf1e83c0a7443de300e521b9ad32d60d5cc663. Whole tree
+83c71696073139574c22ac63a2fbda305f04ff73 and plugin tree
+fb679937b97e562d8525bb4e57fbb9aa07176ebb equal the tested payload. All11 PR
+checks passed. CI38939356660 reports10,445facade passes/fiveplatformskips/zero
+failures, cancellations or todos;424bridge passes across28files. Windows
+38939356479 passed. Whole types/strict type-aware lint have zero diagnostics;
+reproducible helper/bundle, compatibility, coverage, package/privacy/repository
+checks pass. Seven official skill validators passed locally. No duplicate full
+local suite. Independent review fixed the pre-capture normal-close gap; the
+automated GitHub reviewer failed to run. Automatic main Windows38941227214
+passed; mainCI38941226908 remains in progress at handoff.
+
+Official named marketplace upgrade under022 returned errors[]/stderr0. CLI
+confirms173000 installed/enabled and cached marketplaceHEAD equals merged main.
+Main and independent inventories match all1,270files/25,162,269bytes,42directories
+0755,1,269files0644/one0755,seven skills,no extras/symlinks/hardlinks.
+Inventory SHA87b313ca6e08c2638dad9d81868e984284a44d85bb12f5597453357154530a6a;
+source388 SHA7d39589528ba1e015add47f00d9aca8acdb7348f3ea2e75fba434968d8f54729;
+runtime3 SHA1f529e94c7f8358ce9e58e0a578ed0b4d57fc2064ef7582de7fdf54308e035b6;
+manifest4359413049cce91edefc21e974108ec55c44a740f2f4bb601765c751e5f2b803.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 without installed module ancestors, upstream child or nonstdio
+socket. Catalog16tools, current helper/all18pins and exact offline schema checks
+pass, including two valid clock shapes/14malformed refusals/later valid input.
+History/analysis/symbol-schema checks pass. Synthetic profile unchanged/stderr0;
+probe644516 exited0 through stdinEOF, no signals or live calls. Private proof
+`/tmp/easyeda-installed-173000-fnVRmBtW/proof.json`,4109bytes SHA
+2d894270406bd81b32ef03b6409093d931dcc865d8fb4421dc44472a29b8fa45.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/44#issuecomment-6221244763
+
+Loaded facade619323/parent617159/startTicks14410828 still holds140000 and was
+left untouched. The official installer pruned its old cache directory; no
+manual cache change or owner termination occurred. A fresh Codex session is
+required before live use. Independently admit the actual173000 host and check
+automatic mainCI first. Prior124500/103000 disposable lifecycles remain terminal;
+no baseline/scratch/renderer/writer stage ran in124500. Never replay them.
+No live EasyEDA call, launch, CAD edit, Save or restoration occurred this turn.
+Production designs and their records remain untouched. No pending tool or CAD
+operation. Private writer/verifier remain unregistered and unvalidated live.
+
+Next coherent implementation, before another disposable lifecycle:
+
+1. Add validation-only orchestration to the current disposable-opening request
+   schema/coordinator and actual project-open callback. Retain its existing
+   baseline instance, use its original project-only generation/aged clock,
+   qualify startup in the original authenticated scope and execute the sealed
+   patch through CurrentSymbolWriterCoordinator. Keep targets/patch/fingerprint
+   fixed by baseline-begin. Update the callback's current no-CAD-edit claim;
+   do not reuse the legacy companion-PCB closed-symbol endpoint.
+2. Retain actual writer/verifier instances through close, termination and the
+   original successful continuation, then verification start/admit/caches/open/
+   saved-read/close/finish. Poll only genuine pending observations, never replay
+   consumed stages or reconstruct owners from journal JSON.
+3. Add a one-use successful verification-result continuation and narrow inverse
+   baseline issuer. Retain the verification snapshot/inventory and original
+   initial metadata. Derive the inverse internally, without caller-supplied
+   patches. Ordinary opening cannot be reused: baselineRuntimeReservations
+   consumes that runtime and the writer binds its original preparation. The
+   inverse must start from the actual verified post-edit snapshot and reuse the
+   maintained writer/verification mechanisms under new original ownership.
+   Restored metadata/peer content is not restoration of historical SQLite bytes.
+4. Implement bounded original-owner read-only recovery classification: unchanged,
+   exact intended effect with sufficient retained evidence, or unresolved.
+   Current writer comparison requires postRecorded and failed writers cannot
+   issue verification continuations. Missing N1/W1 or uncertain cleanup stays
+   unresolved; do not issue a second mutation/Save, widen a consumed window or
+   blindly invert an ambiguous effect.
+5. After installing that complete orchestration, validate one disposable
+   forward/inverse lifecycle: scratch/renderer clocks, actual startup holders,
+   writer effect, cache exclusions, reopened getStr and complete closed SQL.
+   Then deliberately register only the validated narrow writer and update
+   capability evidence. No broad research/test campaign is needed first.
+
+Broader774-method inventory remains212public subsets/29native/82blocked/
+451omitted;332guarded routes/94blocked/twopartial unchanged. Schematic/PCB
+structure completion, geometry/library, manufacturing and preparation timing
+work remain in the release-note backlog. This delivery handoff is intentionally
+uncommitted until the next source change, avoiding a record-only release cycle.
+Earlier pending publication/install and missing-reopen implementation statements
+are historical; the connected-validation requirement remains open.
+
 ### Candidate173000: private post-write reopen verification
 
 Candidate `0.3.0+codex.20261016173000` implements the original verification

@@ -99,7 +99,16 @@ async function requireNoSidecars(path: string): Promise<void> {
 /** Prepare from retained checkpoint descriptors only. No original-source path,
  * native executable, writer expression or caller-selected reader is accepted.
  */
-export async function prepareCurrentSymbolMetadata(input: unknown): Promise<CurrentSymbolMetadataPreparationResult> {
+export function prepareCurrentSymbolMetadata(input: unknown): Promise<CurrentSymbolMetadataPreparationResult> {
+  return prepareMetadata(input, false);
+}
+/** Private inverse preparation preserves the saved reader's exact atom headers.
+ * This read-only projection does not issue an owner or execution permission.
+ */
+export function prepareCurrentInverseSymbolMetadata(input: unknown): Promise<CurrentSymbolMetadataPreparationResult> {
+  return prepareMetadata(input, true);
+}
+async function prepareMetadata(input: unknown, preserveHeaders: boolean): Promise<CurrentSymbolMetadataPreparationResult> {
   const request = currentSymbolMetadataPreparationRequestSchema.parse(input);
   const checkpointRoot = join(controlDataDirectory(), "checkpoints");
   const child = relative(checkpointRoot, request.checkpoint.path);
@@ -118,7 +127,7 @@ export async function prepareCurrentSymbolMetadata(input: unknown): Promise<Curr
       // The maintained decoder hashes and reads its own retained file descriptor.
       // Its only pathname is relative to our retained managed parent directory.
       const history = await readNativeHistoryCheckpoint({ checkpointPath: boundPath, expectedSha256: request.checkpoint.sha256,
-        projectUuid: request.target.projectUuid });
+        projectUuid: request.target.projectUuid, ...(preserveHeaders ? { libraryAtomHeaders: "preserve" as const } : {}) });
       requireCheckpoint(history.projectUuid === request.target.projectUuid && history.branchUuid === request.target.branchUuid &&
         history.projectOwnerUuid === request.target.ownerUuid);
       const plan = prepareProjectSymbolMetadata({ id: "offline-current-symbol-metadata", action: "library.symbol.modify",

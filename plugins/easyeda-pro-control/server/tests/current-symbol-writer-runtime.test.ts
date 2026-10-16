@@ -10,7 +10,7 @@ import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts"
 import { currentProjectOnlySymbolPreflightRequestSchema } from "../src/current-project-only-symbol-preflight.ts";
 
 type Bag = Record<string, unknown>;
-type Failure = "none" | "post-clock" | "owner-after-write" | "late-clock-plan" | "comparison" | "intent-write" | "transfer-write" | "snapshot" | "journal-drift" | "snapshot-revalidate" | "retirement-release" |
+type Failure = "none" | "post-clock" | "post-clock-unchanged" | "owner-after-write" | "late-clock-plan" | "comparison" | "intent-write" | "transfer-write" | "snapshot" | "journal-drift" | "snapshot-revalidate" | "retirement-release" |
   "preflight-mark-cleanup" | "preflight-clear-release" | "writer-mark-cleanup" | "writer-clear-release";
 interface TestCoordinator {
   finishNormalClose: (operationId: string) => Promise<Bag>;
@@ -92,7 +92,7 @@ async function fixture(failure: Failure = "none"): Promise<{
     assertRecoveryOperationIsolated: (id: string): Promise<void> => { assert.equal(id, generation.operationId); return Promise.resolve(); },
     freshClockObservationForClosedCapture: (received: unknown): Promise<unknown> => {
       assert.equal(received, capture); state.clocks += 1;
-      if (state.clocks === 3 && failure === "post-clock") { return Promise.reject(new Error("Synthetic post-clock failure")); }
+      if (state.clocks === 3 && (failure === "post-clock" || failure === "post-clock-unchanged")) { return Promise.reject(new Error("Synthetic post-clock failure")); }
       return Promise.resolve(Object.freeze({ synthetic: `clock-${state.clocks}` }));
     },
     markOrphanedCallRisk: async (_journal: unknown, _phase: unknown, beforeClear: () => Promise<void>): Promise<unknown> => {
@@ -119,6 +119,7 @@ async function fixture(failure: Failure = "none"): Promise<{
     },
   };
   const inventory = Object.freeze({ tables: [], synthetic: "original-after" }), snapshot = Object.freeze({ snapshotCaptured: true });
+  const originalSnapshot = Object.freeze({ inventory });
   let dispatchOwner: unknown;
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-writer-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
@@ -130,6 +131,11 @@ async function fixture(failure: Failure = "none"): Promise<{
     assertCurrentProjectOnlySymbolGeneration: (): typeof original => { source.current(); return original; },
     revalidateCurrentProjectOnlySymbolGeneration: noOp,
     assertCurrentSymbolWriterStartup: startupAssert, revalidateCurrentSymbolWriterStartup: startupAssert,
+    assertOriginalCurrentSymbolBaselineCopy: (received: unknown): typeof baseline => { assert.equal(received, baseline); return baseline; },
+    compareCompleteClosedSql: (beforeInventory: unknown, afterInventory: unknown): Promise<unknown> => {
+      assert.equal(beforeInventory, baseline.inventory); assert.equal(afterInventory, inventory);
+      return state.mutations === 0 || failure === "post-clock-unchanged" ? Promise.resolve({ exactLogicalSqlUnchanged: true }) : Promise.reject(new Error("Synthetic SQL changed"));
+    },
     transferCurrentProjectOnlySymbolGeneration: (): typeof owner => { assert.equal(state.transferred, false); state.transferred = true; return owner; },
     assertCurrentSymbolWriterOwner: (received: unknown): typeof source => { assert.equal(received, owner); source.current(); return source; },
     loadOperation: (): Promise<Bag> => Promise.resolve(structuredClone(disk)),
@@ -161,7 +167,7 @@ async function fixture(failure: Failure = "none"): Promise<{
       if (failure === "snapshot") { return Promise.reject(new Error("Synthetic snapshot final reproof refused")); }
       return Promise.resolve(snapshot);
     },
-    assertOriginalCurrentSymbolFinishSnapshot: (received: unknown): Bag => { assert.equal(received, snapshot); return { inventory }; },
+    assertOriginalCurrentSymbolFinishSnapshot: (received: unknown): Bag => { assert.equal(received, snapshot); return originalSnapshot; },
     revalidateCurrentSymbolFinishSnapshot: (_engine: unknown, received: unknown): Promise<void> => {
       assert.equal(received, snapshot); assert.equal(state.releases, 0);
       return failure === "snapshot-revalidate" ? Promise.reject(new Error("Synthetic snapshot revalidation refused")) : Promise.resolve();
@@ -213,6 +219,11 @@ void test("private writer owns exactly one dispatch, original clock capture, nor
   const terminal = await f.coordinator.observeFinish(ID); assert.equal(terminal["retired"], true); assert.equal(terminal["executionAuthorized"], false);
   assert.equal(terminal["persistentUploadReplayExcluded"], false); assert.equal(terminal["reopened"], false);
   assert.equal(terminal["dispatchCaptureCleanupUncertain"], false);
+  const recovery = record(terminal["recoveryClassification"]);
+  assert.equal(recovery["outcome"], "exact-intended-effect");
+  assert.equal(recovery["verificationContinuationAuthorized"], false); assert.equal(recovery["inverseAuthorized"], false);
+  recovery["outcome"] = "tampered";
+  assert.equal(record(f.coordinator.inspect(ID)["recoveryClassification"])["outcome"], "exact-intended-effect");
   assert.equal(f.state.closeCalls, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1); assert.equal(f.state.releases, 1);
   const continuation = f.coordinator.continuation(ID), source = f.assertContinuation(continuation);
   assert.throws(() => f.assertContinuation(structuredClone(continuation)), /not issued/u);
@@ -236,6 +247,9 @@ for (const failure of ["post-clock", "owner-after-write", "late-clock-plan", "in
     await f.coordinator.finishNormalClose(ID); await f.coordinator.observeFinish(ID); await f.coordinator.observeFinish(ID);
     assert.equal(f.state.closeCalls, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 0);
     assert.equal(f.state.releases, 2); assert.equal(f.coordinator.inspect(ID)["retired"], true);
+    const recovery = record(f.coordinator.inspect(ID)["recoveryClassification"]);
+    assert.equal(recovery["outcome"], failure === "post-clock" ? "unresolved" : "unchanged");
+    assert.equal(recovery["inverseAuthorized"], false); assert.equal(recovery["replayAllowed"], false);
     assert.throws(() => f.coordinator.continuation(ID));
   });
 }
@@ -246,6 +260,17 @@ void test("a refused full comparison cannot retry comparison, write or Save and 
   await f.coordinator.observeFinish(ID);
   assert.equal(f.state.comparisons, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.mutations, 1); assert.equal(f.state.closeCalls, 1);
   assert.equal(f.coordinator.inspect(ID)["failed"], true); assert.equal(f.coordinator.inspect(ID)["retired"], true);
+  assert.equal(record(f.coordinator.inspect(ID)["recoveryClassification"])["outcome"], "unresolved");
+  assert.throws(() => f.coordinator.continuation(ID));
+});
+
+void test("unchanged closed SQL cannot replace missing original post-dispatch evidence", async () => {
+  const f = await fixture("post-clock-unchanged"); await assert.rejects(f.start(), /Synthetic post-clock/u);
+  await f.coordinator.finishNormalClose(ID); await f.coordinator.observeFinish(ID); await f.coordinator.observeFinish(ID);
+  const recovery = record(f.coordinator.inspect(ID)["recoveryClassification"]);
+  assert.equal(recovery["outcome"], "unresolved"); assert.equal(recovery["basis"], "original-post-dispatch-evidence-incomplete");
+  assert.equal(recovery["originalPostEvidenceComplete"], false);
+  assert.equal(f.state.mutations, 1); assert.equal(f.state.comparisons, 0);
   assert.throws(() => f.coordinator.continuation(ID));
 });
 
@@ -272,6 +297,8 @@ void test("writer retires a failed snapshot without retrying it or accepting its
   await f.coordinator.observeFinish(ID);
   assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 0);
   assert.equal(f.coordinator.inspect(ID)["snapshotComplete"], false); assert.equal(f.coordinator.inspect(ID)["retired"], true);
+  const recovery = record(f.coordinator.inspect(ID)["recoveryClassification"]);
+  assert.equal(recovery["outcome"], "unresolved"); assert.equal(recovery["completeClosedSnapshot"], false);
 });
 
 void test("writer never overwrites foreign journal bytes or uses drift to authorize closure", async () => {
@@ -291,6 +318,7 @@ for (const failure of ["preflight-mark-cleanup", "preflight-clear-release", "wri
     assert.equal(f.state.closeCalls, 1); assert.equal(f.state.releases, 1);
     assert.equal(f.coordinator.inspect(ID)["retired"], true);
     assert.equal(f.coordinator.inspect(ID)["dispatchCaptureCleanupUncertain"], true);
+    assert.equal(record(f.coordinator.inspect(ID)["recoveryClassification"])["outcome"], "unresolved");
     await assert.rejects(f.start(), /already consumed/u);
   });
 }

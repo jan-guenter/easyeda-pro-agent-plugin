@@ -1,9 +1,11 @@
 /** One original current verification-generation read. Never a public route. */
 import { assertExpectedFingerprint, assertSubset, canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
+// oxlint-disable-next-line import/no-cycle -- Saved content is bound to the original writer/verification registry; inverse preparation only receives retained data provenance.
 import { assertCurrentSavedSymbolSource, revalidateCurrentSavedSymbolSource, verifyCurrentSavedSymbolContent } from "./current-symbol-saved-source.ts";
 import type { CurrentSavedSymbolSource } from "./current-symbol-saved-source.ts";
 import { CURRENT_SAVED_SYMBOL_READ_TIMEOUT_MS, buildCurrentSavedSymbolReadProgram, decodeCurrentSavedSymbolReadReply } from "./current-symbol-saved-read-program.ts";
+import type { CurrentSavedSymbolReadObservation } from "./current-symbol-saved-read-program.ts";
 // oxlint-disable-next-line import/no-cycle -- Only the original verification coordinator issues this generation; the collector cannot manufacture or restore it.
 import { assertCurrentSymbolVerificationGeneration, revalidateCurrentSymbolVerificationGeneration } from "./current-symbol-verification-runtime.ts";
 import type { CurrentSymbolVerificationGeneration } from "./current-symbol-verification-runtime.ts";
@@ -21,6 +23,7 @@ export interface CurrentSavedSymbolRead {
 interface Collection {
   readonly engine: EasyedaControlEngine; readonly source: CurrentSavedSymbolSource;
   raw?: unknown; rawText?: string; result?: CurrentSavedSymbolRead; resultText?: string;
+  observation?: CurrentSavedSymbolReadObservation; observationText?: string;
 }
 const collections = new WeakMap<CurrentSymbolVerificationGeneration, Collection>();
 function need(value: boolean): asserts value { if (!value) { throw new Error("Current saved symbol read requires its original verification generation."); } }
@@ -39,6 +42,17 @@ export function assertCurrentSavedSymbolRead(value: unknown, engine: EasyedaCont
   need(collection !== undefined && collection.engine === engine && collection.result !== undefined && value === collection.result &&
     canonicalJson(value) === collection.resultText && canonicalJson(collection.raw) === collection.rawText);
   return collection.result;
+}
+
+/** Retained data provenance only, including after normal retirement. This does
+ * not revive the verification generation or issue a write/open capability.
+ */
+export function assertCurrentSavedSymbolReadSource(value: unknown, engine: EasyedaControlEngine,
+  generation: CurrentSymbolVerificationGeneration): Readonly<{ observation: CurrentSavedSymbolReadObservation; source: CurrentSavedSymbolSource }> {
+  assertCurrentSavedSymbolRead(value, engine, generation);
+  const collection = collections.get(generation);
+  need(collection !== undefined && collection.observation !== undefined && canonicalJson(collection.observation) === collection.observationText);
+  return Object.freeze({ observation: collection.observation, source: collection.source });
 }
 
 /** Called inside the coordinator's original authenticated scope. Every awaited
@@ -106,6 +120,7 @@ export async function collectCurrentSavedSymbolContent(engine: EasyedaControlEng
     sourceSha256: sourceValue.sourceSha256, rawReplySha256: sha256Json(raw), requestSha256: sha256Json(saved.request), relation,
     originalGenerationVerified: true, exactSavedContent: true, executionAuthorized: false, persistenceLifecycleComplete: false });
   await source.record("verify-saved-content-result", result, scopeText); current();
+  collection.observation = observation; collection.observationText = canonicalJson(observation);
   collection.result = result; collection.resultText = canonicalJson(result);
   return result;
 }

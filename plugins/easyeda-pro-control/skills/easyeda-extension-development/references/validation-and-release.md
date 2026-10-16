@@ -72,6 +72,15 @@ saved content in the newly admitted generation. Compare its final closed SQL
 inventory with the post-edit inventory. A failed write or partial snapshot must
 not receive a continuation, and a copied journal cannot reconstruct one.
 
+For a disposable forward/inverse orchestrator, make continuation requests name
+the exact expected phase. A lost response must not turn a repeated request into
+the next mutation. Preserve the real stage owners and allow polling only for
+explicitly pending observations. Derive the inverse from the original initial
+metadata and the successfully verified post-edit snapshot, with fresh clock
+qualification; do not register shape-compatible copies as authority. Diagnostic
+closed-state classification must not revive a failed writer, replace missing
+post-dispatch evidence, or authorize a blind inverse.
+
 The ordinary launcher's `observe-application` action is a separate diagnostic
 for a named historical operation after restart. Its two matching same-name
 presence samples cannot restore original handles or prove termination. Keep

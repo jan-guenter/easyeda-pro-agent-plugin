@@ -12,8 +12,11 @@ type Bag = Record<string, unknown>;
 type Failure = "none" | "cache-preflight" | "cache-clear-release" | "open-decode" | "saved-read" | "snapshot" | "comparison" | "foreign-journal" | "source-before-launch" |
   "launch-clock" | "admission-before-capture" | "launch-clock-close-ack";
 interface Harness {
-  invoke: (name: string) => Promise<Bag>;
+  invoke: (name: string, retainForInverse?: true) => Promise<Bag>;
   inspect: () => Bag;
+  assertResult: (value: unknown) => Bag;
+  transferResult: (value: unknown) => Promise<void>;
+  revalidateResult: (value: unknown) => Promise<void>;
   state: { calls: string[]; launches: number; closes: number; reads: number; snapshots: number; comparisons: number; releases: number; sourceReads: number };
   artifacts: Map<string, unknown>;
 }
@@ -36,6 +39,9 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   const afterInventory = Object.freeze({ synthetic: "verification-inventory" }), beforeInventory = Object.freeze({ synthetic: "post-edit-inventory" });
   const postedit = Object.freeze({ checkpoint: { sourceSha256: "d".repeat(64) }, copy: { receiptSha256: "e".repeat(64) } });
   const finalSnapshot = Object.freeze({ synthetic: "verification-snapshot" });
+  const originalFinalSnapshot = Object.freeze({ inventory: afterInventory, proof: { synthetic: "original-proof" }, capture, launch });
+  const initialMetadata = Object.freeze({ name: "Before", description: "Before description", tags: [], source: "" });
+  const savedSource = Object.freeze({ observation: { synthetic: "original-saved-observation" }, source: { synthetic: "original-saved-source" } });
   const journal: Bag = { operationId: ID, artifacts: [], sequence: 30, plan: { profile: "writer" }, state: "plan-invalidated",
     hardStop: false, orphanedCallPossible: false, bridgeSessionBeforeOrphan: prior,
     bridgeDispatchBeforeOrphan: { old: true }, executionAuthorityBeforeOrphan: { processes: [previousLaunch.root] },
@@ -64,7 +70,7 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   };
   const source = { operationId: ID, snapshot: postedit, clockPlan: {}, dispatchOwner: {}, writeInput: {}, sqlRuntime: {}, journal,
     original: { source: { runtime, target: { projectUuid: "p", branchUuid: "b", expectedSourceSha256: "c".repeat(64) }, expectedFingerprint: fingerprint },
-      launch: previousLaunch, capture: { bridgeSession: prior }, baseline: { checkpoint: { sourceSha256: "c".repeat(64) } } } };
+      launch: previousLaunch, capture: { bridgeSession: prior }, baseline: { checkpoint: { sourceSha256: "c".repeat(64) }, preparation: { metadata: { before: initialMetadata } } } } };
   const mark = (): void => {
     Object.assign(journal, { orphanedCallPossible: true, bridgeSessionBeforeOrphan: active, bridgeDispatchBeforeOrphan: lease,
       executionAuthorityBeforeOrphan: { processes: [launch.root] } }); disk = structuredClone(journal);
@@ -141,6 +147,7 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
       return Promise.resolve(Object.freeze({ profile: "private.current-symbol-saved-read.v1", exactSavedContent: true }));
     },
     assertCurrentSavedSymbolRead: (value: unknown): unknown => value,
+    assertCurrentSavedSymbolReadSource: (): typeof savedSource => savedSource,
     currentSavedSymbolReadEvidence: (): Bag => ({ rawRetained: true, raw: { synthetic: "saved-read-raw" } }),
     assertCurrentClosedSessionTerminationObservation: noOp, assertCurrentClosedSessionCopyAuthority: noOp,
     assertClosedSessionCopyAuthority: (proof: unknown): Promise<unknown> => Promise.resolve(proof),
@@ -150,7 +157,10 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
       return failure === "snapshot" ? Promise.reject(new Error("Synthetic final snapshot failed")) : Promise.resolve(finalSnapshot);
     },
     assertOriginalCurrentSymbolFinishSnapshot: (value: unknown): Bag => { assert.equal(value, postedit); return { inventory: beforeInventory }; },
-    assertOriginalCurrentSymbolVerificationSnapshot: (value: unknown): Bag => { assert.equal(value, finalSnapshot); return { inventory: afterInventory }; },
+    assertOriginalCurrentSymbolVerificationSnapshot: (value: unknown): Bag => { assert.equal(value, finalSnapshot); return originalFinalSnapshot; },
+    revalidateCurrentSymbolVerificationSnapshot: (_engine: unknown, value: unknown): Promise<void> => {
+      assert.equal(value, finalSnapshot); assert.equal(state.releases, 0); return Promise.resolve();
+    },
     compareCompleteClosedSql: (before: unknown, after: unknown): Promise<unknown> => {
       assert.equal(before, beforeInventory); assert.equal(after, afterInventory); state.comparisons += 1;
       return failure === "comparison" ? Promise.reject(new Error("Synthetic full SQL differs")) : Promise.resolve({ exactLogicalSqlUnchanged: true });
@@ -158,11 +168,22 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   });
   const constructor: unknown = runInContext(`${program}\nCurrentSymbolVerificationCoordinator;`, context); assert.ok(typeof constructor === "function");
   const instance: unknown = Reflect.construct(constructor, [engine]); assert.ok(isRecord(instance));
-  const invokeRaw = (name: string): unknown => {
+  const invokeRaw = (name: string, retainForInverse?: true): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function");
-    return Reflect.apply(method, instance, [name === "start" ? continuation : ID]) as unknown;
+    return Reflect.apply(method, instance, [name === "start" ? continuation : ID, retainForInverse]) as unknown;
   };
-  return { invoke: async (name): Promise<Bag> => object(await invokeRaw(name)), inspect: (): Bag => object(invokeRaw("inspect")), state, artifacts };
+  const assertResultFunction: unknown = runInContext("assertCurrentSymbolVerificationResult;", context);
+  assert.ok(typeof assertResultFunction === "function");
+  const assertResult = (value: unknown): Bag => object(Reflect.apply(assertResultFunction, undefined, [value, engine]));
+  const callResult = async (value: unknown, methodName: string): Promise<void> => {
+    const result = assertResult(value);
+    const method = result[methodName]; assert.ok(typeof method === "function");
+    await Reflect.apply(method, result, []);
+  };
+  return { invoke: async (name, retainForInverse): Promise<Bag> => object(await invokeRaw(name, retainForInverse)),
+    inspect: (): Bag => object(invokeRaw("inspect")), assertResult,
+    transferResult: (value): Promise<void> => callResult(value, "transfer"),
+    revalidateResult: (value): Promise<void> => callResult(value, "revalidateClosed"), state, artifacts };
 }
 async function open(f: Harness): Promise<void> { await f.invoke("start"); await f.invoke("admit"); await f.invoke("observeCaches"); await f.invoke("openProject"); }
 async function finish(f: Harness): Promise<Bag> {
@@ -181,6 +202,28 @@ void test("private verification runs one original post-edit reopen, scoped saved
 });
 void test("post-edit source refusal occurs before launch or continuation transfer", async () => {
   const f = await fixture("source-before-launch"); await assert.rejects(f.invoke("start"), /source changed/u); assert.equal(f.state.launches, 0);
+});
+void test("verified result retains the original closure and transfers it only once without releasing captures", async () => {
+  const f = await fixture(); await open(f); await f.invoke("collectSavedContent"); await f.invoke("finishNormalClose");
+  await f.invoke("observeFinish", true); const held = await f.invoke("observeFinish", true);
+  assert.equal(held["retainedForInverse"], true); assert.equal(held["retired"], false); assert.equal(f.state.releases, 0);
+  const token = await f.invoke("getResultContinuation");
+  const result = f.assertResult(token);
+  assert.deepEqual(result["initialMetadata"], { name: "Before", description: "Before description", tags: [], source: "" });
+  assert.throws(() => f.assertResult(structuredClone(token)), /original successful/u);
+  await f.revalidateResult(token); await f.transferResult(token);
+  assert.equal(f.inspect()["inverseOwnershipTransferred"], true); assert.equal(f.inspect()["finishObservationAvailable"], false);
+  assert.equal(f.state.releases, 0); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1);
+  await assert.rejects(f.transferResult(token)); await assert.rejects(f.invoke("observeFinish"));
+  assert.equal(f.state.releases, 0);
+});
+void test("held verification can retire normally without granting later inverse closure authority", async () => {
+  const f = await fixture(); await open(f); await f.invoke("collectSavedContent"); await f.invoke("finishNormalClose");
+  await f.invoke("observeFinish", true); await f.invoke("observeFinish", true);
+  const token = await f.invoke("getResultContinuation");
+  const retired = await f.invoke("observeFinish"); assert.equal(retired["retired"], true); assert.equal(f.state.releases, 1);
+  await assert.rejects(f.revalidateResult(token)); await assert.rejects(f.transferResult(token));
+  assert.equal(f.state.closes, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1);
 });
 for (const failure of ["launch-clock", "admission-before-capture", "launch-clock-close-ack"] as const) {
   void test(`pre-capture original launch cleanup survives ${failure} without claiming saved-state proof`, async () => {

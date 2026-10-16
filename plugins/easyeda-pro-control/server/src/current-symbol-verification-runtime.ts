@@ -7,14 +7,18 @@ import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { assertExpectedFingerprint, assertSubset, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { verifyCurrentDisposableOpenImplementation, verifyCurrentProjectOnlyOpenImplementation } from "./current-disposable-open-profile.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "./current-project-only-open.ts";
-import { assertOriginalCurrentSymbolFinishSnapshot, assertOriginalCurrentSymbolVerificationSnapshot, captureCurrentSymbolVerificationSnapshot } from "./current-symbol-baseline-copy.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
+import { assertOriginalCurrentSymbolFinishSnapshot, assertOriginalCurrentSymbolVerificationSnapshot, captureCurrentSymbolVerificationSnapshot, revalidateCurrentSymbolVerificationSnapshot } from "./current-symbol-baseline-copy.ts";
 import type { CurrentSymbolFinishSnapshotEvidence, CurrentSymbolVerificationSnapshot } from "./current-symbol-baseline-copy.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { verifyCurrentSymbolPosteditPreopenSource } from "./current-symbol-preopen-source.ts";
 // oxlint-disable-next-line import/no-cycle -- The fixed saved reader consumes only the original generation issued here; it cannot create a replacement generation.
-import { assertCurrentSavedSymbolRead, collectCurrentSavedSymbolContent, currentSavedSymbolReadEvidence } from "./current-symbol-saved-read.ts";
+import { assertCurrentSavedSymbolRead, assertCurrentSavedSymbolReadSource, collectCurrentSavedSymbolContent, currentSavedSymbolReadEvidence } from "./current-symbol-saved-read.ts";
 import type { CurrentSavedSymbolRead } from "./current-symbol-saved-read.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { prepareCurrentSavedSymbolSource } from "./current-symbol-saved-source.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { assertOriginalCurrentSymbolWriterContinuation, revalidateCurrentSymbolWriterContinuation, transferCurrentSymbolWriterContinuation } from "./current-symbol-writer-runtime.ts";
 import type { CurrentSymbolWriterContinuation, CurrentSymbolWriterContinuationSource } from "./current-symbol-writer-runtime.ts";
 import { CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "./current-upload-queue-read.ts";
@@ -48,6 +52,28 @@ interface Slot {
   readonly snapshotEvidence: Map<CurrentSymbolFinishSnapshotEvidence["kind"], CurrentSymbolFinishSnapshotEvidence["value"]>;
   comparisonAttempted: boolean; comparison?: Value; releaseAttempted: boolean; retired: boolean;
   failed: boolean; dispatchCaptureCleanupUncertain: boolean;
+  retainForInverse: boolean; inverseTransferred: boolean; resultContinuation?: CurrentSymbolVerificationResult;
+}
+export interface CurrentSymbolVerificationResult {
+  readonly profile: "private.current-symbol-verification-result.v1";
+  readonly operationId: string;
+}
+export interface CurrentSymbolVerificationResultSource {
+  readonly writer: CurrentSymbolWriterContinuationSource;
+  readonly snapshot: CurrentSymbolVerificationSnapshot;
+  readonly originalSnapshot: ReturnType<typeof assertOriginalCurrentSymbolVerificationSnapshot>;
+  readonly saved: ReturnType<typeof assertCurrentSavedSymbolReadSource>;
+  readonly initialMetadata: CurrentSymbolWriterContinuationSource["original"]["baseline"]["preparation"]["metadata"]["before"];
+  readonly journal: Journal;
+  readonly currentClosed: () => void;
+  readonly revalidateClosed: () => Promise<void>;
+  readonly transfer: () => Promise<void>;
+}
+const verificationResults = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly source: CurrentSymbolVerificationResultSource; readonly current: () => void }>();
+export function assertCurrentSymbolVerificationResult(value: unknown, engine: EasyedaControlEngine): CurrentSymbolVerificationResultSource {
+  need(value !== null && typeof value === "object"); const original = verificationResults.get(value);
+  need(original !== undefined && original.engine === engine, "Inverse requires the original successful verification result.");
+  original.current(); return original.source;
 }
 export interface CurrentSymbolVerificationGeneration {
   readonly profile: "private.current-symbol-verification-generation.v1";
@@ -106,6 +132,9 @@ function summary(slot: Slot): Value {
     snapshotAttempted: slot.snapshotAttempted, snapshotComplete: slot.snapshot !== undefined,
     comparisonAttempted: slot.comparisonAttempted, comparison: slot.comparison === undefined ? null : structuredClone(slot.comparison),
     failed: slot.failed, retired: slot.retired, dispatchCaptureCleanupUncertain: slot.dispatchCaptureCleanupUncertain,
+    retainedForInverse: slot.retainForInverse, inverseOwnershipTransferred: slot.inverseTransferred,
+    finishObservationAvailable: !slot.releaseAttempted && !slot.retired && !slot.inverseTransferred &&
+      (slot.closeReceipt !== undefined || slot.preCaptureCloseAttempted),
     persistentUploadReplayExcluded: slot.cachesObserved && slot.opened,
     uploadExclusionScope: "point-in-time-inactive-generation-and-immediate-preopen",
     fullReopenReadbackInvariant: slot.saved !== undefined && slot.comparison !== undefined && !slot.failed && slot.retired,
@@ -123,7 +152,7 @@ export class CurrentSymbolVerificationCoordinator {
   private busy = false;
   public constructor(engine: EasyedaControlEngine) { this.engine = engine; }
   private current(slot: Slot, scopeText?: string): void {
-    need(this.slots.get(slot.source.operationId) === slot && !slot.retired);
+    need(this.slots.get(slot.source.operationId) === slot && !slot.retired && !slot.inverseTransferred);
     need(assertOriginalCurrentSymbolWriterContinuation(slot.continuation, this.engine) === slot.source);
     slot.infrastructure(scopeText);
     if (slot.capture !== undefined) { need(canonicalJson(slot.capture) === slot.captureText); }
@@ -249,7 +278,8 @@ export class CurrentSymbolVerificationCoordinator {
         admissionAttempted: false, captureAttempted: false, admitted: false, cacheAttempted: false, cachesObserved: false, openAttempted: false, opened: false,
         readAttempted: false, closeAttempted: false, finishing: false, snapshotAttempted: false, snapshotEvidence: new Map(),
         preCaptureCloseAttempted: false, preCaptureCloseAcknowledged: false,
-        comparisonAttempted: false, releaseAttempted: false, retired: false, failed: false, dispatchCaptureCleanupUncertain: false };
+        comparisonAttempted: false, releaseAttempted: false, retired: false, failed: false, dispatchCaptureCleanupUncertain: false,
+        retainForInverse: false, inverseTransferred: false };
       this.slots.set(source.operationId, slot);
       const previous = structuredClone(slot.journal);
       // The prior generation is terminal. Preserve all of its fields in the
@@ -449,7 +479,7 @@ export class CurrentSymbolVerificationCoordinator {
     } catch (error) { await this.stop(slot, "normal-close"); throw error; }
     finally { this.busy = false; }
   }
-  public async observeFinish(operationId: string): Promise<Value> {
+  public async observeFinish(operationId: string, retainForInverse?: true): Promise<Value> {
     const slot = this.slots.get(operationId); need(!this.busy && slot !== undefined && slot.launch !== undefined && !slot.releaseAttempted && !slot.retired &&
       (slot.capture === undefined ? slot.preCaptureCloseAttempted : slot.intent !== undefined && slot.closeReceipt !== undefined));
     this.busy = true;
@@ -481,6 +511,16 @@ export class CurrentSymbolVerificationCoordinator {
         await this.unchanged(slot); this.closedDispatch(slot); assertCurrentClosedSessionCopyAuthority(proof);
         await this.record(slot, "verification-closed-comparison", slot.comparison);
       }
+      if (retainForInverse === true) {
+        need(!slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.saved !== undefined && slot.snapshot !== undefined && slot.comparison !== undefined);
+        await revalidateCurrentSymbolVerificationSnapshot(this.engine, slot.snapshot); await this.unchanged(slot); this.closedDispatch(slot);
+        slot.retainForInverse = true;
+        if (slot.resultContinuation === undefined) { this.issueResult(slot); }
+        slot.journal.state = "verification-retained-for-inverse";
+        slot.journal.nextSafeAction = "Prepare the internally derived inverse using this original retained closure, or retire without an inverse. No replay or Save.";
+        await this.record(slot, "verification-result-retained", { ...summary(slot), snapshot: slot.snapshot, inverseReady: false });
+        return Object.freeze({ ...summary(slot), termination: "terminated", inverseReady: false });
+      }
       await this.record(slot, "verification-retirement-intent", { proof, ...summary(slot) });
       this.closedDispatch(slot); assertCurrentClosedSessionCopyAuthority(proof); slot.releaseAttempted = true;
       if (slot.journal.orphanedCallPossible) {
@@ -497,6 +537,47 @@ export class CurrentSymbolVerificationCoordinator {
       return Object.freeze({ ...summary(slot), termination: "terminated" });
     } catch (error) { await this.stop(slot, "termination-or-comparison"); throw error; }
     finally { this.busy = false; }
+  }
+  private issueResult(slot: Slot): void {
+    const { snapshot, saved, generation } = slot; need(snapshot !== undefined && saved !== undefined && generation !== undefined);
+    const originalSnapshot = assertOriginalCurrentSymbolVerificationSnapshot(snapshot, this.engine);
+    const savedSource = assertCurrentSavedSymbolReadSource(saved, this.engine, generation);
+    const token: CurrentSymbolVerificationResult = Object.freeze({ profile: "private.current-symbol-verification-result.v1", operationId: slot.source.operationId });
+    const initialMetadata = Object.freeze(structuredClone(slot.source.original.baseline.preparation.metadata.before));
+    const resultText = canonicalJson({ snapshot, savedSource, initialMetadata, comparison: slot.comparison });
+    const current = (): void => {
+      need(this.slots.get(token.operationId) === slot && slot.resultContinuation === token && !slot.failed && !slot.dispatchCaptureCleanupUncertain &&
+        slot.saved === saved && slot.snapshot === snapshot && slot.comparison !== undefined &&
+        canonicalJson({ snapshot, savedSource, initialMetadata, comparison: slot.comparison }) === resultText);
+      need(assertOriginalCurrentSymbolVerificationSnapshot(snapshot, this.engine) === originalSnapshot);
+      assertCurrentSavedSymbolRead(saved, this.engine, generation);
+    };
+    const currentClosed = (): void => {
+      current(); this.current(slot); need(slot.retainForInverse && !slot.releaseAttempted && !slot.inverseTransferred);
+      this.closedDispatch(slot); assertCurrentClosedSessionCopyAuthority(originalSnapshot.proof);
+    };
+    const revalidateClosed = async (): Promise<void> => {
+      currentClosed(); await this.unchanged(slot); currentClosed();
+      await revalidateCurrentSymbolVerificationSnapshot(this.engine, snapshot); currentClosed();
+    };
+    const transfer = async (): Promise<void> => {
+      need(!this.busy); this.busy = true;
+      try {
+        await revalidateClosed();
+        slot.journal.state = "plan-invalidated"; slot.journal.hardStop = false;
+        slot.journal.nextSafeAction = "Verified closure ownership transferred to the original inverse baseline; no release, relaunch or replay by this verifier.";
+        await this.record(slot, "verification-inverse-ownership-transfer", { snapshot, originalCaptureRetained: true, captureReleased: false });
+        currentClosed(); slot.inverseTransferred = true;
+      } finally { this.busy = false; }
+    };
+    slot.resultContinuation = token;
+    verificationResults.set(token, { engine: this.engine, current, source: Object.freeze({ writer: slot.source, snapshot,
+      originalSnapshot, saved: savedSource, initialMetadata, journal: slot.journal, currentClosed, revalidateClosed, transfer }) });
+    currentClosed();
+  }
+  public getResultContinuation(operationId: string): CurrentSymbolVerificationResult {
+    const slot = this.slots.get(operationId); need(slot?.resultContinuation !== undefined);
+    assertCurrentSymbolVerificationResult(slot.resultContinuation, this.engine); return slot.resultContinuation;
   }
   private async observePreCaptureFinish(slot: Slot): Promise<Value> {
     need(slot.capture === undefined && slot.launch !== undefined && slot.preCaptureCloseIntent !== undefined && slot.preCaptureCloseAttempted);

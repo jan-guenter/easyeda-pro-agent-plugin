@@ -14,6 +14,9 @@ import { canonicalJson, isRecord, normalizeEasyedaProjectPath, sha256Json } from
 // oxlint-disable-next-line import/no-cycle -- Only the retained opening coordinator can issue the owner consumed by its closed-copy stage; no alternate issuer or caller verifier is exposed.
 import { assertCurrentSymbolBaselineOwner, revalidateCurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
+// oxlint-disable-next-line import/no-cycle -- Inverse copying accepts only the verifier-derived original owner; an injectable registry would weaken issuance.
+import { assertCurrentSymbolInverseBaselineOwner, revalidateCurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
+import type { CurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
 import { assessCurrentStartupPremises } from "./current-startup-premises.ts";
 import type { CurrentStartupPremises } from "./current-startup-premises.ts";
 import { currentClosedSymbolMetadataProjection } from "./current-symbol-closed-target.ts";
@@ -43,7 +46,7 @@ export type CurrentSymbolBaselineCopyEvidence =
   Readonly<{ kind: "preparation"; value: CurrentSymbolMetadataPreparationResult }>;
 export interface CurrentSymbolBaselineCopy {
   readonly profile: "private.current-symbol-baseline-copy.v1";
-  readonly owner: CurrentSymbolBaselineOwner;
+  readonly owner: CurrentSymbolBaselineOwner | CurrentSymbolInverseBaselineOwner;
   readonly checkpoint: CheckpointReceipt;
   readonly copy: ClosedFileCopyReceipt;
   readonly inventory: SqlInventory;
@@ -59,7 +62,7 @@ export interface CurrentSymbolBaselineCopy {
   readonly writerReady: false;
   readonly executionAuthorized: false;
 }
-const consumed = new WeakSet<CurrentSymbolBaselineOwner>();
+const consumed = new WeakSet<CurrentSymbolBaselineOwner | CurrentSymbolInverseBaselineOwner>();
 const issued = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly text: string;
   readonly closedLaunch: WindowsAuthorityLaunch; readonly closedSession: ClosedSessionAuthorityCapture["bridgeSession"] }>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
@@ -81,7 +84,7 @@ export async function revalidateCurrentSymbolBaselineCopy(engine: EasyedaControl
   proof: ClosedSessionTerminationProof): Promise<void> {
   const current = (): void => {
     assertOriginalCurrentSymbolBaselineCopy(value, engine);
-    assertCurrentSymbolBaselineOwner(value.owner, engine);
+    assertBaselineOwner(value.owner, engine);
     assertIssuedClosedFileCopy(value.copy);
     assertCurrentClosedSessionCopyAuthority(proof);
     const completion = readerCompletion(value.inventory);
@@ -92,7 +95,7 @@ export async function revalidateCurrentSymbolBaselineCopy(engine: EasyedaControl
   };
   current();
   need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority."); current();
-  await revalidateCurrentSymbolBaselineOwner(value.owner, engine); current();
+  await revalidateBaselineOwner(value.owner, engine); current();
   const root = await controlRootCapability(); current();
   const receiptCurrent = async (): Promise<void> => {
     const receipt = await readArtifact(value.checkpoint.receiptPath, 0, 65_536); current();
@@ -117,7 +120,7 @@ export async function revalidateCurrentSymbolBaselineCopy(engine: EasyedaControl
   }
 }
 
-function closeBinding(input: CurrentSymbolBaselineCopyInput,
+function closeBinding(input: Omit<CurrentSymbolBaselineCopyInput, "owner"> & { readonly owner: Pick<CurrentSymbolBaselineOwner, "operationId"> },
   source: Pick<ReturnType<typeof assertCurrentSymbolBaselineOwner>["source"], "launchProjection" | "bridgeSession">,
   phase: "closed-baseline" | "closed-edit" | "closed-verification" = "closed-baseline"): void {
   const { owner, capture, intent, closeReceipt, proof } = input;
@@ -143,6 +146,63 @@ function closeBinding(input: CurrentSymbolBaselineCopyInput,
     proof["helperInstance"] === launch.helperInstance && proof["jobId"] === launch.jobId &&
     proof["policyId"] === authority.policyId && proof["policySha256"] === authority.policySha256,
   "Current symbol baseline closure does not bind its owner, capture, session, runtime and launch.");
+}
+
+function assertBaselineOwner(owner: CurrentSymbolBaselineCopy["owner"], engine: EasyedaControlEngine): void {
+  if (owner.profile === "private.current-symbol-inverse-baseline-owner.v1") { assertCurrentSymbolInverseBaselineOwner(owner, engine); }
+  else { assertCurrentSymbolBaselineOwner(owner, engine); }
+}
+async function revalidateBaselineOwner(owner: CurrentSymbolBaselineCopy["owner"], engine: EasyedaControlEngine): Promise<void> {
+  await (owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ?
+    revalidateCurrentSymbolInverseBaselineOwner(owner, engine) : revalidateCurrentSymbolBaselineOwner(owner, engine));
+}
+/** Fixed binding for a fresh inverse scratch sample before transferring its
+ * verified predecessor's held closure. Never accepts a caller-selected journal.
+ */
+export function currentSymbolBaselineClockBinding(value: CurrentSymbolBaselineCopy, engine: EasyedaControlEngine):
+Readonly<{ journalOperationId: string; phase: "closed-baseline" | "closed-verification" }> {
+  assertOriginalCurrentSymbolBaselineCopy(value, engine);
+  if (value.owner.profile !== "private.current-symbol-inverse-baseline-owner.v1") {
+    return Object.freeze({ journalOperationId: value.owner.operationId, phase: "closed-baseline" });
+  }
+  const original = assertCurrentSymbolInverseBaselineOwner(value.owner, engine);
+  return Object.freeze({ journalOperationId: original.predecessor.operationId, phase: "closed-verification" });
+}
+
+/** Adopt the actual complete verified post-edit copy, never a synthetic SQL
+ * baseline. New metadata preparation and startup premises use that checkpoint.
+ */
+export async function prepareCurrentSymbolInverseBaselineCopy(engine: EasyedaControlEngine,
+  owner: CurrentSymbolInverseBaselineOwner): Promise<CurrentSymbolBaselineCopy> {
+  const original = assertCurrentSymbolInverseBaselineOwner(owner, engine);
+  need(!consumed.has(owner), "Current inverse baseline copy attempt already consumed."); consumed.add(owner);
+  const { snapshot, originalSnapshot: snapshotSource } = original.result;
+  const { checkpoint, copy } = snapshot, { inventory } = snapshotSource;
+  const preparation = original.preparation.checkpointPreparation, source = original.source;
+  const current = async (): Promise<void> => {
+    need(await revalidateCurrentSymbolInverseBaselineOwner(owner, engine) === original, "Inverse baseline owner changed.");
+    need(assertOriginalCurrentSymbolVerificationSnapshot(snapshot, engine) === snapshotSource, "Inverse baseline snapshot changed.");
+  };
+  await current();
+  const history = await readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint,
+    expectedSha256: checkpoint.checkpointSha256, projectUuid: preparation.target.projectUuid, libraryAtomHeaders: "preserve" }); await current();
+  const matches = history.documents.filter((document) => document.uuid === source.target.documentUuid);
+  const document = matches[0];
+  need(history.projectUuid === preparation.target.projectUuid && history.branchUuid === preparation.target.branchUuid &&
+    history.projectOwnerUuid === preparation.target.ownerUuid && matches.length === 1 && document?.docType === "PCB" && !isNativeDocumentDeleted(document),
+  "Inverse baseline needs the original undeleted companion PCB.");
+  const targetEvidence = Object.freeze({ projectUuid: history.projectUuid, branchUuid: history.branchUuid, ownerUuid: history.projectOwnerUuid,
+    documentUuid: document.uuid, docType: "PCB" as const, documentSemanticSha256: document.semanticSha256,
+    historySemanticSha256: history.semanticSha256, headHistoryUuid: history.headHistoryUuid });
+  const startupPremises = await assessCurrentStartupPremises({ inventory, sourceSha256: copy.sha256, checkpointSha256: checkpoint.checkpointSha256,
+    history, target: preparation.target, documentUuid: document.uuid }); await current();
+  need(preparation.history.headHistoryUuid === history.headHistoryUuid && preparation.history.documents === history.documents.length,
+    "Inverse metadata preparation differs from its complete snapshot.");
+  const result: CurrentSymbolBaselineCopy = Object.freeze({ profile: "private.current-symbol-baseline-copy.v1", owner, checkpoint, copy, inventory,
+    preparation, startupPremises, targetEvidence, postOpeningClosedCopyCaptured: true, beforeWriteBaselineVerified: false,
+    openingEffectsVerified: false, writerReady: false, executionAuthorized: false });
+  issued.set(result, { engine, text: canonicalJson(result), closedLaunch: snapshotSource.launch, closedSession: snapshotSource.capture.bridgeSession });
+  return result;
 }
 
 function copyLineage(checkpoint: CheckpointReceipt, copy: ClosedFileCopyReceipt): void {
@@ -322,11 +382,19 @@ export function assertOriginalCurrentSymbolVerificationSnapshot(value: CurrentSy
  * post-edit checkpoint, raw copy and source. This never substitutes the older
  * baseline or grants authority after a restart.
  */
-export async function revalidateCurrentSymbolFinishSnapshot(engine: EasyedaControlEngine,
+export function revalidateCurrentSymbolFinishSnapshot(engine: EasyedaControlEngine,
   snapshot: CurrentSymbolFinishSnapshot): Promise<void> {
-  const original = assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine);
+  return revalidateSnapshot(engine, snapshot);
+}
+export function revalidateCurrentSymbolVerificationSnapshot(engine: EasyedaControlEngine,
+  snapshot: CurrentSymbolVerificationSnapshot): Promise<void> {
+  return revalidateSnapshot(engine, snapshot);
+}
+async function revalidateSnapshot(engine: EasyedaControlEngine,
+  snapshot: CurrentSymbolFinishSnapshot | CurrentSymbolVerificationSnapshot): Promise<void> {
+  const original = originalSnapshot(snapshot, engine);
   const current = (): void => {
-    need(assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine) === original, "Current symbol post-edit snapshot owner changed.");
+    need(originalSnapshot(snapshot, engine) === original, "Current symbol post-edit snapshot owner changed.");
     assertIssuedClosedFileCopy(snapshot.copy); assertCurrentClosedSessionCopyAuthority(original.proof);
     const completion = readerCompletion(original.inventory);
     need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&

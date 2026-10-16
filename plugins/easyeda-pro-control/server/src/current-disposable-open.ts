@@ -3,6 +3,7 @@ import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { sha256Text } from "./core.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
+import { currentSymbolValidationStepSchema } from "./current-symbol-validation.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY, CURRENT_MAIN_REFERENCE_RUNTIME_PINS, CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256,
   CURRENT_MAIN_REFERENCE_VERSIONS } from "./current-main-reference-helper-identity.ts";
 
@@ -45,6 +46,9 @@ export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action",
   z.object({ action: z.literal("baseline-finish-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-observe-finish"), operationId }).strict(),
   z.object({ action: z.literal("baseline-inspect"), operationId }).strict(),
+  z.object({ action: z.literal("validation-begin"), operationId, confirmDisposableProject: z.literal(true) }).strict(),
+  z.object({ action: z.literal("validation-advance"), operationId, step: currentSymbolValidationStepSchema }).strict(),
+  z.object({ action: z.literal("validation-inspect"), operationId }).strict(),
 ]).refine((value) => value.action !== "open" || sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.")
   .refine((value) => value.action !== "baseline-begin" || value.operationId !== value.openingOperationId, "The baseline needs a distinct operation ID.");
 export type CurrentDisposableOpenRequest = z.infer<typeof currentDisposableOpenRequestSchema>;
@@ -74,8 +78,10 @@ const limitations = [
   "Project-only reopening requires a supported historical closed baseline, a fresh raw-source hash, exact registered path and fresh inactive upload-cache observations. It opens no editor document. A project-open return is not full startup completion, persistence, backend actor/clock qualification or writer authority; writers remain disabled. Finish requests normal close without Save/Discard and observes the original new generation's termination. Unknown disposable file effects are retained, not accepted as an intended edit.",
   "Only baseline-open-project accepts optional acceptUnqualifiedSchematicStartupEffects:true for disposable observation-only opening when active schematic pages are the sole historical blocker. Schematic initialization may rewrite documents or queue persistence. The active-page blocker and historicalSubsetSatisfied:false remain recorded; every other historical prerequisite remains mandatory. Omitting this acceptance keeps the strict no-active-page gate. Acceptance never grants startup, opening-effect, persistence or writer authority.",
   "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
-  "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Pre-admission launch failures and unsupported stopped states remain review-only.",
+  "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
   "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
+  "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Normal design writers remain disabled and this route is not yet connected-validated.",
+  "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps.",
 ] as const;
 
 export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
@@ -90,7 +96,8 @@ export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, 
     }, entries: [{
     action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
     actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch",
-      "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect"], limitations: [...limitations],
+      "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect",
+      "validation-begin", "validation-advance", "validation-inspect"], limitations: [...limitations],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentDisposableOpenRequestSchema) } : {}),
   }] };
 }
