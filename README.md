@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016200000` fixes missing production clock-method
+Candidate `0.3.0+codex.20261016211500` corrects a source-proven startup-holder
+mismatch and adds bounded failure categories. The200000 disposable run passed
+both clock controls, then refused before writer transfer. Original-owner cleanup
+completed with unchanged raw bytes, all 35 SQL tables and 18 native documents.
+The new internal ordinary metadata workflow is forward-only and purpose-bound,
+but remains unregistered pending a successful disposable round trip.
+See the [startup correction and remaining work](docs/current-symbol-writer-owner-release-2026-10-16.md).
+
+Update `0.3.0+codex.20261016200000` fixes missing production clock-method
 forwarding and removes redundant launch/baseline admission scans while retaining
 the final checks. The190000 disposable run passed its isolated clock check and
 project-only reopening, then refused before renderer sampling or any edit.

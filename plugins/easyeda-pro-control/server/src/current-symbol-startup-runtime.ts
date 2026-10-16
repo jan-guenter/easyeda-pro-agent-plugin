@@ -2,7 +2,7 @@
 /* oxlint-disable import/max-dependencies -- Compose original generation, source pins and bounded evidence directly without a caller-selectable verifier. */
 import { readExactUtf8Artifact, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
-import { assertExpectedFingerprint, assertUpstreamReplySettled, canonicalJson, extractToolPayload, sha256Json, sha256Text } from "./core.ts";
+import { assertExpectedFingerprint, assertUpstreamReplySettled, canonicalJson, extractToolPayload, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
 import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbol-guard.ts";
 // oxlint-disable-next-line import/no-cycle -- Startup consumes the original baseline generation now retained by disposable orchestration; a supplied issuer would weaken ownership.
@@ -10,7 +10,7 @@ import { assertCurrentProjectOnlySymbolGeneration, revalidateCurrentProjectOnlyS
 import type { CurrentProjectOnlySymbolGeneration, CurrentProjectOnlySymbolGenerationSource } from "./current-symbol-baseline-runtime.ts";
 import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
-import { buildCurrentSymbolStartupGuard } from "./current-symbol-startup-guard.ts";
+import { CURRENT_SYMBOL_STARTUP_STAGES, buildCurrentSymbolStartupGuard } from "./current-symbol-startup-guard.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
@@ -59,15 +59,17 @@ export function buildCurrentSymbolStartupObservation(target: Readonly<{ projectU
   exact(target, ["projectUuid", "branchUuid"]);
   need(/^[a-f0-9]{64}$/u.test(target.projectUuid) && /^[a-f0-9]{32}$/u.test(target.branchUuid));
   const selected = currentSymbolStartupExpectationSchema.parse(expectation);
-  return `const observation=(()=>{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},startupExpected=${JSON.stringify(selected)},expired=false;
+  return `let startupStage='project-only-context';
+const observation=(()=>{try{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},startupExpected=${JSON.stringify(selected)},expired=false;
 const bad=()=>{throw new Error('CURRENT_SYMBOL_STARTUP_FAILED');};
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
 const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
 const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
 ${buildCurrentProjectOnlySymbolGuard()}
-${buildCurrentSymbolStartupGuard()}
-startup.check();projectOnly.check();startup.check();
-return{profile:'private.current-symbol-startup-observation.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,executionAuthorized:false};})();
+${buildCurrentSymbolStartupGuard(true)}
+startup.check();startupStage='project-only-context';projectOnly.check();startup.check();
+return{profile:'private.current-symbol-startup-observation.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,executionAuthorized:false};
+}catch{return{profile:'private.current-symbol-startup-failure.v1',stage:startupStage,executionAuthorized:false};}})();
 const json=JSON.stringify(observation),utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
 if(utf8Bytes>${MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${MAX_BYTES})throw new Error('CURRENT_SYMBOL_STARTUP_ENVELOPE');
@@ -79,9 +81,15 @@ export function decodeCurrentSymbolStartupObservation(raw: unknown, target: Read
   const envelope = exact(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   need(envelope["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope["json"] === "string" &&
     envelope["json"].length > 0 && envelope["json"].length <= MAX_BYTES && Buffer.byteLength(JSON.stringify(envelope)) <= MAX_BYTES);
+  const observation = decodeExactReadEnvelope(envelope);
+  if (isRecord(observation) && observation["profile"] === "private.current-symbol-startup-failure.v1") {
+    const failure = exact(observation, ["profile", "stage", "executionAuthorized"]), stage = failure["stage"];
+    need(failure["executionAuthorized"] === false && CURRENT_SYMBOL_STARTUP_STAGES.some((allowed) => allowed === stage));
+    throw new Error(`Current symbol writer startup qualification refused [startup:${String(stage)}].`);
+  }
   const expected = { profile: "private.current-symbol-startup-observation.v1", ...target, sheetUuids: expectation.sheetUuids,
     templates: expectation.templates, executionAuthorized: false };
-  need(canonicalJson(decodeExactReadEnvelope(envelope)) === canonicalJson(expected));
+  need(canonicalJson(observation) === canonicalJson(expected));
 }
 
 export function assertCurrentSymbolWriterStartup(value: unknown, engine: EasyedaControlEngine,
@@ -132,6 +140,9 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   need(history.semanticSha256 === premises.historySemanticSha256 && history.branchUuid === baseline.preparation.target.branchUuid);
   const expectation = selectCurrentSymbolStartupExpectation(history);
   need(expectation.sheetUuids.length === premises.activeSchematicPages);
+  if (source.source.purpose === "ordinary-symbol-metadata") {
+    need(source.source.startupExpectation !== undefined && canonicalJson(expectation) === canonicalJson(source.source.startupExpectation));
+  }
   const fingerprint = source.source.expectedFingerprint;
   assertExpectedFingerprint(fingerprint); validateSdkLocalRuntimeFingerprint(fingerprint);
   const assetsRoot = fingerprint.installedBundles.assetsRoot;

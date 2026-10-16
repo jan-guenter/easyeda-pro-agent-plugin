@@ -5,6 +5,9 @@ import type { CheckpointAccessPolicy, CheckpointReceipt } from "./checkpoint.ts"
 import { canonicalJson, normalizeEasyedaProjectPath, sha256Text } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
+import { CURRENT_SYMBOL_OPERATION_PURPOSE } from "./current-symbol-operation.ts";
+import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
+import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { isNativeDocumentDeleted, readNativeHistoryCheckpoint } from "./native-history.ts";
 
 const PROFILE = "easyeda-pro-control.current-disposable-open-checkpoint.v1";
@@ -18,6 +21,8 @@ export interface CurrentDisposableOpenCheckpoint {
     sourceSha256: string; checkpointSha256: string; documentSemanticSha256: string;
     historySemanticSha256: string; headHistoryUuid: string;
   }>;
+  readonly purpose?: typeof CURRENT_SYMBOL_OPERATION_PURPOSE;
+  readonly startupExpectation?: CurrentSymbolStartupExpectation;
 }
 
 function normalizedSource(target: CurrentDisposableOpenTarget): string {
@@ -106,5 +111,41 @@ export async function verifyCurrentDisposableOpenCheckpoint(prepared: CurrentDis
   await unchanged(checkpoint, source);
   if (canonicalJson(input) !== inputText || canonicalJson(prepared) !== preparedText) {
     throw new Error("Disposable opening retained admission changed during verification.");
+  }
+}
+
+async function startupExpectation(prepared: CurrentDisposableOpenCheckpoint): Promise<CurrentSymbolStartupExpectation> {
+  const history = await readNativeHistoryCheckpoint({ checkpointPath: prepared.checkpoint.checkpoint,
+    expectedSha256: prepared.checkpoint.checkpointSha256, projectUuid: prepared.targetEvidence.projectUuid, libraryAtomHeaders: "preserve" });
+  if (history.branchUuid !== prepared.targetEvidence.branchUuid || history.semanticSha256 !== prepared.targetEvidence.historySemanticSha256) {
+    throw new Error("Ordinary symbol opening startup history differs from its complete managed checkpoint.");
+  }
+  return selectCurrentSymbolStartupExpectation(history);
+}
+
+/** Ordinary editing must reject unsupported startup before its first navigation,
+ * not discover an unsupported page/template only after opening changed storage.
+ */
+export async function prepareCurrentSymbolOperationCheckpoint(input: CurrentDisposableOpenTarget): Promise<CurrentDisposableOpenCheckpoint> {
+  const inputText = canonicalJson(input);
+  const prepared = await prepareCurrentDisposableOpenCheckpoint(input);
+  const expectation = await startupExpectation(prepared);
+  await unchanged(prepared.checkpoint, prepared.checkpoint.source);
+  if (canonicalJson(input) !== inputText) { throw new Error("Ordinary symbol opening target changed during startup preparation."); }
+  return Object.freeze({ ...prepared, purpose: CURRENT_SYMBOL_OPERATION_PURPOSE, startupExpectation: expectation });
+}
+
+export async function verifyCurrentSymbolOperationCheckpoint(prepared: CurrentDisposableOpenCheckpoint, input: CurrentDisposableOpenTarget): Promise<void> {
+  const inputText = canonicalJson(input), preparedText = canonicalJson(prepared);
+  if (prepared.purpose !== CURRENT_SYMBOL_OPERATION_PURPOSE || !currentSymbolStartupExpectationSchema.safeParse(prepared.startupExpectation).success) {
+    throw new Error("Ordinary symbol opening needs its sealed pre-navigation startup expectation.");
+  }
+  await verifyCurrentDisposableOpenCheckpoint(prepared, input);
+  if (canonicalJson(await startupExpectation(prepared)) !== canonicalJson(prepared.startupExpectation)) {
+    throw new Error("Ordinary symbol opening startup expectation changed.");
+  }
+  await unchanged(prepared.checkpoint, prepared.checkpoint.source);
+  if (canonicalJson(prepared) !== preparedText || canonicalJson(input) !== inputText) {
+    throw new Error("Ordinary symbol opening retained startup admission changed.");
   }
 }

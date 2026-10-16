@@ -15,6 +15,8 @@ import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-sy
 import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from "../src/current-symbol-clock-evidence.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
 import { qualifyCurrentSymbolClockRelation } from "../src/current-symbol-clock-relation.ts";
+import { selectCurrentSymbolStartupExpectation } from "../src/current-symbol-startup.ts";
+import type { NativeHistorySnapshot } from "../src/native-history.ts";
 import { CURRENT_UPLOAD_QUEUE_PROFILE, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "../src/current-upload-queue-read.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "../src/current-project-only-open.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
@@ -35,14 +37,22 @@ const RAW_PATH = String.raw`C:\Fixtures\Disposable.eprj2`;
 const CACHE_TARGET = { projectUuid: sha256Text(RAW_PATH), branchUuid: "d".repeat(32) };
 const OPEN_TARGET = { ...CACHE_TARGET, rawWindowsPath: RAW_PATH, documentUuid: "c".repeat(16), expectedSourceSha256: HASH };
 type Upstream = WindowsControlRuntimeOptions["upstream"];
-type StartupCase = boolean | Readonly<{ activeSchematicPages: number; blockers: readonly string[] }>;
+type StartupCase = boolean | Readonly<{ activeSchematicPages: number; blockers: readonly string[]; ordinary?: true; startupMismatch?: true }>;
+
+function startupHistory(mismatch = false): NativeHistorySnapshot {
+  const documents = [{ uuid: mismatch ? "e".repeat(16) : "a".repeat(16), docType: "SCH_PAGE", metadata: {}, semanticSha256: HASH,
+    records: [{ type: "META", id: "META", body: { schematic: "b".repeat(16) }, ticket: 1, client: null }] },
+  { uuid: "b".repeat(16), docType: "SCH", metadata: {}, semanticSha256: HASH, records: [] }];
+  return { profile: "easyeda.native-history.linear-gcm-gzip.v1", ...CACHE_TARGET, checkpointSha256: HASH,
+    headHistoryUuid: "c".repeat(32), historyRowCount: 1, chunkCount: 1, plaintextBytes: 1, documents, semanticSha256: sha256Json(documents) };
+}
 
 /** Private owner/copy and installed-source qualification are synthetic seams.
  * The unchanged coordinator, managed storage, engine capture/tracked dispatch,
  * runtime normal-close and termination issuers execute their actual code.
  * Synthetic native child frames do not launch Windows or establish CAD proof.
  */
-async function fixture(context: TestContext): Promise<{
+async function fixture(context: TestContext, ordinary = false): Promise<{
   coordinator: CurrentSymbolBaselineCoordinator; restart: () => CurrentSymbolBaselineCoordinator;
   owner: CurrentSymbolBaselineOwner; native: Awaited<ReturnType<typeof qualifiedNativeFixture>>;
   runtime: WindowsControlRuntime;
@@ -56,7 +66,7 @@ async function fixture(context: TestContext): Promise<{
     finishSnapshots: number; finishSnapshotFailure: boolean; afterFinishSnapshot: (() => Promise<void>) | undefined;
     validatorRuntime: WindowsControlRuntime | undefined;
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
-    activeSchematicPages: number; startupBlockers: readonly string[];
+    activeSchematicPages: number; startupBlockers: readonly string[]; startupMismatch: boolean; startupReads: number;
     referenceAttempts: number; referenceFailure: boolean; clockObservations: number; clockFailure: boolean;
     afterReference: (() => Promise<void>) | undefined; afterAgedClock: (() => Promise<void>) | undefined;
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
@@ -72,7 +82,7 @@ async function fixture(context: TestContext): Promise<{
     finishSnapshots: 0, finishSnapshotFailure: false, afterFinishSnapshot: undefined as (() => Promise<void>) | undefined,
     validatorRuntime: undefined as WindowsControlRuntime | undefined,
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
-    activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
+    activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[], startupMismatch: false, startupReads: 0,
     referenceAttempts: 0, referenceFailure: false, clockObservations: 0, clockFailure: false,
     afterReference: undefined as (() => Promise<void>) | undefined, afterAgedClock: undefined as (() => Promise<void>) | undefined,
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
@@ -190,6 +200,7 @@ async function fixture(context: TestContext): Promise<{
   });
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
+    ...(ordinary ? { purpose: "ordinary-symbol-metadata", startupExpectation: selectCurrentSymbolStartupExpectation(startupHistory()) } : {}),
     target: { ...OPEN_TARGET, expectedSourceSha256: "f".repeat(64) },
     expectedFingerprint: structuredClone(FINGERPRINT) }, preparation: { preparationSha256: HASH } };
   const ownerText = canonicalJson(ownerData);
@@ -205,6 +216,13 @@ async function fixture(context: TestContext): Promise<{
     OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema, assertWindowsRuntimeValidator,
     assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS,
     currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence, currentAgedSqlCollectionEvidence: (): undefined => undefined,
+    selectCurrentSymbolStartupExpectation,
+    readNativeHistoryCheckpoint: (input: unknown): Promise<NativeHistorySnapshot> => {
+      assert.equal(ordinary, true); assert.equal(state.scope, false);
+      assert.deepEqual(structuredClone(input), { checkpointPath: "/synthetic/current-symbol-baseline.eprj2", expectedSha256: HASH,
+        projectUuid: CACHE_TARGET.projectUuid, libraryAtomHeaders: "preserve" });
+      state.startupReads += 1; state.events.push("startup-checkpoint"); return Promise.resolve(startupHistory(state.startupMismatch));
+    },
     CurrentAgedSqlReferenceStage: class {
       private readonly receivedEngine: unknown;
       public constructor(receivedEngine: unknown) { this.receivedEngine = receivedEngine; }
@@ -295,11 +313,15 @@ async function fixture(context: TestContext): Promise<{
       assert.ok(last !== undefined); assert.match(basename(last.path), /-copy-intent\.json$/u);
       state.copies += 1; state.events.push("copy");
       if (state.copyFailure) { throw new Error("synthetic copy failure"); }
-      const checkpoint = { checkpointSha256: HASH, sourceSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
+      const checkpoint = { checkpointSha256: HASH, sourceSha256: HASH,
+        ...(ordinary ? { checkpoint: "/synthetic/current-symbol-baseline.eprj2" } : {}) };
+      const copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
       state.proof = input["proof"];
       const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
         startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false,
+          ...(ordinary ? { sqlSchemaSupported: true, databaseVersion: "25.10.31.1", targetPcbSuppliesNonzeroNativeCount: true,
+            historySemanticSha256: startupHistory(state.startupMismatch).semanticSha256 } : {}),
           activeSchematicPages: state.activeSchematicPages, blockers: [...state.startupBlockers] } };
       state.copied = result; return result;
     },
@@ -451,7 +473,9 @@ void test("current baseline rechecks the retained proof epoch at final pending a
 });
 
 async function completedBaseline(context: TestContext, historicalSubset: StartupCase = false): Promise<Awaited<ReturnType<typeof fixture>>> {
-  const f = await fixture(context); f.state.historicalSubset = historicalSubset === true;
+  const f = await fixture(context, typeof historicalSubset !== "boolean" && historicalSubset.ordinary === true);
+  f.state.historicalSubset = historicalSubset === true;
+  f.state.startupMismatch = typeof historicalSubset !== "boolean" && historicalSubset.startupMismatch === true;
   f.state.activeSchematicPages = typeof historicalSubset === "boolean" ? 0 : historicalSubset.activeSchematicPages;
   if (typeof historicalSubset === "boolean") { f.state.startupBlockers = historicalSubset ? [] : ["unsupported-sql-schema"]; }
   else { f.state.startupBlockers = historicalSubset.blockers; }
@@ -1175,6 +1199,49 @@ void test("current project-only opening refuses an unsupported historical subset
   await assert.rejects(f.coordinator.openProject(f.owner.operationId), /original qualified baseline/u);
   assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
   const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["projectOpenAttempted"], false);
+});
+
+void test("ordinary project-only startup binds its closed expectation and purpose before navigation", async (context) => {
+  const ordinary = { ordinary: true, activeSchematicPages: 1, blockers: ["active-schematic-pages"] } as const;
+  await context.test("supported ordinary startup refuses disposable acceptance without consuming its own opening", async (childContext) => {
+    const f = await projectReadyBaseline(childContext, ordinary);
+    await assert.rejects(f.coordinator.openProject(f.owner.operationId, true), /another purpose/u);
+    assert.equal(f.state.opens, 0); assert.equal(f.state.startupReads, 0);
+    const initial = await f.coordinator.inspect(f.owner.operationId); assert.equal(initial["projectOpenAttempted"], false);
+    const result = await f.coordinator.openOrdinaryProject(f.owner.operationId);
+    assert.equal(result["purpose"], "ordinary-symbol-metadata"); assert.equal(result["projectOpeningMode"], "supported-symbol-startup");
+    assert.equal(result["unqualifiedSchematicStartupEffectsAccepted"], false); assert.equal(result["startupQualified"], false);
+    assert.equal(result["writerReady"], false); assert.equal(result["executionAuthorized"], false);
+    assert.equal(f.state.startupReads, 1); assert.equal(f.state.opens, 1);
+    assert.ok(f.state.events.indexOf("startup-checkpoint") < f.state.events.indexOf("project-only-open"));
+    const generation = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
+    assert.equal(f.assertGeneration(generation, f.engine).source.purpose, "ordinary-symbol-metadata");
+    await assert.rejects(f.coordinator.openOrdinaryProject(f.owner.operationId), /original closed baseline/u);
+    assert.equal(f.state.opens, 1);
+  });
+  await context.test("changed closed startup expectation refuses dispatch and permits only original cleanup", async (childContext) => {
+    const f = await projectReadyBaseline(childContext, { ...ordinary, startupMismatch: true });
+    await assert.rejects(f.coordinator.openOrdinaryProject(f.owner.operationId), /sealed pre-navigation expectation/u);
+    assert.equal(f.state.startupReads, 1); assert.equal(f.state.opens, 0); assert.equal(f.state.sourceChecks, 0);
+    const refused = await f.coordinator.inspect(f.owner.operationId);
+    assert.equal(refused["state"], "stopped"); assert.equal(refused["projectOpenAttempted"], true);
+    assert.equal(refused["purpose"], "ordinary-symbol-metadata");
+    assert.throws(() => f.coordinator.getProjectOnlyGeneration(f.owner.operationId), /original settled opening/u);
+    await assert.rejects(f.coordinator.openOrdinaryProject(f.owner.operationId), /original closed baseline/u);
+    assert.equal(f.state.startupReads, 1);
+    await f.coordinator.finishNormalClose(f.owner.operationId);
+    const retired = await f.coordinator.observeFinish(f.owner.operationId);
+    assert.equal(retired["retired"], true); assert.equal(retired["purpose"], "ordinary-symbol-metadata");
+    assert.equal(retired["writerReady"], false); assert.equal(f.state.opens, 0);
+  });
+  await context.test("ordinary entry cannot consume a disposable baseline", async (childContext) => {
+    const f = await projectReadyBaseline(childContext);
+    await assert.rejects(f.coordinator.openOrdinaryProject(f.owner.operationId), /another purpose/u);
+    assert.equal(f.state.opens, 0); assert.equal(f.state.startupReads, 0);
+    const initial = await f.coordinator.inspect(f.owner.operationId); assert.equal(initial["projectOpenAttempted"], false);
+    const result = await f.coordinator.openProject(f.owner.operationId);
+    assert.equal(result["purpose"], "disposable-validation"); assert.equal(f.state.opens, 1);
+  });
 });
 
 void test("current project-only schematic observation requires explicit acceptance and preserves unqualified evidence through retirement", async (context) => {

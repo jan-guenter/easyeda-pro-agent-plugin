@@ -8,7 +8,8 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { gzipSync } from "node:zlib";
 import { sha256Text } from "../src/core.ts";
-import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
+import { prepareCurrentDisposableOpenCheckpoint, prepareCurrentSymbolOperationCheckpoint,
+  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSymbolOperationCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
 
 const BRANCH = "22".repeat(16), DOCUMENT = "66".repeat(8), HISTORY = "33".repeat(16);
 const digest = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
@@ -25,7 +26,7 @@ function fixturePaths(context: TestContext): Map<string, string> {
   return paths;
 }
 
-async function fixture(paths: Map<string, string>, docType = "PCB", deleted = false): Promise<{
+async function fixture(paths: Map<string, string>, docType = "PCB", deleted = false, linkedPage = false): Promise<{
   source: string; target: { rawWindowsPath: string; projectUuid: string; documentUuid: string; expectedSourceSha256: string };
 }> {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -38,7 +39,11 @@ async function fixture(paths: Map<string, string>, docType = "PCB", deleted = fa
     + line({ type: "META", id: "META", ticket: 1 }, { title: "Synthetic PCB" })
     + (deleted ? line({ type: "DELETE_DOC", id: "DELETE_DOC", ticket: 2 }, { isDelete: true }) : "")
     + line({ type: "DOCHEAD", ticket: 3 }, { uuid: "77".repeat(16), docType: "SYMBOL", client: "fixture-client" })
-    + line({ type: "PIN", id: "pin", ticket: 459, firstTicket: 6 }, { number: "1" });
+    + line({ type: "PIN", id: "pin", ticket: 459, firstTicket: 6 }, { number: "1" })
+    + (linkedPage ? line({ type: "DOCHEAD", ticket: 460 }, { uuid: "88".repeat(8), docType: "SCH", client: "fixture-client" })
+      + line({ type: "META", id: "META", ticket: 460 }, { title: "Synthetic schematic" })
+      + line({ type: "DOCHEAD", ticket: 461 }, { uuid: "99".repeat(8), docType: "SCH_PAGE", client: "fixture-client" })
+      + line({ type: "META", id: "META", ticket: 461 }, { title: "Synthetic page", schematic: "88".repeat(8) }) : "");
   // Synthetic encryption key for this generated SQLite fixture, not a credential.
   const key = "55".repeat(16);
   const cipher = createCipheriv("aes-128-gcm", Buffer.from(key, "hex"), Buffer.from(HISTORY, "hex"));
@@ -95,4 +100,20 @@ void test("disposable checkpoint refuses wrong source hash, non-PCB and deleted 
     const f = await fixture(paths, docType, deleted);
     await assert.rejects(prepareCurrentDisposableOpenCheckpoint(f.target), /undeleted PCB/u);
   }
+});
+
+void test("ordinary checkpoint seals supported startup from managed history and rejects missing or changed expectations", async context => {
+  const paths = fixturePaths(context), unsupported = await fixture(paths);
+  await assert.rejects(prepareCurrentSymbolOperationCheckpoint(unsupported.target));
+  const value = await fixture(paths, "PCB", false, true);
+  const prepared = await prepareCurrentSymbolOperationCheckpoint(value.target);
+  assert.equal(prepared.purpose, "ordinary-symbol-metadata");
+  assert.deepEqual(prepared.startupExpectation, { sheetUuids: ["99".repeat(8)], templates: [] });
+  assert.equal(digest(await readFile(value.source)), value.target.expectedSourceSha256);
+  await verifyCurrentSymbolOperationCheckpoint(prepared, value.target);
+  const disposable = await prepareCurrentDisposableOpenCheckpoint(value.target);
+  await assert.rejects(verifyCurrentSymbolOperationCheckpoint(disposable, value.target), /sealed pre-navigation/u);
+  await assert.rejects(verifyCurrentSymbolOperationCheckpoint({ ...prepared,
+    startupExpectation: { sheetUuids: ["aa".repeat(8)], templates: [] } }, value.target), /expectation changed/u);
+  assert.equal(digest(await readFile(value.source)), value.target.expectedSourceSha256);
 });

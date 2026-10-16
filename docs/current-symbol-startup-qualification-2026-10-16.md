@@ -23,10 +23,12 @@ closed SQL/native comparison remain mandatory. See the
 [startup premises](current-startup-premises-research-2026-10-16.md) and
 [producer scope](current-symbol-producer-scope-2026-10-16.md).
 
-No live renderer has yet executed this new startup guard. Its cached-holder
-shape is source-derived and can still refuse the installed runtime. Passing
-synthetic tests or the historical data predicate does not settle that question.
-The public writer remains disabled.
+The200000 live renderer executed the startup observation but returned its
+generic refusal before writer transfer. Original-owner cleanup and complete
+closed comparison finished with no changes. Source review then found the
+`base`/`_base` mismatch described below. The corrected guard still needs a new
+connected attempt; synthetic tests do not establish runtime acceptance or
+writer persistence. The public writer remains disabled.
 
 ## Pinned primary sources
 
@@ -117,6 +119,24 @@ invocation. It never calls the `parts` getter, which sorts the backing array
 at SCH 5380751. It does not require the symbol-template fetch map to be empty:
 SCH 5890791 retains settled entries because it deletes the different result
 fetch map. Retained template initialization state is checked directly instead.
+
+The symbol consistency manager is `v9 extends mse extends pse` (SCH offsets
+4412965, 808753 and 803504). `pse` exposes `get base(){return this._base}` and
+assigns its own `_base` at 803724. Update211500 replaces the incorrect own
+`base` requirement with that exact own `_base` field and rechecks its identity.
+It does not invoke or broadly admit getters. Adjacent source checks confirm
+own `partId` (properties passed at 5754017 and assigned at 4287060), handler
+`isPaused` (4455090), and `shapes.docManager` (4283804). No other property-shape
+change was identified. The old opaque failure cannot establish which predicate
+failed first.
+
+Observation-only diagnostics name seven fixed stages: `project-only-context`,
+`sch-holder`, `scheduler`, `cache`, `template`, `native-queue`, and `parts`.
+No raw holder values, project/template identifiers or native error text are
+returned. The decoder accepts only the exact bounded failure envelope and
+preserves unsettled-call/timeout refusal. These categories identify a check to
+investigate; they do not grant retry, navigation, mutation or cleanup authority.
+The writer's embedded guard does not opt into diagnostic reporting.
 
 [current-symbol-startup-runtime.ts](../plugins/easyeda-pro-control/server/src/current-symbol-startup-runtime.ts)
 issues a nonserializable original token only for the original generation and

@@ -1,4 +1,6 @@
-/** Retains one disposable forward/inverse lifecycle. Never restores from JSON. */
+/** Retains an original forward-only edit or disposable forward/inverse lifecycle. */
+// oxlint-disable-next-line import/no-cycle -- Purpose is checked on the original baseline registry, never caller JSON.
+import { assertCurrentProjectOnlySymbolGeneration } from "./current-symbol-baseline-runtime.ts";
 import type { CurrentProjectOnlySymbolGeneration, CurrentSymbolBaselineCoordinator } from "./current-symbol-baseline-runtime.ts";
 import type { OriginalCurrentAgedSqlClock } from "./current-aged-sql-issuer.ts";
 // oxlint-disable-next-line import/no-cycle -- Inverse ownership is issued from the original verified result, not reconstructed through a caller-supplied factory.
@@ -7,6 +9,8 @@ import { CurrentSymbolInverseCoordinator } from "./current-symbol-inverse-runtim
 import { qualifyCurrentSymbolWriterStartup } from "./current-symbol-startup-runtime.ts";
 import { currentSymbolValidationStepSchema } from "./current-symbol-validation.ts";
 import type { CurrentSymbolValidationPhase, CurrentSymbolValidationStep } from "./current-symbol-validation.ts";
+import { currentSymbolOperationStepSchema } from "./current-symbol-operation.ts";
+import type { CurrentSymbolOperationStep } from "./current-symbol-operation.ts";
 // oxlint-disable-next-line import/no-cycle -- The retained verification owner consumes only original writer continuations from this lifecycle.
 import { CurrentSymbolVerificationCoordinator } from "./current-symbol-verification-runtime.ts";
 // oxlint-disable-next-line import/no-cycle -- The original writer transfers the opener's baseline registry rather than accepting an injected authority callback.
@@ -17,6 +21,7 @@ type Value = Readonly<Record<string, unknown>>;
 type CloseOwner = CurrentSymbolBaselineCoordinator | CurrentSymbolInverseCoordinator | CurrentSymbolWriterCoordinator | CurrentSymbolVerificationCoordinator;
 interface Slot {
   readonly operationId: string;
+  readonly purpose: "disposable-validation" | "ordinary-symbol-metadata";
   readonly generation: CurrentProjectOnlySymbolGeneration;
   readonly agedClock: OriginalCurrentAgedSqlClock;
   next: CurrentSymbolValidationPhase | "completed" | "stopped";
@@ -28,11 +33,11 @@ interface Slot {
   forwardVerified: boolean;
   inverseVerified: boolean;
 }
-function need(value: boolean, message = "Disposable validation requires its original owner and exact next phase."): asserts value {
+function need(value: boolean, message = "Current symbol operation requires its original owner and exact next phase."): asserts value {
   if (!value) { throw new Error(message); }
 }
 
-/** Constructed only by the original disposable opener. Stage coordinators still
+/** Constructed only by the original purpose-bound opener. Stage coordinators still
  * enforce their private registries, journals and native capabilities themselves.
  */
 export class CurrentSymbolValidationCoordinator {
@@ -55,42 +60,67 @@ export class CurrentSymbolValidationCoordinator {
 
   /** No dispatch. Preserve the original baseline even when later startup fails. */
   public begin(operationId: string): Value {
-    need(this.slot === undefined && !this.busy, "Disposable validation already retained its one original baseline.");
+    return this.beginForPurpose(operationId, "disposable-validation");
+  }
+
+  public beginOrdinary(operationId: string): Value {
+    return this.beginForPurpose(operationId, "ordinary-symbol-metadata");
+  }
+
+  private beginForPurpose(operationId: string, purpose: Slot["purpose"]): Value {
+    need(this.slot === undefined && !this.busy, "Current symbol operation already retained its one original baseline.");
     const generation = this.baseline.getProjectOnlyGeneration(operationId);
+    const original = assertCurrentProjectOnlySymbolGeneration(generation, this.engine);
+    need((original.source.purpose ?? "disposable-validation") === purpose,
+      "Current symbol operation cannot consume another purpose's original baseline.");
+    need(purpose !== "ordinary-symbol-metadata" || original.source.startupExpectation !== undefined,
+      "Ordinary symbol editing requires its sealed pre-navigation startup expectation.");
     const agedClock = this.baseline.getAgedClock(operationId);
-    this.slot = { operationId, generation, agedClock, next: "forward-write", attempted: [], forwardVerified: false, inverseVerified: false };
+    this.slot = { operationId, purpose, generation, agedClock, next: "forward-write", attempted: [], forwardVerified: false, inverseVerified: false };
     return this.inspect(operationId);
   }
 
   public inspect(operationId: string): Value {
     const slot = this.slot; need(slot !== undefined && slot.operationId === operationId);
-    return Object.freeze({ profile: "easyeda-pro-control.current-symbol-disposable-validation.v1", operationId,
+    return Object.freeze({ profile: slot.purpose === "ordinary-symbol-metadata" ? "easyeda-pro-control.current-symbol-operation.v1" :
+      "easyeda-pro-control.current-symbol-disposable-validation.v1", operationId, purpose: slot.purpose,
       inverseOperationId: slot.inverseOperationId ?? null, nextPhase: slot.next, busy: this.busy,
       attemptedPhases: [...slot.attempted], failedPhase: slot.failedPhase ?? null, lastResult: slot.last === undefined ? null : structuredClone(slot.last),
       originalOwnerRetained: true, forwardVerified: slot.forwardVerified, inverseVerified: slot.inverseVerified,
       metadataRestorationVerified: slot.forwardVerified && slot.inverseVerified, historicalDatabaseBytesRestored: false,
+      requestedMetadataVerified: slot.purpose === "ordinary-symbol-metadata" && slot.forwardVerified,
       normalWritersEnabled: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
 
   /** The expected phase is checked before consuming anything. A retry of a lost
    * response cannot silently enter the next mutation, launch or closure stage.
    */
-  public async advance(operationId: string, input: CurrentSymbolValidationStep): Promise<Value> {
-    const slot = this.slot, step = currentSymbolValidationStepSchema.parse(input);
-    need(!this.busy && slot !== undefined && slot.operationId === operationId && slot.next === step.expectedPhase);
-    this.busy = true; slot.next = "stopped"; slot.attempted.push(step.expectedPhase);
+  public advance(operationId: string, input: CurrentSymbolValidationStep): Promise<Value> {
+    return this.advanceForPurpose(operationId, input, "disposable-validation");
+  }
+
+  public advanceOrdinary(operationId: string, input: CurrentSymbolOperationStep): Promise<Value> {
+    return this.advanceForPurpose(operationId, input, "ordinary-symbol-metadata");
+  }
+
+  private async advanceForPurpose(operationId: string, input: CurrentSymbolValidationStep | CurrentSymbolOperationStep, purpose: Slot["purpose"]): Promise<Value> {
+    const { expectedPhase: phase } = purpose === "ordinary-symbol-metadata" ?
+      currentSymbolOperationStepSchema.parse(input) : currentSymbolValidationStepSchema.parse(input);
+    const slot = this.slot;
+    need(!this.busy && slot !== undefined && slot.operationId === operationId && slot.next === phase && slot.purpose === purpose);
+    this.busy = true; slot.next = "stopped"; slot.attempted.push(phase);
     try {
-      const result = await this.perform(slot, step.expectedPhase); slot.last = structuredClone(result);
+      const result = await this.perform(slot, phase); slot.last = structuredClone(result);
       // A retained coordinator may return a stopped diagnostic instead of
       // Throwing. It never becomes permission for the following stage.
-      need(step.expectedPhase.startsWith("cleanup-") || (result["failed"] !== true && result["state"] !== "stopped" && result["state"] !== "baseline-stopped"),
-        "Disposable validation retained a stopped stage; inspect its original owner.");
-      this.next(slot, step.expectedPhase, result);
+      need(phase.startsWith("cleanup-") || (result["failed"] !== true && result["state"] !== "stopped" && result["state"] !== "baseline-stopped"),
+        "Current symbol operation retained a stopped stage; inspect its original owner.");
+      this.next(slot, phase, result);
     } catch (error) {
-      slot.failedPhase ??= step.expectedPhase;
-      try { await this.failed(slot, step.expectedPhase); }
+      slot.failedPhase ??= phase;
+      try { await this.failed(slot, phase); }
       catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "Disposable validation failed and its retained cleanup owner needs inspection.", { cause: cleanupError });
+        throw new AggregateError([error, cleanupError], "Current symbol operation failed and its retained cleanup owner needs inspection.", { cause: cleanupError });
       }
       throw error;
     } finally { this.busy = false; }
@@ -108,6 +138,7 @@ export class CurrentSymbolValidationCoordinator {
   }
 
   private async perform(slot: Slot, phase: CurrentSymbolValidationPhase): Promise<Value> {
+    need(slot.purpose === "disposable-validation" || !phase.startsWith("inverse-"));
     const id = slot.operationId;
     switch (phase) {
       case "forward-write": { return this.write(slot.generation, slot.agedClock, this.forwardWriter); }
@@ -119,7 +150,9 @@ export class CurrentSymbolValidationCoordinator {
       case "forward-verification-open": { return this.forwardVerifier.openProject(id); }
       case "forward-verification-read": { return this.forwardVerifier.collectSavedContent(id); }
       case "forward-verification-close": { return this.forwardVerifier.finishNormalClose(id); }
-      case "forward-verification-finish": { return this.forwardVerifier.observeFinish(id, true); }
+      case "forward-verification-finish": {
+        return slot.purpose === "ordinary-symbol-metadata" ? this.forwardVerifier.observeFinish(id) : this.forwardVerifier.observeFinish(id, true);
+      }
       case "inverse-prepare": {
         const result = await this.inverse.prepare(this.forwardVerifier.getResultContinuation(id));
         need(typeof result["operationId"] === "string" && result["operationId"] !== id && result["prepared"] === true);
@@ -177,6 +210,9 @@ export class CurrentSymbolValidationCoordinator {
     }
     if (phase === "forward-observe-termination" || phase === "inverse-observe-termination") { need(result["verificationContinuationRetained"] === true); }
     if (phase === "forward-verification-finish") {
+      if (slot.purpose === "ordinary-symbol-metadata") {
+        need(result["fullReopenReadbackInvariant"] === true); slot.forwardVerified = true; slot.next = "completed"; return;
+      }
       this.forwardVerifier.getResultContinuation(slot.operationId); slot.forwardVerified = true;
     }
     if (phase === "inverse-verification-finish") {

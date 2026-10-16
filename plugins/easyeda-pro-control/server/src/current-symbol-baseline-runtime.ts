@@ -23,12 +23,14 @@ import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from 
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
 import { qualifyCurrentSymbolClockRelation } from "./current-symbol-clock-relation.ts";
 import type { CurrentSymbolClockRelation } from "./current-symbol-clock-relation.ts";
+import { selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "./current-upload-queue-read.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "./current-project-only-open.ts";
 // oxlint-disable-next-line import/no-cycle -- The source reader reuses the original copy issuer; it cannot replace the retained coordinator's ownership.
 import { verifyCurrentSymbolPreopenSource } from "./current-symbol-preopen-source.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
+import { readNativeHistoryCheckpoint } from "./native-history.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertCurrentIssuedWindowsClockObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationObservation, ClosedSessionTerminationProof, IssuedWindowsClockObservation, WindowsAuthorityLaunch } from "./windows-authority.ts";
@@ -39,7 +41,7 @@ type Value = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.current-symbol-closed-baseline.v1";
 const CACHE_PHASE = "current-symbol-inactive-caches";
 const OPEN_PHASE = "current-symbol-project-only-open";
-type ProjectOpeningMode = "historical-subset" | "unqualified-schematic-startup-observation";
+type ProjectOpeningMode = "historical-subset" | "unqualified-schematic-startup-observation" | "supported-symbol-startup";
 const activeSessionSchema = z.object({ sessionId: z.string().regex(/^[A-Za-z0-9_-]{43}$/u), sequence: z.number().int().positive(),
   authenticationReceiptSha256: z.string().regex(/^[a-f0-9]{64}$/u), authenticatedAtEpochMs: z.number().int().positive() }).strict();
 const closedSessionSchema = activeSessionSchema.extend({ closedAtEpochMs: z.number().int().positive(), closeReason: z.string().min(1).max(160) }).strict();
@@ -65,6 +67,7 @@ async function revalidateBaselineOwner(owner: BaselineOwner, engine: EasyedaCont
 type Binding = Omit<Parameters<WindowsControlRuntime["prepareClosedSessionClose"]>[0], "windowHandle">;
 interface Slot {
   readonly owner: BaselineOwner; readonly journal: Journal; readonly ownerText: string;
+  readonly purpose: "disposable-validation" | "ordinary-symbol-metadata";
   readonly originalPreparation: OriginalPreparation; readonly originalPreparationText: string;
   created: boolean; journalText: string; capture?: ClosedSessionAuthorityCapture; binding?: Binding;
   intent?: ClosedSessionCloseIntent; closeReceipt?: ClosedSessionCloseReceipt; observation?: ClosedSessionTerminationObservation;
@@ -207,6 +210,7 @@ function clockStageNextSafeAction(slot: Slot): string | undefined {
 }
 function summary(slot: Slot): Value {
   return { operationId: slot.owner.operationId, openingOperationId: slot.owner.openingOperationId, state: slot.journal.state,
+    purpose: slot.purpose,
     closeAttempted: slot.closeAttempted, closeAcknowledged: slot.closeReceipt !== undefined, copyAttempted: slot.copyAttempted,
     baselineCaptured: slot.baselineCaptured, relaunchAttempted: slot.relaunchAttempted, launchAcknowledged: slot.launch !== undefined,
     releaseAttempted: slot.releaseAttempted, captureReleased: slot.captureReleased, nativeLaunchClockStatus: slot.launchClock?.clock.status ?? "not-observed",
@@ -264,7 +268,7 @@ export class CurrentSymbolBaselineCoordinator {
       canonicalJson(this.sqlRuntime) === canonicalJson(original.result.writer.sqlRuntime), "Inverse baseline original runtime differs.");
     assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
     assertOriginalCurrentAgedSqlReference(reference, this.engine, copy);
-    const plan: Journal["plan"] = { profile: PROFILE, openingOperationId: owner.openingOperationId, target: source.target,
+    const plan: Journal["plan"] = { profile: PROFILE, purpose: source.purpose ?? "disposable-validation", openingOperationId: owner.openingOperationId, target: source.target,
       expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
       preparationSha256: original.preparation.preparationSha256, inverseOf: original.predecessor.operationId };
     const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,
@@ -274,7 +278,7 @@ export class CurrentSymbolBaselineCoordinator {
       cacheAttempted: false, projectOpenAttempted: false, finishCloseAttempted: false, finishReleaseAttempted: false,
       finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), nextSafeAction: "Inverse adoption has not transferred closure ownership." };
-    const slot: Slot = { owner, ownerText: canonicalJson(owner), originalPreparation: original.preparation,
+    const slot: Slot = { owner, purpose: source.purpose ?? "disposable-validation", ownerText: canonicalJson(owner), originalPreparation: original.preparation,
       originalPreparationText: canonicalJson(original.preparation), journal, journalText: canonicalJson(journal), created: false,
       capture: original.result.originalSnapshot.capture, proof: original.result.originalSnapshot.proof, copy,
       closeAttempted: true, copyAttempted: true, baselineCaptured: true, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
@@ -370,7 +374,7 @@ export class CurrentSymbolBaselineCoordinator {
     need(!this.busy && !this.slots.has(owner.operationId), "Current symbol baseline is busy or already consumed.");
     const original = assertCurrentSymbolBaselineOwner(owner, this.engine), source = original.source;
     need(source.runtime === this.runtime, "Current symbol baseline has another runtime.");
-    const plan: Journal["plan"] = { profile: PROFILE, openingOperationId: owner.openingOperationId, target: source.target,
+    const plan: Journal["plan"] = { profile: PROFILE, purpose: source.purpose ?? "disposable-validation", openingOperationId: owner.openingOperationId, target: source.target,
       expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
       preparationSha256: original.preparation.preparationSha256 };
     const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,
@@ -381,7 +385,7 @@ export class CurrentSymbolBaselineCoordinator {
       finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       nextSafeAction: "Retain one closed-session capture in the original authenticated scope before normal close." };
-    const slot: Slot = { owner, ownerText: canonicalJson(owner), originalPreparation: original.preparation,
+    const slot: Slot = { owner, purpose: source.purpose ?? "disposable-validation", ownerText: canonicalJson(owner), originalPreparation: original.preparation,
       originalPreparationText: canonicalJson(original.preparation), journal, journalText: canonicalJson(journal), created: false,
       closeAttempted: false, copyAttempted: false, baselineCaptured: false, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
       admissionAttempted: false, admissionProved: false, cacheAttempted: false, cacheReplyRetained: false, cachesObserved: false,
@@ -706,8 +710,7 @@ export class CurrentSymbolBaselineCoordinator {
       need(await assertIssuedWindowsClockObservation(launchClock) === launchClock, "Current symbol admission launch clock changed."); await current();
       // Acquiring a scope can connect the upstream. Quarantine/isolation must
       // Refuse before that acquisition, as well as within the engine capture.
-      await this.engine.assertBridgeDispatchAllowed(); await current();
-      await this.engine.assertRecoveryOperationIsolated(operationId); await current();
+      await this.engine.assertBridgeAndRecoveryAdmission(operationId); await current();
       slot.journal.admissionAttempted = true; slot.journal.state = "admission-dispatching";
       slot.journal.nextSafeAction = "Retain one capture from the new authenticated session; no project open, Save or writer is authorized.";
       await CurrentSymbolBaselineCoordinator.record(slot, "admission-intent", { launch, launchClock, session, capturePhase: "closed-edit", challengeAttempt: 1 });
@@ -788,8 +791,7 @@ export class CurrentSymbolBaselineCoordinator {
           "Current symbol cache admission clock changed."); await current(scopeText);
       };
       await original();
-      await this.engine.assertBridgeDispatchAllowed(); await current();
-      await this.engine.assertRecoveryOperationIsolated(operationId); await current();
+      await this.engine.assertBridgeAndRecoveryAdmission(operationId); await current();
       validateSdkLocalRuntimeFingerprint(source.expectedFingerprint);
       const target = { projectUuid: source.target.projectUuid, branchUuid: source.target.branchUuid };
       const code = buildCurrentUploadQueueReadProgram(target), scope = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
@@ -813,8 +815,7 @@ export class CurrentSymbolBaselineCoordinator {
         slot.journal.nextSafeAction = "Retain this single inactive-target cache observation; do not repeat, navigate, Save or write.";
         await CurrentSymbolBaselineCoordinator.record(slot, "cache-intent", { target, programSha256: sha256Json({ code }),
           runtimeFingerprintSha256: sha256Json(fingerprint), startupQualified: false, executionAuthorized: false }); await original(scopeText);
-        await this.engine.assertBridgeDispatchAllowed(); await current(scopeText);
-        await this.engine.assertRecoveryOperationIsolated(operationId); await current(scopeText);
+        await this.engine.assertBridgeAndRecoveryAdmission(operationId); await current(scopeText);
         const before = structuredClone(slot.journal);
         let marked: Journal | undefined;
         await this.engine.dispatchWithOrphanTracking(slot.journal, CACHE_PHASE, "easyeda_execute",
@@ -883,20 +884,43 @@ export class CurrentSymbolBaselineCoordinator {
    * blocker without qualifying initialization effects. The generated program
    * repeats inactive-cache observations and never opens an editor document.
    */
-  public async openProject(operationId: string, acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
+  public openProject(operationId: string, acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
+    return this.openProjectForPurpose(operationId, "disposable-validation", acceptUnqualifiedSchematicStartupEffects);
+  }
+
+  /** Ordinary edits require a startup shape selected before the first opening.
+   * This is not the disposable acceptance of otherwise unqualified effects.
+   */
+  public openOrdinaryProject(operationId: string): Promise<Value> {
+    return this.openProjectForPurpose(operationId, "ordinary-symbol-metadata");
+  }
+
+  private async openProjectForPurpose(operationId: string, purpose: "disposable-validation" | "ordinary-symbol-metadata",
+    acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
     const slot = this.slots.get(operationId);
     need(!this.busy && slot !== undefined && slot.journal.state === "caches-observed" && slot.cachesObserved &&
       slot.admissionProved && slot.copy !== undefined &&
       slot.source !== undefined && slot.sessionCurrent !== undefined && slot.admissionCapture !== undefined &&
       slot.admissionClock !== undefined && slot.launch !== undefined && !slot.projectOpenAttempted,
     "Current project-only opening needs its original closed baseline, admitted session and unused attempt.");
+    need((slot.source.purpose ?? "disposable-validation") === purpose,
+      "Current project-only opening cannot consume another purpose's original baseline.");
     const premises = slot.copy.startupPremises;
     // Explicit disposable observation may accept this sole historical blocker,
     // Not unsupported schema/version/count evidence or a qualified writer baseline.
-    const observeSchematicEffects = acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied &&
+    const observeSchematicEffects = purpose === "disposable-validation" && acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied &&
       premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages";
-    need(premises.historicalSubsetSatisfied || observeSchematicEffects,
-      "Current project-only opening needs its original qualified baseline, or explicit acceptance of its sole active-schematic-pages blocker for observation only.");
+    const supportedStartup = purpose === "ordinary-symbol-metadata" && slot.source.startupExpectation !== undefined &&
+      premises.sqlSchemaSupported && premises.databaseVersion === "25.10.31.1" && premises.targetPcbSuppliesNonzeroNativeCount &&
+      premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages";
+    need(purpose === "ordinary-symbol-metadata" ? supportedStartup : premises.historicalSubsetSatisfied || observeSchematicEffects,
+      purpose === "ordinary-symbol-metadata" ? "Ordinary symbol opening requires its sealed supported startup shape and unchanged closed-baseline prerequisites." :
+        "Current project-only opening needs its original qualified baseline, or explicit acceptance of its sole active-schematic-pages blocker for observation only.");
+    let openingMode: ProjectOpeningMode = "historical-subset", startupEffects = "linked-sheet-loop-excluded";
+    if (observeSchematicEffects) {
+      openingMode = "unqualified-schematic-startup-observation"; startupEffects = "native-document-rewrites-and-queued-persistence-may-occur";
+    }
+    if (supportedStartup) { openingMode = "supported-symbol-startup"; startupEffects = "sealed-supported-shape-requires-live-qualification"; }
     this.busy = true; slot.projectOpenAttempted = true;
     const { source, copy, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
     try {
@@ -913,8 +937,17 @@ export class CurrentSymbolBaselineCoordinator {
           "Current project-only admission clock changed."); await current(scopeText);
       };
       await original();
-      await this.engine.assertBridgeDispatchAllowed(); await current();
-      await this.engine.assertRecoveryOperationIsolated(operationId); await current();
+      if (supportedStartup) {
+        const history = await readNativeHistoryCheckpoint({ checkpointPath: copy.checkpoint.checkpoint,
+          expectedSha256: copy.checkpoint.checkpointSha256, projectUuid: source.target.projectUuid, libraryAtomHeaders: "preserve" });
+        await original();
+        const expectation = selectCurrentSymbolStartupExpectation(history);
+        need(history.branchUuid === source.target.branchUuid && history.semanticSha256 === premises.historySemanticSha256 &&
+          expectation.sheetUuids.length === premises.activeSchematicPages &&
+          canonicalJson(expectation) === canonicalJson(source.startupExpectation),
+        "Current ordinary symbol startup differs from its sealed pre-navigation expectation.");
+      }
+      await this.engine.assertBridgeAndRecoveryAdmission(operationId); await current();
       validateSdkLocalRuntimeFingerprint(source.expectedFingerprint);
       // The earlier ordinary opening may have changed storage. Bind this new
       // Attempt to its actual closed baseline, never the original input hash.
@@ -938,16 +971,15 @@ export class CurrentSymbolBaselineCoordinator {
         await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot); await original(scopeText);
         slot.preopenSource = await verifyCurrentSymbolPreopenSource(this.engine, copy); await original(scopeText);
         slot.journal.projectOpenAttempted = true; slot.journal.state = "project-only-dispatching";
-        slot.journal.projectOpeningMode = observeSchematicEffects ? "unqualified-schematic-startup-observation" : "historical-subset";
+        slot.journal.projectOpeningMode = openingMode;
         slot.journal.mutationMayHaveOccurred = true;
         slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
         await CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", { target, programSha256: sha256Json({ code }),
           source: slot.preopenSource, startupPremises: copy.startupPremises, runtimeFingerprintSha256: sha256Json(fingerprint),
           projectOpeningMode: slot.journal.projectOpeningMode, unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
-          schematicStartupEffects: observeSchematicEffects ? "native-document-rewrites-and-queued-persistence-may-occur" : "linked-sheet-loop-excluded",
+          schematicStartupEffects: startupEffects,
           startupQualified: false, executionAuthorized: false }); await original(scopeText);
-        await this.engine.assertBridgeDispatchAllowed(); await current(scopeText);
-        await this.engine.assertRecoveryOperationIsolated(operationId); await current(scopeText);
+        await this.engine.assertBridgeAndRecoveryAdmission(operationId); await current(scopeText);
         const before = structuredClone(slot.journal);
         let marked: Journal | undefined;
         await this.engine.dispatchWithOrphanTracking(slot.journal, OPEN_PHASE, "easyeda_execute",
@@ -1122,8 +1154,7 @@ export class CurrentSymbolBaselineCoordinator {
           "Current aged clock original generation or reference changed.");
       };
       await revalidateCurrentProjectOnlySymbolGeneration(generation, this.engine); current();
-      await this.engine.assertBridgeDispatchAllowed(); current();
-      await this.engine.assertRecoveryOperationIsolated(operationId); current();
+      await this.engine.assertBridgeAndRecoveryAdmission(operationId); current();
       const scope = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
       need(typeof scope === "function", "Current aged clock requires its original authenticated scope.");
       let completed = false;

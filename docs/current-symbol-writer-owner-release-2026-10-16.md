@@ -1,5 +1,56 @@
 # Current runtime correction and private writer ownership
 
+## Startup holder correction and ordinary workflow, update211500
+
+The200000 disposable run passed the isolated reference and live renderer clock
+controls, resolving the190000 production callback failure. Startup qualification
+then refused before transferring the baseline to the writer. No metadata write
+or explicit Save was dispatched. The original owner completed normal closure,
+observed its retained process/Job terminate, captured the final snapshot and
+retired. Maintained offline comparison proves unchanged raw bytes, all 35 SQL
+tables and all 18 selected-branch native documents and their provenance. The
+failed write and completed cleanup must not be repeated.
+
+Pinned SCH source reveals a deterministic guard mismatch: the symbol manager
+inherits `base` as a prototype getter and owns its backing field `_base`. The
+guard incorrectly required an own data property named `base`. The correction
+reads and rechecks the exact own `_base` holder without invoking a getter or
+accepting arbitrary accessor shapes. The retained generic error does not prove
+this was the first predicate that failed. Observation-only diagnostics now
+report one of seven fixed stages without exposing raw values, identifiers or
+exception text. Writer guards still fail closed. See the
+[source trace and diagnostic contract](current-symbol-startup-qualification-2026-10-16.md).
+
+The internal ordinary metadata workflow now has a separate purpose-bound
+contract and original-owner path. Before ordinary navigation it selects the
+supported startup shape from the preserved checkpoint, then rechecks that shape
+against the complete closed baseline and again before live qualification. It
+does not accept the disposable unqualified-startup acknowledgement. Ordinary
+completion requires the full reopened saved-content/SQL invariant and retires
+without retaining an inverse. Cross-purpose owners and inverse steps refuse.
+This path remains unregistered: no new MCP tool or normal writer is enabled.
+
+Six adjacent baseline bridge/recovery checks now use the existing combined
+fresh admission scan. There is no cross-call allow cache, external pin change,
+removed predicate or measured connected speedup claim. Tool descriptions also
+correctly distinguish disposable validation mutations from disabled ordinary
+editing.
+
+Remaining work:
+
+1. After delivery and a fresh facade, run one new disposable forward/inverse
+   lifecycle. The corrected holder, actual writer, saved persistence and inverse
+   still need connected validation. A failure permits only its original-owner
+   cleanup, not a retry or blind Save.
+2. After successful connected evidence and review, register only the narrow
+   ordinary forward-only route and validate its ordinary-purpose integration.
+   Do not unblock the older coordinator or generic `library.symbol.modify`.
+3. Continue the documented schematic/PCB structure, geometry, library and
+   manufacturing API backlog. This release does not change coverage totals.
+
+The engineering checkpoint records focused verification, CI and delivery
+separately. Production projects and their records remain untouched.
+
 ## Production clock forwarding, update200000
 
 The190000 disposable run passed ordinary opening, normal closure, a complete
