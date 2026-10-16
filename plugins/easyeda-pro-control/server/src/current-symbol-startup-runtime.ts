@@ -5,6 +5,7 @@ import type { ArtifactDescriptor } from "./artifacts.ts";
 import { assertExpectedFingerprint, assertUpstreamReplySettled, canonicalJson, extractToolPayload, sha256Json, sha256Text } from "./core.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
 import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbol-guard.ts";
+// oxlint-disable-next-line import/no-cycle -- Startup consumes the original baseline generation now retained by disposable orchestration; a supplied issuer would weaken ownership.
 import { assertCurrentProjectOnlySymbolGeneration, revalidateCurrentProjectOnlySymbolGeneration } from "./current-symbol-baseline-runtime.ts";
 import type { CurrentProjectOnlySymbolGeneration, CurrentProjectOnlySymbolGenerationSource } from "./current-symbol-baseline-runtime.ts";
 import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";

@@ -31,7 +31,7 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
     registerFacadeTool: (name: string, config: { inputSchema: { request: z.ZodType; expectedFingerprint: z.ZodType };
       annotations: { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean } }, handler: Callback): void => {
       assert.equal(name, "easyeda_control_project_open"); assert.deepEqual(Object.keys(config.inputSchema), ["request", "expectedFingerprint"]);
-      assert.equal(config.annotations.readOnlyHint, false); assert.equal(config.annotations.destructiveHint, false); assert.equal(config.annotations.idempotentHint, false);
+      assert.equal(config.annotations.readOnlyHint, false); assert.equal(config.annotations.destructiveHint, true); assert.equal(config.annotations.idempotentHint, false);
       invoke = handler; requestSchema = config.inputSchema.request;
     },
   });
@@ -75,7 +75,53 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
     await assert.rejects(invoke({ request: { action: continuation, operationId } }), /unavailable/u);
   }
   await assert.rejects(invoke({ request: { action: "baseline-prepare-clock", operationId, acceptScratchProcessEffects: true } }), /unavailable/u);
+  for (const validation of [{ action: "validation-begin", operationId, confirmDisposableProject: true },
+    { action: "validation-advance", operationId, step: { expectedPhase: "forward-write", confirmDisposableProject: true, acceptMetadataMutation: true } },
+    { action: "validation-inspect", operationId }]) {
+    assert.equal(requestSchema.safeParse(validation).success, true);
+    await assert.rejects(invoke({ request: validation }), /original production opening owner/u);
+    await assert.rejects(invoke({ request: validation, expectedFingerprint: {} }), /cannot replace/u);
+  }
   assert.equal(nativeOwners, 0); assert.equal(quarantineChecks, 0);
+});
+
+void test("disposable validation keeps mutation approval prompted and exact phase effects in the actual route", async () => {
+  const operationId = "disposable-validation-schema";
+  const begin = { action: "validation-begin", operationId, confirmDisposableProject: true };
+  assert.equal(currentDisposableOpenRequestSchema.safeParse(begin).success, true);
+  assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...begin, confirmDisposableProject: false }).success, false);
+  for (const step of [
+    { expectedPhase: "forward-write", confirmDisposableProject: true, acceptMetadataMutation: true },
+    { expectedPhase: "inverse-write", confirmDisposableProject: true, acceptDerivedInverseMutation: true },
+    { expectedPhase: "forward-close", confirmNormalClose: true, acceptUnknownFileEffects: true },
+    { expectedPhase: "forward-verification-start", acceptNormalOpenEffects: true },
+    { expectedPhase: "inverse-prepare", acceptScratchProcessEffects: true },
+    { expectedPhase: "inverse-open", acceptNormalOpenEffects: true, acceptUnqualifiedSchematicStartupEffects: true },
+    { expectedPhase: "forward-verification-admit" },
+  ]) {
+    const request = { action: "validation-advance", operationId, step };
+    assert.equal(currentDisposableOpenRequestSchema.safeParse(request).success, true);
+    for (const key of Object.keys(step)) {
+      const remaining = Object.entries(step).filter(([name]) => name !== key);
+      const missing = Object.fromEntries(remaining);
+      const parsed = currentDisposableOpenRequestSchema.safeParse({ ...request, step: missing });
+      assert.equal(parsed.success, false);
+    }
+    for (const override of [{ target: {} }, { patch: { name: "Replacement" } }, { code: "caller()" }, { expectedFingerprint: {} }, { continuation: {} }]) {
+      assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...request, ...override }).success, false);
+      assert.equal(currentDisposableOpenRequestSchema.safeParse({ ...request, step: { ...step, ...override } }).success, false);
+    }
+  }
+  const wrongApproval = { action: "validation-advance", operationId,
+    step: { expectedPhase: "inverse-write", confirmDisposableProject: true, acceptMetadataMutation: true } };
+  assert.equal(currentDisposableOpenRequestSchema.safeParse(wrongApproval).success, false);
+  const manifest: unknown = JSON.parse(await readFile(new URL("../../.mcp.json", import.meta.url), "utf8"));
+  const toolPermission = z.object({ easyeda_control_project_open: z.object({ approval_mode: z.literal("prompt") }) });
+  const serverPermission = z.object({ easyeda_pro_control: z.object({ tools: toolPermission }) });
+  const permission = z.object({ mcpServers: serverPermission });
+  assert.equal(permission.safeParse(manifest).success, true);
+  const catalog = JSON.stringify(queryCurrentDisposableOpen({ includeSchemas: true }));
+  assert.ok(catalog.includes("validation-advance")); assert.ok(catalog.includes("Normal design writers remain disabled"));
 });
 
 void test("optional current clock stages accept only original operation identity and explicit scratch effects", () => {

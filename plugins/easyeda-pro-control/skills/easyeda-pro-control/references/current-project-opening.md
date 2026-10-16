@@ -3,7 +3,9 @@
 Use `easyeda_control_project_open` only for an explicitly selected disposable
 local `.eprj2` file and one existing PCB. This is the separately pinned current
 3.2.206 application route. It does not enable legacy `runtime open-existing`,
-generic document navigation or design writers.
+generic document navigation or normal design writers. The separate disposable
+`validation-*` workflow below can perform its sealed symbol-metadata edit and
+internally derived inverse; ordinary opening and baseline observation cannot.
 
 Query offline `project-open` with `includeSchemas:true`, then validate the
 assembled request with `project-open-validate`. Confirm the actual installed
@@ -257,9 +259,59 @@ handles. The ordinary finish workflow still owns application closure. A failed
 scratch reference prevents replacement relaunch; do not bypass that refusal.
 
 These controls do not arm a write window, prove continuous clock stability or
-directly observe APP's clock. The future writer must bind the original result
+directly observe APP's clock. The validation writer must bind the original result
 to its fresh immutable timestamp window. Startup qualification, full persistence
 comparison and writer enablement remain separate.
+
+## Disposable forward/inverse validation
+
+Use this route only for the explicitly authorized sacrificial project. It is
+an implementation-validation workflow, not enabled general symbol editing.
+Query the installed `project-open` schema; older snapshots expose only opening
+and baseline observations. Keep the same facade alive until both writes and
+their verification generations have closed. A restart cannot reconstruct the
+original owners from journals.
+
+Finish baseline preparation through project-only opening and both clock
+controls, but do not run the baseline-only finish actions. `validation-begin`
+accepts the retained baseline operation ID and explicit disposable-project
+acknowledgement. It retains the original generation, target, patch and clock
+evidence. No replacement paths, metadata, fingerprint or execution code are
+accepted. The forward-write phase requires a separate metadata-mutation
+acknowledgement, and startup qualification still runs before that one write.
+
+Use `validation-inspect` to read `nextPhase`. Each `validation-advance` supplies
+that exact `step.expectedPhase` and only its schema-required acknowledgements.
+A repeated request with a consumed phase refuses rather than advancing into a
+different write, launch or close. Poll only a returned pending observation.
+After a lost response, inspect before taking the next step.
+
+The forward writer requests normal close, observes its original process/Job
+termination and compares the complete closed SQL effect. A new admitted
+verification generation excludes both inactive upload caches, reopens only the
+project, checks saved symbol content, closes, and compares complete SQL again.
+Only that fully verified result can supply the inverse. The inverse derives
+its patch from the initial metadata and its baseline from the actual verified
+post-edit snapshot; it obtains fresh clock evidence and repeats the same write
+and reopen verification. It restores metadata, not historical SQLite bytes,
+tickets, timestamps or history.
+
+The writer requires the unlocked history head to be at least 61 seconds old at
+its fresh backend-clock observation. A quickly completed forward verification
+does not waive that requirement for the inverse. Allow the new head to age
+before attempting the inverse write; an early refusal consumes the attempt and
+is not permission to retry it or rewrite the head's timestamp/lock.
+
+On failure, inspect the retained owner and use only the returned cleanup phase.
+Never issue another edit, explicit Save, manual inverse, replacement operation
+ID or prompt response. Closed recovery may report `unchanged`,
+`exact-intended-effect` or `unresolved`; these are diagnostics, not permission
+to continue a failed write. Missing original post-dispatch clock evidence or
+uncertain capture cleanup remains unresolved even if later SQL looks unchanged.
+Lost owners and conflicting journals require separate recovery work.
+
+Source tests do not establish a live forward/inverse lifecycle. Record actual
+connected results before deliberately enabling any normal writer capability.
 
 ## Compare retained snapshots
 

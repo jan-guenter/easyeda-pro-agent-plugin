@@ -1,7 +1,9 @@
 /** Original current post-edit SQL-to-getStr relation. No live reader authority. */
 import { canonicalJson, sha256Json } from "./core.ts";
+// oxlint-disable-next-line import/no-cycle -- Saved-source preparation requires the actual snapshot issuer shared with inverse baseline adoption, never a caller copy.
 import { assertOriginalCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
 import { decodeCompletedCurrentSymbolTransactionHistory } from "./current-symbol-transaction-clock.ts";
+// oxlint-disable-next-line import/no-cycle -- Only the writer's lexical continuation registry supplies this saved-source relation through the inverse lifecycle.
 import { assertOriginalCurrentSymbolWriterContinuation } from "./current-symbol-writer-runtime.ts";
 import type { CurrentSymbolWriterContinuation, CurrentSymbolWriterContinuationSource } from "./current-symbol-writer-runtime.ts";
 import { CURRENT_SAVED_SYMBOL_CONTENT_LIMIT, currentSavedSymbolReadRequestSchema } from "./current-symbol-saved-read-program.ts";

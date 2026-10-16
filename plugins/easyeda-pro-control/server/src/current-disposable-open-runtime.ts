@@ -23,6 +23,8 @@ import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-own
 // oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
 import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "./current-symbol-baseline-runtime.ts";
 import { inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
+// oxlint-disable-next-line import/no-cycle -- The disposable route retains the original baseline; validation never reconstructs its private opener owner.
+import { CurrentSymbolValidationCoordinator } from "./current-symbol-validation-runtime.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 
@@ -197,6 +199,7 @@ export class CurrentDisposableOpenCoordinator {
   private readonly generations = new Map<string, CurrentDisposableOpenGeneration>();
   private readonly baselineJobs = new Set<string>();
   private readonly baselines = new Map<string, CurrentSymbolBaselineCoordinator>();
+  private readonly validations = new Map<string, CurrentSymbolValidationCoordinator>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -207,6 +210,26 @@ export class CurrentDisposableOpenCoordinator {
   public async run(input: unknown, expectedFingerprint?: Value): Promise<Value> {
     const request = parseCurrentDisposableOpenRequest(structuredClone(input));
     requireValue(!this.busy, "Current disposable opening is already in progress.");
+    if (request.action === "validation-begin" || request.action === "validation-advance" || request.action === "validation-inspect") {
+      requireValue(expectedFingerprint === undefined, "Disposable validation cannot replace its original runtime fingerprint.");
+      requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+        "Disposable validation requires its original production opening owner.");
+      let validation = this.validations.get(request.operationId);
+      if (request.action === "validation-begin") {
+        const baseline = this.baselines.get(request.operationId);
+        requireValue(validation === undefined && baseline !== undefined, "Disposable validation requires an unused original baseline.");
+        validation = new CurrentSymbolValidationCoordinator(this.options.engine, baseline);
+        // Begin only checks local original tokens. If it refuses, the original
+        // Baseline still owns its existing close path. Retain before dispatch.
+        const result = validation.begin(request.operationId);
+        this.validations.set(request.operationId, validation); return result;
+      }
+      requireValue(validation !== undefined, "Disposable validation cannot resume from journal JSON; its original coordinator is unavailable.");
+      if (request.action === "validation-inspect") { return validation.inspect(request.operationId); }
+      this.busy = true;
+      try { return await validation.advance(request.operationId, request.step); }
+      finally { this.busy = false; }
+    }
     if (request.action === "baseline-begin") {
       requireValue(expectedFingerprint === undefined, "Baseline validation derives its runtime from the original opening; do not supply a replacement fingerprint.");
       requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine && this.retained.has(request.openingOperationId),
@@ -222,6 +245,8 @@ export class CurrentDisposableOpenCoordinator {
     }
     if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination") {
       requireValue(expectedFingerprint === undefined, "Baseline continuation cannot replace its original runtime fingerprint.");
+      requireValue(!this.validations.has(request.operationId) || request.action === "baseline-inspect",
+        "Disposable validation retains this original baseline; use validation inspection or its exact next phase.");
       switch (request.action) {
         case "baseline-observe-termination": { return this.observeSymbolBaseline(request.operationId); }
         case "baseline-prepare-clock": { return this.prepareSymbolBaselineClock(request.operationId); }

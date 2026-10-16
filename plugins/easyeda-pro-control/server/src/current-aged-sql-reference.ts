@@ -9,7 +9,7 @@ import { CURRENT_AGED_SQL_DATE_PARSER_SOURCE } from "./current-aged-sql-clock-co
 import { selectCurrentUnlockedSqlHead } from "./current-aged-sql-head.ts";
 import { currentSymbolClockEvidenceId } from "./current-symbol-clock-evidence.ts";
 // oxlint-disable-next-line import/no-cycle -- The baseline coordinator invokes this stage; only its existing copy issuer may admit the original input.
-import { assertOriginalCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolBaselineCopy, currentSymbolBaselineClockBinding, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import type { CurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { MAIN_REFERENCE_PROFILE, validateMainReferenceRequest } from "./closed-symbol-main-reference-program.ts";
@@ -89,10 +89,12 @@ export class CurrentAgedSqlReferenceStage {
     assertOriginalCurrentSymbolBaselineCopy(baseline, engine);
     need(!attempts.has(baseline), "Current aged SQL reference attempt already consumed."); attempts.add(baseline);
     const operationId = baseline.owner.operationId, proofText = canonicalJson(proof);
+    const closureBinding = currentSymbolBaselineClockBinding(baseline, engine), { journalOperationId } = closureBinding;
     const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
     need(scopeReader !== undefined);
     const unchanged = (): void => {
       assertOriginalCurrentSymbolBaselineCopy(baseline, engine);
+      need(canonicalJson(currentSymbolBaselineClockBinding(baseline, engine)) === canonicalJson(closureBinding));
       need(input.baseline === baseline && input.proof === proof && canonicalJson(proof) === proofText &&
         engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine.upstream) === undefined,
       "Current scratch reference requires its original closed baseline outside a bridge scope.");
@@ -102,15 +104,15 @@ export class CurrentAgedSqlReferenceStage {
       unchanged(); await revalidateCurrentSymbolBaselineCopy(engine, baseline, proof); unchanged();
     };
     await current(); await engine.assertBridgeDispatchAllowed(); await current();
-    await engine.assertRecoveryOperationIsolated(operationId); await current();
-    const journal = await loadOperation(operationId); unchanged();
+    await engine.assertRecoveryOperationIsolated(journalOperationId); await current();
+    const journal = await loadOperation(journalOperationId); unchanged();
     const journalText = canonicalJson(journal);
-    need(journal.operationId === operationId && journal["orphanedCallPossible"] === false);
+    need(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
     const head = await selectCurrentUnlockedSqlHead(baseline.inventory, baseline.preparation.target); await current();
     need(head.historyUuid === baseline.preparation.history.headHistoryUuid);
     const clock = await windowsClockObservationForResult(proof, "termination"); await current();
     need(clock.clock.status === "observed" && clock.base["checkedAt"] === proof.closedAt &&
-      clock.ownerBinding["operationId"] === operationId && clock.ownerBinding["phase"] === "closed-baseline");
+      clock.ownerBinding["operationId"] === journalOperationId && clock.ownerBinding["phase"] === closureBinding.phase);
     const binding = Object.freeze({ profile: "private.current-aged-sql-reference-binding.v1", operationId,
       planHash: journal.planHash, baselineCopyReceiptSha256: baseline.copy.receiptSha256,
       baselineLogicalSha256: baseline.inventory.logicalSha256, target: baseline.preparation.target,
@@ -123,7 +125,7 @@ export class CurrentAgedSqlReferenceStage {
       nativePinsSha256: sha256Json({ parser: CURRENT_AGED_SQL_DATE_PARSER_SOURCE, runtime: CURRENT_MAIN_REFERENCE_RUNTIME_PINS }), ...head,
       referenceUtcMs: Number((BigInt(clock.clock.after.utcBeforeTicks) - 621_355_968_000_000_000n) / 10_000n) });
     const invocation = await compileCurrentAgedSqlReferenceTransport(request); await current();
-    need(canonicalJson(await loadOperation(operationId)) === journalText); unchanged();
+    need(canonicalJson(await loadOperation(journalOperationId)) === journalText); unchanged();
     const evidenceId = currentSymbolClockEvidenceId(operationId);
     const resultPath = join(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
     const intentArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-intent", {
@@ -134,7 +136,7 @@ export class CurrentAgedSqlReferenceStage {
       windowsSideEffects: "one disjoint nonce scratch copy and original synthetic Job; no EasyEDA APP or profile input", executionAuthorized: false,
     }));
     await current(); await readExactUtf8Artifact(intentArtifact); await current();
-    need(canonicalJson(await loadOperation(operationId)) === journalText); unchanged();
+    need(canonicalJson(await loadOperation(journalOperationId)) === journalText); unchanged();
     const returned = await invokeMainReferenceTransport(invocation);
     this.returns.set(operationId, returned);
     const retained = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
@@ -158,7 +160,7 @@ export class CurrentAgedSqlReferenceStage {
     need(BigInt(nativeBefore.utcBeforeTicks) >= BigInt(clock.clock.after.utcAfterTicks) &&
       BigInt(nativeBefore.qpcBefore) >= BigInt(clock.clock.after.qpcAfter));
     await readExactUtf8Artifact(resultArtifact); await current();
-    need(canonicalJson(await loadOperation(operationId)) === journalText); unchanged();
+    need(canonicalJson(await loadOperation(journalOperationId)) === journalText); unchanged();
     assertCurrentIssuedWindowsClockObservation(clock);
     const result: OriginalCurrentAgedSqlReference = Object.freeze({ profile: "private.original-current-aged-sql-reference.v1", operationId,
       request, controlsAfter, nativeBefore, nativeAfter, parserSource: CURRENT_AGED_SQL_DATE_PARSER_SOURCE, mainSha256: invocation.mainSha256,

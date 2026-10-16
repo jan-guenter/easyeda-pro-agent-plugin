@@ -1,5 +1,43 @@
 # Current runtime correction and private writer ownership
 
+## Disposable orchestration, update190000
+
+Candidate `0.3.0+codex.20261016190000` connects the existing baseline, writer and
+verification owners through three `project-open` actions: `validation-begin`,
+`validation-advance` and `validation-inspect`. It accepts only the original
+ready baseline and cannot substitute a target, patch, runtime fingerprint or
+verifier. Every advance names the exact expected phase and its required effect
+acknowledgements. A lost response cannot make a repeated request perform the
+next action. Only pending observations can repeat.
+
+The forward direction retains startup qualification, one write, normal close,
+complete closed SQL effect proof, cache-excluded reopening, saved-content checks
+and another closed SQL comparison. A one-use result from successful verification
+supplies the inverse's baseline and initial metadata. The inverse derives its
+patch internally, qualifies fresh clocks and reuses the maintained write/reopen
+mechanisms. It restores selected metadata, not old SQLite bytes or history.
+
+Failed writers expose read-only recovery classification from their original
+complete snapshot: `unchanged`, `exact-intended-effect` or `unresolved`.
+Missing post-dispatch evidence and uncertain capture cleanup remain unresolved.
+These classifications cannot issue a verification continuation, authorize an
+inverse, widen a clock window or allow another write/Save. Original-owner
+cleanup remains distinct from successful persistence verification.
+
+This route deliberately permits disposable validation mutations; its tool
+description and permission hint no longer claim that every project-open action
+is free of CAD edits. Normal design writers stay disabled. No live EasyEDA call,
+project edit, Save or restoration was performed while implementing it. Actual
+173000 was independently admitted after restart and both main CI runs passed.
+Production designs and their records remain untouched.
+
+The next step after publication, installation and fresh-session admission is one
+disposable forward/inverse lifecycle. Current clocks, startup holders, actual
+saved persistence and failure handling still need that connected evidence.
+Then deliberately enable only the validated narrow writer. The broader API
+backlog below is unchanged. Source tests and installation checks are not live
+validation; final verification and delivery receipts are recorded in AGENTS.md.
+
 ## Post-write verification implementation, update173000
 
 Candidate `0.3.0+codex.20261016173000` adds the private verification continuation
@@ -156,8 +194,8 @@ checkpoint after they complete, not inferred from this candidate document.
 3. Validate the inactive upload-cache exclusions and reopen verification
    implemented privately in173000. Successful closed SQL comparison alone is
    not sufficient for enablement.
-4. Implement the scoped disposable-validation entrypoint and inverse/recovery
-   orchestration. Prove disposable forward/inverse metadata persistence and
+4. Validate the scoped disposable entrypoint and inverse/recovery orchestration
+   implemented in190000. Prove disposable forward/inverse metadata persistence and
    ambiguous-failure handling, then deliberately register only the validated
    narrow writer and update its capability evidence. Do not enable it by
    bypassing a flag.

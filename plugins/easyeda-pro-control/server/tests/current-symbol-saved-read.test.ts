@@ -16,6 +16,7 @@ interface API {
   collect: (engine: unknown, generation: unknown, source: unknown) => Promise<unknown>;
   evidence: (generation: unknown, engine: unknown) => unknown;
   assert: (value: unknown, engine: unknown, generation: unknown) => unknown;
+  provenance: (value: unknown, engine: unknown, generation: unknown) => unknown;
 }
 async function fixture(failure: Failure = "none"): Promise<{
   api: API; engine: object; generation: object; source: object; raw: Bag;
@@ -78,9 +79,9 @@ async function fixture(failure: Failure = "none"): Promise<{
     verifyCurrentSavedSymbolContent: (): object => ({ exactContent: true, executionAuthorized: false }),
     CURRENT_SAVED_SYMBOL_READ_TIMEOUT_MS: 10_000,
   });
-  const apiValue: unknown = runInContext(`${program}\n({collect:collectCurrentSavedSymbolContent,evidence:currentSavedSymbolReadEvidence,assert:assertCurrentSavedSymbolRead})`, context);
+  const apiValue: unknown = runInContext(`${program}\n({collect:collectCurrentSavedSymbolContent,evidence:currentSavedSymbolReadEvidence,assert:assertCurrentSavedSymbolRead,provenance:assertCurrentSavedSymbolReadSource})`, context);
   assert.ok(isRecord(apiValue));
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The isolated VM exposes only these three fixed maintained function declarations.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The isolated VM exposes only these four fixed maintained function declarations.
   return { api: apiValue as unknown as API, engine, generation, source, raw, state };
 }
 
@@ -93,6 +94,12 @@ void test("current saved collector binds one original generation, reply and exac
   await assert.rejects(f.api.collect(f.engine, f.generation, f.source)); assert.equal(f.state.calls, 1);
   assert.throws(() => f.api.assert(structuredClone(result), f.engine, f.generation));
   assert.throws(() => f.api.assert(result, f.engine, { ...f.generation }));
+  f.state.active = false;
+  const retained = bag(f.api.provenance(result, f.engine, f.generation));
+  assert.equal(retained["source"], f.source); assert.equal(f.state.calls, 1);
+  assert.throws(() => f.api.provenance(structuredClone(result), f.engine, f.generation));
+  bag(retained["observation"])["expectedActor"] = { forged: true };
+  assert.throws(() => f.api.provenance(result, f.engine, f.generation));
   f.raw["synthetic"] = "changed"; assert.throws(() => f.api.assert(result, f.engine, f.generation));
 });
 

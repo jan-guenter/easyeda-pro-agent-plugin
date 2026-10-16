@@ -3,17 +3,22 @@
  */
 /* oxlint-disable import/max-dependencies -- Compose the existing original lifecycle, source, clock, compiler and complete SQL owners without alternate verifier callbacks. */
 import { loadOperation, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { assertExpectedFingerprint, assertUpstreamReplySettled, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { qualifyCurrentAgedSqlHead } from "./current-aged-sql-issuer.ts";
 import type { OriginalCurrentAgedSqlClock } from "./current-aged-sql-issuer.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
 import { buildCurrentProjectOnlySymbolPreflightProgram, currentProjectOnlySymbolPreflightRequestSchema, decodeCurrentProjectOnlySymbolPreflightReply } from "./current-project-only-symbol-preflight.ts";
 import type { CurrentProjectOnlySymbolPreflightResult } from "./current-project-only-symbol-preflight.ts";
-import { assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
+import { assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
 import type { CurrentSymbolFinishSnapshot, CurrentSymbolFinishSnapshotEvidence } from "./current-symbol-baseline-copy.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { assertCurrentProjectOnlySymbolGeneration, assertCurrentSymbolWriterOwner, revalidateCurrentProjectOnlySymbolGeneration, transferCurrentProjectOnlySymbolGeneration } from "./current-symbol-baseline-runtime.ts";
 import type { CurrentProjectOnlySymbolGeneration, CurrentSymbolWriterOwner, CurrentSymbolWriterOwnerSource } from "./current-symbol-baseline-runtime.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
+// oxlint-disable-next-line import/no-cycle -- Forward/inverse lifecycle composition consumes lexical original-owner registries; replacing them with callback registration would allow fabricated authority.
 import { assertCurrentSymbolWriterStartup, revalidateCurrentSymbolWriterStartup } from "./current-symbol-startup-runtime.ts";
 import { prepareCurrentSymbolTransactionClock, recordCurrentSymbolTransactionClockPost, verifyCurrentSymbolTransactionClock } from "./current-symbol-transaction-clock.ts";
 import type { CurrentSymbolTransactionClockPlan } from "./current-symbol-transaction-clock.ts";
@@ -44,6 +49,7 @@ interface Slot {
   snapshotInventory?: Extract<CurrentSymbolFinishSnapshotEvidence, { kind: "inventory" }>["value"];
   snapshot?: CurrentSymbolFinishSnapshot; continuation?: CurrentSymbolWriterContinuation;
   comparisonAttempted: boolean; comparison?: Readonly<Record<string, unknown>>;
+  recoveryClassificationAttempted: boolean; recoveryClassification?: Readonly<Record<string, unknown>>;
   releaseAttempted: boolean; retired: boolean;
 }
 export interface CurrentSymbolWriterContinuation {
@@ -113,8 +119,11 @@ function summary(slot: Slot): Readonly<Record<string, unknown>> {
     originalClockRepliesRetained: slot.clockRaw !== undefined && slot.writeRaw !== undefined,
     originalWindowsSamplesRetained: slot.beforeClock !== undefined && slot.armedClock !== undefined && slot.afterClock !== undefined,
     postRecorded: slot.postRecorded, closeAttempted: slot.closeAttempted, closeAcknowledged: slot.closeReceipt !== undefined,
+    finishObservationAvailable: slot.closeIntent !== undefined && slot.closeReceipt !== undefined && !slot.releaseAttempted && !slot.retired,
     snapshotAttempted: slot.snapshotAttempted, snapshotComplete: slot.snapshotComplete,
-    comparisonAttempted: slot.comparisonAttempted, comparison: slot.comparison ?? null,
+    comparisonAttempted: slot.comparisonAttempted, comparison: slot.comparison === undefined ? null : structuredClone(slot.comparison),
+    recoveryClassificationAttempted: slot.recoveryClassificationAttempted,
+    recoveryClassification: slot.recoveryClassification === undefined ? null : structuredClone(slot.recoveryClassification),
     failed: slot.failed, retired: slot.retired, verificationContinuationRetained: slot.continuation !== undefined,
     dispatchCaptureCleanupUncertain: slot.dispatchCaptureCleanupUncertain,
     replayAllowed: false, explicitSaveDispatched: false,
@@ -218,7 +227,8 @@ export class CurrentSymbolWriterCoordinator {
       const journal = source.journal;
       slot = { owner, source, journal, startup, transferJournal: beforeJournal, dispatchOwner: Object.freeze({}), methods: methods(this.engine),
         journalText: canonicalJson(journal), dispatchStarted: false, writeAcknowledged: false, postRecorded: false, failed: false, dispatchCaptureCleanupUncertain: false,
-        closeAttempted: false, snapshotAttempted: false, snapshotComplete: false, snapshotEvidence: new Map(), comparisonAttempted: false, releaseAttempted: false, retired: false };
+        closeAttempted: false, snapshotAttempted: false, snapshotComplete: false, snapshotEvidence: new Map(), comparisonAttempted: false,
+        recoveryClassificationAttempted: false, releaseAttempted: false, retired: false };
       this.slots.set(owner.operationId, slot);
       need(canonicalJson(beforeJournal) === slot.journalText);
       journal.plan = { profile: PROFILE, baselinePlan: structuredClone(journal.plan), baselineJournalSha256: sha256Json(beforeJournal),
@@ -406,6 +416,10 @@ export class CurrentSymbolWriterCoordinator {
         await this.record(slot, "writer-comparison", { comparison: slot.comparison, originalDispatchOwned: true,
           originalDocumentSamplesRetained: true, persistenceLifecycleComplete: false, persistentUploadReplayExcluded: false, reopened: false });
       }
+      if (!slot.recoveryClassificationAttempted) {
+        slot.recoveryClassificationAttempted = true;
+        await this.classifyClosedRecovery(slot);
+      }
       if (!slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== undefined &&
         slot.writeAcknowledged && slot.postRecorded) {
         need(slot.snapshot !== undefined);
@@ -430,6 +444,50 @@ export class CurrentSymbolWriterCoordinator {
       slot.source.retire(); slot.retired = true; return Object.freeze({ ...summary(slot), termination: "terminated" });
     } catch (error) { await this.stop(slot, "termination-or-comparison"); throw error; }
     finally { this.busy = false; }
+  }
+
+  /** Read-only diagnosis of the original completed snapshot. In particular,
+   * unchanged bytes cannot replace a missing post-dispatch clock sample, and
+   * an exact effect does not revive a failed writer or authorize an inverse.
+   */
+  private async classifyClosedRecovery(slot: Slot): Promise<void> {
+    let basis = "complete-snapshot-unavailable", outcome = "unresolved";
+    let exactLogicalSqlUnchanged = false;
+    const postEvidenceComplete = slot.postRecorded && slot.clockPlan !== undefined && slot.writeResult !== undefined &&
+      slot.beforeClock !== undefined && slot.armedClock !== undefined && slot.afterClock !== undefined;
+    if (slot.snapshotComplete && slot.snapshot !== undefined) {
+      const original = assertOriginalCurrentSymbolFinishSnapshot(slot.snapshot, this.engine);
+      need(original.inventory === slot.snapshotInventory);
+      assertOriginalCurrentSymbolBaselineCopy(slot.source.original.baseline, this.engine);
+      await revalidateCurrentSymbolFinishSnapshot(this.engine, slot.snapshot);
+      await this.unchanged(slot); this.closedDispatch(slot);
+      if (slot.dispatchCaptureCleanupUncertain) { basis = "dispatch-capture-cleanup-uncertain"; }
+      else if (slot.dispatchStarted && !postEvidenceComplete) { basis = "original-post-dispatch-evidence-incomplete"; }
+      else if (slot.comparison === undefined) {
+        // A comparison refusal is diagnostic only. Original-owner, journal and
+        // Snapshot checks still run outside this catch and cannot be suppressed.
+        try {
+          await compareCompleteClosedSql(slot.source.original.baseline.inventory, original.inventory);
+          exactLogicalSqlUnchanged = true;
+        } catch { exactLogicalSqlUnchanged = false; }
+        await this.unchanged(slot); this.closedDispatch(slot);
+        need(assertOriginalCurrentSymbolFinishSnapshot(slot.snapshot, this.engine) === original);
+        assertOriginalCurrentSymbolBaselineCopy(slot.source.original.baseline, this.engine);
+        if (exactLogicalSqlUnchanged) { outcome = "unchanged"; basis = "complete-original-closed-sql-equality"; }
+        else { basis = "closed-effect-not-established"; }
+      } else {
+        need(slot.writeAcknowledged && postEvidenceComplete);
+        outcome = "exact-intended-effect"; basis = "original-complete-clock-and-sql-comparison";
+      }
+    }
+    const result = Object.freeze({ profile: "private.current-symbol-closed-recovery.v1", operationId: slot.owner.operationId,
+      outcome, basis, completeClosedSnapshot: slot.snapshotComplete, exactLogicalSqlUnchanged,
+      originalPostEvidenceComplete: postEvidenceComplete, originalTransactionComparisonVerified: slot.comparison !== undefined,
+      dispatchCaptureCleanupUncertain: slot.dispatchCaptureCleanupUncertain, mutationMayHaveOccurred: slot.dispatchStarted,
+      writerFailed: slot.failed, executionAuthorized: false, persistenceLifecycleComplete: false,
+      verificationContinuationAuthorized: false, inverseAuthorized: false, replayAllowed: false });
+    await this.record(slot, "writer-closed-recovery-classification", result);
+    slot.recoveryClassification = result;
   }
 
   private issueContinuation(slot: Slot): void {

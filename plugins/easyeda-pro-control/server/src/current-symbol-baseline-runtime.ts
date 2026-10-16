@@ -7,6 +7,9 @@ import { verifyCurrentDisposableOpenImplementation, verifyCurrentProjectOnlyOpen
 // oxlint-disable-next-line import/no-cycle -- Only the retained opener issues these one-way ownership transfers; no caller-provided issuer exists.
 import { assertCurrentSymbolBaselineOwner, revalidateCurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentDisposableOpenGenerationSource, CurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
+// oxlint-disable-next-line import/no-cycle -- The inverse owner is issued solely from the retained verifier's successful closure, not caller JSON or a fabricated preparation.
+import { assertCurrentSymbolInverseBaselineOwner, currentSymbolInverseOwnershipTransferred, revalidateCurrentSymbolInverseBaselineOwner, transferCurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
+import type { CurrentInverseSymbolPreparation, CurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
 // oxlint-disable-next-line import/no-cycle -- Closed copying consumes only original owners issued by the opener; this private coordinator never replaces that issuer.
 import { assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
@@ -50,10 +53,19 @@ interface Journal extends TrackedDispatchOperationJournal {
   projectOpeningMode?: ProjectOpeningMode;
 }
 type CopyResult = Awaited<ReturnType<typeof captureCurrentSymbolBaselineCopy>>;
+type BaselineOwner = CurrentSymbolBaselineOwner | CurrentSymbolInverseBaselineOwner;
+type OriginalPreparation = ReturnType<typeof assertCurrentSymbolBaselineOwner>["preparation"] | CurrentInverseSymbolPreparation;
+function assertBaselineOwner(owner: BaselineOwner, engine: EasyedaControlEngine): Readonly<{ source: CurrentDisposableOpenGenerationSource; preparation: OriginalPreparation }> {
+  return owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ? assertCurrentSymbolInverseBaselineOwner(owner, engine) : assertCurrentSymbolBaselineOwner(owner, engine);
+}
+async function revalidateBaselineOwner(owner: BaselineOwner, engine: EasyedaControlEngine): Promise<void> {
+  await (owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ?
+    revalidateCurrentSymbolInverseBaselineOwner(owner, engine) : revalidateCurrentSymbolBaselineOwner(owner, engine));
+}
 type Binding = Omit<Parameters<WindowsControlRuntime["prepareClosedSessionClose"]>[0], "windowHandle">;
 interface Slot {
-  readonly owner: CurrentSymbolBaselineOwner; readonly journal: Journal; readonly ownerText: string;
-  readonly originalPreparation: ReturnType<typeof assertCurrentSymbolBaselineOwner>["preparation"]; readonly originalPreparationText: string;
+  readonly owner: BaselineOwner; readonly journal: Journal; readonly ownerText: string;
+  readonly originalPreparation: OriginalPreparation; readonly originalPreparationText: string;
   created: boolean; journalText: string; capture?: ClosedSessionAuthorityCapture; binding?: Binding;
   intent?: ClosedSessionCloseIntent; closeReceipt?: ClosedSessionCloseReceipt; observation?: ClosedSessionTerminationObservation;
   proof?: ClosedSessionTerminationProof; copy?: CopyResult; closeAttempted: boolean; copyAttempted: boolean; baselineCaptured: boolean;
@@ -82,6 +94,8 @@ interface Slot {
   finishSnapshot?: Awaited<ReturnType<typeof captureCurrentSymbolFinishSnapshot>>;
   finishSnapshotFailureEvidenceText?: string;
   readonly evidence: Map<string, unknown>;
+  inverseCleanupMode?: "held-closure" | "pre-capture" | "incomplete-admission";
+  inverseCleanupCloseAttempted?: boolean; inverseCleanupMethods?: readonly unknown[];
 }
 export interface CurrentProjectOnlySymbolGeneration {
   readonly profile: "private.current-project-only-symbol-generation.v1";
@@ -91,7 +105,7 @@ export interface CurrentProjectOnlySymbolGenerationSource {
   readonly source: CurrentDisposableOpenGenerationSource;
   readonly baseline: CopyResult;
   /** Historical original reader witness, never a current startup observation. */
-  readonly originalPreparation: ReturnType<typeof assertCurrentSymbolBaselineOwner>["preparation"];
+  readonly originalPreparation: OriginalPreparation;
   readonly capture: ClosedSessionAuthorityCapture;
   readonly launch: WindowsAuthorityLaunch;
   readonly launchClock: IssuedWindowsClockObservation;
@@ -173,7 +187,7 @@ function relaunchMethods(engine: EasyedaControlEngine, runtime: WindowsControlRu
     engine.status, engine.dispatchWithOrphanTracking, engine.markOrphanedCallRisk, engine.clearOrphanedCallRisk,
     engine.clockObservationForTrackedDispatch, engine.upstream.callTool, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased,
     runtime.observeApplicationWindow, runtime.prepareClosedSessionClose, runtime.requestClosedSessionNormalClose,
-    runtime.probeClosedSessionTermination];
+    runtime.probeClosedSessionTermination, runtime.normalClose, runtime.observeLaunchTermination];
   /* oxlint-enable typescript/unbound-method */
 }
 export function currentSymbolFinishSnapshotStatus(attempted: unknown, captured: unknown, failed: unknown): string {
@@ -208,6 +222,9 @@ function summary(slot: Slot): Value {
       observationCollection: slot.agedClockCollection ?? null },
     unqualifiedSchematicStartupEffectsAccepted: slot.journal.projectOpeningMode === "unqualified-schematic-startup-observation",
     finishCloseAttempted: slot.finishCloseAttempted, finishCloseAcknowledged: slot.finishReceipt !== undefined,
+    inverseCleanupMode: slot.inverseCleanupMode ?? null,
+    finishObservationAvailable: slot.finishing && !slot.finishReleaseAttempted && !slot.finished &&
+      (slot.finishReceipt !== undefined || slot.inverseCleanupMode === "held-closure" || slot.inverseCleanupCloseAttempted === true),
     finishReleaseAttempted: slot.finishReleaseAttempted, finishCaptureReleased: slot.finishCaptureReleased, retired: slot.finished,
     finishSnapshotAttempted: slot.finishSnapshotAttempted, finishSnapshotCaptured: slot.finishSnapshotCaptured,
     finishSnapshotStatus: currentSymbolFinishSnapshotStatus(slot.finishSnapshotAttempted, slot.finishSnapshotCaptured, slot.finishSnapshotFailed),
@@ -236,8 +253,59 @@ export class CurrentSymbolBaselineCoordinator {
     this.clockReferenceStage = new CurrentAgedSqlReferenceStage(engine);
   }
 
+  /** Register the original inverse slot before transferring its predecessor's
+   * held closure. No new capture, reservation reuse or copied JSON owner occurs.
+   */
+  public async adoptInverse(owner: CurrentSymbolInverseBaselineOwner, copy: CopyResult,
+    reference: OriginalCurrentAgedSqlReference): Promise<Value> {
+    need(!this.busy && !this.slots.has(owner.operationId), "Inverse baseline adoption is already consumed.");
+    const original = assertCurrentSymbolInverseBaselineOwner(owner, this.engine), source = original.source;
+    need(source.runtime === this.runtime && !currentSymbolInverseOwnershipTransferred(owner, this.engine) && copy.owner === owner &&
+      canonicalJson(this.sqlRuntime) === canonicalJson(original.result.writer.sqlRuntime), "Inverse baseline original runtime differs.");
+    assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+    assertOriginalCurrentAgedSqlReference(reference, this.engine, copy);
+    const plan: Journal["plan"] = { profile: PROFILE, openingOperationId: owner.openingOperationId, target: source.target,
+      expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
+      preparationSha256: original.preparation.preparationSha256, inverseOf: original.predecessor.operationId };
+    const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,
+      planHash: buildPlanHash(plan), state: "plan-invalidated", mutationState: "not-inferred", saved: false, reopened: false,
+      orphanedCallPossible: false, hardStop: false, mutationMayHaveOccurred: false, sequence: 0, artifacts: [],
+      closeAttempted: true, copyAttempted: true, relaunchAttempted: false, releaseAttempted: false, admissionAttempted: false,
+      cacheAttempted: false, projectOpenAttempted: false, finishCloseAttempted: false, finishReleaseAttempted: false,
+      finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), nextSafeAction: "Inverse adoption has not transferred closure ownership." };
+    const slot: Slot = { owner, ownerText: canonicalJson(owner), originalPreparation: original.preparation,
+      originalPreparationText: canonicalJson(original.preparation), journal, journalText: canonicalJson(journal), created: false,
+      capture: original.result.originalSnapshot.capture, proof: original.result.originalSnapshot.proof, copy,
+      closeAttempted: true, copyAttempted: true, baselineCaptured: true, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
+      admissionAttempted: false, admissionProved: false, cacheAttempted: false, cacheReplyRetained: false, cachesObserved: false,
+      projectOpenAttempted: false, projectOpenReplyRetained: false, projectOpened: false,
+      clockReferenceAttempted: true, clockReferenceAccepted: true, clockReference: reference, agedClockAttempted: false, agedClockAccepted: false,
+      finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
+      finishing: false, finishCloseAttempted: false, finishReleaseAttempted: false, finishCaptureReleased: false, finished: false,
+      inverseCleanupMethods: relaunchMethods(this.engine, this.runtime), evidence: new Map() };
+    this.slots.set(owner.operationId, slot); this.busy = true;
+    try {
+      await original.result.revalidateClosed();
+      await createOperation(journal); slot.created = true; await this.unchanged(slot);
+      await CurrentSymbolBaselineCoordinator.record(slot, "inverse-adoption-intent", { predecessor: original.predecessor, snapshot: original.result.snapshot,
+        preparation: original.preparation, reference, closureOwnershipTransferred: false }); await this.unchanged(slot);
+      await transferCurrentSymbolInverseBaselineOwner(owner, this.engine);
+      await this.unchanged(slot);
+      journal.state = "completed";
+      journal.nextSafeAction = "Original verified closure adopted with fresh inverse scratch evidence. Relaunch once or retire its held closure without a write.";
+      await CurrentSymbolBaselineCoordinator.record(slot, "inverse-adoption-result", { closureOwnershipTransferred: true, captureReleased: false });
+      await this.unchanged(slot); return summary(slot);
+    } catch (error) {
+      if (currentSymbolInverseOwnershipTransferred(owner, this.engine)) { return await CurrentSymbolBaselineCoordinator.fail(slot, "inverse-adoption", error); }
+      // The neutral adoption journal never becomes an extra quarantine while
+      // The predecessor still owns retirement after an unsuccessful transfer.
+      throw error;
+    } finally { this.busy = false; }
+  }
+
   private current(slot: Slot): void {
-    const original = assertCurrentSymbolBaselineOwner(slot.owner, this.engine);
+    const original = assertBaselineOwner(slot.owner, this.engine);
     need(this.slots.get(slot.owner.operationId) === slot && canonicalJson(slot.owner) === slot.ownerText && original.source.runtime === this.runtime,
       "Current symbol baseline original owner changed.");
     if (slot.capture !== undefined) { assertWindowsRuntimeValidator(this.engine.executionAuthorityValidator, this.runtime); }
@@ -249,7 +317,7 @@ export class CurrentSymbolBaselineCoordinator {
   }
   private async unchanged(slot: Slot): Promise<void> {
     this.current(slot);
-    await revalidateCurrentSymbolBaselineOwner(slot.owner, this.engine); this.current(slot);
+    await revalidateBaselineOwner(slot.owner, this.engine); this.current(slot);
     const persisted = await loadOperation(slot.owner.operationId); this.current(slot);
     need(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText, "Current symbol baseline journal changed.");
   }
@@ -410,6 +478,7 @@ export class CurrentSymbolBaselineCoordinator {
       slot.journal.state = "copying";
       await CurrentSymbolBaselineCoordinator.record(slot, "copy-intent", { proof }); this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
       const capture = slot.capture; need(capture !== undefined, "Current symbol baseline capture was lost.");
+      need(slot.owner.profile !== "private.current-symbol-inverse-baseline-owner.v1", "Inverse baselines use only their original verification snapshot.");
       const result = await captureCurrentSymbolBaselineCopy(this.engine, { owner: slot.owner, capture, intent: slot.intent,
         closeReceipt: slot.closeReceipt, proof, runtime: this.sqlRuntime }, (event) => { slot.evidence.set(event.kind, event.value); });
       slot.copy = result;
@@ -473,7 +542,7 @@ export class CurrentSymbolBaselineCoordinator {
     const { copy, proof, capture } = slot;
     try {
       this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
-      const source = assertCurrentSymbolBaselineOwner(slot.owner, this.engine).source;
+      const source = assertBaselineOwner(slot.owner, this.engine).source;
       slot.source = source;
       const upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
       const lifecycleReader = upstream.bridgeSessionLifecycle, scopeReader = upstream.currentAuthenticatedBridgeDispatchBinding;
@@ -1118,6 +1187,9 @@ export class CurrentSymbolBaselineCoordinator {
    */
   public async finishNormalClose(operationId: string): Promise<Value> {
     const slot = this.slots.get(operationId);
+    if (slot?.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" && !slot.admissionProved) {
+      return this.finishInverseEarlyClose(slot);
+    }
     need(!this.busy && slot !== undefined && slot.writerTransfer === undefined && ["admitted", "caches-observed", "project-only-opened", "stopped"].includes(slot.journal.state) &&
       slot.admissionProved && slot.admissionCapture !== undefined && slot.admissionClock !== undefined && slot.currentLaunch !== undefined &&
       slot.launch !== undefined && !slot.finishCloseAttempted,
@@ -1160,6 +1232,7 @@ export class CurrentSymbolBaselineCoordinator {
    */
   public async observeFinish(operationId: string): Promise<Value> {
     const slot = this.slots.get(operationId);
+    if (slot?.inverseCleanupMode !== undefined) { return this.observeInverseEarlyFinish(slot); }
     const failedSnapshot = slot !== undefined && slot.journal.state === "stopped" && slot.finishSnapshotFailed && slot.finishSnapshotAttempted &&
       !slot.finishSnapshotCaptured && slot.finishObservation?.status === "terminated" && slot.finishProof === slot.finishObservation.proof &&
       slot.finishSnapshotFailureEvidenceText === canonicalJson([...slot.evidence]);
@@ -1307,6 +1380,102 @@ export class CurrentSymbolBaselineCoordinator {
       if (slot.finishSnapshotFailed && slot.journal.state === "stopped" && slot.finishSnapshotFailureEvidenceText === canonicalJson([...slot.evidence])) { throw error; }
       return await CurrentSymbolBaselineCoordinator.fail(slot, "finish-termination-or-retirement", error);
     }
+    finally { this.busy = false; }
+  }
+
+  private async inverseCleanupCurrent(slot: Slot): Promise<void> {
+    need(slot.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" &&
+      currentSymbolInverseOwnershipTransferred(slot.owner, this.engine) && !slot.finished && slot.writerTransfer === undefined &&
+      slot.inverseCleanupMethods !== undefined && relaunchMethods(this.engine, this.runtime).every((method, index) => method === slot.inverseCleanupMethods?.[index]),
+    "Inverse cleanup requires its original transferred owner and native methods.");
+    this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
+    slot.currentLaunch?.();
+    if (slot.launch !== undefined) {
+      const status = this.runtime.status();
+      need(status.state === "owned" && canonicalJson(status.launch) === canonicalJson(slot.launch), "Inverse cleanup original launch changed.");
+    }
+    need(!slot.journal.orphanedCallPossible && slot.journal.bridgeDispatchBeforeOrphan === undefined &&
+      slot.journal.bridgeSessionBeforeOrphan === undefined && slot.journal.executionAuthorityBeforeOrphan === undefined,
+    "Early inverse cleanup cannot adopt a dispatched or orphaned generation.");
+  }
+  private async finishInverseEarlyClose(slot: Slot): Promise<Value> {
+    need(!this.busy && !slot.finishCloseAttempted && !slot.finishReleaseAttempted && !slot.finished &&
+      (!slot.relaunchAttempted || slot.launch !== undefined), "Inverse early cleanup requires a held closure or acknowledged original launch.");
+    this.busy = true; slot.finishCloseAttempted = true;
+    try {
+      await this.inverseCleanupCurrent(slot); await this.engine.assertRecoveryOperationIsolated(slot.owner.operationId); await this.inverseCleanupCurrent(slot);
+      if (slot.launch === undefined) {
+        need(slot.proof !== undefined && await assertClosedSessionCopyAuthority(slot.proof) === slot.proof, "Inverse held closure proof changed.");
+        await this.inverseCleanupCurrent(slot); slot.inverseCleanupMode = "held-closure"; slot.finishing = true;
+        await CurrentSymbolBaselineCoordinator.record(slot, "inverse-held-retirement-intent", { captureReleased: false, newCloseDispatched: false });
+        return summary(slot);
+      }
+      const window = await this.runtime.observeApplicationWindow(); await this.inverseCleanupCurrent(slot);
+      need(window.outcome === "available" && window.hwnd !== null && window.jobId === slot.launch.jobId && window.helperInstance === slot.launch.helperInstance,
+        "Inverse early cleanup lacks its original launch window.");
+      const capture = slot.admissionCapture;
+      if (capture === undefined) {
+        slot.inverseCleanupMode = "pre-capture";
+        await CurrentSymbolBaselineCoordinator.record(slot, "inverse-pre-capture-close-intent", { launch: slot.launch, hwnd: window.hwnd,
+          saveOrDiscardSelected: false, replayAllowed: false }); await this.inverseCleanupCurrent(slot);
+        slot.finishing = true; slot.inverseCleanupCloseAttempted = true;
+        await this.runtime.normalClose(window.hwnd);
+      } else {
+        const binding: Binding = { operationId: capture.operationId, phase: capture.phase, challengeAttempt: capture.challengeAttempt,
+          bridgeSession: capture.bridgeSession, runtimeIdentity: capture.runtimeIdentity, executionAuthority: capture.executionAuthority };
+        slot.inverseCleanupMode = "incomplete-admission";
+        slot.finishIntent = await this.runtime.prepareClosedSessionClose({ ...binding, windowHandle: window.hwnd }); await this.inverseCleanupCurrent(slot);
+        await CurrentSymbolBaselineCoordinator.record(slot, "inverse-incomplete-admission-close-intent", { capture, intent: slot.finishIntent }); await this.inverseCleanupCurrent(slot);
+        slot.finishing = true; slot.inverseCleanupCloseAttempted = true;
+        slot.finishReceipt = await this.runtime.requestClosedSessionNormalClose({ ...binding, intent: slot.finishIntent, confirmNormalClose: true });
+      }
+      await this.inverseCleanupCurrent(slot);
+      await CurrentSymbolBaselineCoordinator.record(slot, "inverse-early-close-reply", { mode: slot.inverseCleanupMode, closeReceipt: slot.finishReceipt ?? null });
+      return summary(slot);
+    } catch (error) { return await CurrentSymbolBaselineCoordinator.fail(slot, "inverse-early-close", error); }
+    finally { this.busy = false; }
+  }
+  private async observeInverseEarlyFinish(slot: Slot): Promise<Value> {
+    need(!this.busy && slot.finishing && !slot.finished && !slot.finishReleaseAttempted, "Inverse early finish lacks its retained close attempt.");
+    this.busy = true;
+    try {
+      await this.inverseCleanupCurrent(slot); await this.engine.assertRecoveryOperationIsolated(slot.owner.operationId); await this.inverseCleanupCurrent(slot);
+      if (slot.inverseCleanupMode === "pre-capture") {
+        need(slot.inverseCleanupCloseAttempted === true && slot.launch !== undefined, "Inverse early close was not attempted.");
+        const observation = await this.runtime.observeLaunchTermination(); await this.inverseCleanupCurrent(slot);
+        need(observation.jobId === slot.launch.jobId && observation.helperInstance === slot.launch.helperInstance, "Inverse early termination differs from its launch.");
+        await CurrentSymbolBaselineCoordinator.record(slot, "inverse-pre-capture-termination", { observation, snapshotAuthority: false });
+        if (!observation.terminated) { return { ...summary(slot), termination: "pending" }; }
+      } else if (slot.inverseCleanupMode === "incomplete-admission") {
+        const capture = slot.admissionCapture; need(capture !== undefined && slot.finishIntent !== undefined && slot.finishReceipt !== undefined,
+          "Inverse incomplete admission cleanup requires its original close receipt.");
+        const observation = await this.runtime.probeClosedSessionTermination({ operationId: capture.operationId, phase: capture.phase,
+          challengeAttempt: capture.challengeAttempt, bridgeSession: capture.bridgeSession, runtimeIdentity: capture.runtimeIdentity,
+          executionAuthority: capture.executionAuthority, intent: slot.finishIntent, closeReceipt: slot.finishReceipt });
+        slot.finishObservation = observation; assertCurrentClosedSessionTerminationObservation(observation); await this.inverseCleanupCurrent(slot);
+        if (observation.status === "pending") { return { ...summary(slot), termination: "pending" }; }
+        need(await assertClosedSessionCopyAuthority(observation.proof) === observation.proof, "Inverse incomplete admission proof changed.");
+      } else {
+        need(slot.inverseCleanupMode === "held-closure" && slot.proof !== undefined && await assertClosedSessionCopyAuthority(slot.proof) === slot.proof,
+          "Inverse held proof changed before retirement.");
+      }
+      await this.inverseCleanupCurrent(slot);
+      const lifecycle = this.engine.upstream.bridgeSessionLifecycle?.();
+      need(isRecord(lifecycle) && lifecycle["activeSession"] === null, "Inverse cleanup requires a closed bridge.");
+      slot.finishReleaseAttempted = true;
+      await CurrentSymbolBaselineCoordinator.record(slot, "inverse-early-release-intent", { mode: slot.inverseCleanupMode,
+        captureAcquisitionCleanupUncertain: slot.admissionAttempted && slot.admissionCapture === undefined, snapshotAuthority: false });
+      if (slot.admissionCapture !== undefined) { await this.engine.releaseClosedSessionAuthority(slot.admissionCapture); slot.finishCaptureReleased = true; }
+      if (!slot.captureReleased) {
+        need(!slot.releaseAttempted && slot.capture !== undefined, "Inverse old capture release was already attempted.");
+        slot.releaseAttempted = true; await this.engine.releaseClosedSessionAuthority(slot.capture); slot.captureReleased = true;
+      }
+      await this.inverseCleanupCurrent(slot);
+      slot.journal.state = "plan-invalidated"; slot.journal.hardStop = false;
+      slot.journal.nextSafeAction = "Inverse attempt retired before admission; no writer, saved-state or snapshot authority was granted.";
+      await CurrentSymbolBaselineCoordinator.record(slot, "inverse-early-retired", { retired: true, savedStateVerified: false, snapshotAuthority: false });
+      slot.finished = true; return { ...summary(slot), termination: "terminated", retired: true };
+    } catch (error) { return await CurrentSymbolBaselineCoordinator.fail(slot, "inverse-early-termination", error); }
     finally { this.busy = false; }
   }
 
