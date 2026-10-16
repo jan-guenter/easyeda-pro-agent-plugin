@@ -55,6 +55,27 @@ admission checks. Other failure phases and ambiguous calls remain unsupported.
 An existing valid abandonment record can be inspected again without publishing
 another record or rechecking the now-current design as historical evidence.
 
+## Closed baseline stopped before relaunch
+
+For the current disposable baseline workflow, `easyeda_control_history` also
+accepts `action:"abandon-baseline-before-relaunch"`, the exact `operationId`,
+`confirmDisposableProject:true` and
+`confirmation:"<operationId>:abandoned-before-relaunch"`. Check offline `history`
+and `history-validate` first; older installed versions do not expose this action.
+
+This accepts only the complete seven-phase record ending in a stopped relaunch
+before its durable launch intent. It verifies the original journal, capture,
+normal-close and termination evidence, closed baseline and absence of later
+phase evidence. A boolean saying launch failed is insufficient. Retained binary
+copies are rehashed without reading the original project or running EasyEDA.
+
+The exclusive `abandoned-baseline-before-relaunch.json` sidecar leaves the
+original journal and all copies intact. A valid sidecar removes only this
+specific historical blocker. It does not prove current process absence or
+current source invariance, restore lost handles, complete the lifecycle or
+permit replay. A later launch intent, ambiguous dispatch, missing evidence or
+changed artifact still refuses. Any new operation needs its own admission.
+
 ## Typed design and library recovery
 
 1. Use `easyeda_control_design` inspect with the operation ID, or the corresponding library inspect action. `easyeda_control_recover_incomplete` with no ID lists managed incomplete operations. Local artifact/evidence inspection remains available.

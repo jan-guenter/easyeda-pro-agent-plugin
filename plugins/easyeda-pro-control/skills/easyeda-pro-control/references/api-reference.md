@@ -472,15 +472,22 @@ current actor/worker identity or permission to execute the legacy writer.
 ## Local historical abandonment
 
 Query `history` with `includeSchemas:true`, then validate the request using
-`history-validate` before calling `easyeda_control_history`. The sole request
-is `action:"abandon-before-navigation"`, original `operationId` and
-`confirmation:"<operationId>:abandoned-before-navigation"`. This exact string
-checks argument consistency, not human restart attestation. The tool qualifies
-only the maintained sixteen-event validation marker-read boundary and publishes
-an exclusive historical sidecar. It has no bridge or runtime dependency and
-never rewrites the journal or permanent claim. Read [failure recovery](failure-recovery.md)
-for required retained evidence and the distinction from six-event baseline,
-later-phase, design or process recovery.
+`history-validate` before calling `easyeda_control_history`. Each action takes
+the original `operationId` and an exact confirmation string:
+
+- `abandon-before-navigation` takes
+  `confirmation:"<operationId>:abandoned-before-navigation"` for the maintained
+  sixteen-event validation marker-read boundary.
+- `abandon-baseline-before-relaunch` additionally requires
+  `confirmDisposableProject:true` and
+  `confirmation:"<operationId>:abandoned-before-relaunch"`. It accepts only the
+  seven-phase closed baseline stopped before a durable relaunch intent.
+
+These strings check argument consistency, not human restart attestation.
+Both actions publish exclusive historical sidecars without bridge/runtime
+calls or original-journal rewrites. The second verifies retained copies only,
+not the current source or process. Read [failure recovery](failure-recovery.md)
+for the exact evidence boundaries. Neither permits replay or generic recovery.
 
 ## PCB layer metadata on the current tuple
 

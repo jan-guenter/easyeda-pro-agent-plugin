@@ -35,7 +35,7 @@ interface ScanCandidate {
   readonly bridgeBlocking: boolean;
   readonly unfinished: boolean;
   readonly summary: OperationSummary;
-  readonly classification: "legacy" | "incomplete" | "invalid" | "terminal";
+  readonly classification: "legacy" | "incomplete" | "invalid" | "terminal" | "current-baseline";
   readonly terminal: TerminalCandidate | null;
   readonly incomplete: IncompleteCandidate | null;
 }
@@ -58,6 +58,12 @@ function project(operation: UnknownRecord): ScanCandidate {
   const summary = operationSummary(asOperationJournal(operation));
   const base = { bridgeBlocking: state === "journal-unreadable" || operationHasOrphanedCallRisk(operation),
     unfinished: !isTerminalOperation(operation), summary };
+  if (family === "easyeda-pro-control.current-symbol-closed-baseline.v1") {
+    const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
+    const incomplete = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
+      ? { operationId, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
+    return { ...base, classification: "current-baseline", terminal: null, incomplete };
+  }
   const reserved = family === FAMILY || typeof family === "string" && family.startsWith("easyeda-pro-control.project-symbol-closed-session.") ||
     typeof state === "string" && state.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
   if (!reserved) { return { ...base, classification: "legacy", terminal: null, incomplete: null }; }
@@ -136,6 +142,26 @@ async function qualifyAbandonment(candidate: ScanCandidate): Promise<QualifiedAd
       ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
+async function qualifyCurrentBaselineAbandonment(candidate: ScanCandidate): Promise<QualifiedAdmissionOperation> {
+  const expected = candidate.incomplete;
+  if (expected === null) { return observation(candidate, "abandonment-evidence-invalid"); }
+  try {
+    const { inspectCurrentSymbolBaselineAbandonment } = await import("./current-symbol-baseline-abandonment.ts");
+    const inspected: unknown = await inspectCurrentSymbolBaselineAbandonment(expected.operationId);
+    if (inspected === undefined) { return observation(candidate, "incomplete"); }
+    if (!isRecord(inspected) || inspected["profile"] !== "easyeda-pro-control.current-symbol-baseline-abandonment-inspection.v1" ||
+        inspected["classification"] !== "historical-abandonment-verified" || inspected["operationId"] !== expected.operationId ||
+        inspected["originalStoredJournalSha256"] !== expected.storedJournalSha256 || inspected["originalJournalSha256"] !== expected.entireStoredJournalSha256 ||
+        inspected["completionProved"] !== false || inspected["processClosureProved"] !== false || inspected["currentSourceChecked"] !== false ||
+        inspected["sourceInvarianceProved"] !== false || inspected["authorityRestored"] !== false || inspected["executionAuthorized"] !== false ||
+        inspected["replayAllowed"] !== false || inspected["writerReady"] !== false || inspected["saved"] !== false || inspected["reopened"] !== false) {
+      return observation(candidate, "abandonment-evidence-invalid");
+    }
+    return { ...observation(candidate, "historical-abandonment-verified"), bridgeBlocking: false, unfinished: false };
+  } catch (error) {
+    return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
+  }
+}
 async function qualifyTerminal(candidate: ScanCandidate, runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>>): Promise<QualifiedAdmissionOperation | undefined> {
   const expected = candidate.terminal;
   if (expected === null) { return observation(candidate, "terminal-evidence-invalid"); }
@@ -164,6 +190,8 @@ async function qualifiedCandidates(): Promise<QualifiedAdmissionOperation[]> {
   for (const candidate of candidates) {
     if (candidate.classification === "legacy") {
       results.push(observation(candidate, "legacy"));
+    } else if (candidate.classification === "current-baseline") {
+      results.push(await qualifyCurrentBaselineAbandonment(candidate));
     } else if (candidate.classification === "incomplete") {
       results.push(await qualifyAbandonment(candidate));
     } else if (candidate.classification === "invalid" || candidate.terminal === null) {

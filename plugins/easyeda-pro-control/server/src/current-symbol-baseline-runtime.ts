@@ -7,7 +7,7 @@ import { verifyCurrentDisposableOpenImplementation, verifyCurrentProjectOnlyOpen
 import { assertCurrentSymbolBaselineOwner, revalidateCurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentDisposableOpenGenerationSource, CurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
 // oxlint-disable-next-line import/no-cycle -- Closed copying consumes only original owners issued by the opener; this private coordinator never replaces that issuer.
-import { assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
 import { CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "./current-upload-queue-read.ts";
@@ -17,9 +17,10 @@ import { verifyCurrentSymbolPreopenSource } from "./current-symbol-preopen-sourc
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
-import { assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
+import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationObservation, ClosedSessionTerminationProof, IssuedWindowsClockObservation, WindowsAuthorityLaunch } from "./windows-authority.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import { assertWindowsRuntimeValidator } from "./windows-runtime-validator.ts";
 
 type Value = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.current-symbol-closed-baseline.v1";
@@ -35,6 +36,7 @@ interface Journal extends TrackedDispatchOperationJournal {
   plan: Value & { profile: typeof PROFILE }; closeAttempted: boolean; copyAttempted: boolean;
   relaunchAttempted: boolean; releaseAttempted: boolean; admissionAttempted: boolean; cacheAttempted: boolean;
   projectOpenAttempted: boolean; finishCloseAttempted: boolean; finishReleaseAttempted: boolean;
+  finishSnapshotAttempted?: boolean; finishSnapshotCaptured?: boolean; finishSnapshotFailed?: boolean;
   projectOpeningMode?: ProjectOpeningMode;
 }
 type CopyResult = Awaited<ReturnType<typeof captureCurrentSymbolBaselineCopy>>;
@@ -59,6 +61,9 @@ interface Slot {
   finishIntent?: ClosedSessionCloseIntent; finishReceipt?: ClosedSessionCloseReceipt;
   finishObservation?: ClosedSessionTerminationObservation; finishProof?: ClosedSessionTerminationProof;
   finishCaptureText?: string;
+  finishSnapshotAttempted: boolean; finishSnapshotCaptured: boolean; finishSnapshotFailed: boolean;
+  finishSnapshot?: Awaited<ReturnType<typeof captureCurrentSymbolFinishSnapshot>>;
+  finishSnapshotFailureEvidenceText?: string;
   readonly evidence: Map<string, unknown>;
 }
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
@@ -73,6 +78,12 @@ function relaunchMethods(engine: EasyedaControlEngine, runtime: WindowsControlRu
     runtime.probeClosedSessionTermination];
   /* oxlint-enable typescript/unbound-method */
 }
+export function currentSymbolFinishSnapshotStatus(attempted: unknown, captured: unknown, failed: unknown): string {
+  if (captured === true) { return "captured"; }
+  if (failed === true) { return "failed"; }
+  if (attempted === true) { return "attempted"; }
+  return attempted === false ? "not-attempted" : "not-recorded";
+}
 function summary(slot: Slot): Value {
   return { operationId: slot.owner.operationId, openingOperationId: slot.owner.openingOperationId, state: slot.journal.state,
     closeAttempted: slot.closeAttempted, closeAcknowledged: slot.closeReceipt !== undefined, copyAttempted: slot.copyAttempted,
@@ -86,6 +97,8 @@ function summary(slot: Slot): Value {
     unqualifiedSchematicStartupEffectsAccepted: slot.journal.projectOpeningMode === "unqualified-schematic-startup-observation",
     finishCloseAttempted: slot.finishCloseAttempted, finishCloseAcknowledged: slot.finishReceipt !== undefined,
     finishReleaseAttempted: slot.finishReleaseAttempted, finishCaptureReleased: slot.finishCaptureReleased, retired: slot.finished,
+    finishSnapshotAttempted: slot.finishSnapshotAttempted, finishSnapshotCaptured: slot.finishSnapshotCaptured,
+    finishSnapshotStatus: currentSymbolFinishSnapshotStatus(slot.finishSnapshotAttempted, slot.finishSnapshotCaptured, slot.finishSnapshotFailed),
     nativeProjectOpenClockStatus: slot.projectOpenClock?.clock.status ?? "not-observed",
     startupPremises: slot.copy?.startupPremises ?? null,
     nativeCacheClockStatus: slot.cacheClock?.clock.status ?? "not-observed", startupQualified: false,
@@ -113,6 +126,7 @@ export class CurrentSymbolBaselineCoordinator {
     const original = assertCurrentSymbolBaselineOwner(slot.owner, this.engine);
     need(this.slots.get(slot.owner.operationId) === slot && canonicalJson(slot.owner) === slot.ownerText && original.source.runtime === this.runtime,
       "Current symbol baseline original owner changed.");
+    if (slot.capture !== undefined) { assertWindowsRuntimeValidator(this.engine.executionAuthorityValidator, this.runtime); }
   }
   private outsideScope(slot: Slot): void {
     this.current(slot);
@@ -139,7 +153,12 @@ export class CurrentSymbolBaselineCoordinator {
     slot.journal.cacheAttempted = slot.cacheAttempted;
     slot.journal.projectOpenAttempted = slot.projectOpenAttempted;
     slot.journal.finishCloseAttempted = slot.finishCloseAttempted; slot.journal.finishReleaseAttempted = slot.finishReleaseAttempted;
+    slot.journal.finishSnapshotAttempted = slot.finishSnapshotAttempted; slot.journal.finishSnapshotCaptured = slot.finishSnapshotCaptured;
+    slot.journal.finishSnapshotFailed = slot.finishSnapshotFailed;
     slot.journal.nextSafeAction = "Inspect this consumed attempt. Do not repeat close, copy, launch, release, admission, cache observation, Save or navigation; retain the original facade and process handles.";
+    if (phase === "finish-snapshot" && slot.finishSnapshotFailed) {
+      slot.journal.nextSafeAction = "Final snapshot failed and will not be retried. Retain this facade; baseline-observe-finish may retire using its original terminal proof without another close, navigation or snapshot. File effects remain unknown.";
+    }
     if (slot.created) {
       const persisted = await loadOperation(slot.owner.operationId);
       // Preserve externally advanced or conflicting history instead of replacing
@@ -151,6 +170,8 @@ export class CurrentSymbolBaselineCoordinator {
         cacheAttempted: slot.cacheAttempted, cacheReplyRetained: slot.cacheReplyRetained,
         projectOpenAttempted: slot.projectOpenAttempted, projectOpenReplyRetained: slot.projectOpenReplyRetained,
         finishCloseAttempted: slot.finishCloseAttempted, finishCloseAcknowledged: slot.finishReceipt !== undefined,
+        finishSnapshotAttempted: slot.finishSnapshotAttempted, finishSnapshotCaptured: slot.finishSnapshotCaptured, finishSnapshotFailed: slot.finishSnapshotFailed,
+        finishSnapshotEvidence: CurrentSymbolBaselineCoordinator.finishEvidence(slot),
         finishReleaseAttempted: slot.finishReleaseAttempted, finishCaptureReleased: slot.finishCaptureReleased });
     }
   }
@@ -175,12 +196,14 @@ export class CurrentSymbolBaselineCoordinator {
       orphanedCallPossible: false, hardStop: true, mutationMayHaveOccurred: false, sequence: 0, artifacts: [],
       closeAttempted: false, copyAttempted: false, relaunchAttempted: false, releaseAttempted: false, admissionAttempted: false, cacheAttempted: false, projectOpenAttempted: false,
       finishCloseAttempted: false, finishReleaseAttempted: false,
+      finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       nextSafeAction: "Retain one closed-session capture in the original authenticated scope before normal close." };
     const slot: Slot = { owner, ownerText: canonicalJson(owner), journal, journalText: canonicalJson(journal), created: false,
       closeAttempted: false, copyAttempted: false, baselineCaptured: false, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
       admissionAttempted: false, admissionProved: false, cacheAttempted: false, cacheReplyRetained: false, cachesObserved: false,
       projectOpenAttempted: false, projectOpenReplyRetained: false, projectOpened: false,
+      finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       finishing: false, finishCloseAttempted: false, finishReleaseAttempted: false, finishCaptureReleased: false, finished: false, evidence: new Map() };
     this.slots.set(owner.operationId, slot); this.busy = true;
     try {
@@ -306,8 +329,9 @@ export class CurrentSymbolBaselineCoordinator {
       slot.source = source;
       const upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
       const lifecycleReader = upstream.bridgeSessionLifecycle, scopeReader = upstream.currentAuthenticatedBridgeDispatchBinding;
-      need(typeof scopeReader === "function" && typeof lifecycleReader === "function" && validator === this.runtime,
+      need(typeof scopeReader === "function" && typeof lifecycleReader === "function",
         "Current symbol relaunch needs its original runtime validator and lifecycle readers.");
+      assertWindowsRuntimeValidator(validator, this.runtime);
       const methods = relaunchMethods(this.engine, this.runtime);
       const captureText = canonicalJson(capture), priorLaunch = canonicalJson(source.launchProjection);
       const sourceText = canonicalJson({ target: source.target, expectedFingerprint: source.expectedFingerprint, preNavigationCheckpoint: source.preNavigationCheckpoint });
@@ -317,6 +341,7 @@ export class CurrentSymbolBaselineCoordinator {
       const endpointText = canonicalJson(endpoint["publicEndpoint"]);
       let replacementSessionText: string | undefined;
       const infrastructure = (launched: boolean, scopeText?: string): void => {
+        assertWindowsRuntimeValidator(validator, this.runtime);
         const scope = scopeReader.call(upstream);
         need(this.engine.upstream === upstream && this.engine.executionAuthorityValidator === validator &&
           upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream.bridgeSessionLifecycle === lifecycleReader &&
@@ -769,6 +794,12 @@ export class CurrentSymbolBaselineCoordinator {
       "Current symbol finish journal changed.");
   }
 
+  private static finishEvidence(slot: Slot): Value {
+    // Keep partial file descriptors durable even if a later reader refuses.
+    // The complete SQL/native data can be reread from these preserved files.
+    return { checkpoint: slot.evidence.get("finish-checkpoint") ?? null, copy: slot.evidence.get("finish-copy") ?? null };
+  }
+
   /** Terminal cleanup only, with unknown disposable file effects accepted by
    * the fixed public request. No fallback to an old owner or a new capture is
    * allowed, including when this attempt already owns an orphan marker.
@@ -811,13 +842,16 @@ export class CurrentSymbolBaselineCoordinator {
     finally { this.busy = false; }
   }
 
-  /** A genuine pending native observation is the only repeatable outcome.
-   * Terminal retirement records unknown file effects and never admits replay,
-   * a writer, persistence or the earlier navigation outcome.
+  /** Pending may be observed again. Only a stopped final-snapshot failure may
+   * resume retirement from its original terminal proof, skipping that consumed
+   * snapshot. Neither path repeats close/navigation or accepts file effects.
    */
   public async observeFinish(operationId: string): Promise<Value> {
     const slot = this.slots.get(operationId);
-    need(!this.busy && slot !== undefined && slot.journal.state === "awaiting-finish-termination" && slot.finishing &&
+    const failedSnapshot = slot !== undefined && slot.journal.state === "stopped" && slot.finishSnapshotFailed && slot.finishSnapshotAttempted &&
+      !slot.finishSnapshotCaptured && slot.finishObservation?.status === "terminated" && slot.finishProof === slot.finishObservation.proof &&
+      slot.finishSnapshotFailureEvidenceText === canonicalJson([...slot.evidence]);
+    need(!this.busy && slot !== undefined && (slot.journal.state === "awaiting-finish-termination" || failedSnapshot) && slot.finishing &&
       slot.admissionCapture !== undefined && slot.launch !== undefined && slot.finishIntent !== undefined && slot.finishReceipt !== undefined &&
       !slot.finishReleaseAttempted,
     "Current symbol finish observation requires its original acknowledged close.");
@@ -828,7 +862,9 @@ export class CurrentSymbolBaselineCoordinator {
     try {
       await this.finishUnchanged(slot);
       if (slot.finishObservation !== undefined) { assertCurrentClosedSessionTerminationObservation(slot.finishObservation); }
-      const observation = await this.runtime.probeClosedSessionTermination({ ...binding, intent: slot.finishIntent, closeReceipt: slot.finishReceipt });
+      const observation = failedSnapshot ? slot.finishObservation :
+        await this.runtime.probeClosedSessionTermination({ ...binding, intent: slot.finishIntent, closeReceipt: slot.finishReceipt });
+      need(observation !== undefined, "Current symbol finish lost its original terminal observation.");
       slot.finishObservation = observation;
       if (observation.status === "terminated") { slot.finishProof = observation.proof; }
       assertCurrentClosedSessionTerminationObservation(observation); await this.finishUnchanged(slot);
@@ -862,10 +898,40 @@ export class CurrentSymbolBaselineCoordinator {
         closure ??= current;
       };
       closedDispatch(); await this.engine.assertRecoveryOperationIsolated(operationId); await this.finishUnchanged(slot); closedDispatch();
+      if (failedSnapshot) {
+        // Reusing the original observation must still rehash the native helper;
+        // Synchronous proof identity alone cannot detect later file drift.
+        need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol finish retirement lost its original terminal proof.");
+        await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+      }
+      if (!slot.finishSnapshotAttempted) {
+        slot.finishSnapshotAttempted = true; journal.finishSnapshotAttempted = true;
+        try {
+          need(slot.copy !== undefined && slot.baselineCaptured, "Current symbol finish snapshot lost its original baseline.");
+          journal.state = "finish-snapshotting";
+          await CurrentSymbolBaselineCoordinator.record(slot, "finish-snapshot-intent", { proof, closeIntent: slot.finishIntent,
+            closeReceipt: slot.finishReceipt, admissionCaptureSha256: sha256Json(capture), baselineCopyReceiptSha256: slot.copy.copy.receiptSha256 });
+          await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+          const snapshot = await captureCurrentSymbolFinishSnapshot(this.engine, { baseline: slot.copy, capture, intent: slot.finishIntent,
+            closeReceipt: slot.finishReceipt, proof, launch, runtime: this.sqlRuntime },
+          (event) => { slot.evidence.set(`finish-${event.kind}`, event.value); });
+          slot.finishSnapshot = snapshot;
+          await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+          await CurrentSymbolBaselineCoordinator.record(slot, "finish-snapshot-result", snapshot);
+          await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
+          slot.finishSnapshotCaptured = true; journal.finishSnapshotCaptured = true;
+        } catch (error) {
+          slot.finishSnapshotFailed = true;
+          slot.finishSnapshotFailureEvidenceText = canonicalJson([...slot.evidence]);
+          return await CurrentSymbolBaselineCoordinator.fail(slot, "finish-snapshot", error);
+        }
+      }
       const retirement = { schema: "easyeda-pro-control.current-symbol-finish-retirement.v1", operationId, originalLaunch: launch,
         proof, closeIntent: slot.finishIntent, closeReceipt: slot.finishReceipt, admissionCaptureSha256: sha256Json(capture),
         bridgeSession: capture.bridgeSession, bridgeDispatch: dispatch ?? null, closedDispatchSession: closure ?? null,
         authoritySha256: authority?.authoritySha256 ?? null, priorOrphan: hadOrphan, durableEffects: "unknown-and-accepted",
+        finishSnapshotStatus: slot.finishSnapshotCaptured ? "captured" : "failed", finishSnapshotCaptured: slot.finishSnapshotCaptured,
+        finishSnapshotEvidence: CurrentSymbolBaselineCoordinator.finishEvidence(slot),
         navigationOutcome: "not-inferred", replayAllowed: false, continuationAuthorized: false, persistenceVerified: false, writerAuthority: false };
       await CurrentSymbolBaselineCoordinator.record(slot, "finish-retirement-proof", retirement); await this.finishUnchanged(slot); closedDispatch();
       assertCurrentClosedSessionCopyAuthority(proof);
@@ -893,7 +959,10 @@ export class CurrentSymbolBaselineCoordinator {
       slot.journalText = canonicalJson(journal); await this.finishUnchanged(slot); closedDispatch();
       slot.finished = true;
       return { ...summary(slot), termination: "terminated", durableEffects: "unknown-and-accepted" };
-    } catch (error) { return await CurrentSymbolBaselineCoordinator.fail(slot, "finish-termination-or-retirement", error); }
+    } catch (error) {
+      if (slot.finishSnapshotFailed && slot.journal.state === "stopped" && slot.finishSnapshotFailureEvidenceText === canonicalJson([...slot.evidence])) { throw error; }
+      return await CurrentSymbolBaselineCoordinator.fail(slot, "finish-termination-or-retirement", error);
+    }
     finally { this.busy = false; }
   }
 
@@ -904,6 +973,8 @@ export class CurrentSymbolBaselineCoordinator {
     const slot = this.slots.get(operationId);
     return { ...(slot === undefined ? {} : summary(slot)), operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
       projectOpeningMode: journal["projectOpeningMode"] ?? null,
+      finishSnapshotAttempted: journal["finishSnapshotAttempted"] ?? null, finishSnapshotCaptured: journal["finishSnapshotCaptured"] ?? null,
+      finishSnapshotStatus: currentSymbolFinishSnapshotStatus(journal["finishSnapshotAttempted"], journal["finishSnapshotCaptured"], journal["finishSnapshotFailed"]),
       unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
       nextSafeAction: journal["nextSafeAction"], originalOwnerRetained: this.slots.has(operationId), writerReady: false, executionAuthorized: false };
   }

@@ -69,6 +69,7 @@ import { assertLibraryExecutionLifecycle } from "./library-execution-lifecycle.t
 import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
+import { createWindowsRuntimeValidator } from "./windows-runtime-validator.ts";
 import type { ClosedSymbolDisposableEntry } from "./closed-symbol-disposable-entry.ts";
 import type { ClosedSymbolOperationEntry } from "./closed-symbol-operation-entry.ts";
 import { assertClosedSymbolOperationValidated } from "./closed-symbol-operation-request.ts";
@@ -170,11 +171,7 @@ function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
   return windowsRuntime;
 }
-const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: {
-  capture: (input): ReturnType<WindowsControlRuntime["capture"]> => ownedWindowsRuntime().capture(input),
-  proveTerminated: (input): ReturnType<WindowsControlRuntime["proveTerminated"]> => ownedWindowsRuntime().proveTerminated(input),
-  releaseCapture: (input): ReturnType<WindowsControlRuntime["releaseCapture"]> => ownedWindowsRuntime().releaseCapture(input),
-} });
+const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: createWindowsRuntimeValidator(ownedWindowsRuntime) });
 const designExecutor = new DesignExecutor(engine);
 const libraryExecutor = new LibraryExecutor(engine);
 const ruleCheckExecutor = new RuleCheckExecutor(engine);
@@ -1893,7 +1890,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, local sixteen-event historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; observations grant no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, local historical abandonment at the fixed sixteen-event pre-navigation or seven-phase current-baseline pre-relaunch boundary, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; observations grant no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1950,7 +1947,7 @@ registerFacadeTool(
         pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
         pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
         projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
-        historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-validation-only", replayAuthority: false },
+        historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false }, navigation: { enabled: true, tool: "easyeda_control_project_open",
           scope: "registered-disposable-local-project-and-existing-pcb-only", retainedLaunchRequired: true, unchangedStorageGuaranteed: false } },
@@ -2422,8 +2419,8 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_history",
   {
-    title: "Qualify stopped pre-navigation validation history",
-    description: "Publish local historical abandonment for only the maintained sixteen-event closed-symbol validation marker-read boundary. Requires an exact operation ID and operationId:abandoned-before-navigation confirmation; retained journal, claim, baseline and unchanged disposable source are independently qualified. Writes only the exclusive historical sidecar, preserving original journal and permanent claim. No bridge, process, navigation, Save, discard, restart, completion or replay authority. Six-event baseline and later-phase/generic recovery are not exposed here. Existing valid sidecars are requalified, not republished. Query offline history/history-validate first.",
+    title: "Qualify stopped validation history without replay",
+    description: "Publish local historical abandonment for either the maintained sixteen-event closed-symbol marker-read boundary or the exact seven-phase current closed-baseline prefix stopped before durable relaunch-intent. Both require exact operation-bound confirmation; the latter also requires confirmDisposableProject:true and verifies retained journal, phases, raw copy and checkpoint without reading the original project. Writes only an exclusive sidecar, preserving original history and any permanent claim. No bridge, process, navigation, Save, discard, restart, completion, source-invariance or replay authority is granted. Six-event legacy baseline and later-phase/generic recovery are not exposed here. Existing valid sidecars are requalified, not republished. Query offline history/history-validate first.",
     inputSchema: { request: z.unknown().pipe(historicalAbandonmentRequestSchema) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },

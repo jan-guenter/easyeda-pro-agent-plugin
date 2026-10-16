@@ -1,5 +1,48 @@
 # Current project-only lifecycle validation
 
+Update `0.3.0+codex.20261016073000` retains a final closed-file snapshot before
+releasing the replacement generation's process captures. The result includes
+the raw byte-copy receipt, complete SQL inventory commitments and a separate
+native-history checkpoint. These preserve evidence for comparing startup
+effects; they do not classify those effects or enable a writer.
+
+The live060000 run captured its closed baseline successfully, then exposed a
+production wiring defect before relaunch dispatch. The coordinator compared
+the engine's forwarding validator object with the runtime itself. The fix binds
+the issued forwarder to its actual retained runtime, including later identity
+checks, without assuming the objects are identical.
+
+A separate local history action qualifies only the exact stopped seven-phase
+baseline before its relaunch intent. It preserves the original journal, verifies
+the retained evidence and publishes an exclusive abandonment sidecar. It grants
+no current process, source, replay or writer authority. The060000 stopped
+operation must use that action after a fresh session loads this update; do not
+repeat its relaunch request.
+
+`finishSnapshotStatus` distinguishes captured evidence from a failed or absent
+attempt. A failure retains partial artifacts and the original terminal proof.
+Only that specific failure can continue retirement without another snapshot,
+close or termination probe. Lost ownership and conflicting journals remain
+blocked. Historical inspection reports `not-recorded` for older operations.
+
+Upstream closure hashing now processes at most four regular files concurrently
+per capture. It keeps the sorted traversal, complete inventory, per-file identity
+checks, final path checks and fingerprint format. Every started read and close
+settles before an error is returned, with traversal-order failure selection.
+No hash cache or freshness interval was introduced. End-to-end latency on the
+installed plugin has not yet been measured.
+
+Baseline owner revalidation also evaluates bridge quarantine and recovery
+isolation from one fresh complete history scan. Bridge failures still take
+precedence, including when they belong to the selected operation. This reduces
+the diagnosed pre-checkpoint scans from12 to7; it does not cache admission,
+omit artifact verification or remove any later revalidation.
+
+The snapshot binds the exact source lineage and the new engine-issued capture,
+close receipt and termination proof. It does not reuse the baseline generation's
+expired copy authority. Whole-file SQL comparison and native record comparison
+remain separate analysis; successful closure alone is not saved-state evidence.
+
 Update `0.3.0+codex.20261016060000` adds an explicit observation-only mode to
 `baseline-open-project`. Its optional `acceptUnqualifiedSchematicStartupEffects:true`
 accepts only the original baseline's sole `active-schematic-pages` blocker;
@@ -17,8 +60,9 @@ native records and queue persistence, and caught initialization failures can
 still precede the startup-prefix event. Existing navigation, context, source,
 cache, retained-owner, quarantine and normal-close guards remain unchanged.
 
-This follow-up is source-tested only. Its live lifecycle must run after a fresh
-session loads the published snapshot; do not replay earlier operations. The
+The060000 live baseline and prelaunch refusal are recorded above. Project-only
+reopening remains unvalidated; the new073000 fixes are source-tested only until
+a fresh session loads the published snapshot. Do not replay earlier operations. The
 control reference was updated using skill-creator guidance to keep this opt-in
 next to the existing workflow, without adding a general-purpose bypass.
 
@@ -39,7 +83,8 @@ history evidence. The baseline is an original in-memory object, not caller JSON.
 The next stages retain one new launch, its authenticated session and native
 capture. Inactive upload-cache observations do not authorize opening by themselves.
 The project-only continuation requires the original supported historical subset
-and freshly hashes the exact post-opening closed source. It does not reuse the
+or its explicit sole-active-page observation mode. It freshly hashes the exact
+post-opening closed source. It does not reuse the
 initial opener's digest or the previous generation's invalidated termination proof.
 The raw reader uses descriptor-relative no-symlink traversal, bounded cooperative
 hashing, identity checks and sidecar absence observations. It never attaches
@@ -83,8 +128,11 @@ another general skill or duplicating schemas.
 
 ## Verification
 
-Local verification passes 74 focused tests with no failures or skips, full
-facade/bridge typechecks and strict type-aware lint with zero warnings. Clean
+For 073000, focused verification passes 27 admission/opener tests, 13
+validator/relaunch/finish regressions and 87 historical-route/admission/registration
+tests. Final affected recovery checks pass 15/15; packaged-startup smoke passes 5/5.
+Snapshot and upstream hashing regression tests also pass. Full
+facade/bridge typechecks and strict type-aware lint pass with zero warnings. Clean
 dependency installation, build/sanitizer, compatibility, package/privacy,
 repository, 774-method coverage, actionlint and all seven official skill checks
 pass. Dependency audit verifies 151 registry signatures, 40 attestations and no
@@ -98,8 +146,11 @@ separate release requirements; their receipts must identify the actual payload.
 
 ## Remaining tasks
 
-- Run the installed lifecycle once on an explicitly disposable fixture after a
-  fresh Codex session loads this snapshot. Retain any refusal and do not replay.
+- After a fresh session loads 073000, qualify the preserved pre-relaunch failure
+  through its exact local history action. The ordinary launcher already recorded
+  genuine termination; do not abandon or replay that completed launch.
+- Run a new installed lifecycle on the explicitly disposable fixture, including
+  final closed snapshot evidence. Retain any refusal and do not replay.
 - Qualify remaining startup producers and reopening effects against actual
   closed SQL/native evidence. The prefix event is not a global idle barrier.
 - Implement the effect-classified backend actor observation and producer-specific
@@ -110,5 +161,7 @@ separate release requirements; their receipts must identify the actual payload.
 - Keep other blocked writer families and broader API omissions visible in the
   maintained coverage inventory. This workflow does not lift their restrictions.
 
-No production project is part of this work. No live EasyEDA call, design change,
-Save or restoration was made while implementing these source changes.
+No production project is part of this work. Live work used only the existing
+disposable fixture. Its initial PCB open, normal closure and closed baseline
+succeeded, with the original file hash unchanged. Relaunch stopped before its
+intent or native dispatch. No metadata writer, explicit Save or restoration ran.

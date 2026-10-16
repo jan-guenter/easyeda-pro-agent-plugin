@@ -1,6 +1,7 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
-import { link, lstat, mkdtemp, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
+import fsPromises, { link, lstat, mkdtemp, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { after, afterEach, before, mock, test } from "node:test";
 import { OPERATION_SCHEMA, buildPlanHash, operationSummary } from "../src/core.ts";
@@ -26,6 +27,7 @@ before(async () => {
 });
 afterEach(async () => {
   mock.restoreAll();
+  syncBuiltinESMExports();
   await rm(join(root, "operations"), { recursive: true, force: true });
 });
 after(async () => {
@@ -62,6 +64,7 @@ async function checkTerminalClaim(claim: typeof terminalClaims[number]): Promise
       orphanedCallPossible: false, ...(Object.hasOwn(claim, "terminalArtifact") ? { terminalArtifact: claim.terminalArtifact } : {}) });
     const original = await readFile(artifacts.operationPath(id));
     await assert.rejects(engine.assertBridgeDispatchAllowed(), /dispatch is quarantined/u);
+    await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
     await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
     await assert.rejects(engine.assertNativeUiEditingAllowed(), /before native UI edits/u);
     await assert.rejects(engine.assertRecoveryOperationIsolated("other"), /not isolated/u);
@@ -93,6 +96,30 @@ void test("bridge, recovery and reporting share identical-byte projections witho
   assert.equal(journalParses, 1);
 });
 
+void test("combined admission makes one fresh scan and preserves bridge-first isolation failures", async () => {
+  const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false });
+  const readDirectory = fsPromises.readdir;
+  let scans = 0;
+  mock.method(fsPromises, "readdir", async (...args: unknown[]): Promise<unknown> => {
+    scans += 1;
+    const entries: unknown = await Reflect.apply(readDirectory, undefined, args);
+    return entries;
+  });
+  syncBuiltinESMExports();
+  mock.method(engine, "observeStatusAdmission", (): never => { throw new Error("A status observation is not admission."); });
+  mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
+  mock.method(engine, "assertRecoveryOperationIsolated", (): never => { throw new Error("Do not scan the recovery predicate separately."); });
+  assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
+  assert.equal(scans, 1);
+  await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /not isolated/u);
+  assert.equal(scans, 2);
+  await artifacts.updateOperation({ ...journal, orphanedCallPossible: true });
+  await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
+  assert.equal(scans, 3);
+  await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /dispatch is quarantined/u);
+  assert.equal(scans, 4);
+});
+
 void test("status admission reports one dated cloned observation and every later guard scans fresh bytes", async () => {
   const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false,
     nextSafeAction: "Inspect the retained operation." });
@@ -113,19 +140,21 @@ void test("status admission reports one dated cloned observation and every later
   assert.deepEqual(await engine.recover(), []);
 });
 
-void test("status admission rehashes same-size journal and phase changes after its prior observation", async () => {
+void test("status and combined admission rehash same-size journal and phase changes after prior observations", async () => {
   for (const target of ["journal", "artifact"] as const) {
     const { engine, id, journal } = await fixture();
     const descriptor = await artifacts.writePhaseArtifact(id, 1, "before", { state: "before" });
     await artifacts.updateOperation({ ...journal, artifacts: [descriptor] });
     const observation = await engine.observeStatusAdmission();
     assert.deepEqual(observation.incompleteOperations, []);
+    assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
     const path = target === "journal" ? artifacts.operationPath(id) : descriptor.path;
     const info = await lstat(path), original = await readFile(path, "utf8");
     const changed = target === "journal" ? original.replace('"completed"', '"savingxxx"') : original.replace("before", "forged");
     assert.notEqual(changed, original); assert.equal(Buffer.byteLength(changed), Buffer.byteLength(original));
     await writeFile(path, changed); await utimes(path, info.atime, info.mtime);
     await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
+    await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
     await rm(join(root, "operations"), { recursive: true, force: true });
   }
 });
@@ -149,6 +178,14 @@ void test("shared admission preserves terminal, explicit orphan and legacy orpha
         assert.equal(await engine.assertNativeUiEditingAllowed(), true);
       }
       assert.equal(await engine.assertRecoveryOperationIsolated(id), true);
+      if (orphan) {
+        await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
+        await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /dispatch is quarantined/u);
+      } else {
+        assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
+        if (terminal) { assert.equal(await engine.assertBridgeAndRecoveryAdmission("other"), true); }
+        else { await assert.rejects(engine.assertBridgeAndRecoveryAdmission("other"), /not isolated/u); }
+      }
       await rm(join(root, "operations"), { recursive: true, force: true });
     }
   }

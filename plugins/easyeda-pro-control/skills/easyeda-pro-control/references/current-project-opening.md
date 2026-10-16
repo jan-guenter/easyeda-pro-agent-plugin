@@ -13,8 +13,9 @@ installation does not supply this implementation.
 ## Prepare and open
 
 Resolve any supported historical unfinished-record blocker before opening.
-The current `history` tool qualifies only the sixteen-event pre-navigation
-validation boundary; see [failure recovery](failure-recovery.md). Do not replay
+The current `history` tool qualifies the exact sixteen-event pre-navigation
+validation and seven-phase pre-relaunch baseline boundaries; see
+[failure recovery](failure-recovery.md). Do not replay
 navigation or bypass the guard merely because an older record is data-only.
 
 Use the normal supported launcher in the same facade process. A manually
@@ -177,12 +178,30 @@ its own observation. Preparation still does not authorize editing.
    about intended file changes. Use the returned state, not a close
    acknowledgment, to distinguish pending closure from proved termination.
 
+   Updated finish implementations retain one final closed raw-file copy, SQL
+   inventory commitment and native-history checkpoint before releasing the
+   original capture. Inspect `finishSnapshotStatus` independently of retirement.
+   `captured` means evidence is available, not that startup effects matched the
+   baseline. Compare both complete inventories and native histories separately.
+   Older journals report `not-recorded`; a termination receipt cannot recreate
+   the lost copy authority.
+
+   If the snapshot alone fails after proved termination, the journal retains
+   its partial evidence and reports `failed`. Only this explicitly qualified
+   failure may continue with `baseline-observe-finish` to retire from the same
+   retained proof. It never repeats the snapshot, termination probe or close.
+   Other errors, owner loss or conflicting evidence still require review.
+
 Continuation requests take only their operation ID and listed confirmations.
 Do not pass a replacement top-level fingerprint, target, runtime or code.
 `baseline-inspect` stays local after restart, but historical JSON cannot restore
 lost handles or authorize continuation. A pre-admission launch failure, uncertain
 close without its actual receipt, conflicting history or lost owner requires
-review. Do not restart Codex mid-validation to try to clear those conditions.
+review. The sole historical exception is the exact seven-phase stopped baseline
+before any relaunch intent, documented in
+[failure recovery](failure-recovery.md#closed-baseline-stopped-before-relaunch).
+It permits abandonment only, never continuation of the old attempt. Do not
+restart Codex mid-validation to try to clear other conditions.
 
 `startupQualified`, `openingEffectsVerified`, `beforeWriteBaselineVerified`,
 backend actor/clock qualification and writer authority remain false. The raw

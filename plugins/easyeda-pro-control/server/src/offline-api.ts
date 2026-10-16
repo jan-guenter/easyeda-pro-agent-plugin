@@ -110,13 +110,20 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "project-symbol-prepare-validate": { result = validateCurrentSymbolMetadataPreparationArguments(request.query.request); break; }
     case "project-symbol-prepare": { throw new Error("Checkpoint preparation requires the asynchronous offline API handler."); }
     case "history": {
-      result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+      result = { offline: true, invocationEnabledByDiscovery: false, total: 2, entries: [{
         action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",
         ...(request.query?.includeSchemas === true ? { inputSchema: z.toJSONSchema(historicalAbandonmentRequestSchema) } : {}),
         limitations: ["Only the maintained sixteen-event validation marker-read boundary; no six-event baseline or later-phase recovery.",
           "The exact confirmation is an argument-consistency check, not human attestation or restart authority.",
           "Execution qualifies retained history and unchanged disposable source before exclusive sidecar publication; original journal and permanent claim remain unchanged.",
           "Existing sidecars are requalified without republishing. No application call, completion, process closure, persistence, continuation or replay authority."],
+      }, {
+        action: "abandon-baseline-before-relaunch", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",
+        ...(request.query?.includeSchemas === true ? { inputSchema: z.toJSONSchema(historicalAbandonmentRequestSchema) } : {}),
+        limitations: ["Only the exact seven-phase current closed-baseline prefix stopped before durable relaunch-intent. Explicit disposable-project confirmation required.",
+          "Revalidates every retained phase, closed raw copy and checkpoint; reads no original project and restores no process/copy authority.",
+          "Writes one exclusive sidecar preserving the full original journal and phase evidence. Later, missing, conflicting or corrupted evidence refuses.",
+          "Historical abandonment only. No completion, current process closure, source invariance, continuation, persistence, writer or replay authority."],
       }] }; break;
     }
     case "history-validate": {
