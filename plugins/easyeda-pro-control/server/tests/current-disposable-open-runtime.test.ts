@@ -423,6 +423,7 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
 
 void test("owned baseline transfer reserves the runtime across Jobs and stops in-flight ordinary continuations", async (t) => {
   const input = await preparationCheckpoint(t), isolated = fixture("baseline-transfer");
+  const acceptedStartupEffects: (true | undefined)[] = [];
   const followups: string[] = [];
   let active = false, admitted = 0, cacheReads = 0, constructed = 0, observed = 0, relaunched = 0, sessionClosed = false;
   let retainedOwner: CurrentSymbolBaselineOwner | undefined;
@@ -461,8 +462,9 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
       assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); cacheReads += 1;
       return Promise.resolve({ state: "caches-observed", stageOrdinal: this.ordinal });
     }
-    public openProject(operationId: string): Promise<Value> {
+    public openProject(operationId: string, acceptance?: true): Promise<Value> {
       assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("open-project");
+      acceptedStartupEffects.push(acceptance);
       return Promise.resolve({ state: "project-only-opened", stageOrdinal: this.ordinal, writerAuthority: false });
     }
     public finishNormalClose(operationId: string): Promise<Value> {
@@ -559,8 +561,20 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   assert.equal(caches["stageOrdinal"], 1); assert.equal(cacheReads, 1);
   await assert.rejects(coordinator.observeSymbolBaselineCaches("unknown-baseline"), /unavailable/u);
   await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true }, FINGERPRINT), /cannot replace/u);
+  for (const acceptance of [false, "true", null]) {
+    await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true,
+      acceptUnqualifiedSchematicStartupEffects: acceptance }));
+  }
+  assert.deepEqual(acceptedStartupEffects, []);
   const opened = await coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true });
   assert.equal(opened["stageOrdinal"], 1); assert.equal(opened["writerAuthority"], false);
+  assert.deepEqual(acceptedStartupEffects, [undefined]);
+  // This inert stage exercises argument forwarding only. The actual baseline
+  // Coordinator separately enforces its single navigation attempt.
+  const optedIn = await coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true,
+    acceptUnqualifiedSchematicStartupEffects: true });
+  assert.equal(optedIn["stageOrdinal"], 1); assert.equal(optedIn["writerAuthority"], false);
+  assert.deepEqual(acceptedStartupEffects, [undefined, true]);
   const finished = await coordinator.run({ action: "baseline-finish-close", operationId: baselineId, confirmNormalClose: true, acceptUnknownFileEffects: true });
   assert.equal(finished["stageOrdinal"], 1);
   const terminal = await coordinator.run({ action: "baseline-observe-finish", operationId: baselineId });
@@ -569,7 +583,7 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   const baselineInspection = await coordinator.run({ action: "baseline-inspect", operationId: baselineId });
   assert.equal(baselineInspection["stageOrdinal"], 1); assert.equal(baselineInspection["executionAuthorized"], false);
   isolated.state.quarantine = false;
-  assert.deepEqual(followups, ["open-project", "finish-close", "observe-finish", "inspect"]);
+  assert.deepEqual(followups, ["open-project", "open-project", "finish-close", "observe-finish", "inspect"]);
   assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
   // Neither a completed transition nor a later null launch returns this runtime
   // To ordinary ownership. The reservation lasts for the runtime's lifetime.

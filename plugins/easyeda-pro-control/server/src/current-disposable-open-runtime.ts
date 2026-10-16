@@ -226,7 +226,7 @@ export class CurrentDisposableOpenCoordinator {
         case "baseline-relaunch": { return this.relaunchSymbolBaseline(request.operationId); }
         case "baseline-admit": { return this.admitSymbolBaseline(request.operationId); }
         case "baseline-observe-caches": { return this.observeSymbolBaselineCaches(request.operationId); }
-        case "baseline-open-project": { return this.openSymbolBaselineProject(request.operationId); }
+        case "baseline-open-project": { return this.openSymbolBaselineProject(request.operationId, request.acceptUnqualifiedSchematicStartupEffects); }
         case "baseline-finish-close": { return this.finishSymbolBaseline(request.operationId); }
         case "baseline-observe-finish": { return this.observeSymbolBaselineFinish(request.operationId); }
         case "baseline-inspect": { return this.inspectSymbolBaseline(request.operationId); }
@@ -359,11 +359,11 @@ export class CurrentDisposableOpenCoordinator {
   }
 
   /** Project-only continuation on the retained replacement generation. */
-  public async openSymbolBaselineProject(operationId: string): Promise<Value> {
+  public async openSymbolBaselineProject(operationId: string, acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
     const stage = this.baselines.get(operationId);
     requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
     this.busy = true;
-    try { return await stage.openProject(operationId); }
+    try { return await stage.openProject(operationId, acceptUnqualifiedSchematicStartupEffects); }
     finally { this.busy = false; }
   }
 
@@ -393,6 +393,8 @@ export class CurrentDisposableOpenCoordinator {
       requireValue(journal.operationId === operationId && isRecord(journal.plan) &&
         journal.plan["profile"] === "easyeda-pro-control.current-symbol-closed-baseline.v1", "Current symbol baseline history has another profile.");
       return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
+        projectOpeningMode: journal["projectOpeningMode"] ?? null,
+        unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
         nextSafeAction: journal["nextSafeAction"], originalOwnerRetained: false, writerReady: false, executionAuthorized: false };
     } finally { this.busy = false; }
   }

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b0abc04bc37864f39b252fd212cffc8e494b00173a5095f5a577d43ac7dbe9de";
+const __easyedaBundlePairId = "c4b7b92ffacc312b37ca85dbe2d70f25bdd15e78184b1b7a7f3504fb762e4f90";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -93943,7 +93943,12 @@ var init_current_disposable_open = __esm({
       external_exports.object({ action: external_exports.literal("baseline-relaunch"), operationId, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("baseline-admit"), operationId }).strict(),
       external_exports.object({ action: external_exports.literal("baseline-observe-caches"), operationId }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-open-project"), operationId, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({
+        action: external_exports.literal("baseline-open-project"),
+        operationId,
+        acceptNormalOpenEffects: external_exports.literal(true),
+        acceptUnqualifiedSchematicStartupEffects: external_exports.literal(true).optional()
+      }).strict(),
       external_exports.object({ action: external_exports.literal("baseline-finish-close"), operationId, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("baseline-observe-finish"), operationId }).strict(),
       external_exports.object({ action: external_exports.literal("baseline-inspect"), operationId }).strict()
@@ -93977,6 +93982,7 @@ var init_current_disposable_open = __esm({
       "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
       "baseline-* actions validate a retained disposable opening lifecycle only. Begin consumes its original opening owner, prepares one closed symbol, requests normal application close and captures a complete closed baseline after original termination. Relaunch/admission/cache/project-only opening remain separate one-shot stages. Continuations cannot supply paths, source hashes, code, runtime overrides or replacement owners.",
       "Project-only reopening requires a supported historical closed baseline, a fresh raw-source hash, exact registered path and fresh inactive upload-cache observations. It opens no editor document. A project-open return is not full startup completion, persistence, backend actor/clock qualification or writer authority; writers remain disabled. Finish requests normal close without Save/Discard and observes the original new generation's termination. Unknown disposable file effects are retained, not accepted as an intended edit.",
+      "Only baseline-open-project accepts optional acceptUnqualifiedSchematicStartupEffects:true for disposable observation-only opening when active schematic pages are the sole historical blocker. Schematic initialization may rewrite documents or queue persistence. The active-page blocker and historicalSubsetSatisfied:false remain recorded; every other historical prerequisite remains mandatory. Omitting this acceptance keeps the strict no-active-page gate. Acceptance never grants startup, opening-effect, persistence or writer authority.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Pre-admission launch failures and unsupported stopped states remain review-only."
     ];
   }
@@ -120128,6 +120134,8 @@ function summary6(slot) {
     projectOpenAttempted: slot.projectOpenAttempted,
     projectOpenReplyRetained: slot.projectOpenReplyRetained,
     projectOpened: slot.projectOpened,
+    projectOpeningMode: slot.journal.projectOpeningMode ?? null,
+    unqualifiedSchematicStartupEffectsAccepted: slot.journal.projectOpeningMode === "unqualified-schematic-startup-observation",
     finishCloseAttempted: slot.finishCloseAttempted,
     finishCloseAcknowledged: slot.finishReceipt !== void 0,
     finishReleaseAttempted: slot.finishReleaseAttempted,
@@ -120991,14 +120999,21 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       /** One project-only navigation from the admitted generation. Historical
        * premises and a fresh source hash are admission inputs, not startup
-       * completion. The generated program repeats inactive-cache observations
-       * within this attempt and never opens an editor document.
+       * completion. Explicit disposable observation can accept the sole active-page
+       * blocker without qualifying initialization effects. The generated program
+       * repeats inactive-cache observations and never opens an editor document.
        */
-      async openProject(operationId3) {
+      async openProject(operationId3, acceptUnqualifiedSchematicStartupEffects) {
         const slot = this.slots.get(operationId3);
         need48(
-          !this.busy && slot !== void 0 && slot.journal.state === "caches-observed" && slot.cachesObserved && slot.admissionProved && slot.copy !== void 0 && slot.copy.startupPremises.historicalSubsetSatisfied && slot.source !== void 0 && slot.sessionCurrent !== void 0 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0 && slot.launch !== void 0 && !slot.projectOpenAttempted,
-          "Current project-only opening needs its original qualified baseline, admitted session and unused attempt."
+          !this.busy && slot !== void 0 && slot.journal.state === "caches-observed" && slot.cachesObserved && slot.admissionProved && slot.copy !== void 0 && slot.source !== void 0 && slot.sessionCurrent !== void 0 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0 && slot.launch !== void 0 && !slot.projectOpenAttempted,
+          "Current project-only opening needs its original closed baseline, admitted session and unused attempt."
+        );
+        const premises = slot.copy.startupPremises;
+        const observeSchematicEffects = acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied && premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages";
+        need48(
+          premises.historicalSubsetSatisfied || observeSchematicEffects,
+          "Current project-only opening needs its original qualified baseline, or explicit acceptance of its sole active-schematic-pages blocker for observation only."
         );
         this.busy = true;
         slot.projectOpenAttempted = true;
@@ -121045,6 +121060,7 @@ var init_current_symbol_baseline_runtime = __esm({
           need48(typeof scope6 === "function", "Current project-only opening lacks its owned scope.");
           slot.journal.projectOpenAttempted = true;
           slot.journal.state = "project-only-dispatching";
+          slot.journal.projectOpeningMode = observeSchematicEffects ? "unqualified-schematic-startup-observation" : "historical-subset";
           slot.journal.mutationMayHaveOccurred = true;
           slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", {
@@ -121053,6 +121069,9 @@ var init_current_symbol_baseline_runtime = __esm({
             source: slot.preopenSource,
             startupPremises: copy.startupPremises,
             runtimeFingerprintSha256: sha256Json(initial),
+            projectOpeningMode: slot.journal.projectOpeningMode,
+            unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
+            schematicStartupEffects: observeSchematicEffects ? "native-document-rewrites-and-queued-persistence-may-occur" : "linked-sheet-loop-excluded",
             startupQualified: false,
             executionAuthorized: false
           });
@@ -121148,6 +121167,9 @@ var init_current_symbol_baseline_runtime = __esm({
             dispatchClock: slot.projectOpenClock,
             sourceBeforeDispatch: slot.preopenSource,
             runtimeFingerprintSha256: sha256Json(initial),
+            projectOpeningMode: slot.journal.projectOpeningMode,
+            unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
+            startupPremises: copy.startupPremises,
             startupQualified: false,
             persistenceVerified: false,
             executionAuthorized: false
@@ -121401,6 +121423,8 @@ var init_current_symbol_baseline_runtime = __esm({
           state: journal["state"],
           journalPath: journal["journalPath"],
           artifacts: journal.artifacts,
+          projectOpeningMode: journal["projectOpeningMode"] ?? null,
+          unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
           nextSafeAction: journal["nextSafeAction"],
           originalOwnerRetained: this.slots.has(operationId3),
           writerReady: false,
@@ -121595,7 +121619,7 @@ var init_current_disposable_open_runtime = __esm({
               return this.observeSymbolBaselineCaches(request2.operationId);
             }
             case "baseline-open-project": {
-              return this.openSymbolBaselineProject(request2.operationId);
+              return this.openSymbolBaselineProject(request2.operationId, request2.acceptUnqualifiedSchematicStartupEffects);
             }
             case "baseline-finish-close": {
               return this.finishSymbolBaseline(request2.operationId);
@@ -121773,12 +121797,12 @@ var init_current_disposable_open_runtime = __esm({
         }
       }
       /** Project-only continuation on the retained replacement generation. */
-      async openSymbolBaselineProject(operationId3) {
+      async openSymbolBaselineProject(operationId3, acceptUnqualifiedSchematicStartupEffects) {
         const stage = this.baselines.get(operationId3);
         requireValue15(!this.busy && stage !== void 0, "Current symbol baseline original coordinator is unavailable or busy.");
         this.busy = true;
         try {
-          return await stage.openProject(operationId3);
+          return await stage.openProject(operationId3, acceptUnqualifiedSchematicStartupEffects);
         } finally {
           this.busy = false;
         }
@@ -121818,6 +121842,8 @@ var init_current_disposable_open_runtime = __esm({
             state: journal["state"],
             journalPath: journal["journalPath"],
             artifacts: journal.artifacts,
+            projectOpeningMode: journal["projectOpeningMode"] ?? null,
+            unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
             nextSafeAction: journal["nextSafeAction"],
             originalOwnerRetained: false,
             writerReady: false,

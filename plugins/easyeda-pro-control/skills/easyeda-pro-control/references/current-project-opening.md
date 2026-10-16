@@ -145,8 +145,10 @@ its own observation. Preparation still does not authorize editing.
    history checkpoint. Their hashes need not be equal.
 3. Inspect `startupPremises`. `historicalSubsetSatisfied` requires the reviewed
    database version, a nondeleted PCB metadata count witness and no active
-   schematic pages. A blocker is not permission to edit the fixture around the
-   guard. Other fixtures need a separately qualified startup profile.
+   schematic pages. Do not delete pages or edit the fixture to satisfy this guard.
+   If `active-schematic-pages` is the only blocker, the explicit observation mode
+   below can collect startup evidence without qualifying those effects. Other
+   blockers still refuse opening.
 4. `baseline-relaunch` requires `acceptNormalOpenEffects:true`. It launches one
    new retained generation. `baseline-admit` then captures its authenticated
    session. An authentication-pending result permits another admission check,
@@ -158,6 +160,16 @@ its own observation. Preparation still does not authorize editing.
    It observes the operation-local `loadProjectCompleted` event under the exact
    target context. That event has no producer identity and is only a startup
    prefix, not proof that every background callback finished.
+   For an explicitly disposable project whose sole blocker is
+   `active-schematic-pages`, additionally pass
+   `acceptUnqualifiedSchematicStartupEffects:true` only when native sheet
+   initialization effects are within the approved scope. Initialization can
+   rewrite documents and queue persistence even with no sheet tab open. This
+   opt-in preserves the blocker and `historicalSubsetSatisfied:false`; it records
+   `projectOpeningMode:unqualified-schematic-startup-observation` and enables no
+   writer. Omitting it preserves the strict no-active-page gate. A timeout or
+   unexpected editor tab still consumes the attempt; use retained finish recovery,
+   never repeat navigation. Check that the installed schema supports the field.
 6. `baseline-finish-close` requires `confirmNormalClose:true` and
    `acceptUnknownFileEffects:true`. It uses the retained new generation's
    capture to request normal closure. Follow with `baseline-observe-finish`.
