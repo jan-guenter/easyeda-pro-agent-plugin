@@ -25,6 +25,8 @@ import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetad
 import type { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
 import { assertOriginalCurrentOwnedSymbolPreparation } from "../src/current-symbol-owned-preparation.ts";
+import { CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest } from "../src/current-symbol-operation.ts";
+import { currentSymbolStartupExpectationSchema } from "../src/current-symbol-startup.ts";
 import type { AuthenticatedBridgeDispatchBinding, EasyedaControlEngine, ExecutionAuthorityEvidence } from "../src/engine.ts";
 import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { encrypted } from "./helpers/symbol-sql-fixture.ts";
@@ -53,6 +55,8 @@ const CHECKPOINT: CurrentDisposableOpenCheckpoint = {
   targetEvidence: { projectUuid: TARGET.projectUuid, branchUuid: SEALED.branchUuid, documentUuid: TARGET.documentUuid, docType: "PCB", sourceSha256: HASH,
     checkpointSha256: HASH, documentSemanticSha256: HASH, historySemanticSha256: HASH, headHistoryUuid: "f".repeat(32) },
 };
+const ORDINARY_CHECKPOINT: CurrentDisposableOpenCheckpoint = { ...CHECKPOINT, purpose: CURRENT_SYMBOL_OPERATION_PURPOSE,
+  startupExpectation: { sheetUuids: ["1".repeat(16)], templates: [] } };
 const FINGERPRINT = { fixture: true, installedBundles: { assetsRoot: "/fixture/assets" } };
 interface FixtureState {
   uncertainPhase?: CurrentDisposableOpenPhase;
@@ -115,6 +119,8 @@ function fixture(suffix: string): Fixture {
     },
     prepareCheckpoint: (target) => { assert.deepEqual(currentDisposableOpenTargetSchema.parse(target), TARGET); calls.push("prepare"); return Promise.resolve(structuredClone(CHECKPOINT)); },
     verifyCheckpoint: (prepared, target) => { assert.deepEqual(currentDisposableOpenTargetSchema.parse(target), TARGET); assert.deepEqual(prepared, CHECKPOINT); calls.push("verify-checkpoint"); return Promise.resolve(); },
+    prepareOrdinaryCheckpoint: (target) => { assert.deepEqual(currentDisposableOpenTargetSchema.parse(target), TARGET); calls.push("prepare-ordinary"); return Promise.resolve(structuredClone(ORDINARY_CHECKPOINT)); },
+    verifyOrdinaryCheckpoint: (prepared, target) => { assert.deepEqual(currentDisposableOpenTargetSchema.parse(target), TARGET); assert.deepEqual(prepared, ORDINARY_CHECKPOINT); calls.push("verify-ordinary-checkpoint"); return Promise.resolve(); },
     verifyImplementation: (root) => {
       assert.equal(root, "/fixture/assets"); calls.push("verify-implementation");
       return state.failImplementation ? Promise.reject(new Error("fixture installation drift")) : Promise.resolve();
@@ -200,6 +206,42 @@ void test("current ordinary opener journals both intents, projects strict checkp
   assert.equal(value.calls.filter((call) => call === "prepare").length, 1);
   assert.equal(value.calls.filter((call) => call === "verify-checkpoint").length, 1);
   assert.equal(opened["explicitSaveDispatched"], false); assert.equal(opened["normalOpenEffectsMayHaveOccurred"], true);
+});
+
+void test("dormant ordinary entry seals startup before navigation and rejects disposable continuation", async () => {
+  const value = fixture("ordinary-symbol-purpose");
+  const request = { action: "open", operationId: value.input.operationId, ...TARGET, acceptNormalOpenEffects: true };
+  const opened = await value.coordinator.runOrdinary(request, FINGERPRINT);
+  assert.equal(opened["state"], "completed");
+  assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document"]);
+  assert.equal(value.calls.includes("prepare"), false); assert.equal(value.calls.includes("verify-checkpoint"), false);
+  assert.ok(value.calls.indexOf("prepare-ordinary") < value.calls.indexOf("dispatch:preflight"));
+  assert.ok(value.calls.indexOf("verify-ordinary-checkpoint") < value.calls.indexOf("dispatch:open-project"));
+  const journal = value.journals.get(request.operationId);
+  assert.ok(journal && isRecord(journal["plan"]));
+  const plan = journal["plan"];
+  assert.equal(plan["purpose"], CURRENT_SYMBOL_OPERATION_PURPOSE);
+  assert.ok(isRecord(plan["intent"]));
+  assert.deepEqual(plan["intent"]["request"], request);
+  assert.deepEqual(plan["intent"]["startupExpectation"], ORDINARY_CHECKPOINT.startupExpectation);
+  assert.equal(journal["planHash"], buildPlanHash(plan));
+  const before = [...value.calls];
+  for (const action of ["inspect", "observe", "retire-after-termination"] as const) {
+    await assert.rejects(value.coordinator.run({ ...(action === "retire-after-termination" ? RETIRE : {}), action,
+      operationId: request.operationId }), /Disposable route cannot consume/u);
+  }
+  assert.deepEqual(value.calls, before);
+  await value.coordinator.runOrdinary({ action: "observe", operationId: request.operationId });
+  assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document", "dispatch:observe"]);
+});
+
+void test("ordinary startup refusal creates no journal or navigation and needs no disposable acceptance", async () => {
+  const value = fixture("ordinary-startup-refusal");
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+    prepareOrdinaryCheckpoint: (): Promise<CurrentDisposableOpenCheckpoint> => Promise.reject(new Error("unsupported ordinary startup")) });
+  await assert.rejects(coordinator.runOrdinary({ action: "open", operationId: value.input.operationId,
+    ...TARGET, acceptNormalOpenEffects: true }, FINGERPRINT), /unsupported ordinary startup/u);
+  assert.equal(value.journals.size, 0); assert.equal(value.artifacts.size, 0); assert.deepEqual(dispatches(value), []);
 });
 
 void test("restored active PCB skips redundant open; null document acknowledgement is not opening success", async () => {
@@ -360,6 +402,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     canonicalJson, sha256Json, sha256Text, isRecord, assertSubset, isTerminalOperation, OPERATION_SCHEMA, buildPlanHash, extractToolPayload,
     CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
+    CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest, currentSymbolStartupExpectationSchema,
     currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure, decodeExactReadEnvelope,
     currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, currentClosedSymbolMetadataProjection, readCurrentClosedSymbolMetadata: read,
     CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus,
@@ -367,6 +410,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
     operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
     listQualifiedOperationStates: services.listOperations, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
+    prepareCurrentSymbolOperationCheckpoint: services.prepareOrdinaryCheckpoint, verifyCurrentSymbolOperationCheckpoint: services.verifyOrdinaryCheckpoint,
     verifyCurrentDisposableOpenCheckpoint: services.verifyCheckpoint, verifyCurrentDisposableOpenImplementation: services.verifyImplementation,
     validateSdkLocalRuntimeFingerprint: services.validateFingerprint,
   });
@@ -486,6 +530,14 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
   const original = loaded.original(prepared, engine);
   assert.equal(original.source.engine, engine); assert.equal(original.source.runtime, isolated.options.runtime());
   assert.deepEqual(original.source.preNavigationCheckpoint, CHECKPOINT);
+  assert.equal(original.source.purpose, "disposable-validation"); assert.equal(original.source.startupExpectation, undefined);
+  const beforeWrongPurpose = [...isolated.calls];
+  for (const action of ["inspect", "observe", "retire-after-termination"] as const) {
+    await assert.rejects(coordinator.runOrdinary({ ...(action === "retire-after-termination" ? RETIRE : {}), action,
+      operationId: isolated.input.operationId }), /Ordinary route cannot consume/u);
+    assert.equal(loaded.original(prepared, engine), original);
+  }
+  assert.deepEqual(isolated.calls, beforeWrongPurpose);
   assert.throws(() => loaded.original(structuredClone(prepared), engine), /not issued unchanged/u);
   assert.throws(() => assertOriginalCurrentOwnedSymbolPreparation(prepared, engine), /not issued unchanged/u);
   sessionChanged = true; assert.throws(() => loaded.original(prepared, engine), /session changed/u);
@@ -622,6 +674,12 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   assert.equal(closed["state"], "awaiting-termination"); assert.equal(constructed, 1); assert.equal(sessionClosed, true); assert.ok(retainedOwner !== undefined);
   const original = loaded.baselineOwner(retainedOwner, engine);
   assert.equal(original.source.runtime, isolated.options.runtime()); assert.equal(original.preparation.checkpointPreparation.metadata.after.name, "Changed");
+  assert.equal(original.source.purpose, "disposable-validation");
+  for (const action of ["baseline-inspect", "baseline-observe-termination", "metadata-begin"] as const) {
+    await assert.rejects(coordinator.runOrdinary({ action, operationId: baselineId,
+      ...(action === "metadata-begin" ? { confirmWrite: true } : {}) }), /another purpose/u);
+    assert.equal(loaded.baselineOwner(retainedOwner, engine), original);
+  }
   const beforeRevalidation = combinedAdmissions;
   assert.equal(await loaded.revalidateBaselineOwner(retainedOwner, engine), original);
   assert.equal(combinedAdmissions, beforeRevalidation + 1);

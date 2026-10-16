@@ -3,11 +3,14 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
+import { isRecord } from "../src/core.ts";
+import { CALCULATION_ONLY_TOOLS } from "../src/facade-mode.ts";
 
 interface Observation { observedAt: string; incompleteOperations: unknown[] }
 type Handler = (input: object) => Promise<Record<string, unknown>>;
 
-async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean } = {}): Promise<{
+async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
+  facadeMode?: "legacy-reviewed" | "calculation-only" } = {}): Promise<{
   calls: string[]; invoke: Handler; refuseAdmission: () => void;
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -24,7 +27,8 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   let invoke: Handler | undefined;
   const scope = {
     CONTROL_VERSION: "synthetic",
-    facadeMode: "legacy-reviewed",
+    facadeMode: options.facadeMode ?? "legacy-reviewed",
+    CALCULATION_ONLY_TOOLS,
     UpstreamStartupError: class extends Error {},
     boundedTransactionErrorOutput: (): object => ({}),
     isRecord: (value: unknown): boolean => typeof value === "object" && value !== null,
@@ -107,6 +111,28 @@ void test("registered disconnected status resamples runtime under a lease withou
     if (connectDuringProbe) { expected.push("lease-start", "status", "lease-end"); }
     assert.deepEqual(fixture.calls, expected);
   }
+});
+
+void test("restricted status distinguishes disposable validation mutations from disabled normal writers and live proof", async () => {
+  const fixture = await registeredStatus({ facadeMode: "calculation-only" });
+  const result = await fixture.invoke({});
+  const facade = result["facade"], upstream = result["upstream"];
+  assert.ok(isRecord(facade) && isRecord(upstream) && isRecord(upstream["capabilities"]));
+  assert.equal(facade["mode"], "calculation-only");
+  assert.equal(JSON.stringify(facade["availableTools"]), JSON.stringify(CALCULATION_ONLY_TOOLS));
+  assert.ok(typeof facade["capabilityScope"] === "string");
+  assert.match(facade["capabilityScope"], /validation-\* actions can mutate sealed disposable symbol name\/description/u);
+  assert.match(facade["capabilityScope"], /not connected-validated; normal design writers remain disabled/u);
+  const capabilities = upstream["capabilities"];
+  assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "normal-design-routes" }));
+  assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
+    scope: "sealed-disposable-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+    normalWritersEnabled: false, phaseEffectAcknowledgementsRequired: true, originalOwnerRequired: true }));
+  const navigation = capabilities["navigation"];
+  assert.ok(isRecord(navigation));
+  assert.equal(navigation["scope"], "registered-disposable-project-and-existing-pcb-opening-plus-owned-validation-reopening");
+  assert.equal(navigation["retainedLaunchRequired"], true); assert.equal(navigation["unchangedStorageGuaranteed"], false);
+  assert.deepEqual(fixture.calls, ["admission", "list-tools", "lease-start", "status", "lease-end"]);
 });
 
 void test("registered failed startup/status retains failure and safe passive diagnostics without a retry", async () => {

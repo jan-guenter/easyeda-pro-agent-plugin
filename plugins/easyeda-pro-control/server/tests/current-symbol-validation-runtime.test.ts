@@ -4,6 +4,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { isRecord } from "../src/core.ts";
+import { currentSymbolOperationStepSchema } from "../src/current-symbol-operation.ts";
 import { currentSymbolValidationStepSchema } from "../src/current-symbol-validation.ts";
 
 type Value = Record<string, unknown>;
@@ -11,12 +12,14 @@ const ID = "disposable-validation-original", INVERSE_ID = "disposable-validation
 function object(value: unknown): Value { assert.ok(isRecord(value)); return value; }
 interface Harness {
   readonly calls: string[];
-  readonly state: { failure?: string; authenticationPending: boolean; terminationPending: boolean; cleanupInspectionFails: boolean };
+  readonly state: { failure?: string; authenticationPending: boolean; terminationPending: boolean; cleanupInspectionFails: boolean;
+    purpose: "disposable-validation" | "ordinary-symbol-metadata"; startupExpectationRetained: boolean; fullReopenReadbackInvariant: boolean | undefined };
   readonly invoke: (name: string, argument?: unknown) => Promise<Value>;
   readonly inspect: () => Value;
 }
-async function fixture(): Promise<Harness> {
-  const calls: string[] = [], state: Harness["state"] = { authenticationPending: false, terminationPending: false, cleanupInspectionFails: false };
+async function fixture(purpose: Harness["state"]["purpose"] = "disposable-validation"): Promise<Harness> {
+  const calls: string[] = [], state: Harness["state"] = { authenticationPending: false, terminationPending: false, cleanupInspectionFails: false,
+    purpose, startupExpectationRetained: true, fullReopenReadbackInvariant: true };
   const generation = Object.freeze({ operationId: ID }), inverseGeneration = Object.freeze({ operationId: INVERSE_ID });
   const agedClock = Object.freeze({ original: "aged-clock" }), inverseClock = Object.freeze({ original: "inverse-clock" });
   const forwardContinuation = Object.freeze({ original: "forward-continuation" }), inverseContinuation = Object.freeze({ original: "inverse-continuation" });
@@ -66,13 +69,17 @@ async function fixture(): Promise<Harness> {
       return this.step("finishNormalClose");
     }
     public observeFinish(_operationId: string, retainForInverse?: true): Value {
+      if (retainForInverse === true) { calls.push(`${this.kind}.retainForInverse`); }
       const result = this.step("observeFinish");
       if (state.terminationPending) { state.terminationPending = false; return { ...result, termination: "pending" }; }
       this.status["retired"] = retainForInverse !== true; this.status["finishObservationAvailable"] = retainForInverse === true;
       return { ...this.status, termination: "terminated", verificationContinuationRetained: this.status["failed"] !== true,
-        fullReopenReadbackInvariant: retainForInverse !== true && this.status["failed"] !== true };
+        fullReopenReadbackInvariant: retainForInverse !== true && this.status["failed"] !== true && state.fullReopenReadbackInvariant };
     }
-    public getResultContinuation(): unknown { assert.equal(this.kind, "forward-verifier"); return verificationResult; }
+    public getResultContinuation(): unknown {
+      assert.equal(this.kind, "forward-verifier"); assert.equal(this.status["retired"], false);
+      calls.push(`${this.kind}.getResultContinuation`); return verificationResult;
+    }
     public prepare(input: unknown): Value {
       assert.equal(input, verificationResult); const result = this.step("prepare"); this.owned = true;
       return { ...result, operationId: INVERSE_ID, prepared: true };
@@ -91,7 +98,11 @@ async function fixture(): Promise<Harness> {
   };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-validation-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
-  const context = createContext({ Object, Promise, structuredClone, currentSymbolValidationStepSchema,
+  const context = createContext({ Object, Promise, structuredClone, currentSymbolOperationStepSchema, currentSymbolValidationStepSchema,
+    assertCurrentProjectOnlySymbolGeneration: (value: unknown, owner: unknown): Value => {
+      assert.equal(value, generation); assert.equal(owner, engine);
+      return { source: { purpose: state.purpose, ...(state.startupExpectationRetained ? { startupExpectation: { original: "pre-navigation-startup" } } : {}) } };
+    },
     CurrentSymbolWriterCoordinator: function CurrentSymbolWriterCoordinator(): Controller { const kind = writers === 0 ? "forward-writer" : "inverse-writer"; writers += 1; return new Controller(kind); },
     CurrentSymbolVerificationCoordinator: function CurrentSymbolVerificationCoordinator(): Controller { const kind = verifiers === 0 ? "forward-verifier" : "inverse-verifier"; verifiers += 1; return new Controller(kind); },
     CurrentSymbolInverseCoordinator: function CurrentSymbolInverseCoordinator(): Controller { return new Controller("inverse-baseline"); },
@@ -119,8 +130,14 @@ function step(phase: unknown): Value {
   return { expectedPhase: phase };
 }
 function advance(f: Harness): Promise<Value> { return f.invoke("advance", step(f.inspect()["nextPhase"])); }
-async function reach(f: Harness, phase: string): Promise<void> {
-  for (let index = 0; index < 30 && f.inspect()["nextPhase"] !== phase; index += 1) { await advance(f); }
+function ordinaryStep(phase: unknown): Value {
+  return phase === "forward-write" ? { expectedPhase: phase, confirmWrite: true, acceptMetadataMutation: true } : step(phase);
+}
+function advanceOrdinary(f: Harness): Promise<Value> { return f.invoke("advanceOrdinary", ordinaryStep(f.inspect()["nextPhase"])); }
+async function reach(f: Harness, phase: string, ordinary = false): Promise<void> {
+  for (let index = 0; index < 30 && f.inspect()["nextPhase"] !== phase; index += 1) {
+    await (ordinary ? advanceOrdinary(f) : advance(f));
+  }
   assert.equal(f.inspect()["nextPhase"], phase);
 }
 
@@ -206,4 +223,73 @@ void test("cleanup inspection failure preserves the primary consumed-stage error
   assert.equal(f.inspect()["nextPhase"], "stopped"); assert.equal(f.inspect()["failedPhase"], "inverse-prepare");
   const previous = [...f.calls]; await assert.rejects(f.invoke("advance", step("inverse-prepare")), /exact next phase/u);
   assert.deepEqual(f.calls, previous); assert.equal(f.calls.includes("inverse-writer.execute"), false);
+});
+
+void test("ordinary metadata completes its original forward lifecycle without retaining an inverse or result continuation", async () => {
+  const f = await fixture("ordinary-symbol-metadata"); await f.invoke("beginOrdinary"); await reach(f, "completed", true);
+  const result = f.inspect();
+  assert.equal(result["profile"], "easyeda-pro-control.current-symbol-operation.v1");
+  assert.equal(result["purpose"], "ordinary-symbol-metadata"); assert.equal(result["operationId"], ID);
+  assert.equal(result["forwardVerified"], true); assert.equal(result["requestedMetadataVerified"], true);
+  assert.equal(result["inverseVerified"], false); assert.equal(result["metadataRestorationVerified"], false);
+  assert.equal(result["historicalDatabaseBytesRestored"], false); assert.equal(result["inverseOperationId"], null);
+  const last = object(result["lastResult"]);
+  assert.equal(last["fullReopenReadbackInvariant"], true); assert.equal(last["termination"], "terminated"); assert.equal(last["retired"], true);
+  assert.equal(f.calls.filter((call) => call.endsWith(".execute")).length, 1);
+  assert.equal(f.calls.filter((call) => call.endsWith(".collectSavedContent")).length, 1);
+  assert.equal(f.calls.filter((call) => call.endsWith(".finishNormalClose")).length, 2);
+  assert.equal(f.calls.some((call) => call.startsWith("inverse-") || call.endsWith(".retainForInverse") || call.endsWith(".getResultContinuation")), false);
+  const before = [...f.calls];
+  await assert.rejects(f.invoke("beginOrdinary"), /one original baseline/u);
+  await assert.rejects(f.invoke("advanceOrdinary", ordinaryStep("forward-write")), /exact next phase/u);
+  await assert.rejects(f.invoke("advanceOrdinary", step("inverse-prepare")));
+  assert.deepEqual(f.calls, before);
+});
+
+void test("ordinary completion requires the actual final readback invariant rather than termination alone", async () => {
+  for (const invariant of [false, undefined]) {
+    const f = await fixture("ordinary-symbol-metadata"); await f.invoke("beginOrdinary"); await reach(f, "forward-verification-finish", true);
+    f.state.fullReopenReadbackInvariant = invariant;
+    await assert.rejects(advanceOrdinary(f), /original owner and exact next phase/u);
+    const result = f.inspect(); assert.equal(result["nextPhase"], "stopped"); assert.equal(result["failedPhase"], "forward-verification-finish");
+    assert.equal(result["forwardVerified"], false); assert.equal(result["requestedMetadataVerified"], false);
+    assert.equal(f.calls.some((call) => call.startsWith("inverse-") || call.endsWith(".retainForInverse") || call.endsWith(".getResultContinuation")), false);
+    const before = [...f.calls]; await assert.rejects(advanceOrdinary(f)); assert.deepEqual(f.calls, before);
+  }
+});
+
+void test("ordinary and disposable entries reject each other's original purpose before phase consumption", async () => {
+  const disposable = await fixture();
+  await assert.rejects(disposable.invoke("beginOrdinary"), /another purpose's original baseline/u);
+  await disposable.invoke("begin");
+  await assert.rejects(disposable.invoke("advanceOrdinary", ordinaryStep("forward-write")), /exact next phase/u);
+  assert.equal(disposable.inspect()["nextPhase"], "forward-write"); assert.deepEqual(structuredClone(disposable.inspect()["attemptedPhases"]), []);
+  assert.deepEqual(disposable.calls, []);
+  const ordinary = await fixture("ordinary-symbol-metadata");
+  await assert.rejects(ordinary.invoke("begin"), /another purpose's original baseline/u);
+  ordinary.state.startupExpectationRetained = false;
+  await assert.rejects(ordinary.invoke("beginOrdinary"), /sealed pre-navigation startup expectation/u);
+  ordinary.state.startupExpectationRetained = true; await ordinary.invoke("beginOrdinary");
+  await assert.rejects(ordinary.invoke("advance", step("forward-write")), /exact next phase/u);
+  await assert.rejects(ordinary.invoke("advanceOrdinary", step("forward-write")));
+  assert.equal(ordinary.inspect()["nextPhase"], "forward-write"); assert.deepEqual(structuredClone(ordinary.inspect()["attemptedPhases"]), []);
+  assert.deepEqual(ordinary.calls, []);
+});
+
+void test("ordinary lost forward response retains its consumed writer for cleanup without replay or inverse", async () => {
+  const f = await fixture("ordinary-symbol-metadata"); await f.invoke("beginOrdinary");
+  f.state.failure = "forward-writer.execute";
+  await assert.rejects(advanceOrdinary(f), /Synthetic failure: forward-writer.execute/u);
+  assert.equal(f.inspect()["nextPhase"], "cleanup-close"); assert.equal(f.inspect()["failedPhase"], "forward-write");
+  const before = [...f.calls];
+  await assert.rejects(f.invoke("advanceOrdinary", ordinaryStep("forward-write")), /exact next phase/u);
+  await assert.rejects(f.invoke("advance", step("cleanup-close")), /exact next phase/u);
+  assert.deepEqual(f.calls, before);
+  delete f.state.failure; await advanceOrdinary(f); f.state.terminationPending = true; await advanceOrdinary(f);
+  assert.equal(f.inspect()["nextPhase"], "cleanup-observe-termination"); await advanceOrdinary(f);
+  assert.equal(f.inspect()["nextPhase"], "stopped"); assert.equal(f.inspect()["requestedMetadataVerified"], false);
+  assert.equal(f.calls.filter((call) => call === "forward-writer.execute").length, 1);
+  assert.equal(f.calls.filter((call) => call === "forward-writer.finishNormalClose").length, 1);
+  assert.equal(f.calls.includes("baseline.finishNormalClose"), false);
+  assert.equal(f.calls.some((call) => call.startsWith("inverse-") || call.includes("verifier.start") || call.endsWith(".getResultContinuation")), false);
 });

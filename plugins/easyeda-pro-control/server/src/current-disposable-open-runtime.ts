@@ -8,7 +8,8 @@ import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_T
 import type { CurrentDisposableOpenRequest, CurrentDisposableOpenSealedTarget, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "./current-disposable-open-diagnostics.ts";
 import type { CurrentOpenFailureContext, CurrentOpenFailureDiagnostic } from "./current-disposable-open-diagnostics.ts";
-import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import { prepareCurrentDisposableOpenCheckpoint, prepareCurrentSymbolOperationCheckpoint,
+  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSymbolOperationCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, verifyCurrentDisposableOpenImplementation } from "./current-disposable-open-profile.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
@@ -25,12 +26,18 @@ import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, c
 import { inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
 // oxlint-disable-next-line import/no-cycle -- The disposable route retains the original baseline; validation never reconstructs its private opener owner.
 import { CurrentSymbolValidationCoordinator } from "./current-symbol-validation-runtime.ts";
+import { CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest } from "./current-symbol-operation.ts";
+import type { CurrentSymbolOperationRequest } from "./current-symbol-operation.ts";
+import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.ts";
+import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
 type OpenRequest = Extract<CurrentDisposableOpenRequest, { action: "open" }>;
+type OrdinaryOpenRequest = Extract<CurrentSymbolOperationRequest, { action: "open" }>;
+export type CurrentDisposableOpenPurpose = "disposable-validation" | typeof CURRENT_SYMBOL_OPERATION_PURPOSE;
 const PROFILE = "easyeda-pro-control.current-disposable-open.v1";
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const launchSchema = z.object({ jobId: z.string().regex(/^[a-f0-9]{32}$/u), helperInstance: z.string().regex(/^[a-f0-9]{32}$/u),
@@ -43,7 +50,9 @@ const closedSessionSchema = z.object({ authenticatedAtEpochMs: z.number().int().
 
 interface Plan extends Value {
   profile: typeof PROFILE;
-  intent: { request: OpenRequest; target: CurrentDisposableOpenSealedTarget; implementation: typeof CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION };
+  purpose?: CurrentDisposableOpenPurpose;
+  intent: { request: OpenRequest | OrdinaryOpenRequest; target: CurrentDisposableOpenSealedTarget; implementation: typeof CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION;
+    startupExpectation?: CurrentSymbolStartupExpectation };
   expectedFingerprint: Value;
 }
 interface OpenJournal extends TrackedDispatchOperationJournal {
@@ -72,6 +81,7 @@ export interface CurrentDisposableOpenOptions {
 }
 const defaults = { createOperation, loadOperation, updateOperation, writePhaseArtifact, listOperations: listQualifiedOperationStates,
   prepareCheckpoint: prepareCurrentDisposableOpenCheckpoint, verifyCheckpoint: verifyCurrentDisposableOpenCheckpoint,
+  prepareOrdinaryCheckpoint: prepareCurrentSymbolOperationCheckpoint, verifyOrdinaryCheckpoint: verifyCurrentSymbolOperationCheckpoint,
   verifyImplementation: verifyCurrentDisposableOpenImplementation, validateFingerprint: validateSdkLocalRuntimeFingerprint };
 /** Offline-test seams only; never parsed from a tool request. */
 export type CurrentDisposableOpenDependencies = Partial<typeof defaults>;
@@ -83,6 +93,8 @@ export interface CurrentDisposableOpenGeneration {
 export interface CurrentDisposableOpenGenerationSource {
   readonly engine: EasyedaControlEngine;
   readonly runtime: WindowsControlRuntime;
+  readonly purpose: CurrentDisposableOpenPurpose;
+  readonly startupExpectation?: CurrentSymbolStartupExpectation;
   readonly target: CurrentDisposableOpenSealedTarget;
   readonly expectedFingerprint: Value;
   /** A retained status projection, not an issued launch/close/copy capability. */
@@ -153,6 +165,12 @@ export async function revalidateCurrentDisposableOpenGeneration(value: unknown, 
 }
 
 function requireValue(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
+/** Historical missing purpose is disposable only, never an ordinary edit grant. */
+function openingPurpose(value: unknown): CurrentDisposableOpenPurpose {
+  if (value === undefined || value === "disposable-validation") { return "disposable-validation"; }
+  requireValue(value === CURRENT_SYMBOL_OPERATION_PURPOSE, "Current opening purpose is unsupported.");
+  return value;
+}
 function targetOnly(request: CurrentDisposableOpenTarget): CurrentDisposableOpenTarget {
   return { rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
     documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256 };
@@ -199,7 +217,9 @@ export class CurrentDisposableOpenCoordinator {
   private readonly generations = new Map<string, CurrentDisposableOpenGeneration>();
   private readonly baselineJobs = new Set<string>();
   private readonly baselines = new Map<string, CurrentSymbolBaselineCoordinator>();
+  private readonly baselinePurposes = new Map<string, CurrentDisposableOpenPurpose>();
   private readonly validations = new Map<string, CurrentSymbolValidationCoordinator>();
+  private readonly ordinaryOperations = new Map<string, CurrentSymbolValidationCoordinator>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -214,6 +234,7 @@ export class CurrentDisposableOpenCoordinator {
       requireValue(expectedFingerprint === undefined, "Disposable validation cannot replace its original runtime fingerprint.");
       requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
         "Disposable validation requires its original production opening owner.");
+      this.assertBaselinePurpose(request.operationId, "disposable-validation");
       let validation = this.validations.get(request.operationId);
       if (request.action === "validation-begin") {
         const baseline = this.baselines.get(request.operationId);
@@ -245,6 +266,7 @@ export class CurrentDisposableOpenCoordinator {
     }
     if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination") {
       requireValue(expectedFingerprint === undefined, "Baseline continuation cannot replace its original runtime fingerprint.");
+      this.assertBaselinePurpose(request.operationId, "disposable-validation");
       requireValue(!this.validations.has(request.operationId) || request.action === "baseline-inspect",
         "Disposable validation retains this original baseline; use validation inspection or its exact next phase.");
       switch (request.action) {
@@ -262,17 +284,104 @@ export class CurrentDisposableOpenCoordinator {
       }
     }
     this.busy = true;
-    if (request.action !== "inspect") { this.generations.clear(); }
     try {
       if (request.action === "open") {
         requireValue(expectedFingerprint !== undefined, "Current disposable opening requires its expected fingerprint.");
+        this.generations.clear();
         return await this.open(request, structuredClone(expectedFingerprint));
       }
       const journal = await this.load(request.operationId);
+      requireValue(openingPurpose(journal.plan.purpose) === "disposable-validation", "Disposable route cannot consume an ordinary symbol opening.");
       if (request.action === "inspect") { return summary(journal); }
+      this.generations.clear();
       if (request.action === "retire-after-termination") { return await this.retire(journal); }
       return await this.observe(journal);
     } finally { this.busy = false; }
+  }
+
+  /** Internal future ordinary entry only. No tool registers this method. Purpose
+   * comes from this distinct parser/entry, never a caller-supplied override.
+   */
+  public async runOrdinary(input: unknown, expectedFingerprint?: Value): Promise<Value> {
+    const request = parseCurrentSymbolOperationRequest(structuredClone(input));
+    requireValue(!this.busy, "Current ordinary symbol operation is already in progress.");
+    if (request.action === "metadata-begin" || request.action === "metadata-advance" || request.action === "metadata-inspect") {
+      requireValue(expectedFingerprint === undefined, "Ordinary metadata cannot replace its original runtime fingerprint.");
+      requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+        "Ordinary metadata requires its original production opening owner.");
+      this.assertBaselinePurpose(request.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE);
+      let operation = this.ordinaryOperations.get(request.operationId);
+      if (request.action === "metadata-begin") {
+        const baseline = this.baselines.get(request.operationId);
+        requireValue(operation === undefined && baseline !== undefined, "Ordinary metadata requires an unused original baseline.");
+        operation = new CurrentSymbolValidationCoordinator(this.options.engine, baseline);
+        const result = operation.beginOrdinary(request.operationId);
+        this.ordinaryOperations.set(request.operationId, operation); return result;
+      }
+      requireValue(operation !== undefined, "Ordinary metadata cannot resume from journal JSON; its original coordinator is unavailable.");
+      if (request.action === "metadata-inspect") { return operation.inspect(request.operationId); }
+      this.busy = true;
+      try { return await operation.advanceOrdinary(request.operationId, request.step); }
+      finally { this.busy = false; }
+    }
+    if (request.action === "baseline-begin") {
+      requireValue(expectedFingerprint === undefined, "Ordinary baseline derives its runtime from the original opening.");
+      requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine && this.retained.has(request.openingOperationId),
+        "Ordinary baseline requires its original production opening owner.");
+      this.busy = true;
+      let configured: Awaited<ReturnType<typeof loadRuntimeMachineProfile>>;
+      try { configured = await loadRuntimeMachineProfile(); }
+      finally { this.busy = false; }
+      requireValue(configured.profile.controlDirectory === controlDataDirectory() &&
+        configured.profile.easyeda.assetsRoot === process.env["EASYEDA_ASSETS_ROOT"], "Ordinary baseline machine configuration differs from the active facade.");
+      return this.beginBaseline(request.openingOperationId, { operationId: request.operationId,
+        preparation: request.preparation, confirmNormalClose: true }, configured.profile.runtime, CURRENT_SYMBOL_OPERATION_PURPOSE);
+    }
+    if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination") {
+      requireValue(expectedFingerprint === undefined, "Ordinary baseline continuation cannot replace its original runtime fingerprint.");
+      if (request.action !== "baseline-inspect") { this.assertBaselinePurpose(request.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE); }
+      requireValue(!this.ordinaryOperations.has(request.operationId) || request.action === "baseline-inspect",
+        "Ordinary metadata retains this original baseline; use metadata inspection or its exact next phase.");
+      switch (request.action) {
+        case "baseline-observe-termination": { return this.observeSymbolBaseline(request.operationId); }
+        case "baseline-prepare-clock": { return this.prepareSymbolBaselineClock(request.operationId); }
+        case "baseline-relaunch": { return this.relaunchSymbolBaseline(request.operationId); }
+        case "baseline-admit": { return this.admitSymbolBaseline(request.operationId); }
+        case "baseline-observe-caches": { return this.observeSymbolBaselineCaches(request.operationId); }
+        case "baseline-open-project": {
+          const stage = this.baselines.get(request.operationId);
+          requireValue(stage !== undefined, "Ordinary baseline original coordinator is unavailable.");
+          this.busy = true;
+          try { return await stage.openOrdinaryProject(request.operationId); }
+          finally { this.busy = false; }
+        }
+        case "baseline-observe-clock": { return this.observeSymbolBaselineClock(request.operationId); }
+        case "baseline-finish-close": { return this.finishSymbolBaseline(request.operationId); }
+        case "baseline-observe-finish": { return this.observeSymbolBaselineFinish(request.operationId); }
+        case "baseline-inspect": { return this.inspectSymbolBaseline(request.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE); }
+        default: { throw new Error("Unsupported ordinary baseline continuation."); }
+      }
+    }
+    this.busy = true;
+    try {
+      if (request.action === "open") {
+        requireValue(expectedFingerprint !== undefined, "Ordinary symbol opening requires its expected fingerprint.");
+        this.generations.clear();
+        return await this.open(request, structuredClone(expectedFingerprint), CURRENT_SYMBOL_OPERATION_PURPOSE);
+      }
+      const journal = await this.load(request.operationId);
+      requireValue(openingPurpose(journal.plan.purpose) === CURRENT_SYMBOL_OPERATION_PURPOSE, "Ordinary route cannot consume a disposable opening.");
+      if (request.action === "inspect") { return summary(journal); }
+      this.generations.clear();
+      if (request.action === "retire-after-termination") { return await this.retire(journal); }
+      return await this.observe(journal);
+    } finally { this.busy = false; }
+  }
+
+  private assertBaselinePurpose(operationId: string, purpose: CurrentDisposableOpenPurpose): void {
+    const retained = this.baselinePurposes.get(operationId);
+    requireValue(purpose === "disposable-validation" ? retained !== CURRENT_SYMBOL_OPERATION_PURPOSE : retained === purpose,
+      "Current symbol baseline belongs to another purpose or its ordinary owner is unavailable.");
   }
 
   /** Internal preparation only. The public opener request schema has no route
@@ -284,9 +393,11 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
       "Current symbol preparation cannot issue from injected opening services or an unowned engine.");
     const engine = this.options.engine;
-    this.busy = true; this.generations.clear();
+    this.busy = true;
     try {
       const loaded = await this.load(operationId), slot = this.retainedJournal(loaded);
+      requireValue(openingPurpose(slot.journal.plan.purpose) === "disposable-validation", "Disposable preparation cannot consume an ordinary symbol opening.");
+      this.generations.clear();
       CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
       requireValue(slot.runtime instanceof WindowsControlRuntime, "Current symbol preparation requires the retained Windows runtime object.");
       const runtime = slot.runtime;
@@ -309,7 +420,12 @@ export class CurrentDisposableOpenCoordinator {
    * Consumes this Job before the first await, transfers a fresh preparation,
    * then requests one normal close outside its authenticated scope.
    */
-  public async beginSymbolBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"]): Promise<Value> {
+  public beginSymbolBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"]): Promise<Value> {
+    return this.beginBaseline(openingOperationId, input, sqlRuntime, "disposable-validation");
+  }
+
+  private async beginBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"],
+    purpose: CurrentDisposableOpenPurpose): Promise<Value> {
     const request = currentSymbolBaselineRequestSchema.parse(input);
     requireValue(request.operationId !== openingOperationId && !this.busy && !this.baselines.has(request.operationId),
       "Current symbol baseline needs a distinct unused operation.");
@@ -317,6 +433,7 @@ export class CurrentDisposableOpenCoordinator {
       "Current symbol baseline cannot issue from injected opening services or an unowned engine.");
     const engine = this.options.engine, slot = this.retained.get(openingOperationId);
     requireValue(slot !== undefined && slot.runtime instanceof WindowsControlRuntime, "Current symbol baseline needs the original retained opening and runtime.");
+    requireValue(openingPurpose(slot.journal.plan.purpose) === purpose, "Current symbol baseline cannot transfer an opening of another purpose.");
     const runtime = slot.runtime;
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime); this.current(slot);
     baselineRuntimeReservations.add(runtime);
@@ -324,6 +441,7 @@ export class CurrentDisposableOpenCoordinator {
     this.generations.clear(); this.busy = true;
     const stage = new CurrentSymbolBaselineCoordinator(engine, runtime, sqlRuntime);
     this.baselines.set(request.operationId, stage);
+    this.baselinePurposes.set(request.operationId, purpose);
     let owner: CurrentSymbolBaselineOwner | undefined;
     try {
       const loaded = await this.load(openingOperationId);
@@ -429,15 +547,16 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
-  public async inspectSymbolBaseline(operationId: string): Promise<Value> {
+  public async inspectSymbolBaseline(operationId: string, purpose: CurrentDisposableOpenPurpose = "disposable-validation"): Promise<Value> {
     requireValue(!this.busy, "Current symbol baseline coordinator is busy.");
     this.busy = true;
     try {
       const stage = this.baselines.get(operationId);
-      if (stage !== undefined) { return await stage.inspect(operationId); }
+      if (stage !== undefined) { this.assertBaselinePurpose(operationId, purpose); return await stage.inspect(operationId); }
       const journal = await this.services.loadOperation(operationId);
       requireValue(journal.operationId === operationId && isRecord(journal.plan) &&
         journal.plan["profile"] === "easyeda-pro-control.current-symbol-closed-baseline.v1", "Current symbol baseline history has another profile.");
+      requireValue(openingPurpose(journal.plan["purpose"]) === purpose, "Current symbol baseline history belongs to another purpose.");
       const clockSidecar = await inspectCurrentSymbolClockEvidence(operationId);
       return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts, clockSidecar,
         projectOpeningMode: journal["projectOpeningMode"] ?? null,
@@ -505,7 +624,9 @@ export class CurrentDisposableOpenCoordinator {
         "Current symbol preparation original authenticated session changed.");
       } catch (error) { this.generations.delete(journal.operationId); throw error; }
     };
-    const source = Object.freeze({ engine, runtime, target: journal.plan.intent.target, expectedFingerprint: journal.plan.expectedFingerprint,
+    const source = Object.freeze({ engine, runtime, purpose: openingPurpose(journal.plan.purpose),
+      ...(journal.plan.intent.startupExpectation === undefined ? {} : { startupExpectation: journal.plan.intent.startupExpectation }),
+      target: journal.plan.intent.target, expectedFingerprint: journal.plan.expectedFingerprint,
       launchProjection: slot.launch, bridgeSession: session, preNavigationCheckpoint: journal.checkpointProof });
     const revalidate = async (): Promise<void> => {
       try {
@@ -522,7 +643,8 @@ export class CurrentDisposableOpenCoordinator {
     const raw: unknown = await this.services.loadOperation(operationId);
     requireValue(isOpenJournal(raw), "Current disposable-open journal is malformed or has another profile.");
     const { plan } = raw;
-    const request = parseCurrentDisposableOpenRequest(plan.intent.request);
+    const purpose = openingPurpose(plan.purpose);
+    const request = purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? parseCurrentSymbolOperationRequest(plan.intent.request) : parseCurrentDisposableOpenRequest(plan.intent.request);
     requireValue(request.action === "open" && request.operationId === operationId, "Current disposable-open original request differs.");
     const target = currentDisposableOpenSealedTargetSchema.parse(plan.intent.target);
     requireValue(target.projectUuid === request.projectUuid && target.documentUuid === request.documentUuid &&
@@ -530,6 +652,7 @@ export class CurrentDisposableOpenCoordinator {
       canonicalJson(plan.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) &&
       raw.schema === OPERATION_SCHEMA && raw.operationId === operationId && raw.planHash === buildPlanHash(plan),
     "Current disposable-open journal target or state differs.");
+    CurrentDisposableOpenCoordinator.assertStartupPurpose(raw);
     // Managed load already verified journal/artifact bytes. This checked family
     // Projection never reconstructs the coordinator's original retained slot.
     return raw;
@@ -537,11 +660,24 @@ export class CurrentDisposableOpenCoordinator {
 
   private current(slot: Retained): void {
     this.options.assertOwner();
+    CurrentDisposableOpenCoordinator.assertStartupPurpose(slot.journal);
     requireValue(this.retained.get(slot.journal.operationId) === slot && this.options.runtime() === slot.runtime &&
       canonicalJson(slot.journal.plan) === slot.planText, "Current disposable-open retained owner or plan changed.");
     const status = slot.runtime.status();
     requireValue(status.state === "owned" && canonicalJson(status.launch) === slot.launchText,
       "Current disposable-open original supervised generation changed or was lost.");
+  }
+
+  private static assertStartupPurpose(journal: OpenJournal): void {
+    if (openingPurpose(journal.plan.purpose) === CURRENT_SYMBOL_OPERATION_PURPOSE) {
+      requireValue(journal.checkpointProof.purpose === CURRENT_SYMBOL_OPERATION_PURPOSE &&
+        currentSymbolStartupExpectationSchema.safeParse(journal.plan.intent.startupExpectation).success &&
+        canonicalJson(journal.plan.intent.startupExpectation) === canonicalJson(journal.checkpointProof.startupExpectation),
+      "Ordinary symbol opening lost its sealed pre-navigation startup expectation.");
+    } else {
+      requireValue(journal.plan.intent.startupExpectation === undefined && journal.checkpointProof.purpose === undefined &&
+        journal.checkpointProof.startupExpectation === undefined, "Disposable opening cannot inherit ordinary startup authority.");
+    }
   }
 
   private currentUntransferred(slot: Retained): void {
@@ -604,7 +740,9 @@ export class CurrentDisposableOpenCoordinator {
           await engine.assertRecoveryOperationIsolated(journal.operationId);
           if (phase === "open-project") {
             failureContext.hostStage = "checkpoint-reproof";
-            await this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request));
+            await (openingPurpose(journal.plan.purpose) === CURRENT_SYMBOL_OPERATION_PURPOSE
+              ? this.services.verifyOrdinaryCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request))
+              : this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request)));
           }
           this.currentUntransferred(slot);
           failureContext.hostStage = "tracked-dispatch";
@@ -634,7 +772,8 @@ export class CurrentDisposableOpenCoordinator {
     return result;
   }
 
-  private async open(request: OpenRequest, fingerprint: Value): Promise<Value> {
+  private async open(request: OpenRequest | OrdinaryOpenRequest, fingerprint: Value,
+    purpose: CurrentDisposableOpenPurpose = "disposable-validation"): Promise<Value> {
     const { engine } = this.options;
     this.options.assertOwner();
     const runtime = this.options.runtime(), status = runtime.status();
@@ -647,11 +786,13 @@ export class CurrentDisposableOpenCoordinator {
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     requireValue(!operations.some((operation) => operation["operationId"] === request.operationId), "Current disposable-open operation ID is consumed.");
     this.services.validateFingerprint(fingerprint);
-    const checkpointProof = await this.services.prepareCheckpoint(targetOnly(request));
+    const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
+      ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     const target = currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
       documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256, branchUuid: checkpointProof.targetEvidence.branchUuid });
-    const plan: Plan = { profile: PROFILE, intent: { request, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION }, expectedFingerprint: fingerprint };
+    const plan: Plan = { profile: PROFILE, purpose, intent: { request, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
+      ...(purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? { startupExpectation: checkpointProof.startupExpectation } : {}) }, expectedFingerprint: fingerprint };
     const journal: OpenJournal = { schema: OPERATION_SCHEMA, operationId: request.operationId, journalPath: operationPath(request.operationId),
       planHash: buildPlanHash(plan), plan, state: "planned", mutationState: "not-inferred", saved: false, reopened: false,
       orphanedCallPossible: false, hardStop: true, mutationMayHaveOccurred: false, sequence: 0, artifacts: [],

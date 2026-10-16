@@ -313,6 +313,22 @@ Lost owners and conflicting journals require separate recovery work.
 Source tests do not establish a live forward/inverse lifecycle. Record actual
 connected results before deliberately enabling any normal writer capability.
 
+Startup observation may return one fixed diagnostic stage: `project-only-context`,
+`sch-holder`, `scheduler`, `cache`, `template`, `native-queue`, or `parts`.
+Treat this as a consumed qualification failure, not a retry hint. Inspect the
+original validation owner and follow only its offered cleanup phase. Preserve
+the retained result for source review; do not invoke getters, relax a predicate
+or repeat navigation to make the stage pass. Older snapshots return only a
+generic startup failure. A diagnostic stage does not prove the failing holder's
+actual value or identify every later failing check.
+
+The ordinary forward-only metadata workflow is internal and unregistered.
+Do not substitute ordinary projects into this disposable route, fabricate a
+disposable acknowledgement, or call the older blocked symbol coordinator.
+Future ordinary use must bind its own purpose and supported startup expectation
+before navigation, retain the original owners, and complete full reopened
+saved-content/SQL verification without an automatic inverse.
+
 ## Compare retained snapshots
 
 Use offline `easyeda_control_api` after a successful terminal retirement with
