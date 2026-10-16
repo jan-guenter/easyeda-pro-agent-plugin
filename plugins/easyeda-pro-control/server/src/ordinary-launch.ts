@@ -89,6 +89,10 @@ export interface OrdinaryLaunchOptions {
   readonly assetsRoot: string;
   readonly pluginRoot: string;
   readonly assertAllowed: () => Promise<void>;
+  /** Internal synchronous owner check, never a substitute for dispatch admission.
+   * Omission preserves the full post-intent scan for other coordinator callers.
+   */
+  readonly assertLocalAllowed?: () => void;
   readonly allocateRuntime: (input: { expectedExecutableSha256: string; expectedHelperSha256: string; reviewedExecutionScopeSha256: string }) => OrdinaryLaunchRuntime;
 }
 /** Internal offline-test seam, never a tool argument or runtime profile override. */
@@ -422,6 +426,12 @@ export class OrdinaryLaunchCoordinator {
         expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
         reviewedExecutionScopeSha256: facadeSha256 });
       const runtime = this.runtime;
+      const launchRuntime = runtime.launch;
+      const assertCurrentLaunch = (): void => {
+        this.options.assertLocalAllowed?.();
+        requireValue(this.runtime === runtime && runtime.launch === launchRuntime,
+          "Ordinary launch retained runtime or launch method changed before dispatch.");
+      };
       const existing = z.object({ running: z.boolean() }).strict().parse(await measure("helper-presence", () => runtime.observeExistingApplication()));
       if (existing.running) { return { ...describe(request.operationId), state: "already-running", attemptConsumed: false, ...this.timingSummary(request.operationId) }; }
       await measure("reservation", async () => {
@@ -438,7 +448,12 @@ export class OrdinaryLaunchCoordinator {
         profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE), facadeSha256, createdAt: new Date().toISOString() };
       await measure("intent-publication", () => publish(request.operationId, "intent.json", intent));
       publishedIntent = intent;
-      await measure("admission-after-intent", () => this.options.assertAllowed());
+      // This historical timing label now includes a local-only owner check when
+      // Supplied. Only local inventory/hash reads precede the final full scan.
+      await measure("admission-after-intent", async () => {
+        if (this.options.assertLocalAllowed === undefined) { await this.options.assertAllowed(); }
+        assertCurrentLaunch();
+      });
       const current = await measure("inventory-before-dispatch", inventory);
       requireValue(current.length === operations.length + 1 && current.every((candidate) => candidate.operationId === request.operationId ?
         canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === undefined && candidate.terminated === undefined && candidate.refused === undefined &&
@@ -446,8 +461,9 @@ export class OrdinaryLaunchCoordinator {
       "Ordinary launch intent or inventory changed before dispatch.");
       requireValue(await measure("installation-before-dispatch", () => this.verify(this.options)) === facadeSha256, "Ordinary launch installation changed before dispatch.");
       await measure("admission-before-dispatch", () => this.options.assertAllowed());
+      assertCurrentLaunch();
       launchInvoked = true;
-      const launch = launchSchema.parse(await measure("launch-dispatch", () => runtime.launch()));
+      const launch = launchSchema.parse(await measure("launch-dispatch", () => launchRuntime.call(runtime)));
       const launched: Launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request.operationId, intentSha256: sha256Json(intent), launch };
       this.retained = { operationId: request.operationId, launch, launched };
       await measure("launched-publication", () => publish(request.operationId, "launched.json", launched));

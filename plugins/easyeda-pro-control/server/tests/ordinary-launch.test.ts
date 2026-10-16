@@ -40,7 +40,8 @@ function cleanup(context: TestContext, ...ids: string[]): void {
   context.after(async () => { for (const id of ids) { await rm(journal(id), { recursive: true, force: true }); } });
 }
 function fixture(operationId: string, behavior: { failure?: boolean; wrongTermination?: boolean; existing?: boolean;
-  presenceChanged?: boolean; onAllowed?: (presenceSamples: number) => Promise<void>;
+  presenceChanged?: boolean; onAllowed?: (presenceSamples: number, runtime: OrdinaryLaunchRuntime) => Promise<void>;
+  onLocalAllowed?: () => void;
   otherPowerShell?: boolean; recoveryApplication?: boolean; onRecovery?: () => Promise<void>;
   windowOutcome?: "available" | "unavailable" | "ambiguous"; wrongWindowOwner?: boolean; closeFailure?: boolean } = {}): {
   readonly options: OrdinaryLaunchOptions;
@@ -101,7 +102,10 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   };
   const options: OrdinaryLaunchOptions = {
     assetsRoot: "/opt/synthetic/assets", pluginRoot: "/opt/synthetic/plugin",
-    assertAllowed: async () => { calls.push("guard"); await behavior.onAllowed?.(presenceSamples); },
+    assertAllowed: async () => { calls.push("guard"); await behavior.onAllowed?.(presenceSamples, runtime); },
+    ...(behavior.onLocalAllowed === undefined ? {} : {
+      assertLocalAllowed: (): void => { calls.push("local"); behavior.onLocalAllowed?.(); },
+    }),
     allocateRuntime: (input) => {
       calls.push("allocate");
       assert.equal(input.expectedExecutableSha256, ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256);
@@ -228,6 +232,80 @@ void test("ordinary launch exposes passive phase timings without changing guard 
   const intent = await readFile(join(journal(id), "intent.json"), "utf8");
   assert.doesNotMatch(intent, /timings|elapsed/iu);
   current.markTerminated(); await current.coordinator.run({ action: "observe-termination", operationId: id });
+});
+
+void test("ordinary launch local owner admission omits only the post-intent scan", async (context) => {
+  const id = "ordinary-test-local-admission";
+  cleanup(context, id);
+  let localChecks = 0;
+  const current = fixture(id, { onLocalAllowed: (): void => { localChecks += 1; } });
+  const result = await current.coordinator.run(request(id));
+  assert.equal(result["state"], "launched");
+  assert.deepEqual(current.calls, ["guard", "verify", "guard", "allocate", "existing", "local", "verify", "guard", "local", "launch"]);
+  assert.equal(localChecks, 2);
+  const names = await readdir(journal(id));
+  assert.deepEqual(names.toSorted(), ["intent.json", "launched.json"]);
+  current.markTerminated(); await current.coordinator.run({ action: "observe-termination", operationId: id });
+});
+
+for (const failedCheck of [1, 2]) {
+  void test(`ordinary launch refuses local owner drift at check ${failedCheck} before dispatch consumption`, async (context) => {
+    const id = `ordinary-test-local-drift-${failedCheck}`;
+    cleanup(context, id);
+    let localChecks = 0;
+    const current = fixture(id, { onLocalAllowed: (): void => {
+      localChecks += 1;
+      if (localChecks === failedCheck) { throw new Error("synthetic local owner drift"); }
+    } });
+    await assert.rejects(current.coordinator.run(request(id)), /synthetic local owner drift/u);
+    assert.equal(current.calls.includes("launch"), false);
+    assert.equal(current.calls.filter(call => call === "guard").length, failedCheck + 1);
+    assert.equal(await state(current.coordinator, id), "not-dispatched");
+    const names = await readdir(journal(id));
+    assert.deepEqual(names.toSorted(), ["intent.json", "not-dispatched.json"]);
+    await assert.rejects(current.coordinator.run(request(id)), /consumed/u);
+    assert.equal(current.calls.includes("launch"), false);
+  });
+}
+
+void test("ordinary launch local owner shortcut retains the final full quarantine refusal", async (context) => {
+  const id = "ordinary-test-final-quarantine";
+  cleanup(context, id);
+  let fullChecks = 0, localChecks = 0;
+  const current = fixture(id, {
+    onLocalAllowed: (): void => { localChecks += 1; },
+    onAllowed: (): Promise<void> => {
+      fullChecks += 1;
+      return fullChecks === 3 ? Promise.reject(new Error("synthetic final quarantine")) : Promise.resolve();
+    },
+  });
+  await assert.rejects(current.coordinator.run(request(id)), /synthetic final quarantine/u);
+  assert.equal(fullChecks, 3); assert.equal(localChecks, 1);
+  assert.equal(current.calls.filter(call => call === "verify").length, 2);
+  assert.equal(current.calls.includes("launch"), false);
+  assert.equal(await state(current.coordinator, id), "not-dispatched");
+});
+
+void test("ordinary launch rechecks its captured launch method after awaited final admission", async (context) => {
+  const id = "ordinary-test-final-method-drift";
+  cleanup(context, id);
+  let fullChecks = 0, localChecks = 0, substitutedLaunches = 0;
+  const current = fixture(id, {
+    onLocalAllowed: (): void => { localChecks += 1; },
+    onAllowed: async (_presenceSamples, runtime): Promise<void> => {
+      fullChecks += 1;
+      await Promise.resolve();
+      if (fullChecks === 3) {
+        Object.defineProperty(runtime, "launch", { value: (): Promise<never> => {
+          substitutedLaunches += 1; return Promise.reject(new Error("substituted launch"));
+        } });
+      }
+    },
+  });
+  await assert.rejects(current.coordinator.run(request(id)), /runtime or launch method changed/u);
+  assert.equal(fullChecks, 3); assert.equal(localChecks, 2); assert.equal(substitutedLaunches, 0);
+  assert.equal(current.calls.includes("launch"), false);
+  assert.equal(await state(current.coordinator, id), "not-dispatched");
 });
 
 void test("ordinary launch failure timings survive same-host inspection and replay refusal without granting recovery", async (context) => {

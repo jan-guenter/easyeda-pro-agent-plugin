@@ -6,6 +6,139 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate200000: clock forwarding fix; live190000 cleanup complete
+
+Actual loaded190000 host681163/parent679699/startTicks15367714 independently
+admitted against main bba29f6b: all 1,277 files/25,547,917 bytes/modes match;
+pinned Node24/core0, no initial child/nonstdio socket. Main CI38949533517 and
+Windows38949533671 both passed. Prior124500 launcher is terminal terminated;
+its opener is completed. Selected disposable source remains598,016bytes/
+SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+with no sidecars. No production design or record was accessed.
+New ordinary launch `validation-190000-20261016-launch` completed once:
+root32192/Jobf655668cf9584587a7ef9ebd6a0b73fa/helperf28e954d900c430e974ba7fc891e51b5,
+launched SHA6c08022697cd725a03384cbb1d97d707586fe6cfef4746848b70bbe53cf4505a.
+Authenticated status21 passed the actual190000 tuple and no incomplete operations.
+All18 installed runtime files/292,631,813bytes and helper175,104bytes independently
+match fixed pins; this is byte admission, not clock or writer qualification.
+After fresh source/sidecar checks and offline request validation, opening
+`validation-190000-20261016-open` completed functions24, native target verified,
+hardStop/orphan false, terminal07 SHA4933cddbbeb9fb3d9c5cbfb6a71eed00ad62646b765b74232f853b6e16876e99.
+New baseline `validation-190000-20261016-baseline` completed begin34 and
+termination/copy40 using the new opening checkpoint193022233Z/561,152bytes/
+4ed9ca7c and exact closed symbol df16405f230603d3. Complete baseline captured:
+06-copy-result SHA c0a4c44e8e8b15c36e0cfcca9d18910d8ba8f4387a252fbfc87289cac356f3df,
+source970d21b3 unchanged, logical SQL4d01daaf/history20b0b062. Sole historical
+blocker active-schematic-pages (two); other prerequisites pass. Ordinary launch
+termination48 is recorded with exact original launched SHA/Job, before relaunch.
+Scratch `baseline-prepare-clock`49 passed, reference accepted; original result
+SHA5fbbf13ed09c8e2636ce969414765e9a1a7b19fd53f024011705209cb6afce25.
+Replacement relaunch54 and admission56 passed; original capture released,
+new capture retained, native launch/admission clocks observed. Cache observation57
+and project-only open60 passed; terminal18 SHA9e8281509d32feaedf17e30d223303d2422e2d6168265031837515e06191e56d.
+Renderer-clock62 refused before first Windows sample or renderer dispatch:
+`Fresh clock requires an original closed capture and retained clock method.`
+Inspect64 retains original owner/consumed clock attempt, no before/raw/after
+sample, failure sidecar5ed28825. No validation-begin/write was submitted.
+Original baseline-finish-close65 and observe-finish66 completed normal closure,
+original termination, full final snapshot and retirement: plan-invalidated,
+retiredtrue, finishSnapshotStatus captured. Never replay. Offline analysis71
+proves both raw copies equal598,016bytes/970d21b3, all35 SQL tables and all18
+native documents/provenance unchanged. Journal8ec71a05/evidence19b9cbdb;
+fresh closed original hash/stat/absence of sidecars also pass. No pending live
+tool, symbol edit, Save, restoration or production access remains.
+Source diagnosis: production createWindowsRuntimeValidator omitted the existing
+observeCurrentClock callback, so engine retained undefined. The engine's
+original-capture guard remains unchanged. The production-factory/engine/runtime
+regression reproduced the exact failure before the fix; 23 focused tests now
+pass, including cloned-capture and pre/post-await method/owner drift refusal.
+Main/independent review accepted. The old attempt is consumed; no retry/hotpatch.
+Root owns all live calls. Production designs and their records remain untouched.
+
+Source-only follow-up on `feature/current-symbol-live-validation-followup`:
+ordinary launch removes only its redundant post-intent full scan and adds
+post-await local owner/captured-method checks; 35 focused tests passed. Closed
+baseline copy removes four duplicate admission scans with all post-effect/final
+checks unchanged; 30 focused tests passed. Whole types and targeted strict
+type-aware lint clean, main/independent review accepted both. Candidate version
+200000 is frozen; full types/lint/build, compatibility, API inventory, package,
+repository/privacy and all seven skill checks pass. Source392 SHA3adbf5295b5d363064f0497896269db6d6e573a0f0fa7879993b7ef4d511d821;
+runtime3 SHA6ce2032d7c63cbcd38ea56b3c34f8d97449b1477e623d515559ddf02922d2aff.
+CI/publication/install pending. The initial privacy scan caught private design
+names in uncommitted engineering prose; those references were generalized,
+without changing any design or validator. The complete repeat scan passes.
+Installed190000 remains untouched. Runtime speedup is not measured. Documentation records
+why normal symbol writing needs a current purpose-bound forward-only entry,
+not enablement of the unvalidated older coordinator.
+The extension skill now requires production-factory forwarding coverage when
+adding an optional runtime method. Normal writers remain disabled; connected
+forward/inverse validation and the broader API backlog remain open. After
+publishing/installing200000, leave the current host intact and start a fresh
+Codex session before a new disposable lifecycle. Do not repeat any190000 action.
+
+### Delivered190000: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016190000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR45 merged tested head fdd3fe104bae8e8febec2eeedbe046fcc04b8a3b as
+main bba29f6b2008bb84eede783a4f28a70a6b8e0de3. Whole tree
+22aab710f3efaf240ec4c96ddf0952cfdcc8ae1c and plugin tree
+d9af15c52bb53094a3e53e5725b03f868dd78f25 exactly match the tested payload.
+All 11 PR checks passed: CI38947863170 reports 10,476 facade passes/five skips/
+zero failures, cancellations or todos; 424 bridge passes across 28 files.
+Windows38947863125 passed. Types, strict type-aware lint, dependency audit,
+reproducible builds and package checks passed. Initial CI38945866941 found one
+stale test-only phase inventory; the correction and same-count inverse rejection
+passed all 40 focused cases without changing runtime code, bundle or historical
+acceptance rules. Main and independent review accepted the correction. The
+automated GitHub reviewer failed to run. Main Windows38949533671 passed;
+automatic main CI38949533517 remains in progress at this handoff.
+
+Official marketplace upgrade under umask022 completed with errors[]/stderr0.
+CLI confirms installed/enabled190000 and cached marketplace HEAD equals merged
+main. Main and independent inventories match all 1,277 files/25,547,917 bytes,
+42 directories0755, 1,276 files0644/one0755, seven skills and no extras or links.
+Inventory SHA eeac71eeae8c8d5e65efeed623f5d626224a9c968d8d2a23c5ab202a68e15764;
+source392 SHA36c9c2c1ac752d03ab8395270389902a01a6e5d039e9f0eaa8eb4f822bdbb9e0;
+runtime3 SHA5ed065709e315fbd4c8096b78995132e4d5284f3a2e7c7a900a1a667e8939ea5;
+manifest badf289a9a934e801f0c52f4be95dc23dcb50ca4f44530c7e26ceb382cde7f72.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 with no installed module ancestors, upstream child or nonstdio socket.
+Catalog16tools, current helper/all18pins, clock/history/analysis/symbol schemas
+and four valid/eight malformed validation requests pass. No live tool or journal
+creation; synthetic profile unchanged/stderr0. Probe675179 exited0 through stdin
+EOF, without signals. Private proof
+`/tmp/easyeda-installed-190000-08wfnYgw/proof.json`, 4,293 bytes SHA
+251cfc044f4b6f8bae4a5d026b641a2c1b2bfe71df93f2800ef125974ec5881a.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/45#issuecomment-6222395972
+
+Retained host648739/parent647044/startTicks14830751 still holds173000; independent
+before/after identity, Node24/core0 and zero-child/socket checks pass. The official
+installer pruned its old cache directory. No manual cache edit, hotpatch or owner
+termination occurred. Do not make live calls from this old host. Start a fresh
+Codex session, independently admit actual190000 and check automatic main CI.
+No pending tool or CAD operation. Prior124500/103000 disposable lifecycles remain
+terminal and must never be replayed. No live EasyEDA call, launch, CAD edit,
+Save or restoration occurred this turn. Production designs and their records remain
+untouched. Normal writers remain gated; connected validation is not claimed.
+
+Next: one new disposable forward/inverse lifecycle using the supported launcher
+and current-project-opening skill reference. Finish baseline preparation, then
+validation-begin; every validation-advance keeps the original baseline operation
+ID, including inverse work, and supplies the exact inspected expectedPhase and
+its required acknowledgements. Poll only explicitly pending observations.
+The unlocked head must be at least 61 seconds old at each write's fresh backend
+clock; elapsed agent time is not proof and an early refusal consumes the attempt.
+On failure follow only the original owner's returned cleanup phases; no replay,
+Save, manual inverse, forced termination or reconstructed journal authority.
+Completion requires forwardVerified/inverseVerified/metadataRestorationVerified
+and nextPhase completed; historical SQLite bytes are not restored. After this
+evidence, deliberately enable only the validated narrow writer. The broader
+774-method inventory, schematic/PCB structure, geometry/library, manufacturing
+and preparation-timing backlog remain unchanged. This delivery record is left
+uncommitted until the next source change to avoid a record-only release cycle.
+The candidate's pending-publication wording below is historical.
+
 ### Candidate190000: disposable forward/inverse orchestration
 
 Branch `feature/current-symbol-validation-orchestration` starts at mainaccf1e83.
