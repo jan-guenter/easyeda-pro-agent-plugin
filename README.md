@@ -19,6 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
+Update `0.3.0+codex.20261016073000` preserves final closed-file SQL and native
+history evidence before releasing the disposable process captures. Snapshot failure is
+reported separately from retirement and never permits another copy or close.
+The same update batches up to four independent upstream file hashes and combines
+two history-admission predicates into one fresh scan. It preserves complete
+fingerprint, identity and quarantine checks, without caching admission or
+reducing its frequency. This supports startup-effect analysis without enabling a writer. See the
+[scope and remaining tasks](docs/current-project-only-lifecycle-release-2026-10-16.md).
+
 Update `0.3.0+codex.20261016060000` adds an explicit disposable startup-observation
 opt-in for projects with schematic pages. It preserves their unqualified-startup
 blocker and permits no writer. Native initialization may rewrite documents and

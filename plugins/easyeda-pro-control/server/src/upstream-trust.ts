@@ -486,6 +486,44 @@ async function captureExecutionClosure(
   const seals: PathSeal[] = [];
   const visitedDirectories = new Set<string>();
   const visitedFiles = new Set<string>();
+  const pendingFiles: {
+    readonly absolute: string;
+    readonly info: Stats;
+    readonly relativePath: string;
+    readonly entryIndex: number;
+    readonly sealIndex: number;
+  }[] = [];
+  const flushFiles = async (): Promise<void> => {
+    // Drain all descriptors before selecting the first traversal-order failure.
+    // Completion order must not change evidence or error selection.
+    const results = await Promise.allSettled(
+      pendingFiles.splice(0).map(async (job) => ({
+        job,
+        file: await hashOpenFile(job.absolute, job.info),
+      })),
+    );
+    for (const result of results) {
+      if (result.status === "rejected") {
+        const reason: unknown = result.reason;
+        if (reason instanceof Error) {
+          throw reason;
+        }
+        throw new Error("Upstream execution closure file hashing failed.", {
+          cause: reason,
+        });
+      }
+      const { job, file } = result.value;
+      seals[job.sealIndex] = sealFor(
+        job.absolute, job.info, "file", undefined, file.sha256,
+      );
+      entries[job.entryIndex] = {
+        path: job.relativePath,
+        kind: "file",
+        bytes: file.bytes,
+        sha256: file.sha256,
+      };
+    }
+  };
 
   const visit = async (path: string): Promise<void> => {
     const absolute = resolve(path);
@@ -531,19 +569,30 @@ async function captureExecutionClosure(
       return;
     }
     visitedFiles.add(absolute);
-    const file = await hashOpenFile(absolute, info);
-    seals.push(sealFor(absolute, info, "file", undefined, file.sha256));
-    entries.push({
-      path: relativePath,
-      kind: "file",
-      bytes: file.bytes,
-      sha256: file.sha256,
+    pendingFiles.push({
+      absolute,
+      info,
+      relativePath,
+      entryIndex: entries.length,
+      sealIndex: seals.length,
     });
+    seals.push(sealFor(absolute, info, "file"));
+    entries.push({ path: relativePath, kind: "file", bytes: 0 });
+    if (pendingFiles.length === 4) {
+      await flushFiles();
+    }
   };
 
-  for (const root of roots) {
-    await visit(root);
+  try {
+    for (const root of roots) {
+      await visit(root);
+    }
+  } catch (error) {
+    // A later metadata refusal must not hide an earlier queued file failure.
+    await flushFiles();
+    throw error;
   }
+  await flushFiles();
   await assertPathSealsCurrent(seals);
 
   const sortedEntries = entries.toSorted((left, right) => {

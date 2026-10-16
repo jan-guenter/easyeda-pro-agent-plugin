@@ -20,7 +20,7 @@ import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposabl
 import { CurrentDisposableOpenCoordinator, assertCurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import type { CurrentDisposableOpenDependencies, CurrentDisposableOpenOptions, CurrentSymbolBaselineOwner,
   revalidateCurrentDisposableOpenGeneration, revalidateCurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
-import { currentSymbolBaselineRequestSchema } from "../src/current-symbol-baseline-runtime.ts";
+import { currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "../src/current-symbol-baseline-runtime.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import type { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
@@ -302,7 +302,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
     currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure, decodeExactReadEnvelope,
     currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, currentClosedSymbolMetadataProjection, readCurrentClosedSymbolMetadata: read,
-    CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema,
+    CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus,
     EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
     operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
@@ -322,6 +322,28 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
 function historyRecord(type: string, body: unknown, id?: string): string {
   return `${JSON.stringify({ type, ticket: 1, ...(id === undefined ? {} : { id }) })}||${JSON.stringify(body)}|\n`;
 }
+
+void test("historical baseline inspection reports final snapshot evidence without restoring authority", async () => {
+  const value = fixture("historical-baseline-snapshot");
+  const operationId = "historical-baseline-snapshot";
+  const plan = { profile: "easyeda-pro-control.current-symbol-closed-baseline.v1" };
+  for (const [fields, expected] of [
+    [{}, "not-recorded"],
+    [{ finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false }, "not-attempted"],
+    [{ finishSnapshotAttempted: true, finishSnapshotCaptured: false, finishSnapshotFailed: false }, "attempted"],
+    [{ finishSnapshotAttempted: true, finishSnapshotCaptured: true, finishSnapshotFailed: false }, "captured"],
+    [{ finishSnapshotAttempted: true, finishSnapshotCaptured: false, finishSnapshotFailed: true }, "failed"],
+  ] as const) {
+    value.journals.set(operationId, { operationId, plan, planHash: buildPlanHash(plan), state: "plan-invalidated", artifacts: [], ...fields });
+    const result = await value.coordinator.run({ action: "baseline-inspect", operationId });
+    assert.equal(result["finishSnapshotStatus"], expected);
+    assert.equal(result["originalOwnerRetained"], false); assert.equal(result["executionAuthorized"], false);
+    if (expected === "not-recorded") {
+      assert.equal(result["finishSnapshotAttempted"], null); assert.equal(result["finishSnapshotCaptured"], null);
+    }
+  }
+  assert.deepEqual(value.calls, []);
+});
 async function preparationCheckpoint(t: TestContext): Promise<unknown> {
   const parent = join(controlDataDirectory(), "checkpoints"); await mkdir(parent, { recursive: true, mode: 0o700 });
   const directory = await mkdtemp(join(parent, "owned-symbol-"));
@@ -512,6 +534,12 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   const siblingPreparation = await preparingSibling.prepareSymbolMetadata(siblingInput.operationId, input);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the private source-evaluation scope regards this fixture engine as its synthetic engine class.
   const engine = isolated.options.engine as EasyedaControlEngine;
+  let combinedAdmissions = 0;
+  engine.assertBridgeAndRecoveryAdmission = (operationId: string): Promise<true> => {
+    assert.equal(operationId, baselineId); combinedAdmissions += 1;
+    assert.equal(isolated.state.quarantine, false, "fixture combined admission quarantine");
+    return Promise.resolve(true);
+  };
   const siblingOriginal = loaded.original(siblingPreparation, engine);
   const observingInput = { ...isolated.input, operationId: "current-open-observing-sibling" }, observingSibling = new loaded.Coordinator(isolated.options);
   await observingSibling.run(observingInput, FINGERPRINT);
@@ -527,7 +555,13 @@ void test("owned baseline transfer reserves the runtime across Jobs and stops in
   assert.equal(closed["state"], "awaiting-termination"); assert.equal(constructed, 1); assert.equal(sessionClosed, true); assert.ok(retainedOwner !== undefined);
   const original = loaded.baselineOwner(retainedOwner, engine);
   assert.equal(original.source.runtime, isolated.options.runtime()); assert.equal(original.preparation.checkpointPreparation.metadata.after.name, "Changed");
+  const beforeRevalidation = combinedAdmissions;
   assert.equal(await loaded.revalidateBaselineOwner(retainedOwner, engine), original);
+  assert.equal(combinedAdmissions, beforeRevalidation + 1);
+  isolated.state.quarantine = true;
+  await assert.rejects(loaded.revalidateBaselineOwner(retainedOwner, engine), /combined admission quarantine/u);
+  assert.equal(combinedAdmissions, beforeRevalidation + 2);
+  isolated.state.quarantine = false;
   assert.throws(() => loaded.baselineOwner(structuredClone(retainedOwner), engine), /not issued/u);
   assert.throws(() => assertCurrentSymbolBaselineOwner(retainedOwner, engine), /not issued/u);
   await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /transferred/u);

@@ -197,7 +197,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(symbolRequest["valid"], true); assert.equal(symbolRequest["executionAuthorized"], false);
     const history = await api(client, { action: "history", query: { includeSchemas: true } });
-    assert.equal(history["total"], 1); assert.equal(history["invocationEnabledByDiscovery"], false);
+    assert.equal(history["total"], 2); assert.equal(history["invocationEnabledByDiscovery"], false);
     const historyRequest = await api(client, { action: "history-validate", query: { request: {
       action: "abandon-before-navigation", operationId: "easyeda-synthetic-historical-abandonment",
       confirmation: "easyeda-synthetic-historical-abandonment:abandoned-before-navigation",

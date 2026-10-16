@@ -1,6 +1,6 @@
 /* oxlint-disable import/max-dependencies -- Exercise the unchanged coordinator with actual managed journals, engine captures and native authority issuers in one isolated fixture. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { basename } from "node:path";
 import { test } from "node:test";
@@ -20,6 +20,7 @@ import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
 import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "../src/windows-authority.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
+import { assertWindowsRuntimeValidator, createWindowsRuntimeValidator } from "../src/windows-runtime-validator.ts";
 import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
 import { qualifiedNativeFixture } from "./helpers/windows-pending-fixture.ts";
 import { INPUT } from "./helpers/windows-closed-session-fixture.ts";
@@ -46,6 +47,8 @@ async function fixture(context: TestContext): Promise<{
   engine: EasyedaControlEngine;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
+    finishSnapshots: number; finishSnapshotFailure: boolean; afterFinishSnapshot: (() => Promise<void>) | undefined;
+    validatorRuntime: WindowsControlRuntime | undefined;
     opens: number; openReply: Awaited<ReturnType<Upstream["callTool"]>>; sourceChecks: number; sourceDrift: boolean; historicalSubset: boolean;
     activeSchematicPages: number; startupBlockers: readonly string[];
     afterOpen: (() => Promise<void>) | undefined; afterSource: (() => Promise<void>) | undefined;
@@ -57,6 +60,8 @@ async function fixture(context: TestContext): Promise<{
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
   const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
     copied: undefined as unknown, proof: undefined as unknown, cacheReads: 0, cacheTimeout: false, statusDrift: false,
+    finishSnapshots: 0, finishSnapshotFailure: false, afterFinishSnapshot: undefined as (() => Promise<void>) | undefined,
+    validatorRuntime: undefined as WindowsControlRuntime | undefined,
     opens: 0, openReply: { content: [] } as Awaited<ReturnType<Upstream["callTool"]>>, sourceChecks: 0, sourceDrift: false, historicalSubset: false,
     activeSchematicPages: 0, startupBlockers: ["unsupported-sql-schema"] as readonly string[],
     afterOpen: undefined as (() => Promise<void>) | undefined, afterSource: undefined as (() => Promise<void>) | undefined,
@@ -146,7 +151,10 @@ async function fixture(context: TestContext): Promise<{
     if (action === "normal-close" || action === "clocked-prove-terminated") { assert.equal(state.scope, false); }
     if (action === "normal-close" && state.sessionSequence === 2) { state.activeSession = false; }
   };
-  const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: runtime });
+  state.validatorRuntime = runtime;
+  const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: createWindowsRuntimeValidator(() => {
+    assert.ok(state.validatorRuntime !== undefined); return state.validatorRuntime;
+  }) });
   await engine.controlFingerprintPromise;
   context.mock.method(engine, "status", () => Promise.resolve({ stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } }));
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
@@ -162,7 +170,7 @@ async function fixture(context: TestContext): Promise<{
   const source = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const scope = vm.createContext({ z, Buffer, Object, Date, Reflect, structuredClone,
-    OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema,
+    OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema, assertWindowsRuntimeValidator,
     assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS,
     // Only cross-realm JSON arguments are normalized at these VM boundaries;
     // Actual engine journals, original captures and native issuers stay unchanged.
@@ -204,7 +212,7 @@ async function fixture(context: TestContext): Promise<{
     },
     assertCurrentSymbolBaselineOwner: checkOwner,
     revalidateCurrentSymbolBaselineOwner: (owner: unknown, receivedEngine: unknown) => Promise.resolve(checkOwner(owner, receivedEngine)),
-    assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, windowsClockObservationForResult,
+    assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, windowsClockObservationForResult,
     assertIssuedWindowsClockObservation: async (value: unknown): ReturnType<typeof assertIssuedWindowsClockObservation> => {
       const originalClock = await assertIssuedWindowsClockObservation(value); await state.afterClockAssert?.(); return originalClock;
     },
@@ -231,6 +239,20 @@ async function fixture(context: TestContext): Promise<{
         startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false,
           activeSchematicPages: state.activeSchematicPages, blockers: [...state.startupBlockers] } };
       state.copied = result; return result;
+    },
+    captureCurrentSymbolFinishSnapshot: async (receivedEngine: unknown, input: unknown, onEvidence: (event: unknown) => void): Promise<unknown> => {
+      assert.equal(receivedEngine, engine); assert.ok(isRecord(input)); assert.equal(input["baseline"], state.copied);
+      assert.equal(state.scope, false); assert.equal(state.activeSession, false); assert.deepEqual(input["runtime"], SQL_RUNTIME);
+      assert.equal(await assertClosedSessionCopyAuthority(input["proof"]), input["proof"]);
+      const journal = await loadOperation(operationId);
+      assert.equal(journal["finishSnapshotAttempted"], true); assert.match(basename(journal.artifacts?.at(-1)?.path ?? ""), /-finish-snapshot-intent\.json$/u);
+      state.finishSnapshots += 1; state.events.push("finish-snapshot");
+      const checkpoint = { sourceSha256: HASH, checkpointSha256: HASH }, copy = { sha256: HASH, receiptSha256: HASH };
+      onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy });
+      await state.afterFinishSnapshot?.();
+      if (state.finishSnapshotFailure) { throw new Error("synthetic final snapshot failed"); }
+      return { profile: "private.current-symbol-finish-snapshot.v1", checkpoint, copy, snapshotCaptured: true,
+        openingEffectsVerified: false, persistenceVerified: false, writerReady: false, executionAuthorized: false };
     },
   });
   const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator });`, scope);
@@ -372,6 +394,7 @@ async function completedBaseline(context: TestContext, historicalSubset: Startup
 
 void test("current baseline relaunch retains the actual new launch and its clock after releasing the old capture", async (context) => {
   const f = await completedBaseline(context);
+  assert.notEqual(f.engine.executionAuthorityValidator, f.runtime); assert.equal(Object.isFrozen(f.engine.executionAuthorityValidator), true);
   const oldClock = await windowsClockObservationForResult(f.state.proof, "termination");
   const launch = f.runtime.launch.bind(f.runtime);
   let originalLaunch: Awaited<ReturnType<typeof launch>> | undefined;
@@ -396,6 +419,28 @@ void test("current baseline relaunch retains the actual new launch and its clock
   await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
   await assert.rejects(f.restart().relaunch(f.owner.operationId));
   assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+});
+
+void test("current baseline relaunch rejects a copied forwarder or changed selected runtime before launch", async (context) => {
+  for (const fault of ["copied-forwarder", "runtime-owner"] as const) {
+    await context.test(fault, async (childContext) => {
+      const f = await completedBaseline(childContext);
+      if (fault === "copied-forwarder") { Reflect.set(f.engine, "executionAuthorityValidator", { ...f.engine.executionAuthorityValidator }); }
+      else {
+        f.state.validatorRuntime = new WindowsControlRuntime({ upstream: {
+          callTool: (): Promise<never> => Promise.reject(new Error("Replacement runtime must not dispatch")),
+          currentAuthenticatedBridgeDispatchBinding: (): never => { throw new Error("Replacement runtime must not read binding"); },
+          bridgeSessionLifecycle: (): never => { throw new Error("Replacement runtime must not read lifecycle"); }
+        }, pluginRoot: "/opt/synthetic-control",
+          assetsRoot: "/mnt/c/Synthetic/resources/app/assets", wslDistribution: "SyntheticReview", reviewedExecutionScopeSha256: HASH });
+      }
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId), /validator/u);
+      const stopped = await f.coordinator.inspect(f.owner.operationId); assert.equal(stopped["state"], "stopped");
+      assert.equal(stopped["relaunchAttempted"], true); assert.equal(stopped["launchAcknowledged"], false);
+      await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
+      assert.equal(f.calls("clocked-launch"), 1); assert.equal(f.calls("release-capture"), 0);
+    });
+  }
 });
 
 void test("current baseline relaunch records an unavailable native launch clock without manufacturing clock authority", async (context) => {
@@ -671,6 +716,8 @@ void test("current finish closes its admitted new generation once, polls pending
   const done = await f.coordinator.observeFinish(f.owner.operationId);
   assert.equal(done["state"], "plan-invalidated"); assert.equal(done["termination"], "terminated"); assert.equal(done["retired"], true);
   assert.equal(done["finishCaptureReleased"], true); assert.equal(done["durableEffects"], "unknown-and-accepted");
+  assert.equal(done["finishSnapshotStatus"], "captured"); assert.equal(done["finishSnapshotCaptured"], true); assert.equal(f.state.finishSnapshots, 1);
+  assert.ok(f.state.events.indexOf("finish-snapshot") < f.state.events.lastIndexOf("native:release-capture"));
   for (const key of ["startupQualified", "openingEffectsVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
     assert.equal(done[key], false);
   }
@@ -680,8 +727,55 @@ void test("current finish closes its admitted new generation once, polls pending
   await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
   await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /original acknowledged close/u);
   const historical = await f.restart().inspect(f.owner.operationId); assert.equal(historical["originalOwnerRetained"], false);
+  assert.equal(historical["finishSnapshotStatus"], "captured");
   await assert.rejects(f.restart().finishNormalClose(f.owner.operationId), /original admitted new generation/u);
   assert.equal(f.calls("normal-close"), 2); assert.equal(f.state.opens, 1); assert.equal(f.state.cacheReads, 1);
+});
+
+void test("current finish snapshot failure retains original closure for retirement without another copy, close or probe", async (context) => {
+  const f = await projectReadyBaseline(context); await f.coordinator.openProject(f.owner.operationId);
+  await f.coordinator.finishNormalClose(f.owner.operationId); f.state.finishSnapshotFailure = true;
+  const releasedBefore = f.calls("release-capture");
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /synthetic final snapshot failed/u);
+  const stopped = await loadOperation(f.owner.operationId);
+  assert.equal(stopped["state"], "stopped"); assert.equal(stopped["finishSnapshotFailed"], true); assert.equal(f.calls("release-capture"), releasedBefore);
+  const artifact = stopped.artifacts?.at(-1); assert.ok(artifact !== undefined);
+  const partial: unknown = JSON.parse(await readFile(artifact.path, "utf8"));
+  assert.ok(isRecord(partial)); assert.equal(partial["phase"], "finish-snapshot"); assert.ok(isRecord(partial["finishSnapshotEvidence"]));
+  assert.ok(partial["finishSnapshotEvidence"]["copy"] !== null);
+  await assert.rejects(f.restart().observeFinish(f.owner.operationId), /original acknowledged close/u);
+  await assert.rejects(f.coordinator.finishNormalClose(f.owner.operationId), /original admitted new generation/u);
+  const closes = f.calls("normal-close"), probes = f.calls("clocked-prove-terminated");
+  const done = await f.coordinator.observeFinish(f.owner.operationId);
+  assert.equal(done["retired"], true); assert.equal(done["finishSnapshotStatus"], "failed"); assert.equal(done["finishSnapshotCaptured"], false);
+  assert.equal(done["openingEffectsVerified"], false); assert.equal(done["writerReady"], false);
+  assert.equal(f.calls("clocked-prove-terminated"), probes); assert.equal(f.calls("normal-close"), closes); assert.equal(f.state.finishSnapshots, 1);
+});
+
+void test("current finish snapshot retains observed foreign history and never copies or releases again", async (context) => {
+  const f = await admittedBaseline(context); await f.coordinator.finishNormalClose(f.owner.operationId);
+  let foreign: Buffer | undefined;
+  f.state.afterFinishSnapshot = async (): Promise<void> => {
+    const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Foreign final snapshot history";
+    await updateOperation(journal); foreign = await readFile(operationPath(f.owner.operationId));
+  };
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /finish journal changed/u);
+  assert.ok(foreign !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), foreign);
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /finish journal changed/u);
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), foreign);
+  assert.equal(f.state.finishSnapshots, 1); assert.equal(f.calls("release-capture"), 1);
+});
+
+void test("failed snapshot retirement revalidates reviewed helper bytes without another termination probe", async (context) => {
+  const f = await admittedBaseline(context); await f.coordinator.finishNormalClose(f.owner.operationId); f.state.finishSnapshotFailure = true;
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /synthetic final snapshot failed/u);
+  const probes = f.calls("clocked-prove-terminated"), releases = f.calls("release-capture");
+  const original = await readFile(f.native.helperPath);
+  await writeFile(f.native.helperPath, Buffer.concat([original, Buffer.from("\n# synthetic source drift\n")]));
+  await assert.rejects(f.coordinator.observeFinish(f.owner.operationId), /helper source changed/u);
+  assert.equal(f.calls("clocked-prove-terminated"), probes); assert.equal(f.calls("release-capture"), releases);
+  assert.equal(f.state.finishSnapshots, 1);
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["state"], "stopped"); assert.equal(journal["hardStop"], true);
 });
 
 void test("current finish retires only its own orphan after genuine new-generation termination and lease closure", async (context) => {

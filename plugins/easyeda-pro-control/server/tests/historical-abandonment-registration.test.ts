@@ -54,4 +54,13 @@ void test("historical abandonment registration retains only the local serialized
   assert.equal(requests.length, 1); assert.equal(requests[0], parsed);
   assert.ok(response !== null && typeof response === "object" && "result" in response);
   assert.equal(response.result, historical);
+  const baselineId = "1-Current-Baseline-Registration";
+  const baseline = { action: "abandon-baseline-before-relaunch", operationId: baselineId, confirmDisposableProject: true,
+    confirmation: `${baselineId}:abandoned-before-relaunch` };
+  assert.equal(requestSchema.safeParse({ ...baseline, confirmDisposableProject: false }).success, false);
+  const parsedBaseline = requestSchema.parse(baseline);
+  const baselineResponse = await invoke({ request: parsedBaseline });
+  assert.equal(requests.length, 2); assert.equal(requests[1], parsedBaseline);
+  assert.ok(baselineResponse !== null && typeof baselineResponse === "object" && "result" in baselineResponse);
+  assert.equal(baselineResponse.result, historical); assert.equal(gateRegistrations, 1);
 });

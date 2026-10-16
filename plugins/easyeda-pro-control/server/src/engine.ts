@@ -2021,6 +2021,21 @@ async function scanRecoveryBlockingOperations(): Promise<OperationSummary[]> {
   return operations.map((entry) => entry.summary);
 }
 
+function assertNoOtherRecoveryOperations(operationId: string, operations: readonly OperationSummary[]): true {
+  const blockingOperations = operations.filter((operation) => operation.operationId !== operationId);
+  if (blockingOperations.length === 0) {
+    return true;
+  }
+  const labels = blockingOperations
+    .map((operation) => `${operation.operationId}:${operation.state}`)
+    .join(", ");
+  const error = annotatedError(
+    `Recovery operation ${operationId} is not isolated; another incomplete, unreadable, or orphan-risk journal exists (${labels}). Recovery may dispatch live bridge calls, so resolve or manually review the other journal first.`,
+  );
+  error.blockingOperations = blockingOperations;
+  throw error;
+}
+
 async function scanUnfinishedOperations(): Promise<OperationSummary[]> {
   const operations = await scanQualifiedAdmissionOperations();
   return operations.filter((entry) => entry.unfinished).map((entry) => entry.summary);
@@ -2757,20 +2772,17 @@ export class EasyedaControlEngine {
   public async assertRecoveryOperationIsolated(
     operationId: string,
   ): Promise<true> {
-    const recoveryBlockingOperations = await scanRecoveryBlockingOperations();
-    const blockingOperations = recoveryBlockingOperations
-      .filter((operation) => operation.operationId !== operationId);
-    if (blockingOperations.length === 0) {
-      return true;
-    }
-    const labels = blockingOperations
-      .map((operation) => `${operation.operationId}:${operation.state}`)
-      .join(", ");
-    const error = annotatedError(
-      `Recovery operation ${operationId} is not isolated; another incomplete, unreadable, or orphan-risk journal exists (${labels}). Recovery may dispatch live bridge calls, so resolve or manually review the other journal first.`,
-    );
-    error.blockingOperations = blockingOperations;
-    throw error;
+    return assertNoOtherRecoveryOperations(operationId, await scanRecoveryBlockingOperations());
+  }
+
+  /** Evaluate both predicates against one fresh complete evidence scan. This is
+   * not a reusable admission token; every invocation reads the evidence again.
+   * Bridge quarantine precedes recovery isolation, including the selected ID.
+   */
+  public async assertBridgeAndRecoveryAdmission(operationId: string): Promise<true> {
+    const operations = await scanQualifiedAdmissionOperations();
+    assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
+    return assertNoOtherRecoveryOperations(operationId, operations.map((entry) => entry.summary));
   }
 
   /** Native editing must exclude both unfinished transactions and terminal

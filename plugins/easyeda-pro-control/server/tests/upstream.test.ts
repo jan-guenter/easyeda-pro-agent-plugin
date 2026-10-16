@@ -2,7 +2,7 @@ import { configureTestControlRoot } from "./test-control-root.ts";
 // oxlint-disable import/max-dependencies -- This end-to-end sandbox fixture composes filesystem, WebSocket, bridge-auth, launcher, and lifecycle boundaries in one process.
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import {
+import fsPromises, {
   access,
   chmod,
   copyFile,
@@ -15,9 +15,12 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
+import type { FileHandle } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, test } from "node:test";
+import type { TestContext } from "node:test";
 import { setTimeout as wait } from "node:timers/promises";
 
 import WebSocketClient from "ws";
@@ -176,6 +179,60 @@ function restoreEnvironment(saved: SavedEnvironment): void {
       Reflect.deleteProperty(process.env, name);
     }
   }
+}
+
+function observeClosureHashes(
+  context: TestContext,
+  paths: readonly string[],
+  failures: ReadonlyMap<string, Error> = new Map(),
+): {
+  active: number;
+  maximum: number;
+  readonly handles: FileHandle[];
+  readonly completed: string[];
+} {
+  const originalOpen = fsPromises.open;
+  const observed = { active: 0, maximum: 0, handles: [] as FileHandle[], completed: [] as string[] };
+  context.mock.method(fsPromises, "open", async (
+    ...args: Parameters<typeof originalOpen>
+  ): Promise<FileHandle> => {
+    const handle = await originalOpen(...args);
+    const path = String(args[0]);
+    const index = paths.indexOf(path);
+    if (index === -1) {
+      return handle;
+    }
+    observed.active += 1;
+    observed.maximum = Math.max(observed.maximum, observed.active);
+    observed.handles.push(handle);
+    const originalClose = handle.close.bind(handle);
+    const originalStat = handle.stat.bind(handle);
+    let closed = false, firstStat = true;
+    context.mock.method(handle, "stat", async (...statArgs: unknown[]): Promise<unknown> => {
+      if (firstStat) {
+        firstStat = false;
+        // Complete later traversal entries first; retain real reads and cleanup.
+        await wait(index === 0 ? 40 : 5);
+        const failure = failures.get(path);
+        if (failure) {
+          throw failure;
+        }
+      }
+      const info: unknown = await Reflect.apply(originalStat, undefined, statArgs);
+      return info;
+    });
+    context.mock.method(handle, "close", async (): Promise<void> => {
+      await originalClose();
+      if (!closed) {
+        closed = true;
+        observed.active -= 1;
+        observed.completed.push(path);
+      }
+    });
+    return handle;
+  });
+  syncBuiltinESMExports();
+  return observed;
 }
 
 before(async () => {
@@ -994,6 +1051,75 @@ void describe(
         );
       } finally {
         await writeFile(dependencyPayload, "reviewed dependency\n", "utf8");
+      }
+    });
+
+    void test("batches closure hashes at four without changing fingerprints or seal order", async (context) => {
+      const paths = Array.from({ length: 9 }, (_, index) =>
+        join(implementationRoot, `closure-batch-${index}.txt`));
+      try {
+        await Promise.all(paths.map((path, index) => writeFile(path, `fixture-${index}\n`, "utf8")));
+        const expected = await captureLauncherFingerprint();
+        const observed = observeClosureHashes(context, paths);
+        const actual = await captureLauncherFingerprint();
+        assert.equal(observed.maximum, 4);
+        assert.equal(observed.active, 0);
+        assert.equal(observed.completed.length, paths.length);
+        assert.ok(observed.handles.every((handle) => handle.fd === -1));
+        assert.deepEqual(actual.fingerprint, expected.fingerprint);
+        assert.deepEqual(actual.seals, expected.seals);
+      } finally {
+        context.mock.restoreAll();
+        syncBuiltinESMExports();
+        await Promise.all(paths.map((path) => rm(path, { force: true })));
+      }
+    });
+
+    void test("drains failed closure hash batches and reports the first traversal-order failure", async (context) => {
+      const paths = Array.from({ length: 5 }, (_, index) =>
+        join(implementationRoot, `closure-batch-${index}.txt`));
+      const firstPath = paths[0];
+      const secondPath = paths[1];
+      assert.ok(firstPath !== undefined);
+      assert.ok(secondPath !== undefined);
+      const firstError = new Error("first traversal file failed");
+      const secondError = new Error("second traversal file failed sooner");
+      try {
+        await Promise.all(paths.map((path) => writeFile(path, "fixture\n", "utf8")));
+        const observed = observeClosureHashes(context, paths, new Map([
+          [firstPath, firstError], [secondPath, secondError],
+        ]));
+        await assert.rejects(captureLauncherFingerprint(), (error: unknown) => error === firstError);
+        assert.equal(observed.maximum, 4);
+        assert.equal(observed.active, 0);
+        assert.equal(observed.completed.length, 4);
+        assert.ok(observed.completed.indexOf(secondPath) < observed.completed.indexOf(firstPath));
+        assert.ok(observed.handles.every((handle) => handle.fd === -1));
+      } finally {
+        context.mock.restoreAll();
+        syncBuiltinESMExports();
+        await Promise.all(paths.map((path) => rm(path, { force: true })));
+      }
+    });
+
+    void test("drains queued closure hashes before reporting a later metadata refusal", async (context) => {
+      const file = join(implementationRoot, "closure-batch-0.txt");
+      const link = join(implementationRoot, "closure-batch-1.txt");
+      const externalRoot = await mkdtemp(join(tmpdir(), "easyeda-closure-outside-"));
+      const failure = new Error("earlier queued file failed");
+      try {
+        await writeFile(file, "fixture\n", "utf8");
+        await symlink(externalRoot, link, "dir");
+        const observed = observeClosureHashes(context, [file], new Map([[file, failure]]));
+        await assert.rejects(captureLauncherFingerprint(), (error: unknown) => error === failure);
+        assert.deepEqual(observed.completed, [file]);
+        assert.equal(observed.active, 0);
+        assert.ok(observed.handles.every((handle) => handle.fd === -1));
+      } finally {
+        context.mock.restoreAll();
+        syncBuiltinESMExports();
+        await Promise.all([rm(file, { force: true }), rm(link, { force: true })]);
+        await rm(externalRoot, { recursive: true, force: true });
       }
     });
 

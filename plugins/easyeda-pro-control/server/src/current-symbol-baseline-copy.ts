@@ -23,8 +23,8 @@ import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "./engi
 import type { MachineProfile } from "./machine-profile.ts";
 import { isNativeDocumentDeleted, readNativeHistoryCheckpoint } from "./native-history.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
-import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority } from "./windows-authority.ts";
-import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationProof } from "./windows-authority.ts";
+import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertIssuedWindowsClockObservation } from "./windows-authority.ts";
+import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationProof, WindowsAuthorityLaunch } from "./windows-authority.ts";
 
 type SqlInventory = Awaited<ReturnType<typeof readClosedCopySqlInventory>>;
 export interface CurrentSymbolBaselineCopyInput {
@@ -60,7 +60,8 @@ export interface CurrentSymbolBaselineCopy {
   readonly executionAuthorized: false;
 }
 const consumed = new WeakSet<CurrentSymbolBaselineOwner>();
-const issued = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly text: string }>();
+const issued = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly text: string;
+  readonly closedLaunch: WindowsAuthorityLaunch; readonly closedSession: ClosedSessionAuthorityCapture["bridgeSession"] }>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
 
 /** Original result only. Its issuer and bytes are not future source freshness,
@@ -116,24 +117,26 @@ export async function revalidateCurrentSymbolBaselineCopy(engine: EasyedaControl
   }
 }
 
-function closeBinding(input: CurrentSymbolBaselineCopyInput, source: ReturnType<typeof assertCurrentSymbolBaselineOwner>["source"]): void {
+function closeBinding(input: CurrentSymbolBaselineCopyInput,
+  source: Pick<ReturnType<typeof assertCurrentSymbolBaselineOwner>["source"], "launchProjection" | "bridgeSession">,
+  phase: "closed-baseline" | "closed-edit" = "closed-baseline"): void {
   const { owner, capture, intent, closeReceipt, proof } = input;
   const authority = capture.executionAuthority, launch = source.launchProjection;
   const { authoritySha256, ...authorityPayload } = authority;
   const { closeIntentSha256, ...intentPayload } = intent;
   const { closeReceiptSha256, ...receiptPayload } = closeReceipt;
-  need(capture.operationId === owner.operationId && capture.phase === "closed-baseline" && capture.challengeAttempt === 1 &&
+  need(capture.operationId === owner.operationId && capture.phase === phase && capture.challengeAttempt === 1 &&
     canonicalJson(capture.bridgeSession) === canonicalJson(source.bridgeSession) && authoritySha256 === sha256Json(authorityPayload) &&
     authority.processTreeSha256 === sha256Json(authority.processes) &&
     intent.schema === "easyeda-pro-control.closed-session-close-intent.v1" && closeIntentSha256 === sha256Json(intentPayload) &&
-    intent.operationId === owner.operationId && intent.phase === "closed-baseline" && intent["challengeAttempt"] === 1 &&
+    intent.operationId === owner.operationId && intent.phase === phase && intent["challengeAttempt"] === 1 &&
     intent.authoritySha256 === authority.authoritySha256 && intent["captureBindingSha256"] === authority.bindingSha256 &&
     intent.launchSha256 === sha256Json(launch) && intent.bridgeSessionSha256 === sha256Json(capture.bridgeSession) &&
     intent.runtimeIdentitySha256 === sha256Json(capture.runtimeIdentity) && intent.helperInstance === launch.helperInstance && intent.jobId === launch.jobId &&
     intent.policyId === authority.policyId && intent.policySha256 === authority.policySha256 &&
     closeReceipt.schema === "easyeda-pro-control.closed-session-close-dispatch.v1" && closeReceiptSha256 === sha256Json(receiptPayload) &&
     closeReceipt.closeIntentSha256 === closeIntentSha256 && closeReceipt.closeDispatched && !closeReceipt.saveOrDiscardSelected && !closeReceipt.terminationProved &&
-    proof["operationId"] === owner.operationId && proof["phase"] === "closed-baseline" && proof["challengeAttempt"] === 1 &&
+    proof["operationId"] === owner.operationId && proof["phase"] === phase && proof["challengeAttempt"] === 1 &&
     proof.closeIntentSha256 === closeIntentSha256 && proof.closeReceiptSha256 === closeReceiptSha256 &&
     proof.authoritySha256 === authority.authoritySha256 && proof.launchSha256 === intent.launchSha256 &&
     proof["bridgeSessionSha256"] === intent.bridgeSessionSha256 && proof["runtimeIdentitySha256"] === intent.runtimeIdentitySha256 &&
@@ -241,6 +244,115 @@ export async function captureCurrentSymbolBaselineCopy(engine: EasyedaControlEng
   const result: CurrentSymbolBaselineCopy = Object.freeze({ profile: "private.current-symbol-baseline-copy.v1", owner, checkpoint, copy, inventory, preparation, targetEvidence, startupPremises,
     postOpeningClosedCopyCaptured: true, beforeWriteBaselineVerified: false, openingEffectsVerified: false, writerReady: false, executionAuthorized: false });
   assertCurrentClosedSessionCopyAuthority(proof); unchanged();
-  issued.set(result, { engine, text: canonicalJson(result) });
+  issued.set(result, { engine, text: canonicalJson(result), closedLaunch: structuredClone(source.launchProjection), closedSession: structuredClone(input.capture.bridgeSession) });
   return result;
+}
+
+export interface CurrentSymbolFinishSnapshotInput {
+  readonly baseline: CurrentSymbolBaselineCopy;
+  readonly capture: ClosedSessionAuthorityCapture;
+  readonly intent: ClosedSessionCloseIntent;
+  readonly closeReceipt: ClosedSessionCloseReceipt;
+  readonly proof: ClosedSessionTerminationProof;
+  readonly launch: WindowsAuthorityLaunch;
+  readonly runtime: MachineProfile["runtime"];
+}
+export type CurrentSymbolFinishSnapshotEvidence = Readonly<{ kind: "checkpoint"; value: CheckpointReceipt }> |
+  Readonly<{ kind: "copy"; value: ClosedFileCopyReceipt }> | Readonly<{ kind: "inventory"; value: SqlInventory }>;
+export interface CurrentSymbolFinishSnapshot {
+  readonly profile: "private.current-symbol-finish-snapshot.v1";
+  readonly checkpoint: CheckpointReceipt;
+  readonly copy: ClosedFileCopyReceipt;
+  readonly sql: Readonly<{ checkpointSha256: string; schemaSha256: string; logicalSha256: string }>;
+  readonly native: Readonly<{ projectUuid: string; branchUuid: string; ownerUuid: string;
+    headHistoryUuid: string; historyRows: number; chunks: number; documents: number; historySemanticSha256: string }>;
+  readonly baselineCopyReceiptSha256: string;
+  readonly snapshotCaptured: true;
+  readonly openingEffectsVerified: false;
+  readonly persistenceVerified: false;
+  readonly writerReady: false;
+  readonly executionAuthorized: false;
+}
+const finishAttempts = new WeakSet<CurrentSymbolBaselineCopy>();
+
+/** Fixed final observation before releasing the new generation's original
+ * capture. The old owner/termination proof is deliberately not revalidated.
+ * Source lineage comes from the original baseline, while current authority
+ * comes only from the engine-issued new capture and genuine terminal proof.
+ * Neither the snapshot nor its hashes classify or accept startup effects.
+ */
+export async function captureCurrentSymbolFinishSnapshot(engine: EasyedaControlEngine, input: CurrentSymbolFinishSnapshotInput,
+  onEvidence: (event: CurrentSymbolFinishSnapshotEvidence) => void): Promise<CurrentSymbolFinishSnapshot> {
+  const { baseline, capture, proof, launch } = input;
+  assertOriginalCurrentSymbolBaselineCopy(baseline, engine);
+  const origin = issued.get(baseline); need(origin !== undefined, "Current symbol finish snapshot lost its baseline issuer.");
+  need(!finishAttempts.has(baseline), "Current symbol finish snapshot attempt already consumed."); finishAttempts.add(baseline);
+  const inputText = canonicalJson(input), sourcePath = baseline.checkpoint.source;
+  const reader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
+  need(typeof reader === "function", "Current symbol finish snapshot cannot inspect bridge scope.");
+  // oxlint-disable-next-line typescript/unbound-method -- Identity is retained and every call supplies the original engine receiver.
+  const clockReader = engine.clockObservationForClosedCapture;
+  const evidence: { readonly value: unknown; readonly text: string }[] = [];
+  const unchanged = (): void => {
+    assertOriginalCurrentSymbolBaselineCopy(baseline, engine);
+    need(canonicalJson(input) === inputText && engine.upstream.currentAuthenticatedBridgeDispatchBinding === reader &&
+      reader.call(engine.upstream) === undefined && engine.clockObservationForClosedCapture === clockReader &&
+      evidence.every((item) => canonicalJson(item.value) === item.text), "Current symbol finish snapshot inputs or evidence changed.");
+    closeBinding({ ...input, owner: baseline.owner }, { launchProjection: launch, bridgeSession: capture.bridgeSession }, "closed-edit");
+    need(proof.proofSha256 !== baseline.copy.closureProofSha256 && baseline.copy.source === sourcePath &&
+      launch.helperInstance === origin.closedLaunch.helperInstance && launch.jobId !== origin.closedLaunch.jobId &&
+      capture.bridgeSession.gatewayInstanceId === origin.closedSession.gatewayInstanceId &&
+      capture.bridgeSession.sessionId !== origin.closedSession.sessionId && capture.bridgeSession.sequence > origin.closedSession.sequence,
+      "Current symbol finish snapshot reused its old closure or changed source.");
+    assertCurrentClosedSessionCopyAuthority(proof);
+  };
+  unchanged();
+  const clock = await clockReader.call(engine, capture); unchanged();
+  const current = async (): Promise<void> => {
+    unchanged();
+    need(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol finish snapshot lost its original terminal proof."); unchanged();
+    need(await clockReader.call(engine, capture) === clock, "Current symbol finish snapshot lost its original capture."); unchanged();
+    need(await assertIssuedWindowsClockObservation(clock) === clock, "Current symbol finish snapshot capture clock changed."); unchanged();
+  };
+  const retain = (event: CurrentSymbolFinishSnapshotEvidence): void => {
+    evidence.push({ value: event.value, text: canonicalJson(event.value) }); onEvidence(Object.freeze(event)); unchanged();
+  };
+  await current();
+  // A stopped opening may own an orphan marker. This is isolated local copying
+  // After genuine termination, not a bridge dispatch or quarantine bypass.
+  await engine.assertRecoveryOperationIsolated(baseline.owner.operationId); await current();
+  const root = await controlRootCapability(); await current();
+  const outputDir = join(controlDataDirectory(), "checkpoints");
+  const policy = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268_435_456 };
+  const checkpoint = await createCheckpoint({ source: sourcePath, outputDir, label: `current-symbol-finish-${baseline.owner.operationId.slice(-8)}` }, policy);
+  retain({ kind: "checkpoint", value: checkpoint }); await current();
+  const oldIdentity = baseline.checkpoint.sourceIdentity;
+  need(checkpoint.sourceIdentity.dev === oldIdentity.dev && checkpoint.sourceIdentity.ino === oldIdentity.ino &&
+    checkpoint.sourceIdentity.birthtimeNs === oldIdentity.birthtimeNs, "Current symbol finish source lineage changed.");
+  const copy = await copyClosedProjectBytes({ closureProof: proof, source: sourcePath, expectedSourceSha256: checkpoint.sourceSha256,
+    artifactDirectory: operationPath(baseline.owner.operationId).slice(0, -5) });
+  retain({ kind: "copy", value: copy }); await current(); copyLineage(checkpoint, copy);
+  const inventory = await readClosedCopySqlInventory({ copy, runtime: input.runtime });
+  retain({ kind: "inventory", value: inventory }); await current();
+  const completion = readerCompletion(inventory);
+  need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null && inventory.checkpointSha256 === copy.sha256,
+    "Current symbol finish SQL reader did not complete for its original raw copy.");
+  const target = baseline.preparation.target;
+  const history = await readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256,
+    projectUuid: target.projectUuid, libraryAtomHeaders: "preserve" }); await current();
+  need(history.projectUuid === target.projectUuid && history.branchUuid === target.branchUuid && history.projectOwnerUuid === target.ownerUuid,
+    "Current symbol finish native project, branch or owner changed.");
+  const receipt = await readArtifact(checkpoint.receiptPath, 0, 65_536); await current();
+  need(receipt.eof && canonicalJson(JSON.parse(receipt.text) as unknown) === canonicalJson(checkpoint), "Current symbol finish checkpoint receipt changed.");
+  const verified = await verifyCheckpoint(checkpoint.receiptPath, policy); await current();
+  need(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint &&
+    verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === copy.sha256 &&
+    verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol finish source or checkpoint changed during capture.");
+  return Object.freeze({ profile: "private.current-symbol-finish-snapshot.v1", checkpoint, copy,
+    sql: { checkpointSha256: inventory.checkpointSha256, schemaSha256: inventory.schemaSha256, logicalSha256: inventory.logicalSha256 },
+    native: { projectUuid: history.projectUuid, branchUuid: history.branchUuid, ownerUuid: history.projectOwnerUuid,
+      headHistoryUuid: history.headHistoryUuid, historyRows: history.historyRowCount, chunks: history.chunkCount,
+      documents: history.documents.length, historySemanticSha256: history.semanticSha256 },
+    baselineCopyReceiptSha256: baseline.copy.receiptSha256, snapshotCaptured: true,
+    openingEffectsVerified: false, persistenceVerified: false, writerReady: false, executionAuthorized: false });
 }

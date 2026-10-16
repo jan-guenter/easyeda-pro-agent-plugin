@@ -16,7 +16,7 @@ import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts"
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import { assessCurrentStartupPremises } from "../src/current-startup-premises.ts";
 import { captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
-import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, assertOriginalCurrentSymbolBaselineCopy, revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
+import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, CurrentSymbolFinishSnapshotInput, assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import { prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "../src/engine.ts";
@@ -49,6 +49,7 @@ interface Loaded {
   capture: typeof captureCurrentSymbolBaselineCopy;
   original: typeof assertOriginalCurrentSymbolBaselineCopy;
   revalidate: typeof revalidateCurrentSymbolBaselineCopy;
+  finish: typeof captureCurrentSymbolFinishSnapshot;
 }
 interface Fixture {
   source: string;
@@ -56,7 +57,7 @@ interface Fixture {
   input: CurrentSymbolBaselineCopyInput;
   loaded: Loaded;
   events: CurrentSymbolBaselineCopyEvidence[];
-  state: { current: boolean; scoped: boolean };
+  state: { current: boolean; scoped: boolean; finishCapture: ClosedSessionAuthorityCapture | undefined };
   retained: ReturnType<typeof closedSessionFixture>;
   run: (hook?: (event: CurrentSymbolBaselineCopyEvidence) => void) => ReturnType<typeof captureCurrentSymbolBaselineCopy>;
 }
@@ -109,8 +110,12 @@ async function fixture(): Promise<Fixture> {
       backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false },
     targetClosedInRegistry: true, hiddenEditorsVerified: true, workerIdentityVerified: false,
     cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
-  const state = { current: true, scoped: false };
+  const state = { current: true, scoped: false, finishCapture: undefined as ClosedSessionAuthorityCapture | undefined };
+  const syntheticClock = Object.freeze({ syntheticOriginalCaptureClock: true });
   const syntheticEngine = { upstream: { currentAuthenticatedBridgeDispatchBinding: (): { synthetic: string } | undefined => state.scoped ? { synthetic: "scope" } : undefined },
+    clockObservationForClosedCapture: (candidate: unknown): Promise<typeof syntheticClock> => {
+      assert.equal(candidate, state.finishCapture, "synthetic original finish capture required"); return Promise.resolve(syntheticClock);
+    },
     assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(), assertRecoveryOperationIsolated: (): Promise<void> => Promise.resolve() };
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the source-evaluated private owner seam accepts this explicit synthetic engine; actual production admission is tested separately.
   const engine = syntheticEngine as unknown as EasyedaControlEngine;
@@ -123,13 +128,18 @@ async function fixture(): Promise<Fixture> {
   };
   const sourceText = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-copy.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
-  const scope = vm.createContext({ Object, String, Number, Buffer, lstat, join, controlDataDirectory, controlRootCapability, operationPath, readArtifact,
+  const scope = vm.createContext({ Object, String, Number, Buffer, structuredClone, lstat, join, controlDataDirectory, controlRootCapability, operationPath, readArtifact,
     createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes, readClosedCopySqlInventory, readerCompletion, canonicalJson, isRecord, sha256Json,
     normalizeEasyedaProjectPath: (raw: string): string => { assert.equal(raw, RAW_PATH); return source; },
     assertCurrentSymbolBaselineOwner: assertOwner, revalidateCurrentSymbolBaselineOwner: (candidate: unknown, candidateEngine: unknown) => Promise.resolve(assertOwner(candidate, candidateEngine)),
     currentClosedSymbolMetadataProjection, prepareCurrentSymbolMetadata, assessCurrentStartupPremises, isNativeDocumentDeleted, readNativeHistoryCheckpoint,
-    assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority });
-  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,revalidate:revalidateCurrentSymbolBaselineCopy});`, scope);
+    assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority,
+    // Engine-owned capture clock is a test-only seam here; runtime tests execute
+    // The actual engine/clock issuer. Native termination/copy/SQL remain real.
+    assertIssuedWindowsClockObservation: (candidate: unknown): Promise<typeof syntheticClock> => {
+      assert.equal(candidate, syntheticClock); return Promise.resolve(syntheticClock);
+    } });
+  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,revalidate:revalidateCurrentSymbolBaselineCopy,finish:captureCurrentSymbolFinishSnapshot});`, scope);
   assert.ok(isRecord(exports) && typeof exports["capture"] === "function" && typeof exports["original"] === "function" && typeof exports["revalidate"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked functions come from the maintained source in the private test realm, never from plugin input.
   const loaded = exports as unknown as Loaded;
@@ -138,6 +148,62 @@ async function fixture(): Promise<Fixture> {
   return { source, engine, input, loaded, events, state, retained,
     run: (hook) => loaded.capture(engine, input, (event) => { events.push(event); hook?.(event); }) };
 }
+
+async function finalInput(value: Fixture): Promise<CurrentSymbolFinishSnapshotInput> {
+  const baseline = await value.run();
+  const binding = await value.retained.capture({ ...INPUT, bindingSha256: "f".repeat(64), operationId: value.input.owner.operationId, orphanPhase: "closed-edit",
+    bridgeSession: { ...INPUT.bridgeSession, sessionId: "synthetic-new-session", sequence: 2 } });
+  const capture: ClosedSessionAuthorityCapture = { operationId: binding.operationId, phase: "closed-edit", challengeAttempt: binding.challengeAttempt,
+    bridgeSession: binding.bridgeSession, runtimeIdentity: binding.runtimeIdentity, executionAuthority: binding.executionAuthority };
+  value.state.finishCapture = capture;
+  const intent = await value.retained.supervisor.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  const closeReceipt = await value.retained.supervisor.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  const proof = await value.retained.supervisor.proveClosedSession({ ...binding, intent, closeReceipt });
+  // The old generation/owner is intentionally unavailable after relaunch.
+  value.state.current = false;
+  return { baseline, capture, intent, closeReceipt, proof, launch: binding.launch, runtime: value.input.runtime };
+}
+
+void test("final snapshot retains changed closed bytes and full reader evidence without reusing old owner authority", async () => {
+  const value = await fixture();
+  const input = await finalInput(value);
+  const database = new DatabaseSync(value.source);
+  try { database.exec("INSERT INTO synthetic_open_effect VALUES('unqualified second startup')"); } finally { database.close(); }
+  const bytes = await readFile(value.source), events: string[] = [];
+  const result = await value.loaded.finish(value.engine, input, (event) => { events.push(event.kind); });
+  assert.deepEqual(events, ["checkpoint", "copy", "inventory"]);
+  assert.equal(result.copy.sha256, digest(bytes)); assert.notEqual(result.copy.sha256, input.baseline.copy.sha256);
+  assert.equal(result.sql.checkpointSha256, result.copy.sha256); assert.equal(result.native.projectUuid, TARGET.projectUuid);
+  assert.equal(result.native.ownerUuid, TARGET.ownerUuid); assert.equal(result.native.documents, 2);
+  assert.equal(result.baselineCopyReceiptSha256, input.baseline.copy.receiptSha256);
+  assert.equal(result.snapshotCaptured, true); assert.equal(result.openingEffectsVerified, false); assert.equal(result.persistenceVerified, false);
+  assert.equal(result.writerReady, false); assert.equal(result.executionAuthorized, false);
+  assert.deepEqual(await readFile(result.copy.artifact), bytes); assert.deepEqual(await readFile(value.source), bytes);
+  await assert.rejects(value.loaded.finish(value.engine, input, () => { assert.fail("Consumed final copy repeated"); }), /consumed/u);
+});
+
+void test("final snapshot refuses cloned authority and late source replacement without releasing closure or retrying", async () => {
+  for (const fault of ["capture", "proof", "replacement"] as const) {
+    const value = await fixture();
+    const events: string[] = [], input = await finalInput(value);
+    if (fault === "capture") { Reflect.set(input, "capture", structuredClone(input.capture)); }
+    if (fault === "proof") { Reflect.set(input, "proof", structuredClone(input.proof)); }
+    await assert.rejects(value.loaded.finish(value.engine, input, (event) => {
+      events.push(event.kind);
+      if (fault === "replacement" && event.kind === "checkpoint") {
+        // oxlint-disable-next-line node/no-sync -- Private synthetic source substitution at the exact post-checkpoint boundary.
+        const bytes = readFileSync(value.source);
+        // oxlint-disable-next-line node/no-sync -- Preserve the original synthetic inode; no production file is accessed.
+        renameSync(value.source, `${value.source}.final-retained`);
+        // oxlint-disable-next-line node/no-sync -- Exclusive private synthetic replacement tests same-byte lineage refusal.
+        writeFileSync(value.source, bytes, { flag: "wx", mode: 0o600 });
+      }
+    }));
+    assert.deepEqual(events, fault === "replacement" ? ["checkpoint", "copy"] : []);
+    await assert.rejects(value.loaded.finish(value.engine, input, () => { assert.fail("Failed final copy repeated"); }), /consumed/u);
+    assert.equal(value.retained.requests.filter((request) => request["action"] === "release-capture").length, 0);
+  }
+});
 
 void test("current closed baseline captures new source bytes, real SQL and metadata without writer admission", async () => {
   const value = await fixture();

@@ -21,7 +21,7 @@ import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
 import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
 // oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
-import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema } from "./current-symbol-baseline-runtime.ts";
+import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "./current-symbol-baseline-runtime.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 
@@ -395,6 +395,9 @@ export class CurrentDisposableOpenCoordinator {
       return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
         projectOpeningMode: journal["projectOpeningMode"] ?? null,
         unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
+        finishSnapshotAttempted: journal["finishSnapshotAttempted"] ?? null,
+        finishSnapshotCaptured: journal["finishSnapshotCaptured"] ?? null,
+        finishSnapshotStatus: currentSymbolFinishSnapshotStatus(journal["finishSnapshotAttempted"], journal["finishSnapshotCaptured"], journal["finishSnapshotFailed"]),
         nextSafeAction: journal["nextSafeAction"], originalOwnerRetained: false, writerReady: false, executionAuthorized: false };
     } finally { this.busy = false; }
   }
@@ -421,8 +424,7 @@ export class CurrentDisposableOpenCoordinator {
         canonicalJson(slot.launch) === slot.launchText && canonicalJson(preparation) === preparationText, "Current symbol baseline transferred owner changed.");
     };
     const revalidate = async (): Promise<void> => {
-      current(); await engine.assertBridgeDispatchAllowed(); current();
-      await engine.assertRecoveryOperationIsolated(operationId); current();
+      current(); await engine.assertBridgeAndRecoveryAdmission(operationId); current();
       const persisted = await this.load(owner.openingOperationId); current();
       requireValue(canonicalJson(persisted) === journalText, "Current symbol baseline persisted opening changed.");
     };
