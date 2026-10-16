@@ -6,6 +6,28 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate103000 published for required CI
+
+Payload `8fa5c5e595a4f83ee4b611ee8333888a9a1e35f6` is in protected PR40,
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/40. Full tree
+`3027b037b51f35a0ddb33479d839944d45552338`, package tree
+`126641f568646807095e310be0eadadb20833b66`; both committed bundles reproduce.
+Initial CI38885501941 failed one older callback fixture: its VM had not imported
+the new union's schema. All other tests and verify-build passed; Windows38885501897
+passed. The fixture now injects the actual new schema with its old assertions
+unchanged. No production behavior, deadline or test is weakened. All six callback
+checks, typecheck and targeted strict lint pass; independent review accepts.
+Exact-head CI follows. Do not merge until the aggregate test-build succeeds. Copilot reported
+an error and did not review; independent source reviews are recorded below.
+No install yet; loaded090000 facade481814 remains unchanged. The completed
+090000 lifecycle is fully retired, ordinary launcher terminated, no remaining
+close/navigation/Save action. Do not replay it. Private release checks are in
+`/tmp/easyeda-release-103000-vW5OW4ei`. Prepared unrun installed-proof scripts
+are in `/tmp/easyeda-installed-103000-BnpQ3O39`; main read the full old scripts
+and exact new diff. They use synthetic-only profile data and EOF-only cleanup.
+Main must pass the protected merged commit, not a guessed revision. This local
+delivery checkpoint belongs with the next source change, not a new CI cycle.
+
 ### Resumed090000: complete disposable lifecycle; candidate103000 preparation
 
 Actual facade481814, parent480138, startTicks11808228 loads installed090000

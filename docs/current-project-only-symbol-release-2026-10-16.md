@@ -93,6 +93,12 @@ validators pass. External runtime pins are unchanged. Bundle reproduction,
 protected GitHub CI, publication and installation must be
 reported against the frozen payload, not inferred from these focused results.
 
+Initial full CI caught one older callback fixture whose VM omitted the newly
+introduced schema. Its import and VM binding are corrected; all existing
+assertions and production bytes stay unchanged. All six callback tests, types
+and targeted strict lint pass, with independent review. The initial failed CI
+is not release acceptance; the updated exact payload requires its own green CI.
+
 Installed 090000 completed the full disposable initial opening, normal closure,
 original termination, closed baseline capture, replacement launch, admission,
 inactive-cache observation and project-only opening. Its final normal closure,
