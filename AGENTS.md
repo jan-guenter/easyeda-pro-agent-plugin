@@ -42,6 +42,16 @@ with zero vulnerabilities. One build correctly refused a concurrent source edit;
 the subsequent frozen build passed. Source392 SHA36c9c2c1, runtime3 SHA5ed06570;
 only facade projections/review timestamp changed, no external runtime pins.
 
+Initial PR45 CI38945866941 found one stale source-shape assertion: the historical
+baseline test scanned newly added inverse adoption/cleanup methods as if they
+were historical lifecycle phases. The runtime analyzer still requires its exact
+24-phase historical sequence. The test now enumerates the exact2adoption,
+24historical and7cleanup phases and rejects an inverse descriptor substituted
+at the same artifact count. All40focused cases pass; types and targeted strict
+lint are clean. Runtime and bundle are unchanged; no guard is relaxed. The first
+CI reports10,474passes/one diagnosed failure/fiveskips and424bridge passes.
+Publication remains blocked until the corrected exact head passes required CI.
+
 Publication and installation are pending. Required GitHub CI will run the full
 matrix; no duplicate full local suite. After install and fresh-session admission,
 run one new disposable forward/inverse lifecycle, then deliberately register only

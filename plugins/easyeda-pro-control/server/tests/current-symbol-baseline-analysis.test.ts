@@ -21,6 +21,9 @@ const PHASES = ["capture-intent", "capture-result", "close-intent", "close-resul
   "capture-release-intent", "capture-release-result", "admission-intent", "admission-capture-intent", "admission-capture-result", "admission-result",
   "cache-intent", "cache-result", "project-only-intent", "project-only-result", "finish-close-intent", "finish-close-result", "finish-snapshot-intent",
   "finish-snapshot-result", "finish-retirement-proof", "finish-release-intent"];
+const INVERSE_ADOPTION_PHASES = ["inverse-adoption-intent", "inverse-adoption-result"];
+const INVERSE_CLEANUP_PHASES = ["inverse-held-retirement-intent", "inverse-pre-capture-close-intent", "inverse-incomplete-admission-close-intent",
+  "inverse-early-close-reply", "inverse-pre-capture-termination", "inverse-early-release-intent", "inverse-early-retired"];
 type Bag = Record<string, unknown>;
 let counter = 0;
 function seal(value: Bag, key: string): Bag { return { ...value, [key]: sha256Json(value) }; }
@@ -163,10 +166,19 @@ async function editPhase(operationId: string, phase: string, change: (value: Bag
   await writeFile(operationPath(operationId), JSON.stringify({ ...raw, journalSha256: sha256Json(raw) }));
 }
 
-void test("successful producer phase order is exact and remains the only accepted historical path", async () => {
+void test("producer phases preserve the exact historical path and explicit separate inverse stages", async () => {
   const source = await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8");
   const actual = [...source.matchAll(/record\(slot, "([a-z-]+)"/gu)].map(match => match[1]).filter(phase => phase !== "stopped");
-  assert.deepEqual(actual, PHASES); assert.match(source, /state: "plan-invalidated", hardStop: false, orphanedCallPossible: false/u);
+  assert.deepEqual(actual, [...INVERSE_ADOPTION_PHASES, ...PHASES, ...INVERSE_CLEANUP_PHASES]);
+  assert.match(source, /state: "plan-invalidated", hardStop: false, orphanedCallPossible: false/u);
+});
+void test("inverse adoption cannot substitute a historical phase even with the same complete artifact count", async () => {
+  const selected = await fixture();
+  const journal = await loadOperation(selected.operationId);
+  assert.ok(journal.artifacts); assert.equal(journal.artifacts.length, PHASES.length);
+  journal.artifacts[0] = await writePhaseArtifact(selected.operationId, 1, "inverse-adoption-intent", { closureOwnershipTransferred: false });
+  await updateOperation(journal);
+  await assert.rejects(analyze(selected.operationId), /phase order or descriptor differs/u);
 });
 void test("complete unchanged comparison reads only retained files and changes no journal or raw copy", async () => {
   const selected = await fixture(); const before = await readFile(selected.journalPath), raw = await readFile(selected.rawPath);
