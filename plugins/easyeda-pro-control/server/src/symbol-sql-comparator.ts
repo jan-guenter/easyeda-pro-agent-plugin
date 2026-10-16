@@ -98,6 +98,15 @@ export function metadataPlanForOriginalSymbolSqlPlan(input: unknown): Readonly<P
   Object.freeze(result.beforeTags); Object.freeze(result.peerTitles);
   return Object.freeze(result);
 }
+/** Current plans have their own registry. Never admit a legacy or copied plan. */
+export function metadataPlanForOriginalCurrentSymbolSqlPlan(input: unknown): Readonly<ProjectSymbolMetadataPlan> {
+  need(input !== null && typeof input === "object", "Current SQL metadata requires its original prepared plan.");
+  const current = currentPlans.get(input);
+  need(current !== undefined, "Current SQL metadata requires its original prepared plan.");
+  const result = structuredClone(current.prepared.symbol);
+  Object.freeze(result.beforeTags); Object.freeze(result.peerTitles);
+  return Object.freeze(result);
+}
 function text(value: SqlCell | undefined): string {
   need(value?.kind === "text", "Expected SQL TEXT.");
   const bytes = Buffer.from(value.hex, "hex"); const result = bytes.toString("utf8");
@@ -220,6 +229,23 @@ export async function decodeRawHistoryForOriginalSymbolSqlPlan(input: unknown, a
   const branch = unique(table(after, "branches"), "uuid", prepared.witness.branchUuid);
   const decoded = await selectedHistory(after, prepared.witness, project, branch);
   need(decoded.maximumTicket === prepared.witness.preDispatchMaxTicket + 1, "Raw SQL history maximum differs from the original expected edit.");
+  return decoded;
+}
+/** Data decoding only. The current lifecycle owner separately requires its
+ * successful complete comparison and original post-edit inventory identity.
+ */
+export async function decodeRawHistoryForOriginalCurrentSymbolSqlPlan(input: unknown, after: Inventory): Promise<DecodedSymbolSqlRawHistory> {
+  need(input !== null && typeof input === "object", "Current raw SQL history requires its original prepared plan.");
+  const current = currentPlans.get(input);
+  need(current !== undefined, "Current raw SQL history requires its original prepared plan.");
+  const { prepared } = current;
+  supported(after, prepared.witness.branchUuid);
+  const project = unique(table(after, "projects"), "uuid", prepared.witness.projectUuid);
+  const branch = unique(table(after, "branches"), "uuid", prepared.witness.branchUuid);
+  const decoded = await selectedHistory(after, prepared.witness, project, branch);
+  need(decoded.maximumTicket === prepared.witness.preDispatchMaxTicket + 1,
+    "Current raw SQL history maximum differs from the original expected edit.");
+  need(readerCompletion(after).exitCode === 0, "Current raw SQL history inventory changed during decoding.");
   return decoded;
 }
 export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inventory; operation: unknown; witness: SymbolSqlWitness }>): Promise<SymbolNewHeadSqlPlan> {

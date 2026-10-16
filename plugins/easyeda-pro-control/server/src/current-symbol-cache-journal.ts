@@ -90,7 +90,7 @@ export function assertCurrentSymbolCacheMark(before: Journal, marked: Journal, e
     timestamp(before.updatedAt) <= timestamp(marked.orphanedCallMarkedAt), "fresh mark");
   const { bridgeDispatch, capture, launch } = expected;
   const runtime = capture.runtimeIdentity, session = capture.bridgeSession;
-  need(capture.operationId === before.operationId && capture.phase === "closed-edit" && capture.challengeAttempt === 1 &&
+  need(capture.operationId === before.operationId && (capture.phase === "closed-edit" || capture.phase === "closed-verification") && capture.challengeAttempt === 1 &&
     isDeepStrictEqual(marked.bridgeSessionBeforeOrphan, session) && isDeepStrictEqual(marked.runtimeIdentityBeforeOrphan, runtime) &&
     isDeepStrictEqual(marked.bridgeDispatchBeforeOrphan, bridgeDispatch), "selected capture or scope");
   need(typeof session.gatewayInstanceId === "string" && ID.test(session.gatewayInstanceId) && typeof session.sessionId === "string" && ID.test(session.sessionId) &&

@@ -7,7 +7,7 @@ import { readerCompletion } from "./sqlite-inventory.ts";
 import type { SqlCell, SqlRow, SqlTable, readExactSqlInventory } from "./sqlite-inventory.ts";
 import { ACTOR_NAME_MAX_CODE_UNITS, validateActorProjection } from "./symbol-dual-actor.ts";
 import type { ActorProjection } from "./symbol-dual-actor.ts";
-import { prepareCurrentSymbolNewHeadSqlPlan, verifyCurrentSymbolNewHeadSqlEffect } from "./symbol-sql-comparator.ts";
+import { decodeRawHistoryForOriginalCurrentSymbolSqlPlan, metadataPlanForOriginalCurrentSymbolSqlPlan, prepareCurrentSymbolNewHeadSqlPlan, verifyCurrentSymbolNewHeadSqlEffect } from "./symbol-sql-comparator.ts";
 import type { CurrentSymbolNewHeadSqlPlan, CurrentSymbolSqlWitness } from "./symbol-sql-comparator.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
@@ -124,4 +124,21 @@ export async function verifyCurrentSymbolTransactionActor(plan: CurrentSymbolTra
     selectionSha256: plan.selectionSha256, selectedProjectUserRowSha256: plan.selectedProjectUserRowSha256,
     beforeSqlSha256: plan.beforeSqlSha256, afterSqlSha256: after.logicalSha256, targetUuid: plan.targetUuid,
     transactionActorMatchesExpected: true, fullSqlEffect, ...LIMITATIONS });
+}
+
+/** Original data relation only. The enclosing completed clock owner binds the
+ * inventory to its successful closed effect before this decoder is reachable.
+ */
+export async function decodeCurrentSymbolTransactionActorHistory(plan: CurrentSymbolTransactionActorPlan, after: Inventory): Promise<Readonly<{
+  decoded: Awaited<ReturnType<typeof decodeRawHistoryForOriginalCurrentSymbolSqlPlan>>;
+  metadataPlan: ReturnType<typeof metadataPlanForOriginalCurrentSymbolSqlPlan>;
+  expectedActor: ActorProjection; expectedTicket: number; expectedDocumentEditVersion: "3.2.206";
+}>> {
+  const prepared = preparations.get(plan);
+  need(prepared !== undefined, "Actor history requires its original prepared plan.");
+  const decoded = await decodeRawHistoryForOriginalCurrentSymbolSqlPlan(prepared.sqlPlan, after);
+  need(preparations.get(plan) === prepared, "Actor history preparation changed.");
+  return Object.freeze({ decoded, metadataPlan: metadataPlanForOriginalCurrentSymbolSqlPlan(prepared.sqlPlan),
+    expectedActor: prepared.selected.startupActor, expectedTicket: prepared.sqlPlan.expectedTicket,
+    expectedDocumentEditVersion: prepared.sqlPlan.expectedDocumentEditVersion });
 }

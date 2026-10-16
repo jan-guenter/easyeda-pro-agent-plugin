@@ -15,8 +15,10 @@ import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import { assessCurrentStartupPremises } from "../src/current-startup-premises.ts";
-import { captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
-import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, CurrentSymbolFinishSnapshotInput, assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
+import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, CurrentSymbolFinishSnapshot, CurrentSymbolFinishSnapshotEvidence, CurrentSymbolFinishSnapshotInput, CurrentSymbolVerificationSnapshotInput,
+  assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolVerificationSnapshot, captureCurrentSymbolFinishSnapshot, captureCurrentSymbolVerificationSnapshot,
+  revalidateCurrentSymbolBaselineCopy, revalidateCurrentSymbolFinishSnapshot } from "../src/current-symbol-baseline-copy.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import { prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "../src/engine.ts";
@@ -50,6 +52,10 @@ interface Loaded {
   original: typeof assertOriginalCurrentSymbolBaselineCopy;
   revalidate: typeof revalidateCurrentSymbolBaselineCopy;
   finish: typeof captureCurrentSymbolFinishSnapshot;
+  originalFinish: typeof assertOriginalCurrentSymbolFinishSnapshot;
+  revalidateFinish: typeof revalidateCurrentSymbolFinishSnapshot;
+  verification: typeof captureCurrentSymbolVerificationSnapshot;
+  originalVerification: typeof assertOriginalCurrentSymbolVerificationSnapshot;
 }
 interface Fixture {
   source: string;
@@ -139,7 +145,10 @@ async function fixture(): Promise<Fixture> {
     assertIssuedWindowsClockObservation: (candidate: unknown): Promise<typeof syntheticClock> => {
       assert.equal(candidate, syntheticClock); return Promise.resolve(syntheticClock);
     } });
-  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,revalidate:revalidateCurrentSymbolBaselineCopy,finish:captureCurrentSymbolFinishSnapshot});`, scope);
+  const exports: unknown = vm.runInContext(`${sourceText}\n({capture:captureCurrentSymbolBaselineCopy,original:assertOriginalCurrentSymbolBaselineCopy,
+    revalidate:revalidateCurrentSymbolBaselineCopy,finish:captureCurrentSymbolFinishSnapshot,originalFinish:assertOriginalCurrentSymbolFinishSnapshot,
+    revalidateFinish:revalidateCurrentSymbolFinishSnapshot,verification:captureCurrentSymbolVerificationSnapshot,
+    originalVerification:assertOriginalCurrentSymbolVerificationSnapshot});`, scope);
   assert.ok(isRecord(exports) && typeof exports["capture"] === "function" && typeof exports["original"] === "function" && typeof exports["revalidate"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked functions come from the maintained source in the private test realm, never from plugin input.
   const loaded = exports as unknown as Loaded;
@@ -164,6 +173,18 @@ async function finalInput(value: Fixture): Promise<CurrentSymbolFinishSnapshotIn
   return { baseline, capture, intent, closeReceipt, proof, launch: binding.launch, runtime: value.input.runtime };
 }
 
+async function verificationInput(value: Fixture, finishSnapshot: CurrentSymbolFinishSnapshot): Promise<CurrentSymbolVerificationSnapshotInput> {
+  const binding = await value.retained.capture({ ...INPUT, bindingSha256: "e".repeat(64), operationId: value.input.owner.operationId, orphanPhase: "closed-verification",
+    bridgeSession: { ...INPUT.bridgeSession, sessionId: "synthetic-verification-session", sequence: 3 } });
+  const capture: ClosedSessionAuthorityCapture = { operationId: binding.operationId, phase: "closed-verification", challengeAttempt: binding.challengeAttempt,
+    bridgeSession: binding.bridgeSession, runtimeIdentity: binding.runtimeIdentity, executionAuthority: binding.executionAuthority };
+  value.state.finishCapture = capture;
+  const intent = await value.retained.supervisor.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  const closeReceipt = await value.retained.supervisor.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  const proof = await value.retained.supervisor.proveClosedSession({ ...binding, intent, closeReceipt });
+  return { finishSnapshot, capture, intent, closeReceipt, proof, launch: binding.launch, runtime: value.input.runtime };
+}
+
 void test("final snapshot retains changed closed bytes and full reader evidence without reusing old owner authority", async () => {
   const value = await fixture();
   const input = await finalInput(value);
@@ -180,6 +201,90 @@ void test("final snapshot retains changed closed bytes and full reader evidence 
   assert.equal(result.writerReady, false); assert.equal(result.executionAuthorized, false);
   assert.deepEqual(await readFile(result.copy.artifact), bytes); assert.deepEqual(await readFile(value.source), bytes);
   await assert.rejects(value.loaded.finish(value.engine, input, () => { assert.fail("Consumed final copy repeated"); }), /consumed/u);
+});
+
+void test("post-edit snapshot issuer retains original inventory and closure but rejects reconstructed or changed evidence", async () => {
+  const value = await fixture();
+  const events: CurrentSymbolFinishSnapshotEvidence[] = [], foreign = await fixture(), input = await finalInput(value);
+  const result = await value.loaded.finish(value.engine, input, (event) => { events.push(event); });
+  const original = value.loaded.originalFinish(result, value.engine);
+  assert.equal(original.baseline, input.baseline); assert.equal(original.capture, input.capture);
+  assert.equal(original.proof, input.proof); assert.equal(original.launch, input.launch);
+  const inventory = events[2]; assert.ok(inventory?.kind === "inventory"); assert.equal(original.inventory, inventory.value);
+  assert.equal(readerCompletion(original.inventory).observedChildClose, true);
+  assert.throws(() => { assertOriginalCurrentSymbolFinishSnapshot(result, value.engine); }, /not issued/u);
+  assert.throws(() => { value.loaded.originalFinish(structuredClone(result), value.engine); }, /not issued/u);
+  assert.throws(() => { value.loaded.originalFinish(result, foreign.engine); }, /not issued/u);
+  assert.equal(Object.isFrozen(original.inventory), true);
+  assert.equal(Reflect.set(original.capture, "phase", "closed-baseline"), true);
+  assert.throws(() => { value.loaded.originalFinish(result, value.engine); }, /not issued/u);
+});
+
+void test("post-edit relaunch revalidation uses its own checkpoint and current proof, not the retired baseline owner", async () => {
+  for (const fault of ["none", "source", "checkpoint", "receipt"] as const) {
+    const value = await fixture();
+    const input = await finalInput(value);
+    const database = new DatabaseSync(value.source);
+    try { database.exec("INSERT INTO synthetic_open_effect VALUES('post-edit state')"); } finally { database.close(); }
+    const result = await value.loaded.finish(value.engine, input, () => {
+      // This test consumes the completed issued snapshot below.
+    });
+    assert.notEqual(result.copy.sha256, input.baseline.copy.sha256);
+    await assert.rejects(value.loaded.revalidateFinish(value.engine, structuredClone(result)), /not issued/u);
+    if (fault === "source") {
+      const changed = new DatabaseSync(value.source);
+      try { changed.exec("INSERT INTO synthetic_open_effect VALUES('late drift')"); } finally { changed.close(); }
+    }
+    if (fault === "checkpoint") {
+      const path = result.checkpoint.checkpoint;
+      const bytes = await readFile(path);
+      await rename(path, `${path}.retained`); await writeFile(path, bytes, { flag: "wx", mode: 0o600 });
+    }
+    if (fault === "receipt") { await writeFile(result.checkpoint.receiptPath, JSON.stringify({ ...result.checkpoint, label: "substituted" })); }
+    await (fault === "none" ? value.loaded.revalidateFinish(value.engine, result) :
+      assert.rejects(value.loaded.revalidateFinish(value.engine, result), /changed|identity/u));
+    assert.equal(value.state.current, false); assert.equal(result.persistenceVerified, false);
+    assert.equal(value.retained.requests.filter((request) => request["action"] === "release-capture").length, 0);
+  }
+});
+
+void test("closed verification snapshot retains its own full inventory and binds the original post-edit predecessor", async () => {
+  const value = await fixture();
+  const input = await finalInput(value);
+  const finish = await value.loaded.finish(value.engine, input, () => {
+    // The predecessor's full inventory is retrieved from its original issuer below.
+  }), finishOriginal = value.loaded.originalFinish(finish, value.engine);
+  const events: CurrentSymbolFinishSnapshotEvidence[] = [], verifyInput = await verificationInput(value, finish);
+  const result = await value.loaded.verification(value.engine, verifyInput, (event) => { events.push(event); });
+  assert.deepEqual(events.map((event) => event.kind), ["checkpoint", "copy", "inventory"]);
+  const inventory = events[2], original = value.loaded.originalVerification(result, value.engine);
+  assert.ok(inventory?.kind === "inventory"); assert.equal(original.inventory, inventory.value); assert.notEqual(original.inventory, finishOriginal.inventory);
+  assert.equal(original.baseline, input.baseline); assert.equal(original.capture, verifyInput.capture); assert.equal(original.proof, verifyInput.proof);
+  assert.equal(original.capture.phase, "closed-verification"); assert.notEqual(original.launch.jobId, finishOriginal.launch.jobId);
+  assert.equal(result.copy.sha256, finish.copy.sha256); assert.notEqual(result.copy.closureProofSha256, finish.copy.closureProofSha256);
+  assert.equal(result.posteditCopyReceiptSha256, finish.copy.receiptSha256); assert.equal(result.baselineCopyReceiptSha256, input.baseline.copy.receiptSha256);
+  assert.equal(result.persistenceVerified, false); assert.equal(result.writerReady, false); assert.equal(result.executionAuthorized, false);
+  assert.throws(() => { value.loaded.originalVerification(structuredClone(result), value.engine); }, /not issued/u);
+  assert.equal(value.loaded.originalFinish(finish, value.engine), finishOriginal);
+  await assert.rejects(value.loaded.verification(value.engine, verifyInput, () => { assert.fail("Verification capture repeated"); }), /consumed/u);
+});
+
+void test("closed verification consumes failed attempts without reusing old phase, cloned proof or failed evidence publication", async () => {
+  for (const fault of ["old-phase", "proof", "publication"] as const) {
+    const value = await fixture();
+    const input = await finalInput(value);
+    const events: string[] = [], finish = await value.loaded.finish(value.engine, input, () => {
+      // Only verification-attempt events are collected here.
+    }), verifyInput = await verificationInput(value, finish);
+    if (fault === "old-phase") { Reflect.set(verifyInput.capture, "phase", "closed-edit"); }
+    if (fault === "proof") { Reflect.set(verifyInput, "proof", structuredClone(verifyInput.proof)); }
+    await assert.rejects(value.loaded.verification(value.engine, verifyInput, (event) => {
+      events.push(event.kind); if (fault === "publication" && event.kind === "inventory") { throw new Error("synthetic verification publication failed"); }
+    }));
+    assert.deepEqual(events, fault === "publication" ? ["checkpoint", "copy", "inventory"] : []);
+    await assert.rejects(value.loaded.verification(value.engine, verifyInput, () => { assert.fail("Failed verification repeated"); }), /consumed/u);
+    assert.equal(value.retained.requests.filter((request) => request["action"] === "release-capture").length, 0);
+  }
 });
 
 void test("final snapshot refuses cloned authority and late source replacement without releasing closure or retrying", async () => {

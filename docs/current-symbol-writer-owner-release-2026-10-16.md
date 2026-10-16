@@ -1,5 +1,65 @@
 # Current runtime correction and private writer ownership
 
+## Post-write verification implementation, update173000
+
+Candidate `0.3.0+codex.20261016173000` adds the private verification continuation
+that was missing from140000. Only an original successful writer with a complete
+closed snapshot and successful full SQL comparison can issue it. The checkpoint,
+raw copy, complete inventory and original clock plan remain bound to that
+operation. Failed writes, partial snapshots, uncertain capture cleanup and
+copied journals cannot issue a continuation.
+
+The closed source is revalidated before capture release. Release invalidates
+the native copy proof, so the continuation does not try to revive it. Instead,
+the new verification owner rehashes the source against the actual post-edit
+snapshot before launch and opening. It admits a fresh authenticated generation,
+checks both persistent upload-cache namespaces while the project is inactive,
+and repeats cache checks immediately before opening only the project.
+
+The current no-editor saved reader reconstructs expected `getStr` output from
+the original successful current SQL plan and complete post-edit history. It
+retains the current project-only/startup guards and checks metadata, actors,
+worker client and maximum ticket around two equal content reads. Normal closure
+then produces a separate original verification snapshot. Complete SQL equality
+checks that reopening and reading did not change the post-edit database.
+The lifecycle never dispatches another mutation or explicit Save.
+The reader caps saved content at 65 KiB and stops subsequent reads after its
+10-second deadline. It cannot cancel a vendor enumeration already in flight.
+
+If launch succeeds but clock or admission work fails before acquiring a closed
+session capture, the coordinator can still request one normal close through
+the original launch owner and observe that original root/Job terminating.
+Lost close acknowledgment does not permit another close attempt. This cleanup
+does not issue copy authority, a snapshot or saved-state proof; uncertain
+capture acquisition remains explicit.
+
+The current source review confirms the projection against WORKER
+`b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`
+and MGR `005584e02cd9b2d49fdb387b2f997c1c8d3f88b0c48a7531c8097c483ed0bd2e`.
+WORKER symbol `getStr` at1939611 builds metadata and current-version DOCHEAD,
+then calls `getCanvasByConsistency` at2146197 with the five metadata/deletion
+record exclusions and `keepFirst:true`. Its canvas DOCHEAD retains the stored
+edit version. MGR at2068665 delegates the exact symbol/project IDs. Offsets are
+JavaScript string offsets in the pinned installed sources, read without
+execution. The compression path can clean in-memory caches; no global-idle or
+background-upload completion claim follows from matching content.
+
+This remains an unregistered private workflow. Actual140000 was independently
+admitted after restart, and its main CI passed. No new live EasyEDA lifecycle,
+design edit or Save was attempted while implementing this update. Production
+designs and their records remain untouched.
+
+The remaining implementation boundary is a deliberately scoped disposable
+validation entrypoint and inverse/recovery workflow. Current clock and startup
+holder checks still need connected validation. Only after successful disposable
+forward/inverse persistence and failure handling should the narrow writer be
+registered for normal use. Broader schematic/PCB, library and manufacturing
+backlog remains unchanged. The older numbered list below describes140000's
+handoff; its cache/reopen implementation item is superseded by this section,
+not its connected-validation requirement.
+
+## Earlier140000 scope
+
 Candidate `0.3.0+codex.20261016140000` continues the
 [fixed compiler implementation](current-symbol-writer-compiler-release-2026-10-16.md).
 It does not enable symbol editing or claim a connected writer test.
@@ -93,13 +153,14 @@ checkpoint after they complete, not inferred from this candidate document.
    source qualification at the final writer boundary, including the current
    APP/manager/worker/notify chain. Existing SQLite dependency admission is
    implemented; it is not evidence that startup or background work is absent.
-3. Complete both inactive upload-cache exclusions and reopen verification
-   around the writer lifecycle. The private coordinator explicitly reports
-   these missing guarantees; successful closed SQL comparison alone is not
-   sufficient for enablement.
-4. Prove disposable forward/inverse metadata persistence and ambiguous-failure
-   recovery. Then deliberately register only the validated narrow writer and
-   update its capability evidence. Do not enable it by bypassing a flag.
+3. Validate the inactive upload-cache exclusions and reopen verification
+   implemented privately in173000. Successful closed SQL comparison alone is
+   not sufficient for enablement.
+4. Implement the scoped disposable-validation entrypoint and inverse/recovery
+   orchestration. Prove disposable forward/inverse metadata persistence and
+   ambiguous-failure handling, then deliberately register only the validated
+   narrow writer and update its capability evidence. Do not enable it by
+   bypassing a flag.
 5. Continue the generated API backlog: schematic/PCB structure completion,
    remaining geometry and library workflows, and operation-specific
    manufacturing adapters. Symbol metadata work does not validate these.

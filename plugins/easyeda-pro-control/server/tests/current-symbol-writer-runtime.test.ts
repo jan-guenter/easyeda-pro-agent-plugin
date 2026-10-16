@@ -10,12 +10,13 @@ import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts"
 import { currentProjectOnlySymbolPreflightRequestSchema } from "../src/current-project-only-symbol-preflight.ts";
 
 type Bag = Record<string, unknown>;
-type Failure = "none" | "post-clock" | "owner-after-write" | "late-clock-plan" | "comparison" | "intent-write" | "transfer-write" | "snapshot" | "journal-drift" |
+type Failure = "none" | "post-clock" | "owner-after-write" | "late-clock-plan" | "comparison" | "intent-write" | "transfer-write" | "snapshot" | "journal-drift" | "snapshot-revalidate" | "retirement-release" |
   "preflight-mark-cleanup" | "preflight-clear-release" | "writer-mark-cleanup" | "writer-clear-release";
 interface TestCoordinator {
   finishNormalClose: (operationId: string) => Promise<Bag>;
   observeFinish: (operationId: string) => Promise<Bag>;
   inspect: (operationId: string) => Bag;
+  continuation: (operationId: string) => unknown;
 }
 function noOp(): undefined { return undefined; }
 function record(result: unknown): Bag { assert.ok(isRecord(result)); return result; }
@@ -24,6 +25,7 @@ async function fixture(failure: Failure = "none"): Promise<{
   state: { alive: boolean; transferred: boolean; active: boolean; calls: string[]; clocks: number; mutations: number;
     closeCalls: number; probes: number; writes: string[]; releases: number; snapshots: number; comparisons: number };
   values: Map<string, unknown>; original: Bag; writeRaw: object;
+  assertContinuation: (value: unknown) => unknown; transferContinuation: (value: unknown) => unknown;
 }> {
   const generation = Object.freeze({ profile: "private.current-project-only-symbol-generation.v1", operationId: "synthetic-current-writer" });
   const aged = Object.freeze({ synthetic: "original-age" }), startup = Object.freeze({ synthetic: "original-startup" });
@@ -111,8 +113,12 @@ async function fixture(failure: Failure = "none"): Promise<{
       if (failure === "preflight-clear-release") { throw new Error("Synthetic preflight release after durable clear failed"); }
       return raw;
     },
-    releaseClosedSessionAuthority: (received: unknown): Promise<void> => { assert.equal(received, capture); state.releases += 1; return Promise.resolve(); },
+    releaseClosedSessionAuthority: (received: unknown): Promise<void> => {
+      assert.equal(received, capture); state.releases += 1;
+      return failure === "retirement-release" ? Promise.reject(new Error("Synthetic retirement release failure")) : Promise.resolve();
+    },
   };
+  const inventory = Object.freeze({ tables: [], synthetic: "original-after" }), snapshot = Object.freeze({ snapshotCaptured: true });
   let dispatchOwner: unknown;
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-writer-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
@@ -151,9 +157,14 @@ async function fixture(failure: Failure = "none"): Promise<{
     assertCurrentClosedSessionTerminationObservation: noOp, assertCurrentClosedSessionCopyAuthority: noOp,
     assertClosedSessionCopyAuthority: (proof: unknown): Promise<unknown> => Promise.resolve(proof),
     captureCurrentSymbolFinishSnapshot: (_engine: unknown, _input: unknown, retain: (event: unknown) => void): Promise<unknown> => {
-      state.snapshots += 1; retain({ kind: "inventory", value: { tables: [], synthetic: "original-after" } });
+      state.snapshots += 1; retain({ kind: "inventory", value: inventory });
       if (failure === "snapshot") { return Promise.reject(new Error("Synthetic snapshot final reproof refused")); }
-      return Promise.resolve({ snapshotCaptured: true });
+      return Promise.resolve(snapshot);
+    },
+    assertOriginalCurrentSymbolFinishSnapshot: (received: unknown): Bag => { assert.equal(received, snapshot); return { inventory }; },
+    revalidateCurrentSymbolFinishSnapshot: (_engine: unknown, received: unknown): Promise<void> => {
+      assert.equal(received, snapshot); assert.equal(state.releases, 0);
+      return failure === "snapshot-revalidate" ? Promise.reject(new Error("Synthetic snapshot revalidation refused")) : Promise.resolve();
     },
     verifyCurrentSymbolTransactionClock: (_plan: unknown, input: Bag): Promise<unknown> => {
       assert.equal(input["dispatchOwner"], dispatchOwner); state.comparisons += 1;
@@ -173,8 +184,16 @@ async function fixture(failure: Failure = "none"): Promise<{
     finishNormalClose: async (id): Promise<Bag> => record(await invoke("finishNormalClose", [id])),
     observeFinish: async (id): Promise<Bag> => record(await invoke("observeFinish", [id])),
     inspect: (id): Bag => record(invoke("inspect", [id])),
+    continuation: (id): unknown => invoke("getVerificationContinuation", [id]),
+  };
+  const exported: unknown = runInContext("({ assertOriginalCurrentSymbolWriterContinuation, transferCurrentSymbolWriterContinuation })", context);
+  assert.ok(isRecord(exported));
+  const continuationCall = (name: string, token: unknown): unknown => {
+    const method = exported[name]; assert.ok(typeof method === "function"); return Reflect.apply(method, undefined, [token, engine]) as unknown;
   };
   return { coordinator, state, values, original, writeRaw,
+    assertContinuation: (token): unknown => continuationCall("assertOriginalCurrentSymbolWriterContinuation", token),
+    transferContinuation: (token): unknown => continuationCall("transferCurrentSymbolWriterContinuation", token),
     start: async (): Promise<unknown> => await invoke("execute", [generation, startup, aged]),
     wrongStartup: async (): Promise<unknown> => await invoke("execute", [generation, structuredClone(startup), aged]),
   };
@@ -185,6 +204,7 @@ void test("private writer owns exactly one dispatch, original clock capture, nor
   const f = await fixture();
   await assert.rejects(f.wrongStartup(), /Original startup missing/u); assert.equal(f.state.transferred, false);
   await f.start(); assert.deepEqual(f.state.calls, ["preflight", "clock", "write"]); assert.equal(f.state.mutations, 1); assert.equal(f.state.clocks, 3);
+  assert.throws(() => f.coordinator.continuation(ID));
   assert.ok(f.state.writes.indexOf("writer-dispatch-intent") < f.state.writes.indexOf("writer-dispatch-reply"));
   await assert.rejects(f.start(), /already consumed/u);
   await f.coordinator.finishNormalClose(ID);
@@ -194,6 +214,11 @@ void test("private writer owns exactly one dispatch, original clock capture, nor
   assert.equal(terminal["persistentUploadReplayExcluded"], false); assert.equal(terminal["reopened"], false);
   assert.equal(terminal["dispatchCaptureCleanupUncertain"], false);
   assert.equal(f.state.closeCalls, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1); assert.equal(f.state.releases, 1);
+  const continuation = f.coordinator.continuation(ID), source = f.assertContinuation(continuation);
+  assert.throws(() => f.assertContinuation(structuredClone(continuation)), /not issued/u);
+  assert.equal(f.transferContinuation(continuation), source);
+  assert.throws(() => f.transferContinuation(continuation), /consumed/u);
+  assert.equal(f.assertContinuation(continuation), source);
   await assert.rejects(f.coordinator.observeFinish(ID));
 });
 
@@ -211,6 +236,7 @@ for (const failure of ["post-clock", "owner-after-write", "late-clock-plan", "in
     await f.coordinator.finishNormalClose(ID); await f.coordinator.observeFinish(ID); await f.coordinator.observeFinish(ID);
     assert.equal(f.state.closeCalls, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 0);
     assert.equal(f.state.releases, 2); assert.equal(f.coordinator.inspect(ID)["retired"], true);
+    assert.throws(() => f.coordinator.continuation(ID));
   });
 }
 
@@ -220,7 +246,17 @@ void test("a refused full comparison cannot retry comparison, write or Save and 
   await f.coordinator.observeFinish(ID);
   assert.equal(f.state.comparisons, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.mutations, 1); assert.equal(f.state.closeCalls, 1);
   assert.equal(f.coordinator.inspect(ID)["failed"], true); assert.equal(f.coordinator.inspect(ID)["retired"], true);
+  assert.throws(() => f.coordinator.continuation(ID));
 });
+
+for (const failure of ["snapshot-revalidate", "retirement-release"] as const) {
+  void test(`writer continuation cannot escape ${failure}`, async () => {
+    const f = await fixture(failure); await f.start(); await f.coordinator.finishNormalClose(ID); await f.coordinator.observeFinish(ID);
+    await assert.rejects(f.coordinator.observeFinish(ID), /Synthetic/u);
+    assert.throws(() => f.coordinator.continuation(ID));
+    assert.equal(f.state.mutations, 1); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1);
+  });
+}
 
 void test("writer retains close ownership and exact original journal after transfer artifact publication fails", async () => {
   const f = await fixture("transfer-write"); await assert.rejects(f.start(), /Synthetic transfer/u);

@@ -19,7 +19,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016140000` corrects the scratch helper's runtime
+Candidate `0.3.0+codex.20261016173000` completes the private post-write
+verification workflow: original post-edit snapshot transfer, a fresh admitted
+generation, both inactive upload-cache exclusions, project-only reopening,
+exact saved-symbol content comparison, normal closure and complete SQL
+invariance checks. Failed writes do not receive reopening authority. These
+paths are not public writer enablement or connected validation. Disposable
+forward/inverse validation and a deliberate validation entrypoint remain open.
+See the [implementation and backlog](docs/current-symbol-writer-owner-release-2026-10-16.md).
+
+Update `0.3.0+codex.20261016140000` corrects the scratch helper's runtime
 profile, exposes its complete expected runtime in offline discovery, and adds
 bounded launch-stage timing diagnostics. It also integrates a private symbol
 writer coordinator with startup checks, original clock ownership, normal closure

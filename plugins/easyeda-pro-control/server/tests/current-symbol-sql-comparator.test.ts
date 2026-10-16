@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { decodeNativeHistoryChunk } from "../src/native-history.ts";
-import { prepareCurrentSymbolNewHeadSqlPlan, prepareSymbolNewHeadSqlPlan, verifyCurrentSymbolNewHeadSqlEffect, verifySymbolNewHeadSqlEffect } from "../src/symbol-sql-comparator.ts";
+import { decodeRawHistoryForOriginalCurrentSymbolSqlPlan, metadataPlanForOriginalCurrentSymbolSqlPlan, prepareCurrentSymbolNewHeadSqlPlan, prepareSymbolNewHeadSqlPlan, verifyCurrentSymbolNewHeadSqlEffect, verifySymbolNewHeadSqlEffect } from "../src/symbol-sql-comparator.ts";
 import type { CurrentSymbolNewHeadSqlPlan, CurrentSymbolSqlWitness, SymbolNewHeadSqlPlan } from "../src/symbol-sql-comparator.ts";
 import { HISTORY_TABLE, IDS, OPERATION, TIMES, WITNESS, applyEffect, encrypted, expectedRaw, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
@@ -126,4 +126,22 @@ void test("legacy SQL plan and effect retain their old header contract and resul
   assert.equal(proof["profile"], "easyeda-pro-control.symbol-new-head-full-sql-effect.v1");
   assert.equal(proof["exactLogicalSqlEffect"], true);
   await assert.rejects(verifyCurrentSymbolNewHeadSqlEffect(current, after), /exact intended raw/u);
+});
+
+void test("current original-plan history decoder retains complete post-edit history and rejects copied or legacy authority", async () => {
+  const input = await fixture();
+  const plan = await prepareCurrentSymbolNewHeadSqlPlan({ before: input.before, operation: OPERATION, witness: CURRENT_WITNESS });
+  const legacy = await prepareSymbolNewHeadSqlPlan({ before: input.before, operation: OPERATION, witness: WITNESS });
+  await assert.rejects(decodeRawHistoryForOriginalCurrentSymbolSqlPlan(plan, input.before), /maximum differs/u);
+  applyEffect(input.path, currentRaw()); const after = await inventory(input.path);
+  await verifyCurrentSymbolNewHeadSqlEffect(plan, after);
+  const decoded = await decodeRawHistoryForOriginalCurrentSymbolSqlPlan(plan, after);
+  assert.equal(decoded.maximumTicket, plan.expectedTicket); assert.equal(decoded.history.projectUuid, IDS.project);
+  assert.equal(decoded.chunks.at(-1), currentRaw()); assert.equal(decoded.links.length, decoded.chunks.length);
+  const metadata = metadataPlanForOriginalCurrentSymbolSqlPlan(plan);
+  assert.equal(metadata.targetUuid, plan.targetUuid); assert.ok(Object.isFrozen(metadata) && Object.isFrozen(metadata.beforeTags));
+  await assert.rejects(decodeRawHistoryForOriginalCurrentSymbolSqlPlan(structuredClone(plan), after), /original prepared/u);
+  await assert.rejects(decodeRawHistoryForOriginalCurrentSymbolSqlPlan(legacy, after), /original prepared/u);
+  await assert.rejects(decodeRawHistoryForOriginalCurrentSymbolSqlPlan(plan, structuredClone(after)), /original inventory/u);
+  assert.throws(() => metadataPlanForOriginalCurrentSymbolSqlPlan(legacy), /original prepared/u);
 });

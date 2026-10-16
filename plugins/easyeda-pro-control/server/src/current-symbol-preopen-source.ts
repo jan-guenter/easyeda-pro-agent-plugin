@@ -10,8 +10,8 @@ import type { FileHandle } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 // oxlint-disable-next-line import/no-cycle -- Reuse the baseline issuer's private registry; its retained coordinator calls this reader, and no alternate issuer is exposed.
-import { assertOriginalCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
-import type { CurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+import type { CurrentSymbolBaselineCopy, CurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 
 const CHUNK_BYTES = 1_048_576, MAX_BYTES = 268_435_456n;
@@ -30,6 +30,12 @@ export interface CurrentSymbolPreopenSourceObservation {
   readonly writerAuthority: false;
   readonly executionAuthorized: false;
 }
+export interface CurrentSymbolPosteditPreopenSourceObservation extends Omit<CurrentSymbolPreopenSourceObservation, "profile" | "sourceMatchesClosedBaseline"> {
+  readonly profile: "private.current-symbol-postedit-preopen-source.v1";
+  readonly sourceMatchesClosedPosteditSnapshot: true;
+}
+type SourceBinding = Pick<CurrentSymbolBaselineCopy, "checkpoint" | "copy">;
+type SourceObservation = Omit<CurrentSymbolPreopenSourceObservation, "profile" | "sourceMatchesClosedBaseline">;
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
 function sameInode(a: BigIntStats, b: BigIntStats): boolean { return a.dev === b.dev && a.ino === b.ino; }
 function sameFile(a: BigIntStats, b: BigIntStats): boolean {
@@ -79,7 +85,7 @@ async function noSidecars(path: string, current: () => void): Promise<void> {
     need(absent, "Current preopen source has a SQLite sidecar.");
   }
 }
-function matchesBaseline(stat: BigIntStats, copy: CurrentSymbolBaselineCopy): boolean {
+function matchesBaseline(stat: BigIntStats, copy: SourceBinding): boolean {
   const checkpoint = copy.checkpoint.sourceIdentity, raw = copy.copy.sourceIdentity;
   return stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n && stat.size > 0n && stat.size <= MAX_BYTES &&
     stat.dev.toString() === checkpoint.dev && stat.ino.toString() === checkpoint.ino &&
@@ -111,6 +117,25 @@ async function hash(file: FileHandle, bytes: number, current: () => void): Promi
 export async function verifyCurrentSymbolPreopenSource(engine: EasyedaControlEngine,
   copy: CurrentSymbolBaselineCopy): Promise<Readonly<CurrentSymbolPreopenSourceObservation>> {
   const current = (): void => { assertOriginalCurrentSymbolBaselineCopy(copy, engine); };
+  const observed = await verifySource(copy, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
+}
+
+/** Reopening after a successful write must match the original post-edit
+ * snapshot, not its old baseline. This rehashes raw bytes without reviving the
+ * terminated process's authority and does not itself authorize navigation.
+ */
+export async function verifyCurrentSymbolPosteditPreopenSource(engine: EasyedaControlEngine,
+  snapshot: CurrentSymbolFinishSnapshot): Promise<Readonly<CurrentSymbolPosteditPreopenSourceObservation>> {
+  const original = assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine);
+  const current = (): void => {
+    need(assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine) === original, "Current preopen post-edit snapshot owner changed.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });
+}
+
+async function verifySource(copy: SourceBinding, current: () => void): Promise<Readonly<SourceObservation>> {
   current();
   const { source, sourceSha256 } = copy.checkpoint;
   need(process.platform === "linux" && source.length <= 4096 && isAbsolute(source) && resolve(source) === source && source.endsWith(".eprj2") &&
@@ -118,7 +143,7 @@ export async function verifyCurrentSymbolPreopenSource(engine: EasyedaControlEng
   "Current preopen source requires its canonical original baseline binding.");
   const parent = await directory(dirname(source), current);
   let file: FileHandle | undefined;
-  let observation: Readonly<CurrentSymbolPreopenSourceObservation> | undefined;
+  let observation: Readonly<SourceObservation> | undefined;
   let failed = false;
   let failure: unknown;
   try {
@@ -143,9 +168,9 @@ export async function verifyCurrentSymbolPreopenSource(engine: EasyedaControlEng
     const named = await lstat(path, { bigint: true }); current();
     need(sameInode(parent.info, parentAfter) && sameFile(before, after) && sameFile(before, named),
       "Current preopen source descriptor or path changed during reading.");
-    observation = Object.freeze({ profile: "private.current-symbol-preopen-source.v1", scope: "point-in-time-before-project-opening",
+    observation = Object.freeze({ scope: "point-in-time-before-project-opening",
       source, sourceSha256, bytes: Number(before.size), sourceIdentity: Object.freeze({ ...copy.copy.sourceIdentity }),
-      sourceMatchesClosedBaseline: true, sidecarsObservedAbsent: true, ongoingSourceContinuity: false,
+      sidecarsObservedAbsent: true, ongoingSourceContinuity: false,
       startupQualified: false, writerAuthority: false, executionAuthorized: false });
   } catch (error) { failed = true; failure = error; }
   const cleanup = await Promise.allSettled([file?.close(), parent.handle.close()]);
