@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { WindowsAuthorityTransport } from "./windows-authority.ts";
 
 type Bag = Record<string, unknown>;
-type Phase = "launch" | "capture" | "termination";
+type Phase = "launch" | "capture" | "termination" | "owned-observation";
 interface Sample {
   readonly schema: "easyeda-pro-control.windows-clock-sample.v1";
   readonly utcBeforeTicks: string; readonly utcAfterTicks: string;
@@ -130,6 +130,7 @@ function base(input: unknown, phase: Phase): Bag {
   let keys: string[];
   if (phase === "launch") { keys = ["jobId", "helperInstance", "root"]; }
   else if (phase === "capture") { keys = ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]; }
+  else if (phase === "owned-observation") { keys = ["jobId", "helperInstance", "captureBindingSha256", "observedAt", "rootStillLive", "retainedProcessesLive"]; }
   else { keys = ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"]; }
   const v = fields(input, keys);
   const jobId = text(v["jobId"], idPattern); text(v["helperInstance"], idPattern);
@@ -146,9 +147,14 @@ function base(input: unknown, phase: Phase): Bag {
       if (pid <= previous) { bad(); } previous = pid;
     }
     for (const key of ["runtimePid", "socketOwnerPid"]) { if (v[key] !== null) { integer(v[key], 1, 2_147_483_647); } }
+  } else if (phase === "owned-observation") {
+    text(v["captureBindingSha256"], hashPattern); if (v["rootStillLive"] !== true || v["retainedProcessesLive"] !== true) { bad(); }
   } else { text(v["captureBindingSha256"], hashPattern); if (v["jobEmpty"] !== true || v["retainedProcessesExited"] !== true) { bad(); } }
   if (phase !== "launch") {
-    const timestamp = text(v[phase === "capture" ? "capturedAt" : "checkedAt"], /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,7}Z$/u);
+    let timeKey = "checkedAt";
+    if (phase === "capture") { timeKey = "capturedAt"; }
+    else if (phase === "owned-observation") { timeKey = "observedAt"; }
+    const timestamp = text(v[timeKey], /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,7}Z$/u);
     if (!Number.isFinite(Date.parse(timestamp))) { bad(); }
   }
   return v;
@@ -158,6 +164,7 @@ const mapped: Readonly<Record<string, Readonly<{ action: string; phase: Phase }>
   capture: { action: "clocked-capture", phase: "capture" },
   "finish-probe": { action: "clocked-finish-probe", phase: "capture" },
   "prove-terminated": { action: "clocked-prove-terminated", phase: "termination" },
+  "observe-owned-clock": { action: "clocked-observe-owned-clock", phase: "owned-observation" },
 };
 const passThrough = new Set(["begin-probe", "end-probe", "release-capture", "normal-close", "observe-launch-termination", "observe-existing-application", "observe-application-window"]);
 
@@ -207,7 +214,7 @@ export function createClockedTransport(raw: WindowsAuthorityTransport, source: R
         if (response.schema !== `easyeda-pro-control.windows-clocked-${mapping.phase}.v1`) { bad(); }
         const validatedBase = base(response.base, mapping.phase);
         if (mapping.phase === "capture" && validatedBase["bindingSha256"] !== retainedRequest["bindingSha256"] ||
-            mapping.phase === "termination" && (validatedBase["captureBindingSha256"] !== retainedRequest["captureBindingSha256"] ||
+            (mapping.phase === "termination" || mapping.phase === "owned-observation") && (validatedBase["captureBindingSha256"] !== retainedRequest["captureBindingSha256"] ||
             validatedBase["jobId"] !== retainedRequest["jobId"] || validatedBase["helperInstance"] !== retainedRequest["helperInstance"])) { bad(); }
         let observed: Clock;
         try { observed = clock(response.clockInput); }

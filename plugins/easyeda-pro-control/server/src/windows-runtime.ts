@@ -14,13 +14,14 @@ import type {
   RuntimeExecutionAuthorityValidator,
 } from "./engine.ts";
 import type { UpstreamEasyedaClient } from "./upstream.ts";
-import { assertCurrentClosedSessionTerminationObservation, startWindowsAuthoritySupervisor, windowsClockObservationForResult } from "./windows-authority.ts";
+import { assertCurrentClosedSessionTerminationObservation, assertCurrentIssuedWindowsClockObservation, startWindowsAuthoritySupervisor, windowsClockObservationForResult } from "./windows-authority.ts";
 import type {
   ClosedSessionBinding,
   ClosedSessionCloseIntent,
   ClosedSessionCloseReceipt,
   ClosedSessionTerminationObservation,
   ClosedSessionTerminationProof,
+  IssuedCurrentWindowsClockObservation,
   IssuedWindowsClockObservation,
   WindowsApplicationWindowObservation,
   WindowsAuthorityLaunch,
@@ -218,6 +219,10 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   private readonly dependencies: WindowsRuntimeDependencies;
   private readonly paths: WindowsRuntimePaths;
   private supervisor: WindowsAuthoritySupervisor | undefined;
+  private readonly supervisorClockMethods = new WeakMap<WindowsAuthoritySupervisor, {
+    readonly observe: WindowsAuthoritySupervisor["observeCurrentClock"];
+    readonly capture: WindowsAuthoritySupervisor["capture"];
+  }>();
   private currentLaunch: WindowsAuthorityLaunch | null = null;
   private readonly clockLaunches = new WeakMap<WindowsAuthorityLaunch, {
     readonly original: WindowsAuthorityLaunch; readonly snapshot: string; readonly supervisor: WindowsAuthoritySupervisor;
@@ -282,6 +287,8 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
       await acquired.release();
       throw new Error("Windows runtime changed during helper startup.");
     }
+    // Identity only. Calls below retain their original supervisor receiver.
+    this.supervisorClockMethods.set(this.supervisor, { observe: this.supervisor.observeCurrentClock, capture: this.supervisor.capture });
     return this.supervisor;
   }
 
@@ -324,6 +331,33 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   public capture(input: ExecutionAuthorityCaptureInput): Promise<ExecutionAuthorityEvidence> { return this.requireSupervisor().capture(input); }
   public proveTerminated(input: ExecutionAuthorityTerminationInput): Promise<ExecutionAuthorityTerminationProof> { return this.requireSupervisor().proveTerminated(input); }
   public releaseCapture(evidence: ExecutionAuthorityEvidence): Promise<void> { return this.requireSupervisor().releaseCapture(evidence); }
+
+  /** Internal fresh read from the original capture. Never starts or adopts a helper. */
+  public async observeCurrentClock(evidence: ExecutionAuthorityEvidence): Promise<IssuedCurrentWindowsClockObservation> {
+    const supervisor = this.requireSupervisor();
+    const methods = this.supervisorClockMethods.get(supervisor);
+    const observe = methods?.observe;
+    if (observe === undefined) { throw new Error("Retained runtime has no original fresh-clock method."); }
+    const evidenceText = canonicalJson(evidence), launch = this.currentLaunch, launchText = canonicalJson(launch);
+    const current = (): void => {
+      if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText ||
+          this.supervisorClockMethods.get(supervisor) !== methods || supervisor.observeCurrentClock !== observe ||
+          supervisor.capture !== methods?.capture || canonicalJson(evidence) !== evidenceText) {
+        throw new Error("Fresh runtime clock lost its original capture, supervisor, method or launch.");
+      }
+    };
+    current();
+    const observation = await observe.call(supervisor, evidence); current();
+    const issued = assertCurrentIssuedWindowsClockObservation(observation);
+    if (issued !== observation || observation.phase !== "owned-observation" || launch === null ||
+        observation.base["jobId"] !== launch.jobId || observation.base["helperInstance"] !== launch.helperInstance ||
+        observation.base["captureBindingSha256"] !== evidence.bindingSha256 ||
+        observation.ownerBinding["bindingSha256"] !== evidence.bindingSha256 ||
+        observation.ownerBinding["authoritySha256"] !== evidence.authoritySha256) {
+      throw new Error("Fresh runtime clock returned another original capture or launch.");
+    }
+    current(); return observation;
+  }
 
   /** Internal coordinator-only preparation; never starts a helper or application. */
   public async prepareClosedSessionClose(input: Omit<ClosedSessionBinding, "launch"> & {

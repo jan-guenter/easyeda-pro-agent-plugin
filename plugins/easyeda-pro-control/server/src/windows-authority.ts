@@ -26,6 +26,10 @@ type JsonRecord = Record<string, unknown>;
 export interface IssuedWindowsClockObservation extends ClockAttachment {
   readonly ownerBinding: Readonly<JsonRecord>;
 }
+/** Fresh retained-capture observation, not a new capture or execution grant. */
+export interface IssuedCurrentWindowsClockObservation extends IssuedWindowsClockObservation {
+  readonly phase: "owned-observation";
+}
 type ClockPhase = ClockAttachment["phase"];
 interface NativeTerminationRefusal {
   readonly requestId: string;
@@ -46,8 +50,8 @@ interface QualifiedClockSource {
 }
 const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
 const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
-const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly verify: () => Promise<void> }>();
-const REVIEWED_CLOCK_HELPER_SHA256 = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
+const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly current: () => void; readonly verify: () => Promise<void> }>();
+const REVIEWED_CLOCK_HELPER_SHA256 = "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35";
 function freezeClockData<T>(value: T): T {
   if (value !== null && typeof value === "object") {
     for (const child of Object.values(value)) { freezeClockData(child); }
@@ -61,6 +65,15 @@ export async function assertIssuedWindowsClockObservation(value: unknown): Promi
   if (slot === undefined) { throw new Error("Windows clock observation was not issued by the source-qualified retained helper."); }
   await slot.verify();
   return slot.observation;
+}
+/** Original issued token and current retained owner only. Does not rehash source
+ * or refresh time. Requires an original source-qualified async observation;
+ * fresh collection already hashes its helper before sampling.
+ */
+export function assertCurrentIssuedWindowsClockObservation(value: unknown): IssuedWindowsClockObservation {
+  const slot = value !== null && typeof value === "object" ? issuedClocks.get(value) : undefined;
+  if (slot === undefined) { throw new Error("Windows clock observation was not issued by the source-qualified retained helper."); }
+  slot.current(); return slot.observation;
 }
 /** Original supervisor result only; JSON copies and self-hashes are not tokens. */
 export async function windowsClockObservationForResult(value: unknown, phase: ClockPhase): Promise<IssuedWindowsClockObservation> {
@@ -259,6 +272,8 @@ interface ClosedSessionSlot {
 }
 
 export interface WindowsAuthoritySupervisor extends RuntimeExecutionAuthorityValidator {
+  /** Internal only. Requires the original capture object and samples after helper revalidation. */
+  readonly observeCurrentClock?: (evidence: ExecutionAuthorityEvidence) => Promise<IssuedCurrentWindowsClockObservation>;
   readonly prepareClosedSessionClose: (input: ClosedSessionBinding & { readonly windowHandle: string }) => Promise<ClosedSessionCloseIntent>;
   readonly requestClosedSessionNormalClose: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly confirmNormalClose: true }) => Promise<ClosedSessionCloseReceipt>;
   readonly proveClosedSession: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt }) => Promise<ClosedSessionTerminationProof>;
@@ -430,6 +445,7 @@ export function createWindowsAuthoritySupervisor(
   const closedSessionSlots = new Map<string, ClosedSessionSlot>();
   const normalCloseJobs = new Set<string>();
   const authorities = new Map<string, RetainedAuthority>();
+  const originalCaptureResults = new WeakMap<ExecutionAuthorityEvidence, RetainedAuthority>();
   const usedCaptureBindings = new Set<string>();
   let lifecycleEpoch = 0;
   let currentLaunch: WindowsAuthorityLaunch | undefined;
@@ -439,25 +455,28 @@ export function createWindowsAuthoritySupervisor(
   function parsedCapture(raw: unknown, bindingSha256: string): CaptureReceipt {
     const receipt = captureReceipt(raw, bindingSha256); captureClockBases.set(receipt, raw); return receipt;
   }
-  function retainClock(result: object, raw: unknown, phase: ClockPhase, ownerBinding: JsonRecord): void {
-    if (clockSource === undefined || currentLaunch === undefined) { return; }
+  function retainClock<Phase extends ClockPhase>(result: object, raw: unknown, phase: Phase, ownerBinding: JsonRecord,
+    verifyCurrent?: () => void): (IssuedWindowsClockObservation & { readonly phase: Phase }) | undefined {
+    if (clockSource === undefined || currentLaunch === undefined) { return undefined; }
     let attachment: ClockAttachment | undefined;
-    try { attachment = clockSource.originalAttachment(raw); } catch { return; }
+    try { attachment = clockSource.originalAttachment(raw); } catch { return undefined; }
     if (attachment === undefined || attachment.phase !== phase ||
-        attachment.base["jobId"] !== currentLaunch.jobId || attachment.base["helperInstance"] !== currentLaunch.helperInstance) { return; }
+        attachment.base["jobId"] !== currentLaunch.jobId || attachment.base["helperInstance"] !== currentLaunch.helperInstance) { return undefined; }
     const launchText = canonicalJson(currentLaunch), resultText = canonicalJson(result);
-    const observation: IssuedWindowsClockObservation = freezeClockData({ ...structuredClone(attachment), ownerBinding: structuredClone(ownerBinding) });
-    async function verify(): Promise<void> {
-      function current(): void {
-        requireOwned(); clockSource?.assertTransport();
-        if (canonicalJson(currentLaunch) !== launchText || canonicalJson(result) !== resultText ||
-            originalClocks.get(result) !== observation || qualifiedClockSources.get(transport) !== clockSource) {
-          throw new Error("Windows clock owner, result or launched generation changed.");
-        }
+    const observation = freezeClockData({ ...structuredClone(attachment), phase, ownerBinding: structuredClone(ownerBinding) });
+    function current(): void {
+      requireOwned(); clockSource?.assertTransport();
+      verifyCurrent?.();
+      if (canonicalJson(currentLaunch) !== launchText || canonicalJson(result) !== resultText ||
+          originalClocks.get(result) !== observation || qualifiedClockSources.get(transport) !== clockSource) {
+        throw new Error("Windows clock owner, result or launched generation changed.");
       }
+    }
+    async function verify(): Promise<void> {
       current(); await clockSource?.revalidate(); current();
     }
-    originalClocks.set(result, observation); issuedClocks.set(observation, { observation, verify });
+    originalClocks.set(result, observation); issuedClocks.set(observation, { observation, current, verify });
+    return observation;
   }
 
   function requireOwned(): void {
@@ -553,19 +572,63 @@ export function createWindowsAuthoritySupervisor(
     };
     const evidence: ExecutionAuthorityEvidence = { ...payload, authoritySha256: sha256Json(payload) };
     if (authorities.has(evidence.authoritySha256)) {throw new Error("Windows authority capture was replayed.");}
-    authorities.set(evidence.authoritySha256, {
+    const retained: RetainedAuthority = {
       evidence: structuredClone(evidence), receipt,
       operationId: input.operationId, orphanPhase: input.orphanPhase, challengeAttempt: input.challengeAttempt,
       bridgeSessionSha256: sha256Json(input.bridgeSession), runtimeIdentitySha256: sha256Json(input.runtimeIdentity),
-    });
+    };
+    authorities.set(evidence.authoritySha256, retained);
     if (canonicalJson(input) === canonicalJson(clockInput)) {
-      retainClock(evidence, captureClockBases.get(receipt), "capture", {
+      const observation = retainClock(evidence, captureClockBases.get(receipt), "capture", {
         operationId: clockInput.operationId, phase: clockInput.orphanPhase, challengeAttempt: clockInput.challengeAttempt,
         bindingSha256: clockInput.bindingSha256, bridgeSessionSha256: sha256Json(clockInput.bridgeSession),
         runtimeIdentitySha256: sha256Json(clockInput.runtimeIdentity), authoritySha256: evidence.authoritySha256,
       });
+      if (observation !== undefined) { originalCaptureResults.set(evidence, retained); }
     }
     return evidence;
+  }
+
+  async function observeCurrentClock(evidence: ExecutionAuthorityEvidence): Promise<IssuedCurrentWindowsClockObservation> {
+    const epoch = lifecycleEpoch, launch = currentLaunch, retained = originalCaptureResults.get(evidence);
+    const source = clockSource;
+    if (retained === undefined || launch === undefined || source === undefined) {
+      throw new Error("Fresh Windows clock requires an original source-qualified retained capture.");
+    }
+    const original = Object.freeze({ launch, retained, source });
+    const launchText = canonicalJson(launch);
+    function current(): void {
+      requireOwned(); original.source.assertSource();
+      if (currentLaunch !== original.launch || lifecycleEpoch !== epoch || canonicalJson(original.launch) !== launchText ||
+          qualifiedClockSources.get(transport) !== original.source || originalCaptureResults.get(evidence) !== original.retained ||
+          authorities.get(original.retained.evidence.authoritySha256) !== original.retained ||
+          canonicalJson(evidence) !== canonicalJson(original.retained.evidence) ||
+          original.retained.receipt.jobId !== original.launch.jobId || original.retained.receipt.helperInstance !== original.launch.helperInstance ||
+          normalCloseJobs.has(original.launch.jobId)) {
+        throw new Error("Fresh Windows clock capture, owner or original generation changed.");
+      }
+    }
+    current();
+    // Finish file hashing before sampling. Later assertions recheck source.
+    // Assertions never refresh this observation's timestamp.
+    await source.revalidate(); current();
+    const raw = await transport.request({ action: "observe-owned-clock", captureBindingSha256: retained.receipt.bindingSha256,
+      helperInstance: retained.receipt.helperInstance, jobId: retained.receipt.jobId });
+    current();
+    const base = record(raw);
+    if (base["captureBindingSha256"] !== retained.receipt.bindingSha256 || base["jobId"] !== launch.jobId ||
+        base["helperInstance"] !== launch.helperInstance || base["rootStillLive"] !== true || base["retainedProcessesLive"] !== true ||
+        Date.parse(date(base["observedAt"])) < Date.parse(retained.receipt.capturedAt)) {
+      throw new Error("Fresh Windows clock observation changed its retained capture binding.");
+    }
+    const result = freezeClockData({ schema: "easyeda-pro-control.current-owned-clock-result.v1", ...structuredClone(base) });
+    const observation = retainClock(result, raw, "owned-observation", {
+      operationId: retained.operationId, phase: retained.orphanPhase, challengeAttempt: retained.challengeAttempt,
+      bindingSha256: retained.receipt.bindingSha256, bridgeSessionSha256: retained.bridgeSessionSha256,
+      runtimeIdentitySha256: retained.runtimeIdentitySha256, authoritySha256: retained.evidence.authoritySha256,
+    }, current);
+    if (observation?.phase !== "owned-observation") { throw new Error("Fresh Windows clock observation was not issued."); }
+    return observation;
   }
 
   async function proveTerminated(input: ExecutionAuthorityTerminationInput): Promise<ExecutionAuthorityTerminationProof> {
@@ -898,7 +961,7 @@ export function createWindowsAuthoritySupervisor(
   }
 
   return {
-    capture, proveTerminated, prepareClosedSessionClose, requestClosedSessionNormalClose, proveClosedSession, probeClosedSessionTermination,
+    capture, proveTerminated, prepareClosedSessionClose, requestClosedSessionNormalClose, proveClosedSession, probeClosedSessionTermination, observeCurrentClock,
     async releaseCapture(evidence) {
       lifecycleEpoch += 1;
       requireOwned();

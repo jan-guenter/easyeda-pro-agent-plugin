@@ -13,7 +13,7 @@ import { syntheticSqlSpawn } from "./windows-clock-sql-spawn.ts";
 
 type Bag = Record<string, unknown>;
 const HELPER_SOURCE = new URL("../../../scripts/windows-authority.ps1", import.meta.url);
-export const HELPER_SHA256 = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
+export const HELPER_SHA256 = "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35";
 const CLOCK_TICKS = 639_274_896_000_000_000n, HELPER = "b".repeat(32);
 type SyntheticChild = PassThrough & { stdin: PassThrough; stdout: PassThrough; stderr: PassThrough; exitCode: number | null; signalCode: null };
 function isBag(value: unknown): value is Bag { return value !== null && typeof value === "object" && !Array.isArray(value); }
@@ -74,7 +74,7 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
     if (action === "end-probe") { return { closed: true, bindingSha256: request["bindingSha256"] }; }
     if (action === "release-capture") { return { released: true, captureBindingSha256: request["captureBindingSha256"], jobId, helperInstance: HELPER }; }
     if (action === "normal-close") { return { closeDispatched: true, jobId, saveOrDiscardSelected: false }; }
-    let phase: "launch" | "capture" | "termination";
+    let phase: "launch" | "capture" | "termination" | "owned-observation";
     let base: Bag;
     if (action === "clocked-launch") {
       generation += 1; jobId = generation.toString(16).padStart(32, "0"); phase = "launch";
@@ -84,6 +84,10 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
       const probe = action === "clocked-finish-probe";
       base = { bindingSha256: request["bindingSha256"], jobId, helperInstance: HELPER, capturedAt: "2026-10-12T12:00:00.0000000Z",
         processes: processes(probe), runtimePid: probe ? null : 101, socketOwnerPid: probe ? 101 : null };
+    } else if (action === "clocked-observe-owned-clock") {
+      phase = "owned-observation";
+      base = { captureBindingSha256: request["captureBindingSha256"], jobId, helperInstance: HELPER,
+        observedAt: "2026-10-12T12:00:05.0000000Z", rootStillLive: true, retainedProcessesLive: true };
     } else {
       assert.equal(action, "clocked-prove-terminated"); phase = "termination";
       base = { captureBindingSha256: request["captureBindingSha256"], jobId, helperInstance: HELPER,

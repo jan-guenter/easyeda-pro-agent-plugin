@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "885a596d91eedfd2bb87ef316a6a63c19b88b5b62361fa9e1652d45e75bab24c";
+const __easyedaBundlePairId = "3e6392c49e503bf9abbfd53045dbda4ee7886541da175c3ebfd2018141c1e708";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -68154,6 +68154,8 @@ function base2(input, phase5) {
     keys2 = ["jobId", "helperInstance", "root"];
   } else if (phase5 === "capture") {
     keys2 = ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"];
+  } else if (phase5 === "owned-observation") {
+    keys2 = ["jobId", "helperInstance", "captureBindingSha256", "observedAt", "rootStillLive", "retainedProcessesLive"];
   } else {
     keys2 = ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"];
   }
@@ -68187,6 +68189,11 @@ function base2(input, phase5) {
         integer3(v[key], 1, 2147483647);
       }
     }
+  } else if (phase5 === "owned-observation") {
+    text13(v["captureBindingSha256"], hashPattern);
+    if (v["rootStillLive"] !== true || v["retainedProcessesLive"] !== true) {
+      bad();
+    }
   } else {
     text13(v["captureBindingSha256"], hashPattern);
     if (v["jobEmpty"] !== true || v["retainedProcessesExited"] !== true) {
@@ -68194,7 +68201,13 @@ function base2(input, phase5) {
     }
   }
   if (phase5 !== "launch") {
-    const timestamp9 = text13(v[phase5 === "capture" ? "capturedAt" : "checkedAt"], /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,7}Z$/u);
+    let timeKey = "checkedAt";
+    if (phase5 === "capture") {
+      timeKey = "capturedAt";
+    } else if (phase5 === "owned-observation") {
+      timeKey = "observedAt";
+    }
+    const timestamp9 = text13(v[timeKey], /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,7}Z$/u);
     if (!Number.isFinite(Date.parse(timestamp9))) {
       bad();
     }
@@ -68262,7 +68275,7 @@ function createClockedTransport(raw, source4) {
           bad();
         }
         const validatedBase = base2(response3.base, mapping2.phase);
-        if (mapping2.phase === "capture" && validatedBase["bindingSha256"] !== retainedRequest["bindingSha256"] || mapping2.phase === "termination" && (validatedBase["captureBindingSha256"] !== retainedRequest["captureBindingSha256"] || validatedBase["jobId"] !== retainedRequest["jobId"] || validatedBase["helperInstance"] !== retainedRequest["helperInstance"])) {
+        if (mapping2.phase === "capture" && validatedBase["bindingSha256"] !== retainedRequest["bindingSha256"] || (mapping2.phase === "termination" || mapping2.phase === "owned-observation") && (validatedBase["captureBindingSha256"] !== retainedRequest["captureBindingSha256"] || validatedBase["jobId"] !== retainedRequest["jobId"] || validatedBase["helperInstance"] !== retainedRequest["helperInstance"])) {
           bad();
         }
         let observed2;
@@ -68326,7 +68339,8 @@ var init_windows_clock_transport = __esm({
       launch: { action: "clocked-launch", phase: "launch" },
       capture: { action: "clocked-capture", phase: "capture" },
       "finish-probe": { action: "clocked-finish-probe", phase: "capture" },
-      "prove-terminated": { action: "clocked-prove-terminated", phase: "termination" }
+      "prove-terminated": { action: "clocked-prove-terminated", phase: "termination" },
+      "observe-owned-clock": { action: "clocked-observe-owned-clock", phase: "owned-observation" }
     };
     passThrough = /* @__PURE__ */ new Set(["begin-probe", "end-probe", "release-capture", "normal-close", "observe-launch-termination", "observe-existing-application", "observe-application-window"]);
   }
@@ -68354,6 +68368,14 @@ async function assertIssuedWindowsClockObservation(value2) {
     throw new Error("Windows clock observation was not issued by the source-qualified retained helper.");
   }
   await slot.verify();
+  return slot.observation;
+}
+function assertCurrentIssuedWindowsClockObservation(value2) {
+  const slot = value2 !== null && typeof value2 === "object" ? issuedClocks.get(value2) : void 0;
+  if (slot === void 0) {
+    throw new Error("Windows clock observation was not issued by the source-qualified retained helper.");
+  }
+  slot.current();
   return slot.observation;
 }
 async function windowsClockObservationForResult(value2, phase5) {
@@ -68490,6 +68512,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
   const closedSessionSlots = /* @__PURE__ */ new Map();
   const normalCloseJobs = /* @__PURE__ */ new Set();
   const authorities = /* @__PURE__ */ new Map();
+  const originalCaptureResults = /* @__PURE__ */ new WeakMap();
   const usedCaptureBindings = /* @__PURE__ */ new Set();
   let lifecycleEpoch = 0;
   let currentLaunch;
@@ -68501,35 +68524,37 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     captureClockBases.set(receipt2, raw);
     return receipt2;
   }
-  function retainClock(result, raw, phase5, ownerBinding) {
+  function retainClock(result, raw, phase5, ownerBinding, verifyCurrent) {
     if (clockSource === void 0 || currentLaunch === void 0) {
-      return;
+      return void 0;
     }
     let attachment;
     try {
       attachment = clockSource.originalAttachment(raw);
     } catch {
-      return;
+      return void 0;
     }
     if (attachment === void 0 || attachment.phase !== phase5 || attachment.base["jobId"] !== currentLaunch.jobId || attachment.base["helperInstance"] !== currentLaunch.helperInstance) {
-      return;
+      return void 0;
     }
     const launchText = canonicalJson(currentLaunch), resultText = canonicalJson(result);
-    const observation2 = freezeClockData({ ...structuredClone(attachment), ownerBinding: structuredClone(ownerBinding) });
-    async function verify() {
-      function current3() {
-        requireOwned();
-        clockSource?.assertTransport();
-        if (canonicalJson(currentLaunch) !== launchText || canonicalJson(result) !== resultText || originalClocks.get(result) !== observation2 || qualifiedClockSources.get(transport2) !== clockSource) {
-          throw new Error("Windows clock owner, result or launched generation changed.");
-        }
+    const observation2 = freezeClockData({ ...structuredClone(attachment), phase: phase5, ownerBinding: structuredClone(ownerBinding) });
+    function current3() {
+      requireOwned();
+      clockSource?.assertTransport();
+      verifyCurrent?.();
+      if (canonicalJson(currentLaunch) !== launchText || canonicalJson(result) !== resultText || originalClocks.get(result) !== observation2 || qualifiedClockSources.get(transport2) !== clockSource) {
+        throw new Error("Windows clock owner, result or launched generation changed.");
       }
+    }
+    async function verify() {
       current3();
       await clockSource?.revalidate();
       current3();
     }
     originalClocks.set(result, observation2);
-    issuedClocks.set(observation2, { observation: observation2, verify });
+    issuedClocks.set(observation2, { observation: observation2, current: current3, verify });
+    return observation2;
   }
   function requireOwned() {
     if (released) {
@@ -68633,7 +68658,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     if (authorities.has(evidence2.authoritySha256)) {
       throw new Error("Windows authority capture was replayed.");
     }
-    authorities.set(evidence2.authoritySha256, {
+    const retained = {
       evidence: structuredClone(evidence2),
       receipt: receipt2,
       operationId: input.operationId,
@@ -68641,9 +68666,10 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       challengeAttempt: input.challengeAttempt,
       bridgeSessionSha256: sha256Json(input.bridgeSession),
       runtimeIdentitySha256: sha256Json(input.runtimeIdentity)
-    });
+    };
+    authorities.set(evidence2.authoritySha256, retained);
     if (canonicalJson(input) === canonicalJson(clockInput)) {
-      retainClock(evidence2, captureClockBases.get(receipt2), "capture", {
+      const observation2 = retainClock(evidence2, captureClockBases.get(receipt2), "capture", {
         operationId: clockInput.operationId,
         phase: clockInput.orphanPhase,
         challengeAttempt: clockInput.challengeAttempt,
@@ -68652,8 +68678,55 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
         runtimeIdentitySha256: sha256Json(clockInput.runtimeIdentity),
         authoritySha256: evidence2.authoritySha256
       });
+      if (observation2 !== void 0) {
+        originalCaptureResults.set(evidence2, retained);
+      }
     }
     return evidence2;
+  }
+  async function observeCurrentClock(evidence2) {
+    const epoch = lifecycleEpoch, launch = currentLaunch, retained = originalCaptureResults.get(evidence2);
+    const source4 = clockSource;
+    if (retained === void 0 || launch === void 0 || source4 === void 0) {
+      throw new Error("Fresh Windows clock requires an original source-qualified retained capture.");
+    }
+    const original2 = Object.freeze({ launch, retained, source: source4 });
+    const launchText = canonicalJson(launch);
+    function current3() {
+      requireOwned();
+      original2.source.assertSource();
+      if (currentLaunch !== original2.launch || lifecycleEpoch !== epoch || canonicalJson(original2.launch) !== launchText || qualifiedClockSources.get(transport2) !== original2.source || originalCaptureResults.get(evidence2) !== original2.retained || authorities.get(original2.retained.evidence.authoritySha256) !== original2.retained || canonicalJson(evidence2) !== canonicalJson(original2.retained.evidence) || original2.retained.receipt.jobId !== original2.launch.jobId || original2.retained.receipt.helperInstance !== original2.launch.helperInstance || normalCloseJobs.has(original2.launch.jobId)) {
+        throw new Error("Fresh Windows clock capture, owner or original generation changed.");
+      }
+    }
+    current3();
+    await source4.revalidate();
+    current3();
+    const raw = await transport2.request({
+      action: "observe-owned-clock",
+      captureBindingSha256: retained.receipt.bindingSha256,
+      helperInstance: retained.receipt.helperInstance,
+      jobId: retained.receipt.jobId
+    });
+    current3();
+    const base4 = record5(raw);
+    if (base4["captureBindingSha256"] !== retained.receipt.bindingSha256 || base4["jobId"] !== launch.jobId || base4["helperInstance"] !== launch.helperInstance || base4["rootStillLive"] !== true || base4["retainedProcessesLive"] !== true || Date.parse(date5(base4["observedAt"])) < Date.parse(retained.receipt.capturedAt)) {
+      throw new Error("Fresh Windows clock observation changed its retained capture binding.");
+    }
+    const result = freezeClockData({ schema: "easyeda-pro-control.current-owned-clock-result.v1", ...structuredClone(base4) });
+    const observation2 = retainClock(result, raw, "owned-observation", {
+      operationId: retained.operationId,
+      phase: retained.orphanPhase,
+      challengeAttempt: retained.challengeAttempt,
+      bindingSha256: retained.receipt.bindingSha256,
+      bridgeSessionSha256: retained.bridgeSessionSha256,
+      runtimeIdentitySha256: retained.runtimeIdentitySha256,
+      authoritySha256: retained.evidence.authoritySha256
+    }, current3);
+    if (observation2?.phase !== "owned-observation") {
+      throw new Error("Fresh Windows clock observation was not issued.");
+    }
+    return observation2;
   }
   async function proveTerminated(input) {
     requireOwned();
@@ -68999,6 +69072,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     requestClosedSessionNormalClose,
     proveClosedSession,
     probeClosedSessionTermination,
+    observeCurrentClock,
     async releaseCapture(evidence2) {
       lifecycleEpoch += 1;
       requireOwned();
@@ -69360,7 +69434,7 @@ var init_windows_authority = __esm({
     qualifiedClockSources = /* @__PURE__ */ new WeakMap();
     originalClocks = /* @__PURE__ */ new WeakMap();
     issuedClocks = /* @__PURE__ */ new WeakMap();
-    REVIEWED_CLOCK_HELPER_SHA256 = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
+    REVIEWED_CLOCK_HELPER_SHA256 = "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35";
     CLOSED_SESSION_PROOF_BRAND = /* @__PURE__ */ Symbol("closed-session-termination-proof");
     terminationObservationOwners = /* @__PURE__ */ new WeakMap();
     closedProofOwners = /* @__PURE__ */ new WeakMap();
@@ -69439,7 +69513,7 @@ var init_closed_sql_clock = __esm({
 
 // server/src/closed-symbol-recorded-native.ts
 function knownHelper(value2) {
-  return value2 === HELPER || value2 === ORDINARY_LAUNCH_HELPER || value2 === CURRENT_HELPER;
+  return value2 === HELPER || value2 === ORDINARY_LAUNCH_HELPER || value2 === CURRENT_HELPER || value2 === FRESH_CLOCK_HELPER;
 }
 function need8(value2) {
   if (!value2) {
@@ -69648,7 +69722,7 @@ function validateRecordedCaptureEvidence(input) {
   }
   return freeze(structuredClone({ capture: c, clock: parsed2, authorityRestored: false, executionAuthorized: false }));
 }
-var HELPER, ORDINARY_LAUNCH_HELPER, CURRENT_HELPER, HASH8, ID, TOKEN, EPOCH;
+var HELPER, ORDINARY_LAUNCH_HELPER, CURRENT_HELPER, FRESH_CLOCK_HELPER, HASH8, ID, TOKEN, EPOCH;
 var init_closed_symbol_recorded_native = __esm({
   "server/src/closed-symbol-recorded-native.ts"() {
     init_core3();
@@ -69657,6 +69731,7 @@ var init_closed_symbol_recorded_native = __esm({
     HELPER = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
     ORDINARY_LAUNCH_HELPER = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
     CURRENT_HELPER = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
+    FRESH_CLOCK_HELPER = "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35";
     HASH8 = /^[a-f0-9]{64}$/u;
     ID = /^[a-f0-9]{32}$/u;
     TOKEN = /^[A-Za-z0-9_-]{43}$/u;
@@ -92283,6 +92358,7 @@ var init_windows_runtime = __esm({
       dependencies;
       paths;
       supervisor;
+      supervisorClockMethods = /* @__PURE__ */ new WeakMap();
       currentLaunch = null;
       clockLaunches = /* @__PURE__ */ new WeakMap();
       state = "not-launched";
@@ -92355,6 +92431,7 @@ var init_windows_runtime = __esm({
           await acquired.release();
           throw new Error("Windows runtime changed during helper startup.");
         }
+        this.supervisorClockMethods.set(this.supervisor, { observe: this.supervisor.observeCurrentClock, capture: this.supervisor.capture });
         return this.supervisor;
       }
       /** Starts only the proof helper, not EasyEDA. Existing instances are observed
@@ -92405,6 +92482,30 @@ var init_windows_runtime = __esm({
       }
       releaseCapture(evidence2) {
         return this.requireSupervisor().releaseCapture(evidence2);
+      }
+      /** Internal fresh read from the original capture. Never starts or adopts a helper. */
+      async observeCurrentClock(evidence2) {
+        const supervisor = this.requireSupervisor();
+        const methods5 = this.supervisorClockMethods.get(supervisor);
+        const observe2 = methods5?.observe;
+        if (observe2 === void 0) {
+          throw new Error("Retained runtime has no original fresh-clock method.");
+        }
+        const evidenceText = canonicalJson(evidence2), launch = this.currentLaunch, launchText = canonicalJson(launch);
+        const current3 = () => {
+          if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods5 || supervisor.observeCurrentClock !== observe2 || supervisor.capture !== methods5?.capture || canonicalJson(evidence2) !== evidenceText) {
+            throw new Error("Fresh runtime clock lost its original capture, supervisor, method or launch.");
+          }
+        };
+        current3();
+        const observation2 = await observe2.call(supervisor, evidence2);
+        current3();
+        const issued7 = assertCurrentIssuedWindowsClockObservation(observation2);
+        if (issued7 !== observation2 || observation2.phase !== "owned-observation" || launch === null || observation2.base["jobId"] !== launch.jobId || observation2.base["helperInstance"] !== launch.helperInstance || observation2.base["captureBindingSha256"] !== evidence2.bindingSha256 || observation2.ownerBinding["bindingSha256"] !== evidence2.bindingSha256 || observation2.ownerBinding["authoritySha256"] !== evidence2.authoritySha256) {
+          throw new Error("Fresh runtime clock returned another original capture or launch.");
+        }
+        current3();
+        return observation2;
       }
       /** Internal coordinator-only preparation; never starts a helper or application. */
       async prepareClosedSessionClose(input) {
@@ -92955,7 +93056,7 @@ function describe3(operationId3, operation) {
 function allowsNextLaunch(operation) {
   return operation.terminated !== void 0 || operation.refused !== void 0 || operation.abandoned !== void 0 || operation.unknownAbandoned !== void 0;
 }
-var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, windowHandleSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentFields, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, abandonedSchema, unknownAbandonedSchema, closeIntentSchema, closeAcknowledgmentSchema, windowObservationSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, HISTORICAL_ABANDONMENT_PROFILE_SHA256, HISTORICAL_UNKNOWN_LAUNCH, OrdinaryLaunchCoordinator;
+var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, windowHandleSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentFields, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, abandonedSchema, unknownAbandonedSchema, closeIntentSchema, closeAcknowledgmentSchema, windowObservationSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, HISTORICAL_ABANDONMENT_PROFILE_SHA256, WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, HISTORICAL_UNKNOWN_LAUNCH, OrdinaryLaunchCoordinator;
 var init_ordinary_launch = __esm({
   "server/src/ordinary-launch.ts"() {
     init_zod();
@@ -92971,8 +93072,8 @@ var init_ordinary_launch = __esm({
         { relativePath: "../package.json", bytes: 248, sha256: "e349f8d80f809f82a057f1b81799430ba25bfa0f7c7cb96f6155327b49391455" },
         { relativePath: "../editor.ini", bytes: 8031, sha256: "cb18dd85262f44dedd65487deed4e1b1fac68eb90ad6a99ca86ba163efe655b6" }
       ],
-      // Reviewed retained-root window observer and one-shot normal-close helper.
-      helper: { relativePath: "scripts/windows-authority.ps1", sha256: "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161" }
+      // Adds a separate retained-capture clock observer; launch and normal close are unchanged.
+      helper: { relativePath: "scripts/windows-authority.ps1", sha256: "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35" }
     };
     operationIdSchema = external_exports.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
     digestSchema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
@@ -93126,6 +93227,7 @@ var init_ordinary_launch = __esm({
     MAX_OPERATIONS = 4096;
     MAX_RECORD_BYTES = 8192;
     HISTORICAL_ABANDONMENT_PROFILE_SHA256 = "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314";
+    WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256 = "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad";
     HISTORICAL_UNKNOWN_LAUNCH = {
       profileSha256: "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad",
       facadeSha256: "d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7"
@@ -93399,7 +93501,7 @@ var init_ordinary_launch = __esm({
         requireValue14(!allowsNextLaunch(operation), "Ordinary launch supervision is already resolved or abandoned.");
         requireValue14(this.retained === void 0, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
         requireValue14(request3.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
-        requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
+        requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256 || operation.intent.profileSha256 === WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
         const observation2 = await this.observeApplication(request3.operationId, operation, operations);
         const application2 = external_exports.looseObject({ sameNameProcessPresent: external_exports.boolean() }).parse(observation2["application"]);
         requireValue14(!application2.sameNameProcessPresent, "Supervision abandonment requires absent same-name application samples.");
@@ -97621,6 +97723,34 @@ var init_engine = __esm({
         current3();
         return observation2;
       }
+      /** Fresh final-boundary observation for an already admitted, original tracked
+       * dispatch scope. Does not repeat runtime probes, admission scans or captures.
+       */
+      async freshClockObservationForTrackedDispatch(operation, phase5) {
+        const slot = this.trackedClockCaptures.get(operation);
+        const observe2 = slot?.clockMethod;
+        if (slot === void 0 || observe2 === void 0) {
+          throw new Error("Fresh clock requires an original tracked capture and retained clock method.");
+        }
+        const current3 = () => {
+          if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe2 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
+            throw new Error("Fresh clock requires the unchanged original tracked dispatch owner and methods.");
+          }
+          const session = this.authenticatedBridgeSession();
+          if (canonicalJson(session) !== slot.sessionSnapshot || canonicalJson(authenticatedBridgeDispatchPayload(this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), session)) !== slot.dispatchSnapshot) {
+            throw new Error("Fresh clock requires its original authenticated session and current dispatch lease.");
+          }
+        };
+        current3();
+        const observation2 = await observe2.call(slot.validator, slot.original);
+        current3();
+        const issued7 = assertCurrentIssuedWindowsClockObservation(observation2);
+        if (issued7 !== observation2 || observation2.phase !== "owned-observation" || observation2.ownerBinding["operationId"] !== slot.operationId || observation2.ownerBinding["phase"] !== slot.phase || observation2.ownerBinding["challengeAttempt"] !== slot.challengeAttempt || observation2.ownerBinding["authoritySha256"] !== slot.original.authoritySha256 || observation2.ownerBinding["bindingSha256"] !== slot.original.bindingSha256 || observation2.base["captureBindingSha256"] !== slot.original.bindingSha256 || observation2.ownerBinding["bridgeSessionSha256"] !== sha256Text(slot.sessionSnapshot) || observation2.ownerBinding["runtimeIdentitySha256"] !== sha256Text(slot.runtimeSnapshot)) {
+          throw new Error("Fresh clock returned another original operation, capture, session or runtime.");
+        }
+        current3();
+        return observation2;
+      }
       /** Release only this engine's original receipt, after all closed copies.
        * Release consumes the handle even on ambiguous cleanup; never repeat it.
        */
@@ -97644,6 +97774,7 @@ var init_engine = __esm({
             "Ambiguous-call recovery requires an installed operation-bound process-tree termination validator before dispatch."
           );
         }
+        const clockMethod = validator.observeCurrentClock, dispatchMethod = this.upstream.currentAuthenticatedBridgeDispatchBinding, sessionMethod = this.upstream.bridgeSessionLifecycle;
         const beginDispatch = this.upstream.beginAuthenticatedBridgeDispatch;
         const abortDispatch = this.upstream.abortAuthenticatedBridgeDispatch;
         const scopedDispatch = this.upstream.currentAuthenticatedBridgeDispatchBinding?.();
@@ -97697,6 +97828,10 @@ var init_engine = __esm({
             snapshot: canonicalJson(executionAuthority),
             validator,
             challengeAttempt,
+            clockMethod,
+            dispatchMethod,
+            sessionMethod,
+            dispatchSnapshot: canonicalJson(bridgeDispatch),
             runtimeSnapshot: canonicalJson(runtimeIdentity),
             sessionSnapshot: canonicalJson(bridgeSession)
           });
