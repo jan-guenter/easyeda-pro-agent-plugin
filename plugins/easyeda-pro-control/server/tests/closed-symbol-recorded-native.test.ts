@@ -23,6 +23,7 @@ function fingerprint(): Bag {
       publicApi: { ...m.installedBundles.publicApi, implementationPath: '/synthetic/api.js', adapterPath: '/synthetic/adapter.js', declarationsPath: '/synthetic/api.d.ts' } } };
 }
 const helper = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
+const freshClockHelper = '507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35';
 const ordinaryLaunchHelper = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
 const currentHelper = 'fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161';
 function sample(time: number): ReturnType<typeof validateClockSample> { return { schema: 'easyeda-pro-control.windows-clock-sample.v1', utcBeforeTicks: String(621_355_968_000_000_000n + BigInt(time) * 10_000n),
@@ -131,18 +132,19 @@ void test('strict known native source pins and bootstrap continuity refuse chang
 });
 void test('helper literal and actual native runtime producer shape remain source-backed', async () => {
   const authority = await readFile(new URL('../src/windows-authority.ts', import.meta.url), 'utf8');
-  assert.ok(authority.includes(`const REVIEWED_CLOCK_HELPER_SHA256 = "${currentHelper}";`));
+  assert.ok(authority.includes(`const REVIEWED_CLOCK_HELPER_SHA256 = "${freshClockHelper}";`));
   const helperBytes = await readFile(new URL('../../scripts/windows-authority.ps1', import.meta.url));
-  assert.equal(createHash('sha256').update(helperBytes).digest('hex'), currentHelper);
+  assert.equal(createHash('sha256').update(helperBytes).digest('hex'), freshClockHelper);
   const decoder = await readFile(new URL('../src/closed-symbol-recorded-native.ts', import.meta.url), 'utf8');
   assert.ok(decoder.includes(`const HELPER = '${helper}';`) && decoder.includes(`const CURRENT_HELPER = '${currentHelper}';`));
   assert.ok(decoder.includes(`const ORDINARY_LAUNCH_HELPER = '${ordinaryLaunchHelper}';`));
+  assert.ok(decoder.includes(`const FRESH_CLOCK_HELPER = '${freshClockHelper}';`));
   const runtime = await readFile(new URL('../src/runtime-scripts.ts', import.meta.url), 'utf8');
   assert.ok(runtime.includes('ok: true,\n    kind: "runtime-identity",\n    generation,\n    timeOrigin,\n    processId:'));
 });
 void test('current reviewed helper remains data only and has its own bound policy', () => {
   const historical = fixture();
-  for (const selected of [ordinaryLaunchHelper, currentHelper]) {
+  for (const selected of [ordinaryLaunchHelper, currentHelper, freshClockHelper]) {
     const current = fixture('closed-edit', 2, 101, selected);
     const result = validateRecordedCaptureEvidence(current.input);
     assert.equal(current.input.source.helperSourceSha256, selected);
@@ -152,7 +154,7 @@ void test('current reviewed helper remains data only and has its own bound polic
   }
 });
 void test('known helper generations cannot be mixed between launch, policy and capture', () => {
-  for (const selected of [helper, ordinaryLaunchHelper, currentHelper]) {
+  for (const selected of [helper, ordinaryLaunchHelper, currentHelper, freshClockHelper]) {
     const f = fixture('closed-edit', 2, 101, selected), other = selected === helper ? currentHelper : helper;
     f.clock['helperSourceSha256'] = other;
     assert.throws(() => validateRecordedCaptureEvidence(f.input), /Recorded native capture refused/u);

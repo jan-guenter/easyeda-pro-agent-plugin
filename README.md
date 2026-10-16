@@ -19,6 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
+Candidate `0.3.0+codex.20261016120000` adds internal fresh Windows clock sampling,
+current-version aged-history parsing and a one-shot persisted-timestamp
+comparison. The new path keeps its timestamp windows fixed even when final
+verification happens later. It adds no public writer or execution authority;
+the coordinator and disposable forward/inverse proof remain unfinished. See the
+[implementation and remaining work](docs/current-symbol-clock-implementation-2026-10-16.md).
+
 Update `0.3.0+codex.20261016103000` adds a project-only symbol comparison without
 opening a PCB or symbol editor, plus internal actor postconditions and exact
 SQLite dependency checks for the future writer. The previous installed lifecycle

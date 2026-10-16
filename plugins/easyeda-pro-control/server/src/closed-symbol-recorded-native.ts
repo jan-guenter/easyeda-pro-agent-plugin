@@ -16,7 +16,12 @@ const ORDINARY_LAUNCH_HELPER = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e51
 // The current revision adds private window observation and stronger one-shot
 // WM_CLOSE checks; the recorded clock/capture/termination producers are intact.
 const CURRENT_HELPER = 'fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161';
-function knownHelper(value: unknown): boolean { return value === HELPER || value === ORDINARY_LAUNCH_HELPER || value === CURRENT_HELPER; }
+// This revision adds a distinct owned-observation action. Existing launch,
+// Capture and termination producers are unchanged; old evidence stays data only.
+const FRESH_CLOCK_HELPER = '507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35';
+function knownHelper(value: unknown): boolean {
+  return value === HELPER || value === ORDINARY_LAUNCH_HELPER || value === CURRENT_HELPER || value === FRESH_CLOCK_HELPER;
+}
 const HASH = /^[a-f0-9]{64}$/u, ID = /^[a-f0-9]{32}$/u, TOKEN = /^[A-Za-z0-9_-]{43}$/u;
 const EPOCH = 621_355_968_000_000_000n;
 function need(value: boolean): asserts value { if (!value) { throw new Error('Recorded native capture refused.'); } }

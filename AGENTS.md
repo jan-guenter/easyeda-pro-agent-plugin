@@ -6,7 +6,110 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Resumed103000: host admitted; current clock implementation
+
+Actual facade521945, parent520207, startTicks12434729 loads installed103000
+on pinnedNode24.18.0. Independent read-only admission matches all1,229files/
+24,325,468bytes and modes against main18a8da9e, inventory71d619ff/source367
+SHA742d0526/runtime3 SHA28f6e024. Automatic mainCI38888408538 has passed.
+Offline new project-symbol-preflight discovery passes. Fresh status authenticated
+after one ordinary-startup-103000-20261016 launch, root39584,
+Job94f2ecd2fc39448cb70a56537f36ea8f/helper257145cbd5424ded97003f80c81dc436;
+launchedSHA b7ef19dc. Initial context proved empty StartPage. Disposable
+current-pcb-open-103000-20261016 completed once with exactPCB/nativeidentity,
+hardStop/orphanfalse, terminal07 SHA4933cddb. Its managed checkpoint4ed9ca7c
+is561,152bytes; raw source970d21b3 remains598,016bytes. Baseline-begin41
+for current-baseline-103000-20261016 completed awaiting-termination with one
+acknowledged normal close,04 SHA24e2eebb. Termination/copy observation54 runs;
+no Save or prepared patch was dispatched. Never repeat opening/close. Prior090000
+lifecycle remains fully retired and must not be replayed. Root owns all live calls.
+Source work is on `feature/current-symbol-clock-plan`: fresh original-supervisor
+clock sampling, separate current aged-head parsing and original current clock-
+plan comparison are implemented with focused tests, types and strict targeted
+lint passing. Main/independent review caught and fixed final-await owner drift
+and duplicate observation reuse; final owner checks do not refresh time.
+Runtime/engine forwarding preserves original capture/session/lease/methods and
+does no post-sampling runtime probe or history scan. Historical launch/profile
+pins remain data-only; current helper507fdea3 has its own profilea9038c4e.
+None is live-admitted or writer enablement. Candidate120000 is being prepared;
+no new publication or installation yet. Scope and remaining work are recorded
+in docs/current-symbol-clock-implementation-2026-10-16.md.
+Whole-tree types/strictlint with zero warnings, builds, compatibility, coverage,
+package/repository and all seven official skill validators pass. Initial global
+lint found two comment-capitalization cases and one nested test call; these were
+corrected without exceptions or production behavior changes. No duplicate full
+local suite. Independent preparation-latency review found six history scans/four
+status-source passes before journal creation. No scan was removed: the proposed
+initial removal would allow connect before quarantine admission. Fixed phase
+timing and narrow source-qualification consolidation remain performance backlog.
+Production designs and their records remain untouched.
+
+### Delivered103000: project-only symbol preflight; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016103000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Final payload `8005740b7efa3f29e3372f36bb26c9df6eededfd` merged through protected
+PR40 as main `18a8da9ef632a87137b99cc75753ed95ece0b26b`. Full tree
+`5690b64315f0709b3e5ccc5ff6b66727d431213e` and package tree
+`a5a9f1892844989fd4edeab8954997c2468d69e1` exactly match the tested payload.
+Required PR CI38887063800 passed all ten jobs:10,223 facade passes/five platform
+skips/zero failures or cancellations,424 bridge passes across28files. Windows
+38887063785 passed. Audits verified151registry signatures/40attestations and
+zero vulnerabilities. Types, strict type-aware lint with zero warnings, builds,
+compatibility, package/privacy/repository and seven-skill checks passed. All
+seven official skill validators passed locally; unavailable on the CI runner.
+Initial CI38885501941 failed the older VM fixture's missing schema binding,
+fixed without changing production bytes or assertions. It is not acceptance.
+Automatic mainCI38888408538 is pending; main Windows38888408539 passed. The
+main tree is identical, and no duplicate full local suite was run.
+
+Official named marketplace upgrade under022 returned errors[] and zero stderr.
+CLI confirms103000 installed/enabled; marketplace HEAD equals merged main.
+Configured offline proof matches all1,229files/24,325,468bytes and modes against
+Git:42directories0755,1,228files0644/one0755,seven skills,no extras/symlinks/
+hardlinks. Independent read-only installed inventory repeats the exact match.
+Inventory71d619ff;source367 SHA742d0526/runtime3 SHA28f6e024,
+compatibility manifest64b23d63. AmbientNode26.11.1 hands off to pinnedNode24.18.0,
+without installed module ancestors. The actual installed16-tool catalog exposes
+new exact project-symbol-preflight discovery/validation, rejects three mixed/
+unknown-field requests and accepts a later valid one; authority flags remain
+false. Existing opening/history/baseline-analysis schemas also pass. Three
+samples show no upstream child/non-stdio sockets or operation journals. Probe
+516267 exited0 through stdinEOF, zero stderr, no signals, synthetic profile
+unchanged. Private proof `/tmp/easyeda-installed-103000-BnpQ3O39/proof.json`,
+3,530bytes SHA
+`db73160aa22bf6d2115c8869da6a66cfd09ac957c16066fd971b27391da4b735`.
+No live103000 call or imported-runtime/writer validation is claimed.
+Public delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/40#issuecomment-6213675858.
+
+The completed090000 disposable lifecycle below is fully retired. Do not repeat
+its launch, navigation, close or Save. Loaded090000 facade481814 is unchanged;
+do not terminate it, modify its cache or force it onto103000. Start a fresh
+Codex session for independent installed/actual-host admission and one bounded
+project-only symbol read in a fresh disposable lifecycle. Production designs
+and their records remain excluded. Local main now equals origin/main; this
+delivery checkpoint stays uncommitted for the next source change, without a
+record-only CI cycle.
+
+Next implementation work is the original current clock plan and fresh final-
+dispatch sampling, startup-effect qualification, fixed one-shot metadata
+writer/coordinator, original root/Job termination, complete SQL/native effect
+comparison, both inactive upload-cache exclusions, and exact forward/inverse
+persistence plus failure recovery. Existing writer restrictions remain. The
+broader method backlog and concrete omissions are retained in the coverage
+inventory; see `docs/current-project-only-symbol-release-2026-10-16.md` and
+the dated actor, producer-scope and clock-contract plans. Publication and
+installation are now complete; their pending wording below is historical.
+
 ### Candidate103000 published for required CI
+
+Final follow-up payload `8005740b7efa3f29e3372f36bb26c9df6eededfd` updates only
+the old callback fixture and release records. Full tree5690b643/packagea5a9f189;
+production source/runtime hashes remain742d0526/28f6e024. CI38887063800 runs on
+that exact head; Windows38887063785 passed. The initial payload below is not
+release acceptance. Merge/install remain pending. Keep this final local record
+for the next source change, without another record-only CI cycle.
 
 Payload `8fa5c5e595a4f83ee4b611ee8333888a9a1e35f6` is in protected PR40,
 https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/40. Full tree

@@ -350,7 +350,8 @@ void test("legacy intent-only recovery admits the reviewed runtime hash, not a m
   const path = join(journal(id), "intent.json");
   const intent: unknown = JSON.parse(await readFile(path, "utf8"));
   assert.ok(isRecord(intent));
-  const legacy = { schema: "easyeda-pro-control.ordinary-launch-intent.v1", operationId: id, profileSha256: intent["profileSha256"],
+  const legacy = { schema: "easyeda-pro-control.ordinary-launch-intent.v1", operationId: id,
+    profileSha256: "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad",
     facadeSha256, createdAt: intent["createdAt"] };
   await writeFile(path, JSON.stringify(legacy));
   const refused = fixture(id);
@@ -358,12 +359,16 @@ void test("legacy intent-only recovery admits the reviewed runtime hash, not a m
   await assert.rejects(refused.coordinator.run(unknownRequest(id, legacyDigest)), /dispatch protocol is not reviewed/u);
   assert.equal(refused.calls.includes("recovery"), false);
   const foreignV2 = { ...legacy, schema: "easyeda-pro-control.ordinary-launch-intent.v2",
-    dispatchProtocol: "retained-helper-before-intent.v1", facadeSha256: "b".repeat(64) };
+    profileSha256: intent["profileSha256"], dispatchProtocol: "retained-helper-before-intent.v1", facadeSha256: "b".repeat(64) };
   await writeFile(path, JSON.stringify(foreignV2));
   const foreignDigest = sha256Json(foreignV2);
   await assert.rejects(refused.coordinator.run(unknownRequest(id, foreignDigest)), /v2 producer differs/u);
   assert.equal(refused.calls.includes("recovery"), false);
   const reviewed = { ...legacy, facadeSha256: "d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7" };
+  const wrongProfile = { ...reviewed, profileSha256: intent["profileSha256"] };
+  await writeFile(path, JSON.stringify(wrongProfile));
+  const wrongProfileRequest = unknownRequest(id, sha256Json(wrongProfile));
+  await assert.rejects(refused.coordinator.run(wrongProfileRequest), /dispatch protocol is not reviewed/u);
   await writeFile(path, JSON.stringify(reviewed));
   const accepted = await fixture(id).coordinator.run(unknownRequest(id, sha256Json(reviewed)));
   assert.equal(accepted["state"], "unknown-launch-abandoned");
@@ -706,8 +711,12 @@ void test("ordinary close retains quarantine and journal rechecks after durable 
   assert.equal(terminated["state"], "terminated");
 });
 
-void test("ordinary abandonment admits only the exact historical profile without granting retained close authority", async (context) => {
-  const id = "ordinary-test-abandon-old-profile";
+for (const [suffix, historicalProfile] of [
+  ["ordinary", "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314"],
+  ["window", "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad"],
+] as const) {
+void test(`ordinary abandonment preserves exact ${suffix} historical profile without retained close authority`, async (context) => {
+  const id = `ordinary-test-abandon-old-profile-${suffix}`;
   cleanup(context, id);
   await fixture(id).coordinator.run(request(id));
   const intentPath = join(journal(id), "intent.json"), launchedPath = join(journal(id), "launched.json");
@@ -721,7 +730,7 @@ void test("ordinary abandonment admits only the exact historical profile without
   const restarted = fixture(id);
   const unknownDigest = sha256Json(unknownLaunched);
   await assert.rejects(restarted.coordinator.run(abandonRequest(id, unknownDigest)), /historical profile is not reviewed/u);
-  const oldIntent = { ...originalIntent, profileSha256: "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314" };
+  const oldIntent = { ...originalIntent, profileSha256: historicalProfile };
   const oldLaunched = { ...originalLaunched, intentSha256: sha256Json(oldIntent) };
   await writeFile(intentPath, JSON.stringify(oldIntent));
   await writeFile(launchedPath, JSON.stringify(oldLaunched));
@@ -732,3 +741,4 @@ void test("ordinary abandonment admits only the exact historical profile without
   assert.equal(abandoned["terminationProved"], false);
   assert.equal(restarted.calls.includes("close"), false);
 });
+}

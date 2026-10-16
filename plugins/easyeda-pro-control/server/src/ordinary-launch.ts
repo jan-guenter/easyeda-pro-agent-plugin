@@ -20,8 +20,8 @@ export const ORDINARY_LAUNCH_PROFILE = {
     { relativePath: "../package.json", bytes: 248, sha256: "e349f8d80f809f82a057f1b81799430ba25bfa0f7c7cb96f6155327b49391455" },
     { relativePath: "../editor.ini", bytes: 8031, sha256: "cb18dd85262f44dedd65487deed4e1b1fac68eb90ad6a99ca86ba163efe655b6" },
   ],
-  // Reviewed retained-root window observer and one-shot normal-close helper.
-  helper: { relativePath: "scripts/windows-authority.ps1", sha256: "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161" },
+  // Adds a separate retained-capture clock observer; launch and normal close are unchanged.
+  helper: { relativePath: "scripts/windows-authority.ps1", sha256: "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35" },
 } as const;
 
 const operationIdSchema = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
@@ -157,6 +157,9 @@ const MAX_RECORD_BYTES = 8192;
 // This exact prior profile permits historical supervision relinquishment only.
 // It never admits the former helper for launch, adoption, close or exit proof.
 const HISTORICAL_ABANDONMENT_PROFILE_SHA256 = "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314";
+// The fa5cff83 helper's profile is now historical too. This only preserves
+// Explicit supervision relinquishment; it cannot launch, close or adopt it.
+const WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256 = "9ab6901e888bc4d03084fe64e62325fbd8f333794fad7ac6408dab73081c15ad";
 // Release 020000 observes its retained native helper before publishing intent.
 // That runtime never replaces its supervisor after protocol loss.
 // This pin admits only that ordering proof, never old executable authority.
@@ -557,7 +560,8 @@ export class OrdinaryLaunchCoordinator {
     requireValue(this.retained === undefined, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
     requireValue(request.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
     requireValue(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) ||
-      operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
+      operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256 ||
+      operation.intent.profileSha256 === WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
     // This is an explicit risk acknowledgement, not restoration of lost handles.
     // The observer rechecks installation, admission and the entire inventory.
     const observation = await this.observeApplication(request.operationId, operation, operations);

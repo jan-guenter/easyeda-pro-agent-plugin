@@ -1,8 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
 import { scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
-import { windowsClockObservationForResult } from "./windows-authority.ts";
-import type { IssuedWindowsClockObservation } from "./windows-authority.ts";
+import { assertCurrentIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
+import type { IssuedCurrentWindowsClockObservation, IssuedWindowsClockObservation } from "./windows-authority.ts";
 import {
   OPERATION_SCHEMA,
   assertSubset,
@@ -667,6 +667,8 @@ export interface ExecutionAuthorityTerminationInput {
 }
 
 export interface RuntimeExecutionAuthorityValidator {
+  /** Internal original-capture observation only; no dispatch or writer grant. */
+  readonly observeCurrentClock?: (evidence: ExecutionAuthorityEvidence) => Promise<IssuedCurrentWindowsClockObservation>;
   readonly capture: (
     input: ExecutionAuthorityCaptureInput,
   ) => Promise<ExecutionAuthorityEvidence>;
@@ -2062,6 +2064,10 @@ export class EasyedaControlEngine {
     readonly operationId: string; readonly phase: string; readonly original: ExecutionAuthorityEvidence;
     readonly snapshot: string; readonly validator: RuntimeExecutionAuthorityValidator;
     readonly runtimeSnapshot: string; readonly sessionSnapshot: string; readonly challengeAttempt: number;
+    readonly dispatchSnapshot: string;
+    readonly clockMethod: RuntimeExecutionAuthorityValidator["observeCurrentClock"];
+    readonly sessionMethod: UpstreamClient["bridgeSessionLifecycle"];
+    readonly dispatchMethod: UpstreamClient["currentAuthenticatedBridgeDispatchBinding"];
   }>();
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
@@ -2202,6 +2208,46 @@ export class EasyedaControlEngine {
     const observation = await windowsClockObservationForResult(slot.original, "capture"); current(); return observation;
   }
 
+  /** Fresh final-boundary observation for an already admitted, original tracked
+   * dispatch scope. Does not repeat runtime probes, admission scans or captures.
+   */
+  public async freshClockObservationForTrackedDispatch(operation: TrackedDispatchOperationJournal, phase: string): Promise<IssuedCurrentWindowsClockObservation> {
+    const slot = this.trackedClockCaptures.get(operation);
+    const observe = slot?.clockMethod;
+    if (slot === undefined || observe === undefined) { throw new Error("Fresh clock requires an original tracked capture and retained clock method."); }
+    const current = (): void => {
+      if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase ||
+          this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe ||
+          this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod ||
+          operation.orphanedCallPhase !== phase || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt ||
+          canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot ||
+          canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot ||
+          canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot ||
+          canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
+        throw new Error("Fresh clock requires the unchanged original tracked dispatch owner and methods.");
+      }
+      const session = this.authenticatedBridgeSession();
+      if (canonicalJson(session) !== slot.sessionSnapshot ||
+          canonicalJson(authenticatedBridgeDispatchPayload(this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), session)) !== slot.dispatchSnapshot) {
+        throw new Error("Fresh clock requires its original authenticated session and current dispatch lease.");
+      }
+    };
+    current();
+    const observation = await observe.call(slot.validator, slot.original); current();
+    const issued = assertCurrentIssuedWindowsClockObservation(observation);
+    if (issued !== observation || observation.phase !== "owned-observation" ||
+        observation.ownerBinding["operationId"] !== slot.operationId || observation.ownerBinding["phase"] !== slot.phase ||
+        observation.ownerBinding["challengeAttempt"] !== slot.challengeAttempt ||
+        observation.ownerBinding["authoritySha256"] !== slot.original.authoritySha256 ||
+        observation.ownerBinding["bindingSha256"] !== slot.original.bindingSha256 ||
+        observation.base["captureBindingSha256"] !== slot.original.bindingSha256 ||
+        observation.ownerBinding["bridgeSessionSha256"] !== sha256Text(slot.sessionSnapshot) ||
+        observation.ownerBinding["runtimeIdentitySha256"] !== sha256Text(slot.runtimeSnapshot)) {
+      throw new Error("Fresh clock returned another original operation, capture, session or runtime.");
+    }
+    current(); return observation;
+  }
+
   /** Release only this engine's original receipt, after all closed copies.
    * Release consumes the handle even on ambiguous cleanup; never repeat it.
    */
@@ -2228,6 +2274,9 @@ export class EasyedaControlEngine {
         "Ambiguous-call recovery requires an installed operation-bound process-tree termination validator before dispatch.",
       );
     }
+    // Retain identity before capture; the fresh read keeps the original receiver.
+    const clockMethod = validator.observeCurrentClock, dispatchMethod = this.upstream.currentAuthenticatedBridgeDispatchBinding,
+      sessionMethod = this.upstream.bridgeSessionLifecycle;
     const beginDispatch = this.upstream.beginAuthenticatedBridgeDispatch;
     const abortDispatch = this.upstream.abortAuthenticatedBridgeDispatch;
     const scopedDispatch =
@@ -2279,7 +2328,8 @@ export class EasyedaControlEngine {
       });
       const executionAuthority = executionAuthorityPayload(originalExecutionAuthority, bindingSha256);
       this.trackedClockCaptures.set(operation, { operationId: operation.operationId, phase, original: originalExecutionAuthority,
-        snapshot: canonicalJson(executionAuthority), validator, challengeAttempt,
+        snapshot: canonicalJson(executionAuthority), validator, challengeAttempt, clockMethod, dispatchMethod, sessionMethod,
+        dispatchSnapshot: canonicalJson(bridgeDispatch),
         runtimeSnapshot: canonicalJson(runtimeIdentity), sessionSnapshot: canonicalJson(bridgeSession) });
       capturedAuthority = executionAuthority;
       operation.runtimeIdentityBeforeOrphan = runtimeIdentity;

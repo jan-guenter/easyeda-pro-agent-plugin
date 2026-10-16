@@ -307,6 +307,28 @@ function Make-ClockAttachment($before, $after, [bool]$clockedLaunch) {
     return @{status='observed';tzAbsentBefore=$true;tzAbsentAfter=$true;before=$before.sample;after=$after.sample}
   } catch {return @{status='unavailable';reason='clock-sample'}}
 }
+function Observe-OwnedClock($request) {
+  $binding=Require-Text $request.captureBindingSha256 '^[a-f0-9]{64}$'
+  $capture=$script:captures[$binding]
+  $job=$script:currentJob
+  if ($null -eq $capture -or $null -eq $job -or $null -eq $job.Root -or
+      -not [Object]::ReferenceEquals($capture.job,$job) -or
+      $capture.receipt.helperInstance -cne $request.helperInstance -or
+      $request.helperInstance -cne $script:helperInstance -or
+      $capture.receipt.jobId -cne $request.jobId -or $job.Id -cne $request.jobId -or
+      -not $script:clockedJobs.ContainsKey($job.Id)) {throw 'authority-clock-capture-not-owned'}
+  # Reuse original retained handles only. No PID lookup, capture or replacement
+  # Job is allowed. New descendants remain contained by the existing Job.
+  foreach ($observation in 1..2) {
+    if ($job.Root.HasExited -or -not $job.Contains($job.Root)) {throw 'authority-clock-root-not-live'}
+    if ($capture.handles.Count -eq 0) {throw 'authority-clock-capture-empty'}
+    foreach ($process in $capture.handles) {
+      if ($process.HasExited -or -not $job.Contains($process)) {throw 'authority-clock-process-not-live'}
+    }
+  }
+  return @{jobId=$job.Id;helperInstance=$script:helperInstance;captureBindingSha256=$binding;
+    observedAt=[DateTime]::UtcNow.ToString('o');rootStillLive=$true;retainedProcessesLive=$true}
+}
 function Handle-ClockedRequest($request) {
   $phase=$null
   $legacyAction=$null
@@ -315,6 +337,7 @@ function Handle-ClockedRequest($request) {
     'clocked-capture' {$phase='capture';$legacyAction='capture'}
     'clocked-finish-probe' {$phase='capture';$legacyAction='finish-probe'}
     'clocked-prove-terminated' {$phase='termination';$legacyAction='prove-terminated'}
+    'clocked-observe-owned-clock' {$phase='owned-observation';$legacyAction='observe-owned-clock'}
     default {return Handle-Request $request}
   }
   # Input is the fixed JSON request parsed by the existing outer loop.
@@ -324,7 +347,8 @@ function Handle-ClockedRequest($request) {
   $before=Read-ClockObservation
   # Do not catch the legacy producer. Native failure retains its old error.
   # Never retry, synthesize a base, Save, terminate or choose a prompt.
-  $base=Handle-Request $legacy
+  if ($phase -ceq 'owned-observation') {$base=Observe-OwnedClock $legacy}
+  else {$base=Handle-Request $legacy}
   $after=Read-ClockObservation
   $wasClocked=$false
   try {
