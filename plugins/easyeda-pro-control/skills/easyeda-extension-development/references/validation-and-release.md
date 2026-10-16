@@ -109,6 +109,13 @@ race and lifecycle tests; passing its components does not establish that result.
 Do not add a caller-selectable factory, execution verifier or test port to the
 production route merely to make a positive test easier.
 
+When a runtime interface gains an optional method, test the production factory's
+forwarder through the real engine and retained runtime, not only a mock that
+already implements the method. Current clock sampling once passed its leaf
+tests but failed live because the factory omitted the callback. Pin the
+forwarded method's identity and receiver; missing wiring must not be repaired by
+accepting copied captures or weakening original-owner checks.
+
 ## Compatibility upgrade
 
 Changing the facade's own source/bundle projections is not permission to change

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "76b56a4f01974a024911744be9e841c7db688a259debbe659186c1b65da004cf";
+const __easyedaBundlePairId = "723bc29b5dbf69d3de395b524a78149af9011b852067833141ca40e89b3739d2";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -93738,6 +93738,14 @@ var init_ordinary_launch = __esm({
             reviewedExecutionScopeSha256: facadeSha256
           });
           const runtime = this.runtime;
+          const launchRuntime = runtime.launch;
+          const assertCurrentLaunch = () => {
+            this.options.assertLocalAllowed?.();
+            requireValue14(
+              this.runtime === runtime && runtime.launch === launchRuntime,
+              "Ordinary launch retained runtime or launch method changed before dispatch."
+            );
+          };
           const existing = external_exports.object({ running: external_exports.boolean() }).strict().parse(await measure("helper-presence", () => runtime.observeExistingApplication()));
           if (existing.running) {
             return { ...describe3(request6.operationId), state: "already-running", attemptConsumed: false, ...this.timingSummary(request6.operationId) };
@@ -93763,7 +93771,12 @@ var init_ordinary_launch = __esm({
           };
           await measure("intent-publication", () => publish(request6.operationId, "intent.json", intent));
           publishedIntent = intent;
-          await measure("admission-after-intent", () => this.options.assertAllowed());
+          await measure("admission-after-intent", async () => {
+            if (this.options.assertLocalAllowed === void 0) {
+              await this.options.assertAllowed();
+            }
+            assertCurrentLaunch();
+          });
           const current4 = await measure("inventory-before-dispatch", inventory);
           requireValue14(
             current4.length === operations.length + 1 && current4.every((candidate) => candidate.operationId === request6.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
@@ -93771,8 +93784,9 @@ var init_ordinary_launch = __esm({
           );
           requireValue14(await measure("installation-before-dispatch", () => this.verify(this.options)) === facadeSha256, "Ordinary launch installation changed before dispatch.");
           await measure("admission-before-dispatch", () => this.options.assertAllowed());
+          assertCurrentLaunch();
           launchInvoked = true;
-          const launch = launchSchema.parse(await measure("launch-dispatch", () => runtime.launch()));
+          const launch = launchSchema.parse(await measure("launch-dispatch", () => launchRuntime.call(runtime)));
           const launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request6.operationId, intentSha256: sha256Json(intent), launch };
           this.retained = { operationId: request6.operationId, launch, launched };
           await measure("launched-publication", () => publish(request6.operationId, "launched.json", launched));
@@ -103091,7 +103105,7 @@ var init_tool_operation_envelope = __esm({
 
 // server/src/windows-runtime-validator.ts
 function methods4(runtime) {
-  return [runtime.capture, runtime.proveTerminated, runtime.releaseCapture];
+  return [runtime.capture, runtime.proveTerminated, runtime.releaseCapture, runtime.observeCurrentClock];
 }
 function current(binding3) {
   const runtime = binding3.select();
@@ -103113,7 +103127,13 @@ function createWindowsRuntimeValidator(select) {
   const validator = Object.freeze({
     capture: (input) => current(binding3).capture(input),
     proveTerminated: (input) => current(binding3).proveTerminated(input),
-    releaseCapture: (input) => current(binding3).releaseCapture(input)
+    releaseCapture: (input) => current(binding3).releaseCapture(input),
+    observeCurrentClock: async (input) => {
+      const runtime = current(binding3);
+      const observation2 = await runtime.observeCurrentClock(input);
+      current(binding3);
+      return observation2;
+    }
   });
   issued5.set(validator, binding3);
   return validator;
@@ -121780,10 +121800,6 @@ async function captureCurrentSymbolBaselineCopy(engine2, input, onEvidence) {
     assertCurrentClosedSessionCopyAuthority(proof);
   };
   await current4();
-  await engine2.assertBridgeDispatchAllowed();
-  await current4();
-  await engine2.assertRecoveryOperationIsolated(owner.operationId);
-  await current4();
   const root = await controlRootCapability();
   await current4();
   const outputDir = join60(controlDataDirectory(), "checkpoints");
@@ -133731,14 +133747,19 @@ var init_src = __esm({
             throw new Error("Configure the installed EasyEDA assets before ordinary launch.");
           }
           const pluginRoot = resolve20(import.meta.dirname, "../..");
+          const assertLocalAllowed = () => {
+            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process19.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+              throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
+            }
+          };
           ordinaryLaunchCoordinator = new OrdinaryLaunchCoordinator({
             assetsRoot,
             pluginRoot,
+            assertLocalAllowed,
             assertAllowed: async () => {
-              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process19.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
-                throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
-              }
+              assertLocalAllowed();
               await engine.assertBridgeDispatchAllowed();
+              assertLocalAllowed();
             },
             allocateRuntime: (identity29) => {
               assertOrdinaryRuntimeAllocationAllowed();

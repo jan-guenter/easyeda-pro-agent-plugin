@@ -4,8 +4,53 @@ import { EasyedaControlEngine } from "../src/engine.ts";
 import type { RuntimeExecutionAuthorityValidator } from "../src/engine.ts";
 import { assertCurrentIssuedWindowsClockObservation } from "../src/windows-authority.ts";
 import type { IssuedCurrentWindowsClockObservation } from "../src/windows-authority.ts";
+import { assertWindowsRuntimeValidator, createWindowsRuntimeValidator } from "../src/windows-runtime-validator.ts";
 import { clockEngineFixture } from "./helpers/windows-clock-engine-fixture.ts";
 import { INPUT } from "./helpers/windows-closed-session-fixture.ts";
+
+void test("index validator forwards a fresh closed clock from the engine's exact original capture", async (context) => {
+  const f = await clockEngineFixture(context);
+  const validator = createWindowsRuntimeValidator(() => f.runtime);
+  const engine = new EasyedaControlEngine(f.upstream, { executionAuthorityValidator: validator });
+  await engine.controlFingerprintPromise;
+  const capture = await engine.captureClosedSessionAuthority("index-fresh-closed-original", "closed-edit", 2);
+  assertWindowsRuntimeValidator(validator, f.runtime);
+  const reads = f.state.runtimeReads;
+  context.mock.method(engine, "assertBridgeAndRecoveryAdmission", (): never => { throw new Error("must not scan again"); });
+  await assert.rejects(engine.freshClockObservationForClosedCapture(structuredClone(capture)), /original closed capture/u);
+  const clock = await engine.freshClockObservationForClosedCapture(capture);
+  assert.strictEqual(assertCurrentIssuedWindowsClockObservation(clock), clock);
+  assert.equal(clock.ownerBinding["operationId"], "index-fresh-closed-original");
+  assert.equal(clock.ownerBinding["phase"], "closed-edit");
+  assert.equal(clock.ownerBinding["authoritySha256"], capture.executionAuthority.authoritySha256);
+  assert.equal(clock.phase, "owned-observation"); assert.equal(clock.executionAuthorized, false);
+  assert.equal(f.state.runtimeReads, reads); assert.equal(f.child.spawnCalls(), 1);
+  assert.deepEqual(f.child.requests.map((request) => request["action"]), ["clocked-launch", "clocked-capture", "clocked-observe-owned-clock"]);
+  context.mock.method(f.runtime, "observeCurrentClock", (): never => { throw new Error("Replacement must not run"); });
+  await assert.rejects(engine.freshClockObservationForClosedCapture(capture), /runtime owner or methods changed/u);
+  assert.equal(f.child.requests.filter((request) => request["action"] === "clocked-observe-owned-clock").length, 1);
+});
+
+for (const change of ["selected-owner", "clock-method"] as const) {
+  void test(`index clock forwarding rejects ${change} drift across the native await`, async (context) => {
+    const f = await clockEngineFixture(context);
+    let selectedOwnerAvailable = true;
+    const validator = createWindowsRuntimeValidator(() => {
+      if (!selectedOwnerAvailable) { throw new Error("Original selected owner unavailable"); }
+      return f.runtime;
+    });
+    const engine = new EasyedaControlEngine(f.upstream, { executionAuthorityValidator: validator });
+    await engine.controlFingerprintPromise;
+    const capture = await engine.captureClosedSessionAuthority(`index-fresh-closed-${change}`, "closed-edit", 2);
+    f.child.behavior.mutateResponse = (request): void => {
+      if (request["action"] !== "clocked-observe-owned-clock") { return; }
+      if (change === "selected-owner") { selectedOwnerAvailable = false; }
+      else { context.mock.method(f.runtime, "observeCurrentClock", (): never => { throw new Error("Replacement must not run"); }); }
+    };
+    await assert.rejects(engine.freshClockObservationForClosedCapture(capture), /Original selected owner unavailable|runtime owner or methods changed/u);
+    assert.equal(f.child.requests.filter((request) => request["action"] === "clocked-observe-owned-clock").length, 1);
+  });
+}
 
 void test("fresh closed clock uses original capture in a new same-session lease without admission or runtime probes", async (context) => {
   const f = await clockEngineFixture(context);

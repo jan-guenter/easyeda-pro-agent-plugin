@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016190000` adds a disposable-only forward/inverse
+Candidate `0.3.0+codex.20261016200000` fixes missing production clock-method
+forwarding and removes redundant launch/baseline admission scans while retaining
+the final checks. The190000 disposable run passed its isolated clock check and
+project-only reopening, then refused before renderer sampling or any edit.
+The fix preserves original capture ownership; it does not enable normal writers
+or claim a successful connected metadata round trip.
+See the [failure, implementation and backlog](docs/current-symbol-writer-owner-release-2026-10-16.md).
+
+Update `0.3.0+codex.20261016190000` adds a disposable-only forward/inverse
 symbol-metadata workflow through `project-open`'s `validation-*` actions.
 It retains the prepared baseline and actual writer/verifier owners, requires
 an exact phase on every continuation, and derives the inverse only from the

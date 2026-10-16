@@ -185,6 +185,24 @@ async function verificationInput(value: Fixture, finishSnapshot: CurrentSymbolFi
   return { finishSnapshot, capture, intent, closeReceipt, proof, launch: binding.launch, runtime: value.input.runtime };
 }
 
+void test("baseline copy retains original-owner combined admission and post-root/final checks without duplicate scans", async () => {
+  const copySource = await readFile(new URL("../src/current-symbol-baseline-copy.ts", import.meta.url), "utf8");
+  const ownerSource = await readFile(new URL("../src/current-disposable-open-runtime.ts", import.meta.url), "utf8");
+  const copyStart = copySource.indexOf("export async function captureCurrentSymbolBaselineCopy(");
+  const copyEnd = copySource.indexOf("\nexport interface CurrentSymbolFinishSnapshotInput");
+  const ownerStart = ownerSource.indexOf("  private transferBaseline(");
+  const ownerEnd = ownerSource.indexOf("  private issueGeneration(");
+  assert.ok(copyStart > 0 && copyEnd > copyStart && ownerStart > 0 && ownerEnd > ownerStart);
+  const copy = copySource.slice(copyStart, copyEnd), owner = ownerSource.slice(ownerStart, ownerEnd);
+  assert.match(owner, /current\(\); await engine\.assertBridgeAndRecoveryAdmission\(operationId\); current\(\);\s+const persisted = await this\.load\(owner\.openingOperationId\); current\(\);/u);
+  assert.match(copy, /const retained = await revalidateCurrentSymbolBaselineOwner\(owner, engine\);/u);
+  assert.doesNotMatch(copy, /engine\.assert(?:BridgeDispatchAllowed|RecoveryOperationIsolated)\(/u);
+  assert.equal([...copy.matchAll(/await current\(\);/gu)].length, 11);
+  assert.match(copy, /await current\(\);\s+const root = await controlRootCapability\(\); await current\(\);/u);
+  assert.match(copy, /const verified = await verifyCheckpoint\(checkpoint\.receiptPath, policy\); await current\(\);/u);
+  assert.match(copy, /assertCurrentClosedSessionCopyAuthority\(proof\); unchanged\(\);\s+issued\.set\(result,/u);
+});
+
 void test("final snapshot retains changed closed bytes and full reader evidence without reusing old owner authority", async () => {
   const value = await fixture();
   const input = await finalInput(value);

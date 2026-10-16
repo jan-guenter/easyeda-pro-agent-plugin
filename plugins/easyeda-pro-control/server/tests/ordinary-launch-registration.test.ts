@@ -16,6 +16,7 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
   let options: OrdinaryLaunchOptions | undefined;
   let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
   let checks = 0, quarantine = false, quarantineChecks = 0;
+  let pendingAdmission: Promise<null> | undefined;
   const runtimeOptions: unknown[] = [];
   class Coordinator extends OrdinaryLaunchCoordinator {
     public constructor(input: OrdinaryLaunchOptions) { super(input); options = input; }
@@ -28,8 +29,10 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
-    engine: { assertBridgeDispatchAllowed: (): Promise<void> => {
-      quarantineChecks += 1; return quarantine ? Promise.reject(new Error("quarantine")) : Promise.resolve();
+    engine: { assertBridgeDispatchAllowed: async (): Promise<void> => {
+      quarantineChecks += 1;
+      if (quarantine) { throw new Error("quarantine"); }
+      if (pendingAdmission !== undefined) { await pendingAdmission; }
     } },
     serializedGuarded: (handler: typeof invoke, guardOptions: { allowDuringOrphanRisk: unknown }): typeof invoke => {
       assert.deepEqual(Object.keys(guardOptions), ["allowDuringOrphanRisk"]);
@@ -84,10 +87,33 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
   const allocated = runtimeOptions[0];
   assert.ok(allocated !== null && typeof allocated === "object" && "expectedExecutableSha256" in allocated);
   assert.equal(allocated["expectedExecutableSha256"], identity.expectedExecutableSha256);
+  assert.ok(options.assertLocalAllowed);
+  const scansBeforeLocal = quarantineChecks;
+  options.assertLocalAllowed();
+  assert.equal(quarantineChecks, scansBeforeLocal);
   await options.assertAllowed();
   assert.throws(() => options?.allocateRuntime(identity), /already allocated/u);
   scope["windowsRuntime"] = {};
   await assert.rejects(options.assertAllowed(), /unavailable or changed/u);
   scope["windowsRuntime"] = runtime; scope["scheduledShutdown"] = Promise.resolve();
   await assert.rejects(options.assertAllowed(), /unavailable or changed/u);
+  scope["scheduledShutdown"] = undefined;
+  const drifts = [
+    (): void => { scope["windowsRuntime"] = {}; },
+    (): void => { scope["closedSymbolIndexReservation"] = {}; },
+    (): void => { scope["scheduledShutdown"] = Promise.resolve(); },
+    (): void => { environment.EASYEDA_ASSETS_ROOT = "/mnt/d/Changed/resources/app/assets"; },
+  ];
+  for (const drift of drifts) {
+    const admission = Promise.withResolvers<null>();
+    pendingAdmission = admission.promise;
+    const checked = options.assertAllowed();
+    drift(); admission.resolve(null);
+    await assert.rejects(checked, /unavailable or changed/u);
+    scope["windowsRuntime"] = runtime; scope["closedSymbolIndexReservation"] = undefined;
+    scope["scheduledShutdown"] = undefined;
+    environment.EASYEDA_ASSETS_ROOT = "/mnt/d/Apps/EasyEDA/resources/app/assets";
+  }
+  pendingAdmission = undefined;
+  await options.assertAllowed();
 });

@@ -249,9 +249,9 @@ export async function captureCurrentSymbolBaselineCopy(engine: EasyedaControlEng
     need(retained.source === source && retained.preparation === previous, "Current symbol baseline owner changed."); unchanged();
     assertCurrentClosedSessionCopyAuthority(proof);
   };
+  // The original owner's revalidation already performs fresh combined bridge
+  // And recovery admission. Keep it at every boundary without duplicate scans.
   await current();
-  await engine.assertBridgeDispatchAllowed(); await current();
-  await engine.assertRecoveryOperationIsolated(owner.operationId); await current();
   const root = await controlRootCapability(); await current();
   const outputDir = join(controlDataDirectory(), "checkpoints");
   const policy = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268_435_456 };

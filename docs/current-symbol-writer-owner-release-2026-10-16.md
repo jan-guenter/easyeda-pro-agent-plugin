@@ -1,5 +1,63 @@
 # Current runtime correction and private writer ownership
 
+## Production clock forwarding, update200000
+
+The190000 disposable run passed ordinary opening, normal closure, a complete
+closed baseline, the isolated Date reference, replacement admission, inactive
+cache checks and project-only reopening. Renderer-clock collection then refused
+before its first Windows sample or renderer call. No symbol mutation or explicit
+Save was dispatched. The original owner completed normal closure, retained
+process termination, the final snapshot and retirement. Comparison proves
+unchanged raw bytes, all 35 SQL tables and all 18 selected-branch native documents.
+The failed clock stage and completed cleanup must not be repeated.
+
+The engine correctly requires the original capture and its retained clock
+method. The production `createWindowsRuntimeValidator` factory omitted the
+already implemented `observeCurrentClock` method, so capture issuance retained
+an undefined callback. The fix forwards and identity-pins that method, keeping
+the engine's original-capture, session and dispatch-lease checks unchanged.
+The regression exercises the production factory through the engine and runtime,
+not an injected validator that already supplies the missing method.
+
+This correction requires installation and a fresh facade before another new
+disposable validation lifecycle. It does not validate the forward/inverse writer
+or enable ordinary symbol editing. The engineering checkpoint records completed
+cleanup separately from the pending CI and delivery results.
+
+## Admission performance follow-up
+
+The actual190000 launch spent 96.058 seconds of its 103.271-second total in
+four admission scans; native process creation took 387 ms. The follow-up keeps
+full initial, pre-helper and final pre-dispatch admission. It replaces only the
+post-intent scan with synchronous local ownership checks, then rechecks that
+ownership and the captured launch method after the final awaited scan. Other
+internal callers without the local assertion retain the old scan behavior.
+The previous post-intent stage took 14.786 seconds; that is an opportunity
+estimate, not a measured improvement in the updated implementation.
+
+Closed-baseline capture also repeated bridge and recovery-isolation admission
+immediately after the original owner's combined admission. Removing those two
+redundant guard/revalidation pairs reduces capture-local full scans from 15 to
+11. Every post-copy, SQL/history, receipt and final checkpoint check remains.
+Neither change caches an allow decision or changes a writer gate.
+
+## Normal writer promotion is a separate entrypoint
+
+A successful190000 disposable round trip would qualify its current narrow
+implementation, not the older `easyeda_control_symbol_metadata` coordinator.
+That legacy gate and generic `library.symbol.modify` must remain blocked.
+Normal use needs a purpose-bound forward-only entry that shares the current
+opening, baseline, writer, verifier and cleanup owners. It must not fabricate
+disposable confirmations or accept a reconstructed owner from journal JSON.
+
+Before ordinary navigation, derive the supported startup shape from the
+preserved checkpoint and recheck it against the closed baseline. Keep the live
+startup qualification before writing. The disposable-only acceptance of
+unqualified schematic startup effects must not become an ordinary bypass.
+Successful ordinary completion should retire the verifier without retaining
+an inverse. Name/description scope, exact runtime pins, aged-head checks and
+complete saved-content/SQL comparisons remain mandatory.
+
 ## Disposable orchestration, update190000
 
 Candidate `0.3.0+codex.20261016190000` connects the existing baseline, writer and

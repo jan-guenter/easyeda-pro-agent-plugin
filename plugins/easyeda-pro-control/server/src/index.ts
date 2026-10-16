@@ -2314,14 +2314,18 @@ registerFacadeTool(
       const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
       if (assetsRoot === undefined) { throw new Error("Configure the installed EasyEDA assets before ordinary launch."); }
       const pluginRoot = resolve(import.meta.dirname, "../..");
+      const assertLocalAllowed = (): void => {
+        if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
+            windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+          throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
+        }
+      };
       ordinaryLaunchCoordinator = new OrdinaryLaunchCoordinator({
-        assetsRoot, pluginRoot,
+        assetsRoot, pluginRoot, assertLocalAllowed,
         assertAllowed: async (): Promise<void> => {
-          if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
-              windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
-            throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
-          }
+          assertLocalAllowed();
           await engine.assertBridgeDispatchAllowed();
+          assertLocalAllowed();
         },
         allocateRuntime: (identity): WindowsControlRuntime => {
           assertOrdinaryRuntimeAllocationAllowed();

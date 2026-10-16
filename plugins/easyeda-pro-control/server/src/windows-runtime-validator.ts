@@ -12,7 +12,7 @@ interface Binding {
 const issued = new WeakMap<RuntimeExecutionAuthorityValidator, Binding>();
 function methods(runtime: WindowsControlRuntime): readonly unknown[] {
   // oxlint-disable-next-line typescript/unbound-method -- These are identity pins only; calls below retain the actual runtime receiver.
-  return [runtime.capture, runtime.proveTerminated, runtime.releaseCapture];
+  return [runtime.capture, runtime.proveTerminated, runtime.releaseCapture, runtime.observeCurrentClock];
 }
 function current(binding: Binding): WindowsControlRuntime {
   const runtime = binding.select();
@@ -36,6 +36,13 @@ export function createWindowsRuntimeValidator(select: () => WindowsControlRuntim
     capture: (input: Parameters<WindowsControlRuntime["capture"]>[0]): ReturnType<WindowsControlRuntime["capture"]> => current(binding).capture(input),
     proveTerminated: (input: Parameters<WindowsControlRuntime["proveTerminated"]>[0]): ReturnType<WindowsControlRuntime["proveTerminated"]> => current(binding).proveTerminated(input),
     releaseCapture: (input: Parameters<WindowsControlRuntime["releaseCapture"]>[0]): ReturnType<WindowsControlRuntime["releaseCapture"]> => current(binding).releaseCapture(input),
+    observeCurrentClock: async (input: Parameters<WindowsControlRuntime["observeCurrentClock"]>[0]): ReturnType<WindowsControlRuntime["observeCurrentClock"]> => {
+      const runtime = current(binding);
+      const observation = await runtime.observeCurrentClock(input);
+      // Clock reads acquire no handles. Reject a result if the index selected
+      // Another owner or replaced a pinned method during the native await.
+      current(binding); return observation;
+    },
   });
   issued.set(validator, binding); return validator;
 }
