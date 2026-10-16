@@ -73,7 +73,8 @@ function relaunchMethods(engine: EasyedaControlEngine, runtime: WindowsControlRu
   /* oxlint-disable typescript/unbound-method -- Identity comparison only; every invocation retains its actual runtime or engine receiver. */
   return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture, engine.releaseClosedSessionAuthority,
     runtime.capture, runtime.proveTerminated, engine.captureClosedSessionAuthority, engine.clockObservationForClosedCapture, engine.runtimeIdentity,
-    engine.assertBridgeDispatchAllowed, engine.assertRecoveryOperationIsolated, engine.assertBridgeAndRecoveryAdmission, engine.upstream.withAuthenticatedBridgeDispatchScope,
+    engine.assertBridgeDispatchAllowed, engine.assertRecoveryOperationIsolated, engine.assertBridgeAndRecoveryAdmission,
+    engine.assertBridgeAndNativeUiEditingAdmission, engine.upstream.withAuthenticatedBridgeDispatchScope,
     engine.status, engine.dispatchWithOrphanTracking, engine.markOrphanedCallRisk, engine.clearOrphanedCallRisk,
     engine.clockObservationForTrackedDispatch, engine.upstream.callTool, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased,
     runtime.observeApplicationWindow, runtime.prepareClosedSessionClose, runtime.requestClosedSessionNormalClose,

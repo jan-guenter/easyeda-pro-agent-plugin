@@ -422,6 +422,31 @@ absence, saved membership or persistence proof. No writer may accept this result
 as its complete before-state. The ordinary symbol rename still needs its own
 current-version lifecycle and complete closed-file proof.
 
+### Symbol observation with no editor tabs
+
+When the project is loaded but only Start Page/its hidden blank tab remains,
+use the separate `project-symbol-preflight` discovery and
+`project-symbol-preflight-validate` actions. Pass the validated request to the
+same `easyeda_control_project_symbol` tool with the authenticated fingerprint.
+Do not open a PCB merely to satisfy the older metadata reader's context.
+
+This request has `target:{projectUuid,branchUuid,symbolUuid,ownerUuid}` and
+`expectedBefore:{name,description,tagsJson,source,version,ticket}`; it has no
+`method` or `arguments` field. Use exact known metadata, not guesses or values
+normalized for display. Two samples must match all expected fields. The guard
+checks the complete bounded tab/container registry and native DOM for hidden
+editors, and rejects pending restored tabs, URL commands, dirty tabs, cached
+read-only state or strict concurrent mode. It observes the project client and
+maximum ticket, agreeing UI actor caches and four renderer/notify clock samples.
+No geometry, permission dialog, navigation, mutation or Save is requested.
+
+These are loaded-state comparisons, not source provenance or a worker lock.
+The UI actor is not the backend transaction actor; clock agreement is not
+timestamp-producer qualification. Permission, startup completion, saved-state
+membership and writer authority remain false. A deadline does not cancel a
+native read already in flight. Never turn a successful preflight into permission
+to invoke the disabled writer or substitute it for a retained lifecycle.
+
 ### Checkpoint-bound symbol preparation
 
 The offline API also prepares a name and/or non-null description change from an

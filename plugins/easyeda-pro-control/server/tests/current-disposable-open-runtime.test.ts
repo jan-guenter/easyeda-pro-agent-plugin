@@ -138,7 +138,13 @@ function fixture(suffix: string): Fixture {
       assert.equal([...journals.values()].some((item) => item["orphanedCallPossible"] === true), false, "fixture orphan quarantine");
       return Promise.resolve(true);
     },
-    assertNativeUiEditingAllowed: () => Promise.resolve(true),
+    assertNativeUiEditingAllowed: () => { calls.push("guard:native-edit"); return Promise.resolve(true); },
+    assertBridgeAndNativeUiEditingAdmission: () => {
+      calls.push("guard:bridge-native-edit");
+      assert.equal(state.quarantine, false, "fixture global quarantine");
+      assert.equal([...journals.values()].some((item) => item["orphanedCallPossible"] === true), false, "fixture orphan quarantine");
+      return Promise.resolve(true);
+    },
     assertRecoveryOperationIsolated: () => { calls.push("guard:recovery"); assert.equal(state.quarantine, false, "fixture unrelated quarantine"); return Promise.resolve(true); },
     upstream: {
       callTool: () => Promise.reject(new Error("Only tracked fixture dispatch is allowed")),
@@ -214,7 +220,9 @@ void test("each ordinary opening dispatch uses one combined admission and retain
     const opened = await value.coordinator.run(value.input, FINGERPRINT);
     assert.equal(opened["state"], "completed");
     const count = restored ? 2 : 3;
-    assert.equal(value.calls.filter((call) => call === "guard:bridge").length, 1);
+    assert.equal(value.calls.filter((call) => call === "guard:bridge").length, 0);
+    assert.equal(value.calls.filter((call) => call === "guard:native-edit").length, 0);
+    assert.equal(value.calls.filter((call) => call === "guard:bridge-native-edit").length, 1);
     assert.equal(value.calls.filter((call) => call === `guard:combined:${value.input.operationId}`).length, count);
     assert.equal(value.calls.filter((call) => call === "guard:recovery").length, count);
     await value.coordinator.run({ action: "observe", operationId: value.input.operationId });
@@ -223,6 +231,18 @@ void test("each ordinary opening dispatch uses one combined admission and retain
     assert.equal(dispatches(value).length, count + 1);
   }
 });
+
+for (const failure of ["bridge quarantine", "native editing blocked"] as const) {
+  void test(`combined initial opener admission ${failure} refuses before preparation or dispatch`, async () => {
+    const value = fixture(`initial-${failure.replaceAll(" ", "-")}`);
+    value.options.engine.assertBridgeAndNativeUiEditingAdmission = (): Promise<never> => Promise.reject(new Error(failure));
+    await assert.rejects(value.coordinator.run(value.input, FINGERPRINT), { message: failure });
+    assert.equal(value.calls.includes("prepare"), false);
+    assert.equal(value.calls.includes("scope"), false);
+    assert.equal(value.journals.size, 0);
+    assert.deepEqual(dispatches(value), []);
+  });
+}
 
 for (const failure of ["quarantine", "owner-drift"] as const) {
   void test(`combined opener admission ${failure} refuses before scope or tracked dispatch`, async () => {

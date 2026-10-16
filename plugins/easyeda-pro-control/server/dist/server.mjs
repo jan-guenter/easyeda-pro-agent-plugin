@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "1f9c74c520c445c649d80de6e79a53d65a1fa7b000cfeb928651ae046d39355e";
+const __easyedaBundlePairId = "885a596d91eedfd2bb87ef316a6a63c19b88b5b62361fa9e1652d45e75bab24c";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -20068,17 +20068,17 @@ var init_v4 = __esm({
 });
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
-function assertCompleteRequestPrompt(request2) {
-  if (request2.params.ref.type !== "ref/prompt") {
-    throw new TypeError(`Expected CompleteRequestPrompt, but got ${request2.params.ref.type}`);
+function assertCompleteRequestPrompt(request3) {
+  if (request3.params.ref.type !== "ref/prompt") {
+    throw new TypeError(`Expected CompleteRequestPrompt, but got ${request3.params.ref.type}`);
   }
-  void request2;
+  void request3;
 }
-function assertCompleteRequestResourceTemplate(request2) {
-  if (request2.params.ref.type !== "ref/resource") {
-    throw new TypeError(`Expected CompleteRequestResourceTemplate, but got ${request2.params.ref.type}`);
+function assertCompleteRequestResourceTemplate(request3) {
+  if (request3.params.ref.type !== "ref/resource") {
+    throw new TypeError(`Expected CompleteRequestResourceTemplate, but got ${request3.params.ref.type}`);
   }
-  void request2;
+  void request3;
 }
 var LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS, RELATED_TASK_META_KEY, JSONRPC_VERSION, AssertObjectSchema, ProgressTokenSchema, CursorSchema, TaskCreationParamsSchema, TaskMetadataSchema, RelatedTaskMetadataSchema, RequestMetaSchema, BaseRequestParamsSchema, TaskAugmentedRequestParamsSchema, isTaskAugmentedRequestParams, RequestSchema, NotificationsParamsSchema, NotificationSchema, ResultSchema, RequestIdSchema, JSONRPCRequestSchema, isJSONRPCRequest, JSONRPCNotificationSchema, isJSONRPCNotification, JSONRPCResultResponseSchema, isJSONRPCResultResponse, ErrorCode, JSONRPCErrorResponseSchema, isJSONRPCErrorResponse, JSONRPCMessageSchema, JSONRPCResponseSchema, EmptyResultSchema, CancelledNotificationParamsSchema, CancelledNotificationSchema, IconSchema, IconsSchema, BaseMetadataSchema, ImplementationSchema, FormElicitationCapabilitySchema, ElicitationCapabilitySchema, ClientTasksCapabilitySchema, ServerTasksCapabilitySchema, ClientCapabilitiesSchema, InitializeRequestParamsSchema, InitializeRequestSchema, ServerCapabilitiesSchema, InitializeResultSchema, InitializedNotificationSchema, PingRequestSchema, ProgressSchema, ProgressNotificationParamsSchema, ProgressNotificationSchema, PaginatedRequestParamsSchema, PaginatedRequestSchema, PaginatedResultSchema, TaskStatusSchema, TaskSchema, CreateTaskResultSchema, TaskStatusNotificationParamsSchema, TaskStatusNotificationSchema, GetTaskRequestSchema, GetTaskResultSchema, GetTaskPayloadRequestSchema, GetTaskPayloadResultSchema, ListTasksRequestSchema, ListTasksResultSchema, CancelTaskRequestSchema, CancelTaskResultSchema, ResourceContentsSchema, TextResourceContentsSchema, Base64Schema, BlobResourceContentsSchema, RoleSchema, AnnotationsSchema, ResourceSchema, ResourceTemplateSchema, ListResourcesRequestSchema, ListResourcesResultSchema, ListResourceTemplatesRequestSchema, ListResourceTemplatesResultSchema, ResourceRequestParamsSchema, ReadResourceRequestParamsSchema, ReadResourceRequestSchema, ReadResourceResultSchema, ResourceListChangedNotificationSchema, SubscribeRequestParamsSchema, SubscribeRequestSchema, UnsubscribeRequestParamsSchema, UnsubscribeRequestSchema, ResourceUpdatedNotificationParamsSchema, ResourceUpdatedNotificationSchema, PromptArgumentSchema, PromptSchema, ListPromptsRequestSchema, ListPromptsResultSchema, GetPromptRequestParamsSchema, GetPromptRequestSchema, TextContentSchema, ImageContentSchema, AudioContentSchema, ToolUseContentSchema, EmbeddedResourceSchema, ResourceLinkSchema, ContentBlockSchema, PromptMessageSchema, GetPromptResultSchema, PromptListChangedNotificationSchema, ToolAnnotationsSchema, ToolExecutionSchema, ToolSchema, ListToolsRequestSchema, ListToolsResultSchema, CallToolResultSchema, CompatibilityCallToolResultSchema, CallToolRequestParamsSchema, CallToolRequestSchema, ToolListChangedNotificationSchema, ListChangedOptionsBaseSchema, LoggingLevelSchema, SetLevelRequestParamsSchema, SetLevelRequestSchema, LoggingMessageNotificationParamsSchema, LoggingMessageNotificationSchema, ModelHintSchema, ModelPreferencesSchema, ToolChoiceSchema, ToolResultContentSchema, SamplingContentSchema, SamplingMessageContentBlockSchema, SamplingMessageSchema, CreateMessageRequestParamsSchema, CreateMessageRequestSchema, CreateMessageResultSchema, CreateMessageResultWithToolsSchema, BooleanSchemaSchema, StringSchemaSchema, NumberSchemaSchema, UntitledSingleSelectEnumSchemaSchema, TitledSingleSelectEnumSchemaSchema, LegacyTitledEnumSchemaSchema, SingleSelectEnumSchemaSchema, UntitledMultiSelectEnumSchemaSchema, TitledMultiSelectEnumSchemaSchema, MultiSelectEnumSchemaSchema, EnumSchemaSchema, PrimitiveSchemaDefinitionSchema, ElicitRequestFormParamsSchema, ElicitRequestURLParamsSchema, ElicitRequestParamsSchema, ElicitRequestSchema, ElicitationCompleteNotificationParamsSchema, ElicitationCompleteNotificationSchema, ElicitResultSchema, ResourceTemplateReferenceSchema, PromptReferenceSchema, CompleteRequestParamsSchema, CompleteRequestSchema, CompleteResultSchema, RootSchema, ListRootsRequestSchema, ListRootsResultSchema, RootsListChangedNotificationSchema, ClientRequestSchema, ClientNotificationSchema, ClientResultSchema, ServerRequestSchema, ServerNotificationSchema, ServerResultSchema, McpError, UrlElicitationRequiredError;
 var init_types2 = __esm({
@@ -23289,8 +23289,8 @@ var init_protocol = __esm({
         this._taskStore = _options?.taskStore;
         this._taskMessageQueue = _options?.taskMessageQueue;
         if (this._taskStore) {
-          this.setRequestHandler(GetTaskRequestSchema, async (request2, extra) => {
-            const task = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
+          this.setRequestHandler(GetTaskRequestSchema, async (request3, extra) => {
+            const task = await this._taskStore.getTask(request3.params.taskId, extra.sessionId);
             if (!task) {
               throw new McpError(ErrorCode.InvalidParams, "Failed to retrieve task: Task not found");
             }
@@ -23298,9 +23298,9 @@ var init_protocol = __esm({
               ...task
             };
           });
-          this.setRequestHandler(GetTaskPayloadRequestSchema, async (request2, extra) => {
+          this.setRequestHandler(GetTaskPayloadRequestSchema, async (request3, extra) => {
             const handleTaskResult = async () => {
-              const taskId = request2.params.taskId;
+              const taskId = request3.params.taskId;
               if (!await this._taskStore.getTask(taskId, extra.sessionId)) {
                 throw new McpError(ErrorCode.InvalidParams, `Task not found: ${taskId}`);
               }
@@ -23354,9 +23354,9 @@ var init_protocol = __esm({
             };
             return await handleTaskResult();
           });
-          this.setRequestHandler(ListTasksRequestSchema, async (request2, extra) => {
+          this.setRequestHandler(ListTasksRequestSchema, async (request3, extra) => {
             try {
-              const { tasks, nextCursor } = await this._taskStore.listTasks(request2.params?.cursor, extra.sessionId);
+              const { tasks, nextCursor } = await this._taskStore.listTasks(request3.params?.cursor, extra.sessionId);
               return {
                 tasks,
                 nextCursor,
@@ -23366,20 +23366,20 @@ var init_protocol = __esm({
               throw new McpError(ErrorCode.InvalidParams, `Failed to list tasks: ${error51 instanceof Error ? error51.message : String(error51)}`);
             }
           });
-          this.setRequestHandler(CancelTaskRequestSchema, async (request2, extra) => {
+          this.setRequestHandler(CancelTaskRequestSchema, async (request3, extra) => {
             try {
-              const task = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
+              const task = await this._taskStore.getTask(request3.params.taskId, extra.sessionId);
               if (!task) {
-                throw new McpError(ErrorCode.InvalidParams, `Task not found: ${request2.params.taskId}`);
+                throw new McpError(ErrorCode.InvalidParams, `Task not found: ${request3.params.taskId}`);
               }
               if (isTerminal(task.status)) {
                 throw new McpError(ErrorCode.InvalidParams, `Cannot cancel task in terminal status: ${task.status}`);
               }
-              await this._taskStore.updateTaskStatus(request2.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
-              this._clearTaskQueue(request2.params.taskId, extra.sessionId);
-              const cancelledTask = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
+              await this._taskStore.updateTaskStatus(request3.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
+              this._clearTaskQueue(request3.params.taskId, extra.sessionId);
+              const cancelledTask = await this._taskStore.getTask(request3.params.taskId, extra.sessionId);
               if (!cancelledTask) {
-                throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request2.params.taskId}`);
+                throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request3.params.taskId}`);
               }
               return {
                 _meta: {},
@@ -23500,10 +23500,10 @@ var init_protocol = __esm({
         }
         Promise.resolve().then(() => handler(notification)).catch((error51) => this._onerror(new Error(`Uncaught error in notification handler: ${error51}`)));
       }
-      _onrequest(request2, extra) {
-        const handler = this._requestHandlers.get(request2.method) ?? this.fallbackRequestHandler;
+      _onrequest(request3, extra) {
+        const handler = this._requestHandlers.get(request3.method) ?? this.fallbackRequestHandler;
         const capturedTransport = this._transport;
-        const relatedTaskId = request2.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
+        const relatedTaskId = request3.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
         const sessionId = capturedTransport?.sessionId;
         const store = this._taskStore;
         let relatedTaskFound = true;
@@ -23520,7 +23520,7 @@ var init_protocol = __esm({
         if (handler === void 0) {
           const errorResponse = {
             jsonrpc: "2.0",
-            id: request2.id,
+            id: request3.id,
             error: {
               code: ErrorCode.MethodNotFound,
               message: "Method not found"
@@ -23541,17 +23541,17 @@ var init_protocol = __esm({
           return;
         }
         const abortController = new AbortController();
-        this._requestHandlerAbortControllers.set(request2.id, abortController);
-        const taskCreationParams = isTaskAugmentedRequestParams(request2.params) ? request2.params.task : void 0;
-        const taskStore = this._taskStore ? this.requestTaskStore(request2, capturedTransport?.sessionId) : void 0;
+        this._requestHandlerAbortControllers.set(request3.id, abortController);
+        const taskCreationParams = isTaskAugmentedRequestParams(request3.params) ? request3.params.task : void 0;
+        const taskStore = this._taskStore ? this.requestTaskStore(request3, capturedTransport?.sessionId) : void 0;
         const fullExtra = {
           signal: abortController.signal,
           sessionId: capturedTransport?.sessionId,
-          _meta: request2.params?._meta,
+          _meta: request3.params?._meta,
           sendNotification: async (notification) => {
             if (abortController.signal.aborted)
               return;
-            const notificationOptions = { relatedRequestId: request2.id };
+            const notificationOptions = { relatedRequestId: request3.id };
             if (relatedTaskId) {
               notificationOptions.relatedTask = { taskId: relatedTaskId };
             }
@@ -23561,7 +23561,7 @@ var init_protocol = __esm({
             if (abortController.signal.aborted) {
               throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
             }
-            const requestOptions = { ...options, relatedRequestId: request2.id };
+            const requestOptions = { ...options, relatedRequestId: request3.id };
             if (relatedTaskId && !requestOptions.relatedTask) {
               requestOptions.relatedTask = { taskId: relatedTaskId };
             }
@@ -23572,7 +23572,7 @@ var init_protocol = __esm({
             return await this.request(r, resultSchema3, requestOptions);
           },
           authInfo: extra?.authInfo,
-          requestId: request2.id,
+          requestId: request3.id,
           requestInfo: extra?.requestInfo,
           taskId: relatedTaskId,
           taskStore,
@@ -23585,16 +23585,16 @@ var init_protocol = __esm({
             throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
           }
           if (taskCreationParams) {
-            this.assertTaskHandlerCapability(request2.method);
+            this.assertTaskHandlerCapability(request3.method);
           }
-        }).then(() => handler(request2, fullExtra)).then(async (result) => {
+        }).then(() => handler(request3, fullExtra)).then(async (result) => {
           if (abortController.signal.aborted) {
             return;
           }
           const response3 = {
             result,
             jsonrpc: "2.0",
-            id: request2.id
+            id: request3.id
           };
           if (relatedTaskId && this._taskMessageQueue) {
             await this._enqueueTaskMessage(relatedTaskId, {
@@ -23611,7 +23611,7 @@ var init_protocol = __esm({
           }
           const errorResponse = {
             jsonrpc: "2.0",
-            id: request2.id,
+            id: request3.id,
             error: {
               code: Number.isSafeInteger(error51["code"]) ? error51["code"] : ErrorCode.InternalError,
               message: error51.message ?? "Internal error",
@@ -23628,8 +23628,8 @@ var init_protocol = __esm({
             await capturedTransport?.send(errorResponse);
           }
         }).catch((error51) => this._onerror(new Error(`Failed to send response: ${error51}`))).finally(() => {
-          if (this._requestHandlerAbortControllers.get(request2.id) === abortController) {
-            this._requestHandlerAbortControllers.delete(request2.id);
+          if (this._requestHandlerAbortControllers.get(request3.id) === abortController) {
+            this._requestHandlerAbortControllers.delete(request3.id);
           }
         });
       }
@@ -23733,11 +23733,11 @@ var init_protocol = __esm({
        *
        * @experimental Use `client.experimental.tasks.requestStream()` to access this method.
        */
-      async *requestStream(request2, resultSchema3, options) {
+      async *requestStream(request3, resultSchema3, options) {
         const { task } = options ?? {};
         if (!task) {
           try {
-            const result = await this.request(request2, resultSchema3, options);
+            const result = await this.request(request3, resultSchema3, options);
             yield { type: "result", result };
           } catch (error51) {
             yield {
@@ -23749,7 +23749,7 @@ var init_protocol = __esm({
         }
         let taskId;
         try {
-          const createResult = await this.request(request2, CreateTaskResultSchema, options);
+          const createResult = await this.request(request3, CreateTaskResultSchema, options);
           if (createResult.task) {
             taskId = createResult.task.taskId;
             yield { type: "taskCreated", task: createResult.task };
@@ -23797,7 +23797,7 @@ var init_protocol = __esm({
        *
        * Do not use this method to emit notifications! Use notification() instead.
        */
-      request(request2, resultSchema3, options) {
+      request(request3, resultSchema3, options) {
         const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
         return new Promise((resolve21, reject) => {
           const earlyReject = (error51) => {
@@ -23809,9 +23809,9 @@ var init_protocol = __esm({
           }
           if (this._options?.enforceStrictCapabilities === true) {
             try {
-              this.assertCapabilityForMethod(request2.method);
+              this.assertCapabilityForMethod(request3.method);
               if (task) {
-                this.assertTaskCapability(request2.method);
+                this.assertTaskCapability(request3.method);
               }
             } catch (e) {
               earlyReject(e);
@@ -23821,16 +23821,16 @@ var init_protocol = __esm({
           options?.signal?.throwIfAborted();
           const messageId = this._requestMessageId++;
           const jsonrpcRequest = {
-            ...request2,
+            ...request3,
             jsonrpc: "2.0",
             id: messageId
           };
           if (options?.onprogress) {
             this._progressHandlers.set(messageId, options.onprogress);
             jsonrpcRequest.params = {
-              ...request2.params,
+              ...request3.params,
               _meta: {
-                ...request2.params?._meta || {},
+                ...request3.params?._meta || {},
                 progressToken: messageId
               }
             };
@@ -24034,8 +24034,8 @@ var init_protocol = __esm({
       setRequestHandler(requestSchema, handler) {
         const method5 = getMethodLiteral(requestSchema);
         this.assertRequestHandlerCapability(method5);
-        this._requestHandlers.set(method5, (request2, extra) => {
-          const parsed2 = parseWithCompat(requestSchema, request2);
+        this._requestHandlers.set(method5, (request3, extra) => {
+          const parsed2 = parseWithCompat(requestSchema, request3);
           return Promise.resolve(handler(parsed2, extra));
         });
       }
@@ -24151,19 +24151,19 @@ var init_protocol = __esm({
           }, { once: true });
         });
       }
-      requestTaskStore(request2, sessionId) {
+      requestTaskStore(request3, sessionId) {
         const taskStore = this._taskStore;
         if (!taskStore) {
           throw new Error("No task store configured");
         }
         return {
           createTask: async (taskParams) => {
-            if (!request2) {
+            if (!request3) {
               throw new Error("No request provided");
             }
-            return await taskStore.createTask(taskParams, request2.id, {
-              method: request2.method,
-              params: request2.params
+            return await taskStore.createTask(taskParams, request3.id, {
+              method: request3.method,
+              params: request3.params
             }, sessionId);
           },
           getTask: async (taskId) => {
@@ -31482,8 +31482,8 @@ var init_server = __esm({
        *
        * @experimental
        */
-      requestStream(request2, resultSchema3, options) {
-        return this._server.requestStream(request2, resultSchema3, options);
+      requestStream(request3, resultSchema3, options) {
+        return this._server.requestStream(request3, resultSchema3, options);
       }
       /**
        * Sends a sampling request and returns an AsyncGenerator that yields response messages.
@@ -31743,12 +31743,12 @@ var init_server2 = __esm({
         this._capabilities = options?.capabilities ?? {};
         this._instructions = options?.instructions;
         this._jsonSchemaValidator = options?.jsonSchemaValidator ?? new AjvJsonSchemaValidator();
-        this.setRequestHandler(InitializeRequestSchema, (request2) => this._oninitialize(request2));
+        this.setRequestHandler(InitializeRequestSchema, (request3) => this._oninitialize(request3));
         this.setNotificationHandler(InitializedNotificationSchema, () => this.oninitialized?.());
         if (this._capabilities.logging) {
-          this.setRequestHandler(SetLevelRequestSchema, async (request2, extra) => {
+          this.setRequestHandler(SetLevelRequestSchema, async (request3, extra) => {
             const transportSessionId = extra.sessionId || extra.requestInfo?.headers["mcp-session-id"] || void 0;
-            const { level } = request2.params;
+            const { level } = request3.params;
             const parseResult = LoggingLevelSchema.safeParse(level);
             if (parseResult.success) {
               this._loggingLevels.set(transportSessionId, parseResult.data);
@@ -31798,14 +31798,14 @@ var init_server2 = __esm({
         }
         const method5 = methodValue;
         if (method5 === "tools/call") {
-          const wrappedHandler = async (request2, extra) => {
-            const validatedRequest = safeParse3(CallToolRequestSchema, request2);
+          const wrappedHandler = async (request3, extra) => {
+            const validatedRequest = safeParse3(CallToolRequestSchema, request3);
             if (!validatedRequest.success) {
               const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
               throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
             }
             const { params } = validatedRequest.data;
-            const result = await Promise.resolve(handler(request2, extra));
+            const result = await Promise.resolve(handler(request3, extra));
             if (params.task) {
               const taskValidationResult = safeParse3(CreateTaskResultSchema, result);
               if (!taskValidationResult.success) {
@@ -31936,10 +31936,10 @@ var init_server2 = __esm({
         }
         assertToolsCallTaskCapability(this._capabilities.tasks?.requests, method5, "Server");
       }
-      async _oninitialize(request2) {
-        const requestedVersion = request2.params.protocolVersion;
-        this._clientCapabilities = request2.params.capabilities;
-        this._clientVersion = request2.params.clientInfo;
+      async _oninitialize(request3) {
+        const requestedVersion = request3.params.protocolVersion;
+        this._clientCapabilities = request3.params.capabilities;
+        this._clientVersion = request3.params.clientInfo;
         const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion) ? requestedVersion : LATEST_PROTOCOL_VERSION;
         return {
           protocolVersion,
@@ -32402,33 +32402,33 @@ var init_mcp = __esm({
             return toolDefinition;
           })
         }));
-        this.server.setRequestHandler(CallToolRequestSchema, async (request2, extra) => {
+        this.server.setRequestHandler(CallToolRequestSchema, async (request3, extra) => {
           try {
-            const tool = this._registeredTools[request2.params.name];
+            const tool = this._registeredTools[request3.params.name];
             if (!tool) {
-              throw new McpError(ErrorCode.InvalidParams, `Tool ${request2.params.name} not found`);
+              throw new McpError(ErrorCode.InvalidParams, `Tool ${request3.params.name} not found`);
             }
             if (!tool.enabled) {
-              throw new McpError(ErrorCode.InvalidParams, `Tool ${request2.params.name} disabled`);
+              throw new McpError(ErrorCode.InvalidParams, `Tool ${request3.params.name} disabled`);
             }
-            const isTaskRequest = !!request2.params.task;
+            const isTaskRequest = !!request3.params.task;
             const taskSupport = tool.execution?.taskSupport;
             const isTaskHandler = "createTask" in tool.handler;
             if ((taskSupport === "required" || taskSupport === "optional") && !isTaskHandler) {
-              throw new McpError(ErrorCode.InternalError, `Tool ${request2.params.name} has taskSupport '${taskSupport}' but was not registered with registerToolTask`);
+              throw new McpError(ErrorCode.InternalError, `Tool ${request3.params.name} has taskSupport '${taskSupport}' but was not registered with registerToolTask`);
             }
             if (taskSupport === "required" && !isTaskRequest) {
-              throw new McpError(ErrorCode.MethodNotFound, `Tool ${request2.params.name} requires task augmentation (taskSupport: 'required')`);
+              throw new McpError(ErrorCode.MethodNotFound, `Tool ${request3.params.name} requires task augmentation (taskSupport: 'required')`);
             }
             if (taskSupport === "optional" && !isTaskRequest && isTaskHandler) {
-              return await this.handleAutomaticTaskPolling(tool, request2, extra);
+              return await this.handleAutomaticTaskPolling(tool, request3, extra);
             }
-            const args = await this.validateToolInput(tool, request2.params.arguments, request2.params.name);
+            const args = await this.validateToolInput(tool, request3.params.arguments, request3.params.name);
             const result = await this.executeToolHandler(tool, args, extra);
             if (isTaskRequest) {
               return result;
             }
-            await this.validateToolOutput(tool, result, request2.params.name);
+            await this.validateToolOutput(tool, result, request3.params.name);
             return result;
           } catch (error51) {
             if (error51 instanceof McpError) {
@@ -32532,11 +32532,11 @@ var init_mcp = __esm({
       /**
        * Handles automatic task polling for tools with taskSupport 'optional'.
        */
-      async handleAutomaticTaskPolling(tool, request2, extra) {
+      async handleAutomaticTaskPolling(tool, request3, extra) {
         if (!extra.taskStore) {
           throw new Error("No task store provided for task-capable tool.");
         }
-        const args = await this.validateToolInput(tool, request2.params.arguments, request2.params.name);
+        const args = await this.validateToolInput(tool, request3.params.arguments, request3.params.name);
         const handler = tool.handler;
         const taskExtra = { ...extra, taskStore: extra.taskStore };
         const createTaskResult = args ? await Promise.resolve(handler.createTask(args, taskExtra)) : (
@@ -32564,21 +32564,21 @@ var init_mcp = __esm({
         this.server.registerCapabilities({
           completions: {}
         });
-        this.server.setRequestHandler(CompleteRequestSchema, async (request2) => {
-          switch (request2.params.ref.type) {
+        this.server.setRequestHandler(CompleteRequestSchema, async (request3) => {
+          switch (request3.params.ref.type) {
             case "ref/prompt":
-              assertCompleteRequestPrompt(request2);
-              return this.handlePromptCompletion(request2, request2.params.ref);
+              assertCompleteRequestPrompt(request3);
+              return this.handlePromptCompletion(request3, request3.params.ref);
             case "ref/resource":
-              assertCompleteRequestResourceTemplate(request2);
-              return this.handleResourceCompletion(request2, request2.params.ref);
+              assertCompleteRequestResourceTemplate(request3);
+              return this.handleResourceCompletion(request3, request3.params.ref);
             default:
-              throw new McpError(ErrorCode.InvalidParams, `Invalid completion reference: ${request2.params.ref}`);
+              throw new McpError(ErrorCode.InvalidParams, `Invalid completion reference: ${request3.params.ref}`);
           }
         });
         this._completionHandlerInitialized = true;
       }
-      async handlePromptCompletion(request2, ref3) {
+      async handlePromptCompletion(request3, ref3) {
         const prompt = this._registeredPrompts[ref3.name];
         if (!prompt) {
           throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref3.name} not found`);
@@ -32590,7 +32590,7 @@ var init_mcp = __esm({
           return EMPTY_COMPLETION_RESULT;
         }
         const promptShape = getObjectShape(prompt.argsSchema);
-        const field3 = promptShape?.[request2.params.argument.name];
+        const field3 = promptShape?.[request3.params.argument.name];
         if (!isCompletable(field3)) {
           return EMPTY_COMPLETION_RESULT;
         }
@@ -32598,22 +32598,22 @@ var init_mcp = __esm({
         if (!completer) {
           return EMPTY_COMPLETION_RESULT;
         }
-        const suggestions = await completer(request2.params.argument.value, request2.params.context);
+        const suggestions = await completer(request3.params.argument.value, request3.params.context);
         return createCompletionResult(suggestions);
       }
-      async handleResourceCompletion(request2, ref3) {
+      async handleResourceCompletion(request3, ref3) {
         const template = Object.values(this._registeredResourceTemplates).find((t) => t.resourceTemplate.uriTemplate.toString() === ref3.uri);
         if (!template) {
           if (this._registeredResources[ref3.uri]) {
             return EMPTY_COMPLETION_RESULT;
           }
-          throw new McpError(ErrorCode.InvalidParams, `Resource template ${request2.params.ref.uri} not found`);
+          throw new McpError(ErrorCode.InvalidParams, `Resource template ${request3.params.ref.uri} not found`);
         }
-        const completer = template.resourceTemplate.completeCallback(request2.params.argument.name);
+        const completer = template.resourceTemplate.completeCallback(request3.params.argument.name);
         if (!completer) {
           return EMPTY_COMPLETION_RESULT;
         }
-        const suggestions = await completer(request2.params.argument.value, request2.params.context);
+        const suggestions = await completer(request3.params.argument.value, request3.params.context);
         return createCompletionResult(suggestions);
       }
       setResourceRequestHandlers() {
@@ -32628,7 +32628,7 @@ var init_mcp = __esm({
             listChanged: true
           }
         });
-        this.server.setRequestHandler(ListResourcesRequestSchema, async (request2, extra) => {
+        this.server.setRequestHandler(ListResourcesRequestSchema, async (request3, extra) => {
           const resources = Object.entries(this._registeredResources).filter(([_, resource]) => resource.enabled).map(([uri, resource]) => ({
             uri,
             name: resource.name,
@@ -32658,8 +32658,8 @@ var init_mcp = __esm({
           }));
           return { resourceTemplates };
         });
-        this.server.setRequestHandler(ReadResourceRequestSchema, async (request2, extra) => {
-          const uri = new URL(request2.params.uri);
+        this.server.setRequestHandler(ReadResourceRequestSchema, async (request3, extra) => {
+          const uri = new URL(request3.params.uri);
           const resource = this._registeredResources[uri.toString()];
           if (resource) {
             if (!resource.enabled) {
@@ -32698,21 +32698,21 @@ var init_mcp = __esm({
             };
           })
         }));
-        this.server.setRequestHandler(GetPromptRequestSchema, async (request2, extra) => {
-          const prompt = this._registeredPrompts[request2.params.name];
+        this.server.setRequestHandler(GetPromptRequestSchema, async (request3, extra) => {
+          const prompt = this._registeredPrompts[request3.params.name];
           if (!prompt) {
-            throw new McpError(ErrorCode.InvalidParams, `Prompt ${request2.params.name} not found`);
+            throw new McpError(ErrorCode.InvalidParams, `Prompt ${request3.params.name} not found`);
           }
           if (!prompt.enabled) {
-            throw new McpError(ErrorCode.InvalidParams, `Prompt ${request2.params.name} disabled`);
+            throw new McpError(ErrorCode.InvalidParams, `Prompt ${request3.params.name} disabled`);
           }
           if (prompt.argsSchema) {
             const argsObj = normalizeObjectSchema(prompt.argsSchema);
-            const parseResult = await safeParseAsync3(argsObj, request2.params.arguments ?? {});
+            const parseResult = await safeParseAsync3(argsObj, request3.params.arguments ?? {});
             if (!parseResult.success) {
               const error51 = "error" in parseResult ? parseResult.error : "Unknown error";
               const errorMessage2 = getParseErrorMessage(error51);
-              throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request2.params.name}: ${errorMessage2}`);
+              throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request3.params.name}: ${errorMessage2}`);
             }
             const args = parseResult.data;
             const cb = prompt.callback;
@@ -33378,14 +33378,14 @@ var init_current_disposable_open_diagnostics = __esm({
     for (const stage of CURRENT_OPEN_NATIVE_STAGES) {
       for (const code of CURRENT_OPEN_NATIVE_CODES) {
         const category = `native-current-disposable-open:${stage}:${code}`;
-        const fields9 = { nativeStage: stage, nativeCode: code };
+        const fields10 = { nativeStage: stage, nativeCode: code };
         nativeMessages.set(`CURRENT_DISPOSABLE_OPEN_FAILED:${stage}:${code}`, category);
-        nativeCategories.set(category, fields9);
+        nativeCategories.set(category, fields10);
         for (const prefix4 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
-          wrappedCategories.set(`${prefix4} [${category}].`, fields9);
+          wrappedCategories.set(`${prefix4} [${category}].`, fields10);
         }
         if (code === "TIMEOUT") {
-          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields9);
+          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields10);
         }
       }
     }
@@ -33968,11 +33968,11 @@ function isSchematicTextReadMethod(method5) {
   return SCHEMATIC_TEXT_READ_METHODS.some((entry) => entry === method5);
 }
 function buildSchematicTextReadExpression(input, diagnostics) {
-  const request2 = schematicTextReadRequestSchema.parse(input);
+  const request3 = schematicTextReadRequestSchema.parse(input);
   if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
     throw new Error("Unsupported schematic Text diagnostics.");
   }
-  const selector4 = request2.method === SCHEMATIC_TEXT_READ_METHODS[0] ? request2.arguments.primitiveIds : null;
+  const selector4 = request3.method === SCHEMATIC_TEXT_READ_METHODS[0] ? request3.arguments.primitiveIds : null;
   const selected2 = selector4 === null ? null : (Array.isArray(selector4) ? selector4 : [selector4]).toSorted();
   return `(() => {
 const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_TEXT_'+reason;" : ""}throw new Error('SCH_TEXT_'+reason);};
@@ -34055,10 +34055,10 @@ check();return wanted.map(id=>before.states.get(id));
 })()`;
 }
 function validateSchematicTextStates(value2, input) {
-  const request2 = schematicTextReadRequestSchema.parse(input);
+  const request3 = schematicTextReadRequestSchema.parse(input);
   const rows2 = schematicTextStatesSchema.parse(value2);
-  if (request2.method === SCHEMATIC_TEXT_READ_METHODS[0]) {
-    const selected2 = request2.arguments.primitiveIds;
+  if (request3.method === SCHEMATIC_TEXT_READ_METHODS[0]) {
+    const selected2 = request3.arguments.primitiveIds;
     const wanted = (Array.isArray(selected2) ? selected2 : [selected2]).toSorted();
     if (rows2.length !== wanted.length || rows2.some((row6, index) => row6.primitiveId !== wanted[index])) {
       throw new Error("Text observation does not match the exact requested identities.");
@@ -34125,13 +34125,13 @@ function isSchematicNetGroupReadMethod(method5) {
   return SCHEMATIC_NETGROUP_READ_METHODS.some((entry) => entry === method5);
 }
 function buildSchematicNetGroupReadExpression(input, diagnostics) {
-  const request2 = schematicNetGroupReadRequestSchema.parse(input);
+  const request3 = schematicNetGroupReadRequestSchema.parse(input);
   if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
     throw new Error("Unsupported schematic NetGroup diagnostics.");
   }
-  const selector4 = "primitiveIds" in request2.arguments ? request2.arguments.primitiveIds : null;
+  const selector4 = "primitiveIds" in request3.arguments ? request3.arguments.primitiveIds : null;
   const selected2 = selector4 === null ? null : (Array.isArray(selector4) ? selector4 : [selector4]).toSorted();
-  const kind = request2.method.includes("PrimitiveWire") ? "wire" : "bus";
+  const kind = request3.method.includes("PrimitiveWire") ? "wire" : "bus";
   return `(() => {
 const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_NETGROUP_'+reason;" : ""}throw new Error('SCH_NETGROUP_'+reason);};
 const selected=${JSON.stringify(selected2)},kind=${JSON.stringify(kind)};
@@ -34237,13 +34237,13 @@ for(const id of wanted){if(before.states.get(id)?.kind!==kind)bad('TARGET');}che
 })()`;
 }
 function validateSchematicNetGroupStates(value2, input) {
-  const request2 = schematicNetGroupReadRequestSchema.parse(input), rows2 = schematicNetGroupStatesSchema.parse(value2);
-  const kind = request2.method.includes("PrimitiveWire") ? "wire" : "bus";
+  const request3 = schematicNetGroupReadRequestSchema.parse(input), rows2 = schematicNetGroupStatesSchema.parse(value2);
+  const kind = request3.method.includes("PrimitiveWire") ? "wire" : "bus";
   if (rows2.some((row6) => row6.kind !== kind)) {
     throw new Error("NetGroup observation contains a different family.");
   }
-  if ("primitiveIds" in request2.arguments) {
-    const selected2 = request2.arguments.primitiveIds, wanted = (Array.isArray(selected2) ? selected2 : [selected2]).toSorted();
+  if ("primitiveIds" in request3.arguments) {
+    const selected2 = request3.arguments.primitiveIds, wanted = (Array.isArray(selected2) ? selected2 : [selected2]).toSorted();
     if (rows2.length !== wanted.length || rows2.some((row6, index) => row6.primitiveId !== wanted[index])) {
       throw new Error("NetGroup observation differs from the exact requested identities.");
     }
@@ -34314,12 +34314,12 @@ function isSchematicPrimitiveReadMethod(method5) {
   return SCHEMATIC_PRIMITIVE_READ_METHODS.some((entry) => entry === method5);
 }
 function buildSchematicPrimitiveReadExpression(input, diagnostics) {
-  const request2 = schematicPrimitiveReadRequestSchema.parse(input);
+  const request3 = schematicPrimitiveReadRequestSchema.parse(input);
   if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
     throw new Error("Unsupported schematic primitive diagnostics.");
   }
-  const singular = request2.method === SCHEMATIC_PRIMITIVE_READ_METHODS[0];
-  const selected2 = "id" in request2.arguments ? [request2.arguments.id] : request2.arguments.ids;
+  const singular = request3.method === SCHEMATIC_PRIMITIVE_READ_METHODS[0];
+  const selected2 = "id" in request3.arguments ? [request3.arguments.id] : request3.arguments.ids;
   return `(() => {
 const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_PRIMITIVE_'+reason;" : ""}throw new Error('SCH_PRIMITIVE_'+reason);};
 const selected=${JSON.stringify(selected2)},singular=${JSON.stringify(singular)};
@@ -34457,9 +34457,9 @@ check();const rows=selected.map(id=>states.get(id));return singular?rows[0]:rows
 })()`;
 }
 function validateSchematicPrimitiveStates(value2, input) {
-  const request2 = schematicPrimitiveReadRequestSchema.parse(input);
-  const rows2 = "id" in request2.arguments ? [schematicPrimitiveStateSchema.parse(value2)] : schematicPrimitiveStatesSchema.parse(value2);
-  const wanted = "id" in request2.arguments ? [request2.arguments.id] : request2.arguments.ids;
+  const request3 = schematicPrimitiveReadRequestSchema.parse(input);
+  const rows2 = "id" in request3.arguments ? [schematicPrimitiveStateSchema.parse(value2)] : schematicPrimitiveStatesSchema.parse(value2);
+  const wanted = "id" in request3.arguments ? [request3.arguments.id] : request3.arguments.ids;
   if (rows2.length !== wanted.length || rows2.some((row6, index) => row6.primitiveId !== wanted[index])) {
     throw new Error("Primitive observation differs from the exact ordered selectors.");
   }
@@ -37509,7 +37509,7 @@ async function recoverPublishedEvidence(evidence2) {
 async function archiveExternalEvidence({
   evidence: evidence2,
   reservation,
-  request: request2,
+  request: request3,
   result,
   metadata: metadata8,
   attachments = []
@@ -37538,7 +37538,7 @@ async function archiveExternalEvidence({
     schema: "easyeda-pro-control.tool-result.v1",
     createdAt,
     reservation: evidenceReservationBinding(held),
-    request: request2,
+    request: request3,
     result,
     metadata: metadata8,
     ...archivedAttachments.length === 0 ? {} : { attachments: archivedAttachments }
@@ -37550,7 +37550,7 @@ async function archiveExternalEvidence({
     createdAt,
     resultPath: held.resultPath,
     receiptPath: held.receiptPath,
-    requestSha256: sha256Text(canonicalJson(request2)),
+    requestSha256: sha256Text(canonicalJson(request3)),
     resultSha256: sha256Text(resultText),
     attachments: archivedAttachments,
     metadata: metadata8,
@@ -37574,7 +37574,7 @@ async function archiveExternalEvidence({
 }
 async function archiveCaptureEvidence({
   reservation,
-  request: request2,
+  request: request3,
   payload,
   images,
   metadata: metadata8
@@ -37620,7 +37620,7 @@ async function archiveCaptureEvidence({
       schema: "easyeda-pro-control.capture-result.v1",
       createdAt,
       reservation: evidenceReservationBinding(reservation),
-      request: request2,
+      request: request3,
       result,
       metadata: metadata8
     };
@@ -37631,7 +37631,7 @@ async function archiveCaptureEvidence({
       createdAt,
       resultPath: reservation.resultPath,
       receiptPath: reservation.receiptPath,
-      requestSha256: sha256Text(canonicalJson(request2)),
+      requestSha256: sha256Text(canonicalJson(request3)),
       resultSha256: sha256Text(resultText),
       images: created,
       metadata: metadata8,
@@ -38581,8 +38581,8 @@ async function linuxProcessStartTime(pid2) {
   if (closingParenthesis === -1) {
     throw new Error(`Could not parse process identity for pid ${pid2}.`);
   }
-  const fields9 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields9[19];
+  const fields10 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields10[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error(`Could not parse process start time for pid ${pid2}.`);
   }
@@ -39552,7 +39552,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_symbol",
       selector: "eda.lib_Symbol.get",
       implementation: "native-task-equivalent",
-      scope: "Separately pinned current project-local symbol metadata subset. One exact symbolUuid and explicit active ordinary PCB project/branch/document/tab target. Two matching bounded metadata observations correlate the loaded project owner and require the symbol to remain absent from the complete registered editor tree. Hidden or unregistered editors are not independently excluded. Raw tagsJson is retained without normalization. Retained manager/RPC references do not directly lease the module-private worker; workerIdentityVerified remains false. Not a cloud-library lookup, complete library inventory, symbol geometry, lossless stored META or persistence proof, and not authority to rename or edit. No geometry load, navigation, write or Save; legacy library writers and their existing restrictions are unchanged.",
+      scope: "Separately pinned current project-local symbol metadata subset. One exact symbolUuid and explicit active ordinary PCB project/branch/document/tab target. Two matching bounded metadata observations correlate the loaded project owner and require the symbol to remain absent from the complete registered editor tree. Hidden or unregistered editors are not independently excluded. Raw tagsJson is retained without normalization. Retained manager/RPC references do not directly lease the module-private worker; workerIdentityVerified remains false. Not a cloud-library lookup, complete library inventory, symbol geometry, lossless stored META or persistence proof, and not authority to rename or edit. No geometry load, navigation, write or Save; legacy library writers and their existing restrictions are unchanged. The same tool separately accepts project-symbol-preflight: exact caller-supplied metadata comparison in a loaded project with no editor tabs. Discover that distinct request through project-symbol-preflight/project-symbol-preflight-validate; it is not this lib_Symbol.get request and grants no source provenance, backend actor/clock qualification, permission, startup, persistence or writer authority.",
       source: ["current-symbol-metadata.ts", "current-symbol-metadata-program.ts", "current-symbol-metadata-runtime.ts", "current-disposable-open-profile.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
       tests: ["current-symbol-metadata.test.ts", "facade-mode.test.ts"],
       documentTypes: [3],
@@ -40164,7 +40164,7 @@ function compilePrimitive(operation, family2) {
   const target6 = "target" in operation ? operation.target : null;
   const properties = "properties" in operation ? operation.properties : {};
   const patch2 = "patch" in operation ? operation.patch : {};
-  const fields9 = method5 === "create" ? Object.keys(properties) : Object.keys(patch2);
+  const fields10 = method5 === "create" ? Object.keys(properties) : Object.keys(patch2);
   let args;
   let inverse;
   if (method5 === "create") {
@@ -40177,7 +40177,7 @@ function compilePrimitive(operation, family2) {
     args = [targetArgument(target6)];
     if (method5 === "modify") {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(patch2).map(([field3, value2]) => [field3, propertyArgument(field3, value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target6, fields: fields9 };
+      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target6, fields: fields10 };
     } else {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
@@ -40215,7 +40215,7 @@ function compilePrimitive(operation, family2) {
     afterReads,
     expectedFields,
     inverse,
-    effect: { family: family2, target: target6, identity: method5 === "modify" ? "preserve" : method5, fields: fields9, collateral },
+    effect: { family: family2, target: target6, identity: method5 === "modify" ? "preserve" : method5, fields: fields10, collateral },
     limitations: ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged", ...family2 === "pad" ? ["standalone-pad-only-unless-parent-collateral-is-explicitly-proven", "specialPad-unimplemented-in-sdk"] : [], ...family2 === "region" ? ["public-reader-omits-NO_VIAS"] : [], ...family2 === "fill" ? ["public-reader-hardcodes-fillMode"] : [], ...family2 === "arc" || family2 === "via" ? ["public-reader-rounds-geometry"] : []]
   };
 }
@@ -41661,11 +41661,11 @@ function compareDocumentSources(before, after) {
       if (previous === void 0 || canonicalJson(previous) === canonicalJson(object4)) {
         return [];
       }
-      const fields9 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object4.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object4.body[key] })).toSorted();
+      const fields10 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object4.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object4.body[key] })).toSorted();
       if (previous.type !== object4.type) {
-        fields9.push("$type");
+        fields10.push("$type");
       }
-      return [{ before: previous, after: object4, fields: fields9 }];
+      return [{ before: previous, after: object4, fields: fields10 }];
     })
   };
 }
@@ -41708,11 +41708,11 @@ function assertExactTransportValue(value2, depth = 0) {
   if (typeof value2 !== "object" || value2 === null) {
     throw new Error("Exact reader transport contains a non-JSON value.");
   }
-  const fields9 = Array.isArray(value2) ? value2 : Object.values(value2);
-  if (fields9.length > 2e4) {
+  const fields10 = Array.isArray(value2) ? value2 : Object.values(value2);
+  if (fields10.length > 2e4) {
     throw new Error("Exact reader transport exceeds its collection bound.");
   }
-  for (const field3 of fields9) {
+  for (const field3 of fields10) {
     assertExactTransportValue(field3, depth + 1);
   }
 }
@@ -41766,8 +41766,8 @@ function assertPayloadCandidate(value2) {
     throw new Error("Exact reader returned a non-object payload.");
   }
 }
-function assertExactReadExecutionSupported(request2) {
-  if (request2.kind === "schematic-topology") {
+function assertExactReadExecutionSupported(request3) {
+  if (request3.kind === "schematic-topology") {
     throw new Error(SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL);
   }
 }
@@ -41786,8 +41786,8 @@ function exactReadDocumentType(kind) {
   }
   throw new Error(`Unsupported exact-reader kind: ${String(kind)}`);
 }
-function validateExactReadRequest(request2, expectedContext) {
-  const parsed2 = exactReadRequestSchema.parse(request2);
+function validateExactReadRequest(request3, expectedContext) {
+  const parsed2 = exactReadRequestSchema.parse(request3);
   assertExactReadExecutionSupported(parsed2);
   const requiredType = exactReadDocumentType(parsed2.kind);
   if (expectedContext?.document?.documentType !== requiredType) {
@@ -41807,8 +41807,8 @@ function assertExactRecordKeys(value2, requiredKeys, label) {
     throw new Error(`${label} has missing or unexpected fields.`);
   }
 }
-function assertFiniteFields(value2, fields9, label) {
-  for (const field3 of fields9) {
+function assertFiniteFields(value2, fields10, label) {
+  for (const field3 of fields10) {
     if (typeof value2[field3] !== "number" || !Number.isFinite(value2[field3])) {
       throw new TypeError(`${label}.${field3} must be finite.`);
     }
@@ -41928,7 +41928,7 @@ function assertMaskExpansion(value2, label) {
   if (value2 === null) {
     return;
   }
-  const fields9 = /* @__PURE__ */ new Set([
+  const fields10 = /* @__PURE__ */ new Set([
     "topSolderMask",
     "bottomSolderMask",
     "topPasteMask",
@@ -41937,7 +41937,7 @@ function assertMaskExpansion(value2, label) {
   if (!isUnknownRecord(value2)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
-  if (Object.keys(value2).some((key) => !fields9.has(key))) {
+  if (Object.keys(value2).some((key) => !fields10.has(key))) {
     throw new Error(`${label} has an unexpected field.`);
   }
   assertFiniteFields(value2, Object.keys(value2), label);
@@ -42014,15 +42014,15 @@ function assertOtherProperty(value2, label) {
     }
   }
 }
-function validateExactReadPayload(payload, request2) {
+function validateExactReadPayload(payload, request3) {
   assertExactTransportValue(payload);
   assertPayloadCandidate(payload);
-  if (payload.ok !== true || payload.kind !== request2.kind || payload.documentType !== exactReadDocumentType(request2.kind)) {
+  if (payload.ok !== true || payload.kind !== request3.kind || payload.documentType !== exactReadDocumentType(request3.kind)) {
     throw new Error(
       "Exact reader returned an inconsistent kind, document type, or success flag."
     );
   }
-  if (request2.kind.endsWith("-source")) {
+  if (request3.kind.endsWith("-source")) {
     const source4 = payload["source"];
     if (payload.authority?.source !== "sys_FileManager.getDocumentSource" || typeof source4 !== "string" || source4.trim().length === 0 || Buffer.byteLength(source4, "utf8") > 3 * 1024 * 1024 || payload["utf8Bytes"] !== Buffer.byteLength(source4, "utf8")) {
       throw new Error("Document source is missing, oversized or contradicts its UTF-8 byte count.");
@@ -42030,8 +42030,8 @@ function validateExactReadPayload(payload, request2) {
     parseDocumentSource(source4);
     return payload;
   }
-  if (request2.kind === "schematic-components" || request2.kind === "pcb-components") {
-    if (!Array.isArray(payload.primitiveIds) || payload.detail?.pins !== request2.includePins || payload.detail?.bounds !== request2.includeBounds || !payload.byPrimitiveId || typeof payload.byPrimitiveId !== "object" || Array.isArray(payload.byPrimitiveId)) {
+  if (request3.kind === "schematic-components" || request3.kind === "pcb-components") {
+    if (!Array.isArray(payload.primitiveIds) || payload.detail?.pins !== request3.includePins || payload.detail?.bounds !== request3.includeBounds || !payload.byPrimitiveId || typeof payload.byPrimitiveId !== "object" || Array.isArray(payload.byPrimitiveId)) {
       throw new Error("Exact component reader omitted its primitive index.");
     }
     const componentByPrimitiveId = payload.byPrimitiveId;
@@ -42049,7 +42049,7 @@ function validateExactReadPayload(payload, request2) {
           `Exact component reader returned a mismatched primitive record for ${id9}.`
         );
       }
-      const schematic2 = request2.kind === "schematic-components";
+      const schematic2 = request3.kind === "schematic-components";
       const baseKeys = schematic2 ? [
         "primitiveId",
         "primitiveType",
@@ -42096,10 +42096,10 @@ function validateExactReadPayload(payload, request2) {
         "supplierId",
         "otherProperty"
       ];
-      if (request2.includePins) {
+      if (request3.includePins) {
         baseKeys.push(schematic2 ? "pins" : "pads");
       }
-      if (request2.includeBounds) {
+      if (request3.includeBounds) {
         baseKeys.push("bounds");
       }
       assertExactRecordKeys(component3, baseKeys, `Exact component ${id9}`);
@@ -42139,7 +42139,7 @@ function validateExactReadPayload(payload, request2) {
         component3.otherProperty,
         `Exact component ${id9}.otherProperty`
       );
-      if (request2.includeBounds) {
+      if (request3.includeBounds) {
         assertBounds(component3.bounds, `Exact component ${id9}.bounds`);
       }
       if (schematic2) {
@@ -42169,7 +42169,7 @@ function validateExactReadPayload(payload, request2) {
         if (typeof component3.mirror !== "boolean") {
           throw new TypeError(`Exact component ${id9}.mirror must be boolean.`);
         }
-        if (request2.includePins) {
+        if (request3.includePins) {
           if (!Array.isArray(component3.pins)) {
             throw new TypeError(`Exact component ${id9}.pins must be an array.`);
           }
@@ -42221,7 +42221,7 @@ function validateExactReadPayload(payload, request2) {
             `Exact PCB component ${id9} has malformed boolean state.`
           );
         }
-        if (request2.includePins) {
+        if (request3.includePins) {
           if (!Array.isArray(component3.pads)) {
             throw new TypeError(
               `Exact PCB component ${id9}.pads must be an array.`
@@ -42268,30 +42268,30 @@ function validateExactReadPayload(payload, request2) {
         }
       }
     }
-    if (request2.selector.primitiveIds) {
-      const requested = [...request2.selector.primitiveIds].toSorted();
+    if (request3.selector.primitiveIds) {
+      const requested = [...request3.selector.primitiveIds].toSorted();
       if (JSON.stringify(keys2) !== JSON.stringify(requested)) {
         throw new Error(
           "Exact component reader did not return every requested primitive ID exactly once."
         );
       }
     }
-    if (request2.selector.designators) {
+    if (request3.selector.designators) {
       const actual = keys2.map((id9) => {
         const designator = componentByPrimitiveId[id9]?.designator;
         assertNonemptyString(designator, `Exact component ${id9}.designator`);
         return designator;
       }).toSorted(compareStrings);
-      const requested = request2.selector.designators.toSorted(compareStrings);
+      const requested = request3.selector.designators.toSorted(compareStrings);
       if (JSON.stringify(actual) !== JSON.stringify(requested)) {
         throw new Error(
           "Exact component reader did not return every requested designator exactly once."
         );
       }
     }
-    const limitations12 = payload.limitations;
-    if (request2.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations12) || typeof limitations12.componentPinOtherProperty !== "string" || typeof limitations12.componentOtherPropertyFiltering !== "string" || typeof limitations12.cbbLibraryOwnership !== "string") {
+    const limitations13 = payload.limitations;
+    if (request3.kind === "schematic-components") {
+      if (!isUnknownRecord(limitations13) || typeof limitations13.componentPinOtherProperty !== "string" || typeof limitations13.componentOtherPropertyFiltering !== "string" || typeof limitations13.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42306,12 +42306,12 @@ function validateExactReadPayload(payload, request2) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations12) || typeof limitations12.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations13) || typeof limitations13.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
     }
-  } else if (request2.kind === "schematic-topology") {
+  } else if (request3.kind === "schematic-topology") {
     if (!Array.isArray(payload.compiledConnectivity) || payload.authority?.connectivity !== "sch_ManufactureData.getNetlistFile(JLCEDA)" || payload.authority?.wireGeometry !== "unavailable" || payload.componentCorrelation?.status !== "exact-match" || payload.componentCorrelation?.source !== "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins" || typeof payload.componentCorrelation?.pinCount !== "number" || !Number.isSafeInteger(payload.componentCorrelation?.pinCount) || payload.componentCorrelation.pinCount < 0 || !Array.isArray(payload.componentCorrelation?.uniqueIds) || !Array.isArray(payload.componentCorrelation?.primitiveIds) || !payload.componentCorrelation?.byUniqueId || typeof payload.componentCorrelation.byUniqueId !== "object" || Array.isArray(payload.componentCorrelation.byUniqueId) || !Array.isArray(payload.limitations)) {
       throw new Error(
         "Exact schematic topology reader omitted compiled connectivity provenance."
@@ -42417,9 +42417,9 @@ function validateExactReadPayload(payload, request2) {
         "Exact schematic topology component correlation is inconsistent."
       );
     }
-  } else if (request2.kind === "pcb-inventory") {
-    const limitations12 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations12) || typeof limitations12["directPads"] !== "string" || typeof limitations12.componentPadCorrelation !== "string" || typeof limitations12["pouredCorrelation"] !== "string" || typeof limitations12.regionRuleTypes !== "string" || typeof limitations12.fillModes !== "string" || typeof limitations12.arcPrecision !== "string" || typeof limitations12.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+  } else if (request3.kind === "pcb-inventory") {
+    const limitations13 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations13) || typeof limitations13["directPads"] !== "string" || typeof limitations13.componentPadCorrelation !== "string" || typeof limitations13["pouredCorrelation"] !== "string" || typeof limitations13.regionRuleTypes !== "string" || typeof limitations13.fillModes !== "string" || typeof limitations13.arcPrecision !== "string" || typeof limitations13.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families3 = payload.families;
@@ -42902,7 +42902,7 @@ function validateExactReadPayload(payload, request2) {
         );
       }
     }
-  } else if (request2.kind === "pcb-rules") {
+  } else if (request3.kind === "pcb-rules") {
     const rules = payload.rules;
     const nets = payload.nets;
     if (!rules || typeof rules.configurationName !== "string" || !Array.isArray(rules.netRules) || !Array.isArray(rules.regionRules) || !Array.isArray(rules.netClasses) || !Array.isArray(rules.equalLengthGroups) || !Array.isArray(rules.padPairGroups) || !Array.isArray(rules.differentialPairs) || !rules.configuration || typeof rules.configuration !== "object" || Array.isArray(rules.configuration) || typeof rules.configuration.name !== "string" || rules.configuration.name !== rules.configurationName || rules.configuration.config === void 0 || rules.configuration.config === null || typeof rules.configuration.config !== "object" || Array.isArray(rules.configuration.config) || Object.keys(rules.configuration.config).length === 0 || !rules.netByNetRules || typeof rules.netByNetRules !== "object" || Array.isArray(rules.netByNetRules) || !Array.isArray(nets) || new Set(nets).size !== nets.length) {
@@ -43002,8 +43002,8 @@ function exactTargetAssertionPointer(primitiveId3) {
   const escaped = primitiveId3.replaceAll("~", "~0").replaceAll("/", "~1");
   return `/byPrimitiveId/${escaped}/primitiveId`;
 }
-function buildExactReadExpression(request2) {
-  const parsed2 = exactReadRequestSchema.parse(request2);
+function buildExactReadExpression(request3) {
+  const parsed2 = exactReadRequestSchema.parse(request3);
   assertExactReadExecutionSupported(parsed2);
   if (parsed2.kind === "schematic-flat-topology") {
     throw new Error("Flat topology requires the checkpoint-bound native coordinator.");
@@ -44034,13 +44034,13 @@ function buildExactReadExpression(request2) {
   }
 })()`;
 }
-function buildExactReadCode(request2) {
+function buildExactReadCode(request3) {
   const diagnosticAllowed = Object.fromEntries(
     Object.entries(exactDiagnosticAllowed).map(([key, values2]) => [key, [...values2]])
   );
   return `
 try {
-  const payload = await ${buildExactReadExpression(request2)};
+  const payload = await ${buildExactReadExpression(request3)};
   const json = JSON.stringify(payload, (_key, value) => {
     if (value === null || typeof value === "string" || typeof value === "boolean" ||
         (typeof value === "number" && Number.isFinite(value)) ||
@@ -44573,7 +44573,7 @@ function compileSchematicOperation(input) {
   if (operation.action === "sch.component-pin.no-connect") {
     values2 = { noConnected: operation.noConnected };
   }
-  const fields9 = Object.keys(values2);
+  const fields10 = Object.keys(values2);
   let method5 = "modify";
   let resultKind = "modified-primitive";
   let args = [];
@@ -44606,7 +44606,7 @@ function compileSchematicOperation(input) {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     } else {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(values2).map(([field3, value2]) => [field3, literal3(value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target6, fields: fields9 };
+      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target6, fields: fields10 };
     }
   }
   const familyIdentities = { purpose: "family-identities", api: definition.api, method: "getAllPrimitiveId", args: [] };
@@ -44623,18 +44623,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations12 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations13 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations12.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations13.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations12.push("complete-source-property-merge-required-before-component-modify");
+    limitations13.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations12.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations13.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations12.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations13.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity28 = "preserve";
   if (deleting) {
@@ -44643,7 +44643,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity28 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value2]) => expected(family2, field3, value2)), inverse, effect: { family: family2, target: target6, identity: identity28, fields: fields9, collateral }, requiredPreservation, limitations: limitations12 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value2]) => expected(family2, field3, value2)), inverse, effect: { family: family2, target: target6, identity: identity28, fields: fields10, collateral }, requiredPreservation, limitations: limitations13 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -45847,25 +45847,25 @@ function storedTemplateBodies(sheet, source4, model) {
     if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
       fail4();
     }
-    const body4 = structuredClone(stored2.body), fields9 = [];
+    const body4 = structuredClone(stored2.body), fields10 = [];
     if (stored2.type === "ATTR") {
       if (!same5(body4["zIndex"], live.body["zIndex"])) {
         if (!Number.isSafeInteger(live.body["zIndex"]) || number8(live.body["zIndex"]) < 0) {
           fail4();
         }
         body4["zIndex"] = live.body["zIndex"];
-        fields9.push("zIndex");
+        fields10.push("zIndex");
       }
       if (!Object.hasOwn(body4, "strikeout") && live.body["strikeout"] === false) {
         body4["strikeout"] = false;
-        fields9.push("strikeout");
+        fields10.push("strikeout");
       }
     }
     if (!same5(body4, live.body)) {
       fail4();
     }
-    if (fields9.length > 0) {
-      hydration.push({ id: stored2.id, fields: fields9 });
+    if (fields10.length > 0) {
+      hydration.push({ id: stored2.id, fields: fields10 });
     }
   }
   return hydration;
@@ -47245,7 +47245,7 @@ function diagnosticRecord(value2) {
 function contextFailureDiagnostics(payload) {
   const source4 = diagnosticRecord(payload);
   const result = {};
-  const fields9 = {
+  const fields10 = {
     project: ["uuid", "projectUuid", "path"],
     document: ["uuid", "documentUuid", "documentType", "tabId", "parentProjectUuid", "parentLibraryUuid"],
     pcb: ["uuid", "documentUuid", "tabId"],
@@ -47269,7 +47269,7 @@ function contextFailureDiagnostics(payload) {
   const pathStatus = statuses["projectPath"];
   result["projectPathCall"] = typeof pathStatus === "string" && allowedStatuses.has(pathStatus) ? pathStatus : "unreported";
   result["contextStable"] = source4["contextStable"] === true;
-  for (const [label, keys2] of Object.entries(fields9)) {
+  for (const [label, keys2] of Object.entries(fields10)) {
     const item2 = diagnosticRecord(source4[label]);
     const status2 = statuses[label];
     const projected4 = {
@@ -48059,14 +48059,14 @@ function ownedActive(scope6, document3) {
   return (active2.tabId === `${active2.uuid}@${scope6.projectUuid}` || !library2 && active2.tabId === active2.uuid) && (library2 ? document3["parentLibraryUuid"] === scope6.ownerUuid && (document3["parentProjectUuid"] === void 0 || document3["parentProjectUuid"] === scope6.projectUuid) : document3["parentProjectUuid"] === scope6.projectUuid && document3["parentLibraryUuid"] === void 0);
 }
 function buildEditorTabLookupCode(requestInput2, scopeInput) {
-  const request2 = editorTabLookupRequestSchema.parse(requestInput2), scope6 = scopeSchema.parse(scopeInput);
-  const call = request2.method === TAB_METHOD ? `editor.getSplitScreenIdByTabId(${JSON.stringify(request2.arguments.tabId)})` : `editor.getTabsBySplitScreenId(${JSON.stringify(request2.arguments.splitScreenId)})`;
+  const request3 = editorTabLookupRequestSchema.parse(requestInput2), scope6 = scopeSchema.parse(scopeInput);
+  const call = request3.method === TAB_METHOD ? `editor.getSplitScreenIdByTabId(${JSON.stringify(request3.arguments.tabId)})` : `editor.getTabsBySplitScreenId(${JSON.stringify(request3.arguments.splitScreenId)})`;
   return `
-const scope=${JSON.stringify(scope6)},request=${JSON.stringify(request2)};let stage='api';
+const scope=${JSON.stringify(scope6)},request=${JSON.stringify(request3)};let stage='api';
 const fail=()=>{throw new Error('EDITOR_LOOKUP_REFUSED');};
 try{
 const editor=eda.dmt_EditorControl,project=eda.dmt_Project,select=eda.dmt_SelectControl;
-if(typeof editor?.getSplitScreenTree!=='function'||typeof ${request2.method}!=='function'||typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function')fail();
+if(typeof editor?.getSplitScreenTree!=='function'||typeof ${request3.method}!=='function'||typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function')fail();
 const object=value=>{if(!value||typeof value!=='object'||Array.isArray(value))fail();return value;};
 const field=(value,key)=>{object(value);const descriptor=Object.getOwnPropertyDescriptor(value,key);if(descriptor===undefined)return undefined;if(!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
 const string=value=>{if(typeof value!=='string'||!value||value.length>512||/[\\x00-\\x1f\\x7f]/.test(value))fail();return value;};
@@ -48119,9 +48119,9 @@ function validateEditorTabLookupResult(input, requestInput2, scopeInput) {
   if (Buffer.byteLength(JSON.stringify(input)) > MAX_BYTES) {
     throw new Error("Editor lookup result exceeds its fixed bound.");
   }
-  const request2 = editorTabLookupRequestSchema.parse(requestInput2), scope6 = scopeSchema.parse(scopeInput);
+  const request3 = editorTabLookupRequestSchema.parse(requestInput2), scope6 = scopeSchema.parse(scopeInput);
   const result = resultSchema.parse(input);
-  if (result.method !== request2.method || result.scopeSha256 !== sha256Json(scope6)) {
+  if (result.method !== request3.method || result.scopeSha256 !== sha256Json(scope6)) {
     throw new Error("Editor lookup response substituted its bound request or scope.");
   }
   const documentIds = /* @__PURE__ */ new Set(), nodes = /* @__PURE__ */ new Map(), tabIds = /* @__PURE__ */ new Set();
@@ -48164,14 +48164,14 @@ function validateEditorTabLookupResult(input, requestInput2, scopeInput) {
     throw new Error("Editor lookup tree lacks complete active membership.");
   }
   const leaves = result.tree.filter((node) => node.tabs !== null);
-  const leaf = request2.method === TAB_METHOD ? leaves.find((node) => node.tabs?.some((tab2) => tab2.tabId === request2.arguments.tabId && tab2.uuid !== null) === true) : leaves.find((node) => node.id === request2.arguments.splitScreenId);
-  if (leaf === void 0 || canonicalJson(result.value) !== canonicalJson(request2.method === TAB_METHOD ? leaf.id : leaf.tabs)) {
+  const leaf = request3.method === TAB_METHOD ? leaves.find((node) => node.tabs?.some((tab2) => tab2.tabId === request3.arguments.tabId && tab2.uuid !== null) === true) : leaves.find((node) => node.id === request3.arguments.splitScreenId);
+  if (leaf === void 0 || canonicalJson(result.value) !== canonicalJson(request3.method === TAB_METHOD ? leaf.id : leaf.tabs)) {
     throw new Error("Editor lookup response differs from its complete tree.");
   }
   return result;
 }
 async function readEditorTabLookup(engine2, requestInput2, expectedContext, overrides = {}) {
-  const request2 = editorTabLookupRequestSchema.parse(requestInput2);
+  const request3 = editorTabLookupRequestSchema.parse(requestInput2);
   type.parse(expectedContext.document.documentType);
   const dependencies3 = { ...services, ...overrides };
   await engine2.assertBridgeDispatchAllowed();
@@ -48210,14 +48210,14 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
     projectUuid: projectUuid4
   });
   const scope6 = prepareEditorTabLookupScope(history, context3);
-  const code = wrapWithContextGuard(buildEditorTabLookupCode(request2, scope6), context3);
+  const code = wrapWithContextGuard(buildEditorTabLookupCode(request3, scope6), context3);
   const observe2 = async () => {
     await engine2.assertBridgeDispatchAllowed();
     await engine2.assertContext(context3);
     await unchanged3();
     const raw = await engine2.upstream.callTool("easyeda_execute", { code, timeoutMs: 6e4, confirmWrite: true }, 7e4);
     assertUpstreamReplySettled(raw);
-    const result = validateEditorTabLookupResult(decodeExactReadEnvelope(extractToolPayload(raw)), request2, scope6);
+    const result = validateEditorTabLookupResult(decodeExactReadEnvelope(extractToolPayload(raw)), request3, scope6);
     await engine2.assertContext(context3);
     await unchanged3();
     return result;
@@ -48232,7 +48232,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
   return {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: second.value,
     undefinedPaths: [],
@@ -48816,10 +48816,10 @@ function derivePcbPhysicalMembers(source4, inventoryInput, documentUuid5, primit
   return members;
 }
 function derivePcbNetMembership(source4, inventoryInput, requestInput2, documentUuid5, inherited) {
-  const request2 = pcbNetMembershipRequestSchema.parse(requestInput2);
-  const selected2 = new Set(request2.arguments.primitiveTypes);
-  const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid5, request2.arguments.primitiveTypes, inherited);
-  const netKey = net2.min(1).parse(request2.arguments.net.toUpperCase());
+  const request3 = pcbNetMembershipRequestSchema.parse(requestInput2);
+  const selected2 = new Set(request3.arguments.primitiveTypes);
+  const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid5, request3.arguments.primitiveTypes, inherited);
+  const netKey = net2.min(1).parse(request3.arguments.net.toUpperCase());
   const result = pcbNetMembershipItemsSchema.parse(members.filter((row6) => row6.sourceType !== "FOOTPRINT_LINE" && selected2.has(row6.primitiveType) && row6.net !== "" && row6.net.toUpperCase() === netKey).map(({ padNumber: _padNumber, ...row6 }) => row6).toSorted((left, right) => left.primitiveId < right.primitiveId ? -1 : 1));
   if (Buffer.byteLength(JSON.stringify(result)) > PCB_NET_MEMBERSHIP_MAX_BYTES) {
     throw new Error("PCB net membership result exceeds its byte bound.");
@@ -48970,13 +48970,13 @@ var init_pcb_net_membership = __esm({
 
 // server/src/pcb-primitive-type-read.ts
 function derivePcbPrimitiveType(source4, inventory2, requestInput2, documentUuid5, inherited) {
-  const request2 = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
+  const request3 = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
   const members = derivePcbPhysicalMembers(source4, inventory2, documentUuid5, PCB_NET_MEMBERSHIP_TYPES, inherited);
   const sourceIds = new Set(source4.objects.map((row6) => row6.id));
   if (members.some((row6) => row6.sourceRecordId !== row6.primitiveId && sourceIds.has(row6.primitiveId))) {
     throw new Error("PCB primitive type inherited identity collides with another source record.");
   }
-  const selected2 = members.find((row6) => row6.primitiveId === request2.arguments.id);
+  const selected2 = members.find((row6) => row6.primitiveId === request3.arguments.id);
   if (selected2 === void 0) {
     throw new Error("PCB primitive type requires an existing identity in the five supported physical families; absence or other families are not classified.");
   }
@@ -48998,7 +48998,7 @@ function checkedPayload(input, kind) {
   return payload;
 }
 async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, expectedFingerprint) {
-  const request2 = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
+  const request3 = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
   const documentUuid5 = ownedContext(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
@@ -49059,7 +49059,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory: inventory2, ...proof } = observed2, inherited = inheritedScope?.derive(source4, inventory2);
     return {
       ...proof,
-      value: derivePcbPrimitiveType(source4, inventory2, request2, documentUuid5, inherited),
+      value: derivePcbPrimitiveType(source4, inventory2, request3, documentUuid5, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
@@ -49078,7 +49078,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
   const sample = {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: second.value,
     undefinedPaths: [],
@@ -49091,7 +49091,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     limitations: [...PCB_PRIMITIVE_TYPE_LIMITATIONS],
     proof: {
       profile: PCB_PRIMITIVE_TYPE_PROFILE,
-      primitiveId: request2.arguments.id,
+      primitiveId: request3.arguments.id,
       sourceSha256: second.sourceSha256,
       sourceBeforeSnapshotSha256: second.sourceBeforeSnapshotSha256,
       sourceAfterSnapshotSha256: second.sourceAfterSnapshotSha256,
@@ -49315,8 +49315,8 @@ function isPcbSourceObjectsMethod(method5) {
   return method5 === PCB_SOURCE_OBJECT_METHOD || method5 === PCB_SOURCE_OBJECTS_METHOD;
 }
 function pcbSourceObjectIds(input) {
-  const request2 = pcbSourceObjectsRequestSchema.parse(input);
-  return request2.method === PCB_SOURCE_OBJECT_METHOD ? [request2.arguments.id] : request2.arguments.ids;
+  const request3 = pcbSourceObjectsRequestSchema.parse(input);
+  return request3.method === PCB_SOURCE_OBJECT_METHOD ? [request3.arguments.id] : request3.arguments.ids;
 }
 function derivePcbSourceObjects(source4, inventory2, requestInput2, documentUuid5, inherited) {
   return derivePcbSelectedObjects(
@@ -49455,7 +49455,7 @@ function checkedLayers(input) {
   return payload;
 }
 async function readPcbActiveLayer(engine2, requestInput2, expectedContext, expectedFingerprint) {
-  const request2 = pcbActiveLayerRequestSchema.parse(requestInput2);
+  const request3 = pcbActiveLayerRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
   const documentUuid5 = ownedContext2(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
@@ -49522,7 +49522,7 @@ async function readPcbActiveLayer(engine2, requestInput2, expectedContext, expec
   const sample = {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: second.value,
     undefinedPaths: [],
@@ -49673,11 +49673,11 @@ function assertPlainInput(value2, depth, budget) {
   if (!Array.isArray(value2) && prototype !== Object.prototype && prototype !== null) {
     throw new Error("Public SDK read arguments require plain data.");
   }
-  const fields9 = Object.getOwnPropertyDescriptors(value2);
-  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields9).length > 4096) {
+  const fields10 = Object.getOwnPropertyDescriptors(value2);
+  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields10).length > 4096) {
     throw new Error("Invalid public SDK read argument collection.");
   }
-  for (const [key, descriptor10] of Object.entries(fields9)) {
+  for (const [key, descriptor10] of Object.entries(fields10)) {
     budget.characters += key.length;
     if (key.length > 256 || budget.characters > 131072) {
       throw new Error("Public SDK read argument keys exceed the bound.");
@@ -49692,17 +49692,17 @@ function assertPlainInput(value2, depth, budget) {
       assertPlainInput(descriptor10.value, depth + 1, budget);
     }
   }
-  if (Array.isArray(value2) && Object.keys(fields9).length !== value2.length + 1) {
+  if (Array.isArray(value2) && Object.keys(fields10).length !== value2.length + 1) {
     throw new Error("Sparse public SDK arrays are not accepted.");
   }
 }
 function validatePublicSdkReadRequest(input, documentType3) {
-  const request2 = publicSdkReadRequestSchema.parse(input);
-  const definition = definitions.get(request2.method);
+  const request3 = publicSdkReadRequestSchema.parse(input);
+  const definition = definitions.get(request3.method);
   if (definition === void 0 || !definition.documentTypes.includes(documentType3)) {
     throw new Error("Public SDK read is not admitted for this document type.");
   }
-  return request2;
+  return request3;
 }
 function publicSdkReadImplementationKind(method5) {
   const definition = definitions.get(method5);
@@ -49796,8 +49796,8 @@ function normalizedSplitPolygonGroups(value2) {
     return [boundedPolygon.parse(group)];
   });
 }
-function splitPolygonExpression(request2) {
-  const groups2 = normalizedSplitPolygonGroups(request2.arguments["complexPolygons"]);
+function splitPolygonExpression(request3) {
+  const groups2 = normalizedSplitPolygonGroups(request3.arguments["complexPolygons"]);
   return `(() => {
     const inputs = ${JSON.stringify(groups2)};
     const expectedJson = ${JSON.stringify(JSON.stringify(groups2.flat()))};
@@ -49824,34 +49824,34 @@ function splitPolygonExpression(request2) {
   })()`;
 }
 function buildPublicSdkReadCode(input) {
-  const request2 = publicSdkReadRequestSchema.parse(input);
-  if (isPcbSourceObjectsMethod(request2.method)) {
+  const request3 = publicSdkReadRequestSchema.parse(input);
+  if (isPcbSourceObjectsMethod(request3.method)) {
     throw new Error("Explicit PCB source objects require the source/inventory/source specialized reader.");
   }
-  if (isEditorTabLookupMethod(request2.method)) {
+  if (isEditorTabLookupMethod(request3.method)) {
     throw new Error("Owned editor lookups require the checkpoint-bound specialized reader.");
   }
-  if (request2.method === PCB_NET_MEMBERSHIP_METHOD) {
+  if (request3.method === PCB_NET_MEMBERSHIP_METHOD) {
     throw new Error("PCB net membership requires the source/inventory/source specialized reader.");
   }
-  if (request2.method === PCB_PRIMITIVE_TYPE_METHOD) {
+  if (request3.method === PCB_PRIMITIVE_TYPE_METHOD) {
     throw new Error("PCB primitive type requires the source/inventory/source specialized reader.");
   }
-  if (request2.method === PCB_SELECTED_OBJECTS_METHOD) {
+  if (request3.method === PCB_SELECTED_OBJECTS_METHOD) {
     throw new Error("Selected PCB source objects require the source/selection/inventory specialized reader.");
   }
-  if (request2.method === PCB_ACTIVE_LAYER_METHOD) {
+  if (request3.method === PCB_ACTIVE_LAYER_METHOD) {
     throw new Error("PCB active layer requires the source/layers/source specialized reader.");
   }
-  const definition = definitions.get(request2.method);
+  const definition = definitions.get(request3.method);
   if (definition === void 0) {
     throw new Error("Unsupported fixed SDK method.");
   }
   const args = definition.parameters.map((key) => {
     if (key === definition.restParameter) {
-      return `...${JSON.stringify(request2.arguments[key])}`;
+      return `...${JSON.stringify(request3.arguments[key])}`;
     }
-    return request2.arguments[key] === void 0 ? "undefined" : JSON.stringify(request2.arguments[key]);
+    return request3.arguments[key] === void 0 ? "undefined" : JSON.stringify(request3.arguments[key]);
   }).join(",");
   let expression3 = `await ${definition.path}(${args})`;
   if (definition.path === CONFIGURED_FONT_METHOD) {
@@ -49865,19 +49865,19 @@ function buildPublicSdkReadCode(input) {
   } else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) {
     expression3 = buildSymbolPinEnumerationExpression("sdk-failure-code");
   } else if (isSchematicTextReadMethod(definition.path)) {
-    expression3 = buildSchematicTextReadExpression(request2, "sdk-failure-code");
+    expression3 = buildSchematicTextReadExpression(request3, "sdk-failure-code");
   } else if (isSchematicNetGroupReadMethod(definition.path)) {
-    expression3 = buildSchematicNetGroupReadExpression(request2, "sdk-failure-code");
+    expression3 = buildSchematicNetGroupReadExpression(request3, "sdk-failure-code");
   } else if (isSchematicPrimitiveReadMethod(definition.path)) {
-    expression3 = buildSchematicPrimitiveReadExpression(request2, "sdk-failure-code");
+    expression3 = buildSchematicPrimitiveReadExpression(request3, "sdk-failure-code");
   } else if (definition.path === SPLIT_POLYGON_METHOD) {
-    expression3 = splitPolygonExpression(request2);
+    expression3 = splitPolygonExpression(request3);
   }
   const membership = definition.membership === void 0 ? "" : `
   stage = "membership";
   const members = await ${definition.membership.method}();
   if (!Array.isArray(members) || members.length > ${MAX_ITEMS2} || members.some(item => !item || typeof item.uuid !== "string" || !item.uuid)) fail("sdk-membership-shape");
-  if (!members.some(item => item.uuid === ${JSON.stringify(request2.arguments[definition.membership.argument])})) fail("sdk-foreign-document");
+  if (!members.some(item => item.uuid === ${JSON.stringify(request3.arguments[definition.membership.argument])})) fail("sdk-foreign-document");
   `;
   return `
 let stage = "lookup";
@@ -49947,7 +49947,7 @@ try {
     }
     if (out.ComponentType === "block_symbol") { out.Cbb = state(object, "Cbb"); out.CbbSymbol = state(object, "CbbSymbol"); }
     if (typeof out.PrimitiveId !== "string" || !out.PrimitiveId || out.PrimitiveType !== ${JSON.stringify(definition.primitiveType ?? null)}) fail("sdk-primitive-identity");
-    ${definition.primitiveType === "ComponentPad" ? `if (out.ParentComponentPrimitiveId !== ${JSON.stringify(request2.arguments["primitiveId"])}) fail("sdk-wrong-parent");` : ""}
+    ${definition.primitiveType === "ComponentPad" ? `if (out.ParentComponentPrimitiveId !== ${JSON.stringify(request3.arguments["primitiveId"])}) fail("sdk-wrong-parent");` : ""}
     return out;
   }
   ${definition.implementationKind === "native-task-equivalent" ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
@@ -49957,7 +49957,7 @@ try {
   stage = "projection";
   const present = native !== undefined;
   ${definition.path === SYSTEM_LIBRARY_UUID_METHOD ? 'if (typeof native !== "string" || native.length !== 32 || !/^[a-f0-9]{32}$/.test(native)) fail("sdk-system-library-uuid");' : ""}
-  ${definition.membership === void 0 ? "" : `if (!native || native.uuid !== ${JSON.stringify(request2.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
+  ${definition.membership === void 0 ? "" : `if (!native || native.uuid !== ${JSON.stringify(request3.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
   if (!present && ${JSON.stringify(!definition.optionalResult)}) fail("sdk-missing-result");
   let projected = native;
   if (${JSON.stringify(definition.output)} === "primitive" && present) {
@@ -49966,7 +49966,7 @@ try {
     projected = values.map(primitive);
     const returnedIds = projected.map(item => item.PrimitiveId);
     if (new Set(returnedIds).size !== returnedIds.length) fail("sdk-duplicate-identity");
-    const requestedIds = ${JSON.stringify(request2.arguments["primitiveIds"] ?? null)};
+    const requestedIds = ${JSON.stringify(request3.arguments["primitiveIds"] ?? null)};
     const expectedIds = Array.isArray(requestedIds) ? requestedIds : [requestedIds];
     if (requestedIds !== null && (returnedIds.length !== expectedIds.length || returnedIds.some(id => !expectedIds.includes(id)))) fail("sdk-wrong-identity");
   }
@@ -50008,26 +50008,26 @@ function validatePrimitiveFields(row6, rowIndex, definition, undefinedPointers) 
   }
 }
 function validatePublicSdkReadPayload(input, requestInput2) {
-  const request2 = publicSdkReadRequestSchema.parse(requestInput2);
-  if (isPcbSourceObjectsMethod(request2.method)) {
+  const request3 = publicSdkReadRequestSchema.parse(requestInput2);
+  if (isPcbSourceObjectsMethod(request3.method)) {
     throw new Error("Explicit PCB source object results require the complete source/inventory specialized verifier.");
   }
-  if (isEditorTabLookupMethod(request2.method)) {
+  if (isEditorTabLookupMethod(request3.method)) {
     throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier.");
   }
-  if (request2.method === PCB_NET_MEMBERSHIP_METHOD) {
+  if (request3.method === PCB_NET_MEMBERSHIP_METHOD) {
     throw new Error("PCB net membership results require the complete source/inventory specialized verifier.");
   }
-  if (request2.method === PCB_PRIMITIVE_TYPE_METHOD) {
+  if (request3.method === PCB_PRIMITIVE_TYPE_METHOD) {
     throw new Error("PCB primitive type results require the complete source/inventory specialized verifier.");
   }
-  if (request2.method === PCB_SELECTED_OBJECTS_METHOD) {
+  if (request3.method === PCB_SELECTED_OBJECTS_METHOD) {
     throw new Error("Selected PCB source object results require the complete source/selection/inventory specialized verifier.");
   }
-  if (request2.method === PCB_ACTIVE_LAYER_METHOD) {
+  if (request3.method === PCB_ACTIVE_LAYER_METHOD) {
     throw new Error("PCB active layer results require the complete source/layers specialized verifier.");
   }
-  const definition = definitions.get(request2.method);
+  const definition = definitions.get(request3.method);
   if (definition === void 0) {
     throw new Error("Unsupported fixed SDK method.");
   }
@@ -50036,7 +50036,7 @@ function validatePublicSdkReadPayload(input, requestInput2) {
     throw new Error("Public SDK observation exceeds the byte bound.");
   }
   const payload = payloadSchema2.parse(input);
-  if (payload.method !== request2.method || !Object.hasOwn(payload, "value") || !payload.present && (!definition.optionalResult || payload.value !== null || payload.undefinedPaths.length !== 1 || payload.undefinedPaths[0] !== "/value")) {
+  if (payload.method !== request3.method || !Object.hasOwn(payload, "value") || !payload.present && (!definition.optionalResult || payload.value !== null || payload.undefinedPaths.length !== 1 || payload.undefinedPaths[0] !== "/value")) {
     throw new Error("Public SDK read result does not match its request.");
   }
   if (payload.present) {
@@ -50049,70 +50049,70 @@ function validatePublicSdkReadPayload(input, requestInput2) {
     if (definition.output === "polygon") {
       boundedComplexPolygon.parse(payload.value);
     }
-    if (request2.method === SYSTEM_LIBRARY_UUID_METHOD) {
+    if (request3.method === SYSTEM_LIBRARY_UUID_METHOD) {
       external_exports.string().length(32).regex(/^[a-f0-9]{32}$/u).parse(payload.value);
       if (payload.undefinedPaths.length > 0) {
         throw new Error("System-library UUID cannot contain undefined values.");
       }
     }
-    if (request2.method === CONFIGURED_FONT_METHOD) {
+    if (request3.method === CONFIGURED_FONT_METHOD) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Configured font titles cannot contain undefined values.");
       }
       configuredFontTitlesSchema.parse(payload.value);
     }
-    if (request2.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
+    if (request3.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Component property-name observations cannot contain undefined values.");
       }
       schematicComponentPropertyNamesSchema.parse(payload.value);
     }
-    if (isSchematicTextReadMethod(request2.method)) {
+    if (isSchematicTextReadMethod(request3.method)) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Native Text state cannot contain undefined fields.");
       }
-      validateSchematicTextStates(payload.value, request2);
+      validateSchematicTextStates(payload.value, request3);
     }
-    if (isSchematicNetGroupReadMethod(request2.method)) {
+    if (isSchematicNetGroupReadMethod(request3.method)) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Native NetGroup state cannot contain undefined fields.");
       }
-      validateSchematicNetGroupStates(payload.value, request2);
+      validateSchematicNetGroupStates(payload.value, request3);
     }
-    if (isSchematicPrimitiveReadMethod(request2.method)) {
+    if (isSchematicPrimitiveReadMethod(request3.method)) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Native mixed primitive state cannot contain undefined fields.");
       }
-      validateSchematicPrimitiveStates(payload.value, request2);
+      validateSchematicPrimitiveStates(payload.value, request3);
     }
-    if (request2.method === SYMBOL_PIN_ENUMERATION_METHOD) {
+    if (request3.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows2 = symbolPinRows.parse(payload.value);
       if (payload.undefinedPaths.length !== rows2.length || rows2.some((_row, index) => !payload.undefinedPaths.includes(`/value/${index}/OtherProperty`))) {
         throw new Error("Symbol Pin observations require exactly one undefined OtherProperty pointer per row.");
       }
     }
-    if (definition.output === "polygons" && (payload.undefinedPaths.length > 0 || JSON.stringify(payload.value) !== JSON.stringify(normalizedSplitPolygonGroups(request2.arguments["complexPolygons"]).flat()))) {
+    if (definition.output === "polygons" && (payload.undefinedPaths.length > 0 || JSON.stringify(payload.value) !== JSON.stringify(normalizedSplitPolygonGroups(request3.arguments["complexPolygons"]).flat()))) {
       throw new Error("Public polygon split does not exactly preserve input sources and order.");
     }
-    if (request2.method === "eda.pcb_Net.getNetColor") {
+    if (request3.method === "eda.pcb_Net.getNetColor") {
       rgbaResult.parse(payload.value);
     }
-    if (request2.method === "eda.pcb_Document.getCalculatingRatlineStatus") {
+    if (request3.method === "eda.pcb_Document.getCalculatingRatlineStatus") {
       external_exports.enum(["active", "inactive"]).parse(payload.value);
     }
-    if (request2.method === "eda.sys_Window.getCurrentTheme") {
+    if (request3.method === "eda.sys_Window.getCurrentTheme") {
       external_exports.enum(["light", "dark"]).parse(payload.value);
     }
-    if (request2.method === "eda.sys_Unit.getFrontendDataUnit") {
+    if (request3.method === "eda.sys_Unit.getFrontendDataUnit") {
       external_exports.enum(["mm", "cm", "dm", "m", "inch", "in", "mil"]).parse(payload.value);
     }
-    if (request2.method === "eda.pcb_Drc.getAllDifferentialPairs") {
+    if (request3.method === "eda.pcb_Drc.getAllDifferentialPairs") {
       external_exports.union([recordResult, external_exports.array(recordResult).max(MAX_ITEMS2)]).parse(payload.value);
     }
-    if (request2.method === "eda.sch_Utils.splitLines") {
+    if (request3.method === "eda.sch_Utils.splitLines") {
       splitLinesResult.parse(payload.value);
     }
-    if (definition.membership !== void 0 && recordResult.parse(payload.value)["uuid"] !== request2.arguments[definition.membership.argument]) {
+    if (definition.membership !== void 0 && recordResult.parse(payload.value)["uuid"] !== request3.arguments[definition.membership.argument]) {
       throw new Error("Public SDK result belongs to a different document.");
     }
     if (definition.output === "primitive") {
@@ -50126,16 +50126,16 @@ function validatePublicSdkReadPayload(input, requestInput2) {
         if (row6["PrimitiveType"] !== definition.primitiveType) {
           throw new Error("Public SDK primitive belongs to a different family.");
         }
-        if (definition.primitiveType === "ComponentPad" && row6["ParentComponentPrimitiveId"] !== request2.arguments["primitiveId"]) {
+        if (definition.primitiveType === "ComponentPad" && row6["ParentComponentPrimitiveId"] !== request3.arguments["primitiveId"]) {
           throw new Error("Public SDK component pad belongs to a different parent.");
         }
-        const fields9 = row6["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
-        if (Object.keys(row6).toSorted().join("\n") !== fields9.toSorted().join("\n")) {
+        const fields10 = row6["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
+        if (Object.keys(row6).toSorted().join("\n") !== fields10.toSorted().join("\n")) {
           throw new Error("Public SDK primitive projection is incomplete or contains unknown fields.");
         }
         validatePrimitiveFields(row6, rowIndex, definition, undefinedPointers);
       }
-      const requested = request2.arguments["primitiveIds"];
+      const requested = request3.arguments["primitiveIds"];
       let requestedIds;
       if (typeof requested === "string") {
         requestedIds = [requested];
@@ -50168,28 +50168,28 @@ function validatePublicSdkReadPayload(input, requestInput2) {
     }
   }
   let assurance = definition.implementationKind === "native-task-equivalent" ? "bounded-native-task-observation-not-complete-source-connectivity-or-persistence-proof" : "bounded-public-sdk-observation-not-native-or-persistence-proof";
-  if (isSchematicNativeIdMethod(request2.method)) {
+  if (isSchematicNativeIdMethod(request3.method)) {
     assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof";
   }
-  if (request2.method === CONFIGURED_FONT_METHOD) {
+  if (request3.method === CONFIGURED_FONT_METHOD) {
     assurance = "bounded-configured-font-titles-not-installed-font-or-rendering-proof";
   }
-  if (request2.method === SCHEMATIC_SELECTION_METHOD) {
+  if (request3.method === SCHEMATIC_SELECTION_METHOD) {
     assurance = "bounded-public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof";
   }
-  if (request2.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
+  if (request3.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
     assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof";
   }
-  if (request2.method === SYMBOL_PIN_ENUMERATION_METHOD) {
+  if (request3.method === SYMBOL_PIN_ENUMERATION_METHOD) {
     assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof";
   }
-  if (isSchematicTextReadMethod(request2.method)) {
+  if (isSchematicTextReadMethod(request3.method)) {
     assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof";
   }
-  if (isSchematicNetGroupReadMethod(request2.method)) {
+  if (isSchematicNetGroupReadMethod(request3.method)) {
     assurance = "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof";
   }
-  if (isSchematicPrimitiveReadMethod(request2.method)) {
+  if (isSchematicPrimitiveReadMethod(request3.method)) {
     assurance = "bounded-native-mixed-primitive-state-observation-not-complete-source-connectivity-or-persistence-proof";
   }
   return {
@@ -50285,13 +50285,13 @@ var init_public_sdk_read = __esm({
       parameterSupport: "narrowed",
       limitations: [...CONFIGURED_FONT_LIMITATIONS]
     });
-    for (const request2 of editorTabLookupRequestSchema.options) {
-      const method5 = request2.shape.method.value;
+    for (const request3 of editorTabLookupRequestSchema.options) {
+      const method5 = request3.shape.method.value;
       add2(
         method5,
         ALL_DOCUMENTS,
         method5.endsWith("getSplitScreenIdByTabId") ? "string" : "records",
-        request2.shape.arguments,
+        request3.shape.arguments,
         method5.endsWith("getSplitScreenIdByTabId") ? ["tabId"] : ["splitScreenId"],
         { parameterSupport: "narrowed", limitations: [
           "Requires a verified complete current-project checkpoint and two matching owned editor-tree observations; only an existing owned tab or nonempty leaf is admitted.",
@@ -50584,8 +50584,8 @@ var init_public_sdk_read = __esm({
       Poured: { schema: emptyArguments2, parameters: [] },
       Region: { schema: external_exports.object({ layer: layer([...layerCopper, 12]).optional(), ruleType: regionRuleTypes, primitiveLock: optionalLock }).strict(), parameters: ["layer", "ruleType", "primitiveLock"] }
     };
-    for (const [family2, fields9] of Object.entries(pcbGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields9}`.split(" ");
+    for (const [family2, fields10] of Object.entries(pcbGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields10}`.split(" ");
       const filter = pcbFilters[family2];
       if (filter === void 0) {
         throw new Error("Missing fixed PCB primitive filter.");
@@ -50604,8 +50604,8 @@ var init_public_sdk_read = __esm({
       add2(`eda.pcb_Primitive${family2}.getAll`, PCB_DOCUMENTS, "primitive", filter.schema, filter.parameters, options);
       add2(`eda.pcb_Primitive${family2}.getAllPrimitiveId`, PCB_DOCUMENTS, "ids", filter.schema, filter.parameters, { limitations: options.limitations, parameterSupport: options.parameterSupport });
     }
-    for (const [family2, fields9] of Object.entries(schGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields9}`.split(" ");
+    for (const [family2, fields10] of Object.entries(schGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields10}`.split(" ");
       let filter = { schema: emptyArguments2, parameters: [] };
       if (family2 === "Attribute") {
         filter = { schema: external_exports.object({ parentPrimitiveId: id3.optional() }).strict(), parameters: ["parentPrimitiveId"] };
@@ -50681,19 +50681,19 @@ var init_public_sdk_read = __esm({
           }
           return external_exports.NEVER;
         }
-        const request2 = parsed2.data;
-        const definition = definitions.get(request2.method);
+        const request3 = parsed2.data;
+        const definition = definitions.get(request3.method);
         if (definition === void 0) {
           throw new Error("Unsupported fixed SDK method.");
         }
-        const argumentsResult = definition.argumentsSchema.safeParse(request2.arguments);
+        const argumentsResult = definition.argumentsSchema.safeParse(request3.arguments);
         if (!argumentsResult.success) {
           for (const issue2 of argumentsResult.error.issues.slice(0, 32)) {
             context3.addIssue({ code: "custom", path: ["arguments", ...issue2.path.slice(0, 11)], message: `Invalid public SDK argument (${issue2.code}); consult this method's sdk-reads schema.` });
           }
           return external_exports.NEVER;
         }
-        return { method: request2.method, arguments: argumentsResult.data };
+        return { method: request3.method, arguments: argumentsResult.data };
       } catch {
         context3.addIssue({ code: "custom", message: "Invalid public SDK read method or arguments; consult its strict offline sdk-reads schema." });
         return external_exports.NEVER;
@@ -51155,11 +51155,11 @@ function validateSdkMathArguments(input) {
   return { valid: false, executionAuthorized: false, issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) })) };
 }
 function buildSdkMathProgram(input) {
-  const request2 = parseSdkMathRequest(input);
-  const definition = definitions2[request2.method];
-  const method5 = request2.method.slice("eda.sys_Math.".length);
+  const request3 = parseSdkMathRequest(input);
+  const definition = definitions2[request3.method];
+  const method5 = request3.method.slice("eda.sys_Math.".length);
   const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
-  const callArguments = isSdkClippingMethod(request2.method) ? closeSdkClippingArguments(request2.arguments) : request2.arguments;
+  const callArguments = isSdkClippingMethod(request3.method) ? closeSdkClippingArguments(request3.arguments) : request3.arguments;
   return `try {
 const fail=()=>{throw new Error('SDK_MATH_INVALID_RESULT');};
 const args=${JSON.stringify(callArguments)};
@@ -51182,7 +51182,7 @@ const project=value=>{
 const read=()=>project(method.call(owner,${argumentsCode}));
 const first=read(),second=read();
 if(eda.sys_Math!==owner||owner.${method5}!==method||JSON.stringify(first)!==JSON.stringify(second))fail();
-const json=JSON.stringify({ok:true,kind:'sdk-math',method:${JSON.stringify(request2.method)},value:first});
+const json=JSON.stringify({ok:true,kind:'sdk-math',method:${JSON.stringify(request3.method)},value:first});
 const utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
 if(utf8Bytes>${SDK_MATH_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_MATH_MAX_BYTES})fail();
@@ -51190,16 +51190,16 @@ return envelope;
 }catch{throw new Error('SDK_MATH_CALCULATION_FAILED');}`;
 }
 function validateSdkMathResult(input, raw) {
-  const request2 = parseSdkMathRequest(input);
+  const request3 = parseSdkMathRequest(input);
   const payload = payloadSchema3.parse(raw);
-  const definition = definitions2[request2.method];
-  if (payload.method !== request2.method) {
+  const definition = definitions2[request3.method];
+  if (payload.method !== request3.method) {
     throw new Error("SDK math result belongs to a different method.");
   }
   let value2;
   switch (definition.result) {
     case "boolean": {
-      value2 = isSdkClippingMethod(request2.method) ? validateSdkClippingResult(request2.arguments, request2.method, payload.value) : external_exports.boolean().parse(payload.value);
+      value2 = isSdkClippingMethod(request3.method) ? validateSdkClippingResult(request3.arguments, request3.method, payload.value) : external_exports.boolean().parse(payload.value);
       break;
     }
     case "number": {
@@ -51216,17 +51216,17 @@ function validateSdkMathResult(input, raw) {
     }
     case "points": {
       const points = external_exports.array(resultPoint).max(SDK_MATH_MAX_VERTICES + 1).parse(payload.value);
-      if (!("polygon" in request2.arguments) || points.length !== request2.arguments.polygon.length) {
+      if (!("polygon" in request3.arguments) || points.length !== request3.arguments.polygon.length) {
         throw new Error("SDK math transform changed the point count.");
       }
       value2 = points;
       break;
     }
     case "groups": {
-      if (!isSdkClippingMethod(request2.method)) {
+      if (!isSdkClippingMethod(request3.method)) {
         throw new Error("Unexpected clipping result method.");
       }
-      value2 = validateSdkClippingResult(request2.arguments, request2.method, payload.value);
+      value2 = validateSdkClippingResult(request3.arguments, request3.method, payload.value);
       break;
     }
     default: {
@@ -51360,11 +51360,11 @@ function validateSdkSystemArguments(input) {
   return { valid: false, executionAuthorized: false, issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) })) };
 }
 function buildSdkSystemProgram(input) {
-  const request2 = parseSdkSystemRequest(input);
-  const definition = definitions3[request2.method];
-  const namespace = request2.method.startsWith("eda.sys_Unit.") ? "sys_Unit" : "sys_Environment";
-  const method5 = request2.method.slice(`eda.${namespace}.`.length);
-  const argumentProperties = Object.entries(request2.arguments).map(([key, value2]) => `${JSON.stringify(key)}:${Object.is(value2, -0) ? "-0" : JSON.stringify(value2)}`).join(",");
+  const request3 = parseSdkSystemRequest(input);
+  const definition = definitions3[request3.method];
+  const namespace = request3.method.startsWith("eda.sys_Unit.") ? "sys_Unit" : "sys_Environment";
+  const method5 = request3.method.slice(`eda.${namespace}.`.length);
+  const argumentProperties = Object.entries(request3.arguments).map(([key, value2]) => `${JSON.stringify(key)}:${Object.is(value2, -0) ? "-0" : JSON.stringify(value2)}`).join(",");
   const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
   return `try {
 const fail=()=>{throw new Error('SDK_SYSTEM_INVALID_RESULT');};
@@ -51378,7 +51378,7 @@ const project=value=>{
 };
 const read=()=>{if(eda.${namespace}!==owner||owner.${method5}!==method)fail();const value=project(method.call(owner,${argumentsCode}));if(eda.${namespace}!==owner||owner.${method5}!==method)fail();return value;};
 const first=read(),second=read();if(!Object.is(first,second))fail();
-const json=JSON.stringify({ok:true,kind:'sdk-system',method:${JSON.stringify(request2.method)},value:first,...(kind==='number'?{negativeZero:Object.is(first,-0)}:{})});
+const json=JSON.stringify({ok:true,kind:'sdk-system',method:${JSON.stringify(request3.method)},value:first,...(kind==='number'?{negativeZero:Object.is(first,-0)}:{})});
 const utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
 if(utf8Bytes>${SDK_SYSTEM_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_SYSTEM_MAX_BYTES})fail();
@@ -51386,10 +51386,10 @@ return envelope;
 }catch{throw new Error('SDK_SYSTEM_READ_FAILED');}`;
 }
 function validateSdkSystemResult(input, raw) {
-  const request2 = parseSdkSystemRequest(input);
+  const request3 = parseSdkSystemRequest(input);
   const payload = payloadSchema4.parse(raw);
-  const definition = definitions3[request2.method];
-  if (payload.method !== request2.method) {
+  const definition = definitions3[request3.method];
+  if (payload.method !== request3.method) {
     throw new Error("SDK system result belongs to a different method.");
   }
   let value2;
@@ -51408,7 +51408,7 @@ function validateSdkSystemResult(input, raw) {
     ...payload,
     value: value2,
     effect: definition.effect,
-    ...definition.units === void 0 ? {} : { units: { ...definition.units }, numberOfDecimals: "numberOfDecimals" in request2.arguments ? request2.arguments.numberOfDecimals ?? 4 : 4 },
+    ...definition.units === void 0 ? {} : { units: { ...definition.units }, numberOfDecimals: "numberOfDecimals" in request3.arguments ? request3.arguments.numberOfDecimals ?? 4 : 4 },
     authority: "bounded-system-metadata-or-unit-calculation-only;not-project-state-or-runtime-admission",
     apiVersion: SDK_SYSTEM_API_VERSION,
     apiSha256: SDK_SYSTEM_API_SHA256,
@@ -52255,8 +52255,8 @@ function queryPublicSdkReads(input = {}) {
   };
 }
 function validatePublicSdkArguments(input) {
-  const { request: request2 } = publicSdkValidationQuerySchema.parse(input);
-  const result = publicSdkReadRequestSchema.safeParse(request2);
+  const { request: request3 } = publicSdkValidationQuerySchema.parse(input);
+  const result = publicSdkReadRequestSchema.safeParse(request3);
   if (result.success) {
     const encoded = JSON.stringify(result.data);
     const bytes2 = Buffer.byteLength(encoded, "utf8");
@@ -52569,8 +52569,8 @@ function expectedRegionRules(compiled2, before) {
     if (target6 === void 0 || !constraint && target6.type !== "POUR") {
       throw new Error("Region rule target must be an existing pour or constraint ID.");
     }
-    const fields9 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
-    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields9), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
+    const fields10 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
+    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields10), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
     if (Object.keys(value2).some((key) => !allowed.has(key))) {
       throw new Error("Unreviewed region rule field.");
     }
@@ -52580,7 +52580,7 @@ function expectedRegionRules(compiled2, before) {
     }
     wanted.add(id9);
     const ruleKeyValue = {};
-    for (const [label, raw] of Object.entries(fields9)) {
+    for (const [label, raw] of Object.entries(fields10)) {
       const family2 = String(raw), rule2 = reference(before, value2[label], family2);
       if (rule2 !== null && (constraint || !["PLANE", "COPPER"].includes(family2) || rule2 !== "default")) {
         ruleKeyValue[family2] = rule2;
@@ -53152,8 +53152,8 @@ function assertPrimitiveRepresentation(type2, body4) {
     return unsupported2("blind via requires an explicit existing blind-layer rule");
   }
   if (type2 === "PAD" || type2 === "VIA") {
-    const fields9 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
-    const masks = fields9.map((field3) => body4[field3]);
+    const fields10 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
+    const masks = fields10.map((field3) => body4[field3]);
     if (!masks.every((value2) => value2 === null) && !masks.every((value2) => typeof value2 === "number" && Number.isFinite(value2))) {
       return unsupported2("native mask mode is shared: use all explicit numeric expansions or all rule defaults");
     }
@@ -53865,9 +53865,9 @@ function values(record7, key) {
   }
   return value2;
 }
-function assertDefaultFields(record7, fields9) {
+function assertDefaultFields(record7, fields10) {
   const keys2 = values(record7, "ruleKeyValue");
-  for (const field3 of fields9) {
+  for (const field3 of fields10) {
     const value2 = keys2[field3];
     if (value2 !== void 0 && value2 !== null && value2 !== "default") {
       throw new Error("Public group operation would reset a member rule override; assign or preserve it explicitly first.");
@@ -53912,14 +53912,14 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
     if (verb === "rename" && before.objects.some((record7) => record7.type === "RULE_SELECTOR" && record7 !== group && record7.id.includes(JSON.stringify([selector4, first.value])))) {
       throw new Error("Native group rename cannot preserve associated between-net selectors.");
     }
-    let fields9 = ["DIFFER_ENTAIL"];
+    let fields10 = ["DIFFER_ENTAIL"];
     if (family2 === "netclass") {
-      fields9 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
+      fields10 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
     } else if (family2 === "equal-length") {
-      fields9 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
+      fields10 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
     }
     if (verb === "add-nets") {
-      assertDefaultFields(group, fields9);
+      assertDefaultFields(group, fields10);
     }
     for (const record7 of before.objects.filter((entry) => entry.type === "NET")) {
       const next = expected3.objects.find((entry) => entry.id === record7.id);
@@ -53928,7 +53928,7 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
         if (!Array.isArray(key) || typeof key[1] !== "string") {
           throw new TypeError("Invalid native net identity.");
         }
-        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields9);
+        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields10);
       }
     }
     if (family2 === "differential-pair") {
@@ -56035,8 +56035,8 @@ var init_footprint_public_line = __esm({
 function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}) {
   const operation = footprintOperationSchema.parse(input);
   const family2 = operation.action.split(".")[1] ?? "", verb = operation.action.split(".")[2];
-  const fields9 = mapping[family2], stem = stems[family2];
-  if (fields9 === void 0 || stem === void 0) {
+  const fields10 = mapping[family2], stem = stems[family2];
+  if (fields10 === void 0 || stem === void 0) {
     throw new Error("Unreviewed footprint public geometry family.");
   }
   assertFootprintProfileSupported(operation, before, ids2);
@@ -56091,7 +56091,7 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   }
   const baseline2 = {};
   if (target6 !== void 0) {
-    for (const [key, sourceKey] of Object.entries(fields9)) {
+    for (const [key, sourceKey] of Object.entries(fields10)) {
       if (!Object.hasOwn(target6.body, sourceKey)) {
         throw new Error("Incomplete footprint geometry source baseline.");
       }
@@ -56146,13 +56146,13 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   if (family2 === "text") {
     rawData = "({layer:raw.layerId,x:raw.position?.x*10,y:raw.position?.y*10,text:raw.value,fontFamily:raw.fontFamily,fontSize:raw.fontSize*10,lineWidth:raw.strokeWidth*10,alignMode:raw.origin,rotation:raw.rotation*180/Math.PI,reverse:raw.reverse,expansion:raw.reverseExpansion*10,mirror:raw.mirror,primitiveLock:raw.locked})";
   }
-  let request2 = "data", resultCheck = "if(typeof result?.primitiveId!=='string'||!/^[a-f0-9]{16}$/.test(result.primitiveId)||EXPECTED_SOURCE.objects.some(item=>item.id===result.primitiveId))throw new Error('FOOTPRINT_HISTORY_RESULT');return {primitiveId:result.primitiveId};";
+  let request3 = "data", resultCheck = "if(typeof result?.primitiveId!=='string'||!/^[a-f0-9]{16}$/.test(result.primitiveId)||EXPECTED_SOURCE.objects.some(item=>item.id===result.primitiveId))throw new Error('FOOTPRINT_HISTORY_RESULT');return {primitiveId:result.primitiveId};";
   if (verb === "delete") {
-    request2 = "{primitiveIds:[targetId]}";
+    request3 = "{primitiveIds:[targetId]}";
     resultCheck = "if(!Array.isArray(result)||result.length!==1||result[0]!==targetId)throw new Error('FOOTPRINT_HISTORY_RESULT');return true;";
   }
   if (verb === "modify") {
-    request2 = "{primitiveId:targetId,data}";
+    request3 = "{primitiveId:targetId,data}";
     resultCheck = "if(result===null||typeof result!=='object'||Array.isArray(result)||(result.primitiveId??result.globalIndex)!==targetId)throw new Error('FOOTPRINT_HISTORY_RESULT');return {primitiveId:targetId};";
   }
   return `(async()=>{${buildFootprintSourceGuard(before, scope6)}
@@ -56179,7 +56179,7 @@ data={...preserved,...patch};` : ""}
 await contextMatches();
 const current=(await selected.messageBus.rpcCall('FileSource',{}))?.message;
 if(stable(parseFootprintSource(current))!==stable(EXPECTED_SOURCE))throw new Error('FOOTPRINT_HISTORY_BASELINE');
-const result=(await selected.messageBus.rpcCall('pcb/extensionAPI/${stem}-${verb}',${request2}))?.message;
+const result=(await selected.messageBus.rpcCall('pcb/extensionAPI/${stem}-${verb}',${request3}))?.message;
 ${resultCheck}
 })()`;
 }
@@ -56677,14 +56677,14 @@ function schematicUserRestoration(previous, current3, beforeCheckpointSha256, af
 function verifyTargetMetadata(previous, current3, beforeCheckpointSha256, afterCheckpointSha256) {
   const before = previous.metadata;
   const after = current3.metadata;
-  const fields9 = changedFields(before, after);
-  if (fields9.some((field3) => field3 !== "user" && !VOLATILE_METADATA.has(field3))) {
+  const fields10 = changedFields(before, after);
+  if (fields10.some((field3) => field3 !== "user" && !VOLATILE_METADATA.has(field3))) {
     throw new Error("Saved document metadata changed outside the intended edit.");
   }
-  if (fields9.includes("user")) {
+  if (fields10.includes("user")) {
     return schematicUserRestoration(previous, current3, beforeCheckpointSha256, afterCheckpointSha256);
   }
-  if (fields9.length === 0) {
+  if (fields10.length === 0) {
     return void 0;
   }
   const time4 = after["updateTime"];
@@ -56711,8 +56711,8 @@ function deriveDesignBaselineTargets(before, expectedAfter) {
     if (after === void 0 || after.type !== record7.type) {
       return [{ id: record7.id, fields: Object.keys(record7.body).toSorted() }];
     }
-    const fields9 = changedFields(record7.body, after.body);
-    return fields9.length === 0 ? [] : [{ id: record7.id, fields: fields9 }];
+    const fields10 = changedFields(record7.body, after.body);
+    return fields10.length === 0 ? [] : [{ id: record7.id, fields: fields10 }];
   }).toSorted((left, right) => left.id.localeCompare(right.id));
 }
 function verifyDesignBaseline(input) {
@@ -56911,13 +56911,13 @@ function projectFootprintPadHistory(input) {
       throw new Error("Footprint pad target is absent from durable baseline.");
     }
     const after = live.body, before = stored2.body;
-    const fields9 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field3) => canonicalJson({ value: before[field3] }) !== canonicalJson({ value: after[field3] }));
-    if (fields9.length > 0) {
+    const fields10 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field3) => canonicalJson({ value: before[field3] }) !== canonicalJson({ value: after[field3] }));
+    if (fields10.length > 0) {
       const land = before["defaultPad"];
       if (before["hole"] !== null || after["hole"] !== null || before["layerId"] !== 1 && before["layerId"] !== 2 || before["layerId"] !== after["layerId"] || before["netName"] !== "" || before["parentId"] !== void 0 && before["parentId"] !== null && before["parentId"] !== "" || canonicalJson(before["specialPad"]) !== "[]" || !isRecord(land) || !["ELLIPSE", "OVAL", "RECT"].includes(String(land["padType"]))) {
         throw new Error("Unsupported footprint pad load/export representation.");
       }
-      for (const field3 of fields9) {
+      for (const field3 of fields10) {
         const observed2 = after[field3], value2 = before[field3];
         let admitted = false;
         if (field3 === "padOffsetX" || field3 === "padOffsetY") {
@@ -57016,9 +57016,9 @@ function resolvedTarget2(operation, ids2) {
 }
 function patchFields(family2, properties, previous) {
   const result = {};
-  const fields9 = FIELDS[family2] ?? SHAPE_FIELDS;
+  const fields10 = FIELDS[family2] ?? SHAPE_FIELDS;
   for (const [key, value2] of Object.entries(properties).filter(([property]) => !DERIVED_FIELDS.has(property))) {
-    const field3 = fields9[key];
+    const field3 = fields10[key];
     if (field3 === void 0) {
       throw new Error("Unmapped symbol geometry property.");
     }
@@ -57392,11 +57392,11 @@ function decodeModelTransform(value2) {
       translationMil: { x: numbers[9], y: numbers[10], z: numbers[11] }
     });
   }
-  const fields9 = text26.split(",");
-  if (fields9.length !== 9 || fields9.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
+  const fields10 = text26.split(",");
+  if (fields10.length !== 9 || fields10.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
     throw new Error("Native legacy model transform requires exactly nine numeric fields.");
   }
-  const values2 = fields9.map(Number);
+  const values2 = fields10.map(Number);
   return modelTransformSchema.parse({
     format: "legacy",
     dimensionsMil: { x: values2[0], y: values2[1], z: values2[2] },
@@ -58056,7 +58056,7 @@ var init_pcb_text_lifecycle = __esm({
 function fail5() {
   throw new Error("Schematic null style lacks exact native library reconstruction.");
 }
-function schematicLibraryStyle(history, native, stored2, exported, fields9) {
+function schematicLibraryStyle(history, native, stored2, exported, fields10) {
   const model = native.components.find((entry) => entry.id === stored2.body["parentId"]);
   const symbolId = model?.attributes.find((entry) => entry.key === "Symbol")?.value;
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
@@ -58070,7 +58070,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields9) {
   }
   const roots = symbol4.records.filter((row6) => row6.type === "ATTR" && row6.body["partId"] === model.body["partId"] && (row6.body["parentId"] === "" || row6.body["parentId"] === model.body["partId"]) && row6.body["key"] === stored2.body["key"]);
   const attrs = model.attributes.filter((attr) => attr.id === stored2.id && attr.key === stored2.body["key"]), root = roots[0];
-  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields9.length === 0 || fields9.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same12(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
+  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields10.length === 0 || fields10.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same12(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
     fail5();
   }
   const pins = symbol4.records.filter((row6) => row6.type === "PIN" && row6.body["partId"] === model.body["partId"]);
@@ -58080,7 +58080,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields9) {
   })) {
     fail5();
   }
-  return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields9 };
+  return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields10 };
 }
 var same12;
 var init_schematic_library_style = __esm({
@@ -58127,20 +58127,20 @@ function projectAttributes(side, document3, source4, native, before, differences
       throw new Error("Schematic stored attribute identity differs from source.");
     }
     const kind = parentKind(exported, source4, native);
-    const fields9 = [.../* @__PURE__ */ new Set([...Object.keys(record7.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record7.body, exported.body, key)).toSorted();
-    if (kind === "pin" && fields9.some((key) => key !== "strikeout")) {
+    const fields10 = [.../* @__PURE__ */ new Set([...Object.keys(record7.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record7.body, exported.body, key)).toSorted();
+    if (kind === "pin" && fields10.some((key) => key !== "strikeout")) {
       throw new Error("Pin attributes admit only the reviewed strikeout storage encoding.");
     }
-    const styleFields = fields9.filter((key) => !["zIndex", "strikeout"].includes(key));
+    const styleFields = fields10.filter((key) => !["zIndex", "strikeout"].includes(key));
     const libraryStyle = styleFields.length === 0 ? void 0 : schematicLibraryStyle(history, native, record7, exported, styleFields);
     if (side === "after" && styleFields.some((key) => !fieldEqual(old.get(record7.id)?.body ?? {}, record7.body, key))) {
       throw new Error("Changed durable attribute style is neither retained nor the exact captured model style.");
     }
-    if (fields9.includes("strikeout") && !(!Object.hasOwn(record7.body, "strikeout") && exported.body["strikeout"] === false || record7.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
+    if (fields10.includes("strikeout") && !(!Object.hasOwn(record7.body, "strikeout") && exported.body["strikeout"] === false || record7.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
       throw new Error("Schematic strikeout difference is not the exact missing/false encoding.");
     }
     let hiddenNullOrder;
-    if (fields9.includes("zIndex")) {
+    if (fields10.includes("zIndex")) {
       const current3 = exported.body["zIndex"];
       const stored2 = record7.body["zIndex"];
       const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
@@ -58162,7 +58162,7 @@ function projectAttributes(side, document3, source4, native, before, differences
       parentId: exported.body["parentId"],
       parentKind: kind,
       key: exported.body["key"],
-      fields: fields9,
+      fields: fields10,
       storedBodySha256: sha256Json(record7.body),
       sourceBodySha256: sha256Json(exported.body),
       storedZIndex: record7.body["zIndex"],
@@ -62196,18 +62196,18 @@ function array2(value2, length) {
   return result;
 }
 function descriptor(value2, directory2, maximum, filename) {
-  const fields9 = exact(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields9["bytes"], path5 = text7(fields9["path"]);
+  const fields10 = exact(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields10["bytes"], path5 = text7(fields10["path"]);
   need(isAbsolute9(path5) && resolve5(path5) === path5 && dirname3(path5) === directory2 && !/[\0\r\n]/u.test(path5) && (filename === void 0 || basename4(path5) === filename), "Terminal artifact path refused.");
   need(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash11(fields9["sha256"]) });
+  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash11(fields10["sha256"]) });
 }
 function sql(value2) {
-  const fields9 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash11(fields9["checkpointSha256"]), schemaSha256: hash11(fields9["schemaSha256"]), logicalSha256: hash11(fields9["logicalSha256"]) });
+  const fields10 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash11(fields10["checkpointSha256"]), schemaSha256: hash11(fields10["schemaSha256"]), logicalSha256: hash11(fields10["logicalSha256"]) });
 }
 function generation(value2, ordinal, directory2) {
-  const fields9 = exact(value2, [
+  const fields10 = exact(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -62219,20 +62219,20 @@ function generation(value2, ordinal, directory2) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields9["ordinal"] === ordinal && !Object.is(fields9["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor(fields9["copyArtifact"], directory2, 268435456);
+  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields10["ordinal"] === ordinal && !Object.is(fields10["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor(fields10["copyArtifact"], directory2, 268435456);
   need(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename4(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash11(fields9["generationSha256"]),
-    launchReceiptSha256: hash11(fields9["launchReceiptSha256"]),
-    closeIntentSha256: hash11(fields9["closeIntentSha256"]),
-    closeReceiptSha256: hash11(fields9["closeReceiptSha256"]),
-    terminationProofSha256: hash11(fields9["terminationProofSha256"]),
-    checkpointReceiptSha256: hash11(fields9["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash11(fields9["copyReceiptSha256"]),
+    generationSha256: hash11(fields10["generationSha256"]),
+    launchReceiptSha256: hash11(fields10["launchReceiptSha256"]),
+    closeIntentSha256: hash11(fields10["closeIntentSha256"]),
+    closeReceiptSha256: hash11(fields10["closeReceiptSha256"]),
+    terminationProofSha256: hash11(fields10["terminationProofSha256"]),
+    checkpointReceiptSha256: hash11(fields10["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash11(fields10["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql(fields9["sqlDigests"])
+    sqlDigests: sql(fields10["sqlDigests"])
   });
 }
 function parseClosedSymbolTerminalArtifact(value2, operationId3) {
@@ -62456,18 +62456,18 @@ function array3(value2, length) {
   return result;
 }
 function descriptor2(value2, directory2, maximum, filename) {
-  const fields9 = exact2(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields9["bytes"], path5 = text8(fields9["path"]);
+  const fields10 = exact2(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields10["bytes"], path5 = text8(fields10["path"]);
   need2(isAbsolute10(path5) && resolve6(path5) === path5 && dirname4(path5) === directory2 && !/[\0\r\n]/u.test(path5) && (filename === void 0 || basename5(path5) === filename), "Terminal artifact path refused.");
   need2(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash12(fields9["sha256"]) });
+  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash12(fields10["sha256"]) });
 }
 function sql2(value2) {
-  const fields9 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash12(fields9["checkpointSha256"]), schemaSha256: hash12(fields9["schemaSha256"]), logicalSha256: hash12(fields9["logicalSha256"]) });
+  const fields10 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash12(fields10["checkpointSha256"]), schemaSha256: hash12(fields10["schemaSha256"]), logicalSha256: hash12(fields10["logicalSha256"]) });
 }
 function generation2(value2, ordinal, directory2) {
-  const fields9 = exact2(value2, [
+  const fields10 = exact2(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -62479,20 +62479,20 @@ function generation2(value2, ordinal, directory2) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields9["ordinal"] === ordinal && !Object.is(fields9["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor2(fields9["copyArtifact"], directory2, 268435456);
+  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields10["ordinal"] === ordinal && !Object.is(fields10["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor2(fields10["copyArtifact"], directory2, 268435456);
   need2(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename5(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash12(fields9["generationSha256"]),
-    launchReceiptSha256: hash12(fields9["launchReceiptSha256"]),
-    closeIntentSha256: hash12(fields9["closeIntentSha256"]),
-    closeReceiptSha256: hash12(fields9["closeReceiptSha256"]),
-    terminationProofSha256: hash12(fields9["terminationProofSha256"]),
-    checkpointReceiptSha256: hash12(fields9["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash12(fields9["copyReceiptSha256"]),
+    generationSha256: hash12(fields10["generationSha256"]),
+    launchReceiptSha256: hash12(fields10["launchReceiptSha256"]),
+    closeIntentSha256: hash12(fields10["closeIntentSha256"]),
+    closeReceiptSha256: hash12(fields10["closeReceiptSha256"]),
+    terminationProofSha256: hash12(fields10["terminationProofSha256"]),
+    checkpointReceiptSha256: hash12(fields10["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash12(fields10["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql2(fields9["sqlDigests"])
+    sqlDigests: sql2(fields10["sqlDigests"])
   });
 }
 function parseClosedSymbolAgedTerminalArtifact(value2, operationId3) {
@@ -62762,12 +62762,12 @@ function same18(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function verifyTargetMetadata2(before, after) {
-  const fields9 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
-  if (fields9.length === 0) {
+  const fields10 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
+  if (fields10.length === 0) {
     return;
   }
   const time4 = after["updateTime"];
-  if (fields9.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time4 !== "number" || !Number.isSafeInteger(time4) || time4 < 0 || after["version"] !== String(time4) || typeof before["updateTime"] === "number" && time4 < before["updateTime"]) {
+  if (fields10.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time4 !== "number" || !Number.isSafeInteger(time4) || time4 < 0 || after["version"] !== String(time4) || typeof before["updateTime"] === "number" && time4 < before["updateTime"]) {
     throw new Error("Target library metadata changed outside the reviewed native edit header.");
   }
 }
@@ -63049,12 +63049,12 @@ function validateWorkerExpectation(input, projectUuid4, active2, targetUuid) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null) {
     fail8();
   }
-  const fields9 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
-  if (Reflect.ownKeys(input).length !== fields9.length) {
+  const fields10 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
+  if (Reflect.ownKeys(input).length !== fields10.length) {
     fail8();
   }
   const values2 = {};
-  for (const key of fields9) {
+  for (const key of fields10) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       fail8();
@@ -63795,10 +63795,10 @@ async function appendClosedSymbolEvent(journal, input) {
   requireValue(!busy.has(operationId3), "Closed journal append already running.");
   busy.add(operationId3);
   try {
-    const fields9 = exact3(input, ["step", "kind", "generation", "requestSha256", "data"]);
-    const data3 = jsonData(fields9["data"]);
-    const capturedGeneration = jsonData(fields9["generation"]);
-    const requestSha256 = text9(fields9["requestSha256"], HASH4);
+    const fields10 = exact3(input, ["step", "kind", "generation", "requestSha256", "data"]);
+    const data3 = jsonData(fields10["data"]);
+    const capturedGeneration = jsonData(fields10["generation"]);
+    const requestSha256 = text9(fields10["requestSha256"], HASH4);
     const loaded = await loadClosedSymbolJournal(operationId3);
     const predecessor = loaded.journal;
     const predecessorText = canonicalJson(predecessor);
@@ -63808,7 +63808,7 @@ async function appendClosedSymbolEvent(journal, input) {
     };
     const sequence = predecessor.sequence + 1;
     const position = expected2(sequence);
-    requireValue(position.step === fields9["step"] && position.kind === fields9["kind"], "Closed journal phase order/replay refused.");
+    requireValue(position.step === fields10["step"] && position.kind === fields10["kind"], "Closed journal phase order/replay refused.");
     const event3 = parseEvent({
       profile: EVENT,
       operationId: operationId3,
@@ -64082,8 +64082,8 @@ function parseCompletedOutput(output, expectedSha256) {
 }
 function runReader(file3, node, input, scanDeadlineMs) {
   const started = performance2.now();
-  const request2 = JSON.stringify(input);
-  requireValue3(Buffer.byteLength(request2) <= 8192, "Reader input exceeded its bound.");
+  const request3 = JSON.stringify(input);
+  requireValue3(Buffer.byteLength(request3) <= 8192, "Reader input exceeded its bound.");
   const { promise: promise2, resolve: resolve21, reject } = Promise.withResolvers();
   const child = spawn(node.descriptorPath, ["--max-old-space-size=192", "--input-type=module", "--eval", SQLITE_INVENTORY_PROGRAM], {
     cwd: "/",
@@ -64181,7 +64181,7 @@ function runReader(file3, node, input, scanDeadlineMs) {
   if (!child.stdin || !child.stdout || !child.stderr) {
     stop("SQL reader pipe setup failed.");
   }
-  child.stdin?.end(request2);
+  child.stdin?.end(request3);
   return promise2;
 }
 function readerCompletion(inventory2) {
@@ -64271,15 +64271,15 @@ function exact4(value2, keys2) {
   if (names2.length !== keys2.length || names2.some((key) => typeof key !== "string" || !keys2.includes(key))) {
     throw new Error("Admission exact object fields required.");
   }
-  const fields9 = [];
+  const fields10 = [];
   for (const key of keys2) {
     const descriptor10 = descriptors[key];
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
       throw new Error("Admission enumerable own data fields required.");
     }
-    fields9.push([key, descriptor10.value]);
+    fields10.push([key, descriptor10.value]);
   }
-  return Object.freeze(Object.fromEntries(fields9));
+  return Object.freeze(Object.fromEntries(fields10));
 }
 function selectTerminalProfile(value2) {
   const envelope2 = exact4(value2, ["profile", "body", "bodySha256"]);
@@ -64297,9 +64297,9 @@ function selectTerminalProfile(value2) {
 }
 function matchesHistoricalAdmission(value2, expected3, selection2) {
   try {
-    const fields9 = exact4(value2, RESULT_KEYS);
-    const descriptor10 = parseClosedSymbolTerminalArtifact(fields9["terminalArtifact"], expected3.operationId);
-    return fields9["profile"] === selection2.historicalProfile && fields9["operationId"] === expected3.operationId && fields9["classification"] === "historical-completion-verified" && fields9["historicalCompletionRecorded"] === true && fields9["terminalOutcomeVerified"] === true && fields9["storedJournalSha256"] === expected3.storedJournalSha256 && fields9["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields9["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields9[key] === false);
+    const fields10 = exact4(value2, RESULT_KEYS);
+    const descriptor10 = parseClosedSymbolTerminalArtifact(fields10["terminalArtifact"], expected3.operationId);
+    return fields10["profile"] === selection2.historicalProfile && fields10["operationId"] === expected3.operationId && fields10["classification"] === "historical-completion-verified" && fields10["historicalCompletionRecorded"] === true && fields10["terminalOutcomeVerified"] === true && fields10["storedJournalSha256"] === expected3.storedJournalSha256 && fields10["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields10["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields10[key] === false);
   } catch {
     return false;
   }
@@ -66228,7 +66228,7 @@ import { closeSync as closeSync2, constants as constants8, fstatSync as fstatSyn
 import { mkdir as mkdir3 } from "node:fs/promises";
 import { join as join15 } from "node:path";
 function inputs(rawRequest, rawPlan) {
-  const request2 = parseClosedSymbolValidationRequest(rawRequest);
+  const request3 = parseClosedSymbolValidationRequest(rawRequest);
   const source4 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
   const marker = exactData(source4["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
   const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
@@ -66237,18 +66237,18 @@ function inputs(rawRequest, rawPlan) {
   const patch2 = exactData(operation["patch"], ["name", "description"]), target6 = exactData(operation["target"], ["uuid"]);
   const plan2 = Object.freeze({
     profile: FAMILY2,
-    projectUuid: request2.target.projectUuid,
-    branchUuid: request2.target.branchUuid,
-    ownerUuid: request2.target.ownerUuid,
-    targetUuid: request2.target.symbolUuid,
-    activeUuid: request2.target.companionPcbUuid,
-    projectPath: request2.target.projectPath,
+    projectUuid: request3.target.projectUuid,
+    branchUuid: request3.target.branchUuid,
+    ownerUuid: request3.target.ownerUuid,
+    targetUuid: request3.target.symbolUuid,
+    activeUuid: request3.target.companionPcbUuid,
+    projectPath: request3.target.projectPath,
     operation: Object.freeze({
       id: VALIDATION_ACTION_ID,
       action: "library.symbol.modify",
-      libraryUuid: request2.target.projectUuid,
-      target: Object.freeze({ uuid: request2.target.symbolUuid }),
-      patch: request2.metadata
+      libraryUuid: request3.target.projectUuid,
+      target: Object.freeze({ uuid: request3.target.symbolUuid }),
+      patch: request3.metadata
     }),
     marker: nonces,
     nativePinsSha256: WITNESS_NATIVE_PINS_SHA256,
@@ -66258,8 +66258,8 @@ function inputs(rawRequest, rawPlan) {
   for (const key of ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]) {
     requireValue6(source4[key] === plan2[key], "Validation internal plan does not exactly bind the request and fixed profile.");
   }
-  requireValue6(operation["id"] === VALIDATION_ACTION_ID && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request2.target.projectUuid && target6["uuid"] === request2.target.symbolUuid && patch2["name"] === request2.metadata.name && patch2["description"] === request2.metadata.description, "Validation operation does not match the fixed request.");
-  return Object.freeze({ request: request2, plan: plan2 });
+  requireValue6(operation["id"] === VALIDATION_ACTION_ID && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request3.target.projectUuid && target6["uuid"] === request3.target.symbolUuid && patch2["name"] === request3.metadata.name && patch2["description"] === request3.metadata.description, "Validation operation does not match the fixed request.");
+  return Object.freeze({ request: request3, plan: plan2 });
 }
 function sameFile2(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
@@ -66459,14 +66459,14 @@ async function prefix(operationId3) {
     ownerUuid: journal.plan.ownerUuid,
     marker: journal.plan.marker
   };
-  const request2 = {
+  const request3 = {
     profile: "easyeda-pro-control.closed-symbol-startup-request.v1",
     input,
     codeSha256: sha256Text(buildStartupProgram(input)),
     directMainFrameOnly: true
   };
-  same19(events[14]?.data, request2, "fixed marker-read intent");
-  need4(events[14]?.requestSha256 === sha256Json(request2), "Closed-symbol abandonment request hash differs.");
+  same19(events[14]?.data, request3, "fixed marker-read intent");
+  need4(events[14]?.requestSha256 === sha256Json(request3), "Closed-symbol abandonment request hash differs.");
   const returned = events[15]?.data;
   if (canonicalJson(returned) !== canonicalJson({ rawReturn: REJECTION })) {
     const data3 = bag(returned), raw = bag(data3["rawReturn"]);
@@ -66488,7 +66488,7 @@ async function claim(loaded) {
   const targetKey = sha256Json({ profile: "easyeda-pro-control.closed-symbol-validation-claim.v1", projectUuid: plan2.projectUuid, symbolUuid: plan2.targetUuid });
   const path5 = join16(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
   const retained = await managedJson(path5, 131072), value2 = bag(retained.value);
-  const request2 = {
+  const request3 = {
     action: "run-disposable-once",
     target: {
       projectPath: plan2.projectPath,
@@ -66506,9 +66506,9 @@ async function claim(loaded) {
     profile: "easyeda-pro-control.closed-symbol-validation-claim.v1",
     targetKey,
     createdAt,
-    request: request2,
+    request: request3,
     plan: plan2,
-    requestSha256: sha256Json(request2),
+    requestSha256: sha256Json(request3),
     closedPlanSha256: loaded.journal.closedPlanSha256,
     markerSha256: loaded.journal.markerSha256,
     expectedFingerprintSha256: plan2.expectedFingerprintSha256,
@@ -66808,14 +66808,14 @@ async function prefix2(operationId3) {
     ownerUuid: journal.plan.ownerUuid,
     marker: journal.plan.marker
   };
-  const request2 = {
+  const request3 = {
     profile: "easyeda-pro-control.closed-symbol-startup-request.v1",
     input,
     codeSha256: sha256Text(buildStartupProgram(input)),
     directMainFrameOnly: true
   };
-  same20(events[4]?.data, request2, "fixed startup intent");
-  need5(events[4]?.requestSha256 === sha256Json(request2), "Baseline abandonment request hash differs.");
+  same20(events[4]?.data, request3, "fixed startup intent");
+  need5(events[4]?.requestSha256 === sha256Json(request3), "Baseline abandonment request hash differs.");
   const data3 = bag2(events[5]?.data);
   need5(Object.keys(data3).length === 1 && Object.hasOwn(data3, "rawReturn"), "Baseline abandonment original startup return missing.");
   const raw = bag2(data3["rawReturn"]);
@@ -66833,7 +66833,7 @@ async function claim2(loaded) {
   const targetKey = sha256Json({ profile: "easyeda-pro-control.closed-symbol-validation-claim.v1", projectUuid: plan2.projectUuid, symbolUuid: plan2.targetUuid });
   const path5 = join17(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
   const retained = await managedJson2(path5, 131072), value2 = bag2(retained.value);
-  const request2 = {
+  const request3 = {
     action: "run-disposable-once",
     target: {
       projectPath: plan2.projectPath,
@@ -66851,9 +66851,9 @@ async function claim2(loaded) {
     profile: "easyeda-pro-control.closed-symbol-validation-claim.v1",
     targetKey,
     createdAt,
-    request: request2,
+    request: request3,
     plan: plan2,
-    requestSha256: sha256Json(request2),
+    requestSha256: sha256Json(request3),
     closedPlanSha256: loaded.journal.closedPlanSha256,
     markerSha256: loaded.journal.markerSha256,
     expectedFingerprintSha256: plan2.expectedFingerprintSha256,
@@ -68239,12 +68239,12 @@ function createClockedTransport(raw, source4) {
       }
       Reflect.apply(assertAvailable, raw, []);
     } },
-    async request(request2) {
+    async request(request3) {
       methods5();
       if (released || inFlight) {
         bad();
       }
-      const retainedRequest = snapshotRequest(request2);
+      const retainedRequest = snapshotRequest(request3);
       const action = text13(retainedRequest["action"], /^[a-z-]{1,40}$/u), mapping2 = Object.hasOwn(mapped, action) ? mapped[action] : void 0;
       if (mapping2 === void 0 && !passThrough.has(action)) {
         bad();
@@ -69216,19 +69216,19 @@ async function startWindowsAuthoritySupervisor(options) {
     buffer = buffer.slice(newline + 1);
     try {
       const response3 = record5(JSON.parse(line6));
-      const request2 = pending;
-      if (request2 === void 0 || response3["id"] !== request2.id || buffer.length > 0) {
+      const request3 = pending;
+      if (request3 === void 0 || response3["id"] !== request3.id || buffer.length > 0) {
         fail11();
         return;
       }
       if (response3["ok"] === true) {
         pending = void 0;
-        request2.resolve(response3["result"]);
+        request3.resolve(response3["result"]);
       } else if (response3["ok"] === false) {
         const error51 = new Error(text14(response3["error"], /^authority-[a-z-]{1,80}$/u));
-        nativeRefusals.set(error51, Object.freeze({ ...request2.request, code: error51.message }));
+        nativeRefusals.set(error51, Object.freeze({ ...request3.request, code: error51.message }));
         pending = void 0;
-        request2.reject(error51);
+        request3.reject(error51);
       } else {
         fail11();
       }
@@ -69255,7 +69255,7 @@ async function startWindowsAuthoritySupervisor(options) {
         throw new Error("Closed-session retained helper or process handles are unavailable.");
       }
     },
-    async request(request2) {
+    async request(request3) {
       if (failed || pending !== void 0) {
         throw new Error("Windows authority helper is unavailable or already executing a request.");
       }
@@ -69265,14 +69265,14 @@ async function startWindowsAuthoritySupervisor(options) {
       const requestIdentity = Object.freeze({
         requestId: id9,
         requestSequence,
-        action: Object.getOwnPropertyDescriptor(request2, "action")?.value,
-        captureBindingSha256: Object.getOwnPropertyDescriptor(request2, "captureBindingSha256")?.value,
-        helperInstance: Object.getOwnPropertyDescriptor(request2, "helperInstance")?.value,
-        jobId: Object.getOwnPropertyDescriptor(request2, "jobId")?.value
+        action: Object.getOwnPropertyDescriptor(request3, "action")?.value,
+        captureBindingSha256: Object.getOwnPropertyDescriptor(request3, "captureBindingSha256")?.value,
+        helperInstance: Object.getOwnPropertyDescriptor(request3, "helperInstance")?.value,
+        jobId: Object.getOwnPropertyDescriptor(request3, "jobId")?.value
       });
       pending = { id: id9, request: requestIdentity, resolve: response3.resolve, reject: response3.reject };
       const deadline = setTimeout(fail11, 15e3);
-      child.stdin.write(`${JSON.stringify({ ...request2, id: id9 })}
+      child.stdin.write(`${JSON.stringify({ ...request3, id: id9 })}
 `);
       try {
         return await response3.promise;
@@ -70893,7 +70893,7 @@ async function reconstructRecordedLockedSymbolWitness(input) {
   const admitted = exact9(admissionEvent.data, ["capture", "captureSha256"]);
   const admission = capture(admitted["capture"], journal.operationId, generation5, 1);
   need12(admitted["captureSha256"] === generation5.captureSha256 && sha256Json(admission) === generation5.captureSha256);
-  const request2 = exact9(intent.data, [
+  const request3 = exact9(intent.data, [
     "profile",
     "scope",
     "plannedWindow",
@@ -70916,7 +70916,7 @@ async function reconstructRecordedLockedSymbolWitness(input) {
     createdAtLiteral: literal6
   };
   const code = `return await ${buildSymbolWitnessReadExpression(scope6)}`;
-  need12(request2["profile"] === "private.closed-symbol-witness-request.v1" && canonicalJson(request2["scope"]) === canonicalJson(scope6) && request2["codeSha256"] === sha256Text(code));
+  need12(request3["profile"] === "private.closed-symbol-witness-request.v1" && canonicalJson(request3["scope"]) === canonicalJson(scope6) && request3["codeSha256"] === sha256Text(code));
   const startupInput = {
     phase: "edit-marker-read",
     projectUuid: journal.plan.projectUuid,
@@ -70939,13 +70939,13 @@ async function reconstructRecordedLockedSymbolWitness(input) {
   const actor = validateActorProjection(first["observation"]["startupActor"]);
   const witnessRaw = exact9(rawEvent.data, ["rawReturn"])["rawReturn"];
   const observation2 = validateSymbolWitnessReadResult(extractToolPayload(witnessRaw), scope6);
-  need12(canonicalJson(request2["expectedActor"]) === canonicalJson(actor) && canonicalJson(observation2["startupActor"]) === canonicalJson(actor) && canonicalJson(observation2["cachedActor"]) === canonicalJson(actor));
+  need12(canonicalJson(request3["expectedActor"]) === canonicalJson(actor) && canonicalJson(observation2["startupActor"]) === canonicalJson(actor) && canonicalJson(observation2["cachedActor"]) === canonicalJson(actor));
   const w = exact9(writeIntent.data, ["profile", "witnessArtifactSha256", "witnessClockArtifactSha256", "witnessClockArtifact", "preparedSqlPlanSha256", "metadataPlanSha256", "codeSha256", "context", "sameOriginalClockWindow"]);
   need12(w["profile"] === "private.closed-symbol-write-request.v1" && w["sameOriginalClockWindow"] === true && writeIntent.requestSha256 === sha256Json(writeIntent.data));
   const d = exact9(w["witnessClockArtifact"], ["path", "bytes", "sha256"]);
   need12(typeof d["path"] === "string" && typeof d["bytes"] === "number" && Number.isSafeInteger(d["bytes"]) && d["bytes"] > 0 && d["bytes"] <= 6e4);
   const clockArtifact = { path: d["path"], bytes: d["bytes"], sha256: hash19(d["sha256"]) };
-  need12(clockArtifact.path === request2["qualificationPath"] && clockArtifact.sha256 === w["witnessClockArtifactSha256"]);
+  need12(clockArtifact.path === request3["qualificationPath"] && clockArtifact.sha256 === w["witnessClockArtifactSha256"]);
   const qualification = await readWitnessClockArtifact(journal.operationId, clockArtifact, clockArtifact.sha256);
   unchanged3();
   const q = exact9(qualification, ["profile", "operationId", "generation", "rawResultArtifactSha256", "requestSha256", "plannedWindow", "beforeCapture", "afterCapture", "launchClock", "beforeClock", "afterClock", "relation", "witness", "completionProved", "executionAuthorized"]);
@@ -70954,7 +70954,7 @@ async function reconstructRecordedLockedSymbolWitness(input) {
   const baselineData = exact9(baseline2.data, ["copyReceipt", "sqlDigests"]);
   need12(isRecord(baselineData["copyReceipt"]));
   const copyHash = hash19(baselineData["copyReceipt"]["receiptSha256"]);
-  need12(request2["baselineCopyReceiptSha256"] === copyHash && request2["baselineLogicalSha256"] === baselineInventory.logicalSha256 && request2["operationSha256"] === sha256Json(journal.plan.operation));
+  need12(request3["baselineCopyReceiptSha256"] === copyHash && request3["baselineLogicalSha256"] === baselineInventory.logicalSha256 && request3["operationSha256"] === sha256Json(journal.plan.operation));
   const beforeCapture = capture(q["beforeCapture"], journal.operationId, generation5, 2);
   const afterCapture = capture(q["afterCapture"], journal.operationId, generation5, 3);
   const launch = clock5(q["launchClock"], "launch", generation5);
@@ -71032,14 +71032,14 @@ async function reconstructRecordedLockedSymbolWitness(input) {
     plannedWindow,
     beforeCapture,
     afterCapture,
-    launchClock: request2["launchClock"],
-    beforeClock: request2["beforeClock"],
+    launchClock: request3["launchClock"],
+    beforeClock: request3["beforeClock"],
     afterClock: q["afterClock"],
     relation,
     witness,
     completionProved: false,
     executionAuthorized: false
-  }) && canonicalJson(request2["beforeCapture"]) === canonicalJson(beforeCapture) && canonicalJson(request2["plannedWindow"]) === canonicalJson(plannedWindow));
+  }) && canonicalJson(request3["beforeCapture"]) === canonicalJson(beforeCapture) && canonicalJson(request3["plannedWindow"]) === canonicalJson(plannedWindow));
   unchanged3();
   const result = deepFreeze(structuredClone({
     witness,
@@ -72069,12 +72069,12 @@ async function reconstructClosedSymbolSqlEvidence(input) {
   for (const phase5 of ["edit-sql-compare", "verify-sql-compare"]) {
     const editing = phase5 === "edit-sql-compare";
     const sequence = editing ? 27 : 43;
-    const request2 = bag5(event3(sequence).data);
+    const request3 = bag5(event3(sequence).data);
     if (editing) {
-      const relation = bag5(request2["clockRelation"]), termination = bag5(request2["terminationObservation"]);
+      const relation = bag5(request3["clockRelation"]), termination = bag5(request3["terminationObservation"]);
       need16(relation["terminationObservationSha256"] === sha256Json(termination), "retained termination relation digest differs");
     } else {
-      need16(request2["clockRelation"] === null && request2["terminationObservation"] === null, "verification clock fields differ");
+      need16(request3["clockRelation"] === null && request3["terminationObservation"] === null, "verification clock fields differ");
     }
     const expected3 = {
       profile: "private.closed-symbol-sql-comparison-request.v1",
@@ -72084,14 +72084,14 @@ async function reconstructClosedSymbolSqlEvidence(input) {
       witnessClockArtifactSha256: preparation3.witnessClockArtifactSha256,
       metadataPlanSha256: preparation3.metadataPlanSha256,
       originalWriteResultArtifactSha256: editing ? artifactHash(22) : null,
-      clockRelation: request2["clockRelation"],
-      terminationObservation: request2["terminationObservation"],
+      clockRelation: request3["clockRelation"],
+      terminationObservation: request3["terminationObservation"],
       copyReceiptSha256: editing ? editCopy.receiptSha256 : verificationCopy.receiptSha256,
       copyArtifactSha256: artifactHash(editing ? 26 : 42),
       sqlDigests: digests(editing ? editInventory : verificationInventory),
       originalEditComparisonSha256: editing ? null : editComparison.resultSha256
     };
-    same25(request2, expected3, "SQL comparison request differs");
+    same25(request3, expected3, "SQL comparison request differs");
     need16(event3(sequence).requestSha256 === sha256Json(expected3), "SQL request digest differs");
   }
   const decoded = await decodeRawHistoryForOriginalSymbolSqlPlan(sqlPlan, editInventory);
@@ -72270,7 +72270,7 @@ var init_closed_symbol_admission = __esm({
         await this.engine.assertRecoveryOperationIsolated(operationId3);
         unchanged3();
         current3();
-        const request2 = {
+        const request3 = {
           profile: "easyeda-pro-control.closed-symbol-admission-request.v1",
           operationId: operationId3,
           phase: phase5,
@@ -72280,8 +72280,8 @@ var init_closed_symbol_admission = __esm({
           challengeAttempt: 1,
           bridgeDispatch: binding2
         };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: partial2, requestSha256, data: request2 });
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: partial2, requestSha256, data: request3 });
         unchanged3();
         current3();
         const original2 = await this.engine.captureClosedSessionAuthority(operationId3, selected2.capture, 1);
@@ -72424,9 +72424,9 @@ var init_closed_symbol_close = __esm({
         const intent = await this.runtime.prepareClosedSessionClose({ ...binding2, windowHandle });
         unchanged3();
         current3();
-        const request2 = { intent, capture: capture3, launch };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request2 });
+        const request3 = { intent, capture: capture3, launch };
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request3 });
         unchanged3();
         current3();
         const closeReceipt = await this.runtime.requestClosedSessionNormalClose({ ...binding2, intent, confirmNormalClose: true });
@@ -72645,9 +72645,9 @@ var init_closed_symbol_copy = __esm({
         );
         await current3();
         const proofData = JSON.parse(canonicalJson(proof));
-        const request2 = { proof: proofData, checkpoint, source: journal.plan.projectPath, generation: generation5 };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request2 });
+        const request3 = { proof: proofData, checkpoint, source: journal.plan.projectPath, generation: generation5 };
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request3 });
         await current3();
         const copy = await copyClosedProjectBytes({
           closureProof: proof,
@@ -72747,14 +72747,14 @@ var init_closed_symbol_launch = __esm({
         await this.engine.assertRecoveryOperationIsolated(operationId3);
         unchanged3();
         outsideSession();
-        const request2 = {
+        const request3 = {
           profile: "easyeda-pro-control.closed-symbol-bootstrap-launch-request.v1",
           operationId: operationId3,
           closedPlanSha256: journal.closedPlanSha256,
           runtimeStatus: this.runtime.status()
         };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: "baseline-launch", kind: "intent", generation: null, requestSha256, data: request2 });
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: "baseline-launch", kind: "intent", generation: null, requestSha256, data: request3 });
         unchanged3();
         outsideSession();
         const original2 = await this.runtime.launch();
@@ -72899,7 +72899,7 @@ var init_closed_symbol_relaunch = __esm({
           verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy.source && verified.sourceSha256 === copy.sha256 && verified.receiptPath === retained.checkpoint.receiptPath && verified.checkpoint === retained.checkpoint.checkpoint && verified.checkpointSha256 === retained.checkpoint.checkpointSha256 && verified.sourceDumpSha256 === retained.checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === retained.checkpoint.checkpointDumpSha256,
           "Closed symbol relaunch checkpoint changed."
         );
-        const request2 = {
+        const request3 = {
           profile: "easyeda-pro-control.closed-symbol-relaunch-request.v1",
           operationId: operationId3,
           phase: phase5,
@@ -72908,8 +72908,8 @@ var init_closed_symbol_relaunch = __esm({
           priorProofSha256: proof.proofSha256,
           checkpoint: retained.checkpoint
         };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: null, requestSha256, data: request2 });
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: null, requestSha256, data: request3 });
         await current3();
         const original2 = await this.runtime.launch();
         this.launches.set(key, original2);
@@ -73487,9 +73487,9 @@ var init_closed_symbol_navigation = __esm({
         requireValue12(canonicalJson(prepared.target) === canonicalJson({ projectUuid: projectUuid4, projectPath, documentUuid: activeUuid, documentType: 3 }) && prepared.checkpointSha256 === checkpoint.checkpointSha256 && prepared.libraryHeaderEvidence?.checkpointSha256 === checkpoint.checkpointSha256 && prepared.libraryHeaderEvidence.projectUuid === projectUuid4, "Closed navigation prepared target/checkpoint differs.");
         await this.unchanged(checkpoint, projectPath);
         unchangedPlan();
-        const request2 = { target: prepared.target, context: context3, checkpoint, codeSha256: sha256Text(prepared.code), libraryHeaderEvidence: prepared.libraryHeaderEvidence };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request2 });
+        const request3 = { target: prepared.target, context: context3, checkpoint, codeSha256: sha256Text(prepared.code), libraryHeaderEvidence: prepared.libraryHeaderEvidence };
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request3 });
         unchangedPlan();
         const raw = await this.engine.dispatchWithOrphanTracking(journal, phase5, "easyeda_execute", {
           code: prepared.code,
@@ -73973,8 +73973,8 @@ function validateMainReferenceRequest(input) {
   need19(value2["profile"] === MAIN_REFERENCE_PROFILE);
   const historyUuid = value2["historyUuid"], nonce = value2["nonce"], operationId3 = value2["operationId"];
   need19(typeof nonce === "string" && /^[a-f0-9]{64}$/u.test(nonce) && typeof operationId3 === "string" && /^easyeda-\d{8}t\d{6}z-[a-f0-9]{8}$/u.test(operationId3) && typeof historyUuid === "string" && /^[a-f0-9]{32}$/u.test(historyUuid));
-  const fields9 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
-  for (const field3 of fields9) {
+  const fields10 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
+  for (const field3 of fields10) {
     need19(typeof value2[field3] === "string" && /^[a-f0-9]{64}$/u.test(value2[field3]));
   }
   const scope6 = validateClockControlScope({ createdAtLiteral: value2["createdAtLiteral"], referenceUtcMs: value2["referenceUtcMs"] });
@@ -73992,8 +73992,8 @@ function validateMainReferenceRequest(input) {
   });
 }
 function buildMainReferenceProgram(input) {
-  const request2 = validateMainReferenceRequest(input), requestText = canonicalJson(request2);
-  const observation2 = buildMainClockReference({ createdAtLiteral: request2.createdAtLiteral, referenceUtcMs: request2.referenceUtcMs });
+  const request3 = validateMainReferenceRequest(input), requestText = canonicalJson(request3);
+  const observation2 = buildMainClockReference({ createdAtLiteral: request3.createdAtLiteral, referenceUtcMs: request3.referenceUtcMs });
   return `'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {app}=require('electron');
@@ -74039,11 +74039,11 @@ const watchdog=setTimeout(fail,25000);watchdog.unref();void run().catch(fail);
 `;
 }
 function validateMainReferenceResult(input, expected3) {
-  const request2 = validateMainReferenceRequest(expected3), requestSha256 = sha256Text(canonicalJson(request2));
+  const request3 = validateMainReferenceRequest(expected3), requestSha256 = sha256Text(canonicalJson(request3));
   const value2 = exact10(input, ["profile", "nonce", "requestSha256", "mainReference", "mainDateIdentityRetained", "rendererCreated", "appClockDirectlyObserved", "executionAuthorized"]);
-  need19(value2["profile"] === "private.main-reference-result.v1" && value2["nonce"] === request2.nonce && value2["requestSha256"] === requestSha256 && value2["mainDateIdentityRetained"] === true && value2["rendererCreated"] === false && value2["appClockDirectlyObserved"] === false && value2["executionAuthorized"] === false);
-  const mainReference = validateClockControls(value2["mainReference"], { createdAtLiteral: request2.createdAtLiteral, referenceUtcMs: request2.referenceUtcMs }, "main-reference");
-  return Object.freeze({ request: request2, requestSha256, mainReference, appClockDirectlyObserved: false, executionAuthorized: false });
+  need19(value2["profile"] === "private.main-reference-result.v1" && value2["nonce"] === request3.nonce && value2["requestSha256"] === requestSha256 && value2["mainDateIdentityRetained"] === true && value2["rendererCreated"] === false && value2["appClockDirectlyObserved"] === false && value2["executionAuthorized"] === false);
+  const mainReference = validateClockControls(value2["mainReference"], { createdAtLiteral: request3.createdAtLiteral, referenceUtcMs: request3.referenceUtcMs }, "main-reference");
+  return Object.freeze({ request: request3, requestSha256, mainReference, appClockDirectlyObserved: false, executionAuthorized: false });
 }
 var MAIN_REFERENCE_PROFILE;
 var init_closed_symbol_main_reference_program = __esm({
@@ -74132,13 +74132,13 @@ async function source2(name6) {
   return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
 }
 async function compileMainReferenceV3Metadata(input) {
-  const request2 = validateMainReferenceRequest(input);
+  const request3 = validateMainReferenceRequest(input);
   const identity28 = MAIN_REFERENCE_HELPER_IDENTITY;
   need20(identity28 !== null && identity28.profile === "private.main-reference-helper.v1" && Number.isSafeInteger(identity28.bytes) && identity28.bytes > 0 && identity28.bytes <= 262144);
   hash21(identity28.sha256);
   hash21(identity28.sourcesSha256);
   const helperIdentity = Object.freeze({ ...identity28 });
-  const main = buildMainReferenceProgram(request2), requestText = canonicalJson(request2);
+  const main = buildMainReferenceProgram(request3), requestText = canonicalJson(request3);
   const mainSha256 = sha256Text(main), requestSha256 = sha256Text(requestText);
   const [template, decoder, helper] = await Promise.all([
     source2("owner-command-v3.ps1"),
@@ -74146,7 +74146,7 @@ async function compileMainReferenceV3Metadata(input) {
     pinnedBytes(new URL("../bin/Easyeda.MainReference.dll", import.meta.url), identity28.sha256, 262144, identity28.bytes)
   ]);
   const replacements = Object.freeze({
-    __NONCE__: request2.nonce,
+    __NONCE__: request3.nonce,
     __REQUEST_HASH__: requestSha256,
     __MAIN_HASH__: mainSha256,
     __HELPER_HASH__: identity28.sha256,
@@ -74168,7 +74168,7 @@ async function compileMainReferenceV3Metadata(input) {
   need20(!/__[A-Z_]+__/u.test(command) && command.length > 0 && command.length <= 3e4 && stdin.length > 0 && stdin.length <= 524288 && Buffer.byteLength(stdin) === stdin.length && Buffer.byteLength(main) > 0 && Buffer.byteLength(main) <= 1e5 && Buffer.byteLength(requestText) > 0 && Buffer.byteLength(requestText) <= 8192);
   const sourcePins = Object.freeze({ ...SCRIPT_PINS, "Easyeda.MainReference.dll": identity28.sha256, nativeSourcesSha256: identity28.sourcesSha256 });
   return Object.freeze({
-    request: request2,
+    request: request3,
     command,
     stdin,
     requestSha256,
@@ -74829,7 +74829,7 @@ var init_closed_symbol_main_reference = __esm({
           baselineClock.clock.status === "observed" && baselineClock.base["checkedAt"] === proof.closedAt && baselineClock.base["jobEmpty"] === true && baselineClock.base["jobId"] === proof["jobId"] && baselineClock.base["helperInstance"] === proof["helperInstance"] && baselineClock.ownerBinding["operationId"] === operationId3 && baselineClock.ownerBinding["phase"] === "closed-baseline" && baselineClock.ownerBinding["challengeAttempt"] === 1 && baselineClock.ownerBinding["closeIntentSha256"] === proof.closeIntentSha256 && baselineClock.ownerBinding["authoritySha256"] === proof.authoritySha256,
           "Main reference original baseline clock is unavailable or mismatched."
         );
-        const request2 = validateMainReferenceRequest({
+        const request3 = validateMainReferenceRequest({
           profile: MAIN_REFERENCE_PROFILE,
           nonce: randomBytes9(32).toString("hex"),
           operationId: operationId3,
@@ -74842,7 +74842,7 @@ var init_closed_symbol_main_reference = __esm({
           createdAtLiteral: baseline2.createdAtLiteral,
           referenceUtcMs: Number((BigInt(baselineClock.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
-        const invocation = await compileMainReferenceTransportV3(request2);
+        const invocation = await compileMainReferenceTransportV3(request3);
         await current3();
         const directory2 = operationPath(operationId3).slice(0, -5), resultPath = join28(directory2, "10-baseline-main-reference-result.json");
         const beforeIntent = await loadClosedSymbolJournal(operationId3);
@@ -74850,7 +74850,7 @@ var init_closed_symbol_main_reference = __esm({
         need24(canonicalJson(beforeIntent.journal) === callerText, "Main reference journal advanced before intent.");
         const intentArtifact = Object.freeze(await writePhaseArtifact(operationId3, 10, "baseline-main-reference-intent", {
           profile: "private.main-reference-intent.v3",
-          request: request2,
+          request: request3,
           resultPath,
           commandSha256: invocation.commandSha256,
           mainSha256: invocation.mainSha256,
@@ -74900,7 +74900,7 @@ var init_closed_symbol_main_reference = __esm({
         const result = Object.freeze({
           profile: "private.original-main-reference.v1",
           operationId: operationId3,
-          request: request2,
+          request: request3,
           observation: observation2,
           intentArtifact,
           resultArtifact,
@@ -75243,7 +75243,7 @@ var init_closed_symbol_witness = __esm({
           const controlScope = reference2 === void 0 ? void 0 : { createdAtLiteral: reference2.request.createdAtLiteral, referenceUtcMs: reference2.request.referenceUtcMs };
           const code = `return await ${controlScope === void 0 ? buildSymbolWitnessReadExpression(scope6) : buildAgedSymbolWitnessReadExpression(scope6, controlScope, actor)}`;
           const qualificationPath = join29(operationPath(operationId3).slice(0, -5), "20-edit-witness-clock-qualification.json");
-          const request2 = {
+          const request3 = {
             profile: "private.closed-symbol-witness-request.v1",
             scope: scope6,
             plannedWindow,
@@ -75258,8 +75258,8 @@ var init_closed_symbol_witness = __esm({
             beforeCapture,
             beforeClock: before.observation
           };
-          const requestSha256 = sha256Json(request2);
-          await appendClosedSymbolEvent(journal, { step: "edit-witness", kind: "intent", generation: generation5, requestSha256, data: request2 });
+          const requestSha256 = sha256Json(request3);
+          await appendClosedSymbolEvent(journal, { step: "edit-witness", kind: "intent", generation: generation5, requestSha256, data: request3 });
           current3();
           const raw = await this.engine.dispatchWithOrphanTracking(
             journal,
@@ -75715,7 +75715,7 @@ var init_closed_symbol_write = __esm({
             notAfterMs: witness.witness.serverClockMaxMs
           }
         )}`;
-        const request2 = {
+        const request3 = {
           profile: "private.closed-symbol-write-request.v1",
           witnessArtifactSha256: witness.artifactSha256,
           witnessClockArtifactSha256: witness.clockArtifactSha256,
@@ -75726,8 +75726,8 @@ var init_closed_symbol_write = __esm({
           context: context3,
           sameOriginalClockWindow: true
         };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: "edit-write", kind: "intent", generation: generation5, requestSha256, data: request2 });
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: "edit-write", kind: "intent", generation: generation5, requestSha256, data: request3 });
         current3();
         need28(journal.mutationMayHaveOccurred, "Closed symbol write intent lacks its durable possible-mutation marker.");
         const dispatchGeneration = () => {
@@ -76118,7 +76118,7 @@ var init_closed_symbol_sql_comparison = __esm({
           terminationObservation === null || clockRelation?.["terminationObservationSha256"] === sha256Json(terminationObservation),
           "Closed SQL termination observation changed before retention."
         );
-        const request2 = {
+        const request3 = {
           profile: "private.closed-symbol-sql-comparison-request.v1",
           phase: phase5,
           preparedSqlPlanSha256: preparation3.descriptor.preparedSqlPlanSha256,
@@ -76133,8 +76133,8 @@ var init_closed_symbol_sql_comparison = __esm({
           sqlDigests: sqlDigests(inventory2),
           originalEditComparisonSha256: phase5 === "verify-sql-compare" ? prior?.result.resultSha256 : null
         };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: bound2.generation, requestSha256, data: request2 });
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: bound2.generation, requestSha256, data: request3 });
         await current3();
         let comparison3;
         if (phase5 === "edit-sql-compare") {
@@ -76589,7 +76589,7 @@ var init_closed_symbol_saved_read = __esm({
           };
           const code = `return await ${buildClosedSymbolSavedContentExpression(readPlan, context3, actor)}`;
           const rawPath = join30(operationPath(operationId3).slice(0, -5), "38-verify-content-read-raw.json");
-          const request2 = {
+          const request3 = {
             profile: "private.closed-symbol-saved-read-request.v1",
             source: source4,
             context: context3,
@@ -76602,8 +76602,8 @@ var init_closed_symbol_saved_read = __esm({
             clockCapture: extraCapture,
             clock: clock7
           };
-          const requestSha256 = sha256Json(request2);
-          await appendClosedSymbolEvent(journal, { step: "verify-content-read", kind: "intent", generation: generation5, requestSha256, data: request2 });
+          const requestSha256 = sha256Json(request3);
+          await appendClosedSymbolEvent(journal, { step: "verify-content-read", kind: "intent", generation: generation5, requestSha256, data: request3 });
           current3();
           let rawArtifact, rawBytes = 0, rawSha256 = "";
           const dispatchGeneration = () => {
@@ -76822,9 +76822,9 @@ var init_closed_symbol_startup = __esm({
         current3();
         await this.engine.assertRecoveryOperationIsolated(operationId3);
         current3();
-        const code = buildStartupProgram(input), request2 = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input, codeSha256: sha256Text(code), directMainFrameOnly: true };
-        const requestSha256 = sha256Json(request2);
-        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request2 });
+        const code = buildStartupProgram(input), request3 = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input, codeSha256: sha256Text(code), directMainFrameOnly: true };
+        const requestSha256 = sha256Json(request3);
+        await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request3 });
         current3();
         const raw = await this.engine.dispatchWithOrphanTracking(
           journal,
@@ -77832,14 +77832,14 @@ function startup(journal, events, ordinal) {
   const selected2 = names2[ordinal];
   need34(sequence !== void 0 && selected2 !== void 0, "Terminal startup ordinal differs.");
   const input = { phase: selected2, projectUuid: journal.plan.projectUuid, branchUuid: journal.plan.branchUuid, ownerUuid: journal.plan.ownerUuid, marker: journal.plan.marker };
-  const request2 = {
+  const request3 = {
     profile: "easyeda-pro-control.closed-symbol-startup-request.v1",
     input,
     codeSha256: sha256Text(buildStartupProgram(input)),
     directMainFrameOnly: true
   };
-  same26(phaseData(events, sequence), request2, "startup fixed request");
-  need34(phase2(events, sequence).requestSha256 === sha256Json(request2), "Terminal startup request hash differs.");
+  same26(phaseData(events, sequence), request3, "startup fixed request");
+  need34(phase2(events, sequence).requestSha256 === sha256Json(request3), "Terminal startup request hash differs.");
   const data3 = phaseData(events, sequence + 1);
   same26(Object.keys(data3), ["rawReturn"], "startup result fields");
   const validated = validateStartupResult(extractToolPayload(data3["rawReturn"]), input);
@@ -78136,7 +78136,7 @@ function reconstructRecordedWrite(input) {
       notAfterMs: witness.witness.serverClockMaxMs
     }
   )}`;
-  const request2 = {
+  const request3 = {
     profile: "private.closed-symbol-write-request.v1",
     witnessArtifactSha256: witness.artifactSha256,
     witnessClockArtifactSha256: witness.clockArtifactSha256,
@@ -78147,8 +78147,8 @@ function reconstructRecordedWrite(input) {
     context: expectedContext,
     sameOriginalClockWindow: true
   };
-  same27(phaseData(events, 21), request2, "fixed write request");
-  const requestSha256 = sha256Json(request2);
+  same27(phaseData(events, 21), request3, "fixed write request");
+  const requestSha256 = sha256Json(request3);
   const raw = phaseData(events, 22);
   need35(
     phase2(events, 21).requestSha256 === requestSha256 && phase2(events, 22).requestSha256 === requestSha256 && journal.mutationMayHaveOccurred,
@@ -78183,12 +78183,12 @@ async function recordedNavigationBinding(journal, events, selected2) {
   };
   const index = selected2 === "edit-open" ? 17 : 35;
   const copyIndex = selected2 === "edit-open" ? 9 : 25;
-  const request2 = phaseData(events, index);
+  const request3 = phaseData(events, index);
   const raw = phaseData(events, index + 1);
   const checkpoint = bag7(phaseData(events, copyIndex)["checkpoint"]);
-  same27(request2["checkpoint"], checkpoint, "navigation checkpoint");
-  same27(request2["target"], { projectUuid: journal.plan.projectUuid, projectPath: journal.plan.projectPath, documentUuid: journal.plan.activeUuid, documentType: 3 }, "navigation target");
-  same27(request2["context"], { project: { uuid: journal.plan.projectUuid, path: journal.plan.projectPath }, document: { uuid: journal.plan.activeUuid, documentType: 3 } }, "navigation requested context");
+  same27(request3["checkpoint"], checkpoint, "navigation checkpoint");
+  same27(request3["target"], { projectUuid: journal.plan.projectUuid, projectPath: journal.plan.projectPath, documentUuid: journal.plan.activeUuid, documentType: 3 }, "navigation target");
+  same27(request3["context"], { project: { uuid: journal.plan.projectUuid, path: journal.plan.projectPath }, document: { uuid: journal.plan.activeUuid, documentType: 3 } }, "navigation requested context");
   need35(typeof checkpoint["checkpoint"] === "string" && typeof checkpoint["checkpointSha256"] === "string", "Terminal navigation checkpoint missing.");
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: checkpoint["checkpoint"],
@@ -78208,8 +78208,8 @@ async function recordedNavigationBinding(journal, events, selected2) {
     requireEditorReadiness: true,
     checkpointProjectOwnerUuid: history.projectOwnerUuid
   });
-  same27(request2, { target: target6, context: expectedContext, checkpoint, codeSha256: sha256Text(code), libraryHeaderEvidence: headers }, "full fixed navigation request");
-  need35(phase2(events, index).requestSha256 === sha256Json(request2) && phase2(events, index + 1).requestSha256 === sha256Json(request2), "Terminal navigation request hash differs.");
+  same27(request3, { target: target6, context: expectedContext, checkpoint, codeSha256: sha256Text(code), libraryHeaderEvidence: headers }, "full fixed navigation request");
+  need35(phase2(events, index).requestSha256 === sha256Json(request3) && phase2(events, index + 1).requestSha256 === sha256Json(request3), "Terminal navigation request hash differs.");
   same27(Object.keys(raw), ["rawReturn"], "navigation result fields");
   const native = bag7(extractToolPayload(raw["rawReturn"]));
   const project3 = { uuid: journal.plan.projectUuid, path: journal.plan.projectPath };
@@ -78243,7 +78243,7 @@ async function reconstructRecordedSavedRead(input) {
   const current3 = () => {
     same27(canonicalJson({ journal, events, source: source4, rawArtifact: input.rawArtifact, nativeSource: input.nativeSource }), callerSeal, "saved-read replay caller");
   };
-  const request2 = phaseData(events, 37);
+  const request3 = phaseData(events, 37);
   const result = phaseData(events, 38);
   const admitted = generation4(events, 38, 2);
   const startupData = phaseData(events, 34), startupInput = {
@@ -78257,8 +78257,8 @@ async function reconstructRecordedSavedRead(input) {
   const observations = startup2["observations"];
   need35(startup2["ok"] === true && Array.isArray(observations), "Terminal saved-read startup missing.");
   const actor = validateActorProjection(bag7(bag7(observations[0])["observation"])["startupActor"]);
-  const clock7 = bag7(request2["clock"]);
-  const capture3 = bag7(request2["clockCapture"]);
+  const clock7 = bag7(request3["clock"]);
+  const capture3 = bag7(request3["clockCapture"]);
   const authority2 = bag7(capture3["executionAuthority"]);
   const clockData = bag7(clock7["clock"]);
   const base4 = bag7(clock7["base"]);
@@ -78329,7 +78329,7 @@ async function reconstructRecordedSavedRead(input) {
     clockCapture: capture3,
     clock: clock7
   };
-  same27(request2, expected3, "saved-read fixed request");
+  same27(request3, expected3, "saved-read fixed request");
   const requestSha256 = sha256Json(expected3);
   need35(
     phase2(events, 37).requestSha256 === requestSha256 && phase2(events, 38).requestSha256 === requestSha256,
@@ -79391,10 +79391,10 @@ async function reconstructRecordedMainReference(input) {
   need39(termination.proof["closeReceiptSha256"] === receipt2.closeReceiptSha256);
   need39(isRecord(termination.termination["clock"]));
   const baselineAfter = validateClockSample(termination.termination["clock"]["after"]);
-  const request2 = validateMainReferenceRequest(intent["request"]);
-  same31(request2, {
+  const request3 = validateMainReferenceRequest(intent["request"]);
+  same31(request3, {
     profile: MAIN_REFERENCE_PROFILE,
-    nonce: request2.nonce,
+    nonce: request3.nonce,
     operationId: journal.operationId,
     closedPlanSha256: journal.closedPlanSha256,
     baselineCopyReceiptSha256: copy["receiptSha256"],
@@ -79405,11 +79405,11 @@ async function reconstructRecordedMainReference(input) {
     createdAtLiteral: baseline2.createdAtLiteral,
     referenceUtcMs: Number((BigInt(baselineAfter.utcBeforeTicks) - EPOCH5) / 10000n)
   });
-  const metadata8 = await compileMainReferenceV3Metadata(request2);
+  const metadata8 = await compileMainReferenceV3Metadata(request3);
   unchanged3();
   same31(intent, {
     profile: "private.main-reference-intent.v3",
-    request: request2,
+    request: request3,
     resultPath: resultArtifact.path,
     commandSha256: metadata8.commandSha256,
     mainSha256: metadata8.mainSha256,
@@ -79439,7 +79439,7 @@ async function reconstructRecordedMainReference(input) {
   const result = {
     profile: "private.original-main-reference.v1",
     operationId: journal.operationId,
-    request: request2,
+    request: request3,
     observation: observation2,
     intentArtifact,
     resultArtifact,
@@ -79668,7 +79668,7 @@ async function reconstructRecordedAgedSymbolWitness(input) {
     source: input.nativeSource
   });
   need41(admitted["captureSha256"] === generation5.captureSha256 && sha256Json(admission) === generation5.captureSha256);
-  const request2 = exact15(intent.data, [
+  const request3 = exact15(intent.data, [
     "profile",
     "scope",
     "plannedWindow",
@@ -79691,7 +79691,7 @@ async function reconstructRecordedAgedSymbolWitness(input) {
     activeUuid: journal.plan.activeUuid,
     createdAtLiteral: literal6
   };
-  need41(request2["profile"] === "private.closed-symbol-witness-request.v1" && canonicalJson(request2["scope"]) === canonicalJson(scope6) && canonicalJson(request2["mainReference"]) === canonicalJson(reference2));
+  need41(request3["profile"] === "private.closed-symbol-witness-request.v1" && canonicalJson(request3["scope"]) === canonicalJson(scope6) && canonicalJson(request3["mainReference"]) === canonicalJson(reference2));
   const startupInput = {
     phase: "edit-marker-read",
     projectUuid: journal.plan.projectUuid,
@@ -79714,16 +79714,16 @@ async function reconstructRecordedAgedSymbolWitness(input) {
   const actor = validateActorProjection(first["observation"]["startupActor"]);
   const witnessRaw = exact15(rawEvent.data, ["rawReturn"])["rawReturn"];
   const code = `return await ${buildAgedSymbolWitnessReadExpression(scope6, controlScope, actor)}`;
-  need41(request2["codeSha256"] === sha256Text(code));
+  need41(request3["codeSha256"] === sha256Text(code));
   const qualified = validateAgedSymbolWitnessReadResult(extractToolPayload(witnessRaw), scope6, controlScope);
   const observation2 = qualified.witness;
-  need41(canonicalJson(request2["expectedActor"]) === canonicalJson(actor) && canonicalJson(observation2["startupActor"]) === canonicalJson(actor) && canonicalJson(observation2["cachedActor"]) === canonicalJson(actor));
+  need41(canonicalJson(request3["expectedActor"]) === canonicalJson(actor) && canonicalJson(observation2["startupActor"]) === canonicalJson(actor) && canonicalJson(observation2["cachedActor"]) === canonicalJson(actor));
   const w = exact15(writeIntent.data, ["profile", "witnessArtifactSha256", "witnessClockArtifactSha256", "witnessClockArtifact", "preparedSqlPlanSha256", "metadataPlanSha256", "codeSha256", "context", "sameOriginalClockWindow"]);
   need41(w["profile"] === "private.closed-symbol-write-request.v1" && w["sameOriginalClockWindow"] === true && writeIntent.requestSha256 === sha256Json(writeIntent.data));
   const d = exact15(w["witnessClockArtifact"], ["path", "bytes", "sha256"]);
   need41(typeof d["path"] === "string" && typeof d["bytes"] === "number" && Number.isSafeInteger(d["bytes"]) && d["bytes"] > 0 && d["bytes"] <= 6e4);
   const clockArtifact = { path: d["path"], bytes: d["bytes"], sha256: hash26(d["sha256"]) };
-  need41(clockArtifact.path === request2["qualificationPath"] && clockArtifact.sha256 === w["witnessClockArtifactSha256"]);
+  need41(clockArtifact.path === request3["qualificationPath"] && clockArtifact.sha256 === w["witnessClockArtifactSha256"]);
   const qualification = await readWitnessClockArtifact(journal.operationId, clockArtifact, clockArtifact.sha256);
   unchanged3();
   const q = exact15(qualification, ["profile", "operationId", "generation", "rawResultArtifactSha256", "mainReference", "historicalRelations", "requestSha256", "plannedWindow", "beforeCapture", "afterCapture", "launchClock", "beforeClock", "afterClock", "relation", "witness", "completionProved", "executionAuthorized"]);
@@ -79732,7 +79732,7 @@ async function reconstructRecordedAgedSymbolWitness(input) {
   const baselineData = exact15(baseline2.data, ["copyReceipt", "sqlDigests"]);
   need41(isRecord(baselineData["copyReceipt"]));
   const copyHash = hash26(baselineData["copyReceipt"]["receiptSha256"]);
-  need41(request2["baselineCopyReceiptSha256"] === copyHash && request2["baselineLogicalSha256"] === baselineInventory.logicalSha256 && request2["operationSha256"] === sha256Json(journal.plan.operation));
+  need41(request3["baselineCopyReceiptSha256"] === copyHash && request3["baselineLogicalSha256"] === baselineInventory.logicalSha256 && request3["operationSha256"] === sha256Json(journal.plan.operation));
   const beforeCapture = capture2(q["beforeCapture"], journal.operationId, generation5, 2);
   const afterCapture = capture2(q["afterCapture"], journal.operationId, generation5, 3);
   validateRecordedCaptureEvidence({
@@ -79841,14 +79841,14 @@ async function reconstructRecordedAgedSymbolWitness(input) {
     plannedWindow,
     beforeCapture,
     afterCapture,
-    launchClock: request2["launchClock"],
-    beforeClock: request2["beforeClock"],
+    launchClock: request3["launchClock"],
+    beforeClock: request3["beforeClock"],
     afterClock: q["afterClock"],
     relation,
     witness,
     completionProved: false,
     executionAuthorized: false
-  }) && canonicalJson(request2["beforeCapture"]) === canonicalJson(beforeCapture) && canonicalJson(request2["plannedWindow"]) === canonicalJson(plannedWindow));
+  }) && canonicalJson(request3["beforeCapture"]) === canonicalJson(beforeCapture) && canonicalJson(request3["plannedWindow"]) === canonicalJson(plannedWindow));
   const revalidated = await reconstructRecordedMainReference(input);
   unchanged3();
   need41(revalidated.resultSha256 === sha256Json(reference2));
@@ -80020,12 +80020,12 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
   for (const phase5 of ["edit-sql-compare", "verify-sql-compare"]) {
     const editing = phase5 === "edit-sql-compare";
     const sequence = editing ? 27 : 43;
-    const request2 = bag9(event3(sequence).data);
+    const request3 = bag9(event3(sequence).data);
     if (editing) {
-      const relation = bag9(request2["clockRelation"]), termination = bag9(request2["terminationObservation"]);
+      const relation = bag9(request3["clockRelation"]), termination = bag9(request3["terminationObservation"]);
       need42(relation["terminationObservationSha256"] === sha256Json(termination), "retained termination relation digest differs");
     } else {
-      need42(request2["clockRelation"] === null && request2["terminationObservation"] === null, "verification clock fields differ");
+      need42(request3["clockRelation"] === null && request3["terminationObservation"] === null, "verification clock fields differ");
     }
     const expected3 = {
       profile: "private.closed-symbol-sql-comparison-request.v1",
@@ -80035,14 +80035,14 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
       witnessClockArtifactSha256: preparation3.witnessClockArtifactSha256,
       metadataPlanSha256: preparation3.metadataPlanSha256,
       originalWriteResultArtifactSha256: editing ? artifactHash(22) : null,
-      clockRelation: request2["clockRelation"],
-      terminationObservation: request2["terminationObservation"],
+      clockRelation: request3["clockRelation"],
+      terminationObservation: request3["terminationObservation"],
       copyReceiptSha256: editing ? editCopy.receiptSha256 : verificationCopy.receiptSha256,
       copyArtifactSha256: artifactHash(editing ? 26 : 42),
       sqlDigests: digests2(editing ? editInventory : verificationInventory),
       originalEditComparisonSha256: editing ? null : editComparison.resultSha256
     };
-    same32(request2, expected3, "SQL comparison request differs");
+    same32(request3, expected3, "SQL comparison request differs");
     need42(event3(sequence).requestSha256 === sha256Json(expected3), "SQL request digest differs");
   }
   const decoded = await decodeRawHistoryForOriginalSymbolSqlPlan(sqlPlan, editInventory);
@@ -83633,18 +83633,18 @@ function convertedRecord(record7, after, input, partId) {
     return { record: record7 };
   }
   let body4 = { ...record7.body };
-  const fields9 = [];
+  const fields10 = [];
   for (const [field3, legacy] of [["groupId", ""], ...record7.type === "ATTR" ? [["version", "2.0"]] : []]) {
     if (field3 !== void 0 && body4[field3] === legacy && !Object.hasOwn(next.body, field3) && !Object.hasOwn(source4.body, field3) && !Object.hasOwn(sourceAfter.body, field3)) {
       body4 = Object.fromEntries(Object.entries(body4).filter(([key]) => key !== field3));
-      fields9.push(field3);
+      fields10.push(field3);
     }
   }
   if (record7.type === "ATTR" && body4["parentId"] === "" && source4.body["parentId"] === partId && sourceAfter.body["parentId"] === partId && next.body["parentId"] === partId) {
     body4["parentId"] = partId;
-    fields9.push("parentId");
+    fields10.push("parentId");
   }
-  if (fields9.length === 0) {
+  if (fields10.length === 0) {
     return { record: record7 };
   }
   if (!equal5(body4, source4.body)) {
@@ -83653,7 +83653,7 @@ function convertedRecord(record7, after, input, partId) {
   return { record: { ...record7, body: body4 }, effect: {
     id: record7.id,
     type: record7.type,
-    fields: fields9.toSorted(),
+    fields: fields10.toSorted(),
     beforeBodySha256: sha256Json(record7.body),
     afterBodySha256: sha256Json(body4)
   } };
@@ -85165,8 +85165,8 @@ async function verifyFlatInverseCheckpoint(checkpoint, source4) {
     controlRoot: await controlRootCapability(),
     artifactRoots: [join39(dirname16(expectedSource), "backups"), join39(controlDataDirectory(), "checkpoints")]
   });
-  const fields9 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields9.some((field3) => verified[field3] !== expected3[field3])) {
+  const fields10 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields10.some((field3) => verified[field3] !== expected3[field3])) {
     throw new Error("Flat inverse durable baseline changed immediately before dispatch; no inverse was dispatched.");
   }
 }
@@ -90734,8 +90734,8 @@ var init_library_execution = __esm({
         const result = validateProjectSchematicCreateReadback(decodeExactReadEnvelope(extractToolPayload(raw)), createdId);
         await _LibraryExecutor.record(journal, phase5, result);
       }
-      async execute(request2) {
-        const input = structuredClone(request2);
+      async execute(request3) {
+        const input = structuredClone(request3);
         const operation = libraryOperationSchema.parse(input.operation);
         assertLibraryExecutionLifecycle(operation);
         const kind = libraryExecutionKind(operation);
@@ -91284,13 +91284,13 @@ function queryOperationCatalog(input) {
   };
 }
 function validateCatalogOperation(input) {
-  const request2 = operationValidationRequestSchema.parse(input);
-  const result = (request2.family === "design" ? designActionSchema : libraryOperationSchema).safeParse(request2.operation);
+  const request3 = operationValidationRequestSchema.parse(input);
+  const result = (request3.family === "design" ? designActionSchema : libraryOperationSchema).safeParse(request3.operation);
   if (result.success) {
     const serialized = JSON.stringify(result.data);
     const normalizedOperationBytes = Buffer.byteLength(serialized, "utf8");
     return {
-      family: request2.family,
+      family: request3.family,
       valid: true,
       ...normalizedOperationBytes <= MAX_CATALOG_BYTES ? { normalizedOperation: result.data } : {},
       normalizedOperationBytes,
@@ -91302,7 +91302,7 @@ function validateCatalogOperation(input) {
     };
   }
   return {
-    family: request2.family,
+    family: request3.family,
     valid: false,
     offline: true,
     executionAuthorized: false,
@@ -91984,7 +91984,7 @@ function validateShortcutKeysArguments(input) {
   };
 }
 function buildShortcutKeysProgram(input) {
-  const request2 = parseShortcutKeysRequest(input);
+  const request3 = parseShortcutKeysRequest(input);
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply;let expired=false;
@@ -92041,10 +92041,10 @@ const project=value=>{
  return result;
 };
 const run=async()=>{
- const read=async()=>{check();const raw=await apply(getter.method,owner,[${request2.arguments.includeSystem}]);check();const copied=project(raw);check();return copied;};
+ const read=async()=>{check();const raw=await apply(getter.method,owner,[${request3.arguments.includeSystem}]);check();const copied=project(raw);check();return copied;};
  const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${SHORTCUT_KEYS_MAX_BYTES})bad();
  const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const json=JSON.stringify({ok:true,kind:'shortcut-key-observation',method:${JSON.stringify(SHORTCUT_KEYS_METHOD)},includeSystem:${request2.arguments.includeSystem},shortcuts:first,keyboardExecutionAuthorized:false,cadAuthority:false,persistenceVerified:false});
+ const json=JSON.stringify({ok:true,kind:'shortcut-key-observation',method:${JSON.stringify(SHORTCUT_KEYS_METHOD)},includeSystem:${request3.arguments.includeSystem},shortcuts:first,keyboardExecutionAuthorized:false,cadAuthority:false,persistenceVerified:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
  if(utf8Bytes>${SHORTCUT_KEYS_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SHORTCUT_KEYS_MAX_BYTES})bad();return envelope;
 };
@@ -92054,9 +92054,9 @@ return await Promise.race([run(),timeout]);
 finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('SHORTCUT_KEYS_READ_FAILED');}}}`;
 }
 function validateShortcutKeysResult(input, raw) {
-  const request2 = parseShortcutKeysRequest(input);
+  const request3 = parseShortcutKeysRequest(input);
   const payload = payloadSchema6.parse(raw);
-  if (payload.includeSystem !== request2.arguments.includeSystem) {
+  if (payload.includeSystem !== request3.arguments.includeSystem) {
     throw new Error("Shortcut query result differs from its request.");
   }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > SHORTCUT_KEYS_MAX_BYTES) {
@@ -93145,18 +93145,18 @@ var init_ordinary_launch = __esm({
         this.observeRecovery = dependencies3.observeRecovery ?? observeOrdinaryLaunchRecovery;
       }
       async run(input) {
-        const request2 = parseOrdinaryLaunchRequest(input);
+        const request3 = parseOrdinaryLaunchRequest(input);
         requireValue14(!this.busy, "Ordinary launch is already in progress.");
         this.busy = true;
         let publishedIntent;
         let launchInvoked = false;
         try {
           const operations = await inventory();
-          const operation = operations.find((candidate) => candidate.operationId === request2.operationId);
-          if (request2.action === "inspect") {
+          const operation = operations.find((candidate) => candidate.operationId === request3.operationId);
+          if (request3.action === "inspect") {
             return {
-              ...describe3(request2.operationId, operation),
-              ...this.closeAttempts.has(request2.operationId) && operation?.closeIntent === void 0 ? {
+              ...describe3(request3.operationId, operation),
+              ...this.closeAttempts.has(request3.operationId) && operation?.closeIntent === void 0 ? {
                 normalClose: {
                   attemptConsumed: true,
                   requestAcknowledged: false,
@@ -93168,32 +93168,32 @@ var init_ordinary_launch = __esm({
           }
           await this.options.assertAllowed();
           requireValue14(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
-          if (request2.action === "observe-application") {
-            return await this.observeApplication(request2.operationId, operation, operations);
+          if (request3.action === "observe-application") {
+            return await this.observeApplication(request3.operationId, operation, operations);
           }
-          if (request2.action === "observe-termination") {
-            return await this.observe(request2.operationId, operation);
+          if (request3.action === "observe-termination") {
+            return await this.observe(request3.operationId, operation);
           }
-          if (request2.action === "observe-window") {
-            const observed2 = await this.readWindow(request2, operation, operations);
+          if (request3.action === "observe-window") {
+            const observed2 = await this.readWindow(request3, operation, operations);
             return {
-              action: request2.action,
-              operationId: request2.operationId,
-              launchedSha256: request2.expectedLaunchedSha256,
+              action: request3.action,
+              operationId: request3.operationId,
+              launchedSha256: request3.expectedLaunchedSha256,
               window: observed2.window,
               closeAuthorized: false,
               ...claims,
               limitations: limitations5
             };
           }
-          if (request2.action === "normal-close") {
-            return await this.normalClose(request2, operation, operations);
+          if (request3.action === "normal-close") {
+            return await this.normalClose(request3, operation, operations);
           }
-          if (request2.action === "abandon-supervision") {
-            return await this.abandon(request2, operation, operations);
+          if (request3.action === "abandon-supervision") {
+            return await this.abandon(request3, operation, operations);
           }
-          if (request2.action === "abandon-unknown-launch") {
-            return await this.abandonUnknown(request2, operation, operations);
+          if (request3.action === "abandon-unknown-launch") {
+            return await this.abandonUnknown(request3, operation, operations);
           }
           requireValue14(operation === void 0 && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
           requireValue14(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
@@ -93206,12 +93206,12 @@ var init_ordinary_launch = __esm({
           });
           const existing = external_exports.object({ running: external_exports.boolean() }).strict().parse(await this.runtime.observeExistingApplication());
           if (existing.running) {
-            return { ...describe3(request2.operationId), state: "already-running", attemptConsumed: false };
+            return { ...describe3(request3.operationId), state: "already-running", attemptConsumed: false };
           }
           const root = await controlRootCapability();
           const parent = await root.openDirectory(join48(controlDataDirectory(), JOURNAL_DIRECTORY));
           try {
-            await mkdir4(`/proc/self/fd/${parent.handle.fd}/${request2.operationId}`, { mode: 448 });
+            await mkdir4(`/proc/self/fd/${parent.handle.fd}/${request3.operationId}`, { mode: 448 });
             this.uncertain = true;
             await parent.handle.sync();
           } finally {
@@ -93220,37 +93220,37 @@ var init_ordinary_launch = __esm({
           const intent = {
             schema: "easyeda-pro-control.ordinary-launch-intent.v2",
             dispatchProtocol: "retained-helper-before-intent.v1",
-            operationId: request2.operationId,
+            operationId: request3.operationId,
             profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE),
             facadeSha256,
             createdAt: (/* @__PURE__ */ new Date()).toISOString()
           };
-          await publish(request2.operationId, "intent.json", intent);
+          await publish(request3.operationId, "intent.json", intent);
           publishedIntent = intent;
           await this.options.assertAllowed();
           const current3 = await inventory();
           requireValue14(
-            current3.length === operations.length + 1 && current3.every((candidate) => candidate.operationId === request2.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
+            current3.length === operations.length + 1 && current3.every((candidate) => candidate.operationId === request3.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
             "Ordinary launch intent or inventory changed before dispatch."
           );
           requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary launch installation changed before dispatch.");
           await this.options.assertAllowed();
           launchInvoked = true;
           const launch = launchSchema.parse(await this.runtime.launch());
-          const launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request2.operationId, intentSha256: sha256Json(intent), launch };
-          this.retained = { operationId: request2.operationId, launch, launched };
-          await publish(request2.operationId, "launched.json", launched);
+          const launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request3.operationId, intentSha256: sha256Json(intent), launch };
+          this.retained = { operationId: request3.operationId, launch, launched };
+          await publish(request3.operationId, "launched.json", launched);
           this.uncertain = false;
-          return describe3(request2.operationId, { operationId: request2.operationId, intent, launched });
+          return describe3(request3.operationId, { operationId: request3.operationId, intent, launched });
         } catch (error51) {
           if (publishedIntent !== void 0 && !launchInvoked) {
             const refused2 = {
               schema: "easyeda-pro-control.ordinary-not-dispatched.v1",
-              operationId: request2.operationId,
+              operationId: request3.operationId,
               intentSha256: sha256Json(publishedIntent),
               dispatchAttempted: false
             };
-            await publish(request2.operationId, "not-dispatched.json", refused2);
+            await publish(request3.operationId, "not-dispatched.json", refused2);
             this.uncertain = false;
           }
           throw error51;
@@ -93258,14 +93258,14 @@ var init_ordinary_launch = __esm({
           this.busy = false;
         }
       }
-      async readWindow(request2, operation, operations) {
+      async readWindow(request3, operation, operations) {
         requireValue14(
           operation?.intent !== void 0 && operation.launched !== void 0 && !allowsNextLaunch(operation),
           "Ordinary window observation requires an unresolved successful launch."
         );
         const retained = this.retained, runtime = this.runtime;
-        requireValue14(runtime !== void 0 && retained !== void 0 && retained.operationId === request2.operationId && canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary window observation has no retained owner for this exact operation.");
-        requireValue14(request2.expectedLaunchedSha256 === sha256Json(retained.launched), "Ordinary window observation launch digest differs.");
+        requireValue14(runtime !== void 0 && retained !== void 0 && retained.operationId === request3.operationId && canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary window observation has no retained owner for this exact operation.");
+        requireValue14(request3.expectedLaunchedSha256 === sha256Json(retained.launched), "Ordinary window observation launch digest differs.");
         requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Ordinary window observation profile changed.");
         const observeWindow = runtime.observeApplicationWindow;
         requireValue14(observeWindow !== void 0, "Ordinary retained window observation is unavailable.");
@@ -93289,48 +93289,48 @@ var init_ordinary_launch = __esm({
         current3();
         return { runtime, retained, window, facadeSha256 };
       }
-      async normalClose(request2, operation, operations) {
+      async normalClose(request3, operation, operations) {
         requireValue14(
-          !this.closeAttempts.has(request2.operationId) && operation?.closeIntent === void 0,
+          !this.closeAttempts.has(request3.operationId) && operation?.closeIntent === void 0,
           "Ordinary normal-close attempt is consumed; do not repeat close."
         );
         requireValue14(operation?.intent !== void 0 && operation.launched !== void 0, "Ordinary normal close requires a successful launch.");
-        const { runtime, retained, window, facadeSha256 } = await this.readWindow(request2, operation, operations);
-        requireValue14(window.outcome === "available" && window.hwnd === request2.hwnd, "Ordinary normal close requires the freshly observed unique application window.");
+        const { runtime, retained, window, facadeSha256 } = await this.readWindow(request3, operation, operations);
+        requireValue14(window.outcome === "available" && window.hwnd === request3.hwnd, "Ordinary normal close requires the freshly observed unique application window.");
         const close = runtime.normalClose;
         requireValue14(close !== void 0, "Ordinary retained normal close is unavailable.");
         const closeIntent = {
           schema: "easyeda-pro-control.ordinary-normal-close-intent.v1",
-          operationId: request2.operationId,
+          operationId: request3.operationId,
           intentSha256: sha256Json(operation.intent),
-          launchedSha256: request2.expectedLaunchedSha256,
+          launchedSha256: request3.expectedLaunchedSha256,
           profileSha256: operation.intent.profileSha256,
           facadeSha256,
           jobId: retained.launch.jobId,
           helperInstance: retained.launch.helperInstance,
-          hwnd: request2.hwnd,
+          hwnd: request3.hwnd,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           confirmNormalClose: true
         };
-        this.closeAttempts.add(request2.operationId);
-        await publish(request2.operationId, "close-intent.json", closeIntent);
+        this.closeAttempts.add(request3.operationId);
+        await publish(request3.operationId, "close-intent.json", closeIntent);
         requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary normal-close installation changed before dispatch.");
         await this.options.assertAllowed();
-        const expected3 = operations.map((candidate) => candidate.operationId === request2.operationId ? { ...candidate, closeIntent } : candidate);
+        const expected3 = operations.map((candidate) => candidate.operationId === request3.operationId ? { ...candidate, closeIntent } : candidate);
         requireValue14(canonicalJson(await inventory()) === canonicalJson(expected3), "Ordinary normal-close journal changed before dispatch.");
         await this.options.assertAllowed();
         requireValue14(this.runtime === runtime && this.retained === retained && runtime.normalClose === close && canonicalJson(retained.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed before dispatch.");
-        await close.call(runtime, request2.hwnd);
+        await close.call(runtime, request3.hwnd);
         requireValue14(this.runtime === runtime && this.retained === retained && runtime.normalClose === close && canonicalJson(retained.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed during dispatch.");
         const closeAcknowledgment = {
           schema: "easyeda-pro-control.ordinary-normal-close-acknowledged.v1",
-          operationId: request2.operationId,
+          operationId: request3.operationId,
           closeIntentSha256: sha256Json(closeIntent),
           requestAcknowledged: true,
           terminationProved: false
         };
-        await publish(request2.operationId, "close-acknowledged.json", closeAcknowledgment);
-        return { ...describe3(request2.operationId, { ...operation, closeIntent, closeAcknowledgment }), action: "normal-close", terminationObserved: false };
+        await publish(request3.operationId, "close-acknowledged.json", closeAcknowledgment);
+        return { ...describe3(request3.operationId, { ...operation, closeIntent, closeAcknowledgment }), action: "normal-close", terminationObserved: false };
       }
       async observeApplication(operationId3, operation, operations) {
         requireValue14(operation !== void 0, "Ordinary launch operation was not found.");
@@ -93394,20 +93394,20 @@ var init_ordinary_launch = __esm({
         this.uncertain = false;
         return describe3(operationId3, { ...operation, terminated });
       }
-      async abandon(request2, operation, operations) {
+      async abandon(request3, operation, operations) {
         requireValue14(operation?.intent !== void 0 && operation.launched !== void 0, "Supervision abandonment requires a successful historical launch receipt.");
         requireValue14(!allowsNextLaunch(operation), "Ordinary launch supervision is already resolved or abandoned.");
         requireValue14(this.retained === void 0, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
-        requireValue14(request2.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
+        requireValue14(request3.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
         requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
-        const observation2 = await this.observeApplication(request2.operationId, operation, operations);
+        const observation2 = await this.observeApplication(request3.operationId, operation, operations);
         const application2 = external_exports.looseObject({ sameNameProcessPresent: external_exports.boolean() }).parse(observation2["application"]);
         requireValue14(!application2.sameNameProcessPresent, "Supervision abandonment requires absent same-name application samples.");
         const abandoned = {
           schema: "easyeda-pro-control.ordinary-supervision-abandoned.v1",
-          operationId: request2.operationId,
+          operationId: request3.operationId,
           intentSha256: sha256Json(operation.intent),
-          launchedSha256: request2.expectedLaunchedSha256,
+          launchedSha256: request3.expectedLaunchedSha256,
           profileSha256: operation.intent.profileSha256,
           facadeSha256: digestSchema.parse(observation2["facadeSha256"]),
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -93421,11 +93421,11 @@ var init_ordinary_launch = __esm({
           designExecutionAuthorized: false
         };
         this.uncertain = true;
-        await publish(request2.operationId, "abandonment.json", abandoned);
+        await publish(request3.operationId, "abandonment.json", abandoned);
         this.uncertain = false;
-        return describe3(request2.operationId, { ...operation, abandoned });
+        return describe3(request3.operationId, { ...operation, abandoned });
       }
-      async abandonUnknown(request2, operation, operations) {
+      async abandonUnknown(request3, operation, operations) {
         requireValue14(
           operation?.intent !== void 0 && operation.launched === void 0 && !allowsNextLaunch(operation),
           "Unknown-launch abandonment requires an unresolved intent-only attempt."
@@ -93434,7 +93434,7 @@ var init_ordinary_launch = __esm({
           this.retained === void 0 && this.runtime === void 0,
           "Unknown-launch abandonment requires a fresh coordinator without an allocated runtime."
         );
-        requireValue14(request2.expectedIntentSha256 === sha256Json(operation.intent), "Unknown-launch abandonment intent digest differs.");
+        requireValue14(request3.expectedIntentSha256 === sha256Json(operation.intent), "Unknown-launch abandonment intent digest differs.");
         requireValue14(hasHelperBeforeIntentProtocol(operation.intent), "Unknown-launch historical dispatch protocol is not reviewed.");
         const facadeSha256 = digestSchema.parse(await this.verify(this.options));
         requireValue14(
@@ -93458,8 +93458,8 @@ var init_ordinary_launch = __esm({
         requireValue14(this.retained === void 0 && this.runtime === void 0, "Unknown-launch recovery runtime changed.");
         const unknownAbandoned = {
           schema: "easyeda-pro-control.ordinary-unknown-launch-abandoned.v1",
-          operationId: request2.operationId,
-          intentSha256: request2.expectedIntentSha256,
+          operationId: request3.operationId,
+          intentSha256: request3.expectedIntentSha256,
           profileSha256: operation.intent.profileSha256,
           facadeSha256,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -93474,9 +93474,9 @@ var init_ordinary_launch = __esm({
           designExecutionAuthorized: false
         };
         this.uncertain = true;
-        await publish(request2.operationId, "unknown-abandonment.json", unknownAbandoned);
+        await publish(request3.operationId, "unknown-abandonment.json", unknownAbandoned);
         this.uncertain = false;
-        return describe3(request2.operationId, { ...operation, unknownAbandoned });
+        return describe3(request3.operationId, { ...operation, unknownAbandoned });
       }
     };
   }
@@ -93585,10 +93585,10 @@ function transparency(alpha) {
   return Number.parseFloat(rounded.toFixed(2));
 }
 function buildCurrentPcbLayersProgram(input) {
-  const request2 = parseCurrentPcbLayersRequest(input);
+  const request3 = parseCurrentPcbLayersRequest(input);
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request3.target)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -93650,7 +93650,7 @@ const read=async()=>{await identity();check();const raw=await call('pcb/extensio
 const run=async()=>{
  const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_LAYERS_MAX_BYTES})bad();
  const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const json=JSON.stringify({ok:true,kind:'current-pcb-layer-observation',method:${JSON.stringify(request2.method)},target,nativeLayers:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,physicalStackVerified:false});
+ const json=JSON.stringify({ok:true,kind:'current-pcb-layer-observation',method:${JSON.stringify(request3.method)},target,nativeLayers:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,physicalStackVerified:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
  if(utf8Bytes>${CURRENT_PCB_LAYERS_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_LAYERS_MAX_BYTES})bad();return envelope;
 };
@@ -93660,9 +93660,9 @@ return await Promise.race([run(),timeout]);
 finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');}}}`;
 }
 function validateCurrentPcbLayersResult(input, raw) {
-  const request2 = parseCurrentPcbLayersRequest(input);
+  const request3 = parseCurrentPcbLayersRequest(input);
   const payload = currentPcbLayersResultSchema.parse(raw);
-  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target)) {
+  if (payload.method !== request3.method || canonicalJson(payload.target) !== canonicalJson(request3.target)) {
     throw new Error("PCB layers result differs from its exact target request.");
   }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_LAYERS_MAX_BYTES) {
@@ -93672,7 +93672,7 @@ function validateCurrentPcbLayersResult(input, raw) {
   if (new Set(nativeLayers.map((layer4) => layer4.layerId)).size !== nativeLayers.length) {
     throw new Error("PCB layers contain duplicate identities.");
   }
-  const value2 = request2.method === "eda.pcb_Layer.getTheNumberOfCopperLayers" ? nativeLayers.filter((layer4) => (layer4.type === "SIGNAL" || layer4.type === "PLANE") && layer4.layerStatus !== 0).length + 2 : nativeLayers.map((layer4) => ({
+  const value2 = request3.method === "eda.pcb_Layer.getTheNumberOfCopperLayers" ? nativeLayers.filter((layer4) => (layer4.type === "SIGNAL" || layer4.type === "PLANE") && layer4.layerStatus !== 0).length + 2 : nativeLayers.map((layer4) => ({
     id: layer4.layerId,
     name: layer4.name,
     type: layerType2(layer4.type),
@@ -93756,10 +93756,14 @@ var init_current_pcb_layers = __esm({
 import { createHash as createHash32 } from "node:crypto";
 import { constants as constants20 } from "node:fs";
 import { lstat as lstat28, open as open25, realpath as realpath19 } from "node:fs/promises";
-import { isAbsolute as isAbsolute20, resolve as resolve12 } from "node:path";
+import { dirname as dirname17, isAbsolute as isAbsolute20, resolve as resolve12 } from "node:path";
 async function verifyCurrentProjectOnlyOpenImplementation(assetsRoot) {
   await verifyCurrentDisposableOpenImplementation(assetsRoot);
   await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION]);
+}
+async function verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot) {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION, CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
 }
 function requirePinned(condition) {
   if (!condition) {
@@ -93798,7 +93802,7 @@ async function verifyFiles(assetsRoot, pins) {
     }
   }
 }
-var CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, CURRENT_SYMBOL_CLOCK_IMPLEMENTATION, CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION;
+var CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, CURRENT_SYMBOL_CLOCK_IMPLEMENTATION, CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION, CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION;
 var init_current_disposable_open_profile = __esm({
   "server/src/current-disposable-open-profile.ts"() {
     init_current_ui_implementation();
@@ -93823,6 +93827,37 @@ var init_current_disposable_open_profile = __esm({
       relativePath: "pro-mgr/3.2.184.355087e9/js/ws-service.js",
       bytes: 855142,
       sha256: "7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453"
+    });
+    CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION = Object.freeze({
+      schema: "easyeda-pro-control.current-symbol-persistence-implementation.v1",
+      files: Object.freeze([
+        Object.freeze({
+          relativePath: "../node_modules/sqlite3/package.json",
+          bytes: 3619,
+          sha256: "a7d2279dfd425ee3f2f368e5160955491333967f7207ff3690a747a11f049985"
+        }),
+        Object.freeze({
+          relativePath: "../node_modules/sqlite3/lib/sqlite3.js",
+          bytes: 6309,
+          sha256: "e453648b76b80be1334dc49bf3ba19672f7acbd11b5d8b1ebe0cab08e3c5edf3"
+        }),
+        Object.freeze({
+          relativePath: "../node_modules/sqlite3/lib/sqlite3-binding.js",
+          bytes: 449,
+          sha256: "946769d049dacf8a564ab0f7076e1762ebae7ee7aba43d8ac5d72103089b6ccf"
+        }),
+        Object.freeze({
+          relativePath: "../node_modules/sqlite3/lib/binding/napi-v3-win32-x64/node_sqlite3.node",
+          bytes: 2742272,
+          sha256: "a851d31983fd21ee3821b1a0ca148c013029f96c6e0d31afc400e6a62ea7b482"
+        })
+      ]),
+      absent: Object.freeze([
+        "../node_modules/sqlite3.js",
+        "../node_modules/sqlite3.json",
+        "../node_modules/sqlite3.node",
+        "../node_modules/sqlite3/lib/sqlite3"
+      ])
     });
     CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION = Object.freeze({
       relativePath: "pro-sch/3.2.192.b79ad524/js/sch-main.js",
@@ -93865,9 +93900,9 @@ function validateCurrentSymbolMetadataArguments(input) {
   };
 }
 function validateCurrentSymbolMetadataResult(input, raw) {
-  const request2 = parseCurrentSymbolMetadataRequest(input);
+  const request3 = parseCurrentSymbolMetadataRequest(input);
   const payload = currentSymbolMetadataResultSchema.parse(raw);
-  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target) || payload.value.uuid !== request2.arguments.symbolUuid || payload.value.projectUuid !== request2.target.projectUuid) {
+  if (payload.method !== request3.method || canonicalJson(payload.target) !== canonicalJson(request3.target) || payload.value.uuid !== request3.arguments.symbolUuid || payload.value.projectUuid !== request3.target.projectUuid) {
     throw new Error("Project symbol metadata differs from its exact target request.");
   }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
@@ -93952,7 +93987,7 @@ var init_current_symbol_metadata = __esm({
 import { createHash as createHash33 } from "node:crypto";
 import { constants as constants21 } from "node:fs";
 import { lstat as lstat29, open as open26 } from "node:fs/promises";
-import { basename as basename21, dirname as dirname17, isAbsolute as isAbsolute21, join as join49, relative as relative5, resolve as resolve13, sep as sep3 } from "node:path";
+import { basename as basename21, dirname as dirname18, isAbsolute as isAbsolute21, join as join49, relative as relative5, resolve as resolve13, sep as sep3 } from "node:path";
 import process9 from "node:process";
 function queryCurrentSymbolMetadataPreparation(input = {}) {
   const query = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict().parse(input);
@@ -94015,47 +94050,47 @@ async function requireNoSidecars(path5) {
   }
 }
 async function prepareCurrentSymbolMetadata(input) {
-  const request2 = currentSymbolMetadataPreparationRequestSchema.parse(input);
+  const request3 = currentSymbolMetadataPreparationRequestSchema.parse(input);
   const checkpointRoot = join49(controlDataDirectory(), "checkpoints");
-  const child = relative5(checkpointRoot, request2.checkpoint.path);
+  const child = relative5(checkpointRoot, request3.checkpoint.path);
   requireCheckpoint(child.length > 0 && child !== ".." && !child.startsWith(`..${sep3}`) && !isAbsolute21(child));
   const root = await controlRootCapability(false);
-  const directory2 = await root.openDirectory(dirname17(request2.checkpoint.path), false);
+  const directory2 = await root.openDirectory(dirname18(request3.checkpoint.path), false);
   try {
-    const boundPath = `/proc/self/fd/${String(directory2.handle.fd)}/${basename21(request2.checkpoint.path)}`;
+    const boundPath = `/proc/self/fd/${String(directory2.handle.fd)}/${basename21(request3.checkpoint.path)}`;
     const named = await lstat29(boundPath, { bigint: true });
-    requireCheckpoint(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size === BigInt(request2.checkpoint.bytes) && (typeof process9.getuid !== "function" || named.uid === BigInt(process9.getuid())));
+    requireCheckpoint(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size === BigInt(request3.checkpoint.bytes) && (typeof process9.getuid !== "function" || named.uid === BigInt(process9.getuid())));
     const file3 = await open26(boundPath, constants21.O_RDONLY | constants21.O_NOFOLLOW | constants21.O_NONBLOCK);
     try {
       const before = await file3.stat({ bigint: true });
       requireCheckpoint(sameFile5(named, before));
       const history = await readNativeHistoryCheckpoint({
         checkpointPath: boundPath,
-        expectedSha256: request2.checkpoint.sha256,
-        projectUuid: request2.target.projectUuid
+        expectedSha256: request3.checkpoint.sha256,
+        projectUuid: request3.target.projectUuid
       });
-      requireCheckpoint(history.projectUuid === request2.target.projectUuid && history.branchUuid === request2.target.branchUuid && history.projectOwnerUuid === request2.target.ownerUuid);
+      requireCheckpoint(history.projectUuid === request3.target.projectUuid && history.branchUuid === request3.target.branchUuid && history.projectOwnerUuid === request3.target.ownerUuid);
       const plan2 = prepareProjectSymbolMetadata({
         id: "offline-current-symbol-metadata",
         action: "library.symbol.modify",
-        libraryUuid: request2.target.projectUuid,
-        target: { uuid: request2.target.symbolUuid },
-        patch: request2.patch
+        libraryUuid: request3.target.projectUuid,
+        target: { uuid: request3.target.symbolUuid },
+        patch: request3.patch
       }, history);
-      const target6 = history.documents.find((document3) => document3.uuid === request2.target.symbolUuid);
+      const target6 = history.documents.find((document3) => document3.uuid === request3.target.symbolUuid);
       requireCheckpoint(target6 !== void 0);
-      const observation2 = request2.observationProjection;
+      const observation2 = request3.observationProjection;
       if (observation2 !== void 0) {
         const value2 = observation2.value;
-        requireCheckpoint(observation2.target.projectUuid === request2.target.projectUuid && observation2.target.branchUuid === request2.target.branchUuid && observation2.target.documentUuid !== request2.target.symbolUuid && value2.projectUuid === request2.target.projectUuid && value2.uuid === request2.target.symbolUuid && value2.ownerUuid === request2.target.ownerUuid && value2.name === plan2.beforeTitle && value2.description === plan2.beforeDescription && value2.source === plan2.beforeSource && canonicalJson(JSON.parse(value2.tagsJson)) === canonicalJson(plan2.beforeTags));
+        requireCheckpoint(observation2.target.projectUuid === request3.target.projectUuid && observation2.target.branchUuid === request3.target.branchUuid && observation2.target.documentUuid !== request3.target.symbolUuid && value2.projectUuid === request3.target.projectUuid && value2.uuid === request3.target.symbolUuid && value2.ownerUuid === request3.target.ownerUuid && value2.name === plan2.beforeTitle && value2.description === plan2.beforeDescription && value2.source === plan2.beforeSource && canonicalJson(JSON.parse(value2.tagsJson)) === canonicalJson(plan2.beforeTags));
       }
       const beforeMetadata = { name: plan2.beforeTitle, description: plan2.beforeDescription, tags: plan2.beforeTags, source: plan2.beforeSource };
       const prepared = {
         schema: "easyeda-pro-control.current-symbol-metadata-preparation.v1",
         offline: true,
-        checkpoint: request2.checkpoint,
-        target: request2.target,
-        patch: request2.patch,
+        checkpoint: request3.checkpoint,
+        target: request3.target,
+        patch: request3.patch,
         history: {
           profile: history.profile,
           headHistoryUuid: history.headHistoryUuid,
@@ -94087,7 +94122,7 @@ async function prepareCurrentSymbolMetadata(input) {
       if (Buffer.byteLength(JSON.stringify({ offline: true, result }), "utf8") > 512 * 1024) {
         throw new Error("Current symbol metadata preparation exceeds the 512 KiB offline response limit.");
       }
-      await verifyBytes(file3, request2.checkpoint);
+      await verifyBytes(file3, request3.checkpoint);
       requireCheckpoint(sameFile5(before, await file3.stat({ bigint: true })) && sameFile5(before, await lstat29(boundPath, { bigint: true })));
       const currentDirectory = await root.openDirectory(directory2.absolute, false);
       try {
@@ -94427,8 +94462,8 @@ var init_current_disposable_open = __esm({
 function parseCurrentPcbIdentitiesRequest(input) {
   return currentPcbIdentitiesRequestSchema.parse(input);
 }
-function currentPcbIdentityFamilies(request2) {
-  switch (request2.method) {
+function currentPcbIdentityFamilies(request3) {
+  switch (request3.method) {
     case "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId": {
       return ["selected"];
     }
@@ -94490,16 +94525,16 @@ function validateCurrentPcbIdentitiesArguments(input) {
   };
 }
 function validateCurrentPcbIdentitiesResult(input, raw) {
-  const request2 = parseCurrentPcbIdentitiesRequest(input);
+  const request3 = parseCurrentPcbIdentitiesRequest(input);
   const payload = currentPcbIdentitiesResultSchema.parse(raw);
-  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target)) {
+  if (payload.method !== request3.method || canonicalJson(payload.target) !== canonicalJson(request3.target)) {
     throw new Error("PCB identities result differs from its exact target request.");
   }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_IDENTITIES_MAX_BYTES) {
     throw new Error("PCB identities result exceeds its byte bound.");
   }
   const { observations, ...metadata8 } = payload;
-  if (canonicalJson(observations.map((entry) => entry.family)) !== canonicalJson(currentPcbIdentityFamilies(request2))) {
+  if (canonicalJson(observations.map((entry) => entry.family)) !== canonicalJson(currentPcbIdentityFamilies(request3))) {
     throw new Error("PCB identities result has unexpected family observations.");
   }
   const seen = /* @__PURE__ */ new Set();
@@ -94516,8 +94551,8 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
   }
   let value2;
   const extra = {};
-  if (request2.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
-    const match = observations.find((entry) => entry.ids.includes(request2.arguments.id));
+  if (request3.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
+    const match = observations.find((entry) => entry.ids.includes(request3.arguments.id));
     if (match === void 0 || !["Line", "Arc", "Via"].includes(match.family)) {
       throw new Error("PCB identity is not in an observed supported family.");
     }
@@ -94599,8 +94634,8 @@ var init_current_pcb_identities = __esm({
 function parseCurrentPcbGeometryRequest(input) {
   return currentPcbGeometryRequestSchema.parse(input);
 }
-function currentPcbGeometryFamily(request2) {
-  switch (request2.method) {
+function currentPcbGeometryFamily(request3) {
+  switch (request3.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": {
       return "Line";
@@ -94668,15 +94703,15 @@ function validateCurrentPcbGeometryArguments(input) {
   };
 }
 function validateCurrentPcbGeometryResult(input, raw) {
-  const request2 = parseCurrentPcbGeometryRequest(input);
+  const request3 = parseCurrentPcbGeometryRequest(input);
   const payload = currentPcbGeometryResultSchema.parse(raw);
-  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target)) {
+  if (payload.method !== request3.method || canonicalJson(payload.target) !== canonicalJson(request3.target)) {
     throw new Error("PCB geometry result differs from its exact target request.");
   }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) {
     throw new Error("PCB geometry result exceeds its byte bound.");
   }
-  const expectedFamily = currentPcbGeometryFamily(request2), seen = /* @__PURE__ */ new Set();
+  const expectedFamily = currentPcbGeometryFamily(request3), seen = /* @__PURE__ */ new Set();
   for (const row6 of payload.rows) {
     if (row6.primitiveType !== expectedFamily || seen.has(row6.primitiveId)) {
       throw new Error("PCB geometry result contains duplicate or unexpected family identities.");
@@ -94685,15 +94720,15 @@ function validateCurrentPcbGeometryResult(input, raw) {
   }
   const { rows: rows2, ...metadata8 } = payload;
   const counts2 = { observedRowCount: rows2.length };
-  if ("primitiveIds" in request2.arguments) {
-    if (!("observedRowCount" in payload) || payload.observedRowCount < rows2.length || canonicalJson(rows2.map((row6) => row6.primitiveId)) !== canonicalJson(request2.arguments.primitiveIds)) {
+  if ("primitiveIds" in request3.arguments) {
+    if (!("observedRowCount" in payload) || payload.observedRowCount < rows2.length || canonicalJson(rows2.map((row6) => row6.primitiveId)) !== canonicalJson(request3.arguments.primitiveIds)) {
       throw new Error("PCB geometry result differs from its complete requested identity sequence or observed count.");
     }
     counts2["observedRowCount"] = payload.observedRowCount;
     counts2["returnedRowCount"] = rows2.length;
   }
-  if ("primitiveId" in request2.arguments) {
-    if (!("componentPrimitiveId" in payload) || payload.componentPrimitiveId !== request2.arguments.primitiveId || payload.observedPadCount < rows2.length || seen.has(payload.componentPrimitiveId)) {
+  if ("primitiveId" in request3.arguments) {
+    if (!("componentPrimitiveId" in payload) || payload.componentPrimitiveId !== request3.arguments.primitiveId || payload.observedPadCount < rows2.length || seen.has(payload.componentPrimitiveId)) {
       throw new Error("PCB component child-pad result differs from its requested component or complete observed family.");
     }
     counts2["observedRowCount"] = payload.observedPadCount;
@@ -94882,9 +94917,306 @@ var init_current_pcb_geometry = __esm({
   }
 });
 
+// server/src/current-symbol-runtime-observation.ts
+var milliseconds2, clockSample, currentSymbolRuntimeObservationSchema, CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE;
+var init_current_symbol_runtime_observation = __esm({
+  "server/src/current-symbol-runtime-observation.ts"() {
+    init_zod();
+    init_symbol_dual_actor();
+    milliseconds2 = external_exports.number().int().nonnegative().refine((value2) => Number.isSafeInteger(value2) && !Object.is(value2, -0));
+    clockSample = external_exports.object({ rendererBeforeMs: milliseconds2, serverTimeMs: milliseconds2, rendererAfterMs: milliseconds2 }).strict().refine((value2) => value2.rendererBeforeMs <= value2.serverTimeMs && value2.serverTimeMs <= value2.rendererAfterMs && value2.rendererAfterMs - value2.rendererBeforeMs <= 1e4);
+    currentSymbolRuntimeObservationSchema = external_exports.object({
+      editorVersion: external_exports.literal("3.2.206"),
+      actor: external_exports.object({
+        uuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+        username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
+        nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
+      }).strict(),
+      clockSamples: external_exports.array(clockSample).length(4),
+      backendActorVerified: external_exports.literal(false),
+      backendClockVerified: external_exports.literal(false),
+      clockProducerOwnershipVerified: external_exports.literal(false)
+    }).strict().refine((value2) => {
+      const first = value2.clockSamples[0], last = value2.clockSamples[3];
+      return first !== void 0 && last !== void 0 && last.rendererAfterMs - first.rendererBeforeMs <= 1e4 && value2.clockSamples.every((sample, index) => index === 0 || sample.rendererBeforeMs >= (value2.clockSamples[index - 1]?.rendererAfterMs ?? Infinity));
+    });
+    CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE = `
+${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
+const observedEditorVersion=own(root,'PRO_EDITOR_VERSION');if(observedEditorVersion!=='3.2.206')bad();
+const notifyTab=own(root,'_TAB_ID_');if(typeof notifyTab!=='string'||!/^[a-f0-9]{16}$/.test(notifyTab))bad();
+const notifyKey='/'+notifyTab+'/notify',concurrent=own(host,'concurrentBus'),clockRpc=method(concurrent,'rpcCall');
+const nativeDate=own(root,'Date'),dateNow=own(nativeDate,'now');if(typeof nativeDate!=='function'||typeof dateNow!=='function')bad();
+const clockSamples=[];
+const checkRuntimeObservation=()=>{
+ checkDualActor();methodCheck(clockRpc);
+ if(own(root,'PRO_EDITOR_VERSION')!==observedEditorVersion||own(root,'_TAB_ID_')!==notifyTab||own(root,notifyKey)!==concurrent||own(host,'concurrentBus')!==concurrent||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow)bad();
+};
+const clockInteger=value=>{if(typeof value!=='number'||!Number.isSafeInteger(value)||value<0||Object.is(value,-0))bad();return value;};
+const sampleRuntimeClock=async()=>{
+ same();const rendererBeforeMs=clockInteger(apply(dateNow,nativeDate,[]));
+ const serverTimeMs=await apply(clockRpc.fn,concurrent,['/pro-mgr/serverTime/now']);same();clockInteger(serverTimeMs);
+ const rendererAfterMs=clockInteger(apply(dateNow,nativeDate,[]));same();
+ if(rendererBeforeMs>serverTimeMs||serverTimeMs>rendererAfterMs||rendererAfterMs-rendererBeforeMs>10000||clockSamples.length>=4)bad();
+ const previous=clockSamples[clockSamples.length-1],first=clockSamples[0];
+ if((previous&&rendererBeforeMs<previous.rendererAfterMs)||(first&&rendererAfterMs-first.rendererBeforeMs>10000))bad();
+ clockSamples.push({rendererBeforeMs,serverTimeMs,rendererAfterMs});
+};
+const runtimeObservation=()=>{
+ same();if(clockSamples.length!==4)bad();
+ return{editorVersion:observedEditorVersion,actor:cachedActorProjection,clockSamples,backendActorVerified:false,backendClockVerified:false,clockProducerOwnershipVerified:false};
+};
+`;
+  }
+});
+
+// server/src/current-project-only-symbol-guard.ts
+function buildCurrentProjectOnlySymbolGuard() {
+  return [buildCurrentProjectUrlGuard(), String.raw`
+const projectOnly=(()=>{
+ const ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),project=own(host,'currentProject'),permission=own(ui,'concurrentDesign');
+ const containerIds=own(tabs,'containerIds'),containerTree=own(tabs,'containerTree');
+ const pending=own(host,'sessionStorageTabs'),setConstructor=own(root,'Set'),setPrototype=own(setConstructor,'prototype');
+ const size=Object.getOwnPropertyDescriptor(setPrototype,'size')?.get;
+ const location=root.location,href=location?.href,document=root.document,mode=own(root,'PRO_EDITOR_MODE'),navigator=root.navigator,serviceWorker=navigator?.serviceWorker;
+ const select=document?.querySelectorAll,version=own(root,'PRO_EDITOR_VERSION');
+ if(version!=='3.2.206'||typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype||typeof size!=='function'||typeof select!=='function'||!serviceWorker||serviceWorker.controller!==null)bad();
+ const parsedUrl=parseProjectUrl(href,target.projectUuid);if(parsedUrl.tabIds.length!==0)bad();
+ const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),dirty=method(tabs,'hasTabUnSaved'),tabDirty=method(tabs,'isTabUnSaved');
+ const permissionPrototype=Object.getPrototypeOf(permission),concurrentDescriptor=Object.getOwnPropertyDescriptor(permissionPrototype,'isConcurrentStrictMode');
+ if(Object.hasOwn(permission,'isConcurrentStrictMode')||!concurrentDescriptor||typeof concurrentDescriptor.get!=='function'||typeof concurrentDescriptor.set!=='function')bad();
+ const concurrentGet=concurrentDescriptor.get,concurrentSet=concurrentDescriptor.set;
+ // UI15176271: in nonconcurrent mode this reads cached project/tab read-only
+ // state and returns disable:false. No canAddLib RPC or denial dialog.
+ const disabled=method(permission,'getIframeDisableStatusPanelPcb');
+ const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+ const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+ const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\u0000-\u001f\u007f]/.test(value))bad();return value;};
+ const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
+ const base=()=>{
+  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
+  const url=parseProjectUrl(href,target.projectUuid);if(url.tabIds.length!==0||own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM')||own(root,'PRO_EDITOR_VERSION')!==version)bad();
+  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'currentProject')!==project||own(ui,'concurrentDesign')!==permission||own(host,'sessionStorageTabs')!==pending)bad();
+  if(own(tabs,'containerIds')!==containerIds||own(tabs,'containerTree')!==containerTree||document.querySelectorAll!==select)bad();
+  if(own(root,'Set')!==setConstructor||own(setConstructor,'prototype')!==setPrototype||Object.getPrototypeOf(pending)!==setPrototype||Object.getOwnPropertyDescriptor(setPrototype,'size')?.get!==size||apply(size,pending,[])!==0||Reflect.ownKeys(pending).length!==0)bad();
+  if(own(host,'urlCmd')!==null||own(host,'isHistoryMode')!==false||own(tabs,'isOpenProjectDoc')!==true||own(tabs,'isOpenOtherDoc')!==true)bad();
+  plain(project);if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false)bad();
+  if(root.navigator!==navigator||navigator.serviceWorker!==serviceWorker||serviceWorker.controller!==null||own(permission,'_isConcurrentStrictMode')!==false)bad();
+  const currentConcurrent=Object.getOwnPropertyDescriptor(permissionPrototype,'isConcurrentStrictMode');
+  if(Object.getPrototypeOf(permission)!==permissionPrototype||Object.hasOwn(permission,'isConcurrentStrictMode')||currentConcurrent?.get!==concurrentGet||currentConcurrent?.set!==concurrentSet||apply(concurrentGet,permission,[])!==false)bad();
+  for(const binding of [active,container,dirty,tabDirty,disabled])methodCheck(binding);
+ };
+ const sample=()=>{
+  base();const owners=[containerIds],names=[],registered=new Set(),n=dense(containerIds,128);if(n===0)bad();
+  for(let i=0;i<n;i++){const id=text(own(containerIds,String(i)),256);if(registered.has(id))bad();registered.add(id);names.push(id);}
+  const nodes=[{node:containerTree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
+  if(own(tabs,'belongContainer')!=='editor-window-main'||own(containerTree,'id')!=='editor-window-main')bad();
+  while(nodes.length){const item=nodes.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
+   if(children===undefined){if(!registered.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||nodes.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)nodes.push({node:own(children,String(i)),depth:item.depth+1});}}
+  if(leaves.size!==registered.size)bad();const current=own(tabs,'currentTabId');if((current!=='tab_page1'&&current!=='0')||apply(active.fn,tabs,[])!==current)bad();base();
+  const allIds=new Set(),projection=[];let count=0,start=0,blank=0,currentCount=0;
+  for(const id of names){const info=plain(apply(container.fn,tabs,[id]));base();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256),localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];owners.push(list);if(count+length>256)bad();count+=length;
+   for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),tabId=text(own(tab,'tabId'),512),data=plain(own(tab,'data'));owners.push(tab,data);if(allIds.has(tabId))bad();allIds.add(tabId);localIds.add(tabId);const isStart=tabId==='tab_page1',type=own(data,'doctype');if(!isStart&&tabId!=='0')bad();
+    if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad();const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad();
+    for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad();
+    for(const entry of [tab,data])for(const key of ['isUnSaved','isReadOnlyMode']){const value=own(entry,key,true);if(value!==undefined&&value!==false)bad();}
+    if(apply(tabDirty.fn,tabs,[tabId])!==false)bad();base();
+    if(isStart)start++;else blank++;if(tabId===current){currentCount++;if(localActive!==current)bad();}rows.push([tabId,type,hidden]);}
+   if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
+  if(start!==1||blank>1||count!==start+blank||currentCount!==1||apply(dirty.fn,tabs,[])!==false)bad();base();
+  const permissionResult=plain(apply(disabled.fn,permission,[current]));if(own(permissionResult,'disable')!==false)bad();base();
+  const bodies=apply(select,document,['[id="tabbar_bodies"]']);if(bodies.length!==1)bad();const bodyRoot=bodies[0],children=bodyRoot?.children;
+  if(bodyRoot.tagName!=='DIV'||bodyRoot.ownerDocument!==document||bodyRoot.isConnected!==true||children?.length!==5)bad();owners.push(bodyRoot,children);
+  const staticIds=new Set(['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page']),bodyIds=new Set();
+  for(const body of children){const getAttribute=body?.getAttribute;if(body.tagName!=='DIV'||body.ownerDocument!==document||body.isConnected!==true||body.parentElement!==bodyRoot||typeof getAttribute!=='function'||!staticIds.has(body.id)||bodyIds.has(body.id))bad();bodyIds.add(body.id);owners.push(body,getAttribute);if(apply(getAttribute,body,['uuid'])!==null)bad();}
+  if(bodyIds.size!==5)bad();
+  for(const selector of ['.editframe,[c_doctype],[c_dbid],[id^="frame_"],iframe[src*="entry="],[blankIframe],[pcb-canvas]','iframe','.blankIframeDiv'])if(apply(select,document,[selector]).length!==0)bad();
+  base();return{owners,current,identity:JSON.stringify([names,treeProjection,projection,current])};
+ };
+ const initial=sample();
+ const check=()=>{const value=sample();if(value.identity!==initial.identity||value.owners.length!==initial.owners.length||value.owners.some((owner,index)=>owner!==initial.owners[index]))bad();};
+ return{host,ui,check,currentTabId:initial.current};
+})();
+`].join("\n");
+}
+var init_current_project_only_symbol_guard = __esm({
+  "server/src/current-project-only-symbol-guard.ts"() {
+    init_current_project_url();
+  }
+});
+
+// server/src/current-project-only-symbol-preflight.ts
+function queryCurrentProjectOnlySymbolPreflight(input = {}) {
+  const query = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict().parse(input);
+  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+    tool: "easyeda_control_project_symbol",
+    effect: "current-project-only-symbol-preflight",
+    liveValidation: "not-recorded",
+    invocationEnabledByDiscovery: false,
+    limitations: [...limitations12],
+    ...query.includeSchemas ? {
+      inputSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightRequestSchema),
+      resultSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightResultSchema)
+    } : {}
+  }] };
+}
+function validateCurrentProjectOnlySymbolPreflightArguments(input) {
+  try {
+    return { valid: true, request: request(input), executionAuthorized: false };
+  } catch (error51) {
+    return { valid: false, executionAuthorized: false, issues: error51 instanceof external_exports.ZodError ? error51.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String).join("."), message: issue2.message.slice(0, 512) })) : [{ path: "", message: "Expected exact own-data target and expectedBefore fields." }] };
+  }
+}
+function fields7(input, names2) {
+  if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
+    throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_SHAPE");
+  }
+  const value2 = {};
+  for (const name6 of names2) {
+    const descriptor10 = Object.getOwnPropertyDescriptor(input, name6);
+    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
+      throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_SHAPE");
+    }
+    value2[name6] = descriptor10.value;
+  }
+  return value2;
+}
+function request(input) {
+  const value2 = fields7(input, ["target", "expectedBefore"]);
+  return currentProjectOnlySymbolPreflightRequestSchema.parse({
+    target: fields7(value2["target"], ["projectUuid", "branchUuid", "symbolUuid", "ownerUuid"]),
+    expectedBefore: fields7(value2["expectedBefore"], ["name", "description", "tagsJson", "source", "version", "ticket"])
+  });
+}
+function buildCurrentProjectOnlySymbolPreflightProgram(input) {
+  const selected2 = request(input);
+  return `const observation=await(async()=>{
+const target=${JSON.stringify(selected2.target)},expectedBefore=${JSON.stringify(selected2.expectedBefore)},root=globalThis,apply=Reflect.apply;
+let expired=false,timer,clear,stage='HOST';
+const bad=()=>{throw new Error('CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_REFUSED:'+stage);};
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const text=(value,max)=>{if(typeof value!=='string'||value.length>max)bad();return value;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+try{
+ const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+ ${buildCurrentProjectOnlySymbolGuard()}
+ const host=projectOnly.host,bus=own(host,'messageBus'),rpc=method(bus,'rpcCall'),edaOwner=eda;
+ ${CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE}
+ const same=()=>{projectOnly.check();checkRuntimeObservation();methodCheck(rpc);if(expired||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40'||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();};
+ const call=async(topic,args)=>{same();const raw=await apply(rpc.fn,bus,[topic,args,0]);same();return own(plain(raw),'message');};
+ let retainedClientTicket;
+ const clientTicketSample=async()=>{
+  stage='CLIENT_TICKET';const client=await call('/PrjDB/project/getClient',[target.projectUuid]);same();if(typeof client!=='string'||!/^[a-f0-9]{16}$/.test(client))bad();
+  const maxTicket=await call('/PrjDB/project/getMaxTicket',[target.projectUuid]);same();clockInteger(maxTicket);
+  if(retainedClientTicket&&(retainedClientTicket.client!==client||retainedClientTicket.maxTicket!==maxTicket))bad();retainedClientTicket={client,maxTicket};
+ };
+ const projectMetadata=async()=>{
+  stage='PROJECT';const value=plain(await call('/PrjDB/project/getData',[target.projectUuid]));same();
+  if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false||own(plain(own(value,'owner')),'uuid')!==target.ownerUuid)bad();
+  for(const key of ['archive','store','cbb_project']){const flag=own(value,key,true);if(flag!==undefined&&flag!==false&&flag!==null&&flag!==0)bad();}
+ };
+ const sample=async()=>{
+  stage='CLOCK';await sampleRuntimeClock();await clientTicketSample();await projectMetadata();same();
+  stage='SYMBOL';const value=plain(await call('/PrjDB/symbol/getData',[target.symbolUuid,target.projectUuid]));same();
+  if(own(value,'uuid')!==target.symbolUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'path')!==target.projectUuid||own(value,'docType')!==2||own(plain(own(value,'owner')),'uuid')!==target.ownerUuid)bad();
+  const ticket=clockInteger(own(value,'ticket'));
+  const before={name:text(own(value,'display_title'),512),description:text(own(value,'description'),65536),tagsJson:text(own(value,'custom_tags'),131072),source:text(own(value,'source'),4096),version:text(own(value,'version'),128),ticket};
+  if(JSON.stringify(before)!==JSON.stringify(expectedBefore))bad();
+  await projectMetadata();await clientTicketSample();stage='CLOCK';await sampleRuntimeClock();same();if(ticket>retainedClientTicket.maxTicket)bad();
+  return before;
+ };
+ const run=async()=>{
+  const first=await sample(),second=await sample();same();if(JSON.stringify(first)!==JSON.stringify(second))bad();
+  return{ok:true,kind:'current-project-only-symbol-preflight',target,expectedBefore:first,samples:2,currentTabId:projectOnly.currentTabId,
+   noEditorTabsObserved:true,hiddenEditorsAbsentObserved:true,dirtyTabsAbsentObserved:true,cachedProjectReadOnlyAbsentObserved:true,concurrentStrictModeAbsentObserved:true,
+   clientTicketObservation:{...retainedClientTicket,samples:4},runtimeObservation:runtimeObservation(),expectedBeforeMatched:true,permissionVerified:false,
+   backendActorVerified:false,backendClockVerified:false,startupQualified:false,workerIdentityVerified:false,sourceMembershipVerified:false,persistenceVerified:false,
+   writerAuthority:false,executionAuthorized:false,mutationDispatched:false,explicitSaveDispatched:false};
+ };
+ same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;stage='TIMEOUT';reject(new Error('CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_REFUSED:TIMEOUT'));},${CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS}]);});
+ return await Promise.race([run(),timeout]);
+}catch{throw new Error('CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_REFUSED:'+stage);}
+finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_REFUSED:CLEANUP');}}}
+})();
+const json=JSON.stringify(observation),utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+if(utf8Bytes>${CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES})throw new Error('CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_ENVELOPE');
+return envelope;`;
+}
+function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
+  const selected2 = request(expected3);
+  assertUpstreamReplySettled(raw);
+  const envelope2 = fields7(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES) {
+    throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_ENVELOPE");
+  }
+  const result = currentProjectOnlySymbolPreflightResultSchema.parse(decodeExactReadEnvelope(envelope2));
+  if (canonicalJson(result.target) !== canonicalJson(selected2.target) || canonicalJson(result.expectedBefore) !== canonicalJson(selected2.expectedBefore)) {
+    throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TARGET");
+  }
+  return Object.freeze(result);
+}
+var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema9, beforeSchema, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations12;
+var init_current_project_only_symbol_preflight = __esm({
+  "server/src/current-project-only-symbol-preflight.ts"() {
+    init_zod();
+    init_core3();
+    init_exact_readers();
+    init_current_symbol_metadata();
+    init_current_symbol_runtime_observation();
+    init_current_project_only_symbol_guard();
+    CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS = 1e4;
+    CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES = CURRENT_SYMBOL_METADATA_MAX_BYTES;
+    targetSchema9 = external_exports.object({
+      projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
+      branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+      symbolUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u),
+      ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
+    }).strict();
+    beforeSchema = currentSymbolMetadataResultSchema.shape.value.omit({ uuid: true, projectUuid: true, ownerUuid: true });
+    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema9, expectedBefore: beforeSchema }).strict();
+    ticketSchema = beforeSchema.shape.ticket;
+    currentProjectOnlySymbolPreflightResultSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("current-project-only-symbol-preflight"),
+      target: targetSchema9,
+      expectedBefore: beforeSchema,
+      samples: external_exports.literal(2),
+      currentTabId: external_exports.enum(["tab_page1", "0"]),
+      noEditorTabsObserved: external_exports.literal(true),
+      hiddenEditorsAbsentObserved: external_exports.literal(true),
+      dirtyTabsAbsentObserved: external_exports.literal(true),
+      cachedProjectReadOnlyAbsentObserved: external_exports.literal(true),
+      concurrentStrictModeAbsentObserved: external_exports.literal(true),
+      clientTicketObservation: external_exports.object({ client: external_exports.string().regex(/^[a-f0-9]{16}$/u), maxTicket: ticketSchema, samples: external_exports.literal(4) }).strict(),
+      runtimeObservation: currentSymbolRuntimeObservationSchema,
+      expectedBeforeMatched: external_exports.literal(true),
+      permissionVerified: external_exports.literal(false),
+      backendActorVerified: external_exports.literal(false),
+      backendClockVerified: external_exports.literal(false),
+      startupQualified: external_exports.literal(false),
+      workerIdentityVerified: external_exports.literal(false),
+      sourceMembershipVerified: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false),
+      writerAuthority: external_exports.literal(false),
+      executionAuthorized: external_exports.literal(false),
+      mutationDispatched: external_exports.literal(false),
+      explicitSaveDispatched: external_exports.literal(false)
+    }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.clientTicketObservation.maxTicket);
+    limitations12 = [
+      "Requires the exact loaded local project/branch with only the native Start Page and optional hidden blank placeholder. Every editor tab, hidden/editor/export iframe, pending restoration and URL document command is refused. Bounded complete registry/DOM samples are observations, not continuous exclusion or a lock.",
+      "Supplied expectedBefore values are exact name/description/raw tags/source/version/ticket comparisons, not source provenance or permission. A future owner must derive them from its original plan. Native source/version getter fallbacks remain lossy with respect to stored absence or falsy fields.",
+      "Two matching symbol/project samples and four agreeing client/maxTicket and dual-UI actor/clock samples retain their receivers across awaits. They do not issue a worker lease, authenticate the backend actor, qualify its clock, or prove startup or durable effects.",
+      "Cached project read-only, concurrent strict mode and dirty-tab checks may refuse. Library permission remains unverified. No canAddLib denial dialog, public cloud getter, network request, navigation, drawing read, mutation, explicit Save or APP evaluator is dispatched.",
+      "At most 128 containers, 255 tree nodes, 256 registry tabs and 393216 UTF-8 envelope bytes. The ten-second inner deadline prevents later reads but cannot cancel an already dispatched native request. Missing or uncertain replies require retained-owner review, not automatic retry. Offline discovery and tests are not connected validation."
+    ];
+  }
+});
+
 // server/src/historical-abandonment.ts
-async function runHistoricalAbandonment(request2) {
-  const parsed2 = historicalAbandonmentRequestSchema.parse(request2);
+async function runHistoricalAbandonment(request3) {
+  const parsed2 = historicalAbandonmentRequestSchema.parse(request3);
   if (parsed2.action === "abandon-baseline-before-relaunch") {
     return abandonCurrentSymbolBaselineBeforeRelaunch(parsed2.operationId);
   }
@@ -94902,7 +95234,7 @@ var init_historical_abandonment = __esm({
       operationId: external_exports.string().regex(/^easyeda-[a-z0-9-]{8,96}$/u),
       confirmation: external_exports.string().max(160)
     }).strict().refine(
-      (request2) => request2.confirmation === `${request2.operationId}:abandoned-before-navigation`,
+      (request3) => request3.confirmation === `${request3.operationId}:abandoned-before-navigation`,
       { message: "confirmation must exactly equal operationId:abandoned-before-navigation.", path: ["confirmation"] }
     );
     beforeRelaunchSchema = external_exports.object({
@@ -94911,7 +95243,7 @@ var init_historical_abandonment = __esm({
       confirmDisposableProject: external_exports.literal(true),
       confirmation: external_exports.string().max(160)
     }).strict().refine(
-      (request2) => request2.confirmation === `${request2.operationId}:abandoned-before-relaunch`,
+      (request3) => request3.confirmation === `${request3.operationId}:abandoned-before-relaunch`,
       { message: "confirmation must exactly equal operationId:abandoned-before-relaunch.", path: ["confirmation"] }
     );
     historicalAbandonmentRequestSchema = external_exports.union([beforeNavigationSchema, beforeRelaunchSchema]);
@@ -95431,129 +95763,137 @@ var init_current_symbol_baseline_analysis = __esm({
 });
 
 // server/src/offline-api.ts
-async function runOfflineApi(request2) {
-  if (request2.action === "project-symbol-prepare") {
-    return { offline: true, result: await prepareCurrentSymbolMetadata(request2.query.request) };
+async function runOfflineApi(request3) {
+  if (request3.action === "project-symbol-prepare") {
+    return { offline: true, result: await prepareCurrentSymbolMetadata(request3.query.request) };
   }
-  if (request2.action === "baseline-analyze") {
+  if (request3.action === "baseline-analyze") {
     const { profile } = await loadRuntimeMachineProfile();
-    return { offline: true, result: await analyzeCurrentSymbolBaseline(request2.query.request.operationId, profile.runtime) };
+    return { offline: true, result: await analyzeCurrentSymbolBaseline(request3.query.request.operationId, profile.runtime) };
   }
-  return queryOfflineApi(request2);
+  return queryOfflineApi(request3);
 }
-function queryOfflineApi(request2) {
+function queryOfflineApi(request3) {
   let result;
-  switch (request2.action) {
+  switch (request3.action) {
     case "sdk": {
-      result = queryExtensionApiCatalog(request2.query ?? {});
+      result = queryExtensionApiCatalog(request3.query ?? {});
       break;
     }
     case "coverage": {
-      result = queryExtensionApiCoverage(request2.query ?? {});
+      result = queryExtensionApiCoverage(request3.query ?? {});
       break;
     }
     case "sdk-reads": {
-      result = queryPublicSdkReads(request2.query ?? {});
+      result = queryPublicSdkReads(request3.query ?? {});
       break;
     }
     case "sdk-validate": {
-      result = validatePublicSdkArguments(request2.query);
+      result = validatePublicSdkArguments(request3.query);
       break;
     }
     case "calculations": {
-      result = querySdkMathCalculations(request2.query ?? {});
+      result = querySdkMathCalculations(request3.query ?? {});
       break;
     }
     case "calculate-validate": {
-      result = validateSdkMathArguments(request2.query.request);
+      result = validateSdkMathArguments(request3.query.request);
       break;
     }
     case "system": {
-      result = querySdkSystemMethods(request2.query ?? {});
+      result = querySdkSystemMethods(request3.query ?? {});
       break;
     }
     case "system-validate": {
-      result = validateSdkSystemArguments(request2.query.request);
+      result = validateSdkSystemArguments(request3.query.request);
       break;
     }
     case "extensions": {
-      result = queryStartupExtensions(request2.query ?? {});
+      result = queryStartupExtensions(request3.query ?? {});
       break;
     }
     case "extensions-validate": {
-      result = validateStartupExtensionsArguments(request2.query.request);
+      result = validateStartupExtensionsArguments(request3.query.request);
       break;
     }
     case "editor-shell": {
-      result = queryEditorShell(request2.query ?? {});
+      result = queryEditorShell(request3.query ?? {});
       break;
     }
     case "editor-shell-validate": {
-      result = validateEditorShellArguments(request2.query.request);
+      result = validateEditorShellArguments(request3.query.request);
       break;
     }
     case "editor-context": {
-      result = queryEditorContext(request2.query ?? {});
+      result = queryEditorContext(request3.query ?? {});
       break;
     }
     case "editor-context-validate": {
-      result = validateEditorContextArguments(request2.query.request);
+      result = validateEditorContextArguments(request3.query.request);
       break;
     }
     case "shortcuts": {
-      result = queryShortcutKeys(request2.query ?? {});
+      result = queryShortcutKeys(request3.query ?? {});
       break;
     }
     case "shortcuts-validate": {
-      result = validateShortcutKeysArguments(request2.query.request);
+      result = validateShortcutKeysArguments(request3.query.request);
       break;
     }
     case "pcb-layers": {
-      result = queryCurrentPcbLayers(request2.query ?? {});
+      result = queryCurrentPcbLayers(request3.query ?? {});
       break;
     }
     case "pcb-layers-validate": {
-      result = validateCurrentPcbLayersArguments(request2.query.request);
+      result = validateCurrentPcbLayersArguments(request3.query.request);
       break;
     }
     case "project-open": {
-      result = queryCurrentDisposableOpen(request2.query ?? {});
+      result = queryCurrentDisposableOpen(request3.query ?? {});
       break;
     }
     case "project-open-validate": {
-      result = validateCurrentDisposableOpenArguments(request2.query.request);
+      result = validateCurrentDisposableOpenArguments(request3.query.request);
       break;
     }
     case "pcb-identities": {
-      result = queryCurrentPcbIdentities(request2.query ?? {});
+      result = queryCurrentPcbIdentities(request3.query ?? {});
       break;
     }
     case "pcb-identities-validate": {
-      result = validateCurrentPcbIdentitiesArguments(request2.query.request);
+      result = validateCurrentPcbIdentitiesArguments(request3.query.request);
       break;
     }
     case "pcb-geometry": {
-      result = queryCurrentPcbGeometry(request2.query ?? {});
+      result = queryCurrentPcbGeometry(request3.query ?? {});
       break;
     }
     case "pcb-geometry-validate": {
-      result = validateCurrentPcbGeometryArguments(request2.query.request);
+      result = validateCurrentPcbGeometryArguments(request3.query.request);
       break;
     }
     case "project-symbol": {
-      result = queryCurrentSymbolMetadata(request2.query ?? {});
+      result = queryCurrentSymbolMetadata(request3.query ?? {});
       break;
     }
     case "project-symbol-validate": {
-      result = validateCurrentSymbolMetadataArguments(request2.query.request);
+      result = validateCurrentSymbolMetadataArguments(request3.query.request);
+      break;
+    }
+    case "project-symbol-preflight": {
+      result = queryCurrentProjectOnlySymbolPreflight(request3.query ?? {});
+      break;
+    }
+    case "project-symbol-preflight-validate": {
+      result = validateCurrentProjectOnlySymbolPreflightArguments(request3.query.request);
       break;
     }
     case "project-symbol-preparation": {
-      result = queryCurrentSymbolMetadataPreparation(request2.query ?? {});
+      result = queryCurrentSymbolMetadataPreparation(request3.query ?? {});
       break;
     }
     case "project-symbol-prepare-validate": {
-      result = validateCurrentSymbolMetadataPreparationArguments(request2.query.request);
+      result = validateCurrentSymbolMetadataPreparationArguments(request3.query.request);
       break;
     }
     case "project-symbol-prepare": {
@@ -95564,7 +95904,7 @@ function queryOfflineApi(request2) {
         action: "baseline-analyze",
         tool: "easyeda_control_api",
         effect: "local-retained-snapshot-comparison",
-        ...request2.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(baselineAnalysisRequestSchema) } : {},
+        ...request3.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(baselineAnalysisRequestSchema) } : {},
         limitations: [
           "Only a completed, retired 24-phase current closed-baseline lifecycle with both snapshots captured. Missing, failed or conflicting evidence refuses.",
           "Reads only managed journal evidence, retained raw copies and native checkpoints. Never reads the original project, writes files or calls the application.",
@@ -95575,7 +95915,7 @@ function queryOfflineApi(request2) {
       break;
     }
     case "baseline-analysis-validate": {
-      const parsed2 = baselineAnalysisRequestSchema.safeParse(request2.query.request);
+      const parsed2 = baselineAnalysisRequestSchema.safeParse(request3.query.request);
       result = parsed2.success ? { valid: true, request: parsed2.data, executionAuthorized: false } : {
         valid: false,
         executionAuthorized: false,
@@ -95591,7 +95931,7 @@ function queryOfflineApi(request2) {
         action: "abandon-before-navigation",
         tool: "easyeda_control_history",
         effect: "local-historical-sidecar-publication",
-        ...request2.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(historicalAbandonmentRequestSchema) } : {},
+        ...request3.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(historicalAbandonmentRequestSchema) } : {},
         limitations: [
           "Only the maintained sixteen-event validation marker-read boundary; no six-event baseline or later-phase recovery.",
           "The exact confirmation is an argument-consistency check, not human attestation or restart authority.",
@@ -95602,7 +95942,7 @@ function queryOfflineApi(request2) {
         action: "abandon-baseline-before-relaunch",
         tool: "easyeda_control_history",
         effect: "local-historical-sidecar-publication",
-        ...request2.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(historicalAbandonmentRequestSchema) } : {},
+        ...request3.query?.includeSchemas === true ? { inputSchema: external_exports.toJSONSchema(historicalAbandonmentRequestSchema) } : {},
         limitations: [
           "Only the exact seven-phase current closed-baseline prefix stopped before durable relaunch-intent. Explicit disposable-project confirmation required.",
           "Revalidates every retained phase, closed raw copy and checkpoint; reads no original project and restores no process/copy authority.",
@@ -95613,7 +95953,7 @@ function queryOfflineApi(request2) {
       break;
     }
     case "history-validate": {
-      const parsed2 = historicalAbandonmentRequestSchema.safeParse(request2.query.request);
+      const parsed2 = historicalAbandonmentRequestSchema.safeParse(request3.query.request);
       result = parsed2.success ? { valid: true, request: parsed2.data, executionAuthorized: false } : {
         valid: false,
         executionAuthorized: false,
@@ -95622,19 +95962,19 @@ function queryOfflineApi(request2) {
       break;
     }
     case "launch": {
-      result = queryOrdinaryLaunch(request2.query ?? {});
+      result = queryOrdinaryLaunch(request3.query ?? {});
       break;
     }
     case "launch-validate": {
-      result = validateOrdinaryLaunchArguments(request2.query.request);
+      result = validateOrdinaryLaunchArguments(request3.query.request);
       break;
     }
     case "operations": {
-      result = queryOperationCatalog(request2.query);
+      result = queryOperationCatalog(request3.query);
       break;
     }
     case "validate": {
-      result = validateCatalogOperation(request2.query);
+      result = validateCatalogOperation(request3.query);
       break;
     }
     default: {
@@ -95663,6 +96003,7 @@ var init_offline_api = __esm({
     init_current_pcb_identities();
     init_current_pcb_geometry();
     init_current_symbol_metadata();
+    init_current_project_only_symbol_preflight();
     init_current_symbol_metadata_preparation();
     init_historical_abandonment();
     init_current_symbol_baseline_analysis();
@@ -95696,6 +96037,8 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-preflight"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-preflight-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-prepare-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-prepare"), query: external_exports.object({ request: currentSymbolMetadataPreparationRequestSchema }).strict() }).strict(),
@@ -95711,7 +96054,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Compare retained baseline/final snapshots of a completed disposable lifecycle with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state, qualify startup effects or enable editing. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Query project-symbol-preflight for exact symbol metadata comparison with no editor tabs; caller expectations are not source provenance. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Compare retained baseline/final snapshots of a completed disposable lifecycle with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state, qualify startup effects or enable editing. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -96080,7 +96423,7 @@ async function startOfflineControlServer(code) {
   server2.registerTool(
     "easyeda_control_api",
     { ...offlineApiToolConfiguration, outputSchema },
-    offlineGuard(({ request: request2 }) => runOfflineApi(request2))
+    offlineGuard(({ request: request3 }) => runOfflineApi(request3))
   );
   server2.registerTool("easyeda_control_status", {
     title: "Report offline-only EasyEDA startup status",
@@ -96183,14 +96526,14 @@ var init_legacy_recovery_family = __esm({
 
 // server/src/engine.ts
 import { randomUUID as randomUUID6 } from "node:crypto";
-import { dirname as dirname18, isAbsolute as isAbsolute22, join as join51 } from "node:path";
+import { dirname as dirname19, isAbsolute as isAbsolute22, join as join51 } from "node:path";
 async function checkpointAccessPolicy(source4) {
   const expectedSource = normalizeEasyedaProjectPath(source4);
   return {
     expectedSource,
     controlRoot: await controlRootCapability(),
     artifactRoots: [
-      join51(dirname18(expectedSource), "backups"),
+      join51(dirname19(expectedSource), "backups"),
       join51(controlDataDirectory(), "checkpoints")
     ]
   };
@@ -97043,6 +97386,16 @@ function assertNoOtherRecoveryOperations(operationId3, operations) {
   error51.blockingOperations = blockingOperations;
   throw error51;
 }
+function assertNoNativeUiEditingOperations(blockingOperations) {
+  if (blockingOperations.length === 0) {
+    return true;
+  }
+  const error51 = annotatedError(
+    "Resolve every incomplete, unreadable or orphan-risk API transaction before native UI edits. Inspection, focus and normal close remain available for recovery."
+  );
+  error51.blockingOperations = blockingOperations;
+  throw error51;
+}
 async function scanUnfinishedOperations() {
   const operations = await scanQualifiedAdmissionOperations();
   return operations.filter((entry) => entry.unfinished).map((entry) => entry.summary);
@@ -97766,20 +98119,20 @@ var init_engine = __esm({
         assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
         return assertNoOtherRecoveryOperations(operationId3, operations.map((entry) => entry.summary));
       }
+      /** Evaluate adjacent bridge and native-edit guards from one fresh complete
+       * scan. Quarantine still refuses first; no result can admit a later invocation.
+       */
+      async assertBridgeAndNativeUiEditingAdmission() {
+        const operations = await scanQualifiedAdmissionOperations();
+        assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
+        return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
+      }
       /** Native editing must exclude both unfinished transactions and terminal
        * journals with orphan risk. Use the shared fresh-byte scanner once; local
        * inspection, focus and normal close bypass this editing-only gate.
        */
       async assertNativeUiEditingAllowed() {
-        const blockingOperations = await scanRecoveryBlockingOperations();
-        if (blockingOperations.length === 0) {
-          return true;
-        }
-        const error51 = annotatedError(
-          "Resolve every incomplete, unreadable or orphan-risk API transaction before native UI edits. Inspection, focus and normal close remain available for recovery."
-        );
-        error51.blockingOperations = blockingOperations;
-        throw error51;
+        return assertNoNativeUiEditingOperations(await scanRecoveryBlockingOperations());
       }
       async status() {
         const listTools = this.upstream.listTools?.bind(this.upstream);
@@ -98192,8 +98545,8 @@ var init_engine = __esm({
         }
         return receipt2;
       }
-      async exactRead(request2, expectedContext, options = {}) {
-        const parsed2 = validateExactReadRequest(request2, expectedContext);
+      async exactRead(request3, expectedContext, options = {}) {
+        const parsed2 = validateExactReadRequest(request3, expectedContext);
         if (parsed2.kind === "schematic-native") {
           return this.schematicNativeRead(expectedContext);
         }
@@ -98271,9 +98624,9 @@ var init_engine = __esm({
        * The outer facade retains the authenticated session and full runtime gate.
        * There is no caller code, retry, mutation or lifecycle action in this route.
        */
-      async publicSdkRead(request2, expectedContext) {
+      async publicSdkRead(request3, expectedContext) {
         const boundContext = structuredClone(expectedContext);
-        const parsed2 = validatePublicSdkReadRequest(request2, boundContext.document.documentType);
+        const parsed2 = validatePublicSdkReadRequest(request3, boundContext.document.documentType);
         if (parsed2.method === PCB_NET_MEMBERSHIP_METHOD) {
           throw new Error("PCB net membership requires its exact-runtime source/inventory coordinator.");
         }
@@ -100516,8 +100869,8 @@ var init_check_execution = __esm({
         }
         return snapshot8;
       }
-      async run(request2) {
-        const input = structuredClone(request2);
+      async run(request3) {
+        const input = structuredClone(request3);
         const check3 = nativeRuleCheckRequestSchema.parse({ kind: input.kind });
         const maximumItems = external_exports.number().int().min(0).max(200).parse(input.maxInlineItems ?? 100);
         const operations = await this.services.listOperations();
@@ -100967,8 +101320,8 @@ var init_project_open_execution = __esm({
         await this.record(journal, `${phase5}-return`, result);
         return result;
       }
-      async openExisting(request2) {
-        const input = projectOpenInputSchema.parse(structuredClone(request2));
+      async openExisting(request3) {
+        const input = projectOpenInputSchema.parse(structuredClone(request3));
         const target6 = projectOpenTargetSchema.parse({
           projectUuid: input.projectUuid,
           projectPath: normalizeEasyedaProjectPath(input.projectPath),
@@ -101522,7 +101875,7 @@ function netGraph(segments3, vias, pads, copper, selected2, findings) {
   return { danglingNodes, path: { fromPad: selected2.fromPad, toPad: selected2.toPad, connectedInCenterlineModel: end !== void 0, shortestKnownPlanarLengthMil: end === void 0 ? null : distances.get(end) ?? null, routeIds, viaIds: usedVias, containsCycle, completeSimplePath: end !== void 0 && !containsCycle && findings.length === 0 && pads.length === 2 && routeIds.length === segments3.length && danglingNodes.length === 0 } };
 }
 function auditPcbRoutes(source4, inventory2, input) {
-  const request2 = pcbRouteAuditRequestSchema.parse(input);
+  const request3 = pcbRouteAuditRequestSchema.parse(input);
   if (source4.schema !== "easyeda-pro-control.document-source.v1" || source4.document["docType"] !== "PCB" || source4.sha256 !== sha256Json({ schema: source4.schema, document: source4.document, objects: source4.objects }) || new Set(source4.objects.map((entry) => entry.id)).size !== source4.objects.length) {
     throw new Error("Route audit requires a valid exact PCB source commitment.");
   }
@@ -101534,19 +101887,19 @@ function auditPcbRoutes(source4, inventory2, input) {
     throw new Error("Duplicate canonical native net identities.");
   }
   const pairNames = [...new Set(netObjects.map((entry) => entry.body["differentialName"]).filter((value2) => typeof value2 === "string" && value2 !== ""))].toSorted();
-  const selectedPairs = request2.differentialPairs ?? pairNames;
+  const selectedPairs = request3.differentialPairs ?? pairNames;
   for (const selected2 of selectedPairs) {
     if (!pairNames.includes(selected2)) {
       throw new Error("Requested differential pair does not exist.");
     }
   }
-  const selectedNets = new Set(request2.nets ?? [...allNets.keys()]);
+  const selectedNets = new Set(request3.nets ?? [...allNets.keys()]);
   for (const entry of netObjects) {
     if (selectedPairs.includes(String(entry.body["differentialName"]))) {
       selectedNets.add(netName(entry));
     }
   }
-  for (const path5 of request2.paths) {
+  for (const path5 of request3.paths) {
     selectedNets.add(path5.net);
   }
   if (selectedNets.size > 256) {
@@ -101555,7 +101908,7 @@ function auditPcbRoutes(source4, inventory2, input) {
   if (source4.objects.filter((entry) => ["LINE", "ARC"].includes(entry.type) && selectedNets.has(String(entry.body["netName"]))).length > 8192) {
     throw new Error("Select at most 8192 total route segments for one audit.");
   }
-  for (const contract of request2.widthContracts) {
+  for (const contract of request3.widthContracts) {
     if (!selectedNets.has(contract.net)) {
       throw new Error("Width contract is outside the selected net scope.");
     }
@@ -101596,7 +101949,7 @@ function auditPcbRoutes(source4, inventory2, input) {
       findings.push(note("area-or-other-copper-not-modeled", otherCopper.map((entry) => entry.id), "This net may connect through copper outside the line/arc/via centerline model."));
     }
     findings.push(...geometryWarnings(segments3));
-    const requestedPath = request2.paths.find((entry) => entry.net === net3);
+    const requestedPath = request3.paths.find((entry) => entry.net === net3);
     const selected2 = requestedPath ?? (netPads.length === 2 && netPads[0] !== void 0 && netPads[1] !== void 0 ? { net: net3, fromPad: netPads[0].primitiveId, toPad: netPads[1].primitiveId } : void 0);
     if (selected2 === void 0) {
       findings.push(note("endpoint-selection-required", netPads.map((pad2) => pad2.primitiveId), "Specify two endpoint pad IDs for a net without exactly two physical pads."));
@@ -101608,7 +101961,7 @@ function auditPcbRoutes(source4, inventory2, input) {
       const pairRule = rule(source4, "DIFFER_ENTAIL", selector3(source4, "DIFF_PAIR", pairName)["DIFFER_ENTAIL"]);
       widths.push(...segments3.map((segment2) => widthResult(segment2, pairRule, "stroWidth", "native-pair-width")));
     }
-    for (const contract of request2.widthContracts.filter((entry) => entry.net === net3)) {
+    for (const contract of request3.widthContracts.filter((entry) => entry.net === net3)) {
       for (const segment2 of segments3.filter((entry) => entry.layer === contract.layer)) {
         widths.push({ objectId: segment2.id, net: net3, layer: segment2.layer, actualMil: segment2.width, authority: "requested-width-contract", ruleId: null, minMil: contract.minMil, maxMil: contract.maxMil, status: segment2.width >= contract.minMil && segment2.width <= contract.maxMil ? "within-range" : "outside-range" });
       }
@@ -101738,7 +102091,7 @@ function checkedExactPayload(input, kind) {
   return value2;
 }
 async function runPcbRouteAudit(engine2, input) {
-  const request2 = pcbRouteAuditRequestSchema.parse(input.audit);
+  const request3 = pcbRouteAuditRequestSchema.parse(input.audit);
   const expected3 = structuredClone(input.expectedContext);
   const fingerprint = structuredClone(input.expectedFingerprint);
   if (expected3.document.documentType !== 3) {
@@ -101756,7 +102109,7 @@ async function runPcbRouteAudit(engine2, input) {
   if (before.sha256 !== after.sha256 || before.document["uuid"] !== (context3.document.uuid ?? context3.document.documentUuid)) {
     throw new Error("PCB source changed around the route inventory or has a different document identity.");
   }
-  const report = auditPcbRoutes(before, inventory2, request2);
+  const report = auditPcbRoutes(before, inventory2, request3);
   const finalStatus = await engine2.status();
   assertSubset(finalStatus.stableFingerprint, fingerprint, "Route audit runtime after measurement");
   await engine2.assertContext(context3);
@@ -102048,9 +102401,9 @@ function parseClosedSymbolOperationRequest(input) {
   Object.freeze(operation.target);
   Object.freeze(operation.patch);
   Object.freeze(operation);
-  const request2 = Object.freeze({ action: "execute-closed-symbol", target: scope6.target, operation, confirmWrite: true });
-  requireValue6(Buffer.byteLength(JSON.stringify(request2)) <= 32768, "Closed-symbol operation exceeds 32768 UTF-8 JSON bytes.");
-  return request2;
+  const request3 = Object.freeze({ action: "execute-closed-symbol", target: scope6.target, operation, confirmWrite: true });
+  requireValue6(Buffer.byteLength(JSON.stringify(request3)) <= 32768, "Closed-symbol operation exceeds 32768 UTF-8 JSON bytes.");
+  return request3;
 }
 var init_closed_symbol_operation_request = __esm({
   "server/src/closed-symbol-operation-request.ts"() {
@@ -102226,11 +102579,11 @@ var init_closed_symbol_failure_diagnostic = __esm({
 function parseClosedSymbolDisposableInput(input) {
   const outer = exactData(input, ["request"]);
   const originalRequest = outer["request"];
-  const request2 = parseClosedSymbolValidationRequest(originalRequest);
-  if (request2.metadata.name.trim().length === 0) {
+  const request3 = parseClosedSymbolValidationRequest(originalRequest);
+  if (request3.metadata.name.trim().length === 0) {
     throw new Error("Disposable title is blank.");
   }
-  return Object.freeze({ originalRequest, request: request2 });
+  return Object.freeze({ originalRequest, request: request3 });
 }
 function boundedOwnData(input) {
   let nodes = 0, textBytes = 0;
@@ -102488,7 +102841,7 @@ function formatClosedSymbolOperationResult(input, diagnostic) {
     ...ok ? [] : closedSymbolFailureDiagnosticText(diagnostic)
   ] };
 }
-var projectUuid3, uuid10, documentUuid4, patchInput, targetInput2, request, closedSymbolOperationInputSchema, descriptor7, common2, completed2, stopped2, closedSymbolOperationOutputSchema, CLOSED_SYMBOL_OPERATION_COMMON;
+var projectUuid3, uuid10, documentUuid4, patchInput, targetInput2, request2, closedSymbolOperationInputSchema, descriptor7, common2, completed2, stopped2, closedSymbolOperationOutputSchema, CLOSED_SYMBOL_OPERATION_COMMON;
 var init_closed_symbol_operation_tool = __esm({
   "server/src/closed-symbol-operation-tool.ts"() {
     init_zod();
@@ -102502,7 +102855,7 @@ var init_closed_symbol_operation_tool = __esm({
     documentUuid4 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
     patchInput = external_exports.object({ name: external_exports.string().min(1).max(512), description: external_exports.string().max(65536) }).strict();
     targetInput2 = external_exports.object({ uuid: documentUuid4 }).strict();
-    request = external_exports.object({
+    request2 = external_exports.object({
       action: external_exports.literal("execute-closed-symbol"),
       confirmWrite: external_exports.literal(true),
       target: external_exports.object({
@@ -102521,7 +102874,7 @@ var init_closed_symbol_operation_tool = __esm({
         patch: patchInput
       }).strict()
     }).strict();
-    closedSymbolOperationInputSchema = external_exports.object({ request }).strict();
+    closedSymbolOperationInputSchema = external_exports.object({ request: request2 }).strict();
     descriptor7 = external_exports.object({
       path: external_exports.string().min(1).max(4096).startsWith("/").regex(/^[^\0\r\n]*$/u),
       bytes: external_exports.number().int().min(1).max(131072),
@@ -102665,12 +103018,12 @@ function invokeNativeUiHelper(input) {
 `);
   });
 }
-async function archiveNativeCapture(request2, payload, bytes2) {
+async function archiveNativeCapture(request3, payload, bytes2) {
   const directory2 = await ensureManagedDirectory(path3.join(controlDataDirectory(), "native-ui"));
   const stem = path3.join(directory2, randomUUID7());
   const reservation = await reserveEvidencePaths({ resultPath: `${stem}.result.json`, receiptPath: `${stem}.receipt.json` });
   try {
-    return await archiveCaptureEvidence({ reservation, request: request2, payload, images: [{ mimeType: "image/png", bytes: bytes2 }], metadata: { source: "native-desktop", designPersistenceProven: false } });
+    return await archiveCaptureEvidence({ reservation, request: request3, payload, images: [{ mimeType: "image/png", bytes: bytes2 }], metadata: { source: "native-desktop", designPersistenceProven: false } });
   } catch (error51) {
     await releaseEvidenceReservation(reservation).catch(() => {
     });
@@ -102725,13 +103078,13 @@ var init_windows_native_ui = __esm({
         this.dependencies = dependencies3;
       }
       async run(input) {
-        const request2 = nativeUiRequestSchema.parse(input);
+        const request3 = nativeUiRequestSchema.parse(input);
         if (this.busy) {
           throw nativeUiFailure("native-ui-call-already-running", false);
         }
         this.busy = true;
         try {
-          return await this.runBound(request2);
+          return await this.runBound(request3);
         } finally {
           this.busy = false;
         }
@@ -102753,18 +103106,18 @@ var init_windows_native_ui = __esm({
         if (runtime.state === "owned" && appBinding !== void 0 && (runtime.launch?.root.pid !== appBinding.rootPid || runtime.executableSha256 !== appBinding.executableSha256 || !runtime.launch.root.startIdentity.startsWith(`win32:${appBinding.rootStartTicks}:job:`))) {
           throw nativeUiFailure("native-ui-recovery-owned-binding-mismatch", false);
         }
-        const request2 = nativeUiRequestSchema.parse({ action: "click", ...clickFields, ...runtime.state === "owned" || appBinding === void 0 ? {} : { appBinding } });
+        const request3 = nativeUiRequestSchema.parse({ action: "click", ...clickFields, ...runtime.state === "owned" || appBinding === void 0 ? {} : { appBinding } });
         if (this.busy) {
           throw nativeUiFailure("native-ui-call-already-running", false);
         }
         this.busy = true;
         try {
-          return await this.runBound(request2, { expectedCaptureSha256, expectedBounds });
+          return await this.runBound(request3, { expectedCaptureSha256, expectedBounds });
         } finally {
           this.busy = false;
         }
       }
-      async runBound(request2, recoveryCloseConfirmation) {
+      async runBound(request3, recoveryCloseConfirmation) {
         const runtime = this.options.runtime.status();
         const paths = deriveWindowsRuntimePaths(this.options);
         const helperPath = path3.join(this.options.pluginRoot, "scripts/native-ui-controller.ps1");
@@ -102778,8 +103131,8 @@ var init_windows_native_ui = __esm({
         }
         let binding2;
         let authority2 = "observed-unowned";
-        if (request2.action !== "discover") {
-          if (request2.appBinding === void 0) {
+        if (request3.action !== "discover") {
+          if (request3.appBinding === void 0) {
             const launch = runtime.launch;
             if (runtime.state !== "owned" || launch === null) {
               throw nativeUiFailure("native-ui-discover-and-bind-required", false);
@@ -102794,7 +103147,7 @@ var init_windows_native_ui = __esm({
             if (runtime.state === "owned") {
               throw nativeUiFailure("native-ui-unowned-binding-conflicts-with-owned-runtime", false);
             }
-            const { authority: _authority, ...observed2 } = request2.appBinding;
+            const { authority: _authority, ...observed2 } = request3.appBinding;
             binding2 = bindingSchema2.parse(observed2);
             if (binding2.executable !== paths.executableWindowsPath || binding2.executableSha256 !== executableSha256) {
               throw nativeUiFailure("native-ui-observed-installation-mismatch", false);
@@ -102814,22 +103167,22 @@ var init_windows_native_ui = __esm({
             executable: paths.executableWindowsPath,
             executableSha256,
             ...binding2,
-            ...request2,
+            ...request3,
             legacyHelperSha256: legacySha256,
             ...recoveryCloseConfirmation === void 0 ? {} : { recoveryCloseConfirmation }
           }
         });
         if (canonicalJson(this.options.runtime.status()) !== canonicalJson(runtime)) {
-          throw nativeUiFailure("native-ui-runtime-changed-after-dispatch", "confirmUIWrite" in request2);
+          throw nativeUiFailure("native-ui-runtime-changed-after-dispatch", "confirmUIWrite" in request3);
         }
         const failure2 = failedSchema.safeParse(result);
         if (failure2.success) {
-          if (request2.action === "hover" && failure2.data.error === "native-ui-action-failed" && !failure2.data.dispatched) {
+          if (request3.action === "hover" && failure2.data.error === "native-ui-action-failed" && !failure2.data.dispatched) {
             throw nativeUiFailure("native-ui-hover-response-invalid", true);
           }
           throw nativeUiFailure(failure2.data.error, failure2.data.dispatched);
         }
-        if (request2.action === "discover") {
+        if (request3.action === "discover") {
           const discovery = discoverySchema.parse(result);
           if (discovery.observations.some((observed2) => observed2.executable !== paths.executableWindowsPath || observed2.executableSha256 !== executableSha256)) {
             throw nativeUiFailure("native-ui-discovery-installation-mismatch", false);
@@ -102838,22 +103191,22 @@ var init_windows_native_ui = __esm({
         }
         const parsedResponse = responseSchema.safeParse(result);
         if (!parsedResponse.success) {
-          if (request2.action === "hover") {
+          if (request3.action === "hover") {
             throw nativeUiFailure("native-ui-hover-response-invalid", true);
           }
           throw parsedResponse.error;
         }
         const response3 = parsedResponse.data;
-        if (response3.action !== request2.action || canonicalJson(response3.binding) !== canonicalJson(binding2)) {
-          throw nativeUiFailure("native-ui-response-binding-mismatch", "confirmUIWrite" in request2);
+        if (response3.action !== request3.action || canonicalJson(response3.binding) !== canonicalJson(binding2)) {
+          throw nativeUiFailure("native-ui-response-binding-mismatch", "confirmUIWrite" in request3);
         }
-        if (request2.action === "hover") {
+        if (request3.action === "hover") {
           const pointer = external_exports.object({ pointerMovedTo: external_exports.tuple([external_exports.number().int(), external_exports.number().int()]), buttonInputSent: external_exports.literal(false), hoverEffectProven: external_exports.literal(false) }).strict().safeParse(response3.result);
-          if (!pointer.success || pointer.data.pointerMovedTo[0] !== request2.x || pointer.data.pointerMovedTo[1] !== request2.y) {
+          if (!pointer.success || pointer.data.pointerMovedTo[0] !== request3.x || pointer.data.pointerMovedTo[1] !== request3.y) {
             throw nativeUiFailure("native-ui-hover-position-not-proven", true);
           }
         }
-        if (request2.action !== "capture") {
+        if (request3.action !== "capture") {
           return { ...response3, authority: authority2 };
         }
         const encoded = response3.result["pngBase64"];
@@ -102866,7 +103219,7 @@ var init_windows_native_ui = __esm({
         }
         const { pngBase64: _encoded, ...captureResult } = response3.result;
         const payload = { ...response3, authority: authority2, result: captureResult };
-        const receipt2 = await (this.dependencies.archiveCapture ?? archiveNativeCapture)(request2, payload, bytes2);
+        const receipt2 = await (this.dependencies.archiveCapture ?? archiveNativeCapture)(request3, payload, bytes2);
         return { ...payload, receipt: receipt2 };
       }
     };
@@ -102874,11 +103227,11 @@ var init_windows_native_ui = __esm({
 });
 
 // server/src/native-ui-admission.ts
-async function runNativeUiWithOperationAdmission(request2, run, assertEditingAllowed) {
-  if ("confirmUIWrite" in request2 && !["focus", "normal-close"].includes(request2.action)) {
+async function runNativeUiWithOperationAdmission(request3, run, assertEditingAllowed) {
+  if ("confirmUIWrite" in request3 && !["focus", "normal-close"].includes(request3.action)) {
     await assertEditingAllowed();
   }
-  return run(request2);
+  return run(request3);
 }
 var init_native_ui_admission = __esm({
   "server/src/native-ui-admission.ts"() {
@@ -102899,13 +103252,13 @@ async function managedJson4(file3) {
   }
   return value2;
 }
-async function captureProof(request2) {
-  const verified = await verifyEvidenceReceipt(request2.capture.receiptPath);
+async function captureProof(request3) {
+  const verified = await verifyEvidenceReceipt(request3.capture.receiptPath);
   if (!verified.ok) {
     throw new Error("Recovery capture receipt failed verification.");
   }
-  const receipt2 = await managedJson4(request2.capture.receiptPath);
-  if (receipt2["schema"] !== "easyeda-pro-control.capture-receipt.v1" || receipt2["receiptSha256"] !== request2.capture.receiptSha256 || typeof receipt2["resultPath"] !== "string" || typeof receipt2["createdAt"] !== "string") {
+  const receipt2 = await managedJson4(request3.capture.receiptPath);
+  if (receipt2["schema"] !== "easyeda-pro-control.capture-receipt.v1" || receipt2["receiptSha256"] !== request3.capture.receiptSha256 || typeof receipt2["resultPath"] !== "string" || typeof receipt2["createdAt"] !== "string") {
     throw new Error("Recovery capture identity differs.");
   }
   const age = Date.now() - Date.parse(receipt2["createdAt"]);
@@ -102917,21 +103270,21 @@ async function captureProof(request2) {
   const captured = retained["result"];
   const payload = isRecord(captured) ? captured["payload"] : void 0;
   const image = isRecord(captured) && Array.isArray(captured["images"]) && captured["images"].length === 1 ? captured["images"][0] : void 0;
-  const { authority: _authority, ...binding2 } = request2.appBinding;
-  if (!isRecord(observedRequest) || observedRequest["action"] !== "capture" || observedRequest["windowHandle"] !== request2.windowHandle || !isRecord(payload) || payload["schema"] !== "easyeda-pro-control.windows-native-ui.v1" || payload["action"] !== "capture" || canonicalJson(payload["binding"]) !== canonicalJson(binding2) || !isRecord(image) || image["mimeType"] !== "image/png" || image["sha256"] !== request2.capture.imageSha256) {
+  const { authority: _authority, ...binding2 } = request3.appBinding;
+  if (!isRecord(observedRequest) || observedRequest["action"] !== "capture" || observedRequest["windowHandle"] !== request3.windowHandle || !isRecord(payload) || payload["schema"] !== "easyeda-pro-control.windows-native-ui.v1" || payload["action"] !== "capture" || canonicalJson(payload["binding"]) !== canonicalJson(binding2) || !isRecord(image) || image["mimeType"] !== "image/png" || image["sha256"] !== request3.capture.imageSha256) {
     throw new Error("Recovery capture does not bind the selected native process and window.");
   }
   const result = payload["result"];
   const bounds = external_exports.tuple([external_exports.number(), external_exports.number(), external_exports.number().positive(), external_exports.number().positive()]).parse(isRecord(result) ? result["bounds"] : void 0);
-  const { x, y } = request2.observedDialog.discardButton;
+  const { x, y } = request3.observedDialog.discardButton;
   if (x < bounds[0] || y < bounds[1] || x >= bounds[0] + bounds[2] || y >= bounds[1] + bounds[3]) {
     throw new Error("Recovery discard point is outside its observed capture.");
   }
-  const finalVerification = await verifyEvidenceReceipt(request2.capture.receiptPath);
+  const finalVerification = await verifyEvidenceReceipt(request3.capture.receiptPath);
   if (!finalVerification.ok) {
     throw new Error("Recovery capture changed during validation.");
   }
-  return { bounds, imageSha256: request2.capture.imageSha256, receiptSha256: request2.capture.receiptSha256, createdAt: receipt2["createdAt"] };
+  return { bounds, imageSha256: request3.capture.imageSha256, receiptSha256: request3.capture.receiptSha256, createdAt: receipt2["createdAt"] };
 }
 async function preserveSavedEvidence(journal) {
   const context3 = journal["context"], prior = journal["preCheckpoint"];
@@ -102950,55 +103303,55 @@ async function preserveSavedEvidence(journal) {
   return { beforeReceipt: prior, currentCheckpoint: current3, durableChanged: current3.checkpointDumpSha256 !== original2.checkpointDumpSha256 };
 }
 async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
-  const request2 = nativeCloseRecoveryRequestSchema.parse(input);
+  const request3 = nativeCloseRecoveryRequestSchema.parse(input);
   const operations = await (dependencies3.list ?? listQualifiedOperationStates)();
   const pending = operations.filter((entry) => !isTerminalOperation(entry));
-  if (pending.length !== 1 || pending[0]?.["operationId"] !== request2.operationId) {
+  if (pending.length !== 1 || pending[0]?.["operationId"] !== request3.operationId) {
     throw new Error("Discard-close recovery requires exactly its one pending operation.");
   }
-  const journal = await (dependencies3.load ?? loadOperation)(request2.operationId);
-  const isSaveWarning = request2.action === "discard-save-warning";
+  const journal = await (dependencies3.load ?? loadOperation)(request3.operationId);
+  const isSaveWarning = request3.action === "discard-save-warning";
   const slot = isSaveWarning ? "nativeSaveWarningRecovery" : "nativeCloseRecovery";
   const phasePrefix = isSaveWarning ? "native-discard-save-warning" : "native-discard-close";
   const firstDiscard = journal["nativeCloseRecovery"];
   if (isSaveWarning) {
     const first = isRecord(firstDiscard) ? closeConfirmationRequestSchema.safeParse(firstDiscard["request"]) : void 0;
-    if (!isRecord(firstDiscard) || firstDiscard["schema"] !== "easyeda-pro-control.native-discard-close.v1" || firstDiscard["state"] !== "click-returned" || firstDiscard["dispatched"] !== true || firstDiscard["originalPlanHash"] !== journal.planHash || first?.success !== true || first.data.operationId !== request2.operationId || canonicalJson(first.data.appBinding) !== canonicalJson(request2.appBinding) || canonicalJson(first.data.target) !== canonicalJson(request2.target) || first.data.observedDialog.targetName !== request2.observedDialog.targetName || first.data.capture.receiptSha256 === request2.capture.receiptSha256 || first.data.capture.imageSha256 === request2.capture.imageSha256) {
+    if (!isRecord(firstDiscard) || firstDiscard["schema"] !== "easyeda-pro-control.native-discard-close.v1" || firstDiscard["state"] !== "click-returned" || firstDiscard["dispatched"] !== true || firstDiscard["originalPlanHash"] !== journal.planHash || first?.success !== true || first.data.operationId !== request3.operationId || canonicalJson(first.data.appBinding) !== canonicalJson(request3.appBinding) || canonicalJson(first.data.target) !== canonicalJson(request3.target) || first.data.observedDialog.targetName !== request3.observedDialog.targetName || first.data.capture.receiptSha256 === request3.capture.receiptSha256 || first.data.capture.imageSha256 === request3.capture.imageSha256) {
       throw new Error("Save-warning discard requires the same operation, target and native generation after its first discard click returned, with a new capture.");
     }
   }
   const previous = journal[slot];
   const previousRequest = isRecord(previous) ? previous["request"] : void 0;
   const previousCapture = isRecord(previousRequest) ? previousRequest["capture"] : void 0;
-  const freshAfterRefusal = isRecord(previous) && previous["state"] === "click-failed" && previous["dispatched"] === false && isRecord(previousCapture) && previousCapture["receiptSha256"] !== request2.capture.receiptSha256;
+  const freshAfterRefusal = isRecord(previous) && previous["state"] === "click-failed" && previous["dispatched"] === false && isRecord(previousCapture) && previousCapture["receiptSha256"] !== request3.capture.receiptSha256;
   if (journal.plan["profile"] !== "easyeda-pro-control.typed-design-transaction.v1" || journal["saved"] !== false || journal["orphanedCallPossible"] !== false || previous !== void 0 && !freshAfterRefusal || !Number.isSafeInteger(journal["sequence"]) || typeof journal["sequence"] !== "number") {
     throw new Error("This journal has no unused, settled-call unsaved close-recovery slot. A proven pre-dispatch refusal requires a new capture receipt.");
   }
   const context3 = journal["context"], expected3 = journal.plan["expectedContext"];
   const document3 = isRecord(context3) ? context3["document"] : void 0, project3 = isRecord(context3) ? context3["project"] : void 0;
   const originalDocument = isRecord(expected3) ? expected3["document"] : void 0, originalProject = isRecord(expected3) ? expected3["project"] : void 0;
-  if (!isRecord(project3) || !isRecord(document3) || !isRecord(originalProject) || !isRecord(originalDocument) || project3["uuid"] !== request2.target.projectUuid || originalProject["uuid"] !== request2.target.projectUuid || document3["uuid"] !== request2.target.documentUuid || originalDocument["uuid"] !== request2.target.documentUuid || document3["documentType"] !== request2.target.documentType || originalDocument["documentType"] !== request2.target.documentType) {
+  if (!isRecord(project3) || !isRecord(document3) || !isRecord(originalProject) || !isRecord(originalDocument) || project3["uuid"] !== request3.target.projectUuid || originalProject["uuid"] !== request3.target.projectUuid || document3["uuid"] !== request3.target.documentUuid || originalDocument["uuid"] !== request3.target.documentUuid || document3["documentType"] !== request3.target.documentType || originalDocument["documentType"] !== request3.target.documentType) {
     throw new Error("Recovery acknowledgment does not identify the original target.");
   }
   const authority2 = journal["executionAuthorityBeforeOrphan"];
   const processes2 = isRecord(authority2) && Array.isArray(authority2["processes"]) ? authority2["processes"] : [];
   const roots = processes2.filter((entry) => isRecord(entry) && entry["role"] === "easyeda-main");
   const root = roots[0];
-  if (roots.length !== 1 || !isRecord(root) || root["pid"] !== request2.appBinding.rootPid || typeof root["startIdentity"] !== "string" || !new RegExp(`^win32:${request2.appBinding.rootStartTicks}:job:[a-f0-9]{32}$`, "u").test(root["startIdentity"])) {
+  if (roots.length !== 1 || !isRecord(root) || root["pid"] !== request3.appBinding.rootPid || typeof root["startIdentity"] !== "string" || !new RegExp(`^win32:${request3.appBinding.rootStartTicks}:job:[a-f0-9]{32}$`, "u").test(root["startIdentity"])) {
     throw new Error("Observed native process is not the journal's original execution generation.");
   }
   const saved = await (dependencies3.checkpoint ?? preserveSavedEvidence)(journal);
-  if (saved.durableChanged && request2.acknowledgeDurableChanges !== true) {
+  if (saved.durableChanged && request3.acknowledgeDurableChanges !== true) {
     throw new Error("Saved state differs from the original checkpoint; explicit durable-change acknowledgment is required before discard.");
   }
-  const capture3 = await (dependencies3.capture ?? captureProof)(request2);
+  const capture3 = await (dependencies3.capture ?? captureProof)(request3);
   if (isSaveWarning && (typeof journal["updatedAt"] !== "string" || !Number.isFinite(Date.parse(journal["updatedAt"])) || !Number.isFinite(Date.parse(capture3.createdAt)) || Date.parse(capture3.createdAt) <= Date.parse(journal["updatedAt"]))) {
     throw new Error("Save-warning recovery requires a fresh capture after the prior discard result was journaled.");
   }
   const attempt2 = {
     schema: isSaveWarning ? "easyeda-pro-control.native-discard-save-warning.v1" : "easyeda-pro-control.native-discard-close.v1",
     attemptId: randomUUID8(),
-    request: request2,
+    request: request3,
     ...isSaveWarning ? { priorCloseAttemptSha256: sha256Json(firstDiscard) } : {},
     originalPlanHash: journal.planHash,
     savedEvidence: saved,
@@ -103022,11 +103375,11 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
   await record7(`${phasePrefix}-intent`, attempt2);
   try {
     const result = await controller.runRecoveryCloseClick({
-      windowHandle: request2.windowHandle,
-      appBinding: request2.appBinding,
+      windowHandle: request3.windowHandle,
+      appBinding: request3.appBinding,
       confirmUIWrite: true,
-      x: request2.observedDialog.discardButton.x,
-      y: request2.observedDialog.discardButton.y,
+      x: request3.observedDialog.discardButton.x,
+      y: request3.observedDialog.discardButton.y,
       expectedCaptureSha256: capture3.imageSha256,
       expectedBounds: capture3.bounds
     });
@@ -103040,7 +103393,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash33, targetSchema9, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash33, targetSchema10, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -103051,7 +103404,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash33 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema9 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema10 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -103061,7 +103414,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema9,
+      target: targetSchema10,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash33, imageSha256: hash33 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -103231,8 +103584,8 @@ var init_client = __esm({
        *
        * @experimental
        */
-      requestStream(request2, resultSchema3, options) {
-        return this._client.requestStream(request2, resultSchema3, options);
+      requestStream(request3, resultSchema3, options) {
+        return this._client.requestStream(request3, resultSchema3, options);
       }
     };
   }
@@ -103373,8 +103726,8 @@ var init_client2 = __esm({
         }
         const method5 = methodValue;
         if (method5 === "elicitation/create") {
-          const wrappedHandler = async (request2, extra) => {
-            const validatedRequest = safeParse3(ElicitRequestSchema, request2);
+          const wrappedHandler = async (request3, extra) => {
+            const validatedRequest = safeParse3(ElicitRequestSchema, request3);
             if (!validatedRequest.success) {
               const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
               throw new McpError(ErrorCode.InvalidParams, `Invalid elicitation request: ${errorMessage2}`);
@@ -103388,7 +103741,7 @@ var init_client2 = __esm({
             if (params.mode === "url" && !supportsUrlMode) {
               throw new McpError(ErrorCode.InvalidParams, "Client does not support URL-mode elicitation requests");
             }
-            const result = await Promise.resolve(handler(request2, extra));
+            const result = await Promise.resolve(handler(request3, extra));
             if (params.task) {
               const taskValidationResult = safeParse3(CreateTaskResultSchema, result);
               if (!taskValidationResult.success) {
@@ -103417,14 +103770,14 @@ var init_client2 = __esm({
           return super.setRequestHandler(requestSchema, wrappedHandler);
         }
         if (method5 === "sampling/createMessage") {
-          const wrappedHandler = async (request2, extra) => {
-            const validatedRequest = safeParse3(CreateMessageRequestSchema, request2);
+          const wrappedHandler = async (request3, extra) => {
+            const validatedRequest = safeParse3(CreateMessageRequestSchema, request3);
             if (!validatedRequest.success) {
               const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
               throw new McpError(ErrorCode.InvalidParams, `Invalid sampling request: ${errorMessage2}`);
             }
             const { params } = validatedRequest.data;
-            const result = await Promise.resolve(handler(request2, extra));
+            const result = await Promise.resolve(handler(request3, extra));
             if (params.task) {
               const taskValidationResult = safeParse3(CreateTaskResultSchema, result);
               if (!taskValidationResult.success) {
@@ -106552,7 +106905,7 @@ var require_websocket = __commonJS({
       }
       const defaultPort = isSecure ? 443 : 80;
       const key = randomBytes14(16).toString("base64");
-      const request2 = isSecure ? https.request : http.request;
+      const request3 = isSecure ? https.request : http.request;
       const protocolSet = /* @__PURE__ */ new Set();
       let perMessageDeflate;
       opts.createConnection = opts.createConnection || (isSecure ? tlsConnect : netConnect);
@@ -106629,12 +106982,12 @@ var require_websocket = __commonJS({
         if (opts.auth && !options.headers.authorization) {
           options.headers.authorization = "Basic " + Buffer.from(opts.auth).toString("base64");
         }
-        req = websocket._req = request2(opts);
+        req = websocket._req = request3(opts);
         if (websocket._redirects) {
           websocket.emit("redirect", websocket.url, req);
         }
       } else {
-        req = websocket._req = request2(opts);
+        req = websocket._req = request3(opts);
       }
       if (opts.timeout) {
         req.on("timeout", () => {
@@ -107468,8 +107821,8 @@ function processStartTime(stat2) {
   if (closingParenthesis < 1) {
     throw new Error("The supervised backend process stat record is malformed.");
   }
-  const fields9 = stat2.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields9[19];
+  const fields10 = stat2.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields10[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error("The supervised backend process start identity is unavailable.");
   }
@@ -107690,9 +108043,9 @@ async function establishedServerSocketInode(socket) {
   for (const table8 of tables) {
     const text26 = await readFile6(table8, "utf8");
     for (const line6 of text26.split(/\r?\n/u).slice(1)) {
-      const fields9 = line6.trim().split(/\s+/u);
-      if (fields9.length >= 10 && fields9[1] === expectedLocal && fields9[2] === expectedRemote && fields9[3] === "01" && fields9[9] !== void 0) {
-        matches.push(fields9[9]);
+      const fields10 = line6.trim().split(/\s+/u);
+      if (fields10.length >= 10 && fields10[1] === expectedLocal && fields10[2] === expectedRemote && fields10[3] === "01" && fields10[9] !== void 0) {
+        matches.push(fields10[9]);
       }
     }
   }
@@ -107737,19 +108090,19 @@ import { createServer } from "node:net";
 function isRecord4(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
-function hasAdmittedRendererOrigin(request2) {
+function hasAdmittedRendererOrigin(request3) {
   let originHeaderCount = 0;
   let rawOrigin;
-  for (let index = 0; index < request2.rawHeaders.length; index += 2) {
-    if (request2.rawHeaders[index]?.toLowerCase() === "origin") {
+  for (let index = 0; index < request3.rawHeaders.length; index += 2) {
+    if (request3.rawHeaders[index]?.toLowerCase() === "origin") {
       originHeaderCount += 1;
-      rawOrigin = request2.rawHeaders[index + 1];
+      rawOrigin = request3.rawHeaders[index + 1];
     }
   }
   if (originHeaderCount === 0) {
-    return request2.headers.origin === void 0;
+    return request3.headers.origin === void 0;
   }
-  return originHeaderCount === 1 && rawOrigin === REVIEWED_EASYEDA_RENDERER_ORIGIN && request2.headers.origin === REVIEWED_EASYEDA_RENDERER_ORIGIN;
+  return originHeaderCount === 1 && rawOrigin === REVIEWED_EASYEDA_RENDERER_ORIGIN && request3.headers.origin === REVIEWED_EASYEDA_RENDERER_ORIGIN;
 }
 function assertCompatibleUpstreamHello(value2, maximumPayloadBytes) {
   const supportedProtocolVersions = value2["supportedProtocolVersions"];
@@ -108129,8 +108482,8 @@ var init_authenticated_bridge_gateway = __esm({
           }
         });
         this.#server = server2;
-        server2.on("connection", (socket, request2) => {
-          if (!hasAdmittedRendererOrigin(request2) || request2.socket.remoteAddress !== this.#publicHost || this.#pendingAuthenticationContexts.size >= PENDING_AUTHENTICATION_CONTEXT_LIMIT) {
+        server2.on("connection", (socket, request3) => {
+          if (!hasAdmittedRendererOrigin(request3) || request3.socket.remoteAddress !== this.#publicHost || this.#pendingAuthenticationContexts.size >= PENDING_AUTHENTICATION_CONTEXT_LIMIT) {
             this.#recordConnectionEvent("loopback-required", "upgrade", true);
             closeWebSocket(socket, POLICY_CLOSE_CODE, "loopback-required");
             return;
@@ -108755,7 +109108,7 @@ var init_authenticated_bridge_gateway = __esm({
 import { createHash as createHash37 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
 import { lstat as lstat32, open as open28 } from "node:fs/promises";
-import { basename as basename23, dirname as dirname19, join as join54 } from "node:path";
+import { basename as basename23, dirname as dirname20, join as join54 } from "node:path";
 import process12 from "node:process";
 function isRecord5(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -108840,7 +109193,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       /\.eext$/u,
       `.${parsed2["outputSha256"]}.eext`
     );
-    if (dirname19(parsed2["outputPath"]) !== build.path || basename23(parsed2["outputPath"]) !== expectedGenerationName) {
+    if (dirname20(parsed2["outputPath"]) !== build.path || basename23(parsed2["outputPath"]) !== expectedGenerationName) {
       throw new Error(
         "The authenticated bridge commit receipt points outside its exact immutable generation namespace."
       );
@@ -108897,7 +109250,7 @@ import { constants as fsConstants7 } from "node:fs";
 import { lstat as lstat33, open as open29 } from "node:fs/promises";
 import {
   basename as basename24,
-  dirname as dirname20,
+  dirname as dirname21,
   isAbsolute as isAbsolute23,
   join as join55,
   relative as relative6,
@@ -108961,7 +109314,7 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
     );
   }
   await capability.assertCurrent();
-  const directory2 = await capability.openDirectory(dirname20(path5), false);
+  const directory2 = await capability.openDirectory(dirname21(path5), false);
   const descriptorPath = `/proc/self/fd/${directory2.handle.fd}/${basename24(path5)}`;
   try {
     const pathInfo = await lstat33(descriptorPath);
@@ -114899,7 +115252,7 @@ import { createHash as createHash38 } from "node:crypto";
 import { constants as fsConstants8 } from "node:fs";
 import { lstat as lstat34, open as open30 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
-import { dirname as dirname21, extname, isAbsolute as isAbsolute24, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
+import { dirname as dirname22, extname, isAbsolute as isAbsolute24, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
 import { fileURLToPath as fileURLToPath2, pathToFileURL } from "node:url";
 function isRecord6(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -115118,7 +115471,7 @@ async function packageTypeFor(path5, cwd, seals, capturedSeals, cache) {
   if (extension3 !== ".js") {
     throw new Error(`Unsupported executable upstream module extension: ${path5}`);
   }
-  let directory2 = dirname21(path5);
+  let directory2 = dirname22(path5);
   while (isWithin4(cwd, directory2)) {
     const packagePath = resolve15(directory2, "package.json");
     const captured = await readSealedFileIfPresent(
@@ -115135,7 +115488,7 @@ async function packageTypeFor(path5, cwd, seals, capturedSeals, cache) {
     if (directory2 === cwd) {
       break;
     }
-    directory2 = dirname21(directory2);
+    directory2 = dirname22(directory2);
   }
   cache.set(path5, "commonjs");
   return "commonjs";
@@ -115548,7 +115901,7 @@ import {
   readlink as readlink2,
   realpath as realpath21
 } from "node:fs/promises";
-import { dirname as dirname22, isAbsolute as isAbsolute25, join as join56, relative as relative8, resolve as resolve16, sep as sep6 } from "node:path";
+import { dirname as dirname23, isAbsolute as isAbsolute25, join as join56, relative as relative8, resolve as resolve16, sep as sep6 } from "node:path";
 import process14 from "node:process";
 function boundedTimingInteger(value2) {
   return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value2)));
@@ -116076,7 +116429,7 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
     throw new Error("The upstream entrypoint must not traverse a symbolic link.");
   }
   const [dependencyType, dependencyLockPath] = await detectDependencyLock(cwd);
-  const implementationRoot = dirname22(entrypointPath);
+  const implementationRoot = dirname23(entrypointPath);
   const closure2 = await timings.measure("execution-closure", () => captureExecutionClosure(
     cwd,
     implementationRoot,
@@ -118643,7 +118996,7 @@ function checkedPayload2(input, kind) {
   return payload;
 }
 async function readPcbNetMembership(engine2, requestInput2, expectedContext, expectedFingerprint) {
-  const request2 = pcbNetMembershipRequestSchema.parse(requestInput2);
+  const request3 = pcbNetMembershipRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
   const documentUuid5 = ownedContext3(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
@@ -118696,7 +119049,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     };
   };
   let initial = await observations();
-  if (request2.arguments.primitiveTypes.includes("Line") && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
+  if (request3.arguments.primitiveTypes.includes("Line") && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await capturePcbInheritedLineScope(engine2, context3);
     initial = await observations();
   }
@@ -118704,7 +119057,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory: inventory2, ...proof } = observed2, inherited = inheritedScope?.derive(source4, inventory2);
     return {
       ...proof,
-      value: derivePcbNetMembership(source4, inventory2, request2, documentUuid5, inherited),
+      value: derivePcbNetMembership(source4, inventory2, request3, documentUuid5, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
@@ -118723,7 +119076,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
   const sample = {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: second.value,
     undefinedPaths: [],
@@ -118866,7 +119219,7 @@ function checkedIds(input) {
   return payload;
 }
 async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, expectedFingerprint, timings = new PcbSelectedReadTimings()) {
-  const request2 = pcbSelectedObjectsRequestSchema.parse(requestInput2);
+  const request3 = pcbSelectedObjectsRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
   const documentUuid5 = ownedContext4(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
@@ -118941,7 +119294,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
     const { source: source4, inventory: inventory2, ids: ids2, ...proof2 } = observed2, inherited = inheritedScope?.derive(source4, inventory2);
     return {
       ...proof2,
-      value: derivePcbSelectedObjects(source4, inventory2, ids2, request2, documentUuid5, inherited),
+      value: derivePcbSelectedObjects(source4, inventory2, ids2, request3, documentUuid5, inherited),
       selectedPrimitiveIds: ids2,
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
@@ -118961,7 +119314,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
   const sample = {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: value2,
     undefinedPaths: [],
@@ -119041,7 +119394,7 @@ function checkedExact2(input, kind) {
   return payload;
 }
 async function readPcbSourceObjects(engine2, requestInput2, expectedContext, expectedFingerprint) {
-  const request2 = pcbSourceObjectsRequestSchema.parse(requestInput2), requestedIds = pcbSourceObjectIds(request2);
+  const request3 = pcbSourceObjectsRequestSchema.parse(requestInput2), requestedIds = pcbSourceObjectIds(request3);
   const expected3 = structuredClone(expectedContext);
   const documentUuid5 = ownedContext5(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
@@ -119104,7 +119457,7 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory: inventory2, ...proof2 } = observed2, inherited = inheritedScope?.derive(source4, inventory2);
     return {
       ...proof2,
-      value: derivePcbSourceObjects(source4, inventory2, request2, documentUuid5, inherited),
+      value: derivePcbSourceObjects(source4, inventory2, request3, documentUuid5, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
@@ -119120,11 +119473,11 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
   }
   await guard();
   const { value: rows2, contextBinding, ...proof } = second;
-  const value2 = request2.method === PCB_SOURCE_OBJECT_METHOD ? external_exports.array(external_exports.unknown()).length(1).parse(rows2)[0] : rows2;
+  const value2 = request3.method === PCB_SOURCE_OBJECT_METHOD ? external_exports.array(external_exports.unknown()).length(1).parse(rows2)[0] : rows2;
   const sample = {
     ok: true,
     kind: "public-sdk-read",
-    method: request2.method,
+    method: request3.method,
     present: true,
     value: value2,
     undefinedPaths: [],
@@ -119210,7 +119563,7 @@ function validateSdkMathFingerprint(fingerprint) {
   return validateSdkLocalRuntimeFingerprint(fingerprint);
 }
 async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseSdkMathRequest(requestInput2);
+  const request3 = parseSdkMathRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkMathFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -119220,7 +119573,7 @@ async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   assertSubset(initial, expected3, "SDK math expected runtime");
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildSdkMathProgram(request2),
+    code: buildSdkMathProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119229,7 +119582,7 @@ async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > SDK_MATH_MAX_BYTES) {
     throw new Error("SDK math reply exceeds its byte bound.");
   }
-  const result = validateSdkMathResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateSdkMathResult(request3, decodeExactReadEnvelope(envelope2));
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
   const finalFingerprint = finalStatus.stableFingerprint;
@@ -119265,7 +119618,7 @@ var init_sdk_math_runtime = __esm({
 
 // server/src/sdk-system-runtime.ts
 async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseSdkSystemRequest(requestInput2);
+  const request3 = parseSdkSystemRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -119275,7 +119628,7 @@ async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
   assertSubset(initial, expected3, "SDK system expected runtime");
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildSdkSystemProgram(request2),
+    code: buildSdkSystemProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119284,7 +119637,7 @@ async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > SDK_SYSTEM_MAX_BYTES) {
     throw new Error("SDK system reply exceeds its byte bound.");
   }
-  const result = validateSdkSystemResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateSdkSystemResult(request3, decodeExactReadEnvelope(envelope2));
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
   const finalFingerprint = finalStatus.stableFingerprint;
@@ -119320,7 +119673,7 @@ var init_sdk_system_runtime = __esm({
 
 // server/src/startup-extensions-runtime.ts
 async function readStartupExtensions(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseStartupExtensionsRequest(requestInput2);
+  const request3 = parseStartupExtensionsRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -119332,7 +119685,7 @@ async function readStartupExtensions(engine2, requestInput2, expectedFingerprint
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildStartupExtensionsProgram(request2),
+    code: buildStartupExtensionsProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119341,7 +119694,7 @@ async function readStartupExtensions(engine2, requestInput2, expectedFingerprint
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > STARTUP_EXTENSIONS_MAX_BYTES) {
     throw new Error("Startup extension-index reply exceeds its byte bound.");
   }
-  const result = validateStartupExtensionsResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateStartupExtensionsResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -119387,7 +119740,7 @@ var init_startup_extensions_runtime = __esm({
 // server/src/editor-shell-runtime.ts
 async function readEditorObservation(engine2, requestInput2, expectedFingerprint, mode) {
   const context3 = mode === "context";
-  const request2 = context3 ? parseEditorContextRequest(requestInput2) : parseEditorShellRequest(requestInput2);
+  const request3 = context3 ? parseEditorContextRequest(requestInput2) : parseEditorShellRequest(requestInput2);
   const label = context3 ? "Editor-context" : "Editor-shell";
   const maxBytes = context3 ? EDITOR_CONTEXT_MAX_BYTES : EDITOR_SHELL_MAX_BYTES;
   const profile = context3 ? EDITOR_CONTEXT_RUNTIME_PROFILE : EDITOR_SHELL_RUNTIME_PROFILE;
@@ -119402,7 +119755,7 @@ async function readEditorObservation(engine2, requestInput2, expectedFingerprint
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: context3 ? buildEditorContextProgram(request2) : buildEditorShellProgram(request2),
+    code: context3 ? buildEditorContextProgram(request3) : buildEditorShellProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119412,7 +119765,7 @@ async function readEditorObservation(engine2, requestInput2, expectedFingerprint
     throw new Error(`${label} reply exceeds its byte bound.`);
   }
   const decoded = decodeExactReadEnvelope(envelope2);
-  const result = context3 ? validateEditorContextResult(request2, decoded) : validateEditorShellResult(request2, decoded);
+  const result = context3 ? validateEditorContextResult(request3, decoded) : validateEditorShellResult(request3, decoded);
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -119467,7 +119820,7 @@ var init_editor_shell_runtime = __esm({
 
 // server/src/shortcut-keys-runtime.ts
 async function readShortcutKeys(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseShortcutKeysRequest(requestInput2);
+  const request3 = parseShortcutKeysRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -119479,7 +119832,7 @@ async function readShortcutKeys(engine2, requestInput2, expectedFingerprint) {
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildShortcutKeysProgram(request2),
+    code: buildShortcutKeysProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119488,7 +119841,7 @@ async function readShortcutKeys(engine2, requestInput2, expectedFingerprint) {
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > SHORTCUT_KEYS_MAX_BYTES) {
     throw new Error("Shortcut query reply exceeds its byte bound.");
   }
-  const result = validateShortcutKeysResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateShortcutKeysResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -119531,7 +119884,7 @@ var init_shortcut_keys_runtime = __esm({
 
 // server/src/current-pcb-layers-runtime.ts
 async function readCurrentPcbLayers(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseCurrentPcbLayersRequest(requestInput2);
+  const request3 = parseCurrentPcbLayersRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -119543,7 +119896,7 @@ async function readCurrentPcbLayers(engine2, requestInput2, expectedFingerprint)
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildCurrentPcbLayersProgram(request2),
+    code: buildCurrentPcbLayersProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119552,7 +119905,7 @@ async function readCurrentPcbLayers(engine2, requestInput2, expectedFingerprint)
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PCB_LAYERS_MAX_BYTES) {
     throw new Error("PCB layers reply exceeds its byte bound.");
   }
-  const result = validateCurrentPcbLayersResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateCurrentPcbLayersResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -119649,8 +120002,8 @@ async function unchanged(checkpoint, source4) {
     throw new Error("Disposable opening checkpoint receipt changed.");
   }
   const verified = await verifyCheckpoint(checkpoint.receiptPath, await accessPolicy(source4));
-  const fields9 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields9.some((field3) => verified[field3] !== checkpoint[field3])) {
+  const fields10 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields10.some((field3) => verified[field3] !== checkpoint[field3])) {
     throw new Error("Disposable opening original source or checkpoint changed before navigation.");
   }
 }
@@ -119700,62 +120053,10 @@ var init_current_disposable_open_checkpoint = __esm({
   }
 });
 
-// server/src/current-symbol-runtime-observation.ts
-var milliseconds2, clockSample, currentSymbolRuntimeObservationSchema, CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE;
-var init_current_symbol_runtime_observation = __esm({
-  "server/src/current-symbol-runtime-observation.ts"() {
-    init_zod();
-    init_symbol_dual_actor();
-    milliseconds2 = external_exports.number().int().nonnegative().refine((value2) => Number.isSafeInteger(value2) && !Object.is(value2, -0));
-    clockSample = external_exports.object({ rendererBeforeMs: milliseconds2, serverTimeMs: milliseconds2, rendererAfterMs: milliseconds2 }).strict().refine((value2) => value2.rendererBeforeMs <= value2.serverTimeMs && value2.serverTimeMs <= value2.rendererAfterMs && value2.rendererAfterMs - value2.rendererBeforeMs <= 1e4);
-    currentSymbolRuntimeObservationSchema = external_exports.object({
-      editorVersion: external_exports.literal("3.2.206"),
-      actor: external_exports.object({
-        uuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
-        username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
-        nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
-      }).strict(),
-      clockSamples: external_exports.array(clockSample).length(4),
-      backendActorVerified: external_exports.literal(false),
-      backendClockVerified: external_exports.literal(false),
-      clockProducerOwnershipVerified: external_exports.literal(false)
-    }).strict().refine((value2) => {
-      const first = value2.clockSamples[0], last = value2.clockSamples[3];
-      return first !== void 0 && last !== void 0 && last.rendererAfterMs - first.rendererBeforeMs <= 1e4 && value2.clockSamples.every((sample, index) => index === 0 || sample.rendererBeforeMs >= (value2.clockSamples[index - 1]?.rendererAfterMs ?? Infinity));
-    });
-    CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE = `
-${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
-const observedEditorVersion=own(root,'PRO_EDITOR_VERSION');if(observedEditorVersion!=='3.2.206')bad();
-const notifyTab=own(root,'_TAB_ID_');if(typeof notifyTab!=='string'||!/^[a-f0-9]{16}$/.test(notifyTab))bad();
-const notifyKey='/'+notifyTab+'/notify',concurrent=own(host,'concurrentBus'),clockRpc=method(concurrent,'rpcCall');
-const nativeDate=own(root,'Date'),dateNow=own(nativeDate,'now');if(typeof nativeDate!=='function'||typeof dateNow!=='function')bad();
-const clockSamples=[];
-const checkRuntimeObservation=()=>{
- checkDualActor();methodCheck(clockRpc);
- if(own(root,'PRO_EDITOR_VERSION')!==observedEditorVersion||own(root,'_TAB_ID_')!==notifyTab||own(root,notifyKey)!==concurrent||own(host,'concurrentBus')!==concurrent||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow)bad();
-};
-const clockInteger=value=>{if(typeof value!=='number'||!Number.isSafeInteger(value)||value<0||Object.is(value,-0))bad();return value;};
-const sampleRuntimeClock=async()=>{
- same();const rendererBeforeMs=clockInteger(apply(dateNow,nativeDate,[]));
- const serverTimeMs=await apply(clockRpc.fn,concurrent,['/pro-mgr/serverTime/now']);same();clockInteger(serverTimeMs);
- const rendererAfterMs=clockInteger(apply(dateNow,nativeDate,[]));same();
- if(rendererBeforeMs>serverTimeMs||serverTimeMs>rendererAfterMs||rendererAfterMs-rendererBeforeMs>10000||clockSamples.length>=4)bad();
- const previous=clockSamples[clockSamples.length-1],first=clockSamples[0];
- if((previous&&rendererBeforeMs<previous.rendererAfterMs)||(first&&rendererAfterMs-first.rendererBeforeMs>10000))bad();
- clockSamples.push({rendererBeforeMs,serverTimeMs,rendererAfterMs});
-};
-const runtimeObservation=()=>{
- same();if(clockSamples.length!==4)bad();
- return{editorVersion:observedEditorVersion,actor:cachedActorProjection,clockSamples,backendActorVerified:false,backendClockVerified:false,clockProducerOwnershipVerified:false};
-};
-`;
-  }
-});
-
 // server/src/current-symbol-closed-target.ts
 function validateCurrentClosedSymbolMetadataResult(input, raw) {
-  const request2 = parseCurrentSymbolMetadataRequest(input), result = currentClosedSymbolMetadataResultSchema.parse(raw);
-  if (canonicalJson(result.target) !== canonicalJson(request2.target) || result.value.uuid !== request2.arguments.symbolUuid || result.value.projectUuid !== request2.target.projectUuid || Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
+  const request3 = parseCurrentSymbolMetadataRequest(input), result = currentClosedSymbolMetadataResultSchema.parse(raw);
+  if (canonicalJson(result.target) !== canonicalJson(request3.target) || result.value.uuid !== request3.arguments.symbolUuid || result.value.projectUuid !== request3.target.projectUuid || Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
     throw new Error("Current closed-symbol metadata witness differs from its bounded exact target.");
   }
   return result;
@@ -119844,10 +120145,10 @@ function buildCurrentClosedSymbolMetadataProgram(input) {
   return compileCurrentSymbolMetadataProgram(input, true);
 }
 function compileCurrentSymbolMetadataProgram(input, closedTarget) {
-  const request2 = parseCurrentSymbolMetadataRequest(input);
+  const request3 = parseCurrentSymbolMetadataRequest(input);
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},symbolUuid=${JSON.stringify(request2.arguments.symbolUuid)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request3.target)},symbolUuid=${JSON.stringify(request3.arguments.symbolUuid)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -119927,7 +120228,7 @@ const sample=async()=>{
  if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();${closedTarget ? "await clientTicketSample();await sampleRuntimeClock();same();if(ticket>retainedClientTicket.maxTicket)bad();" : ""}return result;
 };
 const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request2.method)},target,value:first,samples:2,${closedTarget ? "clientTicketObservation:{...retainedClientTicket,samples:4},runtimeObservation:runtimeObservation()," : ""}implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request3.method)},target,value:first,samples:2,${closedTarget ? "clientTicketObservation:{...retainedClientTicket,samples:4},runtimeObservation:runtimeObservation()," : ""}implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
 same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
 }catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}
@@ -119945,7 +120246,7 @@ var init_current_symbol_metadata_program = __esm({
 
 // server/src/current-symbol-closed-target-runtime.ts
 async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedFingerprint) {
-  const expected3 = structuredClone(expectedFingerprint), request2 = parseCurrentSymbolMetadataRequest(requestInput2);
+  const expected3 = structuredClone(expectedFingerprint), request3 = parseCurrentSymbolMetadataRequest(requestInput2);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
   const initialStatus = await engine2.status();
@@ -119956,7 +120257,7 @@ async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedF
   await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildCurrentClosedSymbolMetadataProgram(request2),
+    code: buildCurrentClosedSymbolMetadataProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -119965,7 +120266,7 @@ async function readCurrentClosedSymbolMetadata(engine2, requestInput2, expectedF
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
     throw new Error("Current closed-symbol witness reply exceeds its byte bound.");
   }
-  const observation2 = validateCurrentClosedSymbolMetadataResult(request2, decodeExactReadEnvelope(envelope2));
+  const observation2 = validateCurrentClosedSymbolMetadataResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -120015,9 +120316,9 @@ function assertOriginalCurrentOwnedSymbolPreparation(value2, engine2) {
 }
 async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
   const source4 = assertCurrentDisposableOpenGeneration(generation5, engine2);
-  const request2 = currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }).parse(input);
+  const request3 = currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }).parse(input);
   need45(
-    request2.target.projectUuid === source4.target.projectUuid && request2.target.branchUuid === source4.target.branchUuid && request2.target.symbolUuid !== source4.target.documentUuid,
+    request3.target.projectUuid === source4.target.projectUuid && request3.target.branchUuid === source4.target.branchUuid && request3.target.symbolUuid !== source4.target.documentUuid,
     "Current symbol preparation differs from its original opening target."
   );
   const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
@@ -120038,12 +120339,12 @@ async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
   };
   const closedTargetWitness = await readCurrentClosedSymbolMetadata(
     engine2,
-    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request2.target.symbolUuid }, target: target6 },
+    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request3.target.symbolUuid }, target: target6 },
     source4.expectedFingerprint
   );
   current3();
   const checkpointPreparation = await prepareCurrentSymbolMetadata({
-    ...request2,
+    ...request3,
     observationProjection: currentClosedSymbolMetadataProjection(closedTargetWitness.observation)
   });
   current3();
@@ -121012,7 +121313,7 @@ var init_current_start_page = __esm({
 });
 
 // server/src/current-upload-queue-read.ts
-function fields7(input, names2) {
+function fields8(input, names2) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
   }
@@ -121027,7 +121328,7 @@ function fields7(input, names2) {
   return result;
 }
 function scope5(input) {
-  const value2 = fields7(input, ["projectUuid", "branchUuid"]);
+  const value2 = fields8(input, ["projectUuid", "branchUuid"]);
   const branchUuid2 = value2["branchUuid"], projectUuid4 = value2["projectUuid"];
   if (typeof projectUuid4 !== "string" || projectUuid4.length !== 64 || !/^[a-f0-9]{64}$/u.test(projectUuid4) || typeof branchUuid2 !== "string" || branchUuid2.length !== 32 || !/^[a-f0-9]{32}$/u.test(branchUuid2)) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
@@ -121082,7 +121383,7 @@ return envelope;`;
 }
 function decodeCurrentUploadQueueReadReply(raw, expected3) {
   assertUpstreamReplySettled(raw);
-  const envelope2 = fields7(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope2 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_UPLOAD_QUEUE_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES) {
     throw new Error("CURRENT_UPLOAD_QUEUE_ENVELOPE");
   }
@@ -121090,7 +121391,7 @@ function decodeCurrentUploadQueueReadReply(raw, expected3) {
 }
 function validateCurrentUploadQueueReadResult(input, expected3) {
   const target6 = scope5(expected3);
-  const value2 = fields7(input, [
+  const value2 = fields8(input, [
     "profile",
     "projectUuid",
     "branchUuid",
@@ -121121,7 +121422,7 @@ var init_current_upload_queue_read = __esm({
 });
 
 // server/src/current-project-only-open.ts
-function fields8(input, names2) {
+function fields9(input, names2) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_SHAPE");
   }
@@ -121136,7 +121437,7 @@ function fields8(input, names2) {
   return value2;
 }
 function target5(input) {
-  return currentDisposableOpenSealedTargetSchema.parse(fields8(input, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
+  return currentDisposableOpenSealedTargetSchema.parse(fields9(input, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
 }
 function buildCurrentProjectOnlyOpenProgram(input) {
   const selected2 = target5(input);
@@ -121236,7 +121537,7 @@ return envelope;`;
 function decodeCurrentProjectOnlyOpenReply(raw, expected3) {
   const selected2 = target5(expected3);
   assertUpstreamReplySettled(raw);
-  const envelope2 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope2 = fields9(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_ENVELOPE");
   }
@@ -121289,7 +121590,7 @@ var init_current_project_only_open = __esm({
 import { createHash as createHash43 } from "node:crypto";
 import { constants as constants23 } from "node:fs";
 import { lstat as lstat38, open as open35 } from "node:fs/promises";
-import { basename as basename26, dirname as dirname23, isAbsolute as isAbsolute26, resolve as resolve19 } from "node:path";
+import { basename as basename26, dirname as dirname24, isAbsolute as isAbsolute26, resolve as resolve19 } from "node:path";
 function need50(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -121386,7 +121687,7 @@ async function verifyCurrentSymbolPreopenSource(engine2, copy) {
     process.platform === "linux" && source4.length <= 4096 && isAbsolute26(source4) && resolve19(source4) === source4 && source4.endsWith(".eprj2") && copy.copy.source === source4 && copy.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory(dirname23(source4), current3);
+  const parent = await directory(dirname24(source4), current3);
   let file3;
   let observation2;
   let failed = false;
@@ -121487,6 +121788,7 @@ function relaunchMethods(engine2, runtime) {
     engine2.assertBridgeDispatchAllowed,
     engine2.assertRecoveryOperationIsolated,
     engine2.assertBridgeAndRecoveryAdmission,
+    engine2.assertBridgeAndNativeUiEditingAdmission,
     engine2.upstream.withAuthenticatedBridgeDispatchScope,
     engine2.status,
     engine2.dispatchWithOrphanTracking,
@@ -123031,12 +123333,12 @@ function requireValue15(condition, message) {
     throw new Error(message);
   }
 }
-function targetOnly(request2) {
+function targetOnly(request3) {
   return {
-    rawWindowsPath: request2.rawWindowsPath,
-    projectUuid: request2.projectUuid,
-    documentUuid: request2.documentUuid,
-    expectedSourceSha256: request2.expectedSourceSha256
+    rawWindowsPath: request3.rawWindowsPath,
+    projectUuid: request3.projectUuid,
+    documentUuid: request3.documentUuid,
+    expectedSourceSha256: request3.expectedSourceSha256
   };
 }
 function isOpenJournal(value2) {
@@ -123139,12 +123441,12 @@ var init_current_disposable_open_runtime = __esm({
         this.productionServices = Reflect.ownKeys(dependencies3).length === 0;
       }
       async run(input, expectedFingerprint) {
-        const request2 = parseCurrentDisposableOpenRequest(structuredClone(input));
+        const request3 = parseCurrentDisposableOpenRequest(structuredClone(input));
         requireValue15(!this.busy, "Current disposable opening is already in progress.");
-        if (request2.action === "baseline-begin") {
+        if (request3.action === "baseline-begin") {
           requireValue15(expectedFingerprint === void 0, "Baseline validation derives its runtime from the original opening; do not supply a replacement fingerprint.");
           requireValue15(
-            this.productionServices && this.options.engine instanceof EasyedaControlEngine && this.retained.has(request2.openingOperationId),
+            this.productionServices && this.options.engine instanceof EasyedaControlEngine && this.retained.has(request3.openingOperationId),
             "Baseline validation requires its original production opening owner."
           );
           this.busy = true;
@@ -123155,38 +123457,38 @@ var init_current_disposable_open_runtime = __esm({
             this.busy = false;
           }
           requireValue15(configured.profile.controlDirectory === controlDataDirectory() && configured.profile.easyeda.assetsRoot === process.env["EASYEDA_ASSETS_ROOT"], "Baseline machine configuration differs from the active facade.");
-          return this.beginSymbolBaseline(request2.openingOperationId, {
-            operationId: request2.operationId,
-            preparation: request2.preparation,
+          return this.beginSymbolBaseline(request3.openingOperationId, {
+            operationId: request3.operationId,
+            preparation: request3.preparation,
             confirmNormalClose: true
           }, configured.profile.runtime);
         }
-        if (request2.action !== "open" && request2.action !== "observe" && request2.action !== "inspect" && request2.action !== "retire-after-termination") {
+        if (request3.action !== "open" && request3.action !== "observe" && request3.action !== "inspect" && request3.action !== "retire-after-termination") {
           requireValue15(expectedFingerprint === void 0, "Baseline continuation cannot replace its original runtime fingerprint.");
-          switch (request2.action) {
+          switch (request3.action) {
             case "baseline-observe-termination": {
-              return this.observeSymbolBaseline(request2.operationId);
+              return this.observeSymbolBaseline(request3.operationId);
             }
             case "baseline-relaunch": {
-              return this.relaunchSymbolBaseline(request2.operationId);
+              return this.relaunchSymbolBaseline(request3.operationId);
             }
             case "baseline-admit": {
-              return this.admitSymbolBaseline(request2.operationId);
+              return this.admitSymbolBaseline(request3.operationId);
             }
             case "baseline-observe-caches": {
-              return this.observeSymbolBaselineCaches(request2.operationId);
+              return this.observeSymbolBaselineCaches(request3.operationId);
             }
             case "baseline-open-project": {
-              return this.openSymbolBaselineProject(request2.operationId, request2.acceptUnqualifiedSchematicStartupEffects);
+              return this.openSymbolBaselineProject(request3.operationId, request3.acceptUnqualifiedSchematicStartupEffects);
             }
             case "baseline-finish-close": {
-              return this.finishSymbolBaseline(request2.operationId);
+              return this.finishSymbolBaseline(request3.operationId);
             }
             case "baseline-observe-finish": {
-              return this.observeSymbolBaselineFinish(request2.operationId);
+              return this.observeSymbolBaselineFinish(request3.operationId);
             }
             case "baseline-inspect": {
-              return this.inspectSymbolBaseline(request2.operationId);
+              return this.inspectSymbolBaseline(request3.operationId);
             }
             default: {
               throw new Error("Unsupported baseline continuation.");
@@ -123194,19 +123496,19 @@ var init_current_disposable_open_runtime = __esm({
           }
         }
         this.busy = true;
-        if (request2.action !== "inspect") {
+        if (request3.action !== "inspect") {
           this.generations.clear();
         }
         try {
-          if (request2.action === "open") {
+          if (request3.action === "open") {
             requireValue15(expectedFingerprint !== void 0, "Current disposable opening requires its expected fingerprint.");
-            return await this.open(request2, structuredClone(expectedFingerprint));
+            return await this.open(request3, structuredClone(expectedFingerprint));
           }
-          const journal = await this.load(request2.operationId);
-          if (request2.action === "inspect") {
+          const journal = await this.load(request3.operationId);
+          if (request3.action === "inspect") {
             return summary7(journal);
           }
-          if (request2.action === "retire-after-termination") {
+          if (request3.action === "retire-after-termination") {
             return await this.retire(journal);
           }
           return await this.observe(journal);
@@ -123256,9 +123558,9 @@ var init_current_disposable_open_runtime = __esm({
        * then requests one normal close outside its authenticated scope.
        */
       async beginSymbolBaseline(openingOperationId, input, sqlRuntime) {
-        const request2 = currentSymbolBaselineRequestSchema.parse(input);
+        const request3 = currentSymbolBaselineRequestSchema.parse(input);
         requireValue15(
-          request2.operationId !== openingOperationId && !this.busy && !this.baselines.has(request2.operationId),
+          request3.operationId !== openingOperationId && !this.busy && !this.baselines.has(request3.operationId),
           "Current symbol baseline needs a distinct unused operation."
         );
         requireValue15(
@@ -123275,7 +123577,7 @@ var init_current_disposable_open_runtime = __esm({
         this.generations.clear();
         this.busy = true;
         const stage = new CurrentSymbolBaselineCoordinator(engine2, runtime, sqlRuntime);
-        this.baselines.set(request2.operationId, stage);
+        this.baselines.set(request3.operationId, stage);
         let owner;
         try {
           const loaded = await this.load(openingOperationId);
@@ -123287,9 +123589,9 @@ var init_current_disposable_open_runtime = __esm({
           requireValue15(scope6 !== void 0, "Current symbol baseline needs an authenticated scope.");
           try {
             await scope6.call(engine2.upstream, async () => {
-              const generation5 = this.issueGeneration(slot, engine2, runtime, request2.operationId);
-              const preparation3 = await prepareCurrentOwnedSymbolMetadata(engine2, generation5, request2.preparation);
-              owner = this.transferBaseline(slot, engine2, generation5, preparation3, request2.operationId);
+              const generation5 = this.issueGeneration(slot, engine2, runtime, request3.operationId);
+              const preparation3 = await prepareCurrentOwnedSymbolMetadata(engine2, generation5, request3.preparation);
+              owner = this.transferBaseline(slot, engine2, generation5, preparation3, request3.operationId);
               await stage.capture(owner);
             });
           } catch (error51) {
@@ -123508,11 +123810,11 @@ var init_current_disposable_open_runtime = __esm({
         const raw = await this.services.loadOperation(operationId3);
         requireValue15(isOpenJournal(raw), "Current disposable-open journal is malformed or has another profile.");
         const { plan: plan2 } = raw;
-        const request2 = parseCurrentDisposableOpenRequest(plan2.intent.request);
-        requireValue15(request2.action === "open" && request2.operationId === operationId3, "Current disposable-open original request differs.");
+        const request3 = parseCurrentDisposableOpenRequest(plan2.intent.request);
+        requireValue15(request3.action === "open" && request3.operationId === operationId3, "Current disposable-open original request differs.");
         const target6 = currentDisposableOpenSealedTargetSchema.parse(plan2.intent.target);
         requireValue15(
-          target6.projectUuid === request2.projectUuid && target6.documentUuid === request2.documentUuid && target6.rawWindowsPath === request2.rawWindowsPath && target6.expectedSourceSha256 === request2.expectedSourceSha256 && canonicalJson(plan2.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) && raw.schema === OPERATION_SCHEMA && raw.operationId === operationId3 && raw.planHash === buildPlanHash(plan2),
+          target6.projectUuid === request3.projectUuid && target6.documentUuid === request3.documentUuid && target6.rawWindowsPath === request3.rawWindowsPath && target6.expectedSourceSha256 === request3.expectedSourceSha256 && canonicalJson(plan2.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) && raw.schema === OPERATION_SCHEMA && raw.operationId === operationId3 && raw.planHash === buildPlanHash(plan2),
           "Current disposable-open journal target or state differs."
         );
         return raw;
@@ -123626,34 +123928,33 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(isRecord(result), "Current disposable-open dispatch returned no exact result.");
         return result;
       }
-      async open(request2, fingerprint) {
+      async open(request3, fingerprint) {
         const { engine: engine2 } = this.options;
         this.options.assertOwner();
         const runtime = this.options.runtime(), status2 = runtime.status();
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
         requireValue15(status2.state === "owned", "Current disposable opening requires this facade's original supervised application.");
         const launch = launchSchema2.parse(status2.launch);
-        await engine2.assertBridgeDispatchAllowed();
-        await engine2.assertNativeUiEditingAllowed();
+        await engine2.assertBridgeAndNativeUiEditingAdmission();
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
         const operations = await this.services.listOperations();
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-        requireValue15(!operations.some((operation) => operation["operationId"] === request2.operationId), "Current disposable-open operation ID is consumed.");
+        requireValue15(!operations.some((operation) => operation["operationId"] === request3.operationId), "Current disposable-open operation ID is consumed.");
         this.services.validateFingerprint(fingerprint);
-        const checkpointProof = await this.services.prepareCheckpoint(targetOnly(request2));
+        const checkpointProof = await this.services.prepareCheckpoint(targetOnly(request3));
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
         const target6 = currentDisposableOpenSealedTargetSchema.parse({
-          rawWindowsPath: request2.rawWindowsPath,
-          projectUuid: request2.projectUuid,
-          documentUuid: request2.documentUuid,
-          expectedSourceSha256: request2.expectedSourceSha256,
+          rawWindowsPath: request3.rawWindowsPath,
+          projectUuid: request3.projectUuid,
+          documentUuid: request3.documentUuid,
+          expectedSourceSha256: request3.expectedSourceSha256,
           branchUuid: checkpointProof.targetEvidence.branchUuid
         });
-        const plan2 = { profile: PROFILE19, intent: { request: request2, target: target6, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION }, expectedFingerprint: fingerprint };
+        const plan2 = { profile: PROFILE19, intent: { request: request3, target: target6, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION }, expectedFingerprint: fingerprint };
         const journal = {
           schema: OPERATION_SCHEMA,
-          operationId: request2.operationId,
-          journalPath: operationPath(request2.operationId),
+          operationId: request3.operationId,
+          journalPath: operationPath(request3.operationId),
           planHash: buildPlanHash(plan2),
           plan: plan2,
           state: "planned",
@@ -123674,7 +123975,7 @@ var init_current_disposable_open_runtime = __esm({
           nextSafeAction: "Run one current-profile disposable project/document open; normal open effects are accepted, not validated design changes."
         };
         const slot = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan2) };
-        this.retained.set(request2.operationId, slot);
+        this.retained.set(request3.operationId, slot);
         this.currentUntransferred(slot);
         await this.services.createOperation(journal);
         const failureContext = { phase: "preflight", hostStage: "owner-check" };
@@ -123824,7 +124125,7 @@ var init_current_disposable_open_runtime = __esm({
 
 // server/src/current-pcb-identities-program.ts
 function buildCurrentPcbIdentitiesProgram(input) {
-  const request2 = parseCurrentPcbIdentitiesRequest(input);
+  const request3 = parseCurrentPcbIdentitiesRequest(input);
   const nativeTopics = {
     selected: "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds",
     Line: "pcb/extensionAPI/track-getAll",
@@ -123833,10 +124134,10 @@ function buildCurrentPcbIdentitiesProgram(input) {
     Component: "pcb/extensionAPI/component-getAll",
     Pad: "pcb/extensionAPI/pad-getAll"
   };
-  const reads = currentPcbIdentityFamilies(request2).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
+  const reads = currentPcbIdentityFamilies(request3).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},reads=${JSON.stringify(reads)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request3.target)},reads=${JSON.stringify(reads)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_IDENTITIES_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -123898,7 +124199,7 @@ const read=async()=>{
 const run=async()=>{
  const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_IDENTITIES_MAX_BYTES})bad();
  const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const json=JSON.stringify({ok:true,kind:'current-pcb-identity-observation',method:${JSON.stringify(request2.method)},target,observations:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
+ const json=JSON.stringify({ok:true,kind:'current-pcb-identity-observation',method:${JSON.stringify(request3.method)},target,observations:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
  if(utf8Bytes>${CURRENT_PCB_IDENTITIES_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_IDENTITIES_MAX_BYTES})bad();return envelope;
 };
@@ -123917,7 +124218,7 @@ var init_current_pcb_identities_program = __esm({
 
 // server/src/current-pcb-identities-runtime.ts
 async function readCurrentPcbIdentities(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseCurrentPcbIdentitiesRequest(requestInput2);
+  const request3 = parseCurrentPcbIdentitiesRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -123929,7 +124230,7 @@ async function readCurrentPcbIdentities(engine2, requestInput2, expectedFingerpr
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildCurrentPcbIdentitiesProgram(request2),
+    code: buildCurrentPcbIdentitiesProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -123938,7 +124239,7 @@ async function readCurrentPcbIdentities(engine2, requestInput2, expectedFingerpr
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PCB_IDENTITIES_MAX_BYTES) {
     throw new Error("PCB identities reply exceeds its byte bound.");
   }
-  const result = validateCurrentPcbIdentitiesResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateCurrentPcbIdentitiesResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -123981,10 +124282,10 @@ var init_current_pcb_identities_runtime = __esm({
 
 // server/src/current-pcb-geometry-program.ts
 function buildCurrentPcbGeometryProgram(input) {
-  const request2 = parseCurrentPcbGeometryRequest(input);
-  const family2 = currentPcbGeometryFamily(request2);
-  const primitiveIds2 = "primitiveIds" in request2.arguments ? request2.arguments.primitiveIds : null;
-  const componentPrimitiveId = "primitiveId" in request2.arguments ? request2.arguments.primitiveId : null;
+  const request3 = parseCurrentPcbGeometryRequest(input);
+  const family2 = currentPcbGeometryFamily(request3);
+  const primitiveIds2 = "primitiveIds" in request3.arguments ? request3.arguments.primitiveIds : null;
+  const componentPrimitiveId = "primitiveId" in request3.arguments ? request3.arguments.primitiveId : null;
   const topics = {
     Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll",
@@ -123994,7 +124295,7 @@ function buildCurrentPcbGeometryProgram(input) {
   };
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])},primitiveIds=${JSON.stringify(primitiveIds2)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request3.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])},primitiveIds=${JSON.stringify(primitiveIds2)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -124142,7 +124443,7 @@ const readComponentPads=async()=>{
 const run=async()=>{
  const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
- const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request3.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
   relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
@@ -124166,7 +124467,7 @@ var init_current_pcb_geometry_program = __esm({
 
 // server/src/current-pcb-geometry-runtime.ts
 async function readCurrentPcbGeometry(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseCurrentPcbGeometryRequest(requestInput2);
+  const request3 = parseCurrentPcbGeometryRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -124178,7 +124479,7 @@ async function readCurrentPcbGeometry(engine2, requestInput2, expectedFingerprin
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildCurrentPcbGeometryProgram(request2),
+    code: buildCurrentPcbGeometryProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -124187,7 +124488,7 @@ async function readCurrentPcbGeometry(engine2, requestInput2, expectedFingerprin
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) {
     throw new Error("PCB geometry reply exceeds its byte bound.");
   }
-  const result = validateCurrentPcbGeometryResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateCurrentPcbGeometryResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -124230,7 +124531,7 @@ var init_current_pcb_geometry_runtime = __esm({
 
 // server/src/current-symbol-metadata-runtime.ts
 async function readCurrentSymbolMetadata(engine2, requestInput2, expectedFingerprint) {
-  const request2 = parseCurrentSymbolMetadataRequest(requestInput2);
+  const request3 = parseCurrentSymbolMetadataRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
   validateSdkLocalRuntimeFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
@@ -124242,7 +124543,7 @@ async function readCurrentSymbolMetadata(engine2, requestInput2, expectedFingerp
   await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildCurrentSymbolMetadataProgram(request2),
+    code: buildCurrentSymbolMetadataProgram(request3),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
@@ -124251,7 +124552,7 @@ async function readCurrentSymbolMetadata(engine2, requestInput2, expectedFingerp
   if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_SYMBOL_METADATA_MAX_BYTES) {
     throw new Error("Project symbol metadata reply exceeds its byte bound.");
   }
-  const result = validateCurrentSymbolMetadataResult(request2, decodeExactReadEnvelope(envelope2));
+  const result = validateCurrentSymbolMetadataResult(request3, decodeExactReadEnvelope(envelope2));
   await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
@@ -124289,6 +124590,79 @@ var init_current_symbol_metadata_runtime = __esm({
       schema: "easyeda-pro-control.current-symbol-metadata-runtime.v1",
       implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION
     });
+  }
+});
+
+// server/src/current-project-only-symbol-runtime.ts
+async function readCurrentProjectOnlySymbolPreflight(engine2, input, expectedFingerprint) {
+  const request3 = currentProjectOnlySymbolPreflightRequestSchema.parse(input);
+  const code = buildCurrentProjectOnlySymbolPreflightProgram(request3);
+  const expected3 = structuredClone(expectedFingerprint);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
+  if (scopeReader === void 0) {
+    throw new Error("Project-only symbol observation requires an authenticated scope.");
+  }
+  const scope6 = scopeReader.call(engine2.upstream);
+  if (scope6 === void 0) {
+    throw new Error("Project-only symbol observation requires an authenticated scope.");
+  }
+  const scopeText = canonicalJson(scope6);
+  const current3 = () => {
+    if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
+      throw new Error("Project-only symbol observation authenticated scope changed.");
+    }
+  };
+  await engine2.assertBridgeDispatchAllowed();
+  current3();
+  const initialStatus = await engine2.status();
+  current3();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertExpectedFingerprint(initial);
+  assertSubset(initial, expected3, "Project-only symbol expected runtime");
+  await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
+  current3();
+  await engine2.assertBridgeDispatchAllowed();
+  current3();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code,
+    timeoutMs: CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS + 5e3,
+    confirmWrite: true
+  }, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS + 15e3);
+  current3();
+  const result = decodeCurrentProjectOnlySymbolPreflightReply(raw, request3);
+  await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
+  current3();
+  await engine2.assertBridgeDispatchAllowed();
+  current3();
+  const finalStatus = await engine2.status();
+  current3();
+  validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
+  if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
+    throw new Error("Project-only symbol observation runtime changed around the observation.");
+  }
+  const response3 = { ...result, observationSha256: sha256Json(result), runtimeAdmission: {
+    profile: "easyeda-pro-control.current-project-only-symbol-preflight-runtime.v1",
+    fingerprintSha256: sha256Json(initial),
+    beforeAndAfterChecked: true,
+    scope: "loaded-project-with-no-editor-tabs-metadata-comparison-only",
+    expectedBeforeProvenanceVerified: false,
+    designExecutionAuthorized: false,
+    persistenceVerified: false,
+    liveValidation: "not-recorded"
+  } };
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES) {
+    throw new Error("Project-only symbol observation exceeds its result byte bound.");
+  }
+  return response3;
+}
+var init_current_project_only_symbol_runtime = __esm({
+  "server/src/current-project-only-symbol-runtime.ts"() {
+    init_core3();
+    init_current_disposable_open_profile();
+    init_current_project_only_symbol_preflight();
+    init_sdk_local_runtime();
   }
 });
 
@@ -124505,23 +124879,23 @@ function response(value2) {
   need52(Buffer.byteLength(JSON.stringify(value2)) <= 16384, "Disposable result exceeds 16 KiB.");
   return Object.freeze(value2);
 }
-function planFor(request2, expected3) {
+function planFor(request3, expected3) {
   const nonces = [randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex"), randomBytes12(32).toString("hex")];
   need52(new Set(nonces).size === 3, "Disposable marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
-    projectUuid: request2.target.projectUuid,
-    branchUuid: request2.target.branchUuid,
-    ownerUuid: request2.target.ownerUuid,
-    targetUuid: request2.target.symbolUuid,
-    activeUuid: request2.target.companionPcbUuid,
-    projectPath: request2.target.projectPath,
+    projectUuid: request3.target.projectUuid,
+    branchUuid: request3.target.branchUuid,
+    ownerUuid: request3.target.ownerUuid,
+    targetUuid: request3.target.symbolUuid,
+    activeUuid: request3.target.companionPcbUuid,
+    projectPath: request3.target.projectPath,
     operation: Object.freeze({
       id: VALIDATION_ACTION_ID,
       action: "library.symbol.modify",
-      libraryUuid: request2.target.projectUuid,
-      target: Object.freeze({ uuid: request2.target.symbolUuid }),
-      patch: request2.metadata
+      libraryUuid: request3.target.projectUuid,
+      target: Object.freeze({ uuid: request3.target.symbolUuid }),
+      patch: request3.metadata
     }),
     marker: Object.freeze({ namespaceNonce: nonces[0], keyNonce: nonces[1], bodyNonce: nonces[2] }),
     nativePinsSha256: WITNESS_NATIVE_PINS_SHA256,
@@ -124672,12 +125046,12 @@ var init_closed_symbol_disposable_entry = __esm({
         }
         this.started = true;
         attempts11.add(this.runtime);
-        let request2, requestText;
+        let request3, requestText;
         try {
-          request2 = parseClosedSymbolValidationRequest(rawRequest);
-          this.request = request2;
-          need52(request2.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
-          requestText = canonicalJson(request2);
+          request3 = parseClosedSymbolValidationRequest(rawRequest);
+          this.request = request3;
+          need52(request3.metadata.name.trim().length > 0, "Disposable symbol title must not be blank.");
+          requestText = canonicalJson(request3);
           this.owner();
         } catch (error51) {
           this.failure = error51;
@@ -124685,7 +125059,7 @@ var init_closed_symbol_disposable_entry = __esm({
         }
         const current3 = () => {
           this.owner();
-          need52(this.request === request2 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Disposable entry request changed.");
+          need52(this.request === request3 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request3) === requestText, "Disposable entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -124713,7 +125087,7 @@ var init_closed_symbol_disposable_entry = __esm({
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Disposable runtime scope differs from the actual facade expectation."
             );
-            this.plan = planFor(request2, expected3);
+            this.plan = planFor(request3, expected3);
             const plan2 = this.plan, planText = canonicalJson(plan2);
             let claim3, coordinator;
             const planned = () => {
@@ -124735,12 +125109,12 @@ var init_closed_symbol_disposable_entry = __esm({
             coordinator = this.coordinator;
             this.phase = "claim";
             this.claimState = "publication-unknown";
-            this.claim = await claimClosedSymbolValidationTarget(request2, plan2);
+            this.claim = await claimClosedSymbolValidationTarget(request3, plan2);
             claim3 = this.claim;
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need52(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
+            need52(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request3) && claim3.markerSha256 === sha256Json(plan2.marker), "Disposable claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
@@ -124808,7 +125182,7 @@ import { closeSync as closeSync3, constants as constants24, fstatSync as fstatSy
 import { mkdir as mkdir5 } from "node:fs/promises";
 import { join as join61 } from "node:path";
 function inputs2(rawRequest, rawPlan) {
-  const request2 = parseClosedSymbolOperationRequest(rawRequest);
+  const request3 = parseClosedSymbolOperationRequest(rawRequest);
   const source4 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
   const marker = exactData(source4["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
   const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
@@ -124817,18 +125191,18 @@ function inputs2(rawRequest, rawPlan) {
   const patch2 = exactData(operation["patch"], ["name", "description"]), target6 = exactData(operation["target"], ["uuid"]);
   const plan2 = Object.freeze({
     profile: FAMILY3,
-    projectUuid: request2.target.projectUuid,
-    branchUuid: request2.target.branchUuid,
-    ownerUuid: request2.target.ownerUuid,
-    targetUuid: request2.target.symbolUuid,
-    activeUuid: request2.target.companionPcbUuid,
-    projectPath: request2.target.projectPath,
+    projectUuid: request3.target.projectUuid,
+    branchUuid: request3.target.branchUuid,
+    ownerUuid: request3.target.ownerUuid,
+    targetUuid: request3.target.symbolUuid,
+    activeUuid: request3.target.companionPcbUuid,
+    projectPath: request3.target.projectPath,
     operation: Object.freeze({
-      id: request2.operation.id,
+      id: request3.operation.id,
       action: "library.symbol.modify",
-      libraryUuid: request2.target.projectUuid,
-      target: Object.freeze({ uuid: request2.target.symbolUuid }),
-      patch: request2.operation.patch
+      libraryUuid: request3.target.projectUuid,
+      target: Object.freeze({ uuid: request3.target.symbolUuid }),
+      patch: request3.operation.patch
     }),
     marker: nonces,
     nativePinsSha256: WITNESS_NATIVE_PINS_SHA256,
@@ -124838,8 +125212,8 @@ function inputs2(rawRequest, rawPlan) {
   for (const key of ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]) {
     requireValue6(source4[key] === plan2[key], "Operation internal plan does not exactly bind the request and fixed profile.");
   }
-  requireValue6(operation["id"] === request2.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request2.target.projectUuid && target6["uuid"] === request2.target.symbolUuid && patch2["name"] === request2.operation.patch.name && patch2["description"] === request2.operation.patch.description, "Ordinary operation does not match its request.");
-  return Object.freeze({ request: request2, plan: plan2 });
+  requireValue6(operation["id"] === request3.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request3.target.projectUuid && target6["uuid"] === request3.target.symbolUuid && patch2["name"] === request3.operation.patch.name && patch2["description"] === request3.operation.patch.description, "Ordinary operation does not match its request.");
+  return Object.freeze({ request: request3, plan: plan2 });
 }
 function sameFile7(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
@@ -125006,18 +125380,18 @@ function response2(value2) {
   need53(Buffer.byteLength(JSON.stringify(value2)) <= 16384, "Ordinary result exceeds 16 KiB.");
   return Object.freeze(value2);
 }
-function planFor2(request2, expected3) {
+function planFor2(request3, expected3) {
   const nonces = [randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex"), randomBytes13(32).toString("hex")];
   need53(new Set(nonces).size === 3, "Ordinary marker nonce collision; no regeneration.");
   return Object.freeze({
     profile: "easyeda-pro-control.project-symbol-closed-session.v1",
-    projectUuid: request2.target.projectUuid,
-    branchUuid: request2.target.branchUuid,
-    ownerUuid: request2.target.ownerUuid,
-    targetUuid: request2.target.symbolUuid,
-    activeUuid: request2.target.companionPcbUuid,
-    projectPath: request2.target.projectPath,
-    operation: request2.operation,
+    projectUuid: request3.target.projectUuid,
+    branchUuid: request3.target.branchUuid,
+    ownerUuid: request3.target.ownerUuid,
+    targetUuid: request3.target.symbolUuid,
+    activeUuid: request3.target.companionPcbUuid,
+    projectPath: request3.target.projectPath,
+    operation: request3.operation,
     marker: Object.freeze({ namespaceNonce: nonces[0], keyNonce: nonces[1], bodyNonce: nonces[2] }),
     nativePinsSha256: WITNESS_NATIVE_PINS_SHA256,
     facadeSha256: expected3.fingerprint.facadeImplementation.sha256,
@@ -125162,12 +125536,12 @@ var init_closed_symbol_operation_entry = __esm({
         }
         this.started = true;
         attempts12.add(this.runtime);
-        let request2, requestText;
+        let request3, requestText;
         try {
-          request2 = parseClosedSymbolOperationRequest(rawRequest);
-          this.request = request2;
-          need53((request2.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
-          requestText = canonicalJson(request2);
+          request3 = parseClosedSymbolOperationRequest(rawRequest);
+          this.request = request3;
+          need53((request3.operation.patch.name ?? "").trim().length > 0, "Ordinary symbol title must not be blank.");
+          requestText = canonicalJson(request3);
           this.owner();
         } catch (error51) {
           this.failure = error51;
@@ -125175,7 +125549,7 @@ var init_closed_symbol_operation_entry = __esm({
         }
         const current3 = () => {
           this.owner();
-          need53(this.request === request2 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request2) === requestText, "Ordinary entry request changed.");
+          need53(this.request === request3 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request3) === requestText, "Ordinary entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
@@ -125203,7 +125577,7 @@ var init_closed_symbol_operation_entry = __esm({
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
               "Ordinary runtime scope differs from the actual facade expectation."
             );
-            this.plan = planFor2(request2, expected3);
+            this.plan = planFor2(request3, expected3);
             const plan2 = this.plan, planText = canonicalJson(plan2);
             let claim3, coordinator;
             const planned = () => {
@@ -125225,12 +125599,12 @@ var init_closed_symbol_operation_entry = __esm({
             coordinator = this.coordinator;
             this.phase = "intent";
             this.claimState = "publication-unknown";
-            this.claim = await claimClosedSymbolOperationIntent(request2, plan2);
+            this.claim = await claimClosedSymbolOperationIntent(request3, plan2);
             claim3 = this.claim;
             this.claimState = "acknowledged";
             planned();
             this.fresh();
-            need53(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request2) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
+            need53(claim3.closedPlanSha256 === sha256Json(plan2) && claim3.requestSha256 === sha256Json(request3) && claim3.markerSha256 === sha256Json(plan2.marker), "Ordinary claim differs from its exact internal plan.");
             this.phase = "coordinator";
             this.full = await coordinator.recordAutomaticFullEvidence(plan2);
             planned();
@@ -125269,7 +125643,7 @@ var init_closed_symbol_operation_entry = __esm({
             return response2({
               ...CLOSED_SYMBOL_OPERATION_COMMON,
               outcome: "completed",
-              actionId: request2.operation.id,
+              actionId: request3.operation.id,
               operationId: full.operationId,
               headEligibility: kind,
               intentArtifact: descriptor9(claim3.artifact),
@@ -125297,7 +125671,7 @@ var src_exports = {};
 import { createHash as createHash44 } from "node:crypto";
 import {
   basename as basename27,
-  dirname as dirname24,
+  dirname as dirname25,
   isAbsolute as isAbsolute27,
   relative as relative9,
   resolve as resolve20,
@@ -125345,6 +125719,7 @@ function disposableIndexMethods() {
     disposableOwnerMethod(bridgeGate, "run"),
     disposableOwnerMethod(engine, "assertBridgeDispatchAllowed"),
     disposableOwnerMethod(engine, "assertBridgeAndRecoveryAdmission"),
+    disposableOwnerMethod(engine, "assertBridgeAndNativeUiEditingAdmission"),
     disposableOwnerMethod(engine, "assertNativeUiEditingAllowed"),
     ...["capture", "proveTerminated", "releaseCapture"].map((key) => disposableOwnerMethod(authority2, key)),
     ...[
@@ -125862,7 +126237,7 @@ async function failedExportObservation(path5) {
     };
   }
 }
-async function withEvidence(request2, result, evidence2, metadata8 = {}, {
+async function withEvidence(request3, result, evidence2, metadata8 = {}, {
   reservation,
   returnMode = "full",
   maxInlineBytes = 65536,
@@ -125873,7 +126248,7 @@ async function withEvidence(request2, result, evidence2, metadata8 = {}, {
     receipt2 = await archiveExternalEvidence({
       ...evidence2 === void 0 ? {} : { evidence: evidence2 },
       ...reservation === void 0 ? {} : { reservation },
-      request: request2,
+      request: request3,
       result,
       metadata: metadata8,
       attachments
@@ -125903,7 +126278,7 @@ async function withEvidence(request2, result, evidence2, metadata8 = {}, {
   }
   return { result, summary: summary8, evidence: receipt2 };
 }
-async function finalizeDispatchedFailure(reservation, request2, error51, metadata8 = {}, attachments = []) {
+async function finalizeDispatchedFailure(reservation, request3, error51, metadata8 = {}, attachments = []) {
   if (reservation === void 0) {
     return void 0;
   }
@@ -125911,7 +126286,7 @@ async function finalizeDispatchedFailure(reservation, request2, error51, metadat
   try {
     return await archiveExternalEvidence({
       reservation,
-      request: request2,
+      request: request3,
       result: {
         ok: false,
         outcome: "dispatched-but-not-proven",
@@ -126122,8 +126497,8 @@ function assertExactObjectKeys(value2, expectedKeys, label) {
     throw new Error(`${label} has unexpected or missing fields.`);
   }
 }
-function assertFiniteCaptureFields(value2, fields9, label) {
-  for (const field3 of fields9) {
+function assertFiniteCaptureFields(value2, fields10, label) {
+  for (const field3 of fields10) {
     if (typeof value2[field3] !== "number" || !Number.isFinite(value2[field3])) {
       throw new TypeError(`${label}.${field3} must be a finite number.`);
     }
@@ -126323,6 +126698,8 @@ var init_src = __esm({
     init_current_pcb_geometry_runtime();
     init_current_symbol_metadata();
     init_current_symbol_metadata_runtime();
+    init_current_project_only_symbol_preflight();
+    init_current_project_only_symbol_runtime();
     init_historical_abandonment();
     facadeMode = configuredFacadeMode(process19.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -126862,7 +127239,7 @@ var init_src = __esm({
     registerFacadeTool(
       "easyeda_control_api",
       offlineApiToolConfiguration,
-      guarded(({ request: request2 }) => runOfflineApi(request2))
+      guarded(({ request: request3 }) => runOfflineApi(request3))
     );
     registerFacadeTool(
       "easyeda_control_discover",
@@ -126938,7 +127315,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.union([nativeUiRequestSchema, nativeCloseRecoveryRequestSchema]) },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
-      serializedGuarded(({ request: request2 }) => {
+      serializedGuarded(({ request: request3 }) => {
         const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
         if (assetsRoot === void 0) {
           throw new Error("Configure the machine's installed EasyEDA assets first.");
@@ -126948,10 +127325,10 @@ var init_src = __esm({
           pluginRoot: resolve20(import.meta.dirname, "../.."),
           assetsRoot
         });
-        if (request2.action === "discard-close-confirmation" || request2.action === "discard-save-warning") {
-          return discardCloseConfirmation(request2, controller);
+        if (request3.action === "discard-close-confirmation" || request3.action === "discard-save-warning") {
+          return discardCloseConfirmation(request3, controller);
         }
-        return runNativeUiWithOperationAdmission(request2, (admitted) => controller.run(admitted), () => engine.assertNativeUiEditingAllowed());
+        return runNativeUiWithOperationAdmission(request3, (admitted) => controller.run(admitted), () => engine.assertNativeUiEditingAllowed());
       }, { allowDuringOrphanRisk: true })
     );
     designRequestSchema = external_exports.discriminatedUnion("action", [
@@ -126978,11 +127355,11 @@ var init_src = __esm({
         inputSchema: { request: runtimeRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => {
-        if (request2.action === "status") {
-          return { action: request2.action, result: windowsRuntime?.status() ?? { state: "not-launched" } };
+      serializedGuarded(async ({ request: request3 }) => {
+        if (request3.action === "status") {
+          return { action: request3.action, result: windowsRuntime?.status() ?? { state: "not-launched" } };
         }
-        if (request2.action === "launch-contained") {
+        if (request3.action === "launch-contained") {
           assertOrdinaryRuntimeAllocationAllowed();
           const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
@@ -126997,34 +127374,34 @@ var init_src = __esm({
             reviewedExecutionScopeSha256: implementation.sha256
           });
           assertOrdinaryRuntimeAllocationAllowed();
-          return { action: request2.action, result: await windowsRuntime.launch() };
+          return { action: request3.action, result: await windowsRuntime.launch() };
         }
-        if (request2.action === "normal-close") {
-          await ownedWindowsRuntime().normalClose(request2.windowHandle);
-          return { action: request2.action, result: ownedWindowsRuntime().status() };
+        if (request3.action === "normal-close") {
+          await ownedWindowsRuntime().normalClose(request3.windowHandle);
+          return { action: request3.action, result: ownedWindowsRuntime().status() };
         }
-        if (request2.action === "inspect-open") {
-          return { action: request2.action, result: await projectOpenExecutor.inspect(request2.operationId) };
+        if (request3.action === "inspect-open") {
+          return { action: request3.action, result: await projectOpenExecutor.inspect(request3.operationId) };
         }
-        if (request2.action !== "recover-open-authority") {
+        if (request3.action !== "recover-open-authority") {
           await engine.assertBridgeDispatchAllowed();
         }
         return upstream.withAuthenticatedBridgeDispatchScope(async () => {
-          switch (request2.action) {
+          switch (request3.action) {
             case "open-existing": {
-              return { action: request2.action, result: await projectOpenExecutor.openExisting(request2) };
+              return { action: request3.action, result: await projectOpenExecutor.openExisting(request3) };
             }
             case "recover-open-authority": {
-              return { action: request2.action, result: await projectOpenExecutor.recoverAuthority(request2.operationId) };
+              return { action: request3.action, result: await projectOpenExecutor.recoverAuthority(request3.operationId) };
             }
             case "reconcile-open": {
-              return { action: request2.action, result: await projectOpenExecutor.reconcileNoMutation(request2.operationId) };
+              return { action: request3.action, result: await projectOpenExecutor.reconcileNoMutation(request3.operationId) };
             }
             case "inspect-editor-tabs": {
-              return { action: request2.action, result: await projectOpenExecutor.inspectEditorTabs(request2.operationId) };
+              return { action: request3.action, result: await projectOpenExecutor.inspectEditorTabs(request3.operationId) };
             }
             case "rebind-open-runtime": {
-              return { action: request2.action, result: await projectOpenExecutor.rebindRuntime(request2.operationId, request2.expectedFingerprint) };
+              return { action: request3.action, result: await projectOpenExecutor.rebindRuntime(request3.operationId, request3.expectedFingerprint) };
             }
             default: {
               throw new Error("Unknown project-open runtime request.");
@@ -127067,66 +127444,66 @@ var init_src = __esm({
         inputSchema: { request: designRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => {
-        if (request2.action === "capabilities") {
+      serializedGuarded(async ({ request: request3 }) => {
+        if (request3.action === "capabilities") {
           return { capabilities: listDesignActionCapabilities() };
         }
-        if (request2.action === "inspect") {
-          return DesignExecutor.inspect(request2.operationId);
+        if (request3.action === "inspect") {
+          return DesignExecutor.inspect(request3.operationId);
         }
-        if (request2.action === "apply" || request2.action === "execute") {
-          const compiled2 = compileDesignAction(request2.operation);
-          if (request2.expectedContext.document.documentType !== compiled2.documentType) {
+        if (request3.action === "apply" || request3.action === "execute") {
+          const compiled2 = compileDesignAction(request3.operation);
+          if (request3.expectedContext.document.documentType !== compiled2.documentType) {
             throw new Error("Wrong editor for design action.");
           }
           assertDesignExecutionLifecycle(compiled2.documentType);
         }
-        if (request2.action === "commit" || request2.action === "rollback" || request2.action === "reconcile" || request2.action === "repair-layout-net-labels" || request2.action === "repair-layout-wire-groups" || request2.action === "repair-layout-label-visibility") {
-          const offline = await DesignExecutor.preflightRetainedLifecycle(request2.operationId, request2.action);
+        if (request3.action === "commit" || request3.action === "rollback" || request3.action === "reconcile" || request3.action === "repair-layout-net-labels" || request3.action === "repair-layout-wire-groups" || request3.action === "repair-layout-label-visibility") {
+          const offline = await DesignExecutor.preflightRetainedLifecycle(request3.operationId, request3.action);
           if (offline !== void 0) {
             return offline;
           }
         }
-        if (request2.action !== "recover-authority") {
+        if (request3.action !== "recover-authority") {
           await engine.assertBridgeDispatchAllowed();
         }
         return upstream.withAuthenticatedBridgeDispatchScope(() => {
-          switch (request2.action) {
+          switch (request3.action) {
             case "apply": {
-              return designExecutor.apply(request2);
+              return designExecutor.apply(request3);
             }
             case "execute": {
-              return executeAndCommitDesign(designExecutor, request2);
+              return executeAndCommitDesign(designExecutor, request3);
             }
             case "commit": {
-              return designExecutor.commit(request2.operationId);
+              return designExecutor.commit(request3.operationId);
             }
             case "rollback": {
-              return designExecutor.rollback(request2.operationId);
+              return designExecutor.rollback(request3.operationId);
             }
             case "repair-layout-net-labels": {
-              return designExecutor.repairLayoutNetLabels(request2.operationId, request2.confirmWrite);
+              return designExecutor.repairLayoutNetLabels(request3.operationId, request3.confirmWrite);
             }
             case "repair-layout-wire-groups": {
-              return designExecutor.repairLayoutWireGroups(request2.operationId, request2.confirmWrite);
+              return designExecutor.repairLayoutWireGroups(request3.operationId, request3.confirmWrite);
             }
             case "repair-layout-label-visibility": {
-              return designExecutor.repairLayoutLabelVisibility(request2.operationId, request2.confirmWrite);
+              return designExecutor.repairLayoutLabelVisibility(request3.operationId, request3.confirmWrite);
             }
             case "load-layout-pages": {
-              return designExecutor.loadLayoutPages(request2.operationId, request2.confirmOpen);
+              return designExecutor.loadLayoutPages(request3.operationId, request3.confirmOpen);
             }
             case "reconcile": {
-              return designExecutor.reconcile(request2.operationId);
+              return designExecutor.reconcile(request3.operationId);
             }
             case "recover-authority": {
-              return designExecutor.recoverAuthority(request2.operationId);
+              return designExecutor.recoverAuthority(request3.operationId);
             }
             case "rebind-runtime": {
-              return designExecutor.rebindRuntime(request2.operationId, request2.expectedFingerprint);
+              return designExecutor.rebindRuntime(request3.operationId, request3.expectedFingerprint);
             }
             case "open-target": {
-              return designExecutor.openTarget(request2.operationId);
+              return designExecutor.openTarget(request3.operationId);
             }
             default: {
               throw new Error("Unknown typed design phase.");
@@ -127176,41 +127553,41 @@ var init_src = __esm({
         inputSchema: { request: checkRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => {
-        if (request2.action === "inspect") {
-          return ruleCheckExecutor.inspect(request2.operationId);
+      serializedGuarded(async ({ request: request3 }) => {
+        if (request3.action === "inspect") {
+          return ruleCheckExecutor.inspect(request3.operationId);
         }
-        if (request2.action !== "recover-authority") {
+        if (request3.action !== "recover-authority") {
           await engine.assertBridgeDispatchAllowed();
         }
         return upstream.withAuthenticatedBridgeDispatchScope(() => {
-          switch (request2.action) {
+          switch (request3.action) {
             case "route-audit": {
-              if (request2.returnMode !== "full" && request2.evidence === void 0) {
+              if (request3.returnMode !== "full" && request3.evidence === void 0) {
                 throw new Error("Summary and receipt-only route audits require evidence paths.");
               }
-              return runPcbRouteAudit(engine, request2).then((result) => withEvidence(
-                request2,
+              return runPcbRouteAudit(engine, request3).then((result) => withEvidence(
+                request3,
                 result,
-                request2.evidence,
+                request3.evidence,
                 { facadeVersion: CONTROL_VERSION, reader: "facade-owned-route-audit" },
-                { returnMode: request2.returnMode, maxInlineBytes: request2.maxInlineBytes }
+                { returnMode: request3.returnMode, maxInlineBytes: request3.maxInlineBytes }
               ));
             }
             case "run": {
-              return ruleCheckExecutor.run(request2);
+              return ruleCheckExecutor.run(request3);
             }
             case "recover-authority": {
-              return ruleCheckExecutor.recoverAuthority(request2.operationId);
+              return ruleCheckExecutor.recoverAuthority(request3.operationId);
             }
             case "reconcile-no-mutation": {
-              return ruleCheckExecutor.reconcileNoMutation(request2.operationId);
+              return ruleCheckExecutor.reconcileNoMutation(request3.operationId);
             }
             case "open-target": {
-              return ruleCheckExecutor.openTarget(request2.operationId);
+              return ruleCheckExecutor.openTarget(request3.operationId);
             }
             case "rebind-runtime": {
-              return ruleCheckExecutor.rebindRuntime(request2.operationId, request2.expectedFingerprint);
+              return ruleCheckExecutor.rebindRuntime(request3.operationId, request3.expectedFingerprint);
             }
             default: {
               throw new Error("Unknown native check request.");
@@ -127227,42 +127604,42 @@ var init_src = __esm({
         inputSchema: { request: libraryRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => {
-        if (request2.action === "capabilities") {
+      serializedGuarded(async ({ request: request3 }) => {
+        if (request3.action === "capabilities") {
           return { capabilities: listLibraryExecutionCapabilities() };
         }
-        if (request2.action === "inspect") {
-          return LibraryExecutor.inspect(request2.operationId);
+        if (request3.action === "inspect") {
+          return LibraryExecutor.inspect(request3.operationId);
         }
-        if (request2.action === "execute") {
-          assertLibraryExecutionLifecycle(request2.operation);
+        if (request3.action === "execute") {
+          assertLibraryExecutionLifecycle(request3.operation);
         }
-        if (request2.action === "reconcile" || request2.action === "reconcile-no-mutation") {
-          const offline = await libraryExecutor.preflightReconcile(request2.operationId);
+        if (request3.action === "reconcile" || request3.action === "reconcile-no-mutation") {
+          const offline = await libraryExecutor.preflightReconcile(request3.operationId);
           if (offline !== void 0) {
             return offline;
           }
         }
-        if (request2.action !== "recover-authority") {
+        if (request3.action !== "recover-authority") {
           await engine.assertBridgeDispatchAllowed();
         }
         return upstream.withAuthenticatedBridgeDispatchScope(() => {
-          if (request2.action === "execute") {
-            return libraryExecutor.execute({ operation: request2.operation, expectedContext: request2.expectedContext, expectedFingerprint: request2.expectedFingerprint, ...request2.confirmWrite === void 0 ? {} : { confirmWrite: request2.confirmWrite } });
+          if (request3.action === "execute") {
+            return libraryExecutor.execute({ operation: request3.operation, expectedContext: request3.expectedContext, expectedFingerprint: request3.expectedFingerprint, ...request3.confirmWrite === void 0 ? {} : { confirmWrite: request3.confirmWrite } });
           }
-          if (request2.action === "recover-authority") {
-            return libraryExecutor.recoverAuthority(request2.operationId);
+          if (request3.action === "recover-authority") {
+            return libraryExecutor.recoverAuthority(request3.operationId);
           }
-          if (request2.action === "rebind-runtime") {
-            return libraryExecutor.rebindRuntime(request2.operationId, request2.expectedFingerprint);
+          if (request3.action === "rebind-runtime") {
+            return libraryExecutor.rebindRuntime(request3.operationId, request3.expectedFingerprint);
           }
-          if (request2.action === "open-target") {
-            return libraryExecutor.openTarget(request2.operationId);
+          if (request3.action === "open-target") {
+            return libraryExecutor.openTarget(request3.operationId);
           }
-          if (request2.action === "reconcile") {
-            return libraryExecutor.reconcile(request2.operationId);
+          if (request3.action === "reconcile") {
+            return libraryExecutor.reconcile(request3.operationId);
           }
-          return libraryExecutor.reconcileNoMutation(request2.operationId);
+          return libraryExecutor.reconcileNoMutation(request3.operationId);
         });
       }, { allowDuringOrphanRisk: true })
     );
@@ -127294,7 +127671,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(ordinaryLaunchRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => {
+      serializedGuarded(async ({ request: request3 }) => {
         if (ordinaryLaunchCoordinator === void 0) {
           const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
@@ -127322,7 +127699,7 @@ var init_src = __esm({
             }
           });
         }
-        return { result: await ordinaryLaunchCoordinator.run(request2) };
+        return { result: await ordinaryLaunchCoordinator.run(request3) };
       }, { allowDuringOrphanRisk: true })
     );
     registerFacadeTool(
@@ -127333,7 +127710,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
-      serializedGuarded(async ({ request: request2, expectedFingerprint }) => {
+      serializedGuarded(async ({ request: request3, expectedFingerprint }) => {
         if (currentDisposableOpenCoordinator === void 0) {
           const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           const assertOwner = () => {
@@ -127350,7 +127727,7 @@ var init_src = __esm({
             }
           });
         }
-        return { result: await currentDisposableOpenCoordinator.run(request2, expectedFingerprint) };
+        return { result: await currentDisposableOpenCoordinator.run(request3, expectedFingerprint) };
       }, { allowDuringOrphanRisk: true })
     );
     registerFacadeTool(
@@ -127411,7 +127788,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(historicalAbandonmentRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
-      serializedGuarded(async ({ request: request2 }) => ({ result: await runHistoricalAbandonment(request2) }), { allowDuringOrphanRisk: true })
+      serializedGuarded(async ({ request: request3 }) => ({ result: await runHistoricalAbandonment(request3) }), { allowDuringOrphanRisk: true })
     );
     registerFacadeTool(
       "easyeda_control_pcb_identities",
@@ -127427,11 +127804,11 @@ var init_src = __esm({
       "easyeda_control_project_symbol",
       {
         title: "Read project-local symbol metadata",
-        description: "Read one exact project-local symbol's metadata on the separately pinned current API/UI/project-worker runtime. Requires an explicit active PCB project/branch/document/tab target and authenticated fingerprint. Two matching bounded observations retain the outer RPC receiver and verify the symbol remains absent from the tab registry. The module-private worker is not independently leased; hidden editors, saved records, complete source and connectivity remain unverified. Native task equivalent of the project-local lib_Symbol.get subset, with no cloud-library lookup, geometry load, navigation, write or Save. Query offline project-symbol/project-symbol-validate first; current writer execution remains blocked.",
-        inputSchema: { request: external_exports.unknown().pipe(currentSymbolMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        description: "Read one exact project-local symbol on the separately pinned current runtime. The lib_Symbol.get request requires an active PCB context and observes bounded metadata twice. The project-only preflight request instead requires no editor tabs or hidden editors and compares exact caller-supplied expectedBefore metadata twice, with bounded UI actor/client/ticket/clock observations. Query offline project-symbol/project-symbol-validate or project-symbol-preflight/project-symbol-preflight-validate for the respective schemas. Both require the actual authenticated fingerprint. Supplied expectations are not source provenance; the private worker is not independently leased. No backend actor/clock qualification, startup completion, permission, saved membership, connectivity or writer authority. No cloud-library lookup, geometry load, navigation, mutation or explicit Save. Current writer execution remains blocked.",
+        inputSchema: { request: external_exports.unknown().pipe(external_exports.union([currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema])), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
-      serializedLiveGuarded(async (input) => ({ result: await readCurrentSymbolMetadata(engine, input.request, input.expectedFingerprint) }))
+      serializedLiveGuarded(async (input) => ({ result: "method" in input.request ? await readCurrentSymbolMetadata(engine, input.request, input.expectedFingerprint) : await readCurrentProjectOnlySymbolPreflight(engine, input.request, input.expectedFingerprint) }))
     );
     registerFacadeTool(
       "easyeda_control_pcb_geometry",
@@ -127464,7 +127841,7 @@ var init_src = __esm({
         }
         const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
         let dispatched = false;
-        const request2 = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
+        const request3 = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
         const native = publicSdkReadImplementationKind(input.request.method) === "native-task-equivalent";
         let reader = native ? "fixed-native-task-observation" : "fixed-public-sdk-observation";
         let effect = native ? "fixed-native-task-read" : "fixed-public-sdk-read";
@@ -127533,7 +127910,7 @@ var init_src = __esm({
           }
           const diagnostics = selectedTimings === void 0 ? void 0 : { selectedReaderTimings: selectedTimings.snapshot() };
           const response3 = await withEvidence(
-            request2,
+            request3,
             result,
             input.evidence,
             { facadeVersion: CONTROL_VERSION, reader, ...diagnostics },
@@ -127550,7 +127927,7 @@ var init_src = __esm({
           if (reservation && !dispatched) {
             await releaseEvidenceReservation(reservation);
           } else if (reservation) {
-            await finalizeDispatchedFailure(reservation, request2, error51, {
+            await finalizeDispatchedFailure(reservation, request3, error51, {
               effect,
               ...selectedTimings === void 0 ? {} : { selectedReaderTimings: selectedTimings.snapshot() }
             });
@@ -127586,7 +127963,7 @@ var init_src = __esm({
         }
         const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
         let dispatched = false;
-        const request2 = {
+        const request3 = {
           reader: input.request,
           expectedContext: input.expectedContext,
           expectedFingerprint: input.expectedFingerprint
@@ -127605,7 +127982,7 @@ var init_src = __esm({
             input.expectedContext
           );
           return await withEvidence(
-            request2,
+            request3,
             result,
             input.evidence,
             { facadeVersion: CONTROL_VERSION, reader: "facade-owned-exact" },
@@ -127619,7 +127996,7 @@ var init_src = __esm({
           if (reservation && !dispatched) {
             await releaseEvidenceReservation(reservation);
           } else if (reservation) {
-            await finalizeDispatchedFailure(reservation, request2, error51, {
+            await finalizeDispatchedFailure(reservation, request3, error51, {
               effect: "facade-owned-exact-read"
             });
           }
@@ -127653,7 +128030,7 @@ var init_src = __esm({
         }
         const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
         let dispatched = false;
-        const request2 = {
+        const request3 = {
           upstreamTool: input.upstreamTool,
           arguments: input.arguments,
           expectedContext: input.expectedContext,
@@ -127679,7 +128056,7 @@ var init_src = __esm({
           const result = await callReadOnly(input.upstreamTool, input.arguments);
           await engine.assertContext(input.expectedContext);
           return await withEvidence(
-            request2,
+            request3,
             result,
             input.evidence,
             { facadeVersion: CONTROL_VERSION },
@@ -127693,7 +128070,7 @@ var init_src = __esm({
           if (reservation && !dispatched) {
             await releaseEvidenceReservation(reservation);
           } else if (reservation) {
-            await finalizeDispatchedFailure(reservation, request2, error51, {
+            await finalizeDispatchedFailure(reservation, request3, error51, {
               effect: "read"
             });
           }
@@ -127728,7 +128105,7 @@ var init_src = __esm({
         }
         const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
         let dispatched = false;
-        const request2 = {
+        const request3 = {
           calls: input.calls,
           expectedContext: input.expectedContext,
           expectedFingerprint: input.expectedFingerprint
@@ -127760,7 +128137,7 @@ var init_src = __esm({
             await engine.assertContext(input.expectedContext);
           }
           return await withEvidence(
-            request2,
+            request3,
             results,
             input.evidence,
             { facadeVersion: CONTROL_VERSION },
@@ -127774,7 +128151,7 @@ var init_src = __esm({
           if (reservation && !dispatched) {
             await releaseEvidenceReservation(reservation);
           } else if (reservation) {
-            await finalizeDispatchedFailure(reservation, request2, error51, {
+            await finalizeDispatchedFailure(reservation, request3, error51, {
               effect: "read-batch"
             });
           }
@@ -128036,7 +128413,7 @@ var init_src = __esm({
         let dispatched = false;
         let publishedExport;
         const requestedPath = resolve20(exportRequest.arguments.filePath);
-        const request2 = {
+        const request3 = {
           upstreamTool: exportRequest.upstreamTool,
           arguments: exportRequest.arguments,
           expectedContext: input.expectedContext,
@@ -128077,9 +128454,9 @@ var init_src = __esm({
             "facade-exports"
           );
           await ensureManagedDirectory(exportRoot);
-          const exportDirectory = dirname24(requestedPath);
+          const exportDirectory = dirname25(requestedPath);
           const exportRelation = relative9(exportRoot, requestedPath);
-          if (dirname24(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename27(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep7}`) || isAbsolute27(exportRelation)) {
+          if (dirname25(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename27(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep7}`) || isAbsolute27(exportRelation)) {
             throw new Error(
               `Export filePath must use a dedicated ${exportRoot}/export-<unique>/ directory.`
             );
@@ -128171,7 +128548,7 @@ var init_src = __esm({
             fabricationRelease: false
           };
           return await withEvidence(
-            request2,
+            request3,
             verified,
             input.evidence,
             { facadeVersion: CONTROL_VERSION, effect: "artifact-write" },
@@ -128184,7 +128561,7 @@ var init_src = __esm({
           if (dispatched) {
             const failureMetadata = {
               effect: "artifact-write",
-              exportDirectory: dirname24(requestedPath)
+              exportDirectory: dirname25(requestedPath)
             };
             const failureAttachments = [];
             if (publishedExport === void 0) {
@@ -128198,7 +128575,7 @@ var init_src = __esm({
             }
             await finalizeDispatchedFailure(
               reservation,
-              request2,
+              request3,
               error51,
               failureMetadata,
               failureAttachments

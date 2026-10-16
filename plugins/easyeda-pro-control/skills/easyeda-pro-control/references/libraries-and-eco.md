@@ -19,6 +19,12 @@ first. It observes registry absence and loaded metadata only. It does not prove
 hidden-editor absence, saved source or readiness to rename, and it never enables
 the blocked writer below.
 
+With a loaded project and no editor tabs, use the separate
+`project-symbol-preflight` request instead. Read [the no-editor comparison
+contract](api-reference.md#symbol-observation-with-no-editor-tabs) before use.
+Do not open a PCB solely for that comparison. Caller-supplied expectations
+neither verify source provenance nor enable renaming.
+
 ## Structure-write completion restriction
 
 The separate `easyeda_control_symbol_metadata` source entry implements one

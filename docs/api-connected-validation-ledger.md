@@ -1084,3 +1084,59 @@ This case does not validate complete source, saved membership, ownership,
 connectivity, writers, selected-ID reads, other families or later generations.
 The inventory's generation-neutral live-unclaimed labels remain conservative;
 this version-specific ledger is the connected evidence, not global authority.
+
+## Generation G20261016-090000: complete project-only baseline lifecycle
+
+Installed `0.3.0+codex.20261016090000` was admitted against main
+`63453740b02b46519fb0e7b3dea109a2c7b4ec1d`, package tree
+`ea0f43840044ae5ea700a1805aa9535cda4bb819`, source363 SHA
+`5f7a89b09a9e99827908d7734e1ba472f1bf7454ff327a62f107ae77975f9a59`
+and runtime3 SHA
+`788d810d5e6ba6761889010191a775c60e08ecd68ad71a22030e33887c77f831`.
+The exact installed inventory matched1,222files/24,192,640bytes and modes.
+Its [frozen current opening profile](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/63453740b02b46519fb0e7b3dea109a2c7b4ec1d/plugins/easyeda-pro-control/server/src/current-disposable-open-profile.ts)
+binds APP `52f51ce4`, UI `3823ed6e`, manager `005584e0`, worker `b849bd12`
+and schematic `d9d6a955`. API0.3.50.ab46409c, UI3.2.196.26ed3d6c,
+PCB3.2.193.682ed44e and dispatcher ded07x99dcxb504 retain their exact
+capability-specific admission. These are not the older design-writer tuple.
+
+One existing disposable fixture completed initial PCB opening, normal close,
+original termination and a closed baseline copy. Its original ordinary launcher
+recorded termination before the retained baseline relaunched EasyEDA. Replacement
+admission, inactive-cache observation and project-only opening then succeeded.
+The opening explicitly accepted unqualified schematic-startup effects because
+two active schematic pages exclude the narrower no-active-page profile. No
+document navigation followed project-only opening. One normal close and the
+original root/Job termination produced the final closed snapshot and capture
+release. The complete24phase lifecycle is retired, with no replay authorized.
+
+The installed offline analyzer accepted that retained lifecycle. It compared
+the raw copies, complete logical SQL and all selected-branch native records and
+provenance without opening the original project. Both raw files are byte-identical
+598,016bytes/SHA`970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199`;
+both native checkpoints are561,152bytes/SHA
+`4ed9ca7c9ec086d5c79d7f059ca906eb66d12e08457a7f495848809b135f993f`.
+All35SQLtables and18native documents match. Complete logical SQL is
+`4d01daaf05d97cda374ef7319f4567458c4c71c684b14c5291738688033c2b21`;
+native history is
+`20b0b0629d86cdfcd7601b8747ea5509ad5dcd719079ee1d49368dfb16083588`.
+
+Independent read-only review checked all24artifact hashes and canonical journal
+binding `b3bf3385`, final snapshot `43b10bb7`, retirement `ef37a034`, close/session/
+original-launch links and the two retained raw files. Native checkpoint hashes
+were checked through the snapshot/analyzer commitments; that independent pass
+did not reopen those external checkpoint files or rerun SQL comparison. The main
+installed analyzer performed the full comparison. Its retained report is26,733
+bytes/SHA`e5c45abebfd9a12bd7ba59ed590760f68c9addf421b0d9f89df485fa55dcff9b`.
+
+Five native clock attachments share the original owner/source/scope and ordered
+endpoints. Independent recomputation matches the separate elapsed ranges:
+UTC446,073..446,391ms and QPC446,068..446,386ms. These observations do not bind
+the document/backend/SQLite timestamp producers, prove continuous clock stability
+or establish a writer deadline.
+
+This is a successful disposable lifecycle and historical unchanged-result check,
+not startup qualification, current-state authority, metadata-writer validation or
+live validation of the later103000 reader. No metadata edit, explicit Save,
+Save/Discard choice, restoration, forced exit or production-design access ran.
+The retired operation must not be replayed.

@@ -19,6 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
+Update `0.3.0+codex.20261016103000` adds a project-only symbol comparison without
+opening a PCB or symbol editor, plus internal actor postconditions and exact
+SQLite dependency checks for the future writer. The previous installed lifecycle
+completed normal close/reopen/close with unchanged retained raw files, complete
+SQL and native history. This does not qualify startup effects or enable editing.
+See the [scope and concrete remaining work](docs/current-project-only-symbol-release-2026-10-16.md).
+
 Update `0.3.0+codex.20261016090000` adds offline `baseline-analyze` for complete retained SQL/native
 snapshot comparisons, process-bound clock reporting at retirement, and fewer
 redundant history scans. It also fixes authenticated status checks around cache
@@ -223,6 +230,10 @@ exposes sixteen: API reference, local discovery, status, calculations, local
 system methods, extension-index/editor-shell/identity-context/shortcut observers,
 explicit-target PCB layer/identity/geometry and project-symbol metadata observations, local historical abandonment,
 ordinary launch and disposable project opening.
+The project-symbol tool also has a separate no-editor-tab preflight: it compares
+known metadata in a loaded project and observes bounded UI actor/ticket/clock
+data without opening a PCB. Discover `project-symbol-preflight` before use;
+success is not permission, backend attribution or writer authority.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
 launch instead verifies its installed executable/app/helper identities.
