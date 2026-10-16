@@ -2036,6 +2036,15 @@ function assertNoOtherRecoveryOperations(operationId: string, operations: readon
   throw error;
 }
 
+function assertNoNativeUiEditingOperations(blockingOperations: readonly OperationSummary[]): true {
+  if (blockingOperations.length === 0) { return true; }
+  const error = annotatedError(
+    "Resolve every incomplete, unreadable or orphan-risk API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.",
+  );
+  error.blockingOperations = blockingOperations;
+  throw error;
+}
+
 async function scanUnfinishedOperations(): Promise<OperationSummary[]> {
   const operations = await scanQualifiedAdmissionOperations();
   return operations.filter((entry) => entry.unfinished).map((entry) => entry.summary);
@@ -2784,18 +2793,21 @@ export class EasyedaControlEngine {
     return assertNoOtherRecoveryOperations(operationId, operations.map((entry) => entry.summary));
   }
 
+  /** Evaluate adjacent bridge and native-edit guards from one fresh complete
+   * scan. Quarantine still refuses first; no result can admit a later invocation.
+   */
+  public async assertBridgeAndNativeUiEditingAdmission(): Promise<true> {
+    const operations = await scanQualifiedAdmissionOperations();
+    assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
+    return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
+  }
+
   /** Native editing must exclude both unfinished transactions and terminal
    * journals with orphan risk. Use the shared fresh-byte scanner once; local
    * inspection, focus and normal close bypass this editing-only gate.
    */
   public async assertNativeUiEditingAllowed(): Promise<true> {
-    const blockingOperations = await scanRecoveryBlockingOperations();
-    if (blockingOperations.length === 0) { return true; }
-    const error = annotatedError(
-      "Resolve every incomplete, unreadable or orphan-risk API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.",
-    );
-    error.blockingOperations = blockingOperations;
-    throw error;
+    return assertNoNativeUiEditingOperations(await scanRecoveryBlockingOperations());
   }
 
   public async status(): Promise<EngineStatus> {

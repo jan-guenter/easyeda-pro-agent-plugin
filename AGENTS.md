@@ -6,6 +6,116 @@ Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Resumed090000: complete disposable lifecycle; candidate103000 preparation
+
+Actual facade481814, parent480138, startTicks11808228 loads installed090000
+on pinnedNode24.18.0. Independent read-only admission matches all1,222files/
+24,192,640bytes and modes against main63453740b02b46519fb0e7b3dea109a2c7b4ec1d,
+inventoryd29f767e/source363 SHA5f7a89b0/runtime3 SHA788d810d. Automatic main
+CI38879868791 has passed. No completed release suite was rerun.
+
+Fresh status13 completed with no incomplete operations and no bridge session.
+Only the existing disposable source was rehashed,970d21b3 unchanged. New launch
+`ordinary-startup-090000-20261016` completed17, root32580,
+Job691bf2ba62f04a0bb63937d8d692037f/helper79fc2bd0268041028591b7042f0bfabf;
+launchedSHA73b53793. Status21 authenticated automatically; context22 proved
+empty StartPage. `current-pcb-open-090000-20261016` completed24 with exact
+PCB/native identity, hardStop/orphan false, terminal07 SHA4933cddb. No replay.
+Its managed checkpoint is561,152bytes/SHA4ed9ca7c. Exact-schema validation
+passed for `current-baseline-090000-20261016`; baseline-begin36 completed
+awaiting-termination with one acknowledged normal close,04 SHA5f848e70.
+Termination/baseline-copy observation51 completed: source970d21b3/raw598,016,
+checkpoint4ed9ca7c/561,152, SQLlogical4d01daaf/history20b0b062; copy-result06
+SHA95165331. Historical subset sole blocker is two active schematic pages.
+Ordinary launch termination65 completed before baseline relaunch72 replaced
+its Job. New-session admission75, inactive-cache observation78 and project-only
+opening81 succeeded. One finish-close acknowledged closure; observe-finish91
+proved original replacement root/Job termination and preserved the final snapshot.
+All24phases remain, retiredtrue/capturesreleased, terminalplan-invalidated.
+Snapshot22 SHA43b10bb7; retirement23 SHAef37a034. No replay or extra close.
+The installed offline analyzer accepted this successful24phase profile:
+journalb3bf3385/evidence218c2cd1, rawfilesunchanged598,016/SHA970d21b3,
+checkpointsunchanged561,152/SHA4ed9ca7c, complete35SQLtables and18native
+documents/provenance unchanged. SQLlogical4d01daaf/history20b0b062.
+Same-generation native clock relation is observed across five stages, with
+ordered endpoints and separate UTC/QPC elapsed ranges. No backend actor/clock,
+continuous-clock stability, startup qualification or writer authority inferred.
+Both original ordinary launch and replacement lifecycle are finished.073000 is
+fully retired and060000 abandoned; no recovery, navigation or Save replay.
+Production designs and their records remain untouched. Source work is on
+`feature/current-startup-evidence`. A source-only initial-opener scan reduction
+passed33 focused tests, final changed-test rerun, types and strict lint with
+zero warnings; independent review accepts. It saves one complete history scan,
+not measured live latency. New public project-only symbol comparison is guarded
+by an authenticated lease and current APP/UI/MGR/WORKER/SCH/WS identities.
+It needs no editor tabs, compares caller expectations and retains bounded UI
+actor/client/ticket/clock observations; it grants no source provenance or writer
+authority. Existing PCB-context lib_Symbol.get remains unchanged. Its seven
+compiler, nine runtime and five registration tests pass; independent review
+accepts integration. A separate internal actor postcondition passes nine tests,
+and exact SQLite dependency qualification passes19tests. These are synthetic
+checks, not connected validation of the candidate. Current writer clock plan,
+one-shot fixed mutation/coordinator, forward/inverse persistence and recovery
+remain unimplemented. Research records the concrete next steps.
+Candidate `0.3.0+codex.20261016103000` is being built and checked. Whole-tree
+types/strict lint, build, compatibility,774-method inventory and package/seven-
+skill checks pass. Initial repository validation caught literal control bytes
+in a new regex; textual Unicode escapes preserve semantics without broadening
+the binary allowlist. Final seven-test check, rebuild, compatibility, package
+and repository checks pass. Candidate source367 SHA742d0526/runtime3 SHA28f6e024;
+external runtime pins are unchanged. All seven official skill validators pass.
+No candidate publication or installation yet. Scope and backlog:
+`docs/current-project-only-symbol-release-2026-10-16.md`.
+
+### Delivered090000: scoped status, retained analysis and clock reporting
+
+Published and installed/enabled `0.3.0+codex.20261016090000` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Final payload `c112a6be940f138ba3f7d115c74df4bb7b676e2e` merged through protected
+PR39 as main `63453740b02b46519fb0e7b3dea109a2c7b4ec1d`. Full tree
+`d98e1b33039a39832c67837c4a3879a8568a1ee3` and package tree
+`ea0f43840044ae5ea700a1805aa9535cda4bb819` exactly match the tested payload;
+both committed bundles reproduce. Required PR CI38878541256 passed all ten
+jobs:10,180 facade passes/five platform skips/zero failures or cancellations,
+424 bridge passes across28files. Windows38878541240 passed. Audit verified151
+registry signatures/40attestations and zero vulnerabilities. Types, strict
+lint with zero warnings, builds, compatibility, package/privacy/repository and
+seven-skill checks passed. Official skill validators passed locally; unavailable
+on the CI runner, not falsely counted there. Automatic mainCI38879868791 and
+postmerge Windows38879868828 passed on the identical tree.
+
+Official named marketplace upgrade under022 returned errors[]. CLI confirms
+090000 installed/enabled and marketplace HEAD equals merged main. Before/after
+and independent read-only inventories match all1,222files/24,192,640bytes,
+42directories0755,1,221files0644/one0755 and seven skills, with no extras,
+symlinks or hardlinks. Inventoryd29f767e; source363 SHA5f7a89b0/runtime3 SHA788d810d,
+compatibility manifestfebc0b6d. The actual configured offline launcher hands
+ambientNode26.11.1 to pinnedNode24.18.0 without installed module ancestors.
+Its16-tool catalog exposes baseline-analysis discovery/exact validation,
+rejects10 invalid requests then accepts a valid one. Existing project-opening
+and historical schemas pass. Three samples show no upstream child/non-stdio
+socket, no operation journal, no live call. Probe475893 exited through stdinEOF,
+zero stderr, no signals; synthetic profile and installed inventory unchanged.
+Private proof `/tmp/easyeda-installed-090000-CRlQwv47/proof.json`,3,292bytes,
+SHA `2928e7ea8c7977007c60a387ee9051ad4157df95d543c0b6211049433eefcdce`.
+Public release receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/39#issuecomment-6212360797.
+
+STOP for a fresh Codex session before live calls, following the packaged release
+workflow. No owner termination, loaded-cache hotpatch or live call followed
+installation. Production designs and their records remain untouched. This local
+delivery record belongs with the next source change, not a record-only CI cycle.
+
+Next: verify mainCI and admit the actual090000 facade, then run one NEW disposable
+lifecycle using the scoped status fix through project-only opening and final
+snapshot/retirement.073000 is fully retired,060000 historically abandoned and
+their ordinary launchers terminated: no recovery, replay, extra close or Save.
+Only a successful24-phase lifecycle qualifies for the new offline analyzer.
+New clock reporting is not yet live-validated. Startup effects, backend actor/
+producer-clock qualification, symbol writer/inverse/persistence recovery and
+other blocked API families remain open. Full scope and concrete limits:
+`docs/current-project-only-lifecycle-release-2026-10-16.md`.
+
 ### Resumed073000: safely retired; authenticated scope fix ready
 
 Latest live checkpoint: replacement admission completed70. One cache observation76

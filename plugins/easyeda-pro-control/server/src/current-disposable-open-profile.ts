@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
+import type { BigIntStats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
-import { isAbsolute, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { CURRENT_UI_IMPLEMENTATION, verifyCurrentUiImplementation } from "./current-ui-implementation.ts";
 
 /** Opening is an ordinary writable application lifecycle. These additional
@@ -27,6 +28,26 @@ export const CURRENT_SYMBOL_CLOCK_IMPLEMENTATION = Object.freeze({
   sha256: "7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453",
 });
 
+/** Extra dependencies for the exact local symbol/history/structure producer.
+ * This is source admission only: the original reviewed win32-x64 executable,
+ * owned Job, local routing and closed SQL effect still need their own proofs.
+ */
+export const CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION = Object.freeze({
+  schema: "easyeda-pro-control.current-symbol-persistence-implementation.v1",
+  files: Object.freeze([
+    Object.freeze({ relativePath: "../node_modules/sqlite3/package.json", bytes: 3619,
+      sha256: "a7d2279dfd425ee3f2f368e5160955491333967f7207ff3690a747a11f049985" }),
+    Object.freeze({ relativePath: "../node_modules/sqlite3/lib/sqlite3.js", bytes: 6309,
+      sha256: "e453648b76b80be1334dc49bf3ba19672f7acbd11b5d8b1ebe0cab08e3c5edf3" }),
+    Object.freeze({ relativePath: "../node_modules/sqlite3/lib/sqlite3-binding.js", bytes: 449,
+      sha256: "946769d049dacf8a564ab0f7076e1762ebae7ee7aba43d8ac5d72103089b6ccf" }),
+    Object.freeze({ relativePath: "../node_modules/sqlite3/lib/binding/napi-v3-win32-x64/node_sqlite3.node", bytes: 2_742_272,
+      sha256: "a851d31983fd21ee3821b1a0ca148c013029f96c6e0d31afc400e6a62ea7b482" }),
+  ]),
+  absent: Object.freeze(["../node_modules/sqlite3.js", "../node_modules/sqlite3.json", "../node_modules/sqlite3.node",
+    "../node_modules/sqlite3/lib/sqlite3"]),
+});
+
 /** The project-only profile relies on the no-active-sheet startup exclusion.
  * Pin the implementation that owns that initialization, not just its caller.
  */
@@ -38,6 +59,14 @@ export const CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION = Object.freeze({
 export async function verifyCurrentProjectOnlyOpenImplementation(assetsRoot: string): Promise<void> {
   await verifyCurrentDisposableOpenImplementation(assetsRoot);
   await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION]);
+}
+
+/** Observation-only project context plus the existing notify-clock source.
+ * This does not qualify SQLite persistence or grant a write route.
+ */
+export async function verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot: string): Promise<void> {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION, CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
 }
 
 function requirePinned(condition: boolean): asserts condition {
@@ -57,6 +86,64 @@ export async function verifyCurrentDisposableOpenImplementation(assetsRoot: stri
 export async function verifyCurrentSymbolWitnessImplementation(assetsRoot: string): Promise<void> {
   await verifyCurrentDisposableOpenImplementation(assetsRoot);
   await verifyFiles(assetsRoot, [CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
+}
+
+/** Separate opt-in dependency check. Existing opening/read profiles do not call
+ * this function, and matching these files grants no writer or process authority.
+ * The fixed package main and binding loader were reviewed with verbose disabled;
+ * no caller-supplied package resolver, paths, hashes or platform is accepted.
+ */
+export async function verifyCurrentSymbolPersistenceImplementation(assetsRoot: string): Promise<void> {
+  requirePinned(isAbsolute(assetsRoot) && await realpath(assetsRoot) === assetsRoot);
+  const before = await persistenceResolution(assetsRoot);
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.files);
+  const after = await persistenceResolution(assetsRoot);
+  requirePinned(before.length === after.length && before.every((item, index) => item === after[index]));
+}
+
+function identity(info: BigIntStats, directory: boolean): string {
+  // Parent directory timestamps can change for unrelated sibling activity.
+  // Their inode/type stays bound; selected file timestamps and link count do not.
+  return [info.dev, info.ino, info.mode, ...(directory ? [] : [info.size, info.mtimeNs, info.ctimeNs, info.nlink])].join(":");
+}
+
+async function persistenceResolution(assetsRoot: string): Promise<readonly string[]> {
+  const files = CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.files.map((pin) => resolve(assetsRoot, pin.relativePath));
+  const directories = new Set<string>([assetsRoot]);
+  for (const path of [assetsRoot, ...files]) {
+    let directory = dirname(path);
+    for (;;) {
+      directories.add(directory);
+      const parent = dirname(directory);
+      if (parent === directory) { break; }
+      directory = parent;
+    }
+  }
+  const result: string[] = [];
+  for (const directory of directories) {
+    const info = await lstat(directory, { bigint: true });
+    requirePinned(info.isDirectory() && !info.isSymbolicLink() && await realpath(directory) === directory);
+    result.push(`${directory}:${identity(info, true)}`);
+  }
+  for (const path of files) {
+    const info = await lstat(path, { bigint: true });
+    requirePinned(info.isFile() && !info.isSymbolicLink() && info.nlink === 1n && await realpath(path) === path);
+    result.push(`${path}:${identity(info, false)}`);
+  }
+  for (const relativePath of CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.absent) {
+    await requireAbsent(resolve(assetsRoot, relativePath));
+  }
+  return result;
+}
+
+async function requireAbsent(path: string): Promise<void> {
+  try { await lstat(path); }
+  catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") { return; }
+    throw error;
+  }
+  requirePinned(false);
 }
 
 async function verifyFiles(assetsRoot: string, pins: readonly Readonly<{ relativePath: string; bytes: number; sha256: string }>[]): Promise<void> {

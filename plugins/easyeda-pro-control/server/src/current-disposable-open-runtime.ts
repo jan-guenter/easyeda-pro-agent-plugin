@@ -61,7 +61,7 @@ interface Retained {
 }
 export interface CurrentDisposableOpenOptions {
   readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertNativeUiEditingAllowed" | "assertRecoveryOperationIsolated" | "assertBridgeAndRecoveryAdmission" |
-    "dispatchWithOrphanTracking" | "executionAuthorityValidator" | "upstream"> & {
+    "assertBridgeAndNativeUiEditingAdmission" | "dispatchWithOrphanTracking" | "executionAuthorityValidator" | "upstream"> & {
       readonly status: () => Promise<{ stableFingerprint: Value }>;
     };
   readonly runtime: () => Pick<WindowsControlRuntime, "status" | "observeLaunchTermination">;
@@ -594,7 +594,7 @@ export class CurrentDisposableOpenCoordinator {
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     requireValue(status.state === "owned", "Current disposable opening requires this facade's original supervised application.");
     const launch = launchSchema.parse(status.launch);
-    await engine.assertBridgeDispatchAllowed(); await engine.assertNativeUiEditingAllowed();
+    await engine.assertBridgeAndNativeUiEditingAdmission();
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     const operations = await this.services.listOperations();
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);

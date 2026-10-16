@@ -120,6 +120,40 @@ void test("combined admission makes one fresh scan and preserves bridge-first is
   assert.equal(scans, 4);
 });
 
+void test("combined bridge/native editing admission scans once and preserves exact bridge-first refusals", async () => {
+  const { engine, journal } = await fixture();
+  const readDirectory = fsPromises.readdir;
+  let scans = 0;
+  mock.method(fsPromises, "readdir", async (...args: unknown[]): Promise<unknown> => {
+    scans += 1;
+    const entries: unknown = await Reflect.apply(readDirectory, undefined, args);
+    return entries;
+  });
+  syncBuiltinESMExports();
+  mock.method(engine, "observeStatusAdmission", (): never => { throw new Error("A status observation is not admission."); });
+  mock.method(engine, "assertBridgeDispatchAllowed", (): never => { throw new Error("Do not scan the bridge predicate separately."); });
+  mock.method(engine, "assertNativeUiEditingAllowed", (): never => { throw new Error("Do not scan the native-edit predicate separately."); });
+  assert.equal(await engine.assertBridgeAndNativeUiEditingAdmission(), true);
+  assert.equal(scans, 1);
+  for (const orphanedCallPossible of [false, true]) {
+    await artifacts.updateOperation({ ...journal, state: "library-needs-review", orphanedCallPossible });
+    const originalGuard = orphanedCallPossible
+      ? engines.EasyedaControlEngine.prototype.assertBridgeDispatchAllowed.bind(engine)
+      : engines.EasyedaControlEngine.prototype.assertNativeUiEditingAllowed.bind(engine);
+    let original: unknown;
+    try { await originalGuard(); } catch (error) { original = error; }
+    assert.ok(original instanceof Error && "blockingOperations" in original);
+    const scansBefore: number = scans;
+    await assert.rejects(engine.assertBridgeAndNativeUiEditingAdmission(), (error: unknown) => {
+      assert.ok(error instanceof Error && "blockingOperations" in error);
+      assert.equal(error.message, original.message);
+      assert.deepEqual(error.blockingOperations, original.blockingOperations);
+      return true;
+    });
+    assert.equal(scans, scansBefore + 1);
+  }
+});
+
 void test("status admission reports one dated cloned observation and every later guard scans fresh bytes", async () => {
   const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false,
     nextSafeAction: "Inspect the retained operation." });
@@ -148,6 +182,7 @@ void test("status and combined admission rehash same-size journal and phase chan
     const observation = await engine.observeStatusAdmission();
     assert.deepEqual(observation.incompleteOperations, []);
     assert.equal(await engine.assertBridgeAndRecoveryAdmission(id), true);
+    assert.equal(await engine.assertBridgeAndNativeUiEditingAdmission(), true);
     const path = target === "journal" ? artifacts.operationPath(id) : descriptor.path;
     const info = await lstat(path), original = await readFile(path, "utf8");
     const changed = target === "journal" ? original.replace('"completed"', '"savingxxx"') : original.replace("before", "forged");
@@ -155,6 +190,7 @@ void test("status and combined admission rehash same-size journal and phase chan
     await writeFile(path, changed); await utimes(path, info.atime, info.mtime);
     await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
     await assert.rejects(engine.assertBridgeAndRecoveryAdmission(id), /dispatch is quarantined/u);
+    await assert.rejects(engine.assertBridgeAndNativeUiEditingAdmission(), /dispatch is quarantined/u);
     await rm(join(root, "operations"), { recursive: true, force: true });
   }
 });

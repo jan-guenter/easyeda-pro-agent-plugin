@@ -1,5 +1,16 @@
 # Current project-only lifecycle validation
 
+## Completed 090000 live continuation
+
+The restarted090000 lifecycle completed all24phases, including project-only
+opening, original root/Job termination, final closed snapshot and capture release.
+The maintained offline analyzer found both raw files byte-identical, all35SQL
+tables unchanged and all18selected-branch native documents/provenance unchanged.
+Its five-stage native clock relation is observed, not timestamp-producer or
+continuous-clock qualification. Do not replay the retired operation. This closes
+the lifecycle/analysis TODOs below for that one run; startup and writer
+qualification remain separate. See the [follow-up release and remaining work](current-project-only-symbol-release-2026-10-16.md).
+
 ## Retained analysis and clock reporting
 
 Update `0.3.0+codex.20261016090000` adds `baseline-analyze` to the offline API. It accepts only an
