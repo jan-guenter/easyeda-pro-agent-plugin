@@ -22,6 +22,7 @@ import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolM
 import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
 // oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
 import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "./current-symbol-baseline-runtime.ts";
+import { inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 
@@ -223,10 +224,12 @@ export class CurrentDisposableOpenCoordinator {
       requireValue(expectedFingerprint === undefined, "Baseline continuation cannot replace its original runtime fingerprint.");
       switch (request.action) {
         case "baseline-observe-termination": { return this.observeSymbolBaseline(request.operationId); }
+        case "baseline-prepare-clock": { return this.prepareSymbolBaselineClock(request.operationId); }
         case "baseline-relaunch": { return this.relaunchSymbolBaseline(request.operationId); }
         case "baseline-admit": { return this.admitSymbolBaseline(request.operationId); }
         case "baseline-observe-caches": { return this.observeSymbolBaselineCaches(request.operationId); }
         case "baseline-open-project": { return this.openSymbolBaselineProject(request.operationId, request.acceptUnqualifiedSchematicStartupEffects); }
+        case "baseline-observe-clock": { return this.observeSymbolBaselineClock(request.operationId); }
         case "baseline-finish-close": { return this.finishSymbolBaseline(request.operationId); }
         case "baseline-observe-finish": { return this.observeSymbolBaselineFinish(request.operationId); }
         case "baseline-inspect": { return this.inspectSymbolBaseline(request.operationId); }
@@ -331,6 +334,15 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
+  /** One exact-literal scratch comparison before the owned replacement launch. */
+  public async prepareSymbolBaselineClock(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.prepareClockReference(operationId); }
+    finally { this.busy = false; }
+  }
+
   /** Fixed continuation on the original retained baseline; no owner adoption. */
   public async relaunchSymbolBaseline(operationId: string): Promise<Value> {
     const stage = this.baselines.get(operationId);
@@ -367,6 +379,15 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
+  /** Fixed Date controls only; caller input cannot select code or a target. */
+  public async observeSymbolBaselineClock(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.observeAgedClock(operationId); }
+    finally { this.busy = false; }
+  }
+
   public async finishSymbolBaseline(operationId: string): Promise<Value> {
     const stage = this.baselines.get(operationId);
     requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
@@ -392,7 +413,8 @@ export class CurrentDisposableOpenCoordinator {
       const journal = await this.services.loadOperation(operationId);
       requireValue(journal.operationId === operationId && isRecord(journal.plan) &&
         journal.plan["profile"] === "easyeda-pro-control.current-symbol-closed-baseline.v1", "Current symbol baseline history has another profile.");
-      return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts,
+      const clockSidecar = await inspectCurrentSymbolClockEvidence(operationId);
+      return { operationId, state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts, clockSidecar,
         projectOpeningMode: journal["projectOpeningMode"] ?? null,
         unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
         finishSnapshotAttempted: journal["finishSnapshotAttempted"] ?? null,

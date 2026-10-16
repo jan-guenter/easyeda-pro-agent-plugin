@@ -2058,6 +2058,10 @@ export class EasyedaControlEngine {
     readonly snapshot: ClosedSessionAuthorityCapture;
     readonly originalExecutionAuthority: ExecutionAuthorityEvidence;
     readonly validator: RuntimeExecutionAuthorityValidator;
+    readonly upstream: UpstreamClient;
+    readonly clockMethod: RuntimeExecutionAuthorityValidator["observeCurrentClock"];
+    readonly sessionMethod: UpstreamClient["bridgeSessionLifecycle"];
+    readonly dispatchMethod: UpstreamClient["currentAuthenticatedBridgeDispatchBinding"];
     releasing: boolean;
   }>();
   private readonly trackedClockCaptures = new WeakMap<TrackedDispatchOperationJournal, {
@@ -2130,16 +2134,27 @@ export class EasyedaControlEngine {
     if (validator?.releaseCapture === undefined) {
       throw new Error("Closed-session capture needs retained process authority with explicit release.");
     }
+    const upstream = this.upstream;
+    const clockMethod = validator.observeCurrentClock, dispatchMethod = upstream.currentAuthenticatedBridgeDispatchBinding,
+      sessionMethod = upstream.bridgeSessionLifecycle;
+    const methodsCurrent = (): void => {
+      if (this.executionAuthorityValidator !== validator || this.upstream !== upstream || validator.observeCurrentClock !== clockMethod ||
+          upstream.bridgeSessionLifecycle !== sessionMethod || upstream.currentAuthenticatedBridgeDispatchBinding !== dispatchMethod) {
+        throw new Error("Closed-session capture owner or retained methods changed.");
+      }
+    };
     const attemptKey = JSON.stringify([operationId, phase, challengeAttempt]);
     if (this.closedCaptureAttempts.has(attemptKey)) { throw new Error("Closed-session capture attempt was already consumed."); }
     // Reserve synchronously, before the admission scan or any native await.
     this.closedCaptureAttempts.add(attemptKey);
     await this.assertBridgeAndRecoveryAdmission(operationId);
+    methodsCurrent();
     const bridgeSession = structuredClone(this.authenticatedBridgeSession());
     const bridgeDispatch = authenticatedBridgeDispatchPayload(
       this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession,
     );
     const recheck = (): void => {
+      methodsCurrent();
       if (canonicalJson(this.authenticatedBridgeSession()) !== canonicalJson(bridgeSession) ||
           canonicalJson(authenticatedBridgeDispatchPayload(this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession)) !== canonicalJson(bridgeDispatch)) {
         throw new Error("Closed-session capture changed authenticated session or dispatch scope.");
@@ -2165,7 +2180,8 @@ export class EasyedaControlEngine {
         throw new Error("Closed-session capture changed native runtime identity.");
       }
       const receipt = Object.freeze({ operationId, phase, challengeAttempt, bridgeSession, runtimeIdentity, executionAuthority });
-      this.closedCaptures.set(receipt, { snapshot: structuredClone(receipt), originalExecutionAuthority: result, validator, releasing: false });
+      this.closedCaptures.set(receipt, { snapshot: structuredClone(receipt), originalExecutionAuthority: result,
+        validator, upstream, clockMethod, sessionMethod, dispatchMethod, releasing: false });
       return receipt;
     } catch (error) {
       if (captured !== undefined) {
@@ -2188,6 +2204,50 @@ export class EasyedaControlEngine {
     current();
     if (slot === undefined) { throw new Error("Original closed clock capture is missing."); }
     const observation = await windowsClockObservationForResult(slot.originalExecutionAuthority, "capture"); current(); return observation;
+  }
+
+  /** Fresh observation through an existing original closed capture. The capture
+   * outlives its acquisition scope; this call requires and retains a current
+   * lease in that same session. No new capture, runtime probe or history scan.
+   */
+  public async freshClockObservationForClosedCapture(receipt: ClosedSessionAuthorityCapture): Promise<IssuedCurrentWindowsClockObservation> {
+    const slot = this.closedCaptures.get(receipt);
+    const observe = slot?.clockMethod;
+    if (slot === undefined || observe === undefined) { throw new Error("Fresh clock requires an original closed capture and retained clock method."); }
+    const runtimeSnapshot = canonicalJson(slot.snapshot.runtimeIdentity), sessionSnapshot = canonicalJson(slot.snapshot.bridgeSession);
+    const originalCurrent = (): void => {
+      if (this.closedCaptures.get(receipt) !== slot || slot.releasing || this.executionAuthorityValidator !== slot.validator ||
+          this.upstream !== slot.upstream || slot.validator.observeCurrentClock !== observe ||
+          slot.upstream.bridgeSessionLifecycle !== slot.sessionMethod || slot.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod ||
+          canonicalJson(receipt) !== canonicalJson(slot.snapshot)) {
+        throw new Error("Fresh clock requires the unchanged original closed capture owner and methods.");
+      }
+    };
+    originalCurrent();
+    const session = this.authenticatedBridgeSession();
+    if (canonicalJson(session) !== sessionSnapshot) { throw new Error("Fresh clock requires its original closed capture session."); }
+    const dispatchSnapshot = canonicalJson(authenticatedBridgeDispatchPayload(slot.dispatchMethod?.call(slot.upstream), session));
+    const current = (): void => {
+      originalCurrent();
+      const active = this.authenticatedBridgeSession();
+      if (canonicalJson(active) !== sessionSnapshot ||
+          canonicalJson(authenticatedBridgeDispatchPayload(slot.dispatchMethod?.call(slot.upstream), active)) !== dispatchSnapshot) {
+        throw new Error("Fresh clock requires its original authenticated session and current dispatch lease.");
+      }
+    };
+    current();
+    const observation = await observe.call(slot.validator, slot.originalExecutionAuthority); current();
+    const authority = slot.snapshot.executionAuthority, issued = assertCurrentIssuedWindowsClockObservation(observation);
+    if (issued !== observation || observation.phase !== "owned-observation" ||
+        observation.ownerBinding["operationId"] !== slot.snapshot.operationId || observation.ownerBinding["phase"] !== slot.snapshot.phase ||
+        observation.ownerBinding["challengeAttempt"] !== slot.snapshot.challengeAttempt ||
+        observation.ownerBinding["authoritySha256"] !== authority.authoritySha256 || observation.ownerBinding["bindingSha256"] !== authority.bindingSha256 ||
+        observation.base["captureBindingSha256"] !== authority.bindingSha256 ||
+        observation.ownerBinding["bridgeSessionSha256"] !== sha256Text(sessionSnapshot) ||
+        observation.ownerBinding["runtimeIdentitySha256"] !== sha256Text(runtimeSnapshot)) {
+      throw new Error("Fresh clock returned another original closed operation, capture, session or runtime.");
+    }
+    current(); return observation;
   }
 
   /** Original working journal only; a loaded copy does not recover clock authority. */

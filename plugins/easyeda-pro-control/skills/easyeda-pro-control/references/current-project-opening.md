@@ -224,6 +224,36 @@ source check is a point-in-time observation, not a file lock. Ordinary opening
 can still have automatic effects. Never issue an extra Save, open a document,
 confirm an update dialog, or run the prepared patch to complete this validation.
 
+## Optional current clock preparation
+
+Use these stages only when qualifying the current metadata writer's date parsing.
+They are not required to repeat an already completed opening or reader check.
+Confirm the installed `project-open` schema includes both actions.
+
+After `baseline-observe-termination` has captured the closed baseline, but before
+`baseline-relaunch`, call `baseline-prepare-clock` with the original baseline
+`operationId` and `acceptScratchProcessEffects:true`. It selects the exact
+unlocked history-head date from that baseline. A source-qualified scratch
+process tests the fixed Date program without loading EasyEDA's application or
+profile. Its separate evidence retains the original process result. It neither
+changes the fixture nor locks a history head to make it eligible.
+
+After the same baseline's project-only opening succeeds, `baseline-observe-clock`
+takes only that `operationId`. It binds the fixed renderer Date controls to the
+original replacement generation and independent Windows clock observations.
+No arbitrary script, date literal, process identity or supplied result is accepted.
+The evidence remains separate from the original 24-phase lifecycle.
+
+Each optional stage is one-shot, including an ambiguous failure. Inspect its
+retained state instead of retrying. Keep the same facade and original process
+handles. The ordinary finish workflow still owns application closure. A failed
+scratch reference prevents replacement relaunch; do not bypass that refusal.
+
+These controls do not arm a write window, prove continuous clock stability or
+directly observe APP's clock. The future writer must bind the original result
+to its fresh immutable timestamp window. Startup qualification, full persistence
+comparison and writer enablement remain separate.
+
 ## Compare retained snapshots
 
 Use offline `easyeda_control_api` after a successful terminal retirement with

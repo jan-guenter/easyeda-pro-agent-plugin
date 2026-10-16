@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016120000` adds internal fresh Windows clock sampling,
+Candidate `0.3.0+codex.20261016124500` adds two optional, one-shot clock-preparation
+actions to the retained disposable workflow and a private fixed symbol-metadata
+writer compiler. The clock actions retain original scratch-process and renderer
+observations; they do not enable editing. The compiler refuses changed metadata,
+actors, tickets, receivers and expired windows before its sole native mutation,
+but remains unregistered pending lifecycle integration and live validation. See
+the [scope and remaining work](docs/current-symbol-writer-compiler-release-2026-10-16.md).
+
+Update `0.3.0+codex.20261016120000` adds internal fresh Windows clock sampling,
 current-version aged-history parsing and a one-shot persisted-timestamp
 comparison. The new path keeps its timestamp windows fixed even when final
 verification happens later. It adds no public writer or execution authority;

@@ -13,6 +13,8 @@ import { MAIN_REFERENCE_PACKAGE, buildMainReferenceProgram, validateMainReferenc
 import { RUNTIME_PINS } from "./closed-symbol-main-reference-runtime.ts";
 import { compileMainReferenceV3Metadata } from "./closed-symbol-main-reference-v3-metadata.ts";
 import type { MainReferenceV3Metadata } from "./closed-symbol-main-reference-v3-metadata.ts";
+import { compileCurrentAgedSqlReferenceMetadata } from "./current-aged-sql-reference-program.ts";
+import type { CurrentAgedSqlReferenceMetadata } from "./current-aged-sql-reference-program.ts";
 
 const SOURCES = Object.freeze({ "owner-command.ps1": "f417642a0dffa2f80df33b6aafd5865aa944acb635b3a4b4814814dcdcfabbd5",
   "stdin-decoder.ps1": "c16caba4dc933f299f25b3bc9acede20e590f8bad3cfdb66799aefb978631e90",
@@ -76,6 +78,14 @@ export async function compileMainReferenceTransport(input: unknown): Promise<Com
 /** Current binary-helper compiler. The metadata twin itself grants no invocation. */
 export async function compileMainReferenceTransportV3(input: unknown): Promise<Readonly<MainReferenceV3Metadata>> {
   const result = await compileMainReferenceV3Metadata(input);
+  compiled.add(result); return result;
+}
+
+/** Separate fixed current compiler. Same owned scratch process protocol, never
+ * a supplied program or a historical APP-source qualification.
+ */
+export async function compileCurrentAgedSqlReferenceTransport(input: unknown): Promise<Readonly<CurrentAgedSqlReferenceMetadata>> {
+  const result = await compileCurrentAgedSqlReferenceMetadata(input);
   compiled.add(result); return result;
 }
 
