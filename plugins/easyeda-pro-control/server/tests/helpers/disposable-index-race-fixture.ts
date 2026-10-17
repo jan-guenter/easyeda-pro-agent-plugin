@@ -202,7 +202,7 @@ export async function raceFixture(context: TestContext, scenario: Scenario): Pro
   assert.deepEqual(await readReport("observer-ready.json"), { sdkListenerRetained: true, sdkFirst: true, dataListeners: 2, scenario });
   const held = await readReport("fingerprint-held.json"); assert.equal(held["reads"], 1);
   assert.equal(held["sourcePath"], join(plugin, "server/src/core.ts"));
-  assert.equal(held["sourceSha256"], "f536d9adae3fd0177718e9d6d1e10d68627ad8a9ee29266487d55305e05fb9fb");
+  assert.equal(held["sourceSha256"], "edf3e02692bd93507440e5c6373afc233e90b28cc98a7b9049daf731a3fd3718");
   const call = (name: string, input: Record<string, unknown>): Promise<Response> =>
     client.callTool({ name, arguments: input }, undefined, { timeout: 15_000, maxTotalTimeout: 15_000 });
   async function runtimeStatus(): Promise<unknown> {
