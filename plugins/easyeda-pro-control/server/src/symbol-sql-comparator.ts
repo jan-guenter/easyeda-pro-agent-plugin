@@ -170,7 +170,8 @@ function ticketFromRaw(plaintext: string): number {
   }
   return maximum;
 }
-async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, project: SqlRow, branch: SqlRow): Promise<DecodedSymbolSqlRawHistory> {
+async function selectedHistory(before: Inventory, witness: Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">,
+  project: SqlRow, branch: SqlRow): Promise<DecodedSymbolSqlRawHistory> {
   const histories = table(before, `project_history_${witness.branchUuid}`);
   const data = table(before, "history_data");
   const head = text(field(table(before, "branches"), branch, "history_uuid"));
@@ -218,6 +219,30 @@ async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, pro
     branchUuid: witness.branchUuid, headHistoryUuid: head, checkpointSha256: before.checkpointSha256, historyRowCount: rows.length,
     chunkCount: chunks.length, plaintextBytes: bytes, documents,
     semanticSha256: sha256Json(documents.map((document) => ({ uuid: document.uuid, docType: document.docType, semanticSha256: document.semanticSha256 }))) } };
+}
+/** Read the complete pre-edit chain from an original completed SQL inventory.
+ * This data-only decoder issues no clock, transaction plan or writer authority.
+ * The caller must bind the inventory to its original retained baseline.
+ */
+export async function decodeCurrentSymbolPreEditHistory(before: Inventory,
+  identity: Readonly<Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">>): Promise<DecodedSymbolSqlRawHistory> {
+  const witness = structuredClone(identity);
+  need(Object.keys(witness).length === 2 && typeof witness.projectUuid === "string" && PROJECT_UUID.test(witness.projectUuid) &&
+    typeof witness.branchUuid === "string" && UUID.test(witness.branchUuid), "Current pre-edit history identity refused.");
+  supported(before, witness.branchUuid);
+  const completion = readerCompletion(before);
+  need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null,
+    "Current pre-edit history requires an original completed SQL reader.");
+  const branches = table(before, "branches"), projects = table(before, "projects");
+  need(projects.rows.length === 1, "Current pre-edit history requires exactly one project row.");
+  const branch = unique(branches, "uuid", witness.branchUuid), project = unique(projects, "uuid", witness.projectUuid);
+  need(text(field(projects, project, "branch_uuid")) === witness.branchUuid && text(field(branches, branch, "project_uuid")) === witness.projectUuid &&
+    integer(field(branches, branch, "delete_status")) === 0n && integer(field(branches, branch, "node")) === 0n,
+    "Current pre-edit project/default-branch association differs.");
+  const decoded = await selectedHistory(before, witness, project, branch);
+  supported(before, witness.branchUuid);
+  need(readerCompletion(before) === completion, "Current pre-edit SQL reader changed during decoding.");
+  return decoded;
 }
 /** Pure decode only. The owning SQL stage separately binds this inventory to
  * its original successful edit effect and historical issued copy. */

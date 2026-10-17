@@ -291,7 +291,10 @@ export class CurrentSymbolBaselineCoordinator {
     this.slots.set(owner.operationId, slot); this.busy = true;
     try {
       await original.result.revalidateClosed();
-      await createOperation(journal); slot.created = true; await this.unchanged(slot);
+      await createOperation(journal); slot.created = true;
+      // Creation seals this original journal in place. Bind its sealed form,
+      // Then revalidate both owners and persisted bytes before transferring.
+      slot.journalText = canonicalJson(journal); await this.unchanged(slot);
       await CurrentSymbolBaselineCoordinator.record(slot, "inverse-adoption-intent", { predecessor: original.predecessor, snapshot: original.result.snapshot,
         preparation: original.preparation, reference, closureOwnershipTransferred: false }); await this.unchanged(slot);
       await transferCurrentSymbolInverseBaselineOwner(owner, this.engine);

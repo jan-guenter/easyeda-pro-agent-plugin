@@ -6,6 +6,164 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate101500: source frozen; release verification running
+
+Branch feature/current-symbol-inverse-adoption-20261017 starts from merged
+main4273d7f; the ordinary-route stash remains intact and unapplied. New version
+0.3.0+codex.20261017101500 is built but NOT published or installed. Root and
+independent reviews accept the META-only raw-history gate, one/two-stage proof
+budgets, separate raw-copy/VACUUM bindings and inverse post-create journal seal
+fix. The actual managed-storage regression reproduced the inverse error before
+the fix;21focused inverse tests pass afterward, including pre-transfer disk and
+memory drift refusal.35gate/budget/startup/coordinator cases are covered, with
+the final12gate/startup cases rerun after raw/VACUUM correction. Types and strict
+targeted lint are clean. Fresh151dependency install,151registry signatures,
+40attestations and zero-vulnerability audit pass. Wholeverify is running.
+
+Frozen398sourceSHA9938e85bcdb127f6860b68c41d52ea9feb6ce9f0feff56ea892eb628808c324e;
+runtime3SHA109c5e99197a09423a2a311878a28bb5f93d5a3053db192b4dcf3da35cfd0fec.
+Only facade projections/review timestamp changed in compatibility; all external
+runtime pins, API catalog and dispatcher remain unchanged.16restricted tools/
+seven skills; no ordinary metadata registration or generic writer enablement.
+No additional live call is planned on the current facade. Once publication and
+official installation are complete, a fresh session is required for new live work.
+
+### Live090000: forward verified; inverse adoption stopped and cleaned up
+
+Fresh facade1145198/parent1143483/startTicks20424122 loads installed090000;
+old1052908 is absent. Root and independent admission verify pinnedNode24.18.0,
+core0, all1,286packaged files/modes,396sources,three runtime files and18external
+runtime pins against the delivered hashes below. MainCI39020367419 and
+Windows39020367402 both completed successfully; main facade totals10576tests,
+10571passes,fiveskips,zero failures/cancellations/todos. No cache modifications.
+
+New operation validation-090000-20261017-launch is consumed and acknowledged:
+root49432/Job27645a5c34ab4867a55b5144e1ee0e2a, launchedSHA
+39011e3d2f9ff8edb132721284d40cc663c8e852738abebeaef41f8759ff6467.
+Authentication passed on the original owner; no incomplete operations or drift.
+Open validation-090000-20261017-open completed exact PCB/native identity, no
+replay. Managed preparation checkpoint093029082Z is561152bytes/SHA
+52b523cb43af141e43d3d7a19871669c2dba6ee1b507e57bf5d12bd52e3105d9.
+Prepared090000 name/description has SHA
+84aae5cb9696d683149584cf4894747cbb26dfc6f35b8186439a7be8e696bae5;
+independent complete18document review confirms two META occurrences only,
+zero historical canvas and zero references across two sheets/three templates.
+Baseline validation-090000-20261017-baseline acknowledged normal close and
+captured original closed SQL3edebd2d/source1ae5d54b. Original ordinary launcher
+also recorded terminated with matching39011e3d launch digest. Scratch clock
+reference was accepted, one-shot baseline relaunch completed, and the replacement
+session was admitted. Inactive-cache observation, one project-only opening
+and renderer clock qualification all completed. validation-begin retained the
+original owner and returned forward-write. The single forward-write returned
+acknowledged with all original clock/post evidence, then normal close and
+termination/full-SQL comparison completed. Exact intended effect passed:
+beforeSQL3edebd2d to afterSQLde4e0f65, newhead6852df97/ticket767. The fresh
+forward verification generation launched, authenticated, proved inactive caches
+absent and reopened the project once. Exact saved415bytes/contentcfa622d5 passed
+the current-document-cache projection; final closedSQL remainsde4e0f65.
+forwardVerifiedtrue. Inverse preparation then refused at adoption with
+"Current symbol baseline journal changed." Neutral inverse786c3ac5 remains
+sequence0/artifacts0/plan-invalidated/hardStopfalse; no ownership transfer,
+inverse dispatch or metadata restoration. Offered cleanup-observe-termination
+completed original verification retirement, fullReopenReadbackInvarianttrue.
+The validation is terminal stopped/failedPhaseinverse-prepare; NEVER replay it.
+EasyEDA is closed; final disposable598016bytes/SHA
+df69bb99542058c042bbfe459c5b40a02dcd2787e6aa1b7c8f252797ead93712.
+The unused target now retains090000name/description, the baseline for any NEW
+future attempt. No explicit Save or production access occurred.
+The initial prelaunch and baseline closed disposable source was598016bytes/SHA
+1ae5d54bedb702dd694f4b129fa01aac7a9b19498b10183cc8729b87803981a4,
+without sidecars. All072500/043703 stages remain terminal and must not be replayed.
+Original-owner closure is complete; terminal status has no incomplete operations.
+Production designs and their records remain excluded.
+
+Root and independent source diagnosis identify the adoption bug: createOperation
+adds integrityModel/journalSha256 to its original object, but adoptInverse compares
+the sealed object with journalText captured before creation. Neutral sequence0
+matches this first post-create boundary, before adoption intent or transfer.
+The narrow source correction must refresh the expected text only after original
+successful creation and preserve the unchanged check before transfer. No journal
+is to be edited or reused; the complete new round trip remains pending.
+
+Parallel source review identified a scope gap before ordinary registration:
+nonempty or historically tombstoned target canvas must refuse before mutation,
+because only META-only document-cache replay is modeled. A narrow source gate
+and pre-write proof-capacity checks are implemented and independently reviewed.
+The34focused tests and strict lint pass; whole both-target types pass. Disposable
+forward reserves both forward and original-metadata inverse stages. Physical
+SQLite allocation, heap and deadline completion remain runtime limitations,
+not claims made by the logical-size admission. Root integration review then
+found the new gate incorrectly equated raw-copy and VACUUM-checkpoint hashes;
+the correction now binds both original descriptors separately. One real-VACUUM
+regression proves unequal file/lineage hashes with equal history semantics and
+rejects swapped bindings. Root and independent review accept;12focused gate/
+startup tests, both-target types and strict lint pass after the correction.
+No registration, build or installation yet.
+The deferred ordinary-route stash remains intact and unapplied.
+
+### Delivered090000: published and installed; fresh session required
+
+Published and installed/enabled0.3.0+codex.20261017090000 through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR52 merged reviewedb343edd183a3b716f21643707289afdd7a150075 as
+main4273d7feaa341f6640727aded42640754855ca28. Whole tree
+dbfc727b91c29733f4e0b8a4cbbd3024931d127c and plugin tree
+3973e8b20c840a3220a9bd891d7b65de2362c3f2 equal the reviewed payload exactly.
+All11 required PR checks passed: CI39019359603 and Windows39019359606.
+Final CI totals10576facadetests/10571passes/fiveskips/zerofailures,cancellations,
+todos. Local fullverify passed10576/10572/fourskips/zero failures;424bridge tests
+across28files. Wholetypes/strictlint, freshdependencyinstall/audits, reproducible
+build/compatibility, APIinventory, package/privacy/repository and seven official
+skill checks pass. MainWindows39020367402 and mainCI39020367419 verify-build
+passed; the duplicate main facade shards are still running and need a later
+status check. Required exact-payload PR CI is complete, not pending.
+
+Official marketplace upgrade underumask022 completed exit0/errors[]/stderr0.
+CLI confirms enabled090000; cached marketplaceHEAD equals mergedmain4273d7f.
+Root and independent inventories match all1,286files/25,842,205bytes,
+42directories0755,1,285files0644/one0755,seven skills and no extras/links.
+InventorySHA8076499a58245c779c6e98b4687c1ccc105072232c613227c7037f33a9ff7c4b.
+Source396 8dbf6029d671a94d267edbd9b90564e200f3112072f6375e4eca5cdac40a8968;
+runtime3 fc57440d028c0ca01b97f4dee3ad604b90ce6b983eb2fc874ced6a4fe6ee2389;
+manifest59033b7a04479b4538a6daa96f75d4d9526314870f5a7716dfc7d1368c1278e3.
+External runtime/bridge compatibility fields and coreedf3e026 remain unchanged.
+
+New one-shot synthetic installed probe1140165 passed, then exited normally via
+stdinEOF without signals/adoption. Actual configured startup handed ambient
+Node26.11.1 to pinnedNode24.18.0/core0, with no installed module ancestors,
+upstream child or nonstdio socket. Catalog16tools/seven skills; discovery and
+strict phase acknowledgement checks pass, ordinary metadata remains absent.
+No live status/tool, actual profile or operation journal was used; synthetic
+profile unchanged/stderr0. Proof
+/tmp/easyeda-installed-release-090000-XZyjQPc4/proof.json is2831bytes/SHA
+f9194a4109ca690b9f93ab9433b31004a24b636b60d27d8170075f9f0d3c63c0.
+Never rerun probe.mjs; inventory.mjs is read-only and may be repeated. All local
+tool/test/probe sessions are terminal. No new connected validation is claimed.
+
+Actual host1052908/startTicks19944543 still loads072500 with its original
+pinnedNode24/core0. It was not terminated, adopted or hotpatched. No more live
+calls from that host. The extension-development release workflow requires a
+fresh Codex session and independent installed090000 admission before live work.
+Leave EasyEDA closed. Final disposable file598016bytes/SHA
+1ae5d54bedb702dd694f4b129fa01aac7a9b19498b10183cc8729b87803981a4,
+no sidecars, unchanged after installation. Production designs/records untouched.
+
+Next: check duplicate mainCI, then after fresh admission prepare ONE NEW
+disposable forward/inverse lifecycle from the current changed unused symbol
+23630514533a0345 (name EASYEDA_VALIDATE_072500_UNUSED_SYMBOL, description
+"Disposable unused-symbol metadata validation 072500."). Never replay any
+072500 or043703 ID, write, opening, close, inverse or Save. Both old attempts
+remain terminal; the new cache model cannot revive the failed saved read.
+Only a fully accepted new round trip can justify ordinary forward-only
+registration. That conditional18file draft remains recoverably stashed at
+ebe1b55d7a430ae2e3168e373e155957b582eff9; inspect/rebase it deliberately, never
+blindly pop it over later changes. Referenced-symbol propagation, nonempty-canvas
+cache replay and broader schematic/PCB structure, library/manufacturing work
+remain documented in docs/current-symbol-clock-lifetime-2026-10-17.md and the
+774method inventory. This delivery record stays uncommitted for the next source
+change; no record-only release cycle. Earlier pending statements below are
+historical, superseded by this delivery.
+
 ### Candidate090000: exact cache replay and bounded historical scans
 
 Preparing0.3.0+codex.20261017090000 on
@@ -36,9 +194,15 @@ Frozen396sources8dbf6029d671a94d267edbd9b90564e200f3112072f6375e4eca5cdac40a8968
 runtime3 fc57440d028c0ca01b97f4dee3ad604b90ce6b983eb2fc874ced6a4fe6ee2389,
 manifest59033b7a04479b4538a6daa96f75d4d9526314870f5a7716dfc7d1368c1278e3.
 External compatibility fields and coreedf3e026 are unchanged. Fresh npmci passes
-151packages/zerovulnerabilities. Full existing release verification is running
-under /tmp/easyeda-090000-release-rTCib9vz; CI, publication and official marketplace
-installation remain pending. Existing-install dependency checks pass:151 registry signatures/40attestations/zero
+151packages/zerovulnerabilities. Full existing release verification passed under
+/tmp/easyeda-090000-release-rTCib9vz:10576facadetests/10572passes/fourskips/
+zerofailures,cancellations,todos;424bridgetests/28files. Wholetypes/strictlint,
+reproduciblebuild/compatibility/APIinventory, package/privacy/repository and all
+seven official skill checks pass. VerifylogSHA
+aedce9d8a5f85e1a32ddc775fae90efd7ef932ff869eda45c121f827be9b307d.
+PR52 publishes exactb343edd183a3b716f21643707289afdd7a150075; required CI is
+still running. Merge and official marketplace installation remain pending.
+Existing-install dependency checks pass:151 registry signatures/40attestations/zero
 vulnerabilities. Logs are privately retained under
 /tmp/easyeda-release-dependency-checks-20261017-Oas6vJop. No new live call after
 terminal072500 cleanup, and no production-design or installed-cache change.

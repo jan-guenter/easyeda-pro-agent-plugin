@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "8dbf6029d671a94d267edbd9b90564e200f3112072f6375e4eca5cdac40a8968",
-      "fileCount": 396,
+      "sha256": "9938e85bcdb127f6860b68c41d52ea9feb6ce9f0feff56ea892eb628808c324e",
+      "fileCount": 398,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -603,8 +603,8 @@
         },
         {
           "relativePath": "current-symbol-baseline-runtime.ts",
-          "bytes": 123901,
-          "sha256": "911e2418270425e49d0daca4fd4f3a7549c561e387edf75dd0dffaa610ca61bc"
+          "bytes": 124106,
+          "sha256": "aa1ec80fc1aadbe2acbc502b8b9782abbe81540d85ff8cb1b276519e04179c57"
         },
         {
           "relativePath": "current-symbol-cache-journal.ts",
@@ -650,6 +650,11 @@
           "relativePath": "current-symbol-inverse-runtime.ts",
           "bytes": 6510,
           "sha256": "79d148a30f65073e74cbbacd16a984aefc4b4d4d11843c94b7597a3b51b111b6"
+        },
+        {
+          "relativePath": "current-symbol-meta-only.ts",
+          "bytes": 5873,
+          "sha256": "7312f426de0cfe2c63c143f56ed1a5d6e32db05130da03cca049287cc5de5a30"
         },
         {
           "relativePath": "current-symbol-metadata-preparation.ts",
@@ -713,8 +718,8 @@
         },
         {
           "relativePath": "current-symbol-startup-runtime.ts",
-          "bytes": 15517,
-          "sha256": "b4eb67713beec9bbfea57573abb211f3fe2727e535d7078ee5313abebc4848cc"
+          "bytes": 16088,
+          "sha256": "dd34fbef9f598f2208fb7b0910ced68f5a38664f6cd5cd5b8d6c834be59b1d4e"
         },
         {
           "relativePath": "current-symbol-startup.ts",
@@ -733,8 +738,8 @@
         },
         {
           "relativePath": "current-symbol-validation-runtime.ts",
-          "bytes": 18822,
-          "sha256": "193220d918ee4b525d3430ff4964323d3548b365e34108bd90803ea72353a099"
+          "bytes": 19078,
+          "sha256": "08dc26ee016919bed22d8594c02ab62efa890616a62dc94d189573bc3bf9f237"
         },
         {
           "relativePath": "current-symbol-validation.ts",
@@ -745,6 +750,11 @@
           "relativePath": "current-symbol-verification-runtime.ts",
           "bytes": 53981,
           "sha256": "6a1630d38a6549cbe9438946073b1e275f7aa3f8c17c6277468f9f86d18d992a"
+        },
+        {
+          "relativePath": "current-symbol-write-budget.ts",
+          "bytes": 15158,
+          "sha256": "48a6c6b7aee51e94217494cb2fc1f04aff843ec23302a7011af21df33c51a1e6"
         },
         {
           "relativePath": "current-symbol-write-diagnostics.ts",
@@ -1883,8 +1893,8 @@
         },
         {
           "relativePath": "symbol-sql-comparator.ts",
-          "bytes": 35733,
-          "sha256": "cd865f194a3bd51150f1c7c726238433dddbd01a4479b355ce1b75ce6c459ff3"
+          "bytes": 37638,
+          "sha256": "804767cd5c18a36ea77ccef511db050ed747d5a080a1a889c8144a0c8f4e6465"
         },
         {
           "relativePath": "symbol-startup-actor.ts",
@@ -1991,7 +2001,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "fc57440d028c0ca01b97f4dee3ad604b90ce6b983eb2fc874ced6a4fe6ee2389",
+      "sha256": "109c5e99197a09423a2a311878a28bb5f93d5a3053db192b4dcf3da35cfd0fec",
       "fileCount": 3,
       "files": [
         {
@@ -2001,19 +2011,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 7357232,
-          "sha256": "28a0b7a7d2558a4da7a74291d26367af8b99e3d1acf8a4dd85adadc1040fe571"
+          "bytes": 7376367,
+          "sha256": "454ddce1fc27f324115de93aec9153386ff0fa5059fa1d37ab35d1dc7857c0c1"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "e0f733536c37a96a01f8df2c10cfb3d73103f857b44af85a2599684e55223bee"
+          "sha256": "81ec440e00d0001a313d73c5438e9ce9412f87f38359bf13e45f52bd553cfd10"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-17T08:55:44.214Z",
+  "reviewedAt": "2026-10-17T10:09:54.156Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

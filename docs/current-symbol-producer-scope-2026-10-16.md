@@ -188,3 +188,44 @@ replay exclusion in the new forward/inverse lifecycle.
 The research and extension-development skills kept this decision tied to the
 installed call path and separate from live validation. No execution route,
 compatibility pin, writer-authority flag or existing baseline history changed.
+
+## 2026-10-17 addendum: compressed upload size bound
+
+Read-only review rehashed APP `app.js`, 2,657,192 bytes, SHA-256
+`52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c`.
+Its `O4` implementation at offset 2583349 converts the complete upload to UTF-8,
+calls `gzipSync` with only `level: 1`, encrypts with AES-128-GCM and appends the
+16-byte authentication tag. The `x4` encryption call at 2600704 passes that
+buffer to `DB`; its base64 conversion at 2600893 supplies the stored SQL TEXT.
+Offsets retain the UTF-16 convention above. No installed code was evaluated.
+
+The [pinned runtime identity](../plugins/easyeda-pro-control/server/src/current-main-reference-helper-identity.ts)
+records Node 24.14.1. Its [JavaScript zlib wrapper](https://raw.githubusercontent.com/nodejs/node/v24.14.1/lib/zlib.js)
+uses `Z_FINISH` for the synchronous operation and supplies no extra gzip header
+through this call. Its [Chromium-zlib `deflateBound` implementation](https://raw.githubusercontent.com/nodejs/node/v24.14.1/deps/zlib/deflate.c),
+lines 824 through 887, gives the following conservative bound for `n` complete
+upload UTF-8 bytes:
+
+```text
+F = n + floor(n / 8) + floor(n / 256) + floor(n / 512) + 4
+S = n + floor(n / 32) + floor(n / 128) + floor(n / 2048) + 7
+gzipBytes <= max(F, S) + 18
+storedBase64Bytes <= 4 * ceil((max(F, S) + 18 + 16) / 3)
+```
+
+The 18 bytes cover the gzip wrapper; GCM adds 16 bytes before base64 expansion.
+Chromium's hash-table implementation can break the correspondence between
+`hash_bits` and `memLevel`. The source therefore selects the conservative bound
+instead of its tighter default-parameter formula. The budget does not assume
+that the tighter formula applies merely because compression uses default
+window and memory settings. This is a source-derived upper bound, not a claim
+that another zlib build reproduces the vendor's compressed bytes.
+
+[Current write admission](../plugins/easyeda-pro-control/server/src/current-symbol-write-budget.ts)
+uses this bound for logical SQL cell and encoded-result headroom. It separately
+counts reserved rows, cells, history records and complete saved-read envelopes.
+These checks do not prove physical SQLite file allocation, available heap or
+deadline completion. Those runtime limits and original-owner cleanup remain
+in force; passing the budget grants no writer authority or successful lifecycle
+claim. This addendum records completed source research only, with no live call
+or design access.

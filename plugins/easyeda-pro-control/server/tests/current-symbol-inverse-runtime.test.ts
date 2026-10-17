@@ -7,17 +7,18 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
-import { canonicalJson, isRecord, sha256Json } from "../src/core.ts";
+import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
+import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json } from "../src/core.ts";
 
 type Bag = Record<string, unknown>;
-type Failure = "none" | "launch-clock" | "admission" | "close-ack" | "transfer" | "adoption-result";
+type Failure = "none" | "launch-clock" | "admission" | "close-ack" | "transfer" | "adoption-result" | "created-disk-drift" | "created-memory-drift";
 interface Api { adoptInverse: (owner: unknown, copy: unknown, reference: unknown) => Promise<Bag>; relaunch: (id: string) => Promise<Bag>;
   admit: (id: string) => Promise<Bag>; finishNormalClose: (id: string) => Promise<Bag>; observeFinish: (id: string) => Promise<Bag>; inspect: (id: string) => Promise<Bag>; }
 function noop(): undefined { return undefined; }
 async function baselineFixture(failure: Failure = "none"): Promise<{
   api: Api; adopt: () => Promise<Bag>; id: string; state: { transferred: boolean; launches: number; closes: number; releases: number; proofReads: number };
 }> {
-  const id = "inverse-original-test", owner = Object.freeze({ profile: "private.current-symbol-inverse-baseline-owner.v1", operationId: id, openingOperationId: "forward" });
+  const id = newOperationId(), owner = Object.freeze({ profile: "private.current-symbol-inverse-baseline-owner.v1", operationId: id, openingOperationId: "forward" });
   const session = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 1, authenticationReceiptSha256: "a".repeat(64), authenticatedAtEpochMs: 1000 };
   const nextSession = { sessionId: "n".repeat(43), sequence: 2, authenticationReceiptSha256: "b".repeat(64), authenticatedAtEpochMs: 2000 };
   const previousLaunch = { jobId: "prior", helperInstance: "helper", root: { pid: 1, startIdentity: "old" } };
@@ -26,7 +27,7 @@ async function baselineFixture(failure: Failure = "none"): Promise<{
   const preparation = { preparationSha256: "p", closedTargetWitness: {} }, reference = { operationId: id };
   const copy = { owner, copy: { receiptSha256: "r" }, checkpoint: {}, preparation: {}, startupPremises: {} };
   const state = { transferred: false, launches: 0, closes: 0, releases: 0, proofReads: 0 };
-  let active = false, disk: Bag | undefined, polls = 0;
+  let active = false, polls = 0;
   const runtime = {
     status: (): Bag => ({ state: "owned", launch: state.launches === 0 ? previousLaunch : nextLaunch }),
     launch: (): Promise<unknown> => { state.launches += 1; active = true; return Promise.resolve(nextLaunch); },
@@ -50,14 +51,17 @@ async function baselineFixture(failure: Failure = "none"): Promise<{
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Map, WeakMap, Date, Promise, structuredClone, z, canonicalJson, isRecord, sha256Json,
-    OPERATION_SCHEMA: "test", buildPlanHash: sha256Json, currentSymbolMetadataPreparationRequestSchema: z.object({}),
+    OPERATION_SCHEMA, buildPlanHash, currentSymbolMetadataPreparationRequestSchema: z.object({}),
     CurrentAgedSqlReferenceStage: function CurrentAgedSqlReferenceStage(): void { noop(); }, assertWindowsRuntimeValidator: noop,
     assertCurrentSymbolInverseBaselineOwner: (value: unknown): unknown => { assert.equal(value, owner); return original; },
     revalidateCurrentSymbolInverseBaselineOwner: (value: unknown): Promise<unknown> => { assert.equal(value, owner); return Promise.resolve(original); },
     currentSymbolInverseOwnershipTransferred: (): boolean => state.transferred,
-    transferCurrentSymbolInverseBaselineOwner: (): Promise<void> => {
-      if (failure === "transfer") { return Promise.reject(new Error("transfer refused")); }
-      state.transferred = true; return Promise.resolve();
+    transferCurrentSymbolInverseBaselineOwner: async (): Promise<void> => {
+      const journal = await loadOperation(id);
+      assert.equal(journal["state"], "plan-invalidated"); assert.equal(journal["sequence"], 1);
+      assert.equal(journal.artifacts?.length, 1);
+      if (failure === "transfer") { throw new Error("transfer refused"); }
+      state.transferred = true;
     },
     assertOriginalCurrentSymbolBaselineCopy: noop,
     assertOriginalCurrentAgedSqlReference: (value: unknown): unknown => { assert.equal(value, reference); return value; },
@@ -67,12 +71,23 @@ async function baselineFixture(failure: Failure = "none"): Promise<{
     assertClosedSessionCopyAuthority: (value: unknown): Promise<unknown> => { assert.equal(value, proof); state.proofReads += 1; return Promise.resolve(value); },
     windowsClockObservationForResult: (): Promise<unknown> => Promise.resolve({ clock: { status: "observed" } }),
     assertIssuedWindowsClockObservation: (value: unknown): Promise<unknown> => Promise.resolve(value),
-    operationPath: (value: string): string => `/synthetic/${value}.json`,
-    createOperation: (value: Bag): Promise<void> => { assert.equal(disk, undefined); disk = structuredClone(value); return Promise.resolve(); },
-    loadOperation: (): Promise<unknown> => Promise.resolve(structuredClone(disk)),
-    updateOperation: (value: Bag): Promise<void> => { disk = structuredClone(value); return Promise.resolve(); },
-    writePhaseArtifact: (_operation: unknown, _sequence: unknown, phase: string): Promise<unknown> => failure === "adoption-result" && phase === "inverse-adoption-result" ?
-      Promise.reject(new Error("adoption publication refused")) : Promise.resolve({ path: `/synthetic/${phase}`, sha256: "a".repeat(64), bytes: 1 }),
+    operationPath, loadOperation, updateOperation,
+    // The real managed publisher adds integrity fields in place. Keeping it
+    // Here covers the handoff boundary that an unsealed in-memory mock missed.
+    createOperation: async (value: Bag): Promise<string> => {
+      const path = await createOperation(value);
+      assert.equal(typeof value["integrityModel"], "string"); assert.equal(typeof value["journalSha256"], "string");
+      assert.equal(canonicalJson(await loadOperation(id)), canonicalJson(value));
+      if (failure === "created-disk-drift") {
+        const changed = await loadOperation(id); changed["nextSafeAction"] = "Externally advanced journal";
+        await updateOperation(changed);
+      }
+      if (failure === "created-memory-drift") { value["nextSafeAction"] = "Unexpected in-memory change"; }
+      return path;
+    },
+    writePhaseArtifact: (operation: string, sequence: number, phase: string, value: unknown): ReturnType<typeof writePhaseArtifact> =>
+      failure === "adoption-result" && phase === "inverse-adoption-result" ?
+        Promise.reject(new Error("adoption publication refused")) : writePhaseArtifact(operation, sequence, phase, value),
     inspectCurrentSymbolClockEvidence: (): Promise<unknown> => Promise.resolve({}),
   });
   runInContext(`${program}\nthis.Coordinator = CurrentSymbolBaselineCoordinator;`, context);
@@ -92,6 +107,27 @@ void test("original inverse adoption keeps closure until explicit no-launch reti
   assert.equal(finished["retired"], true); assert.equal(fixture.state.launches, 0); assert.equal(fixture.state.closes, 0); assert.equal(fixture.state.releases, 1);
   await assert.rejects(fixture.api.observeFinish(fixture.id), /retained close/u);
 });
+void test("inverse adoption seals its real managed journal before comparing and transferring ownership", async () => {
+  const fixture = await baselineFixture();
+  const adopted = await fixture.adopt(), journal = await loadOperation(fixture.id);
+  assert.equal(adopted["state"], "completed"); assert.equal(journal["sequence"], 2);
+  assert.equal(typeof journal["integrityModel"], "string"); assert.match(String(journal["journalSha256"]), /^[a-f0-9]{64}$/u);
+  assert.equal(journal.artifacts?.length, 2); assert.equal(fixture.state.transferred, true);
+  assert.equal(fixture.state.launches, 0); assert.equal(fixture.state.closes, 0); assert.equal(fixture.state.releases, 0);
+  await assert.rejects(fixture.adopt, /already consumed/u);
+});
+for (const failure of ["created-disk-drift", "created-memory-drift"] as const) {
+  void test(`inverse ${failure} refuses before intent or ownership transfer`, async () => {
+    const fixture = await baselineFixture(failure);
+    await assert.rejects(fixture.adopt, /baseline journal changed/u);
+    const journal = await loadOperation(fixture.id);
+    assert.equal(journal["state"], "plan-invalidated"); assert.equal(journal["sequence"], 0); assert.equal(journal.artifacts?.length, 0);
+    assert.equal(fixture.state.transferred, false); assert.equal(fixture.state.launches, 0);
+    assert.equal(fixture.state.closes, 0); assert.equal(fixture.state.releases, 0);
+    if (failure === "created-disk-drift") { assert.equal(journal["nextSafeAction"], "Externally advanced journal"); }
+    await assert.rejects(fixture.adopt, /already consumed/u);
+  });
+}
 for (const failure of ["launch-clock", "admission", "close-ack"] as const) {
   void test(`inverse ${failure} preserves one-shot original launch closure`, async () => {
     const fixture = await baselineFixture(failure); await fixture.adopt();

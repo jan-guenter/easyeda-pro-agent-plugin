@@ -13,6 +13,7 @@ import type { NativeDocumentSnapshot, NativeHistorySnapshot, NativeObjectSnapsho
 type Bag = Record<string, unknown>;
 const BRANCH = "b".repeat(32), PROJECT = "a".repeat(64), SCHEMATIC = "d".repeat(16), SHEET = "c".repeat(16);
 const OPERATION_ID = "synthetic-startup-reference-check", UNUSED = "f".repeat(16), USED = "e".repeat(16);
+const OWNER = "9".repeat(32);
 function record(type: string, id: string, body: Bag): NativeObjectSnapshot { return { type, id, body, ticket: 1, client: null }; }
 function document(uuid: string, docType: string, records: readonly NativeObjectSnapshot[]): NativeDocumentSnapshot {
   return { uuid, docType, records, metadata: {}, semanticSha256: sha256Json(records) };
@@ -23,9 +24,10 @@ function history(): NativeHistorySnapshot {
     document(SHEET, "SCH_PAGE", [record("META", "META", { schematic: SCHEMATIC }),
       record("COMPONENT", "component", { partId: "part", attrs: {} }),
       record("ATTR", "symbol-reference", { parentId: "component", key: "Symbol", value: USED })]),
-    ...[USED, UNUSED].map((uuid) => document(uuid, "SYMBOL", [record("META", "META", { docType: 2 }), record("PART", "part", {})])),
+    document(USED, "SYMBOL", [record("META", "META", { docType: 2 }), record("PART", "part", {})]),
+    document(UNUSED, "SYMBOL", [record("META", "META", { docType: 2 })]),
   ];
-  return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: PROJECT, branchUuid: BRANCH,
+  return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: PROJECT, projectOwnerUuid: OWNER, branchUuid: BRANCH,
     headHistoryUuid: "1".repeat(32), checkpointSha256: "2".repeat(64), historyRowCount: 1, chunkCount: 1, plaintextBytes: 1,
     documents, semanticSha256: sha256Json(documents) };
 }
@@ -35,12 +37,18 @@ interface Harness {
   readonly original: (value: unknown) => unknown;
   readonly source: object;
 }
-async function fixture(symbolUuid: string, purpose: "disposable-validation" | "ordinary-symbol-metadata", historyMismatch = false): Promise<Harness> {
+async function fixture(symbolUuid: string, purpose: "disposable-validation" | "ordinary-symbol-metadata",
+  historyMismatch = false, metadataRefusal = false, remainingWrites: 1 | 2 = 1): Promise<Harness> {
   const calls: string[] = [], retainedHistory = history();
   const expectation = selectCurrentSymbolStartupExpectation(retainedHistory);
   const generation = Object.freeze({ operationId: OPERATION_ID }), lease = Object.freeze({ synthetic: "original-lease" });
-  const baseline = { checkpoint: { checkpoint: "/synthetic/baseline.eprj2", checkpointSha256: retainedHistory.checkpointSha256 },
-    preparation: { target: { projectUuid: PROJECT, branchUuid: BRANCH, symbolUuid } },
+  const baseline = { checkpoint: { checkpoint: "/synthetic/baseline.eprj2", checkpointSha256: retainedHistory.checkpointSha256,
+    source: "/synthetic/source.eprj2", sourceSha256: "7".repeat(64) },
+    copy: { source: "/synthetic/source.eprj2", sha256: "7".repeat(64) },
+    inventory: Object.freeze({ synthetic: "original-complete-sql" }),
+    preparation: { target: { projectUuid: PROJECT, branchUuid: BRANCH, ownerUuid: OWNER, symbolUuid },
+      metadata: { before: Object.freeze({ name: "Original synthetic", description: "Original synthetic only", tags: [], source: "" }),
+        after: Object.freeze({ name: "Changed synthetic", description: "Synthetic only", tags: [], source: "" }) } },
     startupPremises: { sqlSchemaSupported: true, databaseVersion: "25.10.31.1", targetPcbSuppliesNonzeroNativeCount: true,
       blockers: ["active-schematic-pages"], activeSchematicPages: 1, historySemanticSha256: retainedHistory.semanticSha256 } };
   const source = { baseline, capture: { synthetic: "original-capture" }, source: { purpose, startupExpectation: expectation,
@@ -59,7 +67,7 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
   assert.ok(start > 0 && helper !== undefined);
   const program = stripTypeScriptTypes(`${helper}\n${text.slice(start)}`).replace("export async function", "async function");
   const context = createContext({ Object, WeakMap, WeakSet, Promise, Error, AggregateError, canonicalJson, sha256Json, sha256Text,
-    attempts: new WeakSet(), collections: new WeakMap(), issued: new WeakMap(), engine, generation,
+    attempts: new WeakSet(), collections: new WeakMap(), issued: new WeakMap(), engine, generation, remainingWrites,
     selectCurrentSymbolStartupExpectation,
     assertCurrentProjectOnlySymbolGeneration: (received: unknown, receivedEngine: unknown, scope: unknown): typeof source => {
       assert.equal(received, generation); assert.equal(receivedEngine, engine); assert.equal(scope, canonicalJson(lease)); return source;
@@ -69,6 +77,17 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
       assert.deepEqual(structuredClone(input), { checkpointPath: baseline.checkpoint.checkpoint, expectedSha256: retainedHistory.checkpointSha256,
         projectUuid: PROJECT, libraryAtomHeaders: "preserve" }); calls.push("closed-history");
       return Promise.resolve(historyMismatch ? { ...retainedHistory, semanticSha256: "0".repeat(64) } : retainedHistory);
+    },
+    assertCurrentSymbolMetaOnlyBaseline: (inventory: unknown, binding: unknown, target: unknown, selectedHistory: unknown, desired: unknown, startup: unknown,
+      restoration: unknown): Promise<Bag> => {
+      assert.equal(binding, baseline); assert.notEqual(baseline.copy.sha256, baseline.checkpoint.checkpointSha256);
+      assert.equal(inventory, baseline.inventory); assert.equal(target, baseline.preparation.target); assert.equal(selectedHistory, retainedHistory);
+      assert.equal(desired, baseline.preparation.metadata.after);
+      assert.deepEqual(startup, expectation);
+      assert.equal(restoration, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined);
+      calls.push("metadata-scope");
+      if (metadataRefusal) { return Promise.reject(new Error("Synthetic unsupported complete metadata history")); }
+      return Promise.resolve({ profile: "private.current-symbol-meta-only-baseline.v1", executionAuthorized: false });
     },
     assertExpectedFingerprint: (): void => { calls.push("fingerprint"); },
     validateSdkLocalRuntimeFingerprint: (): void => { calls.push("runtime-pin"); },
@@ -90,7 +109,7 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
   runInContext(program, context);
   return { calls, source,
     run: async (): Promise<Bag> => {
-      const result: unknown = await runInContext("qualifyCurrentSymbolWriterStartup(engine,generation)", context);
+      const result: unknown = await runInContext("qualifyCurrentSymbolWriterStartup(engine,generation,remainingWrites)", context);
       assert.ok(isRecord(result)); return result;
     },
     original: (value: unknown): unknown => { context["selectedToken"] = value; return runInContext("issued.get(selectedToken)?.source", context) as unknown; },
@@ -113,10 +132,30 @@ void test("unused targets retain the complete original startup qualification and
     assert.equal(token["profile"], "private.current-symbol-writer-startup.v1"); assert.equal(token["operationId"], OPERATION_ID);
     assert.equal(token["executionAuthorized"], false); assert.equal(token["runtimeHoldersObserved"], true);
     assert.equal(selected.original(token), selected.source);
-    assert.deepEqual(selected.calls, ["owner-revalidation", "closed-history", "fingerprint", "runtime-pin", "source-pins", "persistence-pins",
+    assert.deepEqual(selected.calls, ["owner-revalidation", "closed-history", "metadata-scope", "fingerprint", "runtime-pin", "source-pins", "persistence-pins",
       "bridge-admission", "compile-observation", "startup-intent", "intent-revalidation", "native-observation", "startup-result",
       "decode-observation", "source-pins", "persistence-pins", "owner-revalidation"]);
   }
+});
+
+void test("both purposes refuse unsupported complete metadata history before native observation or startup publication", async () => {
+  for (const purpose of ["disposable-validation", "ordinary-symbol-metadata"] as const) {
+    const selected = await fixture(UNUSED, purpose, false, true);
+    await assert.rejects(selected.run(), /unsupported complete metadata history/u);
+    assert.deepEqual(selected.calls, ["owner-revalidation", "closed-history", "metadata-scope"]);
+    await assert.rejects(selected.run(), /qualification refused/u);
+    assert.deepEqual(selected.calls, ["owner-revalidation", "closed-history", "metadata-scope"]);
+  }
+});
+
+void test("disposable forward reserves exact original restoration metadata, and ordinary startup refuses that private mode", async () => {
+  const disposable = await fixture(UNUSED, "disposable-validation", false, false, 2);
+  const token = await disposable.run();
+  assert.equal(token["executionAuthorized"], false);
+  assert.equal(disposable.calls.includes("native-observation"), true);
+  const ordinary = await fixture(UNUSED, "ordinary-symbol-metadata", false, false, 2);
+  await assert.rejects(ordinary.run(), /qualification refused/u);
+  assert.deepEqual(ordinary.calls, []);
 });
 
 void test("the referenced-target prerequisite cannot replace complete closed-history identity verification", async () => {
