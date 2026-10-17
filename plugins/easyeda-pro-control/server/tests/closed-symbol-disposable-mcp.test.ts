@@ -39,7 +39,7 @@ async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T>
     })]);
   } finally { if (timer !== undefined) { clearTimeout(timer); } }
 }
-async function fixture(context: TestContext, scenario: "seeded" | "missing-assets" | "invalid-assets" | "ordinary-history",
+async function fixture(context: TestContext, scenario: "seeded" | "missing-assets" | "invalid-assets" | "ordinary-history" | "copy-history",
   catalogOverflowControl = false): Promise<OfflineFixture> {
   assert.equal(process.versions.node, "24.18.0");
   const parentRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -200,7 +200,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 42); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 43); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
   assert.ok(entry.outputSchema !== undefined); assert.equal(entry.outputSchema.type, "object");
@@ -296,7 +296,7 @@ void test("actual SDK ordinary metadata rejects replacement authority then permi
   const f = await fixture(context, "ordinary-history"), name = "easyeda_control_project_symbol_metadata";
   const operationId = "easyeda-index-original-unfinished", request = { action: "metadata-inspect", operationId };
   const listed = await f.listTools(); const entry = listed.tools.find(item => item.name === name);
-  assert.equal(listed.tools.length, 17); assert.ok(entry !== undefined);
+  assert.equal(listed.tools.length, 18); assert.ok(entry !== undefined);
   assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
@@ -324,4 +324,27 @@ void test("actual SDK ordinary metadata rejects replacement authority then permi
     assert.equal(result[flag], false);
   }
   await f.unchangedAndOffline();
+});
+
+void test("actual SDK copy route has strict disposable schema and permits only nonauthorizing historical inspection after restart", { timeout: 60_000 }, async context => {
+  const f = await fixture(context, "copy-history"), name = "easyeda_control_disposable_symbol_copy";
+  const operationId = "easyeda-index-original-unfinished", request = { action: "copy-inspect", operationId };
+  const listed = await f.listTools(); const entry = listed.tools.find(item => item.name === name); assert.ok(entry);
+  assert.equal(listed.tools.length, 18); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true); assert.equal(entry.annotations?.idempotentHint, false);
+  for (const malformed of [{ request, expectedFingerprint: replacementFingerprint() }, { request, extra: true },
+    { request: { ...request, destinationUuid: "a".repeat(16) } },
+    { request: { action: "copy-advance", operationId, step: { expectedPhase: "copy-write", confirmWrite: true, acceptSymbolCopy: true } } },
+    { request: { action: "copy-advance", operationId, step: { expectedPhase: "inverse-write", confirmDisposableProject: true } } }]) {
+    const response = await f.call(name, malformed); assert.equal(response.isError, true);
+    assert.match(JSON.stringify(response.content), /Input validation error/u); await f.unchangedAndOffline();
+  }
+  const response = await f.call(name, { request }); assert.notEqual(response.isError, true, JSON.stringify(response));
+  assert.ok(isRecord(response.structuredContent)); const result = response.structuredContent["result"]; assert.ok(isRecord(result));
+  assert.equal(result["historicalOnly"], true);
+  for (const flag of ["originalOwnerRetained", "continuationAvailable", "copyVerified", "executionAuthorized", "replayAllowed"]) { assert.equal(result[flag], false); }
+  const cannotResume = await f.call(name, { request: { action: "copy-advance", operationId, step: { expectedPhase: "verification-read" } } });
+  assert.equal(cannotResume.isError, true); assert.doesNotMatch(JSON.stringify(cannotResume.content), /Input validation error/u);
+  const crossPurpose = await f.call("easyeda_control_project_symbol_metadata", { request: { action: "metadata-inspect", operationId } });
+  assert.equal(crossPurpose.isError, true); await f.unchangedAndOffline();
 });

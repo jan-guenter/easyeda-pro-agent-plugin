@@ -15,10 +15,11 @@ import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import { assessCurrentStartupPremises } from "../src/current-startup-premises.ts";
-import { assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolFinishSnapshot, captureCurrentSymbolBaselineCopy, revalidateCurrentSymbolFinishSnapshot,
+  revalidateCurrentSymbolVerificationSnapshot } from "../src/current-symbol-baseline-copy.ts";
 import type { CurrentSymbolBaselineCopyEvidence, CurrentSymbolBaselineCopyInput, CurrentSymbolFinishSnapshot, CurrentSymbolFinishSnapshotEvidence, CurrentSymbolFinishSnapshotInput, CurrentSymbolVerificationSnapshotInput,
   assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolVerificationSnapshot, captureCurrentSymbolFinishSnapshot, captureCurrentSymbolVerificationSnapshot,
-  revalidateCurrentSymbolBaselineCopy, revalidateCurrentSymbolFinishSnapshot } from "../src/current-symbol-baseline-copy.ts";
+  revalidateCurrentSymbolBaselineCopy } from "../src/current-symbol-baseline-copy.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import { prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "../src/engine.ts";
@@ -195,12 +196,19 @@ void test("baseline copy retains original-owner combined admission and post-root
   assert.ok(copyStart > 0 && copyEnd > copyStart && ownerStart > 0 && ownerEnd > ownerStart);
   const copy = copySource.slice(copyStart, copyEnd), owner = ownerSource.slice(ownerStart, ownerEnd);
   assert.match(owner, /current\(\); await engine\.assertBridgeAndRecoveryAdmission\(operationId\); current\(\);\s+const persisted = await this\.load\(owner\.openingOperationId\); current\(\);/u);
-  assert.match(copy, /const retained = await revalidateCurrentSymbolBaselineOwner\(owner, engine\);/u);
+  assert.match(copy, /const retained = owner\.profile === "private\.current-symbol-copy-baseline-owner\.v1"\s+\? await revalidateCurrentSymbolCopyBaselineOwner\(owner, engine\) : await revalidateCurrentSymbolBaselineOwner\(owner, engine\);/u);
   assert.doesNotMatch(copy, /engine\.assert(?:BridgeDispatchAllowed|RecoveryOperationIsolated)\(/u);
-  assert.equal([...copy.matchAll(/await current\(\);/gu)].length, 11);
+  assert.equal([...copy.matchAll(/await current\(\);/gu)].length, 12);
   assert.match(copy, /await current\(\);\s+const root = await controlRootCapability\(\); await current\(\);/u);
   assert.match(copy, /const verified = await verifyCheckpoint\(checkpoint\.receiptPath, policy\); await current\(\);/u);
   assert.match(copy, /assertCurrentClosedSessionCopyAuthority\(proof\); unchanged\(\);\s+issued\.set\(result,/u);
+});
+
+void test("legacy snapshot revalidation rejects copy profiles before the shared reader or original-copy registry", () => {
+  for (const [validator, profile] of [[revalidateCurrentSymbolFinishSnapshot, "private.current-symbol-copy-finish-snapshot.v1"],
+    [revalidateCurrentSymbolVerificationSnapshot, "private.current-symbol-copy-verification-snapshot.v1"]] as const) {
+    assert.throws(() => Reflect.apply(validator, undefined, [{}, Object.freeze({ profile })]), /profile differs/u);
+  }
 });
 
 void test("final snapshot retains changed closed bytes and full reader evidence without reusing old owner authority", async () => {

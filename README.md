@@ -28,14 +28,24 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017170000` adds current-version PCB text readers for
+Update `0.3.0+codex.20261017181500` adds a separate disposable-only symbol-copy
+workflow. It retains the original returned UUID, verifies the complete closed
+SQL effect, reopens and checks the new symbol, then verifies final SQL equality.
+The supported source is a bounded single-part self-contained drawing; ordinary
+copying, chosen names, classifications, assets and deletion remain unsupported.
+Source/peer preservation and generated-reader capacity are checked explicitly.
+The implementation has offline tests; connected validation remains pending.
+See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-symbol-copy.md)
+and [native contract and remaining work](docs/current-symbol-copy-contract-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017170000` adds current-version PCB text readers for
 `get`, `getAll` and `getAllPrimitiveId`. They return bounded raw text, font,
 placement and style from parentless loaded String views, not component
 attributes, rendered glyphs or saved-source ownership. These native equivalents
 have source review and offline tests, not connected validation. The control
 skill now routes to shorter task-specific API references. See the
 [release scope](docs/current-pcb-text-2026-10-17.md) and
-[next symbol-copy implementation](docs/current-symbol-copy-contract-2026-10-17.md).
+[symbol-copy contract](docs/current-symbol-copy-contract-2026-10-17.md).
 
 Earlier update `0.3.0+codex.20261017160000` extends disposable symbol-metadata validation
 to bounded multi-segment drawing histories. It checks byte-exact records and

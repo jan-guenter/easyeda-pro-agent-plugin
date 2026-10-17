@@ -5,13 +5,15 @@ import type { ArtifactDescriptor } from "./artifacts.ts";
 import { OPERATION_SCHEMA, assertExpectedFingerprint, assertSubset, buildPlanHash, canonicalJson, isRecord, sha256Json } from "./core.ts";
 import { verifyCurrentDisposableOpenImplementation, verifyCurrentProjectOnlyOpenImplementation } from "./current-disposable-open-profile.ts";
 // oxlint-disable-next-line import/no-cycle -- Only the retained opener issues these one-way ownership transfers; no caller-provided issuer exists.
-import { assertCurrentSymbolBaselineOwner, revalidateCurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
-import type { CurrentDisposableOpenGenerationSource, CurrentSymbolBaselineOwner } from "./current-disposable-open-runtime.ts";
+import { assertCurrentSymbolBaselineOwner, assertCurrentSymbolCopyBaselineOwner, revalidateCurrentSymbolBaselineOwner, revalidateCurrentSymbolCopyBaselineOwner } from "./current-disposable-open-runtime.ts";
+import type { CurrentDisposableOpenGenerationSource, CurrentSymbolBaselineOwner, CurrentSymbolCopyBaselineOwner } from "./current-disposable-open-runtime.ts";
 // oxlint-disable-next-line import/no-cycle -- The inverse owner is issued solely from the retained verifier's successful closure, not caller JSON or a fabricated preparation.
 import { assertCurrentSymbolInverseBaselineOwner, currentSymbolInverseOwnershipTransferred, revalidateCurrentSymbolInverseBaselineOwner, transferCurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
 import type { CurrentInverseSymbolPreparation, CurrentSymbolInverseBaselineOwner } from "./current-symbol-inverse-owner.ts";
 // oxlint-disable-next-line import/no-cycle -- Closed copying consumes only original owners issued by the opener; this private coordinator never replaces that issuer.
-import { assertOriginalCurrentSymbolBaselineCopy, captureCurrentSymbolBaselineCopy, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolCopyBaselineCopy, captureCurrentSymbolBaselineCopy, captureCurrentSymbolCopyBaselineCopy, captureCurrentSymbolCopyFinishSnapshot, captureCurrentSymbolFinishSnapshot, revalidateCurrentSymbolBaselineCopy, revalidateCurrentSymbolCopyBaselineCopy } from "./current-symbol-baseline-copy.ts";
+import type { CurrentSymbolCopyBaselineCopy, CurrentSymbolCopyFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+import type { CurrentOwnedSymbolCopyPreparation } from "./current-symbol-owned-preparation.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "./current-symbol-metadata-preparation.ts";
 // oxlint-disable-next-line import/no-cycle -- This optional fixed collector consumes only this coordinator's original generation; it cannot issue one.
 import { collectCurrentAgedSqlClock, currentAgedSqlCollectionEvidence } from "./current-aged-sql-issuer.ts";
@@ -19,6 +21,12 @@ import type { OriginalCurrentAgedSqlClock } from "./current-aged-sql-issuer.ts";
 // oxlint-disable-next-line import/no-cycle -- Scratch reference preparation consumes the original closed copy before replacement launch, never a loaded journal.
 import { CurrentAgedSqlReferenceStage, assertOriginalCurrentAgedSqlReference, revalidateOriginalCurrentAgedSqlReference } from "./current-aged-sql-reference.ts";
 import type { OriginalCurrentAgedSqlReference } from "./current-aged-sql-reference.ts";
+// oxlint-disable-next-line import/no-cycle -- Copy clock issuers accept only this coordinator's distinct original copy generation and closed baseline.
+import { collectCurrentCopyAgedSqlClock, currentCopyAgedSqlCollectionEvidence } from "./current-copy-aged-sql-issuer.ts";
+import type { OriginalCurrentCopyAgedSqlClock } from "./current-copy-aged-sql-issuer.ts";
+// oxlint-disable-next-line import/no-cycle -- Copy scratch collection consumes this module's original closed copy without a caller-supplied issuer.
+import { CurrentCopyAgedSqlReferenceStage, assertOriginalCurrentCopyAgedSqlReference, revalidateOriginalCurrentCopyAgedSqlReference } from "./current-copy-aged-sql-reference.ts";
+import type { OriginalCurrentCopyAgedSqlReference } from "./current-copy-aged-sql-reference.ts";
 import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./current-symbol-cache-journal.ts";
 import { qualifyCurrentSymbolClockRelation } from "./current-symbol-clock-relation.ts";
@@ -27,7 +35,7 @@ import { selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.
 import { CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "./current-upload-queue-read.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "./current-project-only-open.ts";
 // oxlint-disable-next-line import/no-cycle -- The source reader reuses the original copy issuer; it cannot replace the retained coordinator's ownership.
-import { verifyCurrentSymbolPreopenSource } from "./current-symbol-preopen-source.ts";
+import { verifyCurrentSymbolCopyPreopenSource, verifyCurrentSymbolPreopenSource } from "./current-symbol-preopen-source.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
@@ -48,30 +56,48 @@ const closedSessionSchema = activeSessionSchema.extend({ closedAtEpochMs: z.numb
 export const currentSymbolBaselineRequestSchema = z.object({ operationId: z.string().regex(/^[A-Za-z0-9._:-]{1,160}$/u),
   preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }), confirmNormalClose: z.literal(true) }).strict();
 interface Journal extends TrackedDispatchOperationJournal {
-  plan: Value & { profile: typeof PROFILE | "easyeda-pro-control.current-symbol-writer.v1" }; closeAttempted: boolean; copyAttempted: boolean;
+  plan: Value & { profile: typeof PROFILE | "easyeda-pro-control.current-symbol-writer.v1" | "easyeda-pro-control.current-symbol-copy-writer.v1" }; closeAttempted: boolean; copyAttempted: boolean;
   relaunchAttempted: boolean; releaseAttempted: boolean; admissionAttempted: boolean; cacheAttempted: boolean;
   projectOpenAttempted: boolean; finishCloseAttempted: boolean; finishReleaseAttempted: boolean;
   finishSnapshotAttempted?: boolean; finishSnapshotCaptured?: boolean; finishSnapshotFailed?: boolean;
   projectOpeningMode?: ProjectOpeningMode;
 }
 type CopyResult = Awaited<ReturnType<typeof captureCurrentSymbolBaselineCopy>>;
-type BaselineOwner = CurrentSymbolBaselineOwner | CurrentSymbolInverseBaselineOwner;
+type AnyCopyResult = CopyResult | CurrentSymbolCopyBaselineCopy;
+type BaselineOwner = CurrentSymbolBaselineOwner | CurrentSymbolInverseBaselineOwner | CurrentSymbolCopyBaselineOwner;
 type OriginalPreparation = ReturnType<typeof assertCurrentSymbolBaselineOwner>["preparation"] | CurrentInverseSymbolPreparation;
-function assertBaselineOwner(owner: BaselineOwner, engine: EasyedaControlEngine): Readonly<{ source: CurrentDisposableOpenGenerationSource; preparation: OriginalPreparation }> {
+type AnyOriginalPreparation = OriginalPreparation | CurrentOwnedSymbolCopyPreparation;
+function assertBaselineOwner(owner: BaselineOwner, engine: EasyedaControlEngine): Readonly<{ source: CurrentDisposableOpenGenerationSource; preparation: AnyOriginalPreparation }> {
+  if (owner.profile === "private.current-symbol-copy-baseline-owner.v1") { return assertCurrentSymbolCopyBaselineOwner(owner, engine); }
   return owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ? assertCurrentSymbolInverseBaselineOwner(owner, engine) : assertCurrentSymbolBaselineOwner(owner, engine);
 }
 async function revalidateBaselineOwner(owner: BaselineOwner, engine: EasyedaControlEngine): Promise<void> {
-  await (owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ?
-    revalidateCurrentSymbolInverseBaselineOwner(owner, engine) : revalidateCurrentSymbolBaselineOwner(owner, engine));
+  if (owner.profile === "private.current-symbol-inverse-baseline-owner.v1") { await revalidateCurrentSymbolInverseBaselineOwner(owner, engine); }
+  else if (owner.profile === "private.current-symbol-copy-baseline-owner.v1") { await revalidateCurrentSymbolCopyBaselineOwner(owner, engine); }
+  else { await revalidateCurrentSymbolBaselineOwner(owner, engine); }
+}
+function assertBaselineCopy(copy: AnyCopyResult, engine: EasyedaControlEngine): void {
+  if (copy.profile === "private.current-symbol-copy-baseline-copy.v1") { assertOriginalCurrentSymbolCopyBaselineCopy(copy, engine); }
+  else { assertOriginalCurrentSymbolBaselineCopy(copy, engine); }
+}
+async function revalidateBaselineCopy(engine: EasyedaControlEngine, copy: AnyCopyResult, proof: ClosedSessionTerminationProof): Promise<void> {
+  await (copy.profile === "private.current-symbol-copy-baseline-copy.v1"
+    ? revalidateCurrentSymbolCopyBaselineCopy(engine, copy, proof) : revalidateCurrentSymbolBaselineCopy(engine, copy, proof));
+}
+function preopenSource(engine: EasyedaControlEngine, copy: AnyCopyResult): ReturnType<typeof verifyCurrentSymbolPreopenSource> {
+  return copy.profile === "private.current-symbol-copy-baseline-copy.v1"
+    ? verifyCurrentSymbolCopyPreopenSource(engine, copy) : verifyCurrentSymbolPreopenSource(engine, copy);
 }
 type Binding = Omit<Parameters<WindowsControlRuntime["prepareClosedSessionClose"]>[0], "windowHandle">;
 interface Slot {
   readonly owner: BaselineOwner; readonly journal: Journal; readonly ownerText: string;
-  readonly purpose: "disposable-validation" | "ordinary-symbol-metadata";
-  readonly originalPreparation: OriginalPreparation; readonly originalPreparationText: string;
+  readonly purpose: "disposable-validation" | "ordinary-symbol-metadata" | "disposable-symbol-copy";
+  readonly originalPreparation: AnyOriginalPreparation; readonly originalPreparationText: string;
   created: boolean; journalText: string; capture?: ClosedSessionAuthorityCapture; binding?: Binding;
+  copyOpeningCleanupMethods?: readonly unknown[];
+  copyInitialCaptureAttempted?: boolean;
   intent?: ClosedSessionCloseIntent; closeReceipt?: ClosedSessionCloseReceipt; observation?: ClosedSessionTerminationObservation;
-  proof?: ClosedSessionTerminationProof; copy?: CopyResult; closeAttempted: boolean; copyAttempted: boolean; baselineCaptured: boolean;
+  proof?: ClosedSessionTerminationProof; copy?: AnyCopyResult; closeAttempted: boolean; copyAttempted: boolean; baselineCaptured: boolean;
   relaunchAttempted: boolean; releaseAttempted: boolean; captureReleased: boolean;
   launch?: WindowsAuthorityLaunch; launchClock?: IssuedWindowsClockObservation; terminationClock?: IssuedWindowsClockObservation;
   currentLaunch?: (scopeText?: string) => void;
@@ -82,10 +108,11 @@ interface Slot {
   cacheRaw?: unknown; cacheObservation?: Readonly<Value>; cacheClock?: IssuedWindowsClockObservation;
   projectOpenAttempted: boolean; projectOpenReplyRetained: boolean; projectOpened: boolean;
   projectOpenRaw?: unknown; projectOpenObservation?: Readonly<Value>; projectOpenClock?: IssuedWindowsClockObservation;
-  projectOnlyGeneration?: CurrentProjectOnlySymbolGeneration;
-  writerTransfer?: CurrentSymbolWriterOwner;
+  projectOnlyGeneration?: CurrentProjectOnlySymbolGeneration | CurrentProjectOnlySymbolCopyGeneration;
+  writerTransfer?: CurrentSymbolWriterOwner | CurrentSymbolCopyWriterOwner;
   clockReferenceAttempted: boolean; clockReferenceAccepted: boolean; clockReference?: OriginalCurrentAgedSqlReference;
   agedClockAttempted: boolean; agedClockAccepted: boolean; agedClock?: OriginalCurrentAgedSqlClock;
+  copyClockReference?: OriginalCurrentCopyAgedSqlReference; copyAgedClock?: OriginalCurrentCopyAgedSqlClock;
   clockReferenceFailure?: ArtifactDescriptor; agedClockFailure?: ArtifactDescriptor;
   agedClockCollection?: Readonly<Value>;
   preopenSource?: Awaited<ReturnType<typeof verifyCurrentSymbolPreopenSource>>;
@@ -94,7 +121,7 @@ interface Slot {
   finishObservation?: ClosedSessionTerminationObservation; finishProof?: ClosedSessionTerminationProof;
   finishCaptureText?: string;
   finishSnapshotAttempted: boolean; finishSnapshotCaptured: boolean; finishSnapshotFailed: boolean;
-  finishSnapshot?: Awaited<ReturnType<typeof captureCurrentSymbolFinishSnapshot>>;
+  finishSnapshot?: Awaited<ReturnType<typeof captureCurrentSymbolFinishSnapshot>> | CurrentSymbolCopyFinishSnapshot;
   finishSnapshotFailureEvidenceText?: string;
   readonly evidence: Map<string, unknown>;
   inverseCleanupMode?: "held-closure" | "pre-capture" | "incomplete-admission";
@@ -114,6 +141,45 @@ export interface CurrentProjectOnlySymbolGenerationSource {
   readonly launchClock: IssuedWindowsClockObservation;
   readonly captureClock: IssuedWindowsClockObservation;
 }
+export interface CurrentProjectOnlySymbolCopyGeneration {
+  readonly profile: "private.current-project-only-symbol-copy-generation.v1";
+  readonly operationId: string;
+}
+export interface CurrentProjectOnlySymbolCopyGenerationSource extends Omit<CurrentProjectOnlySymbolGenerationSource, "baseline" | "originalPreparation"> {
+  readonly baseline: CurrentSymbolCopyBaselineCopy;
+  readonly originalPreparation: CurrentOwnedSymbolCopyPreparation;
+}
+const issuedCopyProjectOnlyGenerations = new WeakMap<object, {
+  readonly value: CurrentProjectOnlySymbolCopyGenerationSource;
+  readonly current: (scopeText?: string) => void;
+  readonly revalidate: (scopeText?: string) => Promise<void>;
+  readonly transfer: () => CurrentSymbolCopyWriterOwner;
+}>();
+export function assertCurrentProjectOnlySymbolCopyGeneration(value: unknown, engine: EasyedaControlEngine,
+  scopeText?: string): CurrentProjectOnlySymbolCopyGenerationSource {
+  need(value !== null && typeof value === "object", "Current copy project-only original generation is missing.");
+  const issued = issuedCopyProjectOnlyGenerations.get(value);
+  need(issued !== undefined && issued.value.source.engine === engine, "Current copy generation was not issued by this retained coordinator.");
+  issued.current(scopeText); return issued.value;
+}
+export async function revalidateCurrentProjectOnlySymbolCopyGeneration(value: unknown, engine: EasyedaControlEngine,
+  scopeText?: string): Promise<CurrentProjectOnlySymbolCopyGenerationSource> {
+  const original = assertCurrentProjectOnlySymbolCopyGeneration(value, engine, scopeText);
+  need(value !== null && typeof value === "object", "Current copy generation is missing.");
+  const issued = issuedCopyProjectOnlyGenerations.get(value); need(issued !== undefined, "Current copy generation is missing.");
+  await issued.revalidate(scopeText);
+  need(assertCurrentProjectOnlySymbolCopyGeneration(value, engine, scopeText) === original, "Current copy generation changed during revalidation."); return original;
+}
+type AnyProjectGeneration = CurrentProjectOnlySymbolGeneration | CurrentProjectOnlySymbolCopyGeneration;
+function projectGenerationSource(value: AnyProjectGeneration, engine: EasyedaControlEngine, scopeText?: string):
+CurrentProjectOnlySymbolGenerationSource | CurrentProjectOnlySymbolCopyGenerationSource {
+  return value.profile === "private.current-project-only-symbol-copy-generation.v1"
+    ? assertCurrentProjectOnlySymbolCopyGeneration(value, engine, scopeText) : assertCurrentProjectOnlySymbolGeneration(value, engine, scopeText);
+}
+async function revalidateProjectGeneration(value: AnyProjectGeneration, engine: EasyedaControlEngine): Promise<void> {
+  await (value.profile === "private.current-project-only-symbol-copy-generation.v1"
+    ? revalidateCurrentProjectOnlySymbolCopyGeneration(value, engine) : revalidateCurrentProjectOnlySymbolGeneration(value, engine));
+}
 /** Original in-memory ownership transfer. The same journal remains the sole
  * quarantine identity; historical baseline artifacts are never rewritten.
  */
@@ -129,6 +195,28 @@ export interface CurrentSymbolWriterOwnerSource {
   readonly current: (scopeText?: string) => void;
   readonly beginFinish: () => void;
   readonly retire: () => void;
+}
+export interface CurrentSymbolCopyWriterOwner {
+  readonly profile: "private.current-symbol-copy-writer-owner.v1";
+  readonly operationId: string;
+}
+export interface CurrentSymbolCopyWriterOwnerSource extends Omit<CurrentSymbolWriterOwnerSource, "generation" | "original"> {
+  readonly generation: CurrentProjectOnlySymbolCopyGeneration;
+  readonly original: CurrentProjectOnlySymbolCopyGenerationSource;
+}
+const copyWriterOwners = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly source: CurrentSymbolCopyWriterOwnerSource }>();
+export function transferCurrentProjectOnlySymbolCopyGeneration(value: CurrentProjectOnlySymbolCopyGeneration,
+  engine: EasyedaControlEngine): CurrentSymbolCopyWriterOwner {
+  assertCurrentProjectOnlySymbolCopyGeneration(value, engine);
+  const issued = issuedCopyProjectOnlyGenerations.get(value);
+  need(issued !== undefined, "Current copy writer transfer lost its original generation."); return issued.transfer();
+}
+export function assertCurrentSymbolCopyWriterOwner(value: unknown, engine: EasyedaControlEngine,
+  scopeText?: string): CurrentSymbolCopyWriterOwnerSource {
+  need(value !== null && typeof value === "object", "Current copy writer requires its original owner.");
+  const issued = copyWriterOwners.get(value);
+  need(issued !== undefined && issued.engine === engine, "Current copy writer owner was not issued by this engine.");
+  issued.source.current(scopeText); return issued.source;
 }
 const writerOwners = new WeakMap<object, { readonly engine: EasyedaControlEngine; readonly source: CurrentSymbolWriterOwnerSource }>();
 const issuedProjectOnlyGenerations = new WeakMap<object, {
@@ -221,7 +309,7 @@ function summary(slot: Slot): Value {
     projectOpeningMode: slot.journal.projectOpeningMode ?? null,
     clockReferenceAttempted: slot.clockReferenceAttempted, clockReferenceAccepted: slot.clockReferenceAccepted,
     agedClockAttempted: slot.agedClockAttempted, agedClockAccepted: slot.agedClockAccepted,
-    clockEvidence: { reference: slot.clockReference ?? null, observation: slot.agedClock ?? null,
+    clockEvidence: { reference: slot.copyClockReference ?? slot.clockReference ?? null, observation: slot.copyAgedClock ?? slot.agedClock ?? null,
       referenceFailure: slot.clockReferenceFailure ?? null, observationFailure: slot.agedClockFailure ?? null,
       observationCollection: slot.agedClockCollection ?? null },
     unqualifiedSchematicStartupEffectsAccepted: slot.journal.projectOpeningMode === "unqualified-schematic-startup-observation",
@@ -250,6 +338,7 @@ export class CurrentSymbolBaselineCoordinator {
   private readonly runtime: WindowsControlRuntime;
   private readonly sqlRuntime: MachineProfile["runtime"];
   private readonly clockReferenceStage: CurrentAgedSqlReferenceStage;
+  private copyClockReferenceStage?: CurrentCopyAgedSqlReferenceStage;
   private readonly slots = new Map<string, Slot>();
   private busy = false;
   public constructor(engine: EasyedaControlEngine, runtime: WindowsControlRuntime, sqlRuntime: MachineProfile["runtime"]) {
@@ -374,10 +463,19 @@ export class CurrentSymbolBaselineCoordinator {
    * already consumed that opening, even if capture or scope settlement fails.
    */
   public async capture(owner: CurrentSymbolBaselineOwner): Promise<void> {
+    assertCurrentSymbolBaselineOwner(owner, this.engine);
+    await this.captureOwner(owner);
+  }
+  public async captureCopy(owner: CurrentSymbolCopyBaselineOwner): Promise<void> {
+    assertCurrentSymbolCopyBaselineOwner(owner, this.engine);
+    await this.captureOwner(owner);
+  }
+  private async captureOwner(owner: CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner): Promise<void> {
     need(!this.busy && !this.slots.has(owner.operationId), "Current symbol baseline is busy or already consumed.");
-    const original = assertCurrentSymbolBaselineOwner(owner, this.engine), source = original.source;
+    const original = assertBaselineOwner(owner, this.engine), source = original.source;
     need(source.runtime === this.runtime, "Current symbol baseline has another runtime.");
-    const plan: Journal["plan"] = { profile: PROFILE, purpose: source.purpose ?? "disposable-validation", openingOperationId: owner.openingOperationId, target: source.target,
+    const purpose = owner.profile === "private.current-symbol-copy-baseline-owner.v1" ? "disposable-symbol-copy" : source.purpose ?? "disposable-validation";
+    const plan: Journal["plan"] = { profile: PROFILE, purpose, openingOperationId: owner.openingOperationId, target: source.target,
       expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
       preparationSha256: original.preparation.preparationSha256 };
     const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,
@@ -388,7 +486,7 @@ export class CurrentSymbolBaselineCoordinator {
       finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       nextSafeAction: "Retain one closed-session capture in the original authenticated scope before normal close." };
-    const slot: Slot = { owner, purpose: source.purpose ?? "disposable-validation", ownerText: canonicalJson(owner), originalPreparation: original.preparation,
+    const slot: Slot = { owner, purpose, ownerText: canonicalJson(owner), originalPreparation: original.preparation,
       originalPreparationText: canonicalJson(original.preparation), journal, journalText: canonicalJson(journal), created: false,
       closeAttempted: false, copyAttempted: false, baselineCaptured: false, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
       admissionAttempted: false, admissionProved: false, cacheAttempted: false, cacheReplyRetained: false, cachesObserved: false,
@@ -396,6 +494,7 @@ export class CurrentSymbolBaselineCoordinator {
       clockReferenceAttempted: false, clockReferenceAccepted: false, agedClockAttempted: false, agedClockAccepted: false,
       finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       finishing: false, finishCloseAttempted: false, finishReleaseAttempted: false, finishCaptureReleased: false, finished: false, evidence: new Map() };
+    if (purpose === "disposable-symbol-copy") { slot.copyOpeningCleanupMethods = relaunchMethods(this.engine, this.runtime); }
     this.slots.set(owner.operationId, slot); this.busy = true;
     try {
       const reader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
@@ -411,6 +510,7 @@ export class CurrentSymbolBaselineCoordinator {
       };
       await createOperation(journal); slot.created = true; inside();
       await CurrentSymbolBaselineCoordinator.record(slot, "capture-intent", { openingOperationId: owner.openingOperationId, preparation: original.preparation }); inside();
+      if (purpose === "disposable-symbol-copy") { slot.copyInitialCaptureAttempted = true; }
       const capture = await this.engine.captureClosedSessionAuthority(owner.operationId, "closed-baseline", 1);
       slot.capture = capture;
       slot.binding = { operationId: capture.operationId, phase: capture.phase, challengeAttempt: capture.challengeAttempt,
@@ -430,12 +530,84 @@ export class CurrentSymbolBaselineCoordinator {
     finally { this.busy = false; }
   }
 
-  public async stopAfterScopeFailure(owner: CurrentSymbolBaselineOwner): Promise<void> {
+  public async stopAfterScopeFailure(owner: CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner): Promise<void> {
     const slot = this.slots.get(owner.operationId);
     if (slot !== undefined && slot.owner === owner && slot.journal.state !== "stopped") { await CurrentSymbolBaselineCoordinator.stopped(slot, "scope-settlement"); }
   }
 
-  public async close(owner: CurrentSymbolBaselineOwner): Promise<Value> {
+  /** Inspection of the original failed initial copy stage, never an issuer. */
+  public copyOpeningCleanupStatus(operationId: string): Value {
+    const slot = this.slots.get(operationId);
+    if (slot === undefined) { return { originalCaptureOwnerRetained: false, closeAttempted: false, closeAcknowledged: false, captureRetained: false }; }
+    need(slot.purpose === "disposable-symbol-copy" && !slot.relaunchAttempted && !slot.copyAttempted && slot.writerTransfer === undefined,
+      "Copy opening cleanup cannot adopt a later generation or another operation purpose.");
+    return { originalCaptureOwnerRetained: true, closeAttempted: slot.closeAttempted, closeAcknowledged: slot.closeReceipt !== undefined,
+      captureRetained: slot.capture !== undefined, captureAcquisitionCleanupUncertain: slot.copyInitialCaptureAttempted === true && slot.capture === undefined,
+      releaseAttempted: slot.releaseAttempted, captureReleased: slot.captureReleased, journalCreated: slot.created, retired: slot.finished };
+  }
+
+  /** Release only this failed initial copy capture, after independently observing
+   * its original root/Job exit and closed bridge identity. No snapshot is issued.
+   */
+  public async retireCopyOpeningCapture(operationId: string): Promise<void> {
+    const slot = this.slots.get(operationId);
+    if (slot === undefined) { return; }
+    this.copyOpeningCleanupStatus(operationId);
+    need(!this.busy && !slot.finished && !slot.releaseAttempted && !slot.captureReleased && slot.journal.state === "stopped",
+      "Copy opening capture retirement requires its unconsumed stopped initial owner.");
+    this.busy = true;
+    try {
+      const original = assertBaselineOwner(slot.owner, this.engine);
+      const launch = original.source.launchProjection, prior = original.source.bridgeSession;
+      const current = (): void => {
+        this.outsideScope(slot);
+        need(slot.copyOpeningCleanupMethods !== undefined && relaunchMethods(this.engine, this.runtime).every((method, index) => method === slot.copyOpeningCleanupMethods?.[index]) &&
+          !slot.journal.orphanedCallPossible && slot.journal.bridgeDispatchBeforeOrphan === undefined &&
+          slot.journal.bridgeSessionBeforeOrphan === undefined && slot.journal.executionAuthorityBeforeOrphan === undefined,
+        "Initial copy capture cleanup cannot replace methods or adopt tracked dispatch authority.");
+        const status = this.runtime.status();
+        need(status.state === "owned" && canonicalJson(status.launch) === canonicalJson(launch), "Copy cleanup original launch changed.");
+      };
+      const unchanged = async (): Promise<void> => {
+        current();
+        if (slot.created) {
+          const persisted = await loadOperation(operationId); current();
+          need(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText, "Copy cleanup initial capture journal changed.");
+        }
+      };
+      const closed = (): void => {
+        current(); const lifecycle = this.engine.upstream.bridgeSessionLifecycle?.();
+        need(isRecord(lifecycle) && lifecycle["gatewayInstanceId"] === prior.gatewayInstanceId && lifecycle["activeSession"] === null &&
+          Array.isArray(lifecycle["recentClosedSessions"]), "Copy cleanup original bridge is not closed.");
+        const matches = lifecycle["recentClosedSessions"].filter((entry: unknown) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
+        const retained: unknown = matches[0];
+        need(matches.length === 1 && isRecord(retained) && retained["sequence"] === prior.sequence &&
+          retained["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && retained["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs &&
+          typeof retained["closedAtEpochMs"] === "number" && Number.isSafeInteger(retained["closedAtEpochMs"]) && retained["closedAtEpochMs"] >= prior.authenticatedAtEpochMs,
+        "Copy cleanup closed session differs from its original capture owner.");
+      };
+      await unchanged(); await this.engine.assertRecoveryOperationIsolated(operationId); await unchanged();
+      const observation = await this.runtime.observeLaunchTermination(); await unchanged();
+      need(observation.terminated && observation.jobId === launch.jobId && observation.helperInstance === launch.helperInstance,
+        "Copy cleanup original capture processes have not terminated."); closed();
+      slot.releaseAttempted = true; slot.journal.releaseAttempted = true;
+      if (slot.created) {
+        await CurrentSymbolBaselineCoordinator.record(slot, "copy-initial-capture-release-intent", { observation, snapshotAuthority: false,
+          captureRetained: slot.capture !== undefined, captureAcquisitionCleanupUncertain: slot.copyInitialCaptureAttempted === true && slot.capture === undefined });
+        await unchanged(); closed();
+      }
+      if (slot.capture !== undefined) { await this.engine.releaseClosedSessionAuthority(slot.capture); slot.captureReleased = true; }
+      await unchanged(); closed();
+      if (slot.created) {
+        slot.journal.state = "plan-invalidated"; slot.journal.hardStop = false;
+        slot.journal.nextSafeAction = "Failed initial copy stage retired after original process and bridge closure. Primary failure retained; no retry, snapshot or writer authority.";
+        await CurrentSymbolBaselineCoordinator.record(slot, "copy-initial-capture-retired", { retired: true, captureReleased: slot.captureReleased, fileEffects: "unknown", snapshotAuthority: false });
+      }
+      slot.finished = true;
+    } finally { this.busy = false; }
+  }
+
+  public async close(owner: CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner): Promise<Value> {
     const slot = this.slots.get(owner.operationId);
     need(!this.busy && slot !== undefined && slot.owner === owner && slot.journal.state === "captured" && slot.capture !== undefined && slot.binding !== undefined,
       "Current symbol baseline close needs its original completed capture.");
@@ -486,8 +658,10 @@ export class CurrentSymbolBaselineCoordinator {
       await CurrentSymbolBaselineCoordinator.record(slot, "copy-intent", { proof }); this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
       const capture = slot.capture; need(capture !== undefined, "Current symbol baseline capture was lost.");
       need(slot.owner.profile !== "private.current-symbol-inverse-baseline-owner.v1", "Inverse baselines use only their original verification snapshot.");
-      const result = await captureCurrentSymbolBaselineCopy(this.engine, { owner: slot.owner, capture, intent: slot.intent,
-        closeReceipt: slot.closeReceipt, proof, runtime: this.sqlRuntime }, (event) => { slot.evidence.set(event.kind, event.value); });
+      const copyInput = { capture, intent: slot.intent, closeReceipt: slot.closeReceipt, proof, runtime: this.sqlRuntime };
+      const result = slot.owner.profile === "private.current-symbol-copy-baseline-owner.v1"
+        ? await captureCurrentSymbolCopyBaselineCopy(this.engine, { ...copyInput, owner: slot.owner }, event => { slot.evidence.set(event.kind, event.value); })
+        : await captureCurrentSymbolBaselineCopy(this.engine, { ...copyInput, owner: slot.owner }, event => { slot.evidence.set(event.kind, event.value); });
       slot.copy = result;
       this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
       slot.journal.state = "completed"; slot.journal.hardStop = false;
@@ -509,26 +683,43 @@ export class CurrentSymbolBaselineCoordinator {
    * Failure leaves the original process owner and consumed attempt available
    * for inspection; it cannot authorize replacement launch or any writer.
    */
-  public async prepareClockReference(operationId: string): Promise<Value> {
+  public prepareClockReference(operationId: string): Promise<Value> {
+    return this.prepareClockReferenceForPurpose(operationId, false);
+  }
+  public prepareCopyClockReference(operationId: string): Promise<Value> {
+    return this.prepareClockReferenceForPurpose(operationId, true);
+  }
+  private async prepareClockReferenceForPurpose(operationId: string, copyOperation: boolean): Promise<Value> {
     const slot = this.slots.get(operationId);
     need(!this.busy && slot !== undefined && slot.journal.state === "completed" && slot.baselineCaptured && slot.copy !== undefined &&
       slot.proof !== undefined && !slot.relaunchAttempted && !slot.clockReferenceAttempted,
     "Current clock reference requires its original closed baseline and unused pre-launch attempt.");
+    need((slot.purpose === "disposable-symbol-copy") === copyOperation &&
+      (slot.copy.profile === "private.current-symbol-copy-baseline-copy.v1") === copyOperation,
+    "Current clock reference cannot consume another operation purpose.");
     this.busy = true; slot.clockReferenceAttempted = true;
     try {
       this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
-      const reference = await this.clockReferenceStage.runOnce({ baseline: slot.copy, proof: slot.proof });
-      slot.clockReference = reference;
-      this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
-      need(assertOriginalCurrentAgedSqlReference(reference, this.engine, slot.copy) === reference,
-        "Current clock reference lost its original issuer.");
+      if (slot.copy.profile === "private.current-symbol-copy-baseline-copy.v1") {
+        this.copyClockReferenceStage ??= new CurrentCopyAgedSqlReferenceStage(this.engine);
+        const reference = await this.copyClockReferenceStage.runOnce({ baseline: slot.copy, proof: slot.proof });
+        slot.copyClockReference = reference;
+        this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
+        need(assertOriginalCurrentCopyAgedSqlReference(reference, this.engine, slot.copy) === reference, "Current copy clock reference lost its original issuer.");
+      } else {
+        const reference = await this.clockReferenceStage.runOnce({ baseline: slot.copy, proof: slot.proof });
+        slot.clockReference = reference;
+        this.outsideScope(slot); await this.unchanged(slot); this.outsideScope(slot);
+        need(assertOriginalCurrentAgedSqlReference(reference, this.engine, slot.copy) === reference, "Current clock reference lost its original issuer.");
+      }
       slot.clockReferenceAccepted = true;
       return summary(slot);
     } catch (error) {
       try {
         slot.clockReferenceFailure = await writePhaseArtifact(currentSymbolClockEvidenceId(operationId), 0, "coordinator-reference-refused", {
           profile: "private.current-symbol-clock-stage-refused.v1", operationId, stage: "reference", attemptConsumed: true,
-          originalResultRetained: slot.clockReference !== undefined, transportReturnRetained: this.clockReferenceStage.originalReturn(operationId) !== undefined,
+          originalResultRetained: slot.clockReference !== undefined || slot.copyClockReference !== undefined,
+          transportReturnRetained: (copyOperation ? this.copyClockReferenceStage?.originalReturn(operationId) : this.clockReferenceStage.originalReturn(operationId)) !== undefined,
           replayAllowed: false, startupQualified: false, executionAuthorized: false });
       } catch (recordError) { throw new AggregateError([error, recordError], "Current clock reference failed and its refusal evidence could not be retained.", { cause: recordError }); }
       throw error;
@@ -575,7 +766,7 @@ export class CurrentSymbolBaselineCoordinator {
           canonicalJson(source.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText &&
           canonicalJson({ target: source.target, expectedFingerprint: source.expectedFingerprint, preNavigationCheckpoint: source.preNavigationCheckpoint }) === sourceText,
         "Current symbol relaunch infrastructure, capture or ended scope changed.");
-        assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+        assertBaselineCopy(copy, this.engine);
         const lifecycle = lifecycleReader.call(upstream);
         need(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" &&
           lifecycle["gatewayInstanceId"] === priorSession.gatewayInstanceId && canonicalJson(lifecycle["publicEndpoint"]) === endpointText &&
@@ -614,16 +805,22 @@ export class CurrentSymbolBaselineCoordinator {
       };
       previous();
       if (slot.clockReferenceAttempted) {
-        need(slot.clockReference !== undefined, "Current symbol relaunch lost its optional original clock reference.");
-        await revalidateOriginalCurrentAgedSqlReference(slot.clockReference, this.engine, copy); previous();
+        if (copy.profile === "private.current-symbol-copy-baseline-copy.v1") {
+          need(slot.copyClockReference !== undefined && slot.clockReference === undefined, "Copy relaunch lost its original copy clock reference.");
+          await revalidateOriginalCurrentCopyAgedSqlReference(slot.copyClockReference, this.engine, copy);
+        } else {
+          need(slot.clockReference !== undefined && slot.copyClockReference === undefined, "Current symbol relaunch lost its optional original clock reference.");
+          await revalidateOriginalCurrentAgedSqlReference(slot.clockReference, this.engine, copy);
+        }
+        previous();
       }
-      await revalidateCurrentSymbolBaselineCopy(this.engine, copy, proof); previous();
+      await revalidateBaselineCopy(this.engine, copy, proof); previous();
       slot.terminationClock = await windowsClockObservationForResult(proof, "termination"); previous();
       slot.journal.relaunchAttempted = true; slot.journal.state = "relaunch-dispatching"; slot.journal.hardStop = true;
       slot.journal.nextSafeAction = "Retain this one launch result; never repeat launch after an uncertain return.";
       await CurrentSymbolBaselineCoordinator.record(slot, "relaunch-intent", { copyReceiptSha256: copy.copy.receiptSha256,
         checkpoint: copy.checkpoint, proof, terminationClock: slot.terminationClock }); previous();
-      await revalidateCurrentSymbolBaselineCopy(this.engine, copy, proof); previous();
+      await revalidateBaselineCopy(this.engine, copy, proof); previous();
       await this.unchanged(slot); previous();
       // Launch invalidates the old closure epoch before its first native await.
       // No old-owner/proof assertion is valid beyond this dispatch boundary.
@@ -897,8 +1094,11 @@ export class CurrentSymbolBaselineCoordinator {
   public openOrdinaryProject(operationId: string): Promise<Value> {
     return this.openProjectForPurpose(operationId, "ordinary-symbol-metadata");
   }
+  public openCopyProject(operationId: string, acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
+    return this.openProjectForPurpose(operationId, "disposable-symbol-copy", acceptUnqualifiedSchematicStartupEffects);
+  }
 
-  private async openProjectForPurpose(operationId: string, purpose: "disposable-validation" | "ordinary-symbol-metadata",
+  private async openProjectForPurpose(operationId: string, purpose: Slot["purpose"],
     acceptUnqualifiedSchematicStartupEffects?: true): Promise<Value> {
     const slot = this.slots.get(operationId);
     need(!this.busy && slot !== undefined && slot.journal.state === "caches-observed" && slot.cachesObserved &&
@@ -906,12 +1106,13 @@ export class CurrentSymbolBaselineCoordinator {
       slot.source !== undefined && slot.sessionCurrent !== undefined && slot.admissionCapture !== undefined &&
       slot.admissionClock !== undefined && slot.launch !== undefined && !slot.projectOpenAttempted,
     "Current project-only opening needs its original closed baseline, admitted session and unused attempt.");
-    need((slot.source.purpose ?? "disposable-validation") === purpose,
+    need(slot.purpose === purpose && (slot.source.purpose ?? "disposable-validation") ===
+      (purpose === "disposable-symbol-copy" ? "disposable-validation" : purpose),
       "Current project-only opening cannot consume another purpose's original baseline.");
     const premises = slot.copy.startupPremises;
     // Explicit disposable observation may accept this sole historical blocker,
     // Not unsupported schema/version/count evidence or a qualified writer baseline.
-    const observeSchematicEffects = purpose === "disposable-validation" && acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied &&
+    const observeSchematicEffects = purpose !== "ordinary-symbol-metadata" && acceptUnqualifiedSchematicStartupEffects === true && !premises.historicalSubsetSatisfied &&
       premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages";
     const supportedStartup = purpose === "ordinary-symbol-metadata" && slot.source.startupExpectation !== undefined &&
       premises.sqlSchemaSupported && premises.databaseVersion === "25.10.31.1" && premises.targetPcbSuppliesNonzeroNativeCount &&
@@ -928,7 +1129,7 @@ export class CurrentSymbolBaselineCoordinator {
     const { source, copy, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
     try {
       const current = async (scopeText?: string): Promise<void> => {
-        sessionCurrent(scopeText); assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+        sessionCurrent(scopeText); assertBaselineCopy(copy, this.engine);
         const persisted = await loadOperation(operationId); sessionCurrent(scopeText);
         need(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
           "Current project-only journal changed.");
@@ -972,7 +1173,7 @@ export class CurrentSymbolBaselineCoordinator {
         validateSdkLocalRuntimeFingerprint(fingerprint); assertExpectedFingerprint(fingerprint);
         assertSubset(fingerprint, source.expectedFingerprint, "Current project-only runtime");
         await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot); await original(scopeText);
-        slot.preopenSource = await verifyCurrentSymbolPreopenSource(this.engine, copy); await original(scopeText);
+        slot.preopenSource = await preopenSource(this.engine, copy); await original(scopeText);
         slot.journal.projectOpenAttempted = true; slot.journal.state = "project-only-dispatching";
         slot.journal.projectOpeningMode = openingMode;
         slot.journal.mutationMayHaveOccurred = true;
@@ -998,7 +1199,7 @@ export class CurrentSymbolBaselineCoordinator {
             need(await assertIssuedWindowsClockObservation(slot.projectOpenClock) === slot.projectOpenClock,
               "Current project-only dispatch clock changed."); await original(scopeText);
             await this.engine.assertRecoveryOperationIsolated(operationId); await current(scopeText);
-            slot.preopenSource = await verifyCurrentSymbolPreopenSource(this.engine, copy); await original(scopeText);
+            slot.preopenSource = await preopenSource(this.engine, copy); await original(scopeText);
           },
           async (raw) => {
             slot.projectOpenRaw = raw; slot.projectOpenReplyRetained = true;
@@ -1050,13 +1251,14 @@ export class CurrentSymbolBaselineCoordinator {
     need(source !== undefined && copy !== undefined && sessionCurrent !== undefined && capture !== undefined &&
       captureClock !== undefined && launch !== undefined && launchClock !== undefined && slot.projectOnlyGeneration === undefined,
     "Current project-only generation lacks its original settled replacement bindings.");
-    const token: CurrentProjectOnlySymbolGeneration = Object.freeze({ profile: "private.current-project-only-symbol-generation.v1", operationId: slot.owner.operationId });
+    const token = slot.purpose === "disposable-symbol-copy"
+      ? Object.freeze({ profile: "private.current-project-only-symbol-copy-generation.v1" as const, operationId: slot.owner.operationId })
+      : Object.freeze({ profile: "private.current-project-only-symbol-generation.v1" as const, operationId: slot.owner.operationId });
     const captureText = canonicalJson(capture), launchText = canonicalJson(launch), tokenText = canonicalJson(token);
     const replacementSource: CurrentDisposableOpenGenerationSource = Object.freeze({ ...source,
       launchProjection: launch, bridgeSession: capture.bridgeSession });
     const originalPreparation = slot.originalPreparation;
-    const value: CurrentProjectOnlySymbolGenerationSource = Object.freeze({ source: replacementSource, baseline: copy, originalPreparation,
-      capture, launch, launchClock, captureClock });
+    const common = { source: replacementSource, capture, launch, launchClock, captureClock };
     const journalText = slot.journalText;
     const current = (scopeText?: string): void => {
       need(this.slots.get(token.operationId) === slot && slot.projectOnlyGeneration === token && canonicalJson(token) === tokenText &&
@@ -1069,10 +1271,11 @@ export class CurrentSymbolBaselineCoordinator {
         (slot.writerTransfer === undefined
           ? slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible &&
             slot.journalText === journalText && canonicalJson(slot.journal) === journalText
-          : slot.journal.plan.profile === "easyeda-pro-control.current-symbol-writer.v1"),
+          : slot.journal.plan.profile === (slot.purpose === "disposable-symbol-copy"
+            ? "easyeda-pro-control.current-symbol-copy-writer.v1" : "easyeda-pro-control.current-symbol-writer.v1")),
       "Current project-only original generation was changed, stopped or retired.");
       sessionCurrent(scopeText);
-      assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+      assertBaselineCopy(copy, this.engine);
       need(assertCurrentIssuedWindowsClockObservation(launchClock) === launchClock &&
         assertCurrentIssuedWindowsClockObservation(captureClock) === captureClock,
       "Current project-only generation lost its original Windows clock owners.");
@@ -1093,10 +1296,10 @@ export class CurrentSymbolBaselineCoordinator {
     };
     slot.projectOnlyGeneration = token;
     current();
-    const transfer = (): CurrentSymbolWriterOwner => {
+    const transferLifetime = (owner: CurrentSymbolWriterOwner | CurrentSymbolCopyWriterOwner):
+    Pick<CurrentSymbolWriterOwnerSource, "journal" | "sqlRuntime" | "current" | "beginFinish" | "retire"> => {
       current();
       need(!this.busy && slot.writerTransfer === undefined, "Current symbol writer transfer is already consumed or busy.");
-      const owner: CurrentSymbolWriterOwner = Object.freeze({ profile: "private.current-symbol-writer-owner.v1", operationId: token.operationId });
       const currentLaunch = slot.currentLaunch;
       need(currentLaunch !== undefined, "Current symbol writer transfer has no original launch owner.");
       let retired = false;
@@ -1105,17 +1308,33 @@ export class CurrentSymbolBaselineCoordinator {
           slot.admissionCapture === capture && slot.launch === launch && slot.copy === copy &&
           canonicalJson(capture) === captureText && canonicalJson(launch) === launchText,
         "Current symbol writer transfer changed or retired.");
-        currentLaunch(scopeText);
-        assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
+        currentLaunch(scopeText); assertBaselineCopy(copy, this.engine);
       };
-      const transferred: CurrentSymbolWriterOwnerSource = Object.freeze({ generation: token, original: value,
-        journal: slot.journal, sqlRuntime: Object.freeze(structuredClone(this.sqlRuntime)), current: transferredCurrent,
+      const lifetime = Object.freeze({ journal: slot.journal, sqlRuntime: Object.freeze(structuredClone(this.sqlRuntime)), current: transferredCurrent,
         beginFinish: (): void => { transferredCurrent(); need(!slot.finishing, "Current symbol writer close was already consumed."); slot.finishing = true; },
-        retire: (): void => { transferredCurrent(); need(slot.finishing, "Current symbol writer cannot retire before closure."); retired = true; slot.finished = true; },
-      });
-      slot.writerTransfer = owner;
+        retire: (): void => { transferredCurrent(); need(slot.finishing, "Current symbol writer cannot retire before closure."); retired = true; slot.finished = true; } });
+      slot.writerTransfer = owner; transferredCurrent(); return lifetime;
+    };
+    if (token.profile === "private.current-project-only-symbol-copy-generation.v1") {
+      need(copy.profile === "private.current-symbol-copy-baseline-copy.v1" && originalPreparation.profile === "private.current-owned-symbol-copy-preparation.v1",
+        "Copy generation requires its original copy baseline and preparation.");
+      const value: CurrentProjectOnlySymbolCopyGenerationSource = Object.freeze({ ...common, baseline: copy, originalPreparation });
+      const transfer = (): CurrentSymbolCopyWriterOwner => {
+        need(slot.purpose === "disposable-symbol-copy", "Copy transfer requires its exact original operation purpose.");
+        const owner: CurrentSymbolCopyWriterOwner = Object.freeze({ profile: "private.current-symbol-copy-writer-owner.v1", operationId: token.operationId });
+        const transferred: CurrentSymbolCopyWriterOwnerSource = Object.freeze({ generation: token, original: value, ...transferLifetime(owner) });
+        copyWriterOwners.set(owner, { engine: this.engine, source: transferred }); transferred.current(); return owner;
+      };
+      issuedCopyProjectOnlyGenerations.set(token, { value, current, revalidate, transfer }); return;
+    }
+    need(copy.profile === "private.current-symbol-baseline-copy.v1" && originalPreparation.profile !== "private.current-owned-symbol-copy-preparation.v1",
+      "Metadata generation cannot consume a copy baseline or preparation.");
+    const value: CurrentProjectOnlySymbolGenerationSource = Object.freeze({ ...common, baseline: copy, originalPreparation });
+    const transfer = (): CurrentSymbolWriterOwner => {
+      const owner: CurrentSymbolWriterOwner = Object.freeze({ profile: "private.current-symbol-writer-owner.v1", operationId: token.operationId });
+      const transferred: CurrentSymbolWriterOwnerSource = Object.freeze({ generation: token, original: value, ...transferLifetime(owner) });
       writerOwners.set(owner, { engine: this.engine, source: transferred });
-      transferredCurrent(); return owner;
+      transferred.current(); return owner;
     };
     issuedProjectOnlyGenerations.set(token, { value, current, revalidate, transfer });
   }
@@ -1125,10 +1344,16 @@ export class CurrentSymbolBaselineCoordinator {
    */
   public getProjectOnlyGeneration(operationId: string): CurrentProjectOnlySymbolGeneration {
     const token = this.slots.get(operationId)?.projectOnlyGeneration;
-    need(!this.busy && token !== undefined && this.slots.get(operationId)?.writerTransfer === undefined,
+    need(!this.busy && token !== undefined && token.profile === "private.current-project-only-symbol-generation.v1" && this.slots.get(operationId)?.writerTransfer === undefined,
       "Current project-only generation requires its original settled opening before ownership transfer.");
     assertCurrentProjectOnlySymbolGeneration(token, this.engine);
     return token;
+  }
+  public getCopyProjectOnlyGeneration(operationId: string): CurrentProjectOnlySymbolCopyGeneration {
+    const token = this.slots.get(operationId)?.projectOnlyGeneration;
+    need(!this.busy && token !== undefined && token.profile === "private.current-project-only-symbol-copy-generation.v1" &&
+      this.slots.get(operationId)?.writerTransfer === undefined, "Copy generation requires its original settled opening.");
+    assertCurrentProjectOnlySymbolCopyGeneration(token, this.engine); return token;
   }
 
   /** Internal original lookup, not a deserializer or public execution grant. */
@@ -1139,47 +1364,69 @@ export class CurrentSymbolBaselineCoordinator {
       "Current symbol writer requires its original accepted aged clock.");
     return slot.agedClock;
   }
+  public getCopyAgedClock(operationId: string): OriginalCurrentCopyAgedSqlClock {
+    this.getCopyProjectOnlyGeneration(operationId);
+    const slot = this.slots.get(operationId);
+    need(slot !== undefined && slot.agedClockAccepted && slot.copyAgedClock !== undefined && slot.agedClock === undefined,
+      "Current copy writer requires its original accepted aged clock."); return slot.copyAgedClock;
+  }
 
   /** Optional one-shot read under the original replacement's owned lease.
    * Scope settlement is required before acceptance. No native RPC, mutation,
    * Save, clock-window arming or change to baseline journal phases occurs.
    */
-  public async observeAgedClock(operationId: string): Promise<Value> {
+  public observeAgedClock(operationId: string): Promise<Value> {
+    return this.observeAgedClockForPurpose(operationId, false);
+  }
+  public observeCopyAgedClock(operationId: string): Promise<Value> {
+    return this.observeAgedClockForPurpose(operationId, true);
+  }
+  private async observeAgedClockForPurpose(operationId: string, copyOperation: boolean): Promise<Value> {
     const slot = this.slots.get(operationId);
-    need(!this.busy && slot !== undefined && slot.clockReferenceAccepted && slot.clockReference !== undefined && !slot.agedClockAttempted,
+    need(!this.busy && slot !== undefined && slot.clockReferenceAccepted && !slot.agedClockAttempted &&
+      (slot.purpose === "disposable-symbol-copy") === copyOperation,
       "Current aged clock requires its original accepted reference and unused observation attempt.");
-    const generation = this.getProjectOnlyGeneration(operationId), reference = slot.clockReference;
-    const original = assertCurrentProjectOnlySymbolGeneration(generation, this.engine);
+    const generation = copyOperation ? this.getCopyProjectOnlyGeneration(operationId) : this.getProjectOnlyGeneration(operationId);
+    const reference = copyOperation ? slot.copyClockReference : slot.clockReference;
+    need(reference !== undefined, "Current aged clock original reference is missing.");
+    const original = projectGenerationSource(generation, this.engine);
     this.busy = true; slot.agedClockAttempted = true;
     try {
       const current = (): void => {
-        need(assertCurrentProjectOnlySymbolGeneration(generation, this.engine) === original && slot.clockReference === reference && slot.clockReferenceAccepted,
+        need(projectGenerationSource(generation, this.engine) === original &&
+          (copyOperation ? slot.copyClockReference : slot.clockReference) === reference && slot.clockReferenceAccepted,
           "Current aged clock original generation or reference changed.");
       };
-      await revalidateCurrentProjectOnlySymbolGeneration(generation, this.engine); current();
+      await revalidateProjectGeneration(generation, this.engine); current();
       await this.engine.assertBridgeAndRecoveryAdmission(operationId); current();
       const scope = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
       need(typeof scope === "function", "Current aged clock requires its original authenticated scope.");
       let completed = false;
       await scope.call(this.engine.upstream, async (binding) => {
         const scopeText = canonicalJson(binding), session = original.capture.bridgeSession;
-        need(assertCurrentProjectOnlySymbolGeneration(generation, this.engine, scopeText) === original &&
+        need(projectGenerationSource(generation, this.engine, scopeText) === original &&
           binding.gatewayInstanceId === session.gatewayInstanceId && binding.sessionId === session.sessionId && binding.sessionSequence === session.sequence,
         "Current aged clock scope differs from its original admitted session.");
-        const observation = await collectCurrentAgedSqlClock(this.engine, generation, reference);
-        slot.agedClock = observation;
-        need(assertCurrentProjectOnlySymbolGeneration(generation, this.engine, scopeText) === original,
+        if (generation.profile === "private.current-project-only-symbol-copy-generation.v1") {
+          need(reference === slot.copyClockReference && slot.copyClockReference !== undefined, "Copy clock reference changed.");
+          slot.copyAgedClock = await collectCurrentCopyAgedSqlClock(this.engine, generation, slot.copyClockReference);
+        } else {
+          need(reference === slot.clockReference && slot.clockReference !== undefined, "Current metadata clock reference changed.");
+          slot.agedClock = await collectCurrentAgedSqlClock(this.engine, generation, slot.clockReference);
+        }
+        need(projectGenerationSource(generation, this.engine, scopeText) === original,
           "Current aged clock lost its original generation after observation.");
         completed = true;
       });
       current();
-      await revalidateCurrentProjectOnlySymbolGeneration(generation, this.engine); current();
-      need(completed && slot.agedClock !== undefined, "Current aged clock scope did not complete.");
+      await revalidateProjectGeneration(generation, this.engine); current();
+      need(completed && (copyOperation ? slot.copyAgedClock : slot.agedClock) !== undefined, "Current aged clock scope did not complete.");
       slot.agedClockAccepted = true;
       return summary(slot);
     } catch (error) {
       try {
-        const partial = currentAgedSqlCollectionEvidence(generation, this.engine);
+        const partial = generation.profile === "private.current-project-only-symbol-copy-generation.v1"
+          ? currentCopyAgedSqlCollectionEvidence(generation, this.engine) : currentAgedSqlCollectionEvidence(generation, this.engine);
         if (partial !== undefined) {
           slot.agedClockCollection = Object.freeze({ profile: "private.current-symbol-clock-collection-diagnostics.v1",
             beforeRetained: partial["beforeRetained"] === true, rawRetained: partial["rawRetained"] === true, afterRetained: partial["afterRetained"] === true,
@@ -1188,7 +1435,7 @@ export class CurrentSymbolBaselineCoordinator {
         }
         slot.agedClockFailure = await writePhaseArtifact(currentSymbolClockEvidenceId(operationId), 0, "coordinator-observation-refused", {
           profile: "private.current-symbol-clock-stage-refused.v1", operationId, stage: "observation", attemptConsumed: true,
-          originalResultRetained: slot.agedClock !== undefined, collection: slot.agedClockCollection ?? null,
+          originalResultRetained: slot.agedClock !== undefined || slot.copyAgedClock !== undefined, collection: slot.agedClockCollection ?? null,
           replayAllowed: false, startupQualified: false, executionAuthorized: false });
       } catch (recordError) { throw new AggregateError([error, recordError], "Current aged clock failed and its refusal evidence could not be retained.", { cause: recordError }); }
       throw error;
@@ -1362,9 +1609,12 @@ export class CurrentSymbolBaselineCoordinator {
           await CurrentSymbolBaselineCoordinator.record(slot, "finish-snapshot-intent", { proof, closeIntent: slot.finishIntent,
             closeReceipt: slot.finishReceipt, admissionCaptureSha256: sha256Json(capture), baselineCopyReceiptSha256: slot.copy.copy.receiptSha256 });
           await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
-          const snapshot = await captureCurrentSymbolFinishSnapshot(this.engine, { baseline: slot.copy, capture, intent: slot.finishIntent,
-            closeReceipt: slot.finishReceipt, proof, launch, runtime: this.sqlRuntime },
-          (event) => { slot.evidence.set(`finish-${event.kind}`, event.value); });
+          const snapshotInput = { capture, intent: slot.finishIntent, closeReceipt: slot.finishReceipt, proof, launch, runtime: this.sqlRuntime };
+          const snapshot = slot.copy.profile === "private.current-symbol-copy-baseline-copy.v1"
+            ? await captureCurrentSymbolCopyFinishSnapshot(this.engine, { ...snapshotInput, baseline: slot.copy },
+              event => { slot.evidence.set(`finish-${event.kind}`, event.value); })
+            : await captureCurrentSymbolFinishSnapshot(this.engine, { ...snapshotInput, baseline: slot.copy },
+              event => { slot.evidence.set(`finish-${event.kind}`, event.value); });
           slot.finishSnapshot = snapshot;
           await this.finishUnchanged(slot); closedDispatch(); assertCurrentClosedSessionCopyAuthority(proof);
           await CurrentSymbolBaselineCoordinator.record(slot, "finish-snapshot-result", snapshot);

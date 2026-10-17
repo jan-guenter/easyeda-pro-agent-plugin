@@ -74,6 +74,7 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
     if (action === "end-probe") { return { closed: true, bindingSha256: request["bindingSha256"] }; }
     if (action === "release-capture") { return { released: true, captureBindingSha256: request["captureBindingSha256"], jobId, helperInstance: HELPER }; }
     if (action === "normal-close") { return { closeDispatched: true, jobId, saveOrDiscardSelected: false }; }
+    if (action === "observe-launch-termination") { return { jobId, helperInstance: HELPER, terminated: true }; }
     let phase: "launch" | "capture" | "termination" | "owned-observation";
     let base: Bag;
     if (action === "clocked-launch") {

@@ -95,6 +95,20 @@ void test("coverage enumerates every distinct mounted method and retains every o
   }
 });
 
+void test("copy coverage exposes only the disposable native subset and preserves live-validation limits", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Symbol.copy"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.completeDeclaredContractSupported, false);
+  assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_disposable_symbol_copy"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [2]);
+  for (const text of ["no generic public lib_Symbol.copy", "original retained disposable opening", "native returned UUID", "unchanged source/peer SQL", "No ordinary projects"]) {
+    assert.ok(route.scope.includes(text));
+  }
+  assert.ok(route.inputDiscovery); const result = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
+  assert.ok(isRecord(result)); assert.equal(result["connectedValidation"], false); assert.equal(result["ordinaryProjectsSupported"], false);
+});
+
 void test("coverage does not promote schema-only, native equivalent, stub, latest-only or historical evidence to public execution", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-but-blocked");
@@ -261,7 +275,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 212, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 81, omitted: 451,
+    "implemented-public-subset": 212, "implemented-native-equivalent": 31, "internal-lifecycle-only": 0, "implemented-but-blocked": 81, omitted: 450,
   });
 });
 
@@ -781,7 +795,7 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (request["action"] === "project-symbol-operation") {
+    if (request["action"] === "project-symbol-operation" || request["action"] === "disposable-symbol-copy") {
       assert.ok(isRecord(result["inputSchema"])); assert.ok(isRecord(result["stepSchema"]));
       assert.equal(result["executionAuthorized"], false);
     } else {

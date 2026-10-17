@@ -9,8 +9,10 @@ import vm from "node:vm";
 import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json, sha256Text } from "../src/core.ts";
-import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
-import type { CurrentSymbolBaselineCoordinator, assertCurrentProjectOnlySymbolGeneration, assertCurrentSymbolWriterOwner, revalidateCurrentProjectOnlySymbolGeneration, transferCurrentProjectOnlySymbolGeneration } from "../src/current-symbol-baseline-runtime.ts";
+import type { CurrentSymbolBaselineOwner, CurrentSymbolCopyBaselineOwner } from "../src/current-disposable-open-runtime.ts";
+import type { CurrentSymbolBaselineCoordinator, assertCurrentProjectOnlySymbolCopyGeneration, assertCurrentProjectOnlySymbolGeneration,
+  assertCurrentSymbolCopyWriterOwner, assertCurrentSymbolWriterOwner, revalidateCurrentProjectOnlySymbolGeneration,
+  transferCurrentProjectOnlySymbolCopyGeneration, transferCurrentProjectOnlySymbolGeneration } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 import { currentSymbolClockEvidenceId, inspectCurrentSymbolClockEvidence } from "../src/current-symbol-clock-evidence.ts";
 import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
@@ -52,15 +54,19 @@ function startupHistory(mismatch = false): NativeHistorySnapshot {
  * runtime normal-close and termination issuers execute their actual code.
  * Synthetic native child frames do not launch Windows or establish CAD proof.
  */
-async function fixture(context: TestContext, ordinary = false): Promise<{
+async function fixture(context: TestContext, ordinary = false, copyOperation = false): Promise<{
   coordinator: CurrentSymbolBaselineCoordinator; restart: () => CurrentSymbolBaselineCoordinator;
   owner: CurrentSymbolBaselineOwner; native: Awaited<ReturnType<typeof qualifiedNativeFixture>>;
+  copyOwner: CurrentSymbolCopyBaselineOwner;
   runtime: WindowsControlRuntime;
   engine: EasyedaControlEngine;
   assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration;
   revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration;
   transferGeneration: typeof transferCurrentProjectOnlySymbolGeneration;
   assertWriterOwner: typeof assertCurrentSymbolWriterOwner;
+  assertCopyGeneration: typeof assertCurrentProjectOnlySymbolCopyGeneration;
+  transferCopyGeneration: typeof transferCurrentProjectOnlySymbolCopyGeneration;
+  assertCopyWriterOwner: typeof assertCurrentSymbolCopyWriterOwner;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
     finishSnapshots: number; finishSnapshotFailure: boolean; afterFinishSnapshot: (() => Promise<void>) | undefined;
@@ -198,11 +204,12 @@ async function fixture(context: TestContext, ordinary = false): Promise<{
     state.events.push("status"); await state.afterStatus?.();
     return { stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } };
   });
-  const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
+  const ownerData = { profile: copyOperation ? "private.current-symbol-copy-baseline-owner.v1" : "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
     ...(ordinary ? { purpose: "ordinary-symbol-metadata", startupExpectation: selectCurrentSymbolStartupExpectation(startupHistory()) } : {}),
     target: { ...OPEN_TARGET, expectedSourceSha256: "f".repeat(64) },
-    expectedFingerprint: structuredClone(FINGERPRINT) }, preparation: { preparationSha256: HASH } };
+    expectedFingerprint: structuredClone(FINGERPRINT) }, preparation: { preparationSha256: HASH,
+    ...(copyOperation ? { profile: "private.current-owned-symbol-copy-preparation.v1" } : {}) } };
   const ownerText = canonicalJson(ownerData);
   const checkOwner = (owner: unknown, receivedEngine: unknown): typeof original => {
     assert.equal(receivedEngine, engine); assert.equal(owner, ownerData, "synthetic owner must be original");
@@ -318,7 +325,8 @@ async function fixture(context: TestContext, ordinary = false): Promise<{
       const copy = { sha256: HASH, receiptSha256: HASH }, inventory = { checkpointSha256: HASH, schemaSha256: HASH, logicalSha256: HASH };
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy }); onEvidence({ kind: "inventory", value: inventory });
       state.proof = input["proof"];
-      const result = { checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
+      const result = { profile: copyOperation ? "private.current-symbol-copy-baseline-copy.v1" : "private.current-symbol-baseline-copy.v1",
+        checkpoint, copy, inventory, preparation: { syntheticCopySink: true }, targetEvidence: { syntheticCopySink: true },
         startupPremises: { syntheticCopySink: true, historicalSubsetSatisfied: state.historicalSubset, startupQualified: false,
           ...(ordinary ? { sqlSchemaSupported: true, databaseVersion: "25.10.31.1", targetPcbSuppliesNonzeroNativeCount: true,
             historySemanticSha256: startupHistory(state.startupMismatch).semanticSha256 } : {}),
@@ -336,28 +344,50 @@ async function fixture(context: TestContext, ordinary = false): Promise<{
       onEvidence({ kind: "checkpoint", value: checkpoint }); onEvidence({ kind: "copy", value: copy });
       await state.afterFinishSnapshot?.();
       if (state.finishSnapshotFailure) { throw new Error("synthetic final snapshot failed"); }
-      return { profile: "private.current-symbol-finish-snapshot.v1", checkpoint, copy, snapshotCaptured: true,
+      return { profile: copyOperation ? "private.current-symbol-copy-finish-snapshot.v1" : "private.current-symbol-finish-snapshot.v1", checkpoint, copy, snapshotCaptured: true,
         openingEffectsVerified: false, persistenceVerified: false, writerReady: false, executionAuthorized: false };
     },
   });
-  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator, assertGeneration: assertCurrentProjectOnlySymbolGeneration, revalidateGeneration: revalidateCurrentProjectOnlySymbolGeneration, transferGeneration: transferCurrentProjectOnlySymbolGeneration, assertWriterOwner: assertCurrentSymbolWriterOwner });`, scope);
+  if (copyOperation) {
+    const bindings: Record<string, unknown> = scope;
+    bindings["assertCurrentSymbolCopyBaselineOwner"] = checkOwner;
+    bindings["revalidateCurrentSymbolCopyBaselineOwner"] = bindings["revalidateCurrentSymbolBaselineOwner"];
+    bindings["assertCurrentSymbolBaselineOwner"] = (): never => { throw new Error("synthetic metadata issuer refuses copy owner"); };
+    bindings["revalidateCurrentSymbolBaselineOwner"] = bindings["assertCurrentSymbolBaselineOwner"];
+    for (const [copyName, metadataName] of [["captureCurrentSymbolCopyBaselineCopy", "captureCurrentSymbolBaselineCopy"],
+      ["assertOriginalCurrentSymbolCopyBaselineCopy", "assertOriginalCurrentSymbolBaselineCopy"],
+      ["revalidateCurrentSymbolCopyBaselineCopy", "revalidateCurrentSymbolBaselineCopy"],
+      ["captureCurrentSymbolCopyFinishSnapshot", "captureCurrentSymbolFinishSnapshot"],
+      ["verifyCurrentSymbolCopyPreopenSource", "verifyCurrentSymbolPreopenSource"],
+      ["CurrentCopyAgedSqlReferenceStage", "CurrentAgedSqlReferenceStage"],
+      ["assertOriginalCurrentCopyAgedSqlReference", "assertOriginalCurrentAgedSqlReference"],
+      ["revalidateOriginalCurrentCopyAgedSqlReference", "revalidateOriginalCurrentAgedSqlReference"],
+      ["collectCurrentCopyAgedSqlClock", "collectCurrentAgedSqlClock"],
+      ["currentCopyAgedSqlCollectionEvidence", "currentAgedSqlCollectionEvidence"]] as const) { bindings[copyName] = bindings[metadataName]; }
+  }
+  const loaded: unknown = vm.runInContext(`${source}\n({ Coordinator: CurrentSymbolBaselineCoordinator, assertGeneration: assertCurrentProjectOnlySymbolGeneration, revalidateGeneration: revalidateCurrentProjectOnlySymbolGeneration, transferGeneration: transferCurrentProjectOnlySymbolGeneration, assertWriterOwner: assertCurrentSymbolWriterOwner, assertCopyGeneration: assertCurrentProjectOnlySymbolCopyGeneration, transferCopyGeneration: transferCurrentProjectOnlySymbolCopyGeneration, assertCopyWriterOwner: assertCurrentSymbolCopyWriterOwner });`, scope);
   assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["assertGeneration"] === "function" && typeof loaded["revalidateGeneration"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked export is the unchanged maintained coordinator evaluated in this private test scope.
   const Coordinator = loaded["Coordinator"] as typeof CurrentSymbolBaselineCoordinator;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These checked exports are the unchanged fixed issuers evaluated beside their private coordinator in this test VM.
   const generation = loaded as { assertGeneration: typeof assertCurrentProjectOnlySymbolGeneration; revalidateGeneration: typeof revalidateCurrentProjectOnlySymbolGeneration;
-    transferGeneration: typeof transferCurrentProjectOnlySymbolGeneration; assertWriterOwner: typeof assertCurrentSymbolWriterOwner };
+    transferGeneration: typeof transferCurrentProjectOnlySymbolGeneration; assertWriterOwner: typeof assertCurrentSymbolWriterOwner;
+    assertCopyGeneration: typeof assertCurrentProjectOnlySymbolCopyGeneration; transferCopyGeneration: typeof transferCurrentProjectOnlySymbolCopyGeneration;
+    assertCopyWriterOwner: typeof assertCurrentSymbolCopyWriterOwner };
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only this VM's fixed owner lookup admits this synthetic original; no production issuer is modified.
   const owner = ownerData as unknown as CurrentSymbolBaselineOwner;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the copy-mode private VM issuer accepts this exact synthetic object; metadata-mode calls never use this alias.
+  const copyOwner = ownerData as unknown as CurrentSymbolCopyBaselineOwner;
   const restart = (): CurrentSymbolBaselineCoordinator => new Coordinator(engine, runtime, SQL_RUNTIME);
   context.after(async (): Promise<void> => {
     try { await loadOperation(operationId); }
     catch (error) { if (isRecord(error) && error["code"] === "ENOENT") { return; } throw error; }
     await retireSyntheticJournal(operationId);
   });
-  return { coordinator: restart(), restart, owner, native, runtime, engine, state,
+  return { coordinator: restart(), restart, owner, copyOwner, native, runtime, engine, state,
     assertGeneration: generation.assertGeneration, revalidateGeneration: generation.revalidateGeneration,
     transferGeneration: generation.transferGeneration, assertWriterOwner: generation.assertWriterOwner,
+    assertCopyGeneration: generation.assertCopyGeneration, transferCopyGeneration: generation.transferCopyGeneration, assertCopyWriterOwner: generation.assertCopyWriterOwner,
     calls: (action): number => native.requests.filter((request) => request["action"] === action).length };
 }
 
@@ -472,15 +502,15 @@ void test("current baseline rechecks the retained proof epoch at final pending a
   }
 });
 
-async function completedBaseline(context: TestContext, historicalSubset: StartupCase = false): Promise<Awaited<ReturnType<typeof fixture>>> {
-  const f = await fixture(context, typeof historicalSubset !== "boolean" && historicalSubset.ordinary === true);
+async function completedBaseline(context: TestContext, historicalSubset: StartupCase = false, copyOperation = false): Promise<Awaited<ReturnType<typeof fixture>>> {
+  const f = await fixture(context, typeof historicalSubset !== "boolean" && historicalSubset.ordinary === true, copyOperation);
   f.state.historicalSubset = historicalSubset === true;
   f.state.startupMismatch = typeof historicalSubset !== "boolean" && historicalSubset.startupMismatch === true;
   f.state.activeSchematicPages = typeof historicalSubset === "boolean" ? 0 : historicalSubset.activeSchematicPages;
   if (typeof historicalSubset === "boolean") { f.state.startupBlockers = historicalSubset ? [] : ["unsupported-sql-schema"]; }
   else { f.state.startupBlockers = historicalSubset.blockers; }
-  await f.coordinator.capture(f.owner); f.state.scope = false;
-  await f.coordinator.close(f.owner); await f.coordinator.observe(f.owner.operationId);
+  await (copyOperation ? f.coordinator.captureCopy(f.copyOwner) : f.coordinator.capture(f.owner)); f.state.scope = false;
+  await f.coordinator.close(copyOperation ? f.copyOwner : f.owner); await f.coordinator.observe(f.owner.operationId);
   f.state.activeSession = false; return f;
 }
 
@@ -682,9 +712,9 @@ void test("current admission rejects capture mutation after scope settlement and
   }
 });
 
-async function admittedBaseline(context: TestContext, historicalSubset: StartupCase = false, clockReference = false): ReturnType<typeof fixture> {
-  const f = await completedBaseline(context, historicalSubset);
-  if (clockReference) { await f.coordinator.prepareClockReference(f.owner.operationId); }
+async function admittedBaseline(context: TestContext, historicalSubset: StartupCase = false, clockReference = false, copyOperation = false): ReturnType<typeof fixture> {
+  const f = await completedBaseline(context, historicalSubset, copyOperation);
+  if (clockReference) { await (copyOperation ? f.coordinator.prepareCopyClockReference(f.owner.operationId) : f.coordinator.prepareClockReference(f.owner.operationId)); }
   await f.coordinator.relaunch(f.owner.operationId);
   f.state.activeSession = true; f.state.sessionSequence = 2; await f.coordinator.admit(f.owner.operationId); return f;
 }
@@ -771,8 +801,8 @@ void test("current cache pre-dispatch conflict vetoes cleanup before any cache r
   assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
 });
 
-async function projectReadyBaseline(context: TestContext, historicalSubset: StartupCase = true, clockReference = false): ReturnType<typeof fixture> {
-  const f = await admittedBaseline(context, historicalSubset, clockReference); await f.coordinator.observeCaches(f.owner.operationId);
+async function projectReadyBaseline(context: TestContext, historicalSubset: StartupCase = true, clockReference = false, copyOperation = false): ReturnType<typeof fixture> {
+  const f = await admittedBaseline(context, historicalSubset, clockReference, copyOperation); await f.coordinator.observeCaches(f.owner.operationId);
   f.state.openReply = { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope({
     ok: true, kind: "current-project-only-open", ...CACHE_TARGET, projectPathMatched: true, projectPresent: true, publicResult: true,
     navigationDispatched: true, inactiveUploadCachesObserved: true, noEditorTabsObserved: true, restoreSetEmptyObserved: true,
@@ -783,6 +813,74 @@ async function projectReadyBaseline(context: TestContext, historicalSubset: Star
   }) } };
   return f;
 }
+
+void test("failed initial copy capture releases only after retained process and bridge closure without issuing a baseline", async context => {
+  const f = await fixture(context, false, true);
+  await f.coordinator.captureCopy(f.copyOwner); f.state.scope = false;
+  await f.coordinator.stopAfterScopeFailure(f.copyOwner);
+  assert.equal(f.coordinator.copyOpeningCleanupStatus(f.owner.operationId)["captureRetained"], true);
+  await assert.rejects(f.coordinator.retireCopyOpeningCapture(f.owner.operationId), /bridge is not closed/u);
+  assert.equal(f.calls("release-capture"), 0); f.state.activeSession = false;
+  await f.coordinator.retireCopyOpeningCapture(f.owner.operationId);
+  const result = f.coordinator.copyOpeningCleanupStatus(f.owner.operationId);
+  assert.equal(result["retired"], true); assert.equal(result["captureReleased"], true); assert.equal(f.calls("release-capture"), 1);
+  assert.equal(f.state.copies, 0); assert.equal(f.state.finishSnapshots, 0); assert.equal(f.calls("normal-close"), 0);
+  await assert.rejects(f.coordinator.retireCopyOpeningCapture(f.owner.operationId), /unconsumed stopped/u);
+  const retired = await loadOperation(f.owner.operationId); assert.equal(retired["state"], "plan-invalidated");
+});
+
+void test("copy baseline retains distinct generation and shares normal-close cleanup without metadata admission", async context => {
+  const f = await projectReadyBaseline(context, true, false, true), id = f.copyOwner.operationId;
+  await assert.rejects(f.coordinator.openProject(id), /another purpose/u);
+  await assert.rejects(f.coordinator.openOrdinaryProject(id), /another purpose/u);
+  assert.equal(f.state.opens, 0);
+  await f.coordinator.openCopyProject(id);
+  const generation = f.coordinator.getCopyProjectOnlyGeneration(id), original = f.assertCopyGeneration(generation, f.engine);
+  assert.equal(original.baseline, f.state.copied); assert.equal(original.source.runtime, f.runtime);
+  assert.equal(original.originalPreparation.profile, "private.current-owned-symbol-copy-preparation.v1");
+  assert.throws(() => f.coordinator.getProjectOnlyGeneration(id), /original settled opening/u);
+  assert.throws(() => f.assertGeneration(generation, f.engine), /not issued/u);
+  assert.throws(() => f.assertCopyGeneration(structuredClone(generation), f.engine), /not issued/u);
+  await f.coordinator.finishNormalClose(id); await f.coordinator.observeFinish(id);
+  assert.equal(f.state.finishSnapshots, 1); assert.equal(f.calls("normal-close"), 2);
+  assert.throws(() => f.assertCopyGeneration(generation, f.engine), /stopped or retired/u);
+});
+
+void test("copy writer transfer consumes the same original closure but cannot become a metadata owner", async context => {
+  const f = await projectReadyBaseline(context, true, false, true), id = f.copyOwner.operationId;
+  await f.coordinator.openCopyProject(id);
+  const generation = f.coordinator.getCopyProjectOnlyGeneration(id), original = f.assertCopyGeneration(generation, f.engine);
+  const owner = f.transferCopyGeneration(generation, f.engine), transferred = f.assertCopyWriterOwner(owner, f.engine);
+  assert.equal(transferred.original, original); assert.equal(transferred.original.capture, original.capture);
+  assert.equal(transferred.original.launch, original.launch); assert.deepEqual(transferred.sqlRuntime, SQL_RUNTIME);
+  assert.throws(() => f.assertWriterOwner(owner, f.engine), /not issued/u);
+  assert.throws(() => f.assertCopyWriterOwner(structuredClone(owner), f.engine), /not issued/u);
+  assert.throws(() => f.transferCopyGeneration(generation, f.engine), /stopped or retired/u);
+  await assert.rejects(f.coordinator.finishNormalClose(id), /original admitted new generation/u);
+  assert.throws(() => { transferred.retire(); }, /before closure/u);
+  transferred.beginFinish(); assert.throws(() => { transferred.beginFinish(); }, /already consumed/u);
+  transferred.retire(); assert.throws(() => f.assertCopyWriterOwner(owner, f.engine), /changed or retired/u);
+});
+
+void test("copy baseline cannot consume metadata scratch-clock issuers", async context => {
+  const f = await completedBaseline(context, true, true), id = f.copyOwner.operationId;
+  await assert.rejects(f.coordinator.prepareClockReference(id), /another operation purpose/u);
+  assert.equal(f.state.referenceAttempts, 0);
+  const inspected = await f.coordinator.inspect(id); assert.equal(inspected["clockReferenceAttempted"], false);
+});
+
+void test("current copy optional clocks use their distinct issuers without admitting metadata generations", async context => {
+  const f = await projectReadyBaseline(context, true, true, true), id = f.copyOwner.operationId;
+  await f.coordinator.openCopyProject(id);
+  await assert.rejects(f.coordinator.observeAgedClock(id), /original accepted reference/u);
+  const observed = await f.coordinator.observeCopyAgedClock(id);
+  assert.equal(observed["agedClockAccepted"], true); assert.equal(f.state.referenceAttempts, 1); assert.equal(f.state.clockObservations, 1);
+  const clock = f.coordinator.getCopyAgedClock(id); assert.equal(clock.operationId, id);
+  assert.throws(() => f.coordinator.getAgedClock(id), /original settled opening/u);
+  await assert.rejects(f.coordinator.observeCopyAgedClock(id), /unused observation attempt/u);
+  await f.coordinator.finishNormalClose(id); await f.coordinator.observeFinish(id);
+  assert.equal(f.state.finishSnapshots, 1);
+});
 
 void test("current project-only continuation binds the post-opening hash and owns exactly one settled navigation", async (context) => {
   const f = await projectReadyBaseline(context), result = await f.coordinator.openProject(f.owner.operationId);

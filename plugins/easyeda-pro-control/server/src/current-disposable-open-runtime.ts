@@ -18,8 +18,8 @@ import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
 // oxlint-disable-next-line import/no-cycle -- The fixed preparation stage consumes this module's private original-object issuer after initialization.
-import { assertOriginalCurrentOwnedSymbolPreparation, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
-import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
+import { assertOriginalCurrentOwnedSymbolCopyPreparation, assertOriginalCurrentOwnedSymbolPreparation, currentOwnedSymbolCopyRequestSchema, prepareCurrentOwnedSymbolCopy, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
+import type { CurrentOwnedSymbolCopyPreparation, CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
 // oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
 import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "./current-symbol-baseline-runtime.ts";
 import { inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
@@ -28,6 +28,9 @@ import { inspectCurrentSymbolHistory } from "./current-symbol-history-inspection
 import { CurrentSymbolValidationCoordinator } from "./current-symbol-validation-runtime.ts";
 import { CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest } from "./current-symbol-operation.ts";
 import type { CurrentSymbolOperationRequest } from "./current-symbol-operation.ts";
+import { CURRENT_SYMBOL_COPY_OPERATION_PURPOSE, parseCurrentSymbolCopyOperationRequest } from "./current-symbol-copy-operation.ts";
+// oxlint-disable-next-line import/no-cycle -- The separate disposable copy route retains this opener's original copy baseline, never reconstructed JSON.
+import { CurrentSymbolCopyOperationCoordinator } from "./current-symbol-copy-operation-runtime.ts";
 import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
@@ -38,6 +41,7 @@ type Phase = "preflight" | "open-project" | "open-document" | "observe";
 type OpenRequest = Extract<CurrentDisposableOpenRequest, { action: "open" }>;
 type OrdinaryOpenRequest = Extract<CurrentSymbolOperationRequest, { action: "open" }>;
 export type CurrentDisposableOpenPurpose = "disposable-validation" | typeof CURRENT_SYMBOL_OPERATION_PURPOSE;
+type BaselinePurpose = CurrentDisposableOpenPurpose | "disposable-symbol-copy";
 const PROFILE = "easyeda-pro-control.current-disposable-open.v1";
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const launchSchema = z.object({ jobId: z.string().regex(/^[a-f0-9]{32}$/u), helperInstance: z.string().regex(/^[a-f0-9]{32}$/u),
@@ -74,6 +78,20 @@ interface Retained {
   readonly launchText: string;
   readonly planText: string;
   readonly nativeCleanup: Readonly<Pick<OpenRuntime, "status" | "observeApplicationWindow" | "normalClose">>;
+}
+interface CopyOpeningCleanup {
+  readonly operationId: string;
+  readonly opening: Retained;
+  readonly openingText: string;
+  readonly stage: CurrentSymbolBaselineCoordinator;
+  readonly methods: readonly unknown[];
+  readonly artifacts: Awaited<ReturnType<typeof writePhaseArtifact>>[];
+  failed: boolean;
+  failureRecorded: boolean;
+  closeAttempted: boolean;
+  closeAcknowledged: boolean;
+  releaseAttempted: boolean;
+  retired: boolean;
 }
 export interface CurrentDisposableOpenOptions {
   readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertNativeUiEditingAllowed" | "assertRecoveryOperationIsolated" | "assertBridgeAndRecoveryAdmission" |
@@ -121,6 +139,18 @@ export interface CurrentSymbolBaselineOwnerSource {
   readonly source: CurrentDisposableOpenGenerationSource;
   readonly preparation: CurrentOwnedSymbolMetadataPreparation;
 }
+export interface CurrentSymbolCopyBaselineOwner {
+  readonly profile: "private.current-symbol-copy-baseline-owner.v1";
+  readonly operationId: string;
+  readonly openingOperationId: string;
+}
+export interface CurrentSymbolCopyBaselineOwnerSource {
+  readonly source: CurrentDisposableOpenGenerationSource;
+  readonly preparation: CurrentOwnedSymbolCopyPreparation;
+}
+const issuedCopyBaselineOwners = new WeakMap<object, {
+  readonly value: CurrentSymbolCopyBaselineOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
+}>();
 const issuedBaselineOwners = new WeakMap<object, {
   readonly value: CurrentSymbolBaselineOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
 }>();
@@ -145,6 +175,21 @@ export async function revalidateCurrentSymbolBaselineOwner(value: unknown, engin
   requireValue(issued !== undefined, "Current symbol baseline original owner is missing.");
   await issued.revalidate();
   requireValue(assertCurrentSymbolBaselineOwner(value, engine) === original, "Current symbol baseline owner changed during revalidation.");
+  return original;
+}
+export function assertCurrentSymbolCopyBaselineOwner(value: unknown, engine: EasyedaControlEngine): CurrentSymbolCopyBaselineOwnerSource {
+  requireValue(value !== null && typeof value === "object", "Current copy baseline original owner is missing.");
+  const issued = issuedCopyBaselineOwners.get(value);
+  requireValue(issued !== undefined && issued.value.source.engine === engine, "Current copy baseline owner was not issued by this engine.");
+  issued.current(); return issued.value;
+}
+export async function revalidateCurrentSymbolCopyBaselineOwner(value: unknown, engine: EasyedaControlEngine): Promise<CurrentSymbolCopyBaselineOwnerSource> {
+  const original = assertCurrentSymbolCopyBaselineOwner(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current copy baseline original owner is missing.");
+  const issued = issuedCopyBaselineOwners.get(value);
+  requireValue(issued !== undefined, "Current copy baseline original owner is missing.");
+  await issued.revalidate();
+  requireValue(assertCurrentSymbolCopyBaselineOwner(value, engine) === original, "Current copy baseline owner changed during revalidation.");
   return original;
 }
 
@@ -230,9 +275,11 @@ export class CurrentDisposableOpenCoordinator {
   private readonly generations = new Map<string, CurrentDisposableOpenGeneration>();
   private readonly baselineJobs = new Set<string>();
   private readonly baselines = new Map<string, CurrentSymbolBaselineCoordinator>();
-  private readonly baselinePurposes = new Map<string, CurrentDisposableOpenPurpose>();
+  private readonly baselinePurposes = new Map<string, BaselinePurpose>();
   private readonly validations = new Map<string, CurrentSymbolValidationCoordinator>();
   private readonly ordinaryOperations = new Map<string, CurrentSymbolValidationCoordinator>();
+  private readonly copyOperations = new Map<string, CurrentSymbolCopyOperationCoordinator>();
+  private readonly copyOpeningCleanups = new Map<string, CopyOpeningCleanup>();
   private readonly normalCloseAttempts = new Set<string>();
   private busy = false;
 
@@ -412,9 +459,89 @@ export class CurrentDisposableOpenCoordinator {
     } finally { this.busy = false; }
   }
 
-  private assertBaselinePurpose(operationId: string, purpose: CurrentDisposableOpenPurpose): void {
+  /** Separate copy entry: no opening, fingerprint replacement or metadata token is accepted. */
+  public async runCopy(input: unknown): Promise<Value> {
+    const request = parseCurrentSymbolCopyOperationRequest(structuredClone(input));
+    requireValue(!this.busy, "Current disposable copy operation is already in progress.");
+    const cleanup = this.copyOpeningCleanups.get(request.operationId);
+    if (cleanup?.failed === true) {
+      if (request.action === "baseline-inspect" || request.action === "copy-inspect") { return this.copyOpeningCleanupSummary(cleanup); }
+      requireValue(request.action === "baseline-finish-close" || request.action === "baseline-observe-finish",
+        "Failed copy preparation permits only original-opening cleanup or inspection, never retry or continuation.");
+      this.busy = true;
+      try { return await (request.action === "baseline-finish-close" ? this.closeCopyOpeningCleanup(cleanup) : this.observeCopyOpeningCleanup(cleanup)); }
+      finally { this.busy = false; }
+    }
+    if ((request.action === "copy-inspect" || request.action === "baseline-inspect") && !this.baselines.has(request.operationId)) {
+      this.busy = true;
+      try {
+        const journal = await this.services.loadOperation(request.operationId);
+        requireValue(journal.operationId === request.operationId && isRecord(journal.plan), "Current copy history is unavailable.");
+        const plan = journal.plan;
+        requireValue((plan["profile"] === "easyeda-pro-control.current-symbol-closed-baseline.v1" &&
+          plan["purpose"] === CURRENT_SYMBOL_COPY_OPERATION_PURPOSE) ||
+          plan["profile"] === "easyeda-pro-control.current-symbol-copy-writer.v1" ||
+          plan["profile"] === "easyeda-pro-control.current-symbol-copy-verification.v1", "Current copy history belongs to another purpose.");
+        return { profile: "easyeda-pro-control.current-symbol-copy-history.v1", operationId: request.operationId,
+          state: journal["state"], journalPath: journal["journalPath"], artifacts: journal.artifacts, nextSafeAction: journal["nextSafeAction"],
+          hardStop: journal["hardStop"], orphanedCallPossible: journal["orphanedCallPossible"], mutationMayHaveOccurred: journal["mutationMayHaveOccurred"],
+          originalOwnerRetained: false, continuationAvailable: false, copyVerified: false, historicalOnly: true,
+          replayAllowed: false, executionAuthorized: false };
+      } finally { this.busy = false; }
+    }
+    requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+      "Disposable copy requires its original production opening owner.");
+    if (request.action === "baseline-begin") {
+      requireValue(this.retained.has(request.openingOperationId), "Copy baseline needs its original retained disposable opening.");
+      this.busy = true;
+      let configured: Awaited<ReturnType<typeof loadRuntimeMachineProfile>>;
+      try { configured = await loadRuntimeMachineProfile(); }
+      finally { this.busy = false; }
+      requireValue(configured.profile.controlDirectory === controlDataDirectory() &&
+        configured.profile.easyeda.assetsRoot === process.env["EASYEDA_ASSETS_ROOT"], "Copy baseline machine configuration differs from the active facade.");
+      return this.beginCopyBaseline(request.openingOperationId, { operationId: request.operationId, source: request.source,
+        confirmNormalClose: true }, configured.profile.runtime);
+    }
+    this.assertBaselinePurpose(request.operationId, CURRENT_SYMBOL_COPY_OPERATION_PURPOSE);
+    const baseline = this.baselines.get(request.operationId);
+    requireValue(baseline !== undefined, "Copy continuation cannot recover ownership from journal JSON.");
+    if (request.action === "copy-begin") {
+      requireValue(!this.copyOperations.has(request.operationId), "Copy operation already retained its original baseline.");
+      const operation = new CurrentSymbolCopyOperationCoordinator(this.options.engine, baseline);
+      const result = operation.begin(request.operationId); this.copyOperations.set(request.operationId, operation); return result;
+    }
+    if (request.action === "copy-advance" || request.action === "copy-inspect" || request.action === "copy-cleanup") {
+      const operation = this.copyOperations.get(request.operationId);
+      requireValue(operation !== undefined, "Copy operation needs its original retained coordinator.");
+      if (request.action === "copy-inspect") { return operation.inspect(request.operationId); }
+      if (request.action === "copy-cleanup") { return operation.requestCleanup(request.operationId); }
+      this.busy = true;
+      try { return await operation.advance(request.operationId, request.step); }
+      finally { this.busy = false; }
+    }
+    requireValue(!this.copyOperations.has(request.operationId) || request.action === "baseline-inspect",
+      "Copy operation retains this baseline; use copy inspection or its exact next phase.");
+    this.busy = true;
+    try {
+      switch (request.action) {
+        case "baseline-observe-termination": { return await baseline.observe(request.operationId); }
+        case "baseline-prepare-clock": { return await baseline.prepareCopyClockReference(request.operationId); }
+        case "baseline-relaunch": { return await baseline.relaunch(request.operationId); }
+        case "baseline-admit": { return await baseline.admit(request.operationId); }
+        case "baseline-observe-caches": { return await baseline.observeCaches(request.operationId); }
+        case "baseline-open-project": { return await baseline.openCopyProject(request.operationId, request.acceptUnqualifiedSchematicStartupEffects); }
+        case "baseline-observe-clock": { return await baseline.observeCopyAgedClock(request.operationId); }
+        case "baseline-finish-close": { return await baseline.finishNormalClose(request.operationId); }
+        case "baseline-observe-finish": { return await baseline.observeFinish(request.operationId); }
+        case "baseline-inspect": { return await baseline.inspect(request.operationId); }
+        default: { throw new Error("Unsupported disposable copy continuation."); }
+      }
+    } finally { this.busy = false; }
+  }
+
+  private assertBaselinePurpose(operationId: string, purpose: BaselinePurpose): void {
     const retained = this.baselinePurposes.get(operationId);
-    requireValue(purpose === "disposable-validation" ? retained !== CURRENT_SYMBOL_OPERATION_PURPOSE : retained === purpose,
+    requireValue(retained === purpose || (purpose === "disposable-validation" && retained === undefined),
       "Current symbol baseline belongs to another purpose or its ordinary owner is unavailable.");
   }
 
@@ -464,25 +591,49 @@ export class CurrentDisposableOpenCoordinator {
     return this.beginBaseline(openingOperationId, input, sqlRuntime, "disposable-validation");
   }
 
+  /** Fixed copy composition; public input still cannot issue an original owner. */
+  public beginCopyBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"]): Promise<Value> {
+    return this.beginBaseline(openingOperationId, input, sqlRuntime, "disposable-symbol-copy");
+  }
+
+  /** Original private continuation only. Public metadata/disposable parsers
+   * cannot reach copy state through their existing purpose checks.
+   */
+  public getCopyBaseline(operationId: string): CurrentSymbolBaselineCoordinator {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined && this.baselinePurposes.get(operationId) === "disposable-symbol-copy",
+      "Current copy baseline requires its original retained coordinator."); return stage;
+  }
+
   private async beginBaseline(openingOperationId: string, input: unknown, sqlRuntime: MachineProfile["runtime"],
-    purpose: CurrentDisposableOpenPurpose): Promise<Value> {
-    const request = currentSymbolBaselineRequestSchema.parse(input);
+    purpose: BaselinePurpose): Promise<Value> {
+    const copyBaselineRequestSchema = z.object({ operationId: z.string().regex(/^[A-Za-z0-9._:-]{1,160}$/u),
+      source: currentOwnedSymbolCopyRequestSchema, confirmNormalClose: z.literal(true) }).strict();
+    const parsed = purpose === "disposable-symbol-copy" ? copyBaselineRequestSchema.parse(input) : currentSymbolBaselineRequestSchema.parse(input);
+    const request = { operationId: parsed.operationId, preparation: "source" in parsed ? parsed.source : parsed.preparation };
     requireValue(request.operationId !== openingOperationId && !this.busy && !this.baselines.has(request.operationId),
       "Current symbol baseline needs a distinct unused operation.");
     requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
       "Current symbol baseline cannot issue from injected opening services or an unowned engine.");
     const engine = this.options.engine, slot = this.retained.get(openingOperationId);
     requireValue(slot !== undefined && slot.runtime instanceof WindowsControlRuntime, "Current symbol baseline needs the original retained opening and runtime.");
-    requireValue(openingPurpose(slot.journal.plan.purpose) === purpose, "Current symbol baseline cannot transfer an opening of another purpose.");
+    requireValue(openingPurpose(slot.journal.plan.purpose) === (purpose === "disposable-symbol-copy" ? "disposable-validation" : purpose),
+      "Current symbol baseline cannot transfer an opening of another purpose.");
     const runtime = slot.runtime;
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime); this.current(slot);
+    const stage = new CurrentSymbolBaselineCoordinator(engine, runtime, sqlRuntime);
     baselineRuntimeReservations.add(runtime);
     this.baselineJobs.add(slot.launch.jobId);
     this.generations.clear(); this.busy = true;
-    const stage = new CurrentSymbolBaselineCoordinator(engine, runtime, sqlRuntime);
     this.baselines.set(request.operationId, stage);
     this.baselinePurposes.set(request.operationId, purpose);
-    let owner: CurrentSymbolBaselineOwner | undefined;
+    if (purpose === "disposable-symbol-copy") {
+      this.copyOpeningCleanups.set(request.operationId, { operationId: request.operationId, opening: slot, openingText: canonicalJson(slot.journal), stage,
+        methods: this.copyOpeningCleanupMethods(slot), artifacts: [], failed: false, failureRecorded: false, closeAttempted: false,
+        closeAcknowledged: false, releaseAttempted: false, retired: false });
+    }
+    let owner: CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner | undefined;
+    let failureStage = "opening-revalidation";
     try {
       const loaded = await this.load(openingOperationId);
       requireValue(this.retainedJournal(loaded) === slot, "Current symbol baseline original opening changed.");
@@ -493,9 +644,14 @@ export class CurrentDisposableOpenCoordinator {
       try {
         await scope.call(engine.upstream, async () => {
           const generation = this.issueGeneration(slot, engine, runtime, request.operationId);
-          const preparation = await prepareCurrentOwnedSymbolMetadata(engine, generation, request.preparation);
+          failureStage = "source-preparation";
+          const preparation = purpose === "disposable-symbol-copy"
+            ? await prepareCurrentOwnedSymbolCopy(engine, generation, request.preparation)
+            : await prepareCurrentOwnedSymbolMetadata(engine, generation, request.preparation);
+          failureStage = "owner-transfer";
           owner = this.transferBaseline(slot, engine, generation, preparation, request.operationId);
-          await stage.capture(owner);
+          failureStage = "initial-capture";
+          await (owner.profile === "private.current-symbol-copy-baseline-owner.v1" ? stage.captureCopy(owner) : stage.capture(owner));
         });
       } catch (error) {
         if (owner !== undefined) {
@@ -505,8 +661,126 @@ export class CurrentDisposableOpenCoordinator {
         throw error;
       }
       requireValue(owner !== undefined, "Current symbol baseline scope returned without its retained owner.");
+      failureStage = "initial-close";
       return await stage.close(owner);
+    } catch (error) {
+      const cleanup = this.copyOpeningCleanups.get(request.operationId);
+      if (cleanup !== undefined) {
+        cleanup.failed = true;
+        try {
+          // Failure recording itself grants no authority and must survive loss
+          // Of the original owner. Do not rewrite that owner's journal.
+          const artifact = await this.services.writePhaseArtifact(slot.journal.operationId, slot.journal.sequence + 1, "copy-initial-begin-failed", {
+            operationId: request.operationId, failureStage, originalOpeningSha256: sha256Text(cleanup.openingText),
+            error: error instanceof Error ? { name: error.name.slice(0, 160), message: error.message.slice(0, 2048) } : { name: "UnknownError", message: "Non-Error rejection retained by caller." },
+            ownerTransferred: owner !== undefined, retryAllowed: false, executionAuthorized: false,
+          });
+          cleanup.artifacts.push(artifact); cleanup.failureRecorded = true;
+        } catch (recordError) {
+          throw new AggregateError([error, recordError], "Copy preparation failed and its separate failure artifact could not be published.", { cause: recordError });
+        }
+      }
+      throw error;
     } finally { this.generations.delete(openingOperationId); this.busy = false; }
+  }
+
+  private copyOpeningCleanupMethods(slot: Retained): readonly unknown[] {
+    const { engine } = this.options;
+    return [slot.runtime.status, slot.runtime.normalClose, slot.runtime.observeApplicationWindow, slot.runtime.observeLaunchTermination,
+      engine.assertRecoveryOperationIsolated, engine.upstream, engine.executionAuthorityValidator,
+      engine.upstream.currentAuthenticatedBridgeDispatchBinding, engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased];
+  }
+
+  private copyOpeningCleanupSummary(cleanup: CopyOpeningCleanup): Value {
+    requireValue(this.copyOpeningCleanups.get(cleanup.operationId) === cleanup, "Copy cleanup original inspection owner is missing.");
+    const captured = cleanup.stage.copyOpeningCleanupStatus(cleanup.operationId);
+    return { profile: "easyeda-pro-control.current-symbol-copy-opening-cleanup.v1", operationId: cleanup.operationId,
+      openingOperationId: cleanup.opening.journal.operationId, purpose: CURRENT_SYMBOL_COPY_OPERATION_PURPOSE,
+      state: cleanup.retired ? "plan-invalidated" : "copy-opening-stopped", originalOwnerRetained: true, terminalCleanupOnly: true,
+      closeAttempted: cleanup.closeAttempted || captured["closeAttempted"] === true,
+      closeAcknowledged: cleanup.closeAcknowledged || captured["closeAcknowledged"] === true,
+      finishObservationAvailable: !cleanup.retired && !cleanup.releaseAttempted,
+      releaseAttempted: cleanup.releaseAttempted, retired: cleanup.retired, capture: captured,
+      artifacts: structuredClone(cleanup.artifacts), originalFailurePreserved: cleanup.failureRecorded, reservationConsumed: true,
+      nextSafeAction: cleanup.retired ? "Attempt retired. No retry, navigation, copy or saved-state claim is permitted." :
+        "Use baseline-finish-close once if no close was attempted, then baseline-observe-finish. Leave Save/Discard prompts untouched. Never repeat baseline-begin.",
+      fileEffects: "unknown", closedSessionCopyAuthority: false, copyVerified: false, replayAllowed: false, executionAuthorized: false };
+  }
+
+  private copyOpeningCleanupCurrent(cleanup: CopyOpeningCleanup): void {
+    const slot = cleanup.opening;
+    requireValue(this.copyOpeningCleanups.get(cleanup.operationId) === cleanup && cleanup.failed && !cleanup.retired &&
+      this.baselines.get(cleanup.operationId) === cleanup.stage && this.baselinePurposes.get(cleanup.operationId) === CURRENT_SYMBOL_COPY_OPERATION_PURPOSE &&
+      baselineRuntimeReservations.has(slot.runtime) && this.baselineJobs.has(slot.launch.jobId) &&
+      canonicalJson(slot.journal) === cleanup.openingText &&
+      this.copyOpeningCleanupMethods(slot).every((method, index) => method === cleanup.methods[index]),
+    "Copy opening cleanup lost its original consumed reservation, methods or journal.");
+    requireValue(slot.runtime.normalClose === slot.nativeCleanup.normalClose && slot.runtime.observeApplicationWindow === slot.nativeCleanup.observeApplicationWindow &&
+      slot.runtime.status === slot.nativeCleanup.status, "Copy opening cleanup native methods differ from the original opener.");
+    this.current(slot);
+    const reader = this.options.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
+    requireValue(reader !== undefined && reader.call(this.options.engine.upstream) === undefined,
+      "Copy opening cleanup requires the ended original dispatch scope.");
+  }
+
+  private async copyOpeningCleanupUnchanged(cleanup: CopyOpeningCleanup): Promise<void> {
+    this.copyOpeningCleanupCurrent(cleanup);
+    const persisted = await this.load(cleanup.opening.journal.operationId); this.copyOpeningCleanupCurrent(cleanup);
+    requireValue(canonicalJson(persisted) === cleanup.openingText, "Copy opening cleanup persisted opening changed.");
+  }
+
+  /** Separate exclusive artifacts preserve the opening journal bytes used by
+   * the original capture owner. They never overwrite its primary failure.
+   */
+  private async recordCopyOpeningCleanup(cleanup: CopyOpeningCleanup, phase: string, value: unknown): Promise<void> {
+    await this.copyOpeningCleanupUnchanged(cleanup);
+    const artifact = await this.services.writePhaseArtifact(cleanup.opening.journal.operationId,
+      cleanup.opening.journal.sequence + cleanup.artifacts.length + 1, `copy-initial-${phase}`, { operationId: cleanup.operationId, value });
+    cleanup.artifacts.push(artifact); await this.copyOpeningCleanupUnchanged(cleanup);
+  }
+
+  private async closeCopyOpeningCleanup(cleanup: CopyOpeningCleanup): Promise<Value> {
+    const captured = cleanup.stage.copyOpeningCleanupStatus(cleanup.operationId);
+    requireValue(!cleanup.closeAttempted && captured["closeAttempted"] !== true && !cleanup.releaseAttempted && !cleanup.retired,
+      "Original copy opening close is consumed; observe termination without repeating it.");
+    await this.copyOpeningCleanupUnchanged(cleanup);
+    await this.options.engine.assertRecoveryOperationIsolated(cleanup.operationId); await this.copyOpeningCleanupUnchanged(cleanup);
+    const slot = cleanup.opening, window = await slot.runtime.observeApplicationWindow(); await this.copyOpeningCleanupUnchanged(cleanup);
+    requireValue(window.outcome === "available" && window.hwnd !== null && window.jobId === slot.launch.jobId && window.helperInstance === slot.launch.helperInstance,
+      "Copy opening cleanup requires its original retained application's unique window.");
+    // Reserve before publication and dispatch. An uncertain reply cannot permit a second close.
+    cleanup.closeAttempted = true;
+    await this.recordCopyOpeningCleanup(cleanup, "close-intent", { originalLaunch: slot.launch, hwnd: window.hwnd,
+      confirmNormalClose: true, acceptUnknownFileEffects: true, saveOrDiscardSelected: false, replayAllowed: false });
+    await this.options.engine.assertRecoveryOperationIsolated(cleanup.operationId); await this.copyOpeningCleanupUnchanged(cleanup);
+    await slot.runtime.normalClose(window.hwnd); cleanup.closeAcknowledged = true;
+    await this.recordCopyOpeningCleanup(cleanup, "close-reply", { requestAcknowledged: true, terminationProved: false });
+    return this.copyOpeningCleanupSummary(cleanup);
+  }
+
+  private async observeCopyOpeningCleanup(cleanup: CopyOpeningCleanup): Promise<Value> {
+    requireValue(!cleanup.releaseAttempted && !cleanup.retired, "Copy opening retirement attempt is consumed.");
+    await this.copyOpeningCleanupUnchanged(cleanup);
+    await this.options.engine.assertRecoveryOperationIsolated(cleanup.operationId); await this.copyOpeningCleanupUnchanged(cleanup);
+    const slot = cleanup.opening;
+    const observation = await slot.runtime.observeLaunchTermination(); await this.copyOpeningCleanupUnchanged(cleanup);
+    requireValue(observation.jobId === slot.launch.jobId && observation.helperInstance === slot.launch.helperInstance,
+      "Copy opening termination belongs to another retained launch.");
+    if (!observation.terminated) { return { ...this.copyOpeningCleanupSummary(cleanup), termination: "pending" }; }
+    const dispatch = slot.journal.bridgeDispatchBeforeOrphan, prior = slot.journal.bridgeSessionBeforeOrphan;
+    const observeClosure = this.options.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+    requireValue(dispatch !== undefined && prior !== undefined && observeClosure !== undefined,
+      "Copy opening cleanup lost its original dispatch/session binding.");
+    const closure = closedSessionSchema.parse(observeClosure.call(this.options.engine.upstream, dispatch, prior));
+    await this.recordCopyOpeningCleanup(cleanup, "termination-proof", { observation, closedBridgeSession: closure, snapshotAuthority: false });
+    requireValue(canonicalJson(observeClosure.call(this.options.engine.upstream, dispatch, prior)) === canonicalJson(closure),
+      "Copy opening cleanup bridge closure changed.");
+    cleanup.releaseAttempted = true;
+    await cleanup.stage.retireCopyOpeningCapture(cleanup.operationId);
+    await this.copyOpeningCleanupUnchanged(cleanup);
+    await this.recordCopyOpeningCleanup(cleanup, "retired", { retired: true, fileEffects: "unknown", baselineRetryAllowed: false, snapshotAuthority: false });
+    cleanup.retired = true;
+    return { ...this.copyOpeningCleanupSummary(cleanup), termination: "terminated" };
   }
 
   public async observeSymbolBaseline(operationId: string): Promise<Value> {
@@ -613,15 +887,17 @@ export class CurrentDisposableOpenCoordinator {
   }
 
   private transferBaseline(slot: Retained, engine: EasyedaControlEngine, generation: CurrentDisposableOpenGeneration,
-    preparation: CurrentOwnedSymbolMetadataPreparation, operationId: string): CurrentSymbolBaselineOwner {
-    const original = assertOriginalCurrentOwnedSymbolPreparation(preparation, engine);
+    preparation: CurrentOwnedSymbolMetadataPreparation | CurrentOwnedSymbolCopyPreparation, operationId: string): CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner {
+    const original = preparation.profile === "private.current-owned-symbol-copy-preparation.v1"
+      ? assertOriginalCurrentOwnedSymbolCopyPreparation(preparation, engine) : assertOriginalCurrentOwnedSymbolPreparation(preparation, engine);
     requireValue(original.generation === generation && original.source === assertCurrentDisposableOpenGeneration(generation, engine),
       "Current symbol baseline transfer needs its original preparation and generation.");
     const journalText = canonicalJson(slot.journal), preparationText = canonicalJson(preparation), source = original.source;
     const upstream = engine.upstream, validator = engine.executionAuthorityValidator;
     const lifecycleReader = upstream.bridgeSessionLifecycle, scopeReader = upstream.currentAuthenticatedBridgeDispatchBinding;
-    const owner = Object.freeze({ profile: "private.current-symbol-baseline-owner.v1" as const, operationId, openingOperationId: generation.operationId });
-    const value = Object.freeze({ source, preparation });
+    const owner = Object.freeze({ profile: preparation.profile === "private.current-owned-symbol-copy-preparation.v1"
+      ? "private.current-symbol-copy-baseline-owner.v1" as const : "private.current-symbol-baseline-owner.v1" as const,
+    operationId, openingOperationId: generation.operationId });
     const current = (): void => {
       this.current(slot);
       requireValue(this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine && engine.upstream === upstream &&
@@ -635,7 +911,11 @@ export class CurrentDisposableOpenCoordinator {
       requireValue(canonicalJson(persisted) === journalText, "Current symbol baseline persisted opening changed.");
     };
     current(); this.generations.delete(generation.operationId);
-    issuedBaselineOwners.set(owner, { value, current, revalidate }); return owner;
+    if (preparation.profile === "private.current-owned-symbol-copy-preparation.v1") {
+      requireValue(source.purpose === "disposable-validation", "Copy baseline transfer requires its disposable original opening.");
+      issuedCopyBaselineOwners.set(owner, { value: Object.freeze({ source, preparation }), current, revalidate });
+    } else { issuedBaselineOwners.set(owner, { value: Object.freeze({ source, preparation }), current, revalidate }); }
+    return owner;
   }
 
   private issueGeneration(slot: Retained, engine: EasyedaControlEngine, runtime: WindowsControlRuntime, baselineOperationId?: string): CurrentDisposableOpenGeneration {

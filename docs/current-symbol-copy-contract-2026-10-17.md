@@ -5,7 +5,9 @@
 A narrow, closed project-local copy is the best next fixture-creation route.
 It can copy an existing ordinary type-2 symbol into a new unused document,
 including its existing PART and drawing, without opening a symbol editor.
-This is an implementation proposal, not an enabled operation or a live result.
+The candidate implements this as a separate disposable-only lifecycle, not
+ordinary copying or a live-validated operation. The public workflow is in
+[disposable symbol copy](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-symbol-copy.md).
 No application runtime, bridge, project file or database was accessed for this research.
 Only installed application code, repository code and official documentation
 were read.
@@ -174,7 +176,7 @@ The new document's complete raw history, not the source's materialized drawing
 alone, must pass that projector. Restrict the first copy to no BLOB/FONT or
 unknown dependency records; `Ni` has separate asset branches outside this plan.
 
-There is one concrete remaining mismatch. Both creation DOCHEADs can receive
+The existing profile has one concrete mismatch. Both creation DOCHEADs can receive
 the same millisecond timestamp. `onDocHead` keeps the first equal-time header,
 whereas `observeSingleCanvasHeader` in `server/src/saved-symbol-projection.ts`
 counts each equal latest timestamp and the current final check requires a
@@ -182,14 +184,111 @@ unique latest header. Its final ticket check also expects that winning header
 to have the greatest target header ticket. Equal creation times can therefore
 fail current admission despite deterministic order within their one chunk.
 
-Do not sleep, retry creation or append a gratuitous metadata write to force
-eligibility. Add a separately reviewed same-stream header-order model, with
-exact raw/cache behavior and tests, or retain a closed unsupported result.
-Cross-stream equal-time headers remain ambiguous without a stronger proof.
-An ordinary metadata edit must remain META-only until deliberately broadened
-after its own disposable connected validation.
+The new `prepareCurrentCreatedCopySavedSymbolProjection` now handles this
+specific same-stream case separately. It admits exactly one new destination
+chunk, canonical native EDIT_HEAD/DOCHEAD/META/DOCHEAD headers, ordered or equal
+document times, and copied atom tickets at most `M`. Equal times retain the
+first inner header at `M + 1`, while the global maximum stays `M + 2`; a later
+second time selects the `M + 2` header. The later `getStr` outer header is
+`M + 3`, and metadata remains at `M + 1`. Its raw/cache alternatives remain
+distinct, with no cache provenance or execution authority claim. Existing
+metadata and canvas profiles are unchanged.
 
-## Implementation sequence
+Do not sleep, retry creation or append a gratuitous metadata write to force
+eligibility. Cross-chunk equal-time headers remain refused. The new projection
+is data-only; it is not an enabled copy writer or permission to broaden an
+ordinary metadata edit.
+
+## Ownership integration, 2026-10-17
+
+The pure implementation slice now exists in
+[`current-symbol-copy-plan.ts`](../plugins/easyeda-pro-control/server/src/current-symbol-copy-plan.ts),
+[`current-symbol-copy-program.ts`](../plugins/easyeda-pro-control/server/src/current-symbol-copy-program.ts),
+[`current-symbol-copy-sql.ts`](../plugins/easyeda-pro-control/server/src/current-symbol-copy-sql.ts),
+and [`saved-symbol-projection.ts`](../plugins/easyeda-pro-control/server/src/saved-symbol-projection.ts).
+These pure files provide a source/history plan, a fixed compiler, an exact SQL
+relation and the new saved-content projection. They do not issue process
+ownership. The separate copy writer, saved-source, saved-read, verification and
+operation coordinators now consume the original copy baseline and native return.
+The disposable public route composes those stages; ordinary metadata ownership
+cannot substitute for them. Focused synthetic tests cover these handoffs and
+failures, but connected execution remains unclaimed.
+
+The implementation keeps the existing disposable navigation purpose and
+adds a fixed copy baseline entrypoint. That entrypoint issues its own
+original preparation and operation purpose, not manufacture a metadata patch
+or cast a copy plan to a metadata owner. The shared baseline lifecycle uses a
+closed, discriminated operation union so both operations retain the same
+actual Windows runtime, launch, Job, authenticated session and closure logic.
+Public metadata wrappers and their original-token assertions must continue to
+reject copy tokens. No caller-selected verifier, issuer or cleanup callback
+is needed.
+
+| Existing module and seam | Minimum copy-specific change; machinery to retain |
+| --- | --- |
+| `current-disposable-open-runtime.ts`: `beginBaseline`, `transferBaseline`, `assertBaselinePurpose` | Add a fixed `beginCopyBaseline` entrypoint and separate original copy-baseline issuer. Consume the same runtime/Job reservation before the first await. Retain the existing disposable opener; do not broaden ordinary metadata navigation. |
+| `current-symbol-owned-preparation.ts`: `prepareCurrentOwnedSymbolMetadata` | Add an original copy preparation using the fixed closed-target observation and source identity. The current preparation embeds a metadata patch and cannot honestly represent a copy. |
+| `current-symbol-baseline-runtime.ts`: `capture`, `issueProjectOnlyGeneration`, `transferCurrentProjectOnlySymbolGeneration` | Add a copy-purpose discriminant and distinct copy-owner transfer. Share capture, close, termination, relaunch, admission and cache-excluded project opening. Existing metadata transfer must reject copy generations. Retain synchronous consumption and the failed owner's normal-close path. |
+| `current-symbol-baseline-copy.ts`: `captureCurrentSymbolBaselineCopy`, private `captureSnapshot` | Separate neutral project/branch/source identity from metadata preparation. The current capture reruns `prepareCurrentSymbolMetadata` with the old patch. Add a fixed copy-plan preparation branch while retaining closed-byte capture, original SQL reader, inode/receipt checks and original termination proof. Share finish/verification snapshot collection, not metadata semantics. |
+| `current-symbol-startup-runtime.ts`: `qualifyCurrentSymbolWriterStartup` | Add a distinct copy qualifier/token using the fixed startup observation. The existing qualifier asserts META-only/disposable metadata eligibility and excludes referenced source symbols. Copy must instead prove its new destination is absent; it must not claim source modification eligibility. |
+| `current-aged-sql-reference.ts`: `CurrentAgedSqlReferenceStage`; `current-aged-sql-issuer.ts`: `collectCurrentAgedSqlClock` | Share the fixed date-reference collection and original generation proof. Obtain project/source and actor through the sealed operation binding, not a fabricated metadata preparation. Preserve historical versus live clock epochs and original-reader identity. |
+| `current-symbol-transaction-actor.ts`: `prepareCurrentSymbolTransactionActor`; `current-symbol-transaction-clock.ts`: prepare/record/verify functions | Share fixed actor selection and Windows/renderer clock brackets. Add a distinct copy plan calling the copy SQL relation, with two document headers and an original returned UUID. Preserve one shared dispatch-owner reservation, one-shot stage transitions, original capture/launch checks and post-closure historical-token rules. Do not relax the metadata `M + 1` comparator. |
+| `current-symbol-writer-runtime.ts`: `execute`, `run`, `issueContinuation`; `finishNormalClose`, `observeFinish` | Add fixed copy dispatch/acknowledgment/continuation semantics. Retain the original native UUID before post-read awaits and keep it through SQL verification. Share existing one-shot normal closure, original Job termination, complete snapshot and capture retirement. A lost reply cannot authorize another copy. |
+| `current-symbol-saved-source.ts`: `prepareCurrentSavedSymbolSource` | Add a distinct source issued from the successful copy continuation and exact post-edit snapshot. Bind the destination from the retained native return and use the created-copy projection, not the existing source target or metadata projection. |
+| `current-symbol-saved-read-program.ts`: request schema and compiler; `current-symbol-saved-read.ts`: `collectCurrentSavedSymbolContent` | Add a fixed copy-read variant. Existing requests require `expectedBefore.ticket === maximumTicket`; copy needs metadata `M + 1` with maximum `M + 2`. Preserve the old equality and fixed reader, actor, context, implementation and envelope guards. |
+| `current-symbol-verification-runtime.ts`: `start`, `read`, `observeFinish`, `issueResult` | Reuse new-session cache-excluded reopen, original retained process capture, ordinary normal close and complete post-edit-to-final SQL equality. Add a copy continuation/generation and saved reader. Do not issue a metadata inverse or promise deletion of the new symbol. |
+| `current-symbol-preopen-source.ts`: baseline and post-edit wrappers | Add copy-original wrappers around the same private exact raw-file/inode/sidecar verifier. A point-in-time rehash cannot revive the old process-closure authority. |
+
+The table records the implemented integration boundaries. Baseline capture,
+launch and closure machinery is shared; the copy writer and verifier remain
+separate fixed coordinators because copy changes document membership and has
+no metadata inverse. Actor/clock dispatch and saved reopen consume that original
+binding. No generic mutation engine or caller-selected issuer is introduced.
+
+Two existing assumptions need explicit protection during that refactor:
+
+- `assertBaselinePurpose` currently accepts a disposable purpose when the
+  retained purpose is merely not the ordinary metadata purpose. Introducing a
+  third stored purpose without tightening this check could admit it through
+  the old disposable continuation. Use exact purpose checks, retaining only
+  any deliberately supported legacy absence case.
+- The pre-copy startup guard checks exact cached symbol membership. Successful
+  copy legitimately adds one cache entry, so the same guard cannot prove
+  post-copy startup completion. The new compiler retains fixed project,
+  no-editor, actor, RPC and Date checks after dispatch and explicitly returns
+  `postCopyStartupQualified:false`. Completion still requires original-owner
+  normal closure, exact closed SQL and the fresh saved reopen.
+
+The compiler uses the fixed project-qualified payload
+`{source: sourceUuid, renameKey: true, keepSource: false}`. Its source observation
+uses the registered `/PrjDB/symbol/getStr` route; the worker's internal
+`getCanvasByConsistency` is not a registered external canvas-read RPC. It
+captures the returned destination synchronously before awaited post-reads and
+checks its absence throughout retained decoded strings. That compiler-local
+data relation still does not prove which runtime produced the reply; the new
+owner must retain the original dispatch and reply.
+
+### Conservative structure effect
+
+The current copy SQL plan expects two serialized structure requests from the
+fresh destination's metadata/canvas callbacks under the idle-startup premise.
+The first updates all selected-branch structure rows to `M + 2`; the second
+adds one exact same-ticket duplicate. The complete comparator checks the
+resulting row multiplicities, both AUTOINCREMENT effects, all raw history and
+every source/peer row, not a stable sample or acknowledgment.
+
+For this initial contract, structure bytes must equal the exact retained
+baseline tree bytes. Ordinary type-2 symbols do not appear in that native
+tree. The plan deliberately reports `nativeStructureProjectionVerified:false`:
+it does not reconstruct a native tree from all underlying documents. If an
+already stale baseline tree is regenerated differently during the operation,
+the final comparator will refuse even when the native copy itself is
+legitimate. That is a conservative supported-state limit, not a reason to
+weaken equality or an additional requirement to implement a full graph model
+before this route. Original closure and exact complete SQL verification remain
+required. A refusal authorizes neither retry, Save nor an improvised inverse.
+
+## Implementation sequence and remaining validation
 
 1. Add a pure `current-symbol-copy-plan.ts` and its focused tests. Derive the
    source from the complete retained raw history and SQL inventory. Bind its
@@ -231,7 +330,15 @@ after its own disposable connected validation.
    on the registered disposable project. A failed attempt never authorizes a
    second copy, Save, manual inverse or a replacement-owner continuation.
 
-The first useful code slice is the pure plan plus exact copy-history projection,
-including the same-stream header issue. That can be reviewed without CAD access.
-An executable release needs the complete subsequent lifecycle; this note does
-not propose shipping a partial writer behind a confirmation flag.
+Steps 1–5 and the disposable route in step 6 are implemented in this candidate.
+The separate initial-preparation cleanup retains the original opening journal
+and consumed reservation. It publishes failure evidence and permits only
+original-owner normal closure and terminal retirement, with capture-acquisition
+uncertainty preserved. Before the copy write, `copy-cleanup` permanently cancels
+the ready operation without dispatching creation. These paths have focused
+offline regressions and independent review, not connected validation.
+Publication, installation and the subsequent connected disposable validation
+need their own recorded results. Current String reads and drawn-symbol metadata
+validation also retain their separate connected-validation backlog. General
+library copying, chosen names/classifications, assets, geometry writers and
+schematic/PCB structure completion remain outside this copy subset.

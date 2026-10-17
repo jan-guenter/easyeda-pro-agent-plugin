@@ -129,6 +129,7 @@ import { currentPcbGeometryRequestSchema } from "./current-pcb-geometry.ts";
 import { readCurrentPcbGeometry } from "./current-pcb-geometry-runtime.ts";
 import { currentSymbolMetadataRequestSchema } from "./current-symbol-metadata.ts";
 import { currentSymbolOperationRequestSchema } from "./current-symbol-operation.ts";
+import { currentSymbolCopyOperationRequestSchema } from "./current-symbol-copy-operation.ts";
 import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
@@ -1864,6 +1865,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_pcb_geometry: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_symbol: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
+  easyeda_control_disposable_symbol_copy: currentSymbolOperationToolOutputSchema,
   easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1959,6 +1961,9 @@ registerFacadeTool(
           historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
           sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
           phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false },
+        disposableSymbolCopy: { tool: "easyeda_control_disposable_symbol_copy", scope: "original-disposable-project-local-supported-symbol-copy",
+          runtimeAdmissionRequired: true, designMutation: true, connectedValidation: false, originalOwnerRequired: true,
+          phaseEffectAcknowledgementsRequired: true, inverseSupported: false, ordinaryProjectsSupported: false, genericWritersEnabled: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false, scope: "generic-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
@@ -3649,6 +3654,30 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_symbol_metadata"))
       return { result: await currentDisposableOpenCoordinator.runOrdinary(request, expectedFingerprint) };
     }, { allowDuringOrphanRisk: true }),
   );
+}
+
+if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_symbol_copy")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(currentSymbolCopyOperationRequestSchema) }).strict();
+  server.registerTool("easyeda_control_disposable_symbol_copy", {
+    title: "Copy one supported symbol in an owned disposable project",
+    description: "Separate disposable-only symbol copy lifecycle. Query offline disposable-symbol-copy/disposable-symbol-copy-validate first; workflow reference: easyeda-pro-control/references/current-symbol-copy.md. Begin from an original retained easyeda_control_project_open disposable opening; no ordinary opening, replacement fingerprint, destination UUID, title or patch is accepted. Seal the source against the managed checkpoint and complete closed SQL baseline. The fixed native clone keeps supported self-contained canvas bytes, chooses a new UUID/title and clears source linkage. Original startup, actors, dual clocks and proof budgets precede one copy attempt. Every copy-advance acknowledges its exact next phase; inspect lost replies, never replay. Completion requires copyVerified with nextPhase completed after closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Only offered original-owner cleanup is available after failure. Opening and normal closure can automatically persist changes. No explicit Save, forced exit, delete, inverse, restoration, ordinary-project support or generic lib_Symbol.copy enablement. Connected validation is unclaimed.",
+    inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  }, serializedGuarded(async ({ request }: z.output<typeof inputSchema>) => {
+    if (currentDisposableOpenCoordinator === undefined) {
+      const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+      const assertOwner = (): void => {
+        if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined || ordinaryLaunchRuntime === undefined ||
+          windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === undefined ||
+          process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+          throw new Error("Disposable symbol copy requires this facade's unchanged retained launch.");
+        }
+      };
+      currentDisposableOpenCoordinator = new CurrentDisposableOpenCoordinator({ engine, assertOwner,
+        runtime: (): WindowsControlRuntime => { assertOwner(); return ownedWindowsRuntime(); } });
+    }
+    return { result: await currentDisposableOpenCoordinator.runCopy(request) };
+  }, { allowDuringOrphanRisk: true }));
 }
 
 const transport = new StdioServerTransport();

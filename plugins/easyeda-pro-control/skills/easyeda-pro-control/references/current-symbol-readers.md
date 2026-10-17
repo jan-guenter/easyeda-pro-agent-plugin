@@ -58,6 +58,11 @@ authority or covers ordinary drawn-symbol editing. Generic
 
 ### Symbol observation with no editor tabs
 
+For creating a drawn-symbol fixture in a disposable project, use the separate
+[symbol-copy workflow](current-symbol-copy.md). Metadata-reader results alone
+cannot authorize that operation; it seals its source against the original
+checkpoint and complete SQL inventory. Ordinary copying remains unsupported.
+
 When the project is loaded but only Start Page/its hidden blank tab remains,
 use the separate `project-symbol-preflight` discovery and
 `project-symbol-preflight-validate` actions. Pass the validated request to the
