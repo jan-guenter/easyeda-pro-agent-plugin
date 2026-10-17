@@ -7,7 +7,7 @@ import { createCheckpoint } from "../src/checkpoint.ts";
 import { assertCurrentDisposableSymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "../src/current-symbol-meta-only.ts";
 import { readNativeHistoryCheckpoint } from "../src/native-history.ts";
 import { decodeCurrentSymbolPreEditHistory } from "../src/symbol-sql-comparator.ts";
-import { IDS, TIMES, applyEffect, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
+import { IDS, TIMES, applyEffect, encrypted, expectedRaw, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const IDENTITY = Object.freeze({ projectUuid: IDS.project, branchUuid: IDS.branch });
 const TARGET = Object.freeze({ ...IDENTITY, ownerUuid: IDS.actor, symbolUuid: IDS.target });
@@ -54,6 +54,7 @@ void test("only the disposable entrypoint admits one historical canvas segment a
   const input = await fixture();
   const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
   const forward = await assertCurrentDisposableSymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP, DESIRED);
+  assert.equal(forward.evidence["profile"], "private.current-disposable-canvas-segments-baseline.v1");
   assert.equal(forward.evidence["permittedPurpose"], "disposable-validation"); assert.equal(forward.evidence["canvasRecords"], 1);
   assert.deepEqual(forward.canvasClock, { maximumTargetHeaderTime: 1, remainingWrites: 2 });
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /canvas/u);
@@ -65,6 +66,25 @@ void test("only the disposable entrypoint admits one historical canvas segment a
   assert.deepEqual(inverse.canvasClock, { maximumTargetHeaderTime: TIMES.document, remainingWrites: 1 });
   const changed = { ...inverseHistory.history, plaintextBytes: inverseHistory.history.plaintextBytes + 1 };
   await assert.rejects(assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, changed, DESIRED, STARTUP), /META-only baseline/u);
+});
+
+void test("complete multi-segment canvas histories select only the disposable profile and reserve both writes", async () => {
+  const initial = await fixture();
+  applyEffect(initial.path, `${expectedRaw()}|\n{"type":"LINE","ticket":101,"id":"second-shape"}||{ "x":2 }`);
+  const input = { path: initial.path, before: await inventory(initial.path) };
+  const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
+  assert.equal(decoded.chunks.length, 2);
+  const result = await assertCurrentDisposableSymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP, DESIRED);
+  assert.equal(result.evidence["profile"], "private.current-disposable-canvas-segments-baseline.v1");
+  assert.equal(result.evidence["canvasRecords"], 2);
+  assert.equal(result.evidence["metadataBookkeepingOnly"], false);
+  assert.equal(result.evidence["executionAuthorized"], false);
+  assert.equal(result.evidence["cacheBranchObserved"], false);
+  assert.deepEqual(result.canvasClock, { maximumTargetHeaderTime: TIMES.document, remainingWrites: 2 });
+  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /historical target canvas/u);
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(structuredClone(input.before), binding(input), TARGET, decoded.history, DESIRED, STARTUP), /original inventory/u);
+  const mismatched = { ...binding(input), checkpoint: { ...binding(input).checkpoint, sourceSha256: "0".repeat(64) } };
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(input.before, mismatched, TARGET, decoded.history, DESIRED, STARTUP), /META-only baseline/u);
 });
 
 void test("disposable eligibility never falls back around ambiguous history and retains the META-only path", async () => {

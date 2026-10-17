@@ -1,7 +1,7 @@
 /** Pure synthetic budget checks, never an editor or database mutation. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { prepareCurrentSingleCanvasSegmentWriteBudget, prepareCurrentSymbolWriteBudget } from "../src/current-symbol-write-budget.ts";
+import { prepareCurrentCanvasSegmentsWriteBudget, prepareCurrentSingleCanvasSegmentWriteBudget, prepareCurrentSymbolWriteBudget } from "../src/current-symbol-write-budget.ts";
 import { CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS } from "../src/current-symbol-write-program.ts";
 import { materializeNativeHistory } from "../src/native-history.ts";
 import { isRecord, sha256Json } from "../src/core.ts";
@@ -242,4 +242,52 @@ void test("canvas envelopes count raw escaped drawing bodies as well as desired 
   assert.equal(escaped["maximumSavedContentBytes"], plain["maximumSavedContentBytes"]);
   assert.ok(Number(escaped["maximumSavedEnvelopeBytes"]) > Number(plain["maximumSavedEnvelopeBytes"]));
   assert.ok(Number(escaped["maximumSavedEnvelopeBytes"]) <= 393_216);
+});
+
+function severalCanvasSegments(): string[] {
+  return [canvasInitial(), `${initial(3, undefined, "Later", 200)}|\n` +
+    '{"type":"LINE","ticket":3,"id":"drawn"}||{ "x":2 }|\n{"type":"PART","ticket":3,"id":"part"}||{"partId":"P"}'];
+}
+async function segmentsBudget(input: DecodedSymbolSqlRawHistory, restore?: Parameters<typeof prepareCurrentSymbolWriteBudget>[5]): Promise<Readonly<Record<string, unknown>>> {
+  return prepareCurrentCanvasSegmentsWriteBudget(input, TARGET, DESIRED, await baseline(), STARTUP, restore);
+}
+
+void test("separate multi-segment budget reserves exact forward/inverse output without broadening older profiles", async () => {
+  const input = decoded(severalCanvasSegments(), 3, 2), serialized = JSON.stringify(input);
+  const result = await segmentsBudget(input, DESIRED);
+  assert.equal(result["profile"], "private.current-canvas-segments-write-budget.v1");
+  assert.equal(result["reservedWrites"], 2); assert.equal(result["afterChunks"], 4); assert.equal(result["afterHistoryRows"], 4);
+  assert.equal(result["executionAuthorized"], false); assert.equal(result["producerBindingVerified"], false);
+  const empty = await budget(decoded());
+  assert.ok(Number(result["maximumSavedContentBytes"]) > Number(empty["maximumSavedContentBytes"]));
+  assert.equal(JSON.stringify(input), serialized);
+  await assert.rejects(canvasBudget(input), /multiple history segments/u);
+  await assert.rejects(budget(input), /document-cache canvas/u);
+  const tombstone = severalCanvasSegments(); tombstone[1] += '|\n{"type":"LINE","ticket":4,"id":"drawn"}||';
+  const removed = await segmentsBudget(decoded(tombstone, 4, 2), DESIRED);
+  assert.equal(removed["reservedWrites"], 2);
+});
+
+void test("multi-segment budget reserves every appended chunk inside the first 101-stream loader batch", async () => {
+  const peer = initial().replaceAll(TARGET, "7".repeat(16));
+  const input = (count: number): DecodedSymbolSqlRawHistory => decoded([
+    ...severalCanvasSegments(), ...Array.from({ length: count - 2 }, () => peer),
+  ], 3, 2);
+  const two = await segmentsBudget(input(99), DESIRED);
+  assert.equal(two["afterChunks"], 101);
+  const one = await segmentsBudget(input(100));
+  assert.equal(one["afterChunks"], 101);
+  await assert.rejects(segmentsBudget(input(100), DESIRED), /101|concurrent|chunk/u);
+  await assert.rejects(segmentsBudget(input(101)), /101|concurrent|chunk/u);
+});
+
+void test("multi-segment budget retains original clock, inverse headroom and complete restored-content bounds", async () => {
+  const history = severalCanvasSegments(); history[1] = history[1]?.replace('"updateTime":200', '"updateTime":100') ?? "missing";
+  await assert.rejects(segmentsBudget(decoded(history, 3, 2)), /header|segment arrival order/u);
+  const noDoubleWindow = CURRENT_SYMBOL_WRITE_TIME_CEILING - 2 * CURRENT_SYMBOL_WRITE_WINDOW_MS - 1;
+  const nearCeiling = decoded([canvasInitial('{"x":1}', noDoubleWindow)]);
+  await assert.rejects(segmentsBudget(nearCeiling, DESIRED), /reserved write headroom/u);
+  const excessive = { ...DESIRED, description: "x".repeat(65_536) };
+  const initialSegments = decoded(severalCanvasSegments(), 3, 2);
+  await assert.rejects(segmentsBudget(initialSegments, excessive), /reader byte limit/u);
 });

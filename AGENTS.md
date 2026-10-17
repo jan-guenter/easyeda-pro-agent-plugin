@@ -6,6 +6,140 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate160000: bounded multi-segment disposable symbol replay
+
+Source version0.3.0+codex.20261017160000 on
+feature/current-symbol-multisegment-20261017 extends only the disposable
+canvas-history profile. At most101 complete history chunks including reserved
+forward/inverse writes remain inside the pinned local loader's first batch.
+Exact line membership and a linear first-arrival stream witness preserve raw
+bodies, types, winning clocks, tombstones and physical firstTicket. No sorting,
+field normalization or cache-provenance claim. A variable canvas order may use
+the raw prefix only with a canvas-free winning-header chunk or identical
+raw/cache prefixes. Actual metadata appends must prove that condition and
+strictly newer clock windows before dispatch. Target-later same-type SYMBOL
+cache fragments refuse because their peer header can supply the fallback actor.
+Imported headers, ambiguous latest/max-ticket headers and other existing
+unsupported encodings remain refused. Ordinary editing stays META-only.
+
+Main read all changed source/tests and pinned worker excerpts; independent
+source-plan review accepts the bounded relation and first-SYMBOL guard. The
+final independent implementation review accepts core ebe1f453 and test a5de4e0d,
+budget94e403de/test5c77b9d5 and the separate purpose-bound integration. Initial focused checks:
+56 pure projection tests,13 integration tests and23 budget/status tests passed.
+Strict combined lint and both-target types passed after style corrections.
+No new lint suppression in runtime code. Final reproducible build, full required
+verify, CI, installation and new one-shot offline probe are still pending.
+Dependency installation, complete npm tree,151 verified registry signatures,
+40 attestations and moderate audit passed with zero vulnerabilities. The first
+build's compatibility check caught a source edit racing its snapshot. That
+failed check is retained in the private build log; rebuilding the frozen source
+is required before release. No external pin changed to bypass the refusal.
+External runtime/extension pins are unchanged. No live call, application launch,
+fixture setup, Save, history rewrite or production design access was performed.
+Windows Computer Use remains blocked before JavaScript by the host sandboxCwd
+error recorded below. An installed drawn-symbol lifecycle still needs its own
+eligible disposable fixture and evidence. Do not replay101500 or123000.
+
+### Resumed143000: installed process verified; multi-segment replay review
+
+User restarted Codex. Actual facade1445583, parent1443830/startTicks22660098,
+loads installed143000 through pinned Node24.18.0 with core0. Independent exact
+1,296-file/mode inventory matches main e9a35f0f and the hashes below. Old
+facade1344991 and consumed probe1438664 are absent. Offline public discovery
+returns the expected ordinary-route historical validation field. No upstream
+child was present in the process snapshot; no live status or CAD call was made.
+Main CI39041903089 and Windows39041902989 are now completed successfully,
+including all eight main facade shards and the required aggregator.
+
+Computer Use could not initialize: node_repl rejected the host sandboxCwd
+the Linux workspace file URI before executing JavaScript. No Windows app was
+observed or controlled. EasyEDA was not launched; last retained state is closed.
+Source work continues on feature/current-symbol-multisegment-20261017, preserving
+the prior delivery record and original stash. Review exact cache stream ordering
+before implementing broader disposable-only saved-symbol replay; ordinary
+META-only admission and all runtime/ownership/persistence guards stay unchanged.
+No fixture creation, history rewrite, production read or production edit.
+
+### Delivered143000: published and installed; fresh Codex session required
+
+Published and installed/enabled `0.3.0+codex.20261017143000` through the existing
+Git marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Protected PR55 merged reviewed `40201640dbe5cf6c97a535ceced34f2c3758ffd9` as
+main `e9a35f0f58f15abb13314f17ae2d67952d73be1a`. Whole tree
+`46ff08c7e49ee40d2c6ec6bc5736db92e40e8729` and plugin tree
+`d087a3bdfabeb7f2995e2cd45bf020b924e2dab3` equal the reviewed payload exactly.
+All 11 PR checks passed: CI39040935152 and Windows39040935162. Independent
+CI log review confirms 10,642 facade tests: 10,637 passed, five platform skips,
+zero failed/cancelled/todo; all 424 bridge tests passed in 28 files. Full local
+verify passed 10,638 facade tests with four skips and zero failures, plus all
+424 bridge tests. Strict lint has zero warnings/errors; types, dependency
+audits, reproducible build, compatibility, repository/package validation and
+all seven official local skill validators passed. Hosted CI lacks the optional
+official Codex validators and ran the repository validators instead.
+Local verify log SHA:
+`7e91b8b0e1ed1a3c2cbe5c799782f3ddfd3adc74cbbff5c053656b636ba795e9`.
+Main Windows39041902989 and CI39041903089 verify-build passed, independently
+reviewed at exact merged main. All eight duplicate main facade shards were
+still running at handoff; check their final status next session. Exact-payload
+PR CI is complete; no second full main success is claimed yet.
+
+Official marketplace upgrade under umask022 completed exit0, errors[] and
+stderr0. CLI confirms installed/enabled143000; cached marketplace HEAD equals
+merged main e9a35f0f. Root and independent inventories match all 1,296 files, 26,059,696 bytes
+and committed modes: 42 directories0755, 1,295 files0644 and one0755, seven
+skills, no extra files or links. Inventory SHA
+`fc93dd1b6ae777c3a0a2c505366f80473204fe8d6b613b6b4444e14c69f84153`;
+398-source SHA `90dc5d0dd0b3dbe9449aef37091b7c8168bc84eef331d8296318485cdf1029a2`;
+three-runtime SHA `c3ea88f845ee479e165b35c39f60478a5bbdefa65481c3b858a4c5e3c000b29b`;
+compatibility manifest SHA
+`6e96313362f75d2dee6985745c844e660334ec49561ffd52399c9b2378b91434`.
+
+The one-shot synthetic installed probe1438664 passed and exited normally via
+stdin EOF, without signals or process adoption. Configured startup handed
+ambient Node26.11.1 to pinned Node24.18.0, core0, without installed module
+ancestors, upstream children or nonstdio sockets. All 17 restricted tools and
+seven skills are present. Offline ordinary discovery, exact forward arguments,
+missing-ack rejection and inverse-phase rejection passed. No actual profile,
+live status, CAD operation or operation journal was used; synthetic profile
+unchanged, stderr0. Proof `/tmp/easyeda-release-143000-il7C4kUj/proof.json` is
+2,926 bytes, SHA
+`2147018967d9616b3698937874ee39f4cd5a46378f7338a21380538aa61880f1`.
+Independent review accepts the proof, marker, unchanged helper hashes and final
+synthetic state. PID1438664 is absent; no unresolved-child report exists. The
+synthetic control directory contains only its machine profile, no lock/journal.
+Never rerun this consumed probe or any older one-shot probe.
+
+Loaded facade1344991 remains123000 and was not terminated, patched or rebound.
+External compatibility pins and the EasyEDA extension are unchanged; no new
+extension import is required. Follow the extension-development release workflow:
+start a fresh Codex session and admit installed143000 before further live calls.
+EasyEDA is closed. The ordinary123000 metadata lifecycle below is completed,
+not pending: never replay its edit, Save, opening or verification stages. The
+requested metadata intentionally remains on the disposable unused symbol.
+All production designs and their records remain excluded.
+
+Next focused work is connected qualification of the disposable drawn-symbol
+profile, not a claim that such validation has already passed. No existing drawn
+symbol in the managed fixture is eligible. Normal project-local New Symbol
+(Component Symbol/type2) followed by drawing is a candidate setup workflow,
+but the pinned editor can upload PART during opening before a later drawing
+upload. One visible Save does not prove single-segment canvas history. Complete
+symbol import is also unproved and may introduce unsupported firstTicket data.
+Use a supported setup workflow and inspect full history; if normal creation is
+multi-segment, implement exact broader replay support. Never rewrite/compact
+history or unlink existing components to manufacture eligibility. Current
+restricted tools do not expose generic library creation or native UI controls.
+
+Broader historically drawn/nonempty symbols, referenced-symbol propagation,
+schematic/PCB native structure completion, geometry, component libraries and
+manufacturing exports remain backlog. Ordinary support is still unused,
+META-only and forward-only; generic/legacy writers remain blocked. The new
+digest cache has no measured connected speedup claim. Original stash
+`ebe1b55d7a430ae2e3168e373e155957b582eff9` is intact; never apply it wholesale.
+Local main is fast-forwarded to e9a35f0f; this delivery record is the only
+post-merge working-tree change, retained for the next continuation.
+
 ### Candidate143000: source reviewed; release verification running
 
 Version0.3.0+codex.20261017143000 on feature/ordinary-symbol-validation-20261017

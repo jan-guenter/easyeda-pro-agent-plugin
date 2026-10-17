@@ -28,7 +28,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017143000` adds a disposable-only single-canvas-segment
+Update `0.3.0+codex.20261017160000` extends disposable symbol-metadata validation
+to bounded multi-segment drawing histories. It checks byte-exact records and
+possible concurrent replay order, with capacity reserved for both metadata
+writes. Imported records, ambiguous cache actors and histories beyond the
+101-chunk batch remain unsupported. This is offline-tested support, not a live
+drawn-symbol result; ordinary editing remains META-only. See the
+[current scope and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017143000` adds a disposable-only single-canvas-segment
 symbol-metadata validation profile and bounded historical JSON-digest reuse.
 Every cached digest still requires fresh byte, identity and runtime checks;
 connected latency improvement is not claimed. The new drawn-symbol profile is

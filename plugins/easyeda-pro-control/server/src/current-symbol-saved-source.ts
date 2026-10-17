@@ -12,10 +12,10 @@ import type { CurrentSavedSymbolReadRequest } from "./current-symbol-saved-read-
 import { selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
-import { CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, expectedSavedSymbolContent, prepareCurrentDocumentCacheSavedSymbolProjection,
-  prepareCurrentSingleCanvasSegmentSavedSymbolProjection, prepareSavedSymbolProjection, verifyCurrentSavedSymbolProjectionAlternatives,
-  verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives } from "./saved-symbol-projection.ts";
-import type { CurrentDocumentCacheSavedSymbolProjection, CurrentSingleCanvasSegmentSavedSymbolProjection, SavedSymbolProjection } from "./saved-symbol-projection.ts";
+import { CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, expectedSavedSymbolContent, prepareCurrentCanvasSegmentsSavedSymbolProjection,
+  prepareCurrentDocumentCacheSavedSymbolProjection, prepareSavedSymbolProjection, verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives,
+  verifyCurrentSavedSymbolProjectionAlternatives } from "./saved-symbol-projection.ts";
+import type { CurrentCanvasSegmentsSavedSymbolProjection, CurrentDocumentCacheSavedSymbolProjection, SavedSymbolProjection } from "./saved-symbol-projection.ts";
 
 export interface CurrentSavedSymbolSource {
   readonly profile: "private.current-symbol-saved-source.v1";
@@ -32,7 +32,7 @@ interface Original {
   readonly source: CurrentSymbolWriterContinuationSource; readonly descriptor: CurrentSavedSymbolSource;
   readonly text: string; readonly request: CurrentSavedSymbolReadRequest; readonly requestText: string;
   readonly projection: SavedSymbolProjection;
-  readonly documentCacheProjection: CurrentDocumentCacheSavedSymbolProjection | CurrentSingleCanvasSegmentSavedSymbolProjection;
+  readonly documentCacheProjection: CurrentDocumentCacheSavedSymbolProjection | CurrentCanvasSegmentsSavedSymbolProjection;
 }
 const issued = new WeakMap<object, Original>();
 function need(value: boolean): asserts value { if (!value) { throw new Error("Current saved symbol source requires its original complete post-edit result."); } }
@@ -92,10 +92,12 @@ export async function prepareCurrentSavedSymbolSource(continuation: CurrentSymbo
   const documentCacheProjection = projection.canvasRecords === 0
     ? await prepareCurrentDocumentCacheSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
       maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion })
-    : await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
+    : await prepareCurrentCanvasSegmentsSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
       maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion });
   current();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection, "0".repeat(16)));
+  // Admitted segment orders permute exact lines, preserving UTF8 size.
+  // This representative therefore bounds every cache-order alternative.
   const documentCacheProjectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
   need(projectedContentBytes > 0 && projectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
   need(documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
@@ -116,9 +118,9 @@ export function verifyCurrentSavedSymbolContent(value: CurrentSavedSymbolSource,
   continuation: CurrentSymbolWriterContinuation, observation: unknown): Readonly<Record<string, unknown>> {
   const original = assertCurrentSavedSymbolSource(value, engine, continuation);
   const cache = original.documentCacheProjection;
-  need(cache.profile !== "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" || original.source.original.source.purpose === "disposable-validation");
-  const relation = cache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1"
-    ? verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(original.projection, cache, observation)
+  need(cache.profile !== "private.current-canvas-segments-saved-symbol-getstr-projection.v1" || original.source.original.source.purpose === "disposable-validation");
+  const relation = cache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1"
+    ? verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(original.projection, cache, observation)
     : verifyCurrentSavedSymbolProjectionAlternatives(original.projection, cache, observation);
   return Object.freeze({ ...relation, sourceSha256: value.sourceSha256,
     comparisonSha256: value.comparisonSha256 });

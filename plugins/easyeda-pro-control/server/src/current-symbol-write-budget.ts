@@ -5,7 +5,7 @@ import { CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS } fro
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
-import { expectedSavedSymbolContent, prepareCurrentDocumentCacheSavedSymbolProjection, prepareCurrentSingleCanvasSegmentSavedSymbolProjection,
+import { expectedSavedSymbolContent, prepareCurrentCanvasSegmentsSavedSymbolProjection, prepareCurrentDocumentCacheSavedSymbolProjection, prepareCurrentSingleCanvasSegmentSavedSymbolProjection,
   prepareSavedSymbolProjection } from "./saved-symbol-projection.ts";
 import { ACTOR_NAME_MAX_CODE_UNITS } from "./symbol-dual-actor.ts";
 import type { DecodedSymbolSqlRawHistory } from "./symbol-sql-comparator.ts";
@@ -16,7 +16,12 @@ const desiredSchema = z.object({ name: z.string().min(1).max(512), description: 
   tags: z.array(z.string().max(512)).max(256), source: z.string().max(4096) }).strict();
 const MAX_NATIVE_TIME = 8_640_000_000_000_000;
 type MetadataInput = Readonly<{ name: string; description: string; tags: readonly string[]; source: string }>;
-type BudgetStrategy = "meta-only" | "single-canvas-segment";
+type BudgetStrategy = "meta-only" | "single-canvas-segment" | "canvas-segments";
+const BUDGET_PROFILES = Object.freeze({
+  "meta-only": "private.current-symbol-write-budget.v1",
+  "single-canvas-segment": "private.current-single-canvas-segment-write-budget.v1",
+  "canvas-segments": "private.current-canvas-segments-write-budget.v1",
+});
 const CLIENT = "0".repeat(16);
 // SQL actor selection bounds both project-user names to this many code units.
 // A NUL contributes six JSON bytes, the maximum for any individual code unit.
@@ -169,12 +174,23 @@ export function prepareCurrentSingleCanvasSegmentWriteBudget(decoded: DecodedSym
   return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "single-canvas-segment");
 }
 
+/** Disposable-only stream-order profile. Each appended stage must still fit
+ * the pinned loader's first concurrent batch and prove a canvas-free winning
+ * header, keeping both exact header alternatives independent of canvas order.
+ */
+export function prepareCurrentCanvasSegmentsWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string,
+  desiredInput: MetadataInput, before: NativeSqlInventory, startupInput: CurrentSymbolStartupExpectation,
+  restorationInput?: MetadataInput): Promise<Readonly<Record<string, unknown>>> {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "canvas-segments");
+}
+
 async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string, desiredInput: MetadataInput,
   before: NativeSqlInventory, startupInput: CurrentSymbolStartupExpectation, restorationInput: MetadataInput | undefined,
   strategy: BudgetStrategy): Promise<Readonly<Record<string, unknown>>> {
   const chunks = [...decoded.chunks], desired = desiredSchema.parse(desiredInput);
   const startup = currentSymbolStartupExpectationSchema.parse(startupInput);
   const stages = restorationInput === undefined ? [desired] : [desired, desiredSchema.parse(restorationInput)];
+  const prepareCanvas = strategy === "canvas-segments" ? prepareCurrentCanvasSegmentsSavedSymbolProjection : prepareCurrentSingleCanvasSegmentSavedSymbolProjection;
   const { history, maximumTicket } = decoded;
   need(Number.isSafeInteger(history.historyRowCount) && history.historyRowCount > 0 && history.historyRowCount + stages.length <= 64,
     "reserved appended history rows must fit the maintained 64-row decoder");
@@ -182,10 +198,10 @@ async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUui
     "complete decoded history counts differ");
   need(Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && !Object.is(maximumTicket, -0) && maximumTicket <= Number.MAX_SAFE_INTEGER - stages.length - 1,
     "the written ticket and exported outer ticket must remain supported safe integers");
-  if (strategy === "single-canvas-segment") {
+  if (strategy !== "meta-only") {
     // Check the original history as well as every synthetic appended stage.
     // A new header must not hide an initially ambiguous cache segment order.
-    const baseline = await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
+    const baseline = await prepareCanvas({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
     const firstMaximum = CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages.length - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1);
     need(baseline.maximumTargetHeaderTime < firstMaximum - CURRENT_SYMBOL_WRITE_WINDOW_MS,
       "strictly later document windows cannot fit the reserved write headroom");
@@ -199,8 +215,8 @@ async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUui
     const nextPaths: string[][] = [];
     let stageUploadBytes = 0;
     for (const path of paths) {
-      const stamps = strategy === "single-canvas-segment"
-        ? [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)] : [1, MAX_NATIVE_TIME];
+      const stamps = strategy === "meta-only" ? [1, MAX_NATIVE_TIME]
+        : [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)];
       for (const stamp of stamps) {
         const upload = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ ...ACTOR, updateTime: stamp })}|\n` +
           `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({ docType: "SYMBOL", client: CLIENT, uuid: targetUuid,
@@ -212,9 +228,14 @@ async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUui
         // Reuse the actual post-write proof bounds, including total bytes, chunks,
         // Records and individual records. Do not maintain a looser parallel parser.
         const raw = await prepareSavedSymbolProjection(input);
-        const cache = await (strategy === "single-canvas-segment"
-          ? prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : prepareCurrentDocumentCacheSavedSymbolProjection(input));
+        const cache = await (strategy === "meta-only" ? prepareCurrentDocumentCacheSavedSymbolProjection(input) : prepareCanvas(input));
+        if (strategy === "canvas-segments") {
+          need(cache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1" && cache.rawPrefixOrderIndependent,
+            "appended metadata header must not constrain canvas replay order");
+        }
         for (const projection of [raw, cache]) {
+          // Permuting the same exact lines changes neither UTF8 length nor
+          // JSON-escaped envelope length. Bound both distinct header prefixes.
           const content = expectedSavedSymbolContent(projection, CLIENT);
           const bytes = Buffer.byteLength(content);
           maximumSavedContentBytes = Math.max(maximumSavedContentBytes, bytes);
@@ -225,7 +246,7 @@ async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUui
     }
     uploadBytes.push(stageUploadBytes); maximumUploadBytes = Math.max(maximumUploadBytes, stageUploadBytes); paths = nextPaths;
   }
-  return Object.freeze({ profile: strategy === "single-canvas-segment" ? "private.current-single-canvas-segment-write-budget.v1" : "private.current-symbol-write-budget.v1",
+  return Object.freeze({ profile: BUDGET_PROFILES[strategy],
     targetUuid, beforeMaximumTicket: maximumTicket,
     reservedWrites: stages.length, afterMaximumTicket: maximumTicket + stages.length, afterHistoryRows: history.historyRowCount + stages.length,
     afterChunks: chunks.length + stages.length, maximumUploadBytes,
