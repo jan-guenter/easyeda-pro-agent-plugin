@@ -130,6 +130,12 @@ function fixture(suffix: string): Fixture {
   const runtime: ReturnType<CurrentDisposableOpenOptions["runtime"]> = {
     status: () => ({ state: state.ownerLost ? "released" : "owned", launch: structuredClone(LAUNCH), executableSha256: HASH, reviewedExecutionScopeSha256: HASH }),
     observeLaunchTermination: () => { calls.push("termination"); return Promise.resolve({ jobId: LAUNCH.jobId, helperInstance: LAUNCH.helperInstance, terminated: state.terminated }); },
+    observeApplicationWindow: () => { calls.push("window"); return Promise.resolve({ jobId: LAUNCH.jobId, helperInstance: LAUNCH.helperInstance, outcome: "available", hwnd: "123456" }); },
+    normalClose: (hwnd) => {
+      assert.equal(hwnd, "123456"); assert.equal(calls.includes("normal-close"), false);
+      assert.equal(journals.get(input.operationId)?.["normalCloseAttempted"], true);
+      calls.push("normal-close"); return Promise.resolve();
+    },
   };
   const engine: CurrentDisposableOpenOptions["engine"] = {
     status: () => Promise.resolve({ stableFingerprint: structuredClone(FINGERPRINT) }),
@@ -192,6 +198,157 @@ function fixture(suffix: string): Fixture {
 function resultValue(value: Value): Value { const result = value["result"]; assert.ok(isRecord(result)); return result; }
 function dispatches(value: Fixture): string[] { return value.calls.filter((call) => call.startsWith("dispatch:")); }
 const RETIRE = { action: "retire-after-termination", confirmRetire: true, acceptUnknownFileEffects: true };
+const NORMAL_CLOSE = { action: "request-normal-close", confirmNormalClose: true, acceptUnknownFileEffects: true };
+
+void test("failed disposable opener requests native normal close once without bridge work or clearing quarantine", async () => {
+  const value = fixture("owned-close"); value.state.uncertainPhase = "open-project";
+  await value.coordinator.run(value.input, FINGERPRINT);
+  const before = dispatches(value), beforeScopes = value.calls.filter((call) => call === "scope").length;
+  const result = await value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId });
+  assert.equal(result["normalCloseAttempted"], true); assert.equal(result["normalCloseAcknowledged"], true);
+  assert.equal(result["terminationProved"], false); assert.equal(result["quarantineCleared"], false);
+  assert.equal(result["orphanedCallPossible"], true); assert.equal(result["hardStop"], true);
+  assert.equal(result["state"], "current-open-outcome-unknown");
+  assert.deepEqual(dispatches(value), before); assert.equal(value.calls.filter((call) => call === "scope").length, beforeScopes);
+  assert.ok(value.calls.indexOf("artifact:normal-close-intent") < value.calls.indexOf("normal-close"));
+  assert.ok(value.calls.indexOf("normal-close") < value.calls.indexOf("artifact:normal-close-acknowledged"));
+  await assert.rejects(value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /consumed/u);
+  await assert.rejects(value.coordinator.run({ action: "observe", operationId: value.input.operationId }), /uncertain/u);
+  await assert.rejects(value.coordinator.run({ ...value.input, operationId: "current-open-new-close-id" }, FINGERPRINT), /quarantine/u);
+  await assert.rejects(value.coordinator.run({ ...RETIRE, operationId: value.input.operationId }));
+  value.state.terminated = true; value.state.closed = true;
+  const retired = await value.coordinator.run({ ...RETIRE, operationId: value.input.operationId });
+  assert.equal(retired["state"], "plan-invalidated"); assert.equal(retired["orphanedCallPossible"], false);
+  assert.equal(value.calls.filter((call) => call === "normal-close").length, 1);
+});
+
+void test("disposable normal close refuses wrong purpose, completed state, lost owner, replacement fingerprint and unrelated quarantine", async () => {
+  const completed = fixture("close-completed"); await completed.coordinator.run(completed.input, FINGERPRINT);
+  await assert.rejects(completed.coordinator.run({ ...NORMAL_CLOSE, operationId: completed.input.operationId }), /stopped nonterminal/u);
+  assert.equal(completed.calls.includes("window"), false);
+  const value = fixture("close-admission"); value.state.uncertainPhase = "open-project";
+  await value.coordinator.run(value.input, FINGERPRINT);
+  await assert.rejects(value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }, FINGERPRINT), /cannot replace/u);
+  const restarted = new CurrentDisposableOpenCoordinator(value.options, value.services);
+  await assert.rejects(restarted.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /no longer retains/u);
+  value.state.quarantine = true;
+  await assert.rejects(value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /unrelated quarantine/u);
+  value.state.quarantine = false; value.state.ownerLost = true;
+  await assert.rejects(value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /owner lost/u);
+  assert.equal(value.calls.includes("window"), false); assert.equal(value.calls.includes("normal-close"), false);
+  const ordinary = fixture("close-ordinary"); ordinary.state.uncertainPhase = "open-project";
+  await ordinary.coordinator.runOrdinary({ action: "open", operationId: ordinary.input.operationId, ...TARGET, acceptNormalOpenEffects: true }, FINGERPRINT);
+  await assert.rejects(ordinary.coordinator.run({ ...NORMAL_CLOSE, operationId: ordinary.input.operationId }), /cannot consume an ordinary/u);
+  await assert.rejects(ordinary.coordinator.runOrdinary({ ...NORMAL_CLOSE, operationId: ordinary.input.operationId }));
+  assert.equal(ordinary.calls.includes("window"), false);
+});
+
+for (const failure of ["intent-publication", "intent-update", "native-close", "acknowledgment-publication"] as const) {
+  void test(`disposable normal-close ${failure} ambiguity consumes the attempt and keeps quarantine`, async () => {
+    const value = fixture(`close-${failure}`); value.state.uncertainPhase = "open-project";
+    const originalUpdate = value.services.updateOperation, originalWrite = value.services.writePhaseArtifact;
+    assert.ok(originalWrite && originalUpdate);
+    let failingPhase = "never";
+    if (failure === "intent-publication") { failingPhase = "normal-close-intent"; }
+    if (failure === "acknowledgment-publication") { failingPhase = "normal-close-acknowledged"; }
+    const services = { ...value.services,
+      writePhaseArtifact: async (...args: Parameters<typeof originalWrite>): ReturnType<typeof originalWrite> => {
+        const result = await originalWrite(...args);
+        if (args[2] === failingPhase) {
+          throw new Error("synthetic ambiguous publication");
+        }
+        return result;
+      },
+      updateOperation: async (...args: Parameters<typeof originalUpdate>): ReturnType<typeof originalUpdate> => {
+        const result = await originalUpdate(...args);
+        if (failure === "intent-update" && args[0]["normalCloseAttempted"] === true) { throw new Error("synthetic ambiguous update"); }
+        return result;
+      },
+    };
+    const runtime = value.options.runtime();
+    const originalClose = runtime.normalClose;
+    runtime.normalClose = async (hwnd): Promise<void> => {
+      await originalClose.call(runtime, hwnd);
+      if (failure === "native-close") { throw new Error("synthetic ambiguous close"); }
+    };
+    const coordinator = new CurrentDisposableOpenCoordinator(value.options, services);
+    await coordinator.run(value.input, FINGERPRINT);
+    await assert.rejects(coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /synthetic ambiguous/u);
+    const inspected = await coordinator.run({ action: "inspect", operationId: value.input.operationId });
+    assert.equal(inspected["normalCloseAttempted"], true); assert.equal(inspected["orphanedCallPossible"], true);
+    await assert.rejects(coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /consumed/u);
+    assert.equal(value.calls.filter((call) => call === "normal-close").length, failure.startsWith("intent-") ? 0 : 1);
+    assert.equal(value.calls.includes("release-capture"), false);
+  });
+}
+
+for (const drift of ["owner", "close-method", "window-method", "status-method", "guard-method", "journal", "capture", "foreign-window", "ambiguous-window"] as const) {
+  void test(`disposable normal close refuses ${drift} after native window observation without dispatch`, async () => {
+    const value = fixture(`close-drift-${drift}`); value.state.uncertainPhase = "open-project";
+    const runtime = value.options.runtime();
+    let replacementStatusCalled = false;
+    runtime.observeApplicationWindow = async (): ReturnType<typeof runtime.observeApplicationWindow> => {
+      await Promise.resolve();
+      if (drift === "owner") { value.state.ownerLost = true; }
+      if (drift === "close-method") { runtime.normalClose = (): Promise<never> => Promise.reject(new Error("replacement close must not run")); }
+      if (drift === "window-method") { runtime.observeApplicationWindow = (): Promise<never> => Promise.reject(new Error("replacement window must not run")); }
+      if (drift === "status-method") { runtime.status = (): never => { replacementStatusCalled = true; assert.fail("replacement status must not run"); }; }
+      if (drift === "guard-method") { value.options.engine.assertRecoveryOperationIsolated = (): Promise<true> => Promise.resolve(true); }
+      const journal = value.journals.get(value.input.operationId); assert.ok(journal);
+      if (drift === "journal") { journal["nextSafeAction"] = "foreign change"; }
+      if (drift === "capture") { journal["executionAuthorityBeforeOrphan"] = { ...AUTHORITY, authoritySha256: "9".repeat(64) }; }
+      return { jobId: drift === "foreign-window" ? "9".repeat(32) : LAUNCH.jobId, helperInstance: LAUNCH.helperInstance,
+        outcome: drift === "ambiguous-window" ? "ambiguous" : "available", hwnd: drift === "ambiguous-window" ? null : "123456" };
+    };
+    await value.coordinator.run(value.input, FINGERPRINT);
+    await assert.rejects(value.coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }));
+    assert.equal(value.calls.includes("normal-close"), false);
+    assert.equal(value.calls.includes("artifact:normal-close-intent"), false);
+    assert.equal(value.journals.get(value.input.operationId)?.["orphanedCallPossible"], true);
+    assert.equal(replacementStatusCalled, false);
+  });
+}
+
+for (const boundary of ["first-isolation", "second-isolation", "intent-publication", "third-isolation", "native-close", "acknowledgment-publication"] as const) {
+  void test(`disposable normal close rechecks method identity after ${boundary}`, async () => {
+    const value = fixture(`close-boundary-${boundary}`); value.state.uncertainPhase = "open-project";
+    const runtime = value.options.runtime();
+    let armed = false, isolation = 0, replacementCalls = 0;
+    const replace = (): void => { runtime.normalClose = (): Promise<void> => { replacementCalls += 1; return Promise.resolve(); }; };
+    const originalClose = runtime.normalClose;
+    runtime.normalClose = async (hwnd): Promise<void> => {
+      await originalClose.call(runtime, hwnd);
+      if (boundary === "native-close") { replace(); }
+    };
+    const originalIsolation = value.options.engine.assertRecoveryOperationIsolated;
+    value.options.engine.assertRecoveryOperationIsolated = async (id): Promise<true> => {
+      await originalIsolation.call(value.options.engine, id);
+      if (armed) {
+        isolation += 1;
+        if (boundary === `${["first", "second", "third"][isolation - 1] ?? "later"}-isolation`) { replace(); }
+      }
+      return true;
+    };
+    const originalWrite = value.services.writePhaseArtifact; assert.ok(originalWrite);
+    const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+      writePhaseArtifact: async (...args: Parameters<typeof originalWrite>): ReturnType<typeof originalWrite> => {
+        const result = await originalWrite(...args);
+        if (boundary === "intent-publication" && args[2] === "normal-close-intent" ||
+            boundary === "acknowledgment-publication" && args[2] === "normal-close-acknowledged") { replace(); }
+        return result;
+      },
+    });
+    await coordinator.run(value.input, FINGERPRINT); armed = true;
+    await assert.rejects(coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /retained methods/u);
+    assert.equal(replacementCalls, 0);
+    assert.equal(value.calls.filter((call) => call === "normal-close").length,
+      boundary === "native-close" || boundary === "acknowledgment-publication" ? 1 : 0);
+    assert.equal(value.journals.get(value.input.operationId)?.["orphanedCallPossible"], true);
+    if (!["first-isolation", "second-isolation"].includes(boundary)) {
+      await assert.rejects(coordinator.run({ ...NORMAL_CLOSE, operationId: value.input.operationId }), /consumed/u);
+    }
+  });
+}
 
 void test("current ordinary opener journals both intents, projects strict checkpoint input and never replays", async () => {
   const value = fixture("success");

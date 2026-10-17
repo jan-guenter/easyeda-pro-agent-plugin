@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "55d1ba3a82839cda634b037aecfa77c287df8dce0765167f4c1316c5dd33b1ee";
+const __easyedaBundlePairId = "556a8b70187718d06ce9819da2501975e19894500cfdcb07e9acf4b095f1c51c";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33312,8 +33312,10 @@ var init_current_disposable_open_diagnostics = __esm({
       "setup",
       "before-registration",
       "pre-dispatch",
+      "prefix-subscribe",
       "open-project",
       "project-acknowledgement",
+      "prefix-event",
       "open-document",
       "document-acknowledgement",
       "after-registration",
@@ -33333,7 +33335,18 @@ var init_current_disposable_open_diagnostics = __esm({
       "ACK",
       "OUTPUT",
       "EXCEPTION",
-      "TIMEOUT"
+      "TIMEOUT",
+      "PROJECT",
+      "BRANCH",
+      "FORMAT",
+      "HISTORY",
+      "TABSHAPE",
+      "TABOWNER",
+      "TABACTIVE",
+      "PROJECTION",
+      "OWNERS",
+      "REGISTRY",
+      "PREFIX"
     ];
     CURRENT_OPEN_HOST_STAGES = [
       "owner-check",
@@ -94902,6 +94915,7 @@ function queryCurrentDisposableOpen(input = {}) {
         "open",
         "observe",
         "inspect",
+        "request-normal-close",
         "retire-after-termination",
         "baseline-begin",
         "baseline-observe-termination",
@@ -94935,9 +94949,9 @@ function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
   const target6 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase5 = external_exports.enum(phases2).parse(phaseInput);
   const navigation = phase5 === "open-project" || phase5 === "open-document";
-  return `let timer,clear,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
+  return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target6)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target6)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
 const bad=(code='GUARD')=>{failureCode=code;throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad('FIELD');const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad('FIELD');}if(!Object.hasOwn(d,'value'))bad('FIELD');return d.value;};
@@ -94952,7 +94966,7 @@ const initialUrl=parseProjectUrl(href,target.projectUuid);let retainedHref=href;
 if((phase==='preflight'||phase==='open-project')&&!initialUrl.empty)bad('URL');
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
-const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall');
+const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall'),subscribe=phase==='open-project'?method(bus,'subscribe'):null;
 const projectApi=own(edaOwner,'dmt_Project'),documentApi=own(edaOwner,'dmt_EditorControl'),openProject=method(projectApi,'openProject'),openDocument=method(documentApi,'openDocument');
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
@@ -94962,35 +94976,37 @@ const check=()=>{
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(edaOwner,'dmt_Project')!==projectApi||own(edaOwner,'dmt_EditorControl')!==documentApi||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
  for(const binding of [active,container,getTab,registryCall,openProject,openDocument])methodCheck(binding);
+ if(subscribe!==null)methodCheck(subscribe);
+ if(prefixCheck!==undefined)prefixCheck();
 };
 const sample=()=>{
  check();const owners=[],project=plain(own(host,'currentProject'));owners.push(project);const pid=own(project,'projectId',true),branch=own(project,'branchUuid',true);
- const projectPresent=pid===target.projectUuid;if(pid!==undefined&&!projectPresent)bad();
- if(projectPresent){if(branch!==target.branchUuid||own(project,'isV2Format')!==false)bad();}else if(branch!==undefined&&branch!=='')bad();
- if(own(host,'isHistoryMode')!==false)bad();
+ const projectPresent=pid===target.projectUuid;if(pid!==undefined&&!projectPresent)bad('PROJECT');
+ if(projectPresent){if(branch!==target.branchUuid)bad('BRANCH');if(own(project,'isV2Format')!==false)bad('FORMAT');}else if(branch!==undefined&&branch!=='')bad('BRANCH');
+ if(own(host,'isHistoryMode')!==false)bad('HISTORY');
  const ids=own(tabs,'containerIds'),n=dense(ids,128);if(n===0)bad();owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad();registry.add(id);names.push(id);}
  const tree=own(tabs,'containerTree'),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
  if(own(tabs,'belongContainer')!=='editor-window-main'||own(tree,'id')!=='editor-window-main')bad();
  while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
   if(children===undefined){if(!registry.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
- if(leaves.size!==registry.size)bad();const current=text(own(tabs,'currentTabId'),512,true);if(apply(active.fn,tabs,[])!==current)bad();
+ if(leaves.size!==registry.size)bad();const current=text(own(tabs,'currentTabId'),512,true);if(apply(active.fn,tabs,[])!==current)bad('TABACTIVE');
  const allIds=new Set(),projection=[];let count=0,start=0,placeholder=0,currentCount=0,documentPresent=false,targetTab=null,targetData=null;
  for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256);if(count+length>256)bad();count+=length;owners.push(list);const localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];
   for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),id2=text(own(tab,'tabId'),512),data=plain(own(tab,'data'));owners.push(tab,data);if(allIds.has(id2))bad();allIds.add(id2);localIds.add(id2);const type=own(data,'doctype');
-   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad();const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad();for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad();if(isStart)start++;else placeholder++;
-   }else{if(!projectPresent||![1,3,26].includes(type)||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad();const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid)bad();const parentProject=own(tab,'parentProjectUuid',true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad();if(id2===tabId){if(type!==3)bad();documentPresent=true;targetTab=tab;targetData=data;}}
-   if(id2===current){currentCount++;if(localActive!==current)bad();}rows.push([id2,type]);}
-  if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
- if(start>1||placeholder>1||(current===''?currentCount!==0:currentCount!==1))bad();
- if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad();
+   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad('TABSHAPE');const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad('TABSHAPE');const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad('TABSHAPE');for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad('TABOWNER');for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad('TABOWNER');if(isStart)start++;else placeholder++;
+   }else{if(!projectPresent||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad('TABOWNER');if(![1,3,26].includes(type))bad('TABSHAPE');const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid)bad('TABOWNER');const parentProject=own(tab,'parentProjectUuid',true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad('TABOWNER');if(id2===tabId){if(type!==3)bad('TABSHAPE');documentPresent=true;targetTab=tab;targetData=data;}}
+   if(id2===current){currentCount++;if(localActive!==current)bad('TABACTIVE');}rows.push([id2,type]);}
+  if(localActive!==''&&!localIds.has(localActive))bad('TABACTIVE');projection.push([id,localActive,rows]);}
+ if(start>1||placeholder>1)bad('TABSHAPE');if(current===''?currentCount!==0:currentCount!==1)bad('TABACTIVE');
+ if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad('TABSHAPE');
  if(documentPresent&&apply(getTab.fn,tabs,[tabId])!==targetTab)bad();check();
  const url=parseProjectUrl(retainedHref,target.projectUuid,current);
  if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad('URL');
  return {owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),projectPresent,branchUuid:projectPresent?branch:null,documentPresent,activeTarget:documentPresent&&current===tabId,targetTab,targetData};
 };
-const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad();};
-const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,['/pro-mgr/api/client/getProjectPaths',{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,'message'));if(own(message,'success')!==true)bad();const result=plain(own(message,'result')),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key)))bad();const selected=plain(own(result,target.projectUuid));if(text(own(selected,'path'),4096)!==target.rawWindowsPath||own(selected,'isCbb')!==false)bad();return before;};
+const same=(a,b)=>{if(a.identity!==b.identity)bad('PROJECTION');if(a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad('OWNERS');};
+const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,['/pro-mgr/api/client/getProjectPaths',{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,'message'));if(own(message,'success')!==true)bad('REGISTRY');const result=plain(own(message,'result')),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key)))bad('REGISTRY');const selected=plain(own(result,target.projectUuid));if(text(own(selected,'path'),4096)!==target.rawWindowsPath||own(selected,'isCbb')!==false)bad('REGISTRY');return before;};
 const observe=async()=>{
  const before=sample();if(!before.documentPresent){await Promise.resolve();check();same(before,sample());return {...before,nativeIdentityVerified:false};}
  const select=document?.querySelectorAll;if(typeof select!=='function')bad();const matches=apply(select,document,['[id="frame_'+tabId+'"]']);if(matches.length>1)bad();if(matches.length===0){await Promise.resolve();same(before,sample());return {...before,nativeIdentityVerified:false};}
@@ -95011,8 +95027,23 @@ const run=async()=>{
  stage='before-registration';const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
  stage='pre-dispatch';
  if(phase==='preflight'||phase==='open-project'){if(initial.projectPresent)bad();}else if(phase==='open-document'&&!initial.projectPresent)bad();
- // Only the owned public navigation may advance the retained URL. All subsequent observations freeze it again.
- if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;stage='open-project';publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';retainedHref=location?.href;check();if(typeof publicResult!=='boolean')bad('ACK');}
+ // UI15074858 publishes ON_OPENED without awaiting the async subscriber.
+ // UI16667500 creates the blank tab before the loadProjectCompleted prefix;
+ // restored tabs follow that prefix. This event is not a completion barrier.
+ if(phase==='open-project'){
+  stage='prefix-subscribe';let delivered=0,eventFailed=false,eventProject,settle;
+  const event=new Promise(resolve=>{settle=resolve;});
+  const advanceUrl=()=>{if(!dispatchAttempted)bad('PREFIX');retainedHref=location?.href;check();};
+  const receive=(...args)=>{delivered++;try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad('PREFIX');advanceUrl();const observed=sample();if(!observed.projectPresent)bad('PROJECT');eventProject=own(host,'currentProject');}catch{eventFailed=true;}settle();};
+  const task=apply(subscribe.fn,bus,['loadProjectCompleted',receive]),cancel=method(task,'cancel');
+  const listener=()=>{methodCheck(cancel);if(own(task,'callback')!==receive||own(task,'isRunning')!==true)bad('PREFIX');};
+  cleanup=()=>{listener();apply(cancel.fn,task,[]);if(own(task,'callback')!==null||own(task,'isRunning')!==false)bad('PREFIX');};
+  prefixCheck=()=>{listener();if(eventFailed||delivered>1)bad('PREFIX');};
+  listener();same(initial,sample());check();if(delivered!==0||eventFailed)bad('PREFIX');dispatchAttempted=true;stage='open-project';
+  publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';advanceUrl();listener();if(typeof publicResult!=='boolean')bad('ACK');
+  if(publicResult){stage='prefix-event';await event;check();listener();if(delivered!==1||eventFailed)bad('PREFIX');if(own(host,'currentProject')!==eventProject)bad('OWNERS');}
+ }
+ // Document navigation retains its original acknowledgement boundary.
  else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;stage='open-document';publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);stage='document-acknowledgement';retainedHref=location?.href;check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad('ACK');}
  stage='after-registration';const after=await registration();check();stage='native-observation';const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
  stage='output';
@@ -95021,7 +95052,7 @@ const run=async()=>{
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
 }catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
-finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}}}`;
+finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{cleanupFailed=true;}if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailed=true;}}if(cleanupFailed)throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}`;
 }
 function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   const target6 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
@@ -95071,6 +95102,7 @@ var init_current_disposable_open = __esm({
       external_exports.object({ action: external_exports.literal("open"), operationId, ...targetFields, confirmDisposableProject: external_exports.literal(true), acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("observe"), operationId }).strict(),
       external_exports.object({ action: external_exports.literal("inspect"), operationId }).strict(),
+      external_exports.object({ action: external_exports.literal("request-normal-close"), operationId, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("retire-after-termination"), operationId, confirmRetire: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
       external_exports.object({
         action: external_exports.literal("baseline-begin"),
@@ -95124,6 +95156,8 @@ var init_current_disposable_open = __esm({
       "One explicitly selected, already registered local disposable .eprj2 project and existing type-3 PCB only. The raw Windows registry path hashes to the project identity; the host separately binds the file checkpoint and PCB membership.",
       "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
       "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
+      "request-normal-close consumes one normal-close request through the original failed opening's retained application owner. It accepts no PID/window replacement, Save/Discard choice or force termination, and preserves quarantine. Original termination observation and retirement remain separate actions.",
+      "Project opening waits for one operation-local loadProjectCompleted prefix event before freezing post-open observations. The event has no authenticated producer identity and precedes restored tabs/background work; it is not full startup or restoration completion. Later identity drift still refuses without retry.",
       "Complete bounded registry observations require an initially empty editor, then target-only project tabs and the sealed branch. Public methods route through global state: samples are not an atomic lock against an intervening switch away and back.",
       "Final retained-frame/native identity is not rendering, restoration completion, persistence or writer authority. Ordinary open/observe actions request no explicit Save, close, discard, restoration, settings change or CAD edit; baseline actions separately request normal application closure.",
       "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
@@ -129569,7 +129603,7 @@ function isOpenJournal(value2) {
     return false;
   }
   const checkpoint = value2["checkpointProof"], plan2 = value2["plan"];
-  return plan2["profile"] === PROFILE22 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value2["operationId"] === "string" && typeof value2["journalPath"] === "string" && typeof value2["planHash"] === "string" && typeof value2["state"] === "string" && typeof value2["mutationState"] === "string" && typeof value2["saved"] === "boolean" && typeof value2["reopened"] === "boolean" && typeof value2["orphanedCallPossible"] === "boolean" && typeof value2["hardStop"] === "boolean" && typeof value2["mutationMayHaveOccurred"] === "boolean" && typeof value2["nextSafeAction"] === "string" && typeof value2["updatedAt"] === "string" && Number.isSafeInteger(value2["sequence"]) && typeof value2["projectDispatchConsumed"] === "boolean" && typeof value2["documentDispatchConsumed"] === "boolean" && Array.isArray(value2["artifacts"]) && value2["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value2["originalLaunch"]).success && (value2["failureDiagnostic"] === void 0 || currentOpenFailureDiagnosticSchema.safeParse(value2["failureDiagnostic"]).success);
+  return plan2["profile"] === PROFILE22 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value2["operationId"] === "string" && typeof value2["journalPath"] === "string" && typeof value2["planHash"] === "string" && typeof value2["state"] === "string" && typeof value2["mutationState"] === "string" && typeof value2["saved"] === "boolean" && typeof value2["reopened"] === "boolean" && typeof value2["orphanedCallPossible"] === "boolean" && typeof value2["hardStop"] === "boolean" && typeof value2["mutationMayHaveOccurred"] === "boolean" && typeof value2["nextSafeAction"] === "string" && typeof value2["updatedAt"] === "string" && Number.isSafeInteger(value2["sequence"]) && typeof value2["projectDispatchConsumed"] === "boolean" && typeof value2["documentDispatchConsumed"] === "boolean" && Array.isArray(value2["artifacts"]) && value2["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value2["originalLaunch"]).success && (value2["failureDiagnostic"] === void 0 || currentOpenFailureDiagnosticSchema.safeParse(value2["failureDiagnostic"]).success) && (value2["normalCloseAttempted"] === void 0 || value2["normalCloseAttempted"] === true) && (value2["normalCloseAcknowledged"] === void 0 || value2["normalCloseAcknowledged"] === true && value2["normalCloseAttempted"] === true);
 }
 function observationOutcome(result) {
   if (result["phase"] === "open-document" && result["publicResult"] === null) {
@@ -129592,6 +129626,8 @@ function summary9(journal) {
     hardStop: journal.hardStop,
     result: journal.result ?? null,
     failureDiagnostic: journal.failureDiagnostic ?? null,
+    normalCloseAttempted: journal.normalCloseAttempted === true,
+    normalCloseAcknowledged: journal.normalCloseAcknowledged === true,
     normalOpenEffectsMayHaveOccurred: journal.mutationMayHaveOccurred,
     explicitSaveDispatched: false,
     persistenceVerified: false,
@@ -129666,6 +129702,7 @@ var init_current_disposable_open_runtime = __esm({
       baselinePurposes = /* @__PURE__ */ new Map();
       validations = /* @__PURE__ */ new Map();
       ordinaryOperations = /* @__PURE__ */ new Map();
+      normalCloseAttempts = /* @__PURE__ */ new Set();
       busy = false;
       constructor(options, dependencies3 = {}) {
         this.options = options;
@@ -129722,7 +129759,7 @@ var init_current_disposable_open_runtime = __esm({
             confirmNormalClose: true
           }, configured.profile.runtime);
         }
-        if (request6.action !== "open" && request6.action !== "observe" && request6.action !== "inspect" && request6.action !== "retire-after-termination") {
+        if (request6.action !== "open" && request6.action !== "observe" && request6.action !== "inspect" && request6.action !== "retire-after-termination" && request6.action !== "request-normal-close") {
           requireValue15(expectedFingerprint === void 0, "Baseline continuation cannot replace its original runtime fingerprint.");
           this.assertBaselinePurpose(request6.operationId, "disposable-validation");
           requireValue15(
@@ -129775,9 +129812,13 @@ var init_current_disposable_open_runtime = __esm({
           const journal = await this.load(request6.operationId);
           requireValue15(openingPurpose(journal.plan.purpose) === "disposable-validation", "Disposable route cannot consume an ordinary symbol opening.");
           if (request6.action === "inspect") {
-            return summary9(journal);
+            return { ...summary9(journal), normalCloseAttempted: this.normalCloseAttempts.has(journal.operationId) || journal.normalCloseAttempted === true };
           }
           this.generations.clear();
+          if (request6.action === "request-normal-close") {
+            requireValue15(expectedFingerprint === void 0, "Disposable normal close cannot replace its original runtime fingerprint.");
+            return await this.requestNormalClose(journal);
+          }
           if (request6.action === "retire-after-termination") {
             return await this.retire(journal);
           }
@@ -130302,6 +130343,10 @@ var init_current_disposable_open_runtime = __esm({
         failureContext.phase = phase5;
         failureContext.hostStage = "owner-check";
         this.currentUntransferred(slot);
+        requireValue15(
+          !this.normalCloseAttempts.has(journal.operationId) && journal.normalCloseAttempted !== true,
+          "A normal-close attempt is consumed; this opening cannot dispatch further observations or navigation."
+        );
         failureContext.hostStage = "dispatch-guards";
         await engine2.assertBridgeAndRecoveryAdmission(journal.operationId);
         this.currentUntransferred(slot);
@@ -130429,7 +130474,14 @@ var init_current_disposable_open_runtime = __esm({
           documentDispatchConsumed: false,
           nextSafeAction: "Run one current-profile disposable project/document open; normal open effects are accepted, not validated design changes."
         };
-        const slot = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan2) };
+        const slot = {
+          journal,
+          runtime,
+          launch,
+          launchText: canonicalJson(launch),
+          planText: canonicalJson(plan2),
+          nativeCleanup: Object.freeze({ status: runtime.status, observeApplicationWindow: runtime.observeApplicationWindow, normalClose: runtime.normalClose })
+        };
         this.retained.set(request6.operationId, slot);
         this.currentUntransferred(slot);
         await this.services.createOperation(journal);
@@ -130463,7 +130515,7 @@ var init_current_disposable_open_runtime = __esm({
           journal.state = "plan-invalidated";
           journal.result = { outcome: "stopped-before-navigation", navigationAttempted: false, replayAllowed: false };
         }
-        journal.nextSafeAction = journal.orphanedCallPossible ? "Do not replay navigation. Keep this facade alive; close EasyEDA normally, then retire this exact attempt after original root/Job termination and bridge closure." : "Inspect or observe this consumed attempt without navigation. No successful opening or unchanged durable state is inferred.";
+        journal.nextSafeAction = journal.orphanedCallPossible ? "Do not replay navigation. Keep this facade alive; request-normal-close may request one original-owner normal closure, then retire this exact attempt only after original root/Job termination and bridge closure. Never choose Save/Discard or force exit." : "Inspect or observe this consumed attempt without navigation. No successful opening or unchanged durable state is inferred.";
         if (beforeNavigation) {
           journal.nextSafeAction = "Attempt ended before navigation. Inspect its consumed history; never reuse this operation ID.";
         }
@@ -130500,6 +130552,101 @@ var init_current_disposable_open_runtime = __esm({
         } catch (error51) {
           return this.stop(journal, error51, failureContext);
         }
+      }
+      /** Terminal native cleanup for this failed disposable opener only. This does
+       * not enter a bridge scope or clear quarantine; the existing retirement still
+       * requires original root/Job exit and released authenticated dispatch proof.
+       */
+      async requestNormalClose(loaded) {
+        requireValue15(
+          !isTerminalOperation(loaded) && loaded.hardStop && loaded.orphanedCallPossible && loaded.state === "current-open-outcome-unknown",
+          "Disposable normal close requires a stopped nonterminal orphan-risk opening."
+        );
+        requireValue15(
+          !this.normalCloseAttempts.has(loaded.operationId) && loaded.normalCloseAttempted !== true,
+          "Disposable normal-close attempt is consumed; do not repeat close."
+        );
+        const slot = this.retained.get(loaded.operationId);
+        requireValue15(
+          slot !== void 0 && canonicalJson(slot.journal) === canonicalJson(loaded),
+          "This facade no longer retains the original disposable-open owner and journal; loaded history cannot restore authority."
+        );
+        const { engine: engine2 } = this.options, { runtime, journal } = slot;
+        const authority2 = journal.executionAuthorityBeforeOrphan, binding3 = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
+        requireValue15(
+          prior !== void 0 && binding3 !== void 0 && authority2 !== void 0 && authority2.processes.some((process20) => process20.pid === slot.launch.root.pid && process20.startIdentity === slot.launch.root.startIdentity && process20.role === "easyeda-main") && authority2.processes.every((process20) => process20.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
+          "Disposable normal close lacks the operation's original retained launch/capture binding."
+        );
+        const { normalClose: close, observeApplicationWindow: observeWindow, status: status2 } = slot.nativeCleanup;
+        const isolate = engine2.assertRecoveryOperationIsolated, upstream2 = engine2.upstream, validator = engine2.executionAuthorityValidator;
+        requireValue15(typeof observeWindow === "function" && typeof close === "function", "Original retained native normal-close methods are unavailable.");
+        const originalBinding = () => canonicalJson({
+          authority: journal.executionAuthorityBeforeOrphan,
+          binding: journal.bridgeDispatchBeforeOrphan,
+          prior: journal.bridgeSessionBeforeOrphan,
+          state: journal.state,
+          hardStop: journal.hardStop,
+          orphanedCallPossible: journal.orphanedCallPossible
+        });
+        const bindingText = originalBinding();
+        let journalText = canonicalJson(journal);
+        const current4 = () => {
+          requireValue15(runtime.observeApplicationWindow === observeWindow && runtime.normalClose === close && runtime.status === status2 && engine2.assertRecoveryOperationIsolated === isolate && engine2.executionAuthorityValidator === validator && engine2.upstream === upstream2 && originalBinding() === bindingText && canonicalJson(journal) === journalText, "Disposable normal-close retained methods or journal changed.");
+          this.currentUntransferred(slot);
+        };
+        const unchanged3 = async () => {
+          current4();
+          const persisted = await this.load(journal.operationId);
+          current4();
+          requireValue15(canonicalJson(persisted) === journalText, "Disposable normal-close persisted journal changed.");
+        };
+        current4();
+        await isolate.call(engine2, journal.operationId);
+        await unchanged3();
+        const window = await observeWindow.call(runtime);
+        await unchanged3();
+        requireValue15(
+          Object.keys(window).toSorted().join(",") === "helperInstance,hwnd,jobId,outcome" && window.outcome === "available" && typeof window.hwnd === "string" && /^[1-9]\d{0,18}$/u.test(window.hwnd) && window.jobId === slot.launch.jobId && window.helperInstance === slot.launch.helperInstance,
+          "Disposable normal close requires the original launch's unique application window."
+        );
+        await isolate.call(engine2, journal.operationId);
+        await unchanged3();
+        const intent = {
+          schema: "easyeda-pro-control.current-open-normal-close-intent.v1",
+          operationId: journal.operationId,
+          planHash: journal.planHash,
+          originalLaunch: slot.launch,
+          originalLaunchSha256: sha256Json(slot.launch),
+          authoritySha256: authority2.authoritySha256,
+          bridgeDispatch: binding3,
+          bridgeSession: prior,
+          hwnd: window.hwnd,
+          confirmNormalClose: true,
+          acceptUnknownFileEffects: true,
+          replayAllowed: false
+        };
+        this.normalCloseAttempts.add(journal.operationId);
+        journal.normalCloseAttempted = true;
+        journal.nextSafeAction = "Normal-close intent consumed. Inspect or observe original termination for retirement; never repeat close, navigate, Save or choose a prompt response.";
+        await this.record(journal, "normal-close-intent", intent);
+        journalText = canonicalJson(journal);
+        await unchanged3();
+        await isolate.call(engine2, journal.operationId);
+        await unchanged3();
+        await close.call(runtime, window.hwnd);
+        await unchanged3();
+        journal.normalCloseAcknowledged = true;
+        await this.record(journal, "normal-close-acknowledged", {
+          schema: "easyeda-pro-control.current-open-normal-close-acknowledged.v1",
+          operationId: journal.operationId,
+          intentSha256: sha256Json(intent),
+          requestAcknowledged: true,
+          terminationProved: false,
+          quarantineCleared: false
+        });
+        journalText = canonicalJson(journal);
+        await unchanged3();
+        return { ...summary9(journal), action: "request-normal-close", terminationProved: false, quarantineCleared: false };
       }
       async retire(loaded) {
         requireValue15(!isTerminalOperation(loaded), "Current disposable-open attempt is already terminal.");
@@ -134176,7 +134323,7 @@ var init_src = __esm({
       "easyeda_control_project_open",
       {
         title: "Open and validate one disposable EasyEDA project",
-        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
+        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. A stopped disposable opener can request-normal-close through its original retained Job without a bridge call; quarantine remains until retire-after-termination proves termination and session closure. Close acknowledgement never permits replay or proves saved contents. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },

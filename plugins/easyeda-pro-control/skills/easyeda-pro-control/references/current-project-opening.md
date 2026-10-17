@@ -60,6 +60,13 @@ Project opening, document opening and observed native identity are separate
 facts. Public methods route through mutable global state, so before/after
 observations are not an atomic lock. Keep other app input quiescent.
 
+The current opener subscribes before project navigation and awaits one bounded
+`loadProjectCompleted` prefix event before freezing post-open observations.
+This covers the native blank-tab setup after the public promise returns.
+The event has no authenticated producer identity and precedes further tab
+restoration; it does not prove all startup work completed. Missing or conflicting
+events and later context drift still consume the attempt without retry.
+
 Ordinary opening changes the URL to `#id=<project>` and document focus can add
 `,tab=[*]<document>@<project>|...`. The opener requires an empty initial fragment
 for project dispatch, admits only the selected project's ordinary fragment at
@@ -101,9 +108,20 @@ recorded phase/marking time and artifacts, never as current-phase completion.
 Do not rewrite historical evidence or infer its missing cause from new codes.
 
 Never repeat an uncertain project or document stage, including under a new ID.
-Keep the same facade alive. If a tracked call remains orphaned, normal application
-closure must finish before `retire-after-termination` can run. Do not force-quit
-or choose Save/Discard for unrelated work.
+Keep the same facade alive. For an orphaned, stopped attempt whose original
+opener still owns its runtime, use `request-normal-close` with the original `operationId`,
+`confirmNormalClose:true` and `acceptUnknownFileEffects:true`. Check the installed
+schema first; older releases lack this action. It selects the original owned
+window internally and requests normal closure once. Supply no HWND, PID or
+replacement fingerprint. It performs no bridge call and leaves quarantine set.
+The ordinary launcher's close route remains blocked during quarantine; it is
+not an alternative to the opener's scoped cleanup.
+
+A close acknowledgement is not termination. Inspect an uncertain response;
+never repeat the close or answer Save/Discard. If the retained close route is
+unavailable, ask the user to close normally while keeping this facade alive.
+Normal application closure must finish before `retire-after-termination` can
+run. Do not force-quit or choose Save/Discard for unrelated work.
 
 Retirement requires `confirmRetire:true`, `acceptUnknownFileEffects:true` and
 the exact operation ID. The coordinator proves its original retained root and

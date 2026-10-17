@@ -31,6 +31,7 @@ export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action",
   z.object({ action: z.literal("open"), operationId, ...targetFields, confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("observe"), operationId }).strict(),
   z.object({ action: z.literal("inspect"), operationId }).strict(),
+  z.object({ action: z.literal("request-normal-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("retire-after-termination"), operationId, confirmRetire: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("baseline-begin"), operationId, openingOperationId: operationId,
     preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
@@ -71,6 +72,8 @@ const limitations = [
   "One explicitly selected, already registered local disposable .eprj2 project and existing type-3 PCB only. The raw Windows registry path hashes to the project identity; the host separately binds the file checkpoint and PCB membership.",
   "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
   "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
+  "request-normal-close consumes one normal-close request through the original failed opening's retained application owner. It accepts no PID/window replacement, Save/Discard choice or force termination, and preserves quarantine. Original termination observation and retirement remain separate actions.",
+  "Project opening waits for one operation-local loadProjectCompleted prefix event before freezing post-open observations. The event has no authenticated producer identity and precedes restored tabs/background work; it is not full startup or restoration completion. Later identity drift still refuses without retry.",
   "Complete bounded registry observations require an initially empty editor, then target-only project tabs and the sealed branch. Public methods route through global state: samples are not an atomic lock against an intervening switch away and back.",
   "Final retained-frame/native identity is not rendering, restoration completion, persistence or writer authority. Ordinary open/observe actions request no explicit Save, close, discard, restoration, settings change or CAD edit; baseline actions separately request normal application closure.",
   "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
@@ -95,7 +98,7 @@ export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, 
       limitation: "Fixed packaged expectations only, not an observation of the installed runtime. Compare the complete runtime inventory before reserving the one-shot scratch stage; discovery grants no execution authority.",
     }, entries: [{
     action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
-    actions: ["open", "observe", "inspect", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch",
+    actions: ["open", "observe", "inspect", "request-normal-close", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch",
       "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish", "baseline-inspect",
       "validation-begin", "validation-advance", "validation-inspect"], limitations: [...limitations],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentDisposableOpenRequestSchema) } : {}),
@@ -118,9 +121,9 @@ export function buildCurrentDisposableOpenProgram(targetInput: unknown, phaseInp
   const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
   const phase = z.enum(phases).parse(phaseInput);
   const navigation = phase === "open-project" || phase === "open-document";
-  return `let timer,clear,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
+  return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},phase=${JSON.stringify(phase)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},phase=${JSON.stringify(phase)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
 const bad=(code='GUARD')=>{failureCode=code;throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad('FIELD');const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad('FIELD');}if(!Object.hasOwn(d,'value'))bad('FIELD');return d.value;};
@@ -135,7 +138,7 @@ const initialUrl=parseProjectUrl(href,target.projectUuid);let retainedHref=href;
 if((phase==='preflight'||phase==='open-project')&&!initialUrl.empty)bad('URL');
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
-const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall');
+const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall'),subscribe=phase==='open-project'?method(bus,'subscribe'):null;
 const projectApi=own(edaOwner,'dmt_Project'),documentApi=own(edaOwner,'dmt_EditorControl'),openProject=method(projectApi,'openProject'),openDocument=method(documentApi,'openDocument');
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
@@ -145,35 +148,37 @@ const check=()=>{
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(edaOwner,'dmt_Project')!==projectApi||own(edaOwner,'dmt_EditorControl')!==documentApi||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
  for(const binding of [active,container,getTab,registryCall,openProject,openDocument])methodCheck(binding);
+ if(subscribe!==null)methodCheck(subscribe);
+ if(prefixCheck!==undefined)prefixCheck();
 };
 const sample=()=>{
  check();const owners=[],project=plain(own(host,'currentProject'));owners.push(project);const pid=own(project,'projectId',true),branch=own(project,'branchUuid',true);
- const projectPresent=pid===target.projectUuid;if(pid!==undefined&&!projectPresent)bad();
- if(projectPresent){if(branch!==target.branchUuid||own(project,'isV2Format')!==false)bad();}else if(branch!==undefined&&branch!=='')bad();
- if(own(host,'isHistoryMode')!==false)bad();
+ const projectPresent=pid===target.projectUuid;if(pid!==undefined&&!projectPresent)bad('PROJECT');
+ if(projectPresent){if(branch!==target.branchUuid)bad('BRANCH');if(own(project,'isV2Format')!==false)bad('FORMAT');}else if(branch!==undefined&&branch!=='')bad('BRANCH');
+ if(own(host,'isHistoryMode')!==false)bad('HISTORY');
  const ids=own(tabs,'containerIds'),n=dense(ids,128);if(n===0)bad();owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad();registry.add(id);names.push(id);}
  const tree=own(tabs,'containerTree'),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
  if(own(tabs,'belongContainer')!=='editor-window-main'||own(tree,'id')!=='editor-window-main')bad();
  while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
   if(children===undefined){if(!registry.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
- if(leaves.size!==registry.size)bad();const current=text(own(tabs,'currentTabId'),512,true);if(apply(active.fn,tabs,[])!==current)bad();
+ if(leaves.size!==registry.size)bad();const current=text(own(tabs,'currentTabId'),512,true);if(apply(active.fn,tabs,[])!==current)bad('TABACTIVE');
  const allIds=new Set(),projection=[];let count=0,start=0,placeholder=0,currentCount=0,documentPresent=false,targetTab=null,targetData=null;
  for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256);if(count+length>256)bad();count+=length;owners.push(list);const localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];
   for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),id2=text(own(tab,'tabId'),512),data=plain(own(tab,'data'));owners.push(tab,data);if(allIds.has(id2))bad();allIds.add(id2);localIds.add(id2);const type=own(data,'doctype');
-   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad();const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad();for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad();if(isStart)start++;else placeholder++;
-   }else{if(!projectPresent||![1,3,26].includes(type)||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad();const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid)bad();const parentProject=own(tab,'parentProjectUuid',true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad();if(id2===tabId){if(type!==3)bad();documentPresent=true;targetTab=tab;targetData=data;}}
-   if(id2===current){currentCount++;if(localActive!==current)bad();}rows.push([id2,type]);}
-  if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
- if(start>1||placeholder>1||(current===''?currentCount!==0:currentCount!==1))bad();
- if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad();
+   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad('TABSHAPE');const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad('TABSHAPE');const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad('TABSHAPE');for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad('TABOWNER');for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad('TABOWNER');if(isStart)start++;else placeholder++;
+   }else{if(!projectPresent||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad('TABOWNER');if(![1,3,26].includes(type))bad('TABSHAPE');const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid)bad('TABOWNER');const parentProject=own(tab,'parentProjectUuid',true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad('TABOWNER');if(id2===tabId){if(type!==3)bad('TABSHAPE');documentPresent=true;targetTab=tab;targetData=data;}}
+   if(id2===current){currentCount++;if(localActive!==current)bad('TABACTIVE');}rows.push([id2,type]);}
+  if(localActive!==''&&!localIds.has(localActive))bad('TABACTIVE');projection.push([id,localActive,rows]);}
+ if(start>1||placeholder>1)bad('TABSHAPE');if(current===''?currentCount!==0:currentCount!==1)bad('TABACTIVE');
+ if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad('TABSHAPE');
  if(documentPresent&&apply(getTab.fn,tabs,[tabId])!==targetTab)bad();check();
  const url=parseProjectUrl(retainedHref,target.projectUuid,current);
  if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad('URL');
  return {owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),projectPresent,branchUuid:projectPresent?branch:null,documentPresent,activeTarget:documentPresent&&current===tabId,targetTab,targetData};
 };
-const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad();};
-const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,['/pro-mgr/api/client/getProjectPaths',{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,'message'));if(own(message,'success')!==true)bad();const result=plain(own(message,'result')),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key)))bad();const selected=plain(own(result,target.projectUuid));if(text(own(selected,'path'),4096)!==target.rawWindowsPath||own(selected,'isCbb')!==false)bad();return before;};
+const same=(a,b)=>{if(a.identity!==b.identity)bad('PROJECTION');if(a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad('OWNERS');};
+const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,['/pro-mgr/api/client/getProjectPaths',{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,'message'));if(own(message,'success')!==true)bad('REGISTRY');const result=plain(own(message,'result')),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key)))bad('REGISTRY');const selected=plain(own(result,target.projectUuid));if(text(own(selected,'path'),4096)!==target.rawWindowsPath||own(selected,'isCbb')!==false)bad('REGISTRY');return before;};
 const observe=async()=>{
  const before=sample();if(!before.documentPresent){await Promise.resolve();check();same(before,sample());return {...before,nativeIdentityVerified:false};}
  const select=document?.querySelectorAll;if(typeof select!=='function')bad();const matches=apply(select,document,['[id="frame_'+tabId+'"]']);if(matches.length>1)bad();if(matches.length===0){await Promise.resolve();same(before,sample());return {...before,nativeIdentityVerified:false};}
@@ -194,8 +199,23 @@ const run=async()=>{
  stage='before-registration';const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
  stage='pre-dispatch';
  if(phase==='preflight'||phase==='open-project'){if(initial.projectPresent)bad();}else if(phase==='open-document'&&!initial.projectPresent)bad();
- // Only the owned public navigation may advance the retained URL. All subsequent observations freeze it again.
- if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;stage='open-project';publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';retainedHref=location?.href;check();if(typeof publicResult!=='boolean')bad('ACK');}
+ // UI15074858 publishes ON_OPENED without awaiting the async subscriber.
+ // UI16667500 creates the blank tab before the loadProjectCompleted prefix;
+ // restored tabs follow that prefix. This event is not a completion barrier.
+ if(phase==='open-project'){
+  stage='prefix-subscribe';let delivered=0,eventFailed=false,eventProject,settle;
+  const event=new Promise(resolve=>{settle=resolve;});
+  const advanceUrl=()=>{if(!dispatchAttempted)bad('PREFIX');retainedHref=location?.href;check();};
+  const receive=(...args)=>{delivered++;try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad('PREFIX');advanceUrl();const observed=sample();if(!observed.projectPresent)bad('PROJECT');eventProject=own(host,'currentProject');}catch{eventFailed=true;}settle();};
+  const task=apply(subscribe.fn,bus,['loadProjectCompleted',receive]),cancel=method(task,'cancel');
+  const listener=()=>{methodCheck(cancel);if(own(task,'callback')!==receive||own(task,'isRunning')!==true)bad('PREFIX');};
+  cleanup=()=>{listener();apply(cancel.fn,task,[]);if(own(task,'callback')!==null||own(task,'isRunning')!==false)bad('PREFIX');};
+  prefixCheck=()=>{listener();if(eventFailed||delivered>1)bad('PREFIX');};
+  listener();same(initial,sample());check();if(delivered!==0||eventFailed)bad('PREFIX');dispatchAttempted=true;stage='open-project';
+  publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';advanceUrl();listener();if(typeof publicResult!=='boolean')bad('ACK');
+  if(publicResult){stage='prefix-event';await event;check();listener();if(delivered!==1||eventFailed)bad('PREFIX');if(own(host,'currentProject')!==eventProject)bad('OWNERS');}
+ }
+ // Document navigation retains its original acknowledgement boundary.
  else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;stage='open-document';publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);stage='document-acknowledgement';retainedHref=location?.href;check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad('ACK');}
  stage='after-registration';const after=await registration();check();stage='native-observation';const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
  stage='output';
@@ -204,7 +224,7 @@ const run=async()=>{
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 10_000 : 10_000}]);});return await Promise.race([run(),timeout]);
 }catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
-finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}}}`;
+finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{cleanupFailed=true;}if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailed=true;}}if(cleanupFailed)throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}`;
 }
 
 export function validateCurrentDisposableOpenResult(targetInput: unknown, phaseInput: CurrentDisposableOpenPhase, raw: unknown): CurrentDisposableOpenResult {

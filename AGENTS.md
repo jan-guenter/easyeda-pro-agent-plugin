@@ -2,9 +2,138 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-16 (Europe/Berlin)
+Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
+
+### Candidate020000: opening prefix and owned failure closure
+
+Candidate `0.3.0+codex.20261017020000` addresses the source-proved asynchronous
+opening prefix and adds disposable-only request-normal-close for an orphaned
+stopped opener. The exact211500 failure remains after-registration/GUARD; no
+more specific cause is inferred. Its original owner and launcher are terminal
+below. No fresh navigation, writer, Save or recovery replay. EasyEDA stays closed.
+The new close uses only original retained methods/Job, exact journal/capture
+binding, isolated recovery admission and durable one-shot intent. It never
+enters a bridge scope or clears quarantine; existing termination/session proof
+still owns retirement. Lost owners and publication ambiguity remain fail-closed.
+Source-pinned loadProjectCompleted is only a contextual prefix, not full startup
+completion. Strict post-prefix observations still reject drift. New fixed codes
+preserve bounded failure detail without raw values. Normal writers remain blocked.
+
+Main and independent source review accept the final changes. All51 focused
+opening/diagnostic/runtime tests pass, including retained closure and publication
+ambiguity. Whole TypeScript and strict type-aware lint pass with no diagnostics;
+all seven official skill validators pass. Final rebuild, compatibility/API
+inventory,81 package checks and184 repository checks pass;151 registry signatures,
+40 attestations and zero vulnerabilities. Final source393 SHA
+790d66b19e0cb258c4e0aff73af06583a3ad7fb7b66312bee5c9934d12dbb73a;
+runtime3 SHAe839255d58d94d2ceec80aeaf4e84f37c5fc58019c038e656c30fbf6988f3b50.
+Only facade projections/timestamp changed in compatibility; external pins unchanged.
+The final rebuild supersedes an intermediate build taken during a last source edit.
+CI/publication/installation remain pending. Loaded211500 facade758046 is intact;
+the new source must not be loaded into it. Both new paths require fresh connected
+validation after delivery. Broader backlog is unchanged; see
+docs/current-opening-recovery-2026-10-17.md. Production designs and their records
+remain untouched.
+
+### Actual211500: disposable opening stopped; original owner retired
+
+Fresh sole facade758046/parent754695/startTicks17655953 independently admitted
+on installed211500/mainc40b19056. All1,279files/25,653,610bytes/modes, source393,
+runtime3 and manifest match the delivered hashes below; pinnedNode24.18.0/core0.
+Independent exact-file verification passes all18 EasyEDA runtime pins totaling
+292,631,813bytes and current helper175,104bytes/SHA57e6144cfb4f3f2d6b3b84f699902b209f85af671ef221e38ba40ce1f5a33870.
+Automatic mainCI38969503186 now passes all10jobs; mainWindows38969503223 passes.
+Prior200000 launcher/baseline are terminal and were inspected, not replayed.
+Fresh selected disposable file remains598,016bytes/SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+without sidecars. Ordinary launch `validation-211500-20261017-launch` completed
+ONCE in functions14:root43736/Jobfc61ea7c523b42bf897685f59ef62207/
+helper25b8179e331243bbbb880e03dff323e2, launchedSHA
+ad7561c962693c6a7087037c353db43532785132c7373baa2ab18f8c17665ff2.
+Fresh status authenticates dispatcher ded07x99dcxb504, exact211500 bundle and no
+incomplete operations. New `validation-211500-20261017-open` stopped functions20:
+current-open-outcome-unknown, orphan/hardStop true, project dispatch consumed,
+document dispatch not consumed. Fixed failure is open-project/decode-result/
+native-guard/after-registration/GUARD, retained04 SHA
+fe03dada66e51a353859288cb4ea3ab9c67ce677e1cf2443f1486993c9fbfb57.
+Ordinary observe-window refused quarantine before native observation; no close
+was dispatched. User reports normal closure without a dialog. Original-owner
+retirement42 completed plan-invalidated/orphan false/hardStop false; retained05
+SHA9669122a2fb94b12fa01b9c313e2411bc9b4620784e3a48898ea1bae547da3fb
+proves original Job termination and authenticated session/dispatch closure.
+Launcher observe-termination45 also completed with its exact launched digest.
+Fresh closed fixture remains598,016bytes/SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+no sidecars. No file restoration or navigation replay. This attempt is terminal.
+Do not relaunch or repeat navigation. Root owns all live calls. Proposed but
+NOT started baseline ID is `validation-211500-20261017-baseline` with
+selected closed symbol df16405f230603d3, proposed name
+EASYEDA_VALIDATE_211500_SYMBOL and description
+Disposable current symbol metadata validation 211500. No writer or explicit Save.
+Production designs and their records remain untouched. Earlier pending host/
+restart statements below are historical; this actual211500 owner is current.
+
+### Delivered211500: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261016211500` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR47 merged tested head551e2918a4c0a3afc9329878f5037fa92749ce5d as
+mainc40b19056bb7548a812b3f28ef6ddc8960813bc6. Whole tree
+93c9e3417aeb3cef54bcc1d18331193aba592f7a and plugin tree
+f7458a5a56fdd78204830921975f12d278f3f23f exactly equal the tested payload.
+All11 PR checks passed: CI38967989555 reports10,505 facade passes/five skips/
+zero failures, cancellations or todos;424 bridge passes across28files.
+Windows38967989624 passed. Whole types, strict type-aware lint, dependency
+audit, reproducible builds and package/privacy checks passed. Root/independent
+source and release review accepted; external compatibility pins are unchanged.
+The automated GitHub reviewer failed to run and is not counted as a pass.
+Automatic main Windows38969503223 and mainCI38969503186 verify-build passed;
+the automatic main facade matrix remains in progress.
+
+Official marketplace upgrade under umask022 completed exit0/errors[]. CLI
+confirms installed/enabled211500 and cached marketplace HEAD equals mergedmain.
+Root and independent installed inventories match all1,279files/25,653,610bytes,42directories0755,
+1,278files0644/one0755,seven skills and no extras or links. Inventory SHA
+d57718548c9efeb86ea43e9cab0cb634fc687f99c0d997ec3a93596974151fa7;
+source393 SHAb55f1a9ac93ba093b9e687ada25650e4f62e471b764874b5ea3a12e9c209e952;
+runtime3 SHA390a725a246225fa655dc7b5f0ae066bf681e33f76bed930dc2c616b4cce53ca;
+manifest e760f17567b5ddf354c2a10eeba4541ff0b99dd9c2d6dcba90b7aa486a05368a.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 without installed module ancestors, upstream child or nonstdio
+socket. Catalog16tools/seven skills, fixed helper/all18pins, exact disposable
+schemas and rejection of ordinary metadata actions pass. No live tool or
+journal creation; synthetic profile unchanged/stderr0. Probe740584 exited0
+through stdinEOF without signals. Private proof
+`/tmp/easyeda-installed-211500-MyTDFKe0/proof.json`,4,682bytes SHA
+0d3e4374d143a2c67483b97b2b0cc69fb984fa581107ee4d33d32c5a35b4904f.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/47#issuecomment-6225070436
+
+Retained host711682/parent710002/startTicks15760973 still loads200000, with
+its original Node24 executable/core0 and children714676/715038 untouched.
+Independent before/after identity and its eight nonstdio sockets are unchanged.
+No host termination, manual cache edit or hotpatch. Do not make further live
+calls from that host. Start a fresh Codex session, independently admit actual
+installed211500 and check automatic mainCI. No pending tool or CAD operation.
+All200000 launcher/open/baseline cleanup is terminal; never replay it. Fresh
+closed fixture check remains598,016bytes/SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+with no sidecars. Complete retained35SQLtables/18native documents were unchanged.
+Production designs and their records remain untouched. Keep EasyEDA closed.
+
+Next: one NEW disposable forward/inverse lifecycle using the supported launcher
+and current-project-opening skill reference, with new operation IDs. The200000
+clock callback is live-proved;211500's `_base` correction and complete writer
+lifecycle are not. On startup failure, preserve the fixed stage and follow only
+the original-owner cleanup; never relax a predicate or replay the write. Keep
+the original baseline ID and exact next-phase acknowledgements. Fresh backend
+clock evidence must prove the unlocked head is at least61seconds old at both
+writes. Successful completion requires forwardVerified/inverseVerified/
+metadataRestorationVerified and nextPhasecompleted, not original SQLite bytes.
+The purpose-bound ordinary forward-only implementation is present but remains
+unregistered until connected evidence is reviewed. Do not lift the legacy gate
+or generic library.symbol.modify block. Broader schematic/PCB structure,
+geometry, library and manufacturing backlog remains documented. This delivery
+handoff stays uncommitted until the next source change to avoid a record-only
+release cycle. Earlier pending statements below are historical.
 
 ### Candidate211500: startup correction; disposable200000 closed unchanged
 

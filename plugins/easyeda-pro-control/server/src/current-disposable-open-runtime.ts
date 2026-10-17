@@ -63,20 +63,24 @@ interface OpenJournal extends TrackedDispatchOperationJournal {
   documentDispatchConsumed: boolean;
   result?: Value;
   failureDiagnostic?: CurrentOpenFailureDiagnostic;
+  normalCloseAttempted?: boolean;
+  normalCloseAcknowledged?: boolean;
 }
+type OpenRuntime = Pick<WindowsControlRuntime, "status" | "observeLaunchTermination" | "observeApplicationWindow" | "normalClose">;
 interface Retained {
   readonly journal: OpenJournal;
-  readonly runtime: Pick<WindowsControlRuntime, "status" | "observeLaunchTermination">;
+  readonly runtime: OpenRuntime;
   readonly launch: WindowsAuthorityLaunch;
   readonly launchText: string;
   readonly planText: string;
+  readonly nativeCleanup: Readonly<Pick<OpenRuntime, "status" | "observeApplicationWindow" | "normalClose">>;
 }
 export interface CurrentDisposableOpenOptions {
   readonly engine: Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertNativeUiEditingAllowed" | "assertRecoveryOperationIsolated" | "assertBridgeAndRecoveryAdmission" |
     "assertBridgeAndNativeUiEditingAdmission" | "dispatchWithOrphanTracking" | "executionAuthorityValidator" | "upstream"> & {
       readonly status: () => Promise<{ stableFingerprint: Value }>;
     };
-  readonly runtime: () => Pick<WindowsControlRuntime, "status" | "observeLaunchTermination">;
+  readonly runtime: () => OpenRuntime;
   readonly assertOwner: () => void;
 }
 const defaults = { createOperation, loadOperation, updateOperation, writePhaseArtifact, listOperations: listQualifiedOperationStates,
@@ -188,7 +192,9 @@ function isOpenJournal(value: unknown): value is OpenJournal {
       typeof item["bytes"] === "number" && digest.safeParse(item["sha256"]).success) &&
     checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) &&
     isRecord(checkpoint["targetEvidence"]) && launchSchema.safeParse(value["originalLaunch"]).success &&
-    (value["failureDiagnostic"] === undefined || currentOpenFailureDiagnosticSchema.safeParse(value["failureDiagnostic"]).success);
+    (value["failureDiagnostic"] === undefined || currentOpenFailureDiagnosticSchema.safeParse(value["failureDiagnostic"]).success) &&
+    (value["normalCloseAttempted"] === undefined || value["normalCloseAttempted"] === true) &&
+    (value["normalCloseAcknowledged"] === undefined || value["normalCloseAcknowledged"] === true && value["normalCloseAttempted"] === true);
 }
 function observationOutcome(result: Value): string {
   if (result["phase"] === "open-document" && result["publicResult"] === null) { return "public-returned-not-opened"; }
@@ -200,6 +206,7 @@ function summary(journal: OpenJournal): Value {
     projectDispatchConsumed: journal.projectDispatchConsumed, documentDispatchConsumed: journal.documentDispatchConsumed,
     orphanedCallPossible: journal.orphanedCallPossible, hardStop: journal.hardStop, result: journal.result ?? null,
     failureDiagnostic: journal.failureDiagnostic ?? null,
+    normalCloseAttempted: journal.normalCloseAttempted === true, normalCloseAcknowledged: journal.normalCloseAcknowledged === true,
     normalOpenEffectsMayHaveOccurred: journal.mutationMayHaveOccurred, explicitSaveDispatched: false,
     persistenceVerified: false, writerAuthority: false, nextSafeAction: journal.nextSafeAction,
     journalPath: journal.journalPath, artifacts: journal.artifacts };
@@ -220,6 +227,7 @@ export class CurrentDisposableOpenCoordinator {
   private readonly baselinePurposes = new Map<string, CurrentDisposableOpenPurpose>();
   private readonly validations = new Map<string, CurrentSymbolValidationCoordinator>();
   private readonly ordinaryOperations = new Map<string, CurrentSymbolValidationCoordinator>();
+  private readonly normalCloseAttempts = new Set<string>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -264,7 +272,7 @@ export class CurrentDisposableOpenCoordinator {
       return this.beginSymbolBaseline(request.openingOperationId, { operationId: request.operationId,
         preparation: request.preparation, confirmNormalClose: true }, configured.profile.runtime);
     }
-    if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination") {
+    if (request.action !== "open" && request.action !== "observe" && request.action !== "inspect" && request.action !== "retire-after-termination" && request.action !== "request-normal-close") {
       requireValue(expectedFingerprint === undefined, "Baseline continuation cannot replace its original runtime fingerprint.");
       this.assertBaselinePurpose(request.operationId, "disposable-validation");
       requireValue(!this.validations.has(request.operationId) || request.action === "baseline-inspect",
@@ -292,8 +300,14 @@ export class CurrentDisposableOpenCoordinator {
       }
       const journal = await this.load(request.operationId);
       requireValue(openingPurpose(journal.plan.purpose) === "disposable-validation", "Disposable route cannot consume an ordinary symbol opening.");
-      if (request.action === "inspect") { return summary(journal); }
+      if (request.action === "inspect") {
+        return { ...summary(journal), normalCloseAttempted: this.normalCloseAttempts.has(journal.operationId) || journal.normalCloseAttempted === true };
+      }
       this.generations.clear();
+      if (request.action === "request-normal-close") {
+        requireValue(expectedFingerprint === undefined, "Disposable normal close cannot replace its original runtime fingerprint.");
+        return await this.requestNormalClose(journal);
+      }
       if (request.action === "retire-after-termination") { return await this.retire(journal); }
       return await this.observe(journal);
     } finally { this.busy = false; }
@@ -705,6 +719,8 @@ export class CurrentDisposableOpenCoordinator {
     const { engine } = this.options, journal = slot.journal;
     failureContext.phase = phase; failureContext.hostStage = "owner-check";
     this.currentUntransferred(slot);
+    requireValue(!this.normalCloseAttempts.has(journal.operationId) && journal.normalCloseAttempted !== true,
+      "A normal-close attempt is consumed; this opening cannot dispatch further observations or navigation.");
     failureContext.hostStage = "dispatch-guards";
     await engine.assertBridgeAndRecoveryAdmission(journal.operationId); this.currentUntransferred(slot);
     const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
@@ -799,7 +815,8 @@ export class CurrentDisposableOpenCoordinator {
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), checkpointProof, originalLaunch: launch,
       projectDispatchConsumed: false, documentDispatchConsumed: false,
       nextSafeAction: "Run one current-profile disposable project/document open; normal open effects are accepted, not validated design changes." };
-    const slot: Retained = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan) };
+    const slot: Retained = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan),
+      nativeCleanup: Object.freeze({ status: runtime.status, observeApplicationWindow: runtime.observeApplicationWindow, normalClose: runtime.normalClose }) };
     this.retained.set(request.operationId, slot); this.currentUntransferred(slot);
     await this.services.createOperation(journal);
     const failureContext: CurrentOpenFailureContext = { phase: "preflight", hostStage: "owner-check" };
@@ -830,7 +847,7 @@ export class CurrentDisposableOpenCoordinator {
       journal.result = { outcome: "stopped-before-navigation", navigationAttempted: false, replayAllowed: false };
     }
     journal.nextSafeAction = journal.orphanedCallPossible
-      ? "Do not replay navigation. Keep this facade alive; close EasyEDA normally, then retire this exact attempt after original root/Job termination and bridge closure."
+      ? "Do not replay navigation. Keep this facade alive; request-normal-close may request one original-owner normal closure, then retire this exact attempt only after original root/Job termination and bridge closure. Never choose Save/Discard or force exit."
       : "Inspect or observe this consumed attempt without navigation. No successful opening or unchanged durable state is inferred.";
     if (beforeNavigation) { journal.nextSafeAction = "Attempt ended before navigation. Inspect its consumed history; never reuse this operation ID."; }
     journal.failureDiagnostic = describeCurrentOpenFailure(error, context);
@@ -860,6 +877,74 @@ export class CurrentDisposableOpenCoordinator {
       this.currentUntransferred(slot);
       return summary(journal);
     } catch (error) { return this.stop(journal, error, failureContext); }
+  }
+
+  /** Terminal native cleanup for this failed disposable opener only. This does
+   * not enter a bridge scope or clear quarantine; the existing retirement still
+   * requires original root/Job exit and released authenticated dispatch proof.
+   */
+  private async requestNormalClose(loaded: OpenJournal): Promise<Value> {
+    requireValue(!isTerminalOperation(loaded) && loaded.hardStop && loaded.orphanedCallPossible && loaded.state === "current-open-outcome-unknown",
+      "Disposable normal close requires a stopped nonterminal orphan-risk opening.");
+    requireValue(!this.normalCloseAttempts.has(loaded.operationId) && loaded.normalCloseAttempted !== true,
+      "Disposable normal-close attempt is consumed; do not repeat close.");
+    const slot = this.retained.get(loaded.operationId);
+    requireValue(slot !== undefined && canonicalJson(slot.journal) === canonicalJson(loaded),
+      "This facade no longer retains the original disposable-open owner and journal; loaded history cannot restore authority.");
+    const { engine } = this.options, { runtime, journal } = slot;
+    const authority = journal.executionAuthorityBeforeOrphan, binding = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
+    requireValue(prior !== undefined && binding !== undefined && authority !== undefined &&
+      authority.processes.some((process) => process.pid === slot.launch.root.pid && process.startIdentity === slot.launch.root.startIdentity && process.role === "easyeda-main") &&
+      authority.processes.every((process) => process.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
+    "Disposable normal close lacks the operation's original retained launch/capture binding.");
+    const { normalClose: close, observeApplicationWindow: observeWindow, status } = slot.nativeCleanup;
+    const isolate = engine.assertRecoveryOperationIsolated, upstream = engine.upstream, validator = engine.executionAuthorityValidator;
+    requireValue(typeof observeWindow === "function" && typeof close === "function", "Original retained native normal-close methods are unavailable.");
+    const originalBinding = (): string => canonicalJson({ authority: journal.executionAuthorityBeforeOrphan,
+      binding: journal.bridgeDispatchBeforeOrphan, prior: journal.bridgeSessionBeforeOrphan,
+      state: journal.state, hardStop: journal.hardStop, orphanedCallPossible: journal.orphanedCallPossible });
+    const bindingText = originalBinding();
+    let journalText = canonicalJson(journal);
+    const current = (): void => {
+      requireValue(runtime.observeApplicationWindow === observeWindow && runtime.normalClose === close && runtime.status === status &&
+        engine.assertRecoveryOperationIsolated === isolate && engine.executionAuthorityValidator === validator && engine.upstream === upstream &&
+        originalBinding() === bindingText && canonicalJson(journal) === journalText, "Disposable normal-close retained methods or journal changed.");
+      this.currentUntransferred(slot);
+    };
+    const unchanged = async (): Promise<void> => {
+      current();
+      const persisted = await this.load(journal.operationId); current();
+      requireValue(canonicalJson(persisted) === journalText, "Disposable normal-close persisted journal changed.");
+    };
+    current(); await isolate.call(engine, journal.operationId); await unchanged();
+    const window = await observeWindow.call(runtime); await unchanged();
+    requireValue(Object.keys(window).toSorted().join(",") === "helperInstance,hwnd,jobId,outcome" &&
+      window.outcome === "available" && typeof window.hwnd === "string" && /^[1-9]\d{0,18}$/u.test(window.hwnd) &&
+      window.jobId === slot.launch.jobId && window.helperInstance === slot.launch.helperInstance,
+    "Disposable normal close requires the original launch's unique application window.");
+    await isolate.call(engine, journal.operationId); await unchanged();
+    const intent = { schema: "easyeda-pro-control.current-open-normal-close-intent.v1", operationId: journal.operationId,
+      planHash: journal.planHash, originalLaunch: slot.launch, originalLaunchSha256: sha256Json(slot.launch),
+      authoritySha256: authority.authoritySha256, bridgeDispatch: binding, bridgeSession: prior, hwnd: window.hwnd,
+      confirmNormalClose: true, acceptUnknownFileEffects: true, replayAllowed: false };
+    // Publication can fail after leaving durable bytes. Reserve in memory first,
+    // Then publish intent before the only native dispatch. Never reset on error.
+    this.normalCloseAttempts.add(journal.operationId);
+    journal.normalCloseAttempted = true;
+    journal.nextSafeAction = "Normal-close intent consumed. Inspect or observe original termination for retirement; never repeat close, navigate, Save or choose a prompt response.";
+    await this.record(journal, "normal-close-intent", intent);
+    journalText = canonicalJson(journal); await unchanged();
+    await isolate.call(engine, journal.operationId); await unchanged();
+    // The shared retained helper rechecks root/Job/HWND and consumes its own
+    // Per-Job close reservation. Ordinary and closed-session routes cannot retry.
+    await close.call(runtime, window.hwnd); await unchanged();
+    journal.normalCloseAcknowledged = true;
+    await this.record(journal, "normal-close-acknowledged", {
+      schema: "easyeda-pro-control.current-open-normal-close-acknowledged.v1", operationId: journal.operationId,
+      intentSha256: sha256Json(intent), requestAcknowledged: true, terminationProved: false, quarantineCleared: false,
+    });
+    journalText = canonicalJson(journal); await unchanged();
+    return { ...summary(journal), action: "request-normal-close", terminationProved: false, quarantineCleared: false };
   }
 
   private async retire(loaded: OpenJournal): Promise<Value> {
