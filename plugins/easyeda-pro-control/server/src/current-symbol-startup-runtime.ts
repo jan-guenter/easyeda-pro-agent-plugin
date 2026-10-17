@@ -140,6 +140,13 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   need(history.semanticSha256 === premises.historySemanticSha256 && history.branchUuid === baseline.preparation.target.branchUuid);
   const expectation = selectCurrentSymbolStartupExpectation(history);
   need(expectation.sheetUuids.length === premises.activeSchematicPages);
+  // The complete supported page model supplies every directly used symbol.
+  // Pinned SCH d9d6a955 SYMBOL.ON_UPDATE (6206806) routes such targets through
+  // Em/endBatch/Xl, loading dependent pages into the otherwise empty docMap.
+  // That propagation is not covered by this metadata-only writer contract.
+  if (expectation.templates.some((template) => template.uuid === baseline.preparation.target.symbolUuid)) {
+    throw new Error("Current symbol writer refuses referenced-symbol propagation: native linked-sheet updates are unsupported.");
+  }
   if (source.source.purpose === "ordinary-symbol-metadata") {
     need(source.source.startupExpectation !== undefined && canonicalJson(expectation) === canonicalJson(source.source.startupExpectation));
   }

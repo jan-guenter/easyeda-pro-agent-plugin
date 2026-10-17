@@ -12,12 +12,12 @@ const input = { target, expectedBefore: before, desired: { name: "Renamed", desc
   expectedWorker: { client: "f".repeat(16), maxTicket: 14 }, rendererTimezoneOffsetMinutes: 0,
   backendWindow: { minimumMs: 1_000_000, maximumMs: 1_060_000 }, documentWindow: { minimumMs: 1_000_000, maximumMs: 1_060_000 } };
 function reply(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: value } }; }
-interface Options { readonly setup?: string; readonly afterRpc?: string; readonly afterClock?: string; readonly pending?: string }
+interface Options { readonly setup?: string; readonly afterRpc?: string; readonly afterClock?: string; readonly pending?: string; readonly cleanupFails?: boolean }
 function fixture(options: Options = {}): { run: (selected?: unknown) => Promise<unknown>; evaluate: (source: string) => unknown; expire: () => void } {
   let timeout: (() => void) | undefined;
   const context = createContext({ TextEncoder,
     setTimeout(callback: () => void, delay: number): number { assert.equal(delay, CURRENT_SYMBOL_WRITE_TIMEOUT_MS); timeout = callback; return 7; },
-    clearTimeout(timer: number): void { assert.equal(timer, 7); },
+    clearTimeout(timer: number): void { assert.equal(timer, 7); if (options.cleanupFails === true) { throw new Error("PRIVATE_CLEANUP_FAILURE"); } },
   });
   runInContext(`globalThis.window=globalThis;globalThis.top=globalThis;globalThis.calls=[];globalThis.writes=0;globalThis.forbidden=[];
 globalThis.target=${JSON.stringify(target)};globalThis.before=${JSON.stringify(before)};
@@ -103,14 +103,34 @@ void test("current fixed writer treats uncertain post-write effects as failure w
   }
 });
 
+void test("current fixed writer rejects referenced symbols before any native call", () => {
+  const env = fixture();
+  const selected = { ...input, startup: { ...input.startup, templates: [{ uuid: target.symbolUuid, docType: 2, partId: "part-one" }] } };
+  assert.throws(() => env.run(selected), /not referenced by active schematic pages/u);
+  assert.equal(env.evaluate("writes"), 0); assert.equal(env.evaluate("calls.length"), 0);
+});
+
+void test("current fixed writer distinguishes RPC failure from post-mutation guards without leaking native errors", async () => {
+  for (const [afterRpc, message] of [
+    ["if(writes)throw new Error('PRIVATE_NATIVE_FAILURE');", "CURRENT_SYMBOL_WRITE_REFUSED:MUTATION"],
+    ["if(writes)docMemory.docMap.set('hidden-sheet',{});", "CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:STARTUP:cache"],
+    ["if(writes)gVars.messageBus=new Bus();", "CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:HOST"],
+    ["if(writes)metadata.source='changed';", "CURRENT_SYMBOL_WRITE_REFUSED:ACK"],
+  ] as const) {
+    const env = fixture({ afterRpc });
+    await assert.rejects(env.run(), { message });
+    assert.equal(env.evaluate("writes"), 1); assert.deepEqual(structuredClone(env.evaluate("forbidden")), []);
+  }
+});
+
 void test("current fixed writer timeout prevents late continuation both before and after its one mutation", async () => {
-  for (const pending of ["canAddLib", "/PrjDB/symbol/updateData"]) {
-    const env = fixture({ pending }), running = env.run(); await flush();
+  for (const pending of ["canAddLib", "/PrjDB/symbol/updateData"]) { for (const cleanupFails of [false, true]) {
+    const env = fixture({ pending, cleanupFails }), running = env.run(); await flush();
     assert.equal(env.evaluate("typeof release"), "function"); const count = env.evaluate("calls.length"); env.expire();
-    await assert.rejects(running, { message: "CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT" });
+    await assert.rejects(running, { message: cleanupFails ? "CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT_CLEANUP" : "CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT" });
     env.evaluate("release();"); await flush(); assert.equal(env.evaluate("calls.length"), count);
     assert.equal(env.evaluate("writes"), pending === "canAddLib" ? 0 : 1);
-  }
+  } }
 });
 
 void test("current fixed writer input and reply cannot promote authority or change the frozen operation", async () => {

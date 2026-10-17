@@ -31,7 +31,9 @@ export const currentSymbolWriteProgramInputSchema = currentProjectOnlySymbolPref
 }).strict().refine((value) => value.expectedBefore.ticket <= value.expectedWorker.maxTicket &&
   (value.desired.name !== value.expectedBefore.name || value.desired.description !== value.expectedBefore.description) &&
   value.peerNames.every((name) => name.trim().toLowerCase() !== value.desired.name.trim().toLowerCase()) &&
-  Math.max(value.backendWindow.minimumMs, value.documentWindow.minimumMs) <= Math.min(value.backendWindow.maximumMs, value.documentWindow.maximumMs));
+  Math.max(value.backendWindow.minimumMs, value.documentWindow.minimumMs) <= Math.min(value.backendWindow.maximumMs, value.documentWindow.maximumMs))
+  .refine((value) => !value.startup.templates.some((template) => template.uuid === value.target.symbolUuid),
+    "Current symbol metadata writes require a symbol not referenced by active schematic pages.");
 export type CurrentSymbolWriteProgramInput = z.infer<typeof currentSymbolWriteProgramInputSchema>;
 
 const sampleSchema = z.object({ rendererBeforeMs: time, serverTimeMs: time, rendererAfterMs: time,
@@ -119,8 +121,9 @@ export function buildCurrentSymbolWriteProgram(input: unknown): string {
   const selected = request(input);
   return `const result=await(async()=>{
 const selected=${JSON.stringify(selected)},target=selected.target,root=globalThis,apply=Reflect.apply;
-let expired=false,timer,clear,stage='HOST';
-const bad=()=>{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage);};
+let expired=false,timer,clear,stage='HOST',guard=null,startupStage='project-only-context';
+const refusal=()=>new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage+(guard===null||stage==='TIMEOUT'?'':':'+guard+(guard==='STARTUP'?':'+startupStage:'')));
+const bad=()=>{throw refusal();};
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
 const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
 const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
@@ -130,7 +133,7 @@ try{
  const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
  ${buildCurrentProjectOnlySymbolGuard()}
  const startupExpected=selected.startup;
- ${buildCurrentSymbolStartupGuard()}
+ ${buildCurrentSymbolStartupGuard(true)}
  const host=projectOnly.host,bus=own(host,'messageBus'),rpc=method(bus,'rpcCall'),edaOwner=eda;
  ${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
  if(!actorEqual(cachedActorProjection,selected.expectedActor)||!actorEqual(startupActorProjection,selected.expectedActor))bad();
@@ -140,9 +143,11 @@ try{
  const iso=own(datePrototype,'toISOString'),zone=own(datePrototype,'getTimezoneOffset');
  if(typeof nativeDate!=='function'||typeof dateNow!=='function'||typeof iso!=='function'||typeof zone!=='function')bad();
  const same=()=>{
-  projectOnly.check();startup.check();checkDualActor();methodCheck(rpc);methodCheck(clockRpc);
+  guard='PROJECT';projectOnly.check();guard='STARTUP';startup.check();guard='ACTOR';checkDualActor();guard='RPC';methodCheck(rpc);methodCheck(clockRpc);
+  guard='HOST';
   if(expired||own(host,'messageBus')!==bus||own(host,'concurrentBus')!==concurrent||own(root,notifyKey)!==concurrent||own(root,'_TAB_ID_')!==notifyTab||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
-  if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow||own(nativeDate,'prototype')!==datePrototype||own(datePrototype,'toISOString')!==iso||own(datePrototype,'getTimezoneOffset')!==zone)bad();
+  guard='DATE';if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow||own(nativeDate,'prototype')!==datePrototype||own(datePrototype,'toISOString')!==iso||own(datePrototype,'getTimezoneOffset')!==zone)bad();
+  guard=null;
  };
  let lastNow;
  const now=()=>{same();const value=integer(apply(dateNow,nativeDate,[]));if(value>8640000000000000||(lastNow!==undefined&&value<lastNow))bad();lastNow=value;const date=new nativeDate(value);if(apply(zone,date,[])!==selected.rendererTimezoneOffsetMinutes)bad();same();return{value,iso:apply(iso,date,[])};};
@@ -178,7 +183,8 @@ try{
   const patch={uuid:target.symbolUuid,title:selected.desired.name,description:selected.desired.description};
   stage='DEADLINE';deadline();
   // No await, public modifier, Save, retry, source change or classification patch between this deadline and the sole mutation.
-  stage='MUTATION';const raw=await apply(rpc.fn,bus,['/PrjDB/symbol/updateData',[patch,target.projectUuid],0]);same();
+  stage='MUTATION';const raw=await apply(rpc.fn,bus,['/PrjDB/symbol/updateData',[patch,target.projectUuid],0]);
+  stage='POST_MUTATION';same();
   stage='ACK';const ack=metadata(own(plain(raw),'message'),true);
   stage='CLOCK_AFTER';const documentAfter=await clock();
   if(documentAfter.rendererBeforeMs<documentBefore.rendererAfterMs||ack.updateTime<documentBefore.serverTimeMs||ack.updateTime>documentAfter.serverTimeMs)bad();
@@ -189,8 +195,8 @@ try{
  };
  same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;stage='TIMEOUT';reject(new Error('CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT'));},${CURRENT_SYMBOL_WRITE_TIMEOUT_MS}]);});
  return await Promise.race([run(),timeout]);
-}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage);}
-finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:CLEANUP');}}}
+}catch{throw refusal();}
+finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+(expired?'TIMEOUT_CLEANUP':'CLEANUP'));}}}
 })();
 const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};

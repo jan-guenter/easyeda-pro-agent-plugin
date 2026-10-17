@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- The fixed classifier composes independently maintained literal guard inventories instead of copying reader contracts. */
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { currentOpenNativeFailureCategory } from "./current-disposable-open-diagnostics.ts";
+import { currentSymbolWriteFailureCategory } from "./current-symbol-write-diagnostics.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
 import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES, SYMBOL_ACTOR_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
@@ -266,6 +267,8 @@ export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
   const currentOpenCategory = currentOpenNativeFailureCategory(message);
   if (currentOpenCategory !== null) { return currentOpenCategory; }
+  const currentSymbolWriteCategory = currentSymbolWriteFailureCategory(message);
+  if (currentSymbolWriteCategory !== null) { return currentSymbolWriteCategory; }
   const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : undefined;
   if (configuredFontCategory !== undefined) { return configuredFontCategory; }
   const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : undefined;
