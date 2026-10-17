@@ -125,7 +125,7 @@ void test("restricted status separates historical metadata validation, offline c
   assert.match(facade["capabilityScope"], /Installed123000 passed the separate ordinary unused META-only forward-only route/u);
   assert.match(facade["capabilityScope"], /historical validation grants no current-invocation authority/u);
   assert.match(facade["capabilityScope"], /Ordinary metadata changes still reject all historical canvas/u);
-  assert.match(facade["capabilityScope"], /disposable single-canvas-segment profile has offline tests only/u);
+  assert.match(facade["capabilityScope"], /disposable canvas-segments profile has offline tests only/u);
   assert.match(facade["capabilityScope"], /Generic design writers remain disabled/u);
   const capabilities = upstream["capabilities"];
   assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "generic-design-routes" }));
@@ -136,9 +136,9 @@ void test("restricted status separates historical metadata validation, offline c
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
     phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
-    scope: "sealed-disposable-unused-meta-only-or-single-canvas-segment-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+    scope: "sealed-disposable-unused-meta-only-or-bounded-canvas-segments-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
-    singleCanvasSegmentValidation: "offline-regression-only",
+    canvasSegmentsValidation: "offline-regression-only",
     normalWritersEnabled: false, phaseEffectAcknowledgementsRequired: true, originalOwnerRequired: true }));
   const navigation = capabilities["navigation"];
   assert.ok(isRecord(navigation));

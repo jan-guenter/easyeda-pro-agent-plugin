@@ -18,7 +18,38 @@ It matches the exact document-cache candidate; actual cache-branch provenance
 is not claimed. Original process/Job termination and retirement completed,
 without explicit Save, Discard, replay or production-project access.
 
-## Candidate 143000: disposable drawn-symbol scope
+## Candidate 160000: multi-segment disposable replay
+
+Normal symbol creation can upload an initialized PART before a later drawing
+upload. One visible Save therefore does not imply single-segment history. The
+new disposable-only profile models several historical drawing segments within
+the pinned loader's first batch, at most 101 complete chunks including reserved
+forward/inverse uploads. Ordinary metadata editing remains META-only.
+
+Cached streams can interleave their records. The verifier checks a possible
+first-arrival order across those streams while requiring exact serialized lines,
+winning tickets, physical first tickets, body bytes and header values. It neither
+sorts the observation nor enumerates permutations. Raw-prefix variable ordering
+is limited to a canvas-free winning-header chunk or identical raw/cache prefixes;
+the original exact raw-history candidate remains separately valid. Each reserved
+metadata append must prove the canvas-free condition and a strictly newer clock
+window before dispatch.
+
+The new profile refuses imported headers, unstable atom types, lossy bodies,
+ambiguous latest headers and target-later SYMBOL cache fragments. The native
+cache groups all symbols together, so a preceding peer header could otherwise
+change the synthesized actor. These limits apply to complete raw history,
+including overwritten records and tombstones, not just the current canvas.
+Original owner, purpose, SQL, raw-copy/checkpoint and inverse guards remain.
+
+The replay model is source-reviewed against project-worker SHA
+`b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`.
+Offline tests and release results are recorded in AGENTS.md as they complete.
+There is no connected drawn-symbol result. Windows Computer Use initialization
+currently fails at the host's sandboxCwd check before executing JavaScript;
+EasyEDA was not launched or controlled during this source work.
+
+## Delivered 143000: original single-segment scope
 
 The new profile supports metadata validation for an unused symbol whose entire
 historical drawing content occupies one raw-history segment. It preserves
@@ -352,10 +383,10 @@ The inverse adoption correction passes 21 focused tests. Its real-storage
 regression reproduced the original error before the fix; changed disk or memory
 state still refuses before adoption intent or ownership transfer.
 
-1. Finish143000 release checks, GitHub CI and marketplace installation. Verify
+1. Finish the multi-segment release checks, GitHub CI and marketplace installation. Verify
    the installed files and offline catalog; then load it in a fresh Codex session.
    Never hotpatch or terminate the loaded facade to update it.
-2. Validate the new single-canvas-segment profile on an eligible disposable
+2. Validate the new bounded canvas-segments profile on an eligible disposable
    symbol after fresh installed-runtime admission, preserving the drawing through
    forward and inverse metadata edits. Do not replay101500 or123000, or revive
    older terminal attempts. No broader live campaign is required for this update.
@@ -365,9 +396,10 @@ state still refuses before adoption intent or ownership transfer.
    through a supported fixture-setup workflow; do not unlink existing components,
    rewrite raw history or treat this audit as creation authority.
 3. Extend ordinary drawn-symbol support only after that result is reviewed.
-   Multi-segment drawings, imported records and other rejected histories still
-   need separate cache-order/serialization models. Deleting geometry is not an
-   admission workaround.
+   Multi-segment support is currently disposable-only and offline-tested.
+   Imported records, more than 101 complete chunks and other rejected histories
+   still need separate cache-order/serialization models. Deleting geometry is
+   not an admission workaround.
 4. Implement referenced-symbol propagation separately, including dependent-page
    loading and its complete source and SQL effects. Unused-symbol evidence does
    not cover this capability.

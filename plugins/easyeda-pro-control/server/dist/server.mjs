@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "f10f3c3d6287e72e8fff0b9528baa49f105d7eebd794cbd65f557721141f41be";
+const __easyedaBundlePairId = "a12a0e09b5d10b8b3479633de257b219942e80bf990c1c9edd0760cbe1f2d041";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -40118,7 +40118,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_symbol_metadata",
       selector: "metadata-advance;forward-only-unused-meta-only-symbol",
       implementation: "native-task-equivalent",
-      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority; the separately offline-tested disposable single-canvas-segment profile does not broaden this ordinary route.",
+      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority; the separately offline-tested disposable bounded canvas-segments profile does not broaden this ordinary route.",
       source: ["current-symbol-operation.ts", "current-disposable-open-runtime.ts", "current-symbol-validation-runtime.ts", "current-symbol-startup-runtime.ts", "current-symbol-meta-only.ts", "current-symbol-write-budget.ts", "current-symbol-write-program.ts", "current-symbol-writer-runtime.ts", "current-symbol-verification-runtime.ts", "symbol-sql-comparator.ts"],
       tests: ["current-symbol-operation.test.ts", "current-symbol-validation-runtime.test.ts", "current-symbol-meta-only.test.ts", "current-symbol-write-budget.test.ts", "closed-symbol-disposable-mcp.test.ts"],
       documentTypes: [2],
@@ -72415,6 +72415,34 @@ function observeSingleCanvasAtom(scope6, atom, chunkIndex) {
     need16(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
   }
 }
+function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
+  if (scope6 === void 0) {
+    return;
+  }
+  const { types: types3 } = scope6.headers;
+  need16(!types3.has(atom.id) || types3.get(atom.id) === atom.type, "canvas-segments atom type changed");
+  types3.set(atom.id, atom.type);
+  if (!IGNORED.has(atom.type)) {
+    need16(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
+    let stream = scope6.streams.get(chunkIndex);
+    if (stream === void 0) {
+      stream = [];
+      scope6.streams.set(chunkIndex, stream);
+    }
+    stream.push(atom.id);
+  }
+}
+function observeCanvasSegmentsHeader(scope6, current4, edit, ticket2, chunkIndex, firstSymbolUuid, targetUuid) {
+  if (scope6 === void 0) {
+    return;
+  }
+  need16(firstSymbolUuid === targetUuid, "canvas-segments target follows a peer SYMBOL cache header");
+  if (number16(current4["updateTime"]) > scope6.headers.latestHeaderTime) {
+    scope6.latestHeaderChunkIndex = chunkIndex;
+  }
+  observeSingleCanvasHeader(scope6.headers, current4, ticket2);
+  scope6.rawHeader = applyHeader(current4, edit, ticket2, scope6.rawHeader);
+}
 async function prepareSavedSymbolProjection(input) {
   const descriptor10 = await prepareProjection(input, "raw");
   need16(descriptor10.profile === "private.saved-symbol-getstr-projection.v1", "raw preparation profile differs");
@@ -72430,6 +72458,13 @@ async function prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) {
   need16(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "single-canvas-segment editor version refused");
   const descriptor10 = await prepareProjection(input, "current-single-canvas-segment-cache");
   need16(descriptor10.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1", "single-canvas-segment preparation profile differs");
+  return descriptor10;
+}
+async function prepareCurrentCanvasSegmentsSavedSymbolProjection(input) {
+  need16(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "canvas-segments editor version refused");
+  need16(Array.isArray(input.chunks) && input.chunks.length <= 101, "canvas-segments exceeds the first 101-chunk loader batch");
+  const descriptor10 = await prepareProjection(input, "current-canvas-segments-cache");
+  need16(descriptor10.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1", "canvas-segments preparation profile differs");
   return descriptor10;
 }
 async function prepareProjection(input, strategy) {
@@ -72466,8 +72501,10 @@ async function prepareProjection(input, strategy) {
   const atoms = /* @__PURE__ */ new Map();
   let maximum2 = 0, metadataTicket = 0, selected3, steps = 0;
   const singleCanvasScope = strategy === "current-single-canvas-segment-cache" ? { types: /* @__PURE__ */ new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 } : void 0;
+  const canvasSegmentsScope = strategy === "current-canvas-segments-cache" ? { headers: { types: /* @__PURE__ */ new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 }, streams: /* @__PURE__ */ new Map() } : void 0;
   for (const [chunkIndex, chunk] of chunks.entries()) {
     let current4, documentCacheEdit, edit;
+    let firstSymbolUuid;
     let targetFragmentRecords = 0;
     const records2 = chunk.split("|\n");
     if (records2.at(-1) === "") {
@@ -72485,6 +72522,9 @@ async function prepareProjection(input, strategy) {
         edit = body3(parsed2.body);
       } else if (header["type"] === "DOCHEAD") {
         current4 = body3(parsed2.body);
+        if (current4["docType"] === "SYMBOL" && firstSymbolUuid === void 0) {
+          firstSymbolUuid = current4["uuid"];
+        }
         edit ??= {
           uuid: current4["uuid"],
           username: isRecord(current4["user"]) ? current4["user"]["username"] : void 0,
@@ -72494,6 +72534,7 @@ async function prepareProjection(input, strategy) {
         if (current4["uuid"] === targetUuid) {
           targetFragmentRecords += 1;
           observeSingleCanvasHeader(singleCanvasScope, current4, header["ticket"]);
+          observeCanvasSegmentsHeader(canvasSegmentsScope, current4, edit, header["ticket"], chunkIndex, firstSymbolUuid, targetUuid);
           documentCacheEdit ??= {
             uuid: current4["uuid"],
             username: isRecord(current4["user"]) ? current4["user"]["username"] : void 0,
@@ -72512,6 +72553,7 @@ async function prepareProjection(input, strategy) {
         need16(/^[a-f0-9]{16}$/u.test(client), "record client refused");
         const atom = { id: id9, type: type2, ticket: ticket2, client, raw: raw.slice(raw.indexOf("||") + 2) };
         observeSingleCanvasAtom(singleCanvasScope, atom, chunkIndex);
+        observeCanvasSegmentsAtom(canvasSegmentsScope, atom, chunkIndex);
         if (applyAtom(atoms, atom)) {
           metadataTicket = Math.max(metadataTicket, ticket2);
         }
@@ -72522,6 +72564,7 @@ async function prepareProjection(input, strategy) {
       }
     }
     need16(singleCanvasScope === void 0 || targetFragmentRecords !== 1, "lone target DOCHEAD is omitted from the document cache");
+    need16(canvasSegmentsScope === void 0 || targetFragmentRecords !== 1, "canvas-segments refuses a lone target DOCHEAD cache fragment");
   }
   need16(maximum2 === maximumTicket && selected3 !== void 0, "global ticket/header differs from the prepared edit");
   const meta3 = atoms.get("META")?.last;
@@ -72532,10 +72575,15 @@ async function prepareProjection(input, strategy) {
   need16(deleted === void 0 || body3(JSON.parse(deleted.raw))["isDelete"] === false, "deleted target refused");
   const metadata9 = { title: value2["title"], description: value2["description"], tags: value2["tags"], docType: value2["docType"], source: value2["source"] };
   const canvas = [];
+  const idsByLine = /* @__PURE__ */ new Map();
   for (const chain2 of atoms.values()) {
     const atom = chain2.last;
     if (!IGNORED.has(atom.type)) {
-      canvas.push(line5(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain2.first.ticket ? void 0 : chain2.first.ticket));
+      const encoded = line5(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain2.first.ticket ? void 0 : chain2.first.ticket);
+      canvas.push(encoded);
+      if (canvasSegmentsScope !== void 0) {
+        idsByLine.set(encoded, atom.id);
+      }
     }
     steps += 1;
     if (steps % 128 === 0) {
@@ -72547,6 +72595,14 @@ async function prepareProjection(input, strategy) {
     need16(singleCanvasScope.canvasChunkIndex !== void 0 && canvas.length > 0, "single-canvas-segment requires historical canvas atoms");
     need16(
       singleCanvasScope.latestHeaderCount === 1 && singleCanvasScope.latestHeaderTicket === singleCanvasScope.maximumHeaderTicket,
+      "canvas header depends on segment arrival order"
+    );
+  }
+  if (canvasSegmentsScope !== void 0) {
+    const { headers } = canvasSegmentsScope;
+    need16(canvasSegmentsScope.streams.size > 0 && canvas.length > 0, "canvas-segments requires historical canvas atoms");
+    need16(
+      headers.latestHeaderCount === 1 && headers.latestHeaderTicket === headers.maximumHeaderTicket,
       "canvas header depends on segment arrival order"
     );
   }
@@ -72562,6 +72618,20 @@ async function prepareProjection(input, strategy) {
   let descriptor10;
   if (strategy === "raw") {
     descriptor10 = Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common3 });
+  } else if (canvasSegmentsScope !== void 0) {
+    const { latestHeaderChunkIndex, rawHeader } = canvasSegmentsScope;
+    need16(latestHeaderChunkIndex !== void 0 && rawHeader !== void 0, "canvas-segments selected header missing");
+    descriptor10 = Object.freeze({
+      profile: "private.current-canvas-segments-saved-symbol-getstr-projection.v1",
+      ...common3,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+      cacheBranchObserved: false,
+      canvasSegmentCount: canvasSegmentsScope.streams.size,
+      maximumTargetHeaderTime: canvasSegmentsScope.headers.latestHeaderTime,
+      rawPrefixOrderIndependent: !canvasSegmentsScope.streams.has(latestHeaderChunkIndex) || JSON.stringify(rawHeader.user) === JSON.stringify(selected3.user),
+      segmentOrderIndependent: false,
+      maximumConcurrentChunks: 101
+    });
   } else if (singleCanvasScope === void 0) {
     descriptor10 = Object.freeze({
       profile: "private.current-document-cache-saved-symbol-getstr-projection.v1",
@@ -72582,7 +72652,15 @@ async function prepareProjection(input, strategy) {
       segmentOrderIndependent: true
     });
   }
-  originals.set(descriptor10, { descriptor: descriptor10, header: selected3, metadata: metadata9, metadataTicket, currentEditVersion, canvas });
+  originals.set(descriptor10, {
+    descriptor: descriptor10,
+    header: selected3,
+    metadata: metadata9,
+    metadataTicket,
+    currentEditVersion,
+    canvas,
+    ...canvasSegmentsScope === void 0 ? {} : { canvasOrder: { streams: [...canvasSegmentsScope.streams.values()], idsByLine } }
+  });
   return descriptor10;
 }
 function expectedSavedSymbolContent(original2, currentWorkerClient) {
@@ -72638,17 +72716,86 @@ function verifyCurrentSavedSymbolProjectionAlternatives(raw, documentCache, obse
     cacheBranchObserved: false
   });
 }
-function verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(raw, documentCache, observation2) {
+function verifyCanvasFirstArrivalOrder(streams, ids2) {
+  const cursors = streams.map(() => 0), seen = /* @__PURE__ */ new Set(), waiting = /* @__PURE__ */ new Map();
+  function advance2(index) {
+    const stream = streams[index];
+    let cursor = cursors[index];
+    need16(stream !== void 0 && cursor !== void 0, "canvas stream cursor missing");
+    while (cursor < stream.length) {
+      const id9 = stream[cursor];
+      need16(id9 !== void 0, "canvas occurrence missing");
+      if (!seen.has(id9)) {
+        const indexes = waiting.get(id9);
+        if (indexes === void 0) {
+          waiting.set(id9, [index]);
+        } else {
+          indexes.push(index);
+        }
+        break;
+      }
+      cursor += 1;
+    }
+    cursors[index] = cursor;
+  }
+  for (const index of streams.keys()) {
+    advance2(index);
+  }
+  for (const id9 of ids2) {
+    const indexes = waiting.get(id9);
+    need16(!seen.has(id9) && indexes !== void 0, "canvas first-arrival order has no stream witness");
+    seen.add(id9);
+    waiting.delete(id9);
+    for (const index of indexes) {
+      advance2(index);
+    }
+  }
+  need16(streams.every((stream, index) => cursors[index] === stream.length), "canvas first-arrival order omits occurrences");
+}
+function verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(raw, documentCache, observation2) {
   const cached2 = originals.get(documentCache), retained = originals.get(raw);
   need16(
-    retained !== void 0 && cached2 !== void 0 && raw.profile === "private.saved-symbol-getstr-projection.v1" && documentCache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" && retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && cached2.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 && documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes && documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket && raw.canvasRecords > 0 && documentCache.canvasRecords === raw.canvasRecords,
-    "single-canvas-segment alternative has different complete history"
+    retained !== void 0 && cached2 !== void 0 && raw.profile === "private.saved-symbol-getstr-projection.v1" && documentCache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1" && retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && cached2.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 && documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes && documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket && raw.canvasRecords > 0 && documentCache.canvasRecords === raw.canvasRecords && cached2.canvasOrder !== void 0,
+    "canvas-segments alternative has different complete history"
   );
-  need16(isRecord(observation2) && typeof observation2["workerClient"] === "string" && typeof observation2["content"] === "string", "native observation shape/identity differs");
-  const matched = observation2["content"] === expectedSavedSymbolContent(raw, observation2["workerClient"]) ? raw : documentCache;
+  need16(isRecord(observation2) && observation2["profile"] === "private.saved-symbol-content-observation.v1" && observation2["targetUuid"] === raw.targetUuid && observation2["maximumTicket"] === raw.maximumTicket && typeof observation2["workerClient"] === "string" && typeof observation2["content"] === "string", "native observation shape/identity differs");
+  const content = observation2["content"], workerClient = observation2["workerClient"];
+  const cacheContent = expectedSavedSymbolContent(documentCache, workerClient), rawContent = expectedSavedSymbolContent(raw, workerClient);
+  if (content === rawContent) {
+    return Object.freeze({
+      ...verifySavedSymbolContent(raw, observation2),
+      matchedProjection: "complete-raw-history",
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+      cacheBranchObserved: false
+    });
+  }
+  need16(content.length <= Math.max(rawContent.length, cacheContent.length), "native saved content exceeds exact projection bound");
+  const records2 = content.split("|\n");
+  need16(records2.length === cached2.canvas.length + 3, "native saved content has different canvas membership");
+  const cachePrefix = cacheContent.split("|\n", 3).join("|\n"), prefix4 = records2.slice(0, 3).join("|\n");
+  const isCachePrefix = prefix4 === cachePrefix;
+  need16(
+    isCachePrefix || documentCache.rawPrefixOrderIndependent && prefix4 === rawContent.split("|\n", 3).join("|\n"),
+    "native saved header differs or constrains canvas arrival order"
+  );
+  const ids2 = records2.slice(3).map((record7) => {
+    const id9 = cached2.canvasOrder?.idsByLine.get(record7);
+    need16(id9 !== void 0, "native saved canvas line differs from complete raw history");
+    return id9;
+  });
+  verifyCanvasFirstArrivalOrder(cached2.canvasOrder.streams, ids2);
   return Object.freeze({
-    ...verifySavedSymbolContent(matched, observation2),
-    matchedProjection: matched === raw ? "complete-raw-history" : "current-single-canvas-segment-cache",
+    profile: "private.saved-symbol-content-relation.v1",
+    targetUuid: raw.targetUuid,
+    rawHistorySha256: raw.rawHistorySha256,
+    contentSha256: digest3(content),
+    contentBytes: Buffer.byteLength(content),
+    exactContent: true,
+    producerBindingVerified: false,
+    executionAuthorized: false,
+    completionProved: false,
+    firstArrivalOrderWitness: true,
+    matchedProjection: isCachePrefix ? "current-canvas-segments-cache" : "current-canvas-segments-raw-header",
     workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
     cacheBranchObserved: false
   });
@@ -95745,7 +95892,7 @@ var init_current_disposable_open = __esm({
       "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
       "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
-      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages. Complete history must be META-only or satisfy the separately bounded single-canvas-segment profile: every historical drawing occurrence in one segment, stable atom types, lossless bodies and a unique latest header with maximal target ticket. The canvas profile also requires strictly newer write windows and inverse clock headroom; it has offline tests, not connected validation. Native linked-sheet propagation and other historical canvas shapes remain unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Installed101500 passed the unused META-only disposable forward/inverse round trip; installed123000 separately passed the ordinary META-only forward lifecycle on a disposable fixture. The ordinary route remains META-only; generic design writers remain disabled.",
+      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages. Complete history must be META-only or satisfy the separately bounded canvas-segments profile: at most 101 complete history chunks including reserved writes, stable atom types, lossless bodies, unambiguous cache actors and a unique latest header with maximal target ticket. Saved canvas order must be attainable by the pinned concurrent replay, with byte-exact lines. The canvas profile also requires strictly newer write windows and inverse clock headroom; it has offline tests, not connected validation. Native linked-sheet propagation and other historical canvas shapes remain unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Installed101500 passed the unused META-only disposable forward/inverse round trip; installed123000 separately passed the ordinary META-only forward lifecycle on a disposable fixture. The ordinary route remains META-only; generic design writers remain disabled.",
       "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps."
     ];
   }
@@ -125047,13 +125194,14 @@ function sqlCapacity(before, branchUuid2, uploadBytes) {
 function prepareCurrentSymbolWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
   return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "meta-only");
 }
-function prepareCurrentSingleCanvasSegmentWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
-  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "single-canvas-segment");
+function prepareCurrentCanvasSegmentsWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "canvas-segments");
 }
 async function prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, strategy) {
   const chunks = [...decoded.chunks], desired = desiredSchema.parse(desiredInput);
   const startup2 = currentSymbolStartupExpectationSchema.parse(startupInput);
   const stages3 = restorationInput === void 0 ? [desired] : [desired, desiredSchema.parse(restorationInput)];
+  const prepareCanvas = strategy === "canvas-segments" ? prepareCurrentCanvasSegmentsSavedSymbolProjection : prepareCurrentSingleCanvasSegmentSavedSymbolProjection;
   const { history, maximumTicket } = decoded;
   need60(
     Number.isSafeInteger(history.historyRowCount) && history.historyRowCount > 0 && history.historyRowCount + stages3.length <= 64,
@@ -125067,8 +125215,8 @@ async function prepareWriteBudget(decoded, targetUuid, desiredInput, before, sta
     Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && !Object.is(maximumTicket, -0) && maximumTicket <= Number.MAX_SAFE_INTEGER - stages3.length - 1,
     "the written ticket and exported outer ticket must remain supported safe integers"
   );
-  if (strategy === "single-canvas-segment") {
-    const baseline2 = await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
+  if (strategy !== "meta-only") {
+    const baseline2 = await prepareCanvas({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
     const firstMaximum = CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages3.length - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1);
     need60(
       baseline2.maximumTargetHeaderTime < firstMaximum - CURRENT_SYMBOL_WRITE_WINDOW_MS,
@@ -125084,7 +125232,7 @@ async function prepareWriteBudget(decoded, targetUuid, desiredInput, before, sta
     const nextPaths = [];
     let stageUploadBytes = 0;
     for (const path5 of paths) {
-      const stamps = strategy === "single-canvas-segment" ? [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages3.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)] : [1, MAX_NATIVE_TIME];
+      const stamps = strategy === "meta-only" ? [1, MAX_NATIVE_TIME] : [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages3.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)];
       for (const stamp of stamps) {
         const upload = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ ...ACTOR, updateTime: stamp })}|
 ${JSON.stringify({ type: "DOCHEAD", ticket: ticket2 })}||${JSON.stringify({
@@ -125101,7 +125249,13 @@ ${JSON.stringify({ type: "META", ticket: ticket2, id: "META" })}||${JSON.stringi
         nextPaths.push(next);
         const input = { chunks: next, targetUuid, maximumTicket: ticket2, currentEditVersion: "3.2.206" };
         const raw = await prepareSavedSymbolProjection(input);
-        const cache = await (strategy === "single-canvas-segment" ? prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : prepareCurrentDocumentCacheSavedSymbolProjection(input));
+        const cache = await (strategy === "meta-only" ? prepareCurrentDocumentCacheSavedSymbolProjection(input) : prepareCanvas(input));
+        if (strategy === "canvas-segments") {
+          need60(
+            cache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1" && cache.rawPrefixOrderIndependent,
+            "appended metadata header must not constrain canvas replay order"
+          );
+        }
         for (const projection8 of [raw, cache]) {
           const content = expectedSavedSymbolContent(projection8, CLIENT);
           const bytes2 = Buffer.byteLength(content);
@@ -125116,7 +125270,7 @@ ${JSON.stringify({ type: "META", ticket: ticket2, id: "META" })}||${JSON.stringi
     paths = nextPaths;
   }
   return Object.freeze({
-    profile: strategy === "single-canvas-segment" ? "private.current-single-canvas-segment-write-budget.v1" : "private.current-symbol-write-budget.v1",
+    profile: BUDGET_PROFILES[strategy],
     targetUuid,
     beforeMaximumTicket: maximumTicket,
     reservedWrites: stages3.length,
@@ -125133,7 +125287,7 @@ ${JSON.stringify({ type: "META", ticket: ticket2, id: "META" })}||${JSON.stringi
     executionAuthorized: false
   });
 }
-var desiredSchema, MAX_NATIVE_TIME, CLIENT, ACTOR, SQL_INTEGER;
+var desiredSchema, MAX_NATIVE_TIME, BUDGET_PROFILES, CLIENT, ACTOR, SQL_INTEGER;
 var init_current_symbol_write_budget = __esm({
   "server/src/current-symbol-write-budget.ts"() {
     init_zod();
@@ -125151,6 +125305,11 @@ var init_current_symbol_write_budget = __esm({
       source: external_exports.string().max(4096)
     }).strict();
     MAX_NATIVE_TIME = 864e13;
+    BUDGET_PROFILES = Object.freeze({
+      "meta-only": "private.current-symbol-write-budget.v1",
+      "single-canvas-segment": "private.current-single-canvas-segment-write-budget.v1",
+      "canvas-segments": "private.current-canvas-segments-write-budget.v1"
+    });
     CLIENT = "0".repeat(16);
     ACTOR = Object.freeze({
       uuid: "0".repeat(32),
@@ -125213,13 +125372,13 @@ async function assertBaseline(inventory2, binding3, target6, expected3, desired,
     throw new Error("Current symbol metadata refuses every historical target canvas atom, including tombstones.");
   }
   const input = { chunks: decoded.chunks, targetUuid: selected3.symbolUuid, maximumTicket: decoded.maximumTicket, currentEditVersion: "3.2.206" };
-  const projection8 = hasCanvas ? await prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : await prepareCurrentDocumentCacheSavedSymbolProjection(input);
-  const writeBudget = hasCanvas ? await prepareCurrentSingleCanvasSegmentWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration) : await prepareCurrentSymbolWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration);
+  const projection8 = hasCanvas ? await prepareCurrentCanvasSegmentsSavedSymbolProjection(input) : await prepareCurrentDocumentCacheSavedSymbolProjection(input);
+  const writeBudget = hasCanvas ? await prepareCurrentCanvasSegmentsWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration) : await prepareCurrentSymbolWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration);
   need61(readerCompletion(inventory2) === completion2 && canonicalJson(expected3) === expectedText && canonicalJson({ copy: binding3.copy, checkpoint: binding3.checkpoint }) === bindingText);
-  const canvasClock = projection8.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" ? Object.freeze({ maximumTargetHeaderTime: projection8.maximumTargetHeaderTime, remainingWrites: restoration === void 0 ? 1 : 2 }) : void 0;
+  const canvasClock = projection8.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1" ? Object.freeze({ maximumTargetHeaderTime: projection8.maximumTargetHeaderTime, remainingWrites: restoration === void 0 ? 1 : 2 }) : void 0;
   need61(hasCanvas ? canvasClock !== void 0 && projection8.canvasRecords > 0 : projection8.canvasRecords === 0);
   const evidence2 = Object.freeze({
-    profile: hasCanvas ? "private.current-disposable-single-canvas-segment-baseline.v1" : "private.current-symbol-meta-only-baseline.v1",
+    profile: hasCanvas ? "private.current-disposable-canvas-segments-baseline.v1" : "private.current-symbol-meta-only-baseline.v1",
     targetUuid: selected3.symbolUuid,
     beforeSqlSha256: inventory2.logicalSha256,
     rawCopySha256,
@@ -126410,7 +126569,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     targetUuid: metadataPlan2.targetUuid,
     maximumTicket: expectedTicket,
     currentEditVersion: expectedDocumentEditVersion
-  }) : await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({
+  }) : await prepareCurrentCanvasSegmentsSavedSymbolProjection({
     chunks: decoded.decoded.chunks,
     targetUuid: metadataPlan2.targetUuid,
     maximumTicket: expectedTicket,
@@ -126458,8 +126617,8 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
 function verifyCurrentSavedSymbolContent(value2, engine2, continuation, observation2) {
   const original2 = assertCurrentSavedSymbolSource(value2, engine2, continuation);
   const cache = original2.documentCacheProjection;
-  need64(cache.profile !== "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" || original2.source.original.source.purpose === "disposable-validation");
-  const relation = cache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" ? verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(original2.projection, cache, observation2) : verifyCurrentSavedSymbolProjectionAlternatives(original2.projection, cache, observation2);
+  need64(cache.profile !== "private.current-canvas-segments-saved-symbol-getstr-projection.v1" || original2.source.original.source.purpose === "disposable-validation");
+  const relation = cache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1" ? verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(original2.projection, cache, observation2) : verifyCurrentSavedSymbolProjectionAlternatives(original2.projection, cache, observation2);
   return Object.freeze({
     ...relation,
     sourceSha256: value2.sourceSha256,
@@ -134963,7 +135122,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. The separate disposable single-canvas-segment profile has offline tests only. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. The separate disposable canvas-segments profile has offline tests only. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -134988,7 +135147,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary metadata changes still reject all historical canvas, including tombstones. A separate disposable single-canvas-segment profile has offline tests only. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
+            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary metadata changes still reject all historical canvas, including tombstones. A separate disposable canvas-segments profile has offline tests only. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -135030,11 +135189,11 @@ var init_src = __esm({
             disposableValidation: {
               tool: "easyeda_control_project_open",
               actions: "validation-*",
-              scope: "sealed-disposable-unused-meta-only-or-single-canvas-segment-symbol-name-description-forward-inverse",
+              scope: "sealed-disposable-unused-meta-only-or-bounded-canvas-segments-symbol-name-description-forward-inverse",
               designMutation: true,
               connectedValidation: false,
               sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
-              singleCanvasSegmentValidation: "offline-regression-only",
+              canvasSegmentsValidation: "offline-regression-only",
               normalWritersEnabled: false,
               phaseEffectAcknowledgementsRequired: true,
               originalOwnerRequired: true
@@ -135523,7 +135682,7 @@ var init_src = __esm({
       "easyeda_control_project_open",
       {
         title: "Open and validate one disposable EasyEDA project",
-        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets refuse before mutation. Complete history must be META-only or meet the separate single-canvas-segment profile: all canvas occurrences, including tombstones, in one history chunk; no cross-type identities or segment-order-dependent headers. Fresh document windows must follow every target header and reserve a later inverse window. This canvas profile has offline tests only, not connected validation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The META-only lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate META-only project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
+        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets refuse before mutation. Complete history must be META-only or meet the separate bounded canvas-segments profile: at most 101 complete history chunks including reserved writes, stable atom types, lossless bodies, unambiguous cache actors and a unique latest/max-ticket header. Saved canvas order must be attainable by the pinned concurrent replay, with every output line byte-exact. Fresh document windows must follow every target header and reserve a later inverse window. This canvas profile has offline tests only, not connected validation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The META-only lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate META-only project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },

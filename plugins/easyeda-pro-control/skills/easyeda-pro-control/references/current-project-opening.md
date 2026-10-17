@@ -315,13 +315,17 @@ Do not unlink components, delete sheets or weaken cache checks to pass. Choose
 an existing unused disposable symbol and prepare it from the current checkpoint.
 
 Complete raw target history must satisfy either the META-only profile or the
-new disposable-only single-canvas-segment profile. The latter requires every
-historical drawing occurrence, including tombstones, to lie in one history
-segment; stable atom types; exact lossless bodies; and a unique latest DOCHEAD
-whose ticket is maximal for the target. Lone-DOCHEAD cache fragments, imported
-atom headers, unsupported normalized keys and multi-segment drawings refuse.
-A currently empty symbol is not sufficient. Do not delete geometry to make a
-target eligible. This new profile is offline-tested, not connected-validated.
+disposable-only canvas-segments profile. The latter admits drawing occurrences
+across several chunks, including updates and tombstones, within the pinned
+loader's first batch of at most 101 complete history chunks. The budget reserves
+space in that batch for both writes. Atom types must stay stable, bodies must be
+lossless, and the unique latest DOCHEAD must also have the maximal target ticket.
+Lone-DOCHEAD cache fragments, imported atom headers, unsupported normalized keys
+and ambiguous cache actors refuse. In each chunk containing the target, its
+header must precede other SYMBOL headers so the cache actor is unambiguous.
+A currently empty symbol is not sufficient. Do not delete geometry, compact
+history or unlink components to make a target eligible. This broader profile
+has offline tests only, not a connected drawn-symbol result.
 
 Its original startup owner retains the maximum target-header time. Each actual
 write window must be strictly newer, and the forward write reserves a complete
@@ -357,9 +361,15 @@ For a current META-only symbol, the content verifier derives exact raw-history
 and document-cache replay candidates from the complete preserved history.
 Native cache replay omits EDIT_HEAD; it can therefore synthesize the outer user
 from DOCHEAD. A match never ignores fields or proves the actual loading branch.
-The persisted SQL actor remains separately checked. The disposable single-canvas
-profile has a separate exact candidate and preserves raw drawing bodies and
-insertion order; a matching candidate still does not prove the loading branch.
+The persisted SQL actor remains separately checked. The canvas-segments profile
+checks a separate exact replay relation. Each saved drawing line must match its
+derived bytes, and the complete line order must be possible when the pinned
+loader interleaves each chunk's ordered records. It does not sort or normalize
+the observed output. A raw-history header with variable canvas order is admitted
+only when the winning header's chunk has no target canvas or both header
+alternatives are identical. Each newly appended metadata-only write proves that
+condition before dispatch. A matching result still does not prove which native
+loading branch actually ran.
 Only that fully verified result can supply the inverse. The inverse derives
 its patch from the initial metadata and its baseline from the actual verified
 post-edit snapshot; it obtains fresh clock evidence and repeats the same write

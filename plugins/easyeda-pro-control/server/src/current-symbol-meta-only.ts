@@ -3,9 +3,9 @@ import { canonicalJson } from "./core.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import { parseNativeRecords } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
-import { prepareCurrentSingleCanvasSegmentWriteBudget, prepareCurrentSymbolWriteBudget } from "./current-symbol-write-budget.ts";
+import { prepareCurrentCanvasSegmentsWriteBudget, prepareCurrentSymbolWriteBudget } from "./current-symbol-write-budget.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
-import { prepareCurrentDocumentCacheSavedSymbolProjection, prepareCurrentSingleCanvasSegmentSavedSymbolProjection } from "./saved-symbol-projection.ts";
+import { prepareCurrentCanvasSegmentsSavedSymbolProjection, prepareCurrentDocumentCacheSavedSymbolProjection } from "./saved-symbol-projection.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { decodeCurrentSymbolPreEditHistory } from "./symbol-sql-comparator.ts";
@@ -99,16 +99,16 @@ async function assertBaseline(inventory: Inventory, binding: BaselineBinding, ta
     throw new Error("Current symbol metadata refuses every historical target canvas atom, including tombstones.");
   }
   const input = { chunks: decoded.chunks, targetUuid: selected.symbolUuid, maximumTicket: decoded.maximumTicket, currentEditVersion: "3.2.206" };
-  const projection = hasCanvas ? await prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input)
+  const projection = hasCanvas ? await prepareCurrentCanvasSegmentsSavedSymbolProjection(input)
     : await prepareCurrentDocumentCacheSavedSymbolProjection(input);
-  const writeBudget = hasCanvas ? await prepareCurrentSingleCanvasSegmentWriteBudget(decoded, selected.symbolUuid, desired, inventory, startup, restoration)
+  const writeBudget = hasCanvas ? await prepareCurrentCanvasSegmentsWriteBudget(decoded, selected.symbolUuid, desired, inventory, startup, restoration)
     : await prepareCurrentSymbolWriteBudget(decoded, selected.symbolUuid, desired, inventory, startup, restoration);
   need(readerCompletion(inventory) === completion && canonicalJson(expected) === expectedText &&
     canonicalJson({ copy: binding.copy, checkpoint: binding.checkpoint }) === bindingText);
-  const canvasClock = projection.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1"
+  const canvasClock = projection.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1"
     ? Object.freeze({ maximumTargetHeaderTime: projection.maximumTargetHeaderTime, remainingWrites: restoration === undefined ? 1 as const : 2 as const }) : undefined;
   need(hasCanvas ? canvasClock !== undefined && projection.canvasRecords > 0 : projection.canvasRecords === 0);
-  const evidence = Object.freeze({ profile: hasCanvas ? "private.current-disposable-single-canvas-segment-baseline.v1" : "private.current-symbol-meta-only-baseline.v1", targetUuid: selected.symbolUuid,
+  const evidence = Object.freeze({ profile: hasCanvas ? "private.current-disposable-canvas-segments-baseline.v1" : "private.current-symbol-meta-only-baseline.v1", targetUuid: selected.symbolUuid,
     beforeSqlSha256: inventory.logicalSha256, rawCopySha256, checkpointSha256, historySemanticSha256: history.semanticSha256,
     rawHistorySha256: projection.rawHistorySha256, rawHistoryBytes: projection.rawHistoryBytes,
     canvasRecords: projection.canvasRecords, metadataBookkeepingOnly: !hasCanvas, writeBudget, cacheBranchObserved: false, executionAuthorized: false,
