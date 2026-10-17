@@ -37,8 +37,11 @@ interface Original {
   readonly source: CurrentProjectOnlySymbolGenerationSource; readonly reference: OriginalCurrentAgedSqlReference;
   readonly renderer: CurrentAgedSqlClockControls;
   readonly before: IssuedWindowsClockObservation; readonly after: IssuedWindowsClockObservation;
+  readonly historical: Readonly<{ beforeText: string; afterText: string; afterClock: ObservedClock;
+    ownerBindingText: string; provenanceText: string }>;
   readonly text: string;
 }
+type ObservedClock = Exclude<IssuedWindowsClockObservation["clock"], { status: "unavailable" }>;
 const issued = new WeakMap<object, Original>();
 const attempts = new WeakSet<CurrentProjectOnlySymbolGeneration>();
 interface Collection {
@@ -70,15 +73,19 @@ function current(value: unknown, engine: EasyedaControlEngine, generation: Curre
   const scope = engine.upstream.currentAuthenticatedBridgeDispatchBinding?.();
   need(scope !== undefined && assertCurrentProjectOnlySymbolGeneration(generation, engine, canonicalJson(scope)) === original.source);
   need(assertOriginalCurrentAgedSqlReference(original.reference, engine, original.source.baseline) === original.reference);
-  assertCurrentIssuedWindowsClockObservation(original.before); assertCurrentIssuedWindowsClockObservation(original.after);
+  need(canonicalJson(original.before) === original.historical.beforeText && canonicalJson(original.after) === original.historical.afterText);
   return original;
 }
-function rawClock(token: IssuedWindowsClockObservation): Exclude<IssuedWindowsClockObservation["clock"], { status: "unavailable" }> {
+function rawClock(token: IssuedWindowsClockObservation): ObservedClock {
   need(assertCurrentIssuedWindowsClockObservation(token) === token && token.phase === "owned-observation" && token.clock.status === "observed" &&
     token.clock.tzAbsentBefore && token.clock.tzAbsentAfter &&
     BigInt(token.clock.before.utcAfterTicks) <= BigInt(token.clock.after.utcBeforeTicks) &&
     BigInt(token.clock.before.qpcAfter) <= BigInt(token.clock.after.qpcBefore));
   return token.clock;
+}
+function clockProvenance(token: IssuedWindowsClockObservation): string {
+  return canonicalJson({ helperSourceSha256: token.helperSourceSha256, executionScopeSha256: token.executionScopeSha256,
+    jobId: token.base["jobId"], helperInstance: token.base["helperInstance"], captureBindingSha256: token.base["captureBindingSha256"] });
 }
 
 /** A new exact dispatch lease can collect this read, but cannot adopt an old
@@ -163,13 +170,20 @@ export async function collectCurrentAgedSqlClock(engine: EasyedaControlEngine, g
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot); unchanged();
   await readExactUtf8Artifact(artifact); unchanged();
   await revalidateCurrentProjectOnlySymbolGeneration(generation, engine, scopeText); unchanged();
-  rawClock(before); rawClock(after);
+  rawClock(before); const finalClock = rawClock(after);
+  need(clockProvenance(before) === clockProvenance(after));
+  // These endpoints prove a completed historical parser comparison. Later
+  // Capture/release work must invalidate their live token authority, not erase
+  // The observed values. Seal only after all original live checks succeed.
+  const historical = Object.freeze({ beforeText: canonicalJson(before), afterText: canonicalJson(after),
+    afterClock: Object.freeze({ ...finalClock, before: Object.freeze({ ...finalClock.before }), after: Object.freeze({ ...finalClock.after }) }),
+    ownerBindingText: canonicalJson(after.ownerBinding), provenanceText: clockProvenance(after) });
   const result: OriginalCurrentAgedSqlClock = Object.freeze({ profile: "private.original-current-aged-sql-clock.v1", operationId: generation.operationId,
     historyUuid: reference.request.historyUuid, createdAtLiteral: reference.request.createdAtLiteral, parserSource: CURRENT_AGED_SQL_DATE_PARSER_SOURCE,
     rendererSha256: sha256Json(renderer), referenceSha256: sha256Json(reference), intentArtifact: Object.freeze(intent), resultArtifact: Object.freeze(artifact),
     originalReferenceAndRendererRetained: true, currentSourceProfileChecked: true,
     sourceFreshnessVerified: false, startupQualified: false, producerBindingVerified: false, executionAuthorized: false });
-  issued.set(result, { engine, generation, source, reference, renderer, before, after, text: canonicalJson(result) }); return result;
+  issued.set(result, Object.freeze({ engine, generation, source, reference, renderer, before, after, historical, text: canonicalJson(result) })); return result;
   } catch (error) {
     collection.failureObserved = true;
     if (collection.intentArtifact !== undefined && !collection.resultPublicationAttempted) {
@@ -193,9 +207,10 @@ export function qualifyCurrentAgedSqlHead(value: OriginalCurrentAgedSqlClock, en
     createdAtLiteral: string; nativeParsedLocalMs: number; nativeTimezoneOffsetMinutes: number;
   }> {
   const original = current(value, engine, generation);
-  const after = rawClock(original.after), clock = rawClock(backendStart);
+  const after = original.historical.afterClock, clock = rawClock(backendStart);
   need(backendStart !== original.before && backendStart !== original.after &&
-    canonicalJson(backendStart.ownerBinding) === canonicalJson(original.after.ownerBinding) &&
+    canonicalJson(backendStart.ownerBinding) === original.historical.ownerBindingText &&
+    clockProvenance(backendStart) === original.historical.provenanceText &&
     clock.before.zoneRulesSha256 === after.after.zoneRulesSha256 && clock.before.localOffsetMinutes === after.after.localOffsetMinutes &&
     clock.before.qpcFrequency === after.after.qpcFrequency && BigInt(clock.before.utcBeforeTicks) >= BigInt(after.after.utcAfterTicks) &&
     BigInt(clock.before.qpcBefore) >= BigInt(after.after.qpcAfter));

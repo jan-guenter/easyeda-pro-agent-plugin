@@ -1,21 +1,27 @@
 /* oxlint-disable import/max-dependencies -- Focused cases reuse real managed journals/checkpoints/SQL and existing closure/startup fixtures, without a new injection harness. */
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readFile, rename, writeFile } from "node:fs/promises";
+import childProcess from "node:child_process";
+import { chmod, mkdir, mkdtemp, readFile, rename, stat, utimes, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
+import { performance } from "node:perf_hooks";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
+import type { TestContext } from "node:test";
 import { controlDataDirectory, operationPath, writePhaseArtifact } from "../src/artifacts.ts";
 import { createCheckpoint } from "../src/checkpoint.ts";
 import { copyClosedProjectBytes } from "../src/closed-file-copy.ts";
 import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { abandonClosedSymbolBeforeNavigation, inspectClosedSymbolAbandonment } from "../src/closed-symbol-abandonment.ts";
+import { inspectHistoricalAbandonmentSql } from "../src/closed-symbol-abandonment-cache.ts";
 import { abandonClosedSymbolBaselineBeforeNavigation, inspectClosedSymbolBaselineAbandonment } from "../src/closed-symbol-baseline-abandonment.ts";
-import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
+import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import type { AppendInput, ClosedJournal, ClosedSymbolPlan, Generation, LaunchGeneration } from "../src/closed-symbol-journal.ts";
 import { WITNESS_NATIVE_PINS_SHA256 } from "../src/closed-symbol-native-profile.ts";
 import { buildStartupProgram } from "../src/closed-symbol-startup-program.ts";
 import { VALIDATION_ACTION_ID, claimClosedSymbolValidationTarget } from "../src/closed-symbol-target-claim.ts";
-import { newOperationId, sha256Json, sha256Text } from "../src/core.ts";
+import { isRecord, newOperationId, sha256Json, sha256Text } from "../src/core.ts";
+import { SQLITE_INVENTORY_PROGRAM } from "../src/sqlite-inventory-program.ts";
 import { syntheticSqlRoot, syntheticSqlRuntime } from "./helpers/sqlite-inventory-fixture.ts";
 import { mintSyntheticClosedSessionProof } from "./helpers/windows-closed-session-fixture.ts";
 import { startupFixture } from "./helpers/closed-symbol-startup-browser-fixture.ts";
@@ -94,6 +100,109 @@ async function fixture(rawReturn: unknown = rejection, baseline = false, success
 function retainedBytes(value: Awaited<ReturnType<typeof fixture>>): Promise<Buffer[]> {
   return Promise.all([value.journal.journalPath, value.claimPath, ...value.journal.artifacts.map(item => item.path)].map(path => readFile(path)));
 }
+
+async function withSqlCount(context: TestContext, body: (count: () => number) => Promise<void>): Promise<void> {
+  const original = childProcess.spawn;
+  let calls = 0;
+  const interception = context.mock.method(childProcess, "spawn", (...args: Parameters<typeof childProcess.spawn>) => {
+    if (args[1]?.includes(SQLITE_INVENTORY_PROGRAM)) { calls += 1; }
+    return original(...args);
+  });
+  syncBuiltinESMExports();
+  try { await body(() => calls); }
+  finally { interception.mock.restore(); syncBuiltinESMExports(); }
+}
+function baselinePaths(value: Awaited<ReturnType<typeof fixture>>): Promise<{ raw: string; checkpoint: string; loaded: Awaited<ReturnType<typeof loadClosedSymbolJournal>>;
+  checkpointValue: Record<string, unknown> }> {
+  return loadClosedSymbolJournal(value.journal.operationId).then(loaded => {
+    const first = loaded.events[8]?.data, second = loaded.events[9]?.data;
+    assert.ok(isRecord(first) && isRecord(second));
+    const checkpointValue = first["checkpoint"], copy = second["copyReceipt"];
+    assert.ok(isRecord(checkpointValue) && isRecord(copy));
+    assert.ok(typeof checkpointValue["checkpoint"] === "string" && typeof copy["artifact"] === "string");
+    return { raw: copy["artifact"], checkpoint: checkpointValue["checkpoint"], loaded, checkpointValue };
+  });
+}
+
+void test("historical SQL reuse retains four residents without evicting scan peers or exposing inventory authority", async context => {
+  const values: Awaited<ReturnType<typeof fixture>>[] = [];
+  for (let index = 0; index < 5; index += 1) { values.push(await fixture()); }
+  await withSqlCount(context, async count => {
+    for (const [index, value] of values.entries()) {
+      const before = count(), result = await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+      assert.equal(result.authorityRestored, false); assert.equal(result.executionAuthorized, false);
+      // The fifth cold result is not retained; publication's final inspection
+      // Performs both complete readers again instead of evicting a scan peer.
+      assert.equal(count() - before, index < 4 ? 2 : 4);
+    }
+    for (const [index, value] of values.entries()) {
+      const before = count();
+      const result = await inspectClosedSymbolAbandonment(value.journal.operationId);
+      assert.equal(result?.classification, "historical-abandonment-verified");
+      assert.equal(count() - before, index < 4 ? 0 : 2);
+    }
+    const first = values[0]; assert.ok(first);
+    const before = count(); await inspectClosedSymbolAbandonment(first.journal.operationId); assert.equal(count(), before);
+  });
+});
+
+void test("warm historical SQL reuse rejects changed bytes at the same size and restored mtime, then recomputes after restoration", async context => {
+  const time = performance.now() + 600_001;
+  context.mock.method(performance, "now", () => time);
+  const value = await fixture(), { checkpoint } = await baselinePaths(value);
+  await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+  const before = await stat(checkpoint), bytes = await readFile(checkpoint);
+  const changed = Buffer.from(bytes); changed[changed.length - 1] = ((changed.at(-1) ?? 0) + 1) % 256;
+  await withSqlCount(context, async count => {
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 0);
+    await writeFile(checkpoint, changed); await utimes(checkpoint, before.atime, before.mtime);
+    await assert.rejects(inspectClosedSymbolAbandonment(value.journal.operationId), /bytes changed/u); assert.equal(count(), 0);
+    await writeFile(checkpoint, bytes); await utimes(checkpoint, before.atime, before.mtime);
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 2);
+  });
+});
+
+void test("warm historical SQL reuse checks all sidecars on both retained databases and invalidates failures", async context => {
+  const time = performance.now() + 1_200_002;
+  context.mock.method(performance, "now", () => time);
+  const value = await fixture();
+  const paths = await baselinePaths(value);
+  await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+  await withSqlCount(context, async count => {
+    for (const path of [paths.raw, paths.checkpoint]) {
+      for (const suffix of ["-wal", "-shm", "-journal"]) {
+        const before = count(), sidecar = `${path}${suffix}`;
+        await writeFile(sidecar, "synthetic sidecar", { flag: "wx", mode: 0o600 });
+        await assert.rejects(inspectClosedSymbolAbandonment(value.journal.operationId), /sidecar/u); assert.equal(count(), before);
+        await rename(sidecar, `${sidecar}.retained`);
+        await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), before + 2);
+      }
+    }
+  });
+});
+
+void test("historical SQL reuse does not cache runtime admission and expires pure digests", async context => {
+  let clockReads = 0, crossExpiryAt = 0;
+  let time = performance.now() + 1_800_003;
+  context.mock.method(performance, "now", () => {
+    clockReads += 1;
+    if (clockReads === crossExpiryAt) { time += 600_001; }
+    return time;
+  });
+  const value = await fixture(), { checkpointValue, loaded } = await baselinePaths(value);
+  await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+  const runtime = await syntheticSqlRuntime();
+  await assert.rejects(inspectHistoricalAbandonmentSql(loaded, checkpointValue, { ...runtime, nodeSha256: "0".repeat(64) }));
+  await withSqlCount(context, async count => {
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 2);
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 2);
+    time += 600_001;
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 4);
+    crossExpiryAt = clockReads + 2;
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 4);
+    await inspectClosedSymbolAbandonment(value.journal.operationId); assert.equal(count(), 6);
+  });
+});
 
 void test("absent sidecar requires no journal or SQL fixture", async () => {
   assert.equal(await inspectClosedSymbolAbandonment("easyeda-absent-abandonment-0001"), undefined);

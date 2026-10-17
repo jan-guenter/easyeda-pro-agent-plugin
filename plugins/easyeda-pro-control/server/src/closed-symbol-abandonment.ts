@@ -7,12 +7,11 @@ import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, operationPath, publishManagedAttachmentExclusive, readArtifact, readExactUtf8Artifact } from "./artifacts.ts";
 import { verifyCheckpoint } from "./checkpoint.ts";
 import { loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
-import { inspectRecordedClosedCopy } from "./closed-symbol-recorded-copy.ts";
+import { inspectHistoricalAbandonmentSql } from "./closed-symbol-abandonment-cache.ts";
 import { buildStartupProgram, validateStartupResult } from "./closed-symbol-startup-program.ts";
 import { VALIDATION_ACTION_ID } from "./closed-symbol-target-claim.ts";
 import { canonicalJson, extractToolPayload, isErrnoException, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
-import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 
 const PROFILE = "easyeda-pro-control.closed-symbol-abandonment.v1";
 const MAX_BYTES = 65_536;
@@ -129,23 +128,13 @@ async function baseline(loaded: Prefix): Promise<{ checkpoint: Record<string, un
   const { receiptSha256, ...receiptBody } = checkpoint;
   need(receiptSha256 === sha256Json(receiptBody), "Closed-symbol abandonment baseline receipt seal differs.");
   const runtime = await currentProcessSqlRuntime();
-  const recorded = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "baseline-copy", runtime });
-  const inventory = recorded.inventory;
-  const completion = readerCompletion(inventory);
-  need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
-    checkpoint["sourceSha256"] === inventory.checkpointSha256 && checkpoint["sourceDumpSha256"] === checkpoint["checkpointDumpSha256"],
-    "Closed-symbol abandonment complete baseline proof differs.");
   // VACUUM can change schema_version and rowids, so its complete inventory is
   // Validated against its own digest, not equated to the raw-copy inventory.
   // Publication proves current raw source bytes equal the original raw copy
   // And separately verifies the complete checkpoint dump. Historical scans
   // Recheck both retained databases without reopening the current source.
-  const vacuum = await readExactSqlInventory({ checkpointPath, expectedSha256: hash.parse(checkpoint["checkpointSha256"]), runtime });
-  const vacuumCompletion = readerCompletion(vacuum);
-  need(vacuumCompletion.observedChildClose && vacuumCompletion.exitCode === 0 && vacuumCompletion.exitSignal === null,
-    "Closed-symbol abandonment retained checkpoint SQL reader did not finish.");
-  return { checkpoint, checkpointReceipt: retained.artifact, sourceSha256: inventory.checkpointSha256,
-    schemaSha256: inventory.schemaSha256, logicalSha256: inventory.logicalSha256 };
+  const sql = await inspectHistoricalAbandonmentSql(loaded, checkpoint, runtime);
+  return { checkpoint, checkpointReceipt: retained.artifact, ...sql };
 }
 
 function assertVerification(value: unknown, retained: Awaited<ReturnType<typeof baseline>>): z.infer<typeof verification> {

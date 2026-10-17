@@ -47,6 +47,18 @@ termination and a new authenticated contained session are required, followed by
 original-journal reconciliation. Restoring a database is a separate destructive
 action needing exact closed-file scope, authority, backup and independent proof.
 
+## Historical evidence performance
+
+Repeated admission can spend substantial time parsing the same historical SQL
+snapshots. Reuse only deterministic digest results whose complete input bytes,
+paths and file identities are freshly checked on each call. Keep journal,
+claim, sidecar and pinned-reader checks outside that reuse decision. Never cache
+process ownership, bridge admission, quarantine clearance or writer authority.
+Bound memory retention; expiry of a pure digest entry is a reason to evict or
+recompute it, not evidence that a freshly verified file became unsafe. Test a
+warm hit against changed bytes and sidecars, and measure connected latency
+separately before claiming a speedup.
+
 ## Process-owning helper tests
 
 For an adapter that launches a native helper, distinguish the transport child's
@@ -115,6 +127,14 @@ already implements the method. Current clock sampling once passed its leaf
 tests but failed live because the factory omitted the callback. Pin the
 forwarded method's identity and receiver; missing wiring must not be repaired by
 accepting copied captures or weakening original-owner checks.
+
+Distinguish a historical clock endpoint from a currently owned observation.
+Legitimate capture/release steps can invalidate an earlier live token's lifecycle
+epoch without changing its recorded timestamp. Seal historical values only
+after their original live checks pass, and bind later use to a fresh original
+owner and observation. Test the composed path with real issuer capture/release
+interposition; an always-current mock misses this failure. Do not weaken shared
+epoch guards or reconstruct ownership from saved clock JSON.
 
 ## Compatibility upgrade
 

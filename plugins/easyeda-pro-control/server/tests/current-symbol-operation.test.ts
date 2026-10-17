@@ -29,6 +29,7 @@ const steps = [
 const requests = [opening, baseline,
   ...["observe", "inspect", "baseline-observe-termination", "baseline-admit", "baseline-observe-caches", "baseline-observe-clock",
     "baseline-observe-finish", "baseline-inspect", "metadata-inspect"].map((action) => ({ action, operationId })),
+  { action: "request-normal-close", operationId, confirmNormalClose: true, acceptUnknownFileEffects: true },
   { action: "retire-after-termination", operationId, confirmRetire: true, acceptUnknownFileEffects: true },
   { action: "baseline-prepare-clock", operationId, acceptScratchProcessEffects: true },
   ...["baseline-relaunch", "baseline-open-project"].map((action) => ({ action, operationId, acceptNormalOpenEffects: true })),
@@ -39,7 +40,7 @@ const requests = [opening, baseline,
 
 void test("ordinary contract preserves all opening/baseline actions and exactly twelve forward or cleanup phases", () => {
   assert.equal(CURRENT_SYMBOL_OPERATION_PURPOSE, "ordinary-symbol-metadata");
-  assert.equal(new Set(requests.map((request) => request.action)).size, 18);
+  assert.equal(new Set(requests.map((request) => request.action)).size, 19);
   assert.equal(new Set(steps.map((step) => step.expectedPhase)).size, 12);
   for (const request of requests) {
     assert.deepEqual(parseCurrentSymbolOperationRequest(request), request);
@@ -114,6 +115,12 @@ void test("ordinary continuations refuse replacement targets, evidence, fingerpr
     assert.equal(currentSymbolOperationRequestSchema.safeParse({ ...continuation, ...extra }).success, false);
     assert.equal(currentSymbolOperationRequestSchema.safeParse({ ...continuation, step: { ...continuation.step, ...extra } }).success, false);
     assert.equal(currentSymbolOperationRequestSchema.safeParse({ action: "metadata-begin", operationId, confirmWrite: true, ...extra }).success, false);
+    assert.equal(currentSymbolOperationRequestSchema.safeParse({ action: "request-normal-close", operationId,
+      confirmNormalClose: true, acceptUnknownFileEffects: true, ...extra }).success, false);
+  }
+  for (const extra of [{ pid: 1234 }, { windowHandle: "123456" }, { hwnd: "123456" }, { force: true }, { save: false }, { discard: true }]) {
+    assert.equal(currentSymbolOperationRequestSchema.safeParse({ action: "request-normal-close", operationId,
+      confirmNormalClose: true, acceptUnknownFileEffects: true, ...extra }).success, false);
   }
 });
 
@@ -131,7 +138,8 @@ void test("ordinary discovery and validation stay offline, dormant and explicit 
   assert.deepEqual(discovery["actions"], currentSymbolOperationRequestSchema.options.map((option) => option.shape.action.value));
   const text = JSON.stringify(discovery["limitations"]);
   for (const required of ["Before the first ordinary navigation", "complete closed baseline", "live startup qualification", "original retained owner",
-    "saved-content verification", "final closed SQL equality", "without retaining an inverse", "ambiguous failure consumes its stage", "61000 ms"]) {
+    "saved-content verification", "final closed SQL equality", "without retaining an inverse", "ambiguous failure consumes its stage", "61000 ms",
+    "request-normal-close", "Quarantine remains", "ambiguity consumes the close attempt"]) {
     assert.ok(text.includes(required));
   }
   assert.throws(() => queryCurrentSymbolOperation({ includeSchemas: true, enable: true }));
