@@ -304,6 +304,14 @@ evidence. No replacement paths, metadata, fingerprint or execution code are
 accepted. The forward-write phase requires a separate metadata-mutation
 acknowledgement, and startup qualification still runs before that one write.
 
+The target must not be referenced by any active schematic page. The qualifier
+derives the complete used-symbol set from the supported selected-branch page
+model, including device bindings, and refuses used targets before native startup
+observation or writer transfer. The compiler checks this again. Native linked-
+sheet propagation can load hidden sheets, which this workflow does not support.
+Do not unlink components, delete sheets or weaken cache checks to pass. Choose
+an existing unused disposable symbol and prepare it from the current checkpoint.
+
 Use `validation-inspect` to read `nextPhase`. Each `validation-advance` supplies
 that exact `step.expectedPhase` and only its schema-required acknowledgements.
 A repeated request with a consumed phase refuses rather than advancing into a
@@ -334,6 +342,14 @@ to continue a failed write. Missing original post-dispatch clock evidence or
 uncertain capture cleanup remains unresolved even if later SQL looks unchanged.
 Lost owners and conflicting journals require separate recovery work.
 
+The 043703 attempt persisted the intended name and description, but failed
+before recording a complete original post-dispatch result. Original-owner
+cleanup completed; recovery remains unresolved. A later complete comparison
+found the other 17 documents unchanged and only native history/structure
+bookkeeping outside the target. That diagnostic does not authorize inverse,
+restoration, replay or ordinary writer use. The changed fixture is the baseline
+for any separately prepared future run, not evidence of a completed round trip.
+
 After a facade restart, `validation-inspect` can read managed baseline, writer
 or verification history when no original coordinator remains. This returns
 recorded state, flags and verified artifact descriptors with
@@ -355,6 +371,15 @@ the retained result for source review; do not invoke getters, relax a predicate
 or repeat navigation to make the stage pass. Older snapshots return only a
 generic startup failure. A diagnostic stage does not prove the failing holder's
 actual value or identify every later failing check.
+
+New writer diagnostics separate native RPC failure at `MUTATION` from checks
+after its return at `POST_MUTATION`, metadata acknowledgment at `ACK`, and later
+clock/readback stages. A fixed guard or startup-stage suffix may identify the
+failed check without exposing native values. Older `MUTATION` markers cover
+both the RPC and immediate guards, so they cannot distinguish those causes.
+`POST_MUTATION` proves only that the RPC returned, not accepted or durable
+success. `TIMEOUT` and `TIMEOUT_CLEANUP` both mean execution may remain unsettled.
+No diagnostic stage grants retry or cleanup authority beyond the owner's reply.
 
 The ordinary forward-only metadata workflow is internal and unregistered.
 Do not substitute ordinary projects into this disposable route, fabricate a

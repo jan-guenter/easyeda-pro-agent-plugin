@@ -7,8 +7,8 @@ type StartupStage = typeof CURRENT_SYMBOL_STARTUP_STAGES[number];
  * Requires root/apply/own/bad/target/startupExpected/projectOnly. No RPC, source
  * getter, collection getter, Save, watcher or timer registration is performed.
  * In particular, SCH.parts sorts its backing array and is never called here.
- * Only the separate observation opts into a lexical startupStage diagnostic.
- * The writer embedding uses the same predicates without that instrumentation.
+ * The separate observation and writer opt into lexical startupStage diagnostics.
+ * Instrumentation changes only fixed labels, never the predicates or reads.
  */
 export function buildCurrentSymbolStartupGuard(diagnosticStages = false): string {
   const at = (stage: StartupStage): string => diagnosticStages ? `startupStage='${stage}';` : "";

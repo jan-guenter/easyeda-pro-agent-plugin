@@ -25,7 +25,18 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261017043703` supports the native case where the selected
+Update `0.3.0+codex.20261017072500` restricts disposable metadata validation
+to unreferenced symbols and adds fixed post-mutation failure diagnostics.
+The 043703 run dispatched its edit, then stopped at an ambiguous `MUTATION`
+marker. Original-owner cleanup completed; a full closed-file diagnostic found
+the intended metadata change, expected native bookkeeping and 17 unchanged peer
+documents. The lifecycle remains unresolved, with no retry or inverse authority.
+Used symbols invoke native linked-sheet propagation that this writer does not
+yet verify. Ordinary writers remain disabled pending a complete new
+unused-symbol validation lifecycle. Delivery results are recorded in AGENTS.md.
+See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Update `0.3.0+codex.20261017043703` supports the native case where the selected
 account has no historical project-user row: its UUID stays fixed, while persisted
 display names must be empty. It also adds ownerless historical inspection,
 preparation checkpoint descriptors in opening results, and lower-overhead fresh

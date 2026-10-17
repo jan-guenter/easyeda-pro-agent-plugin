@@ -4,6 +4,7 @@ import { describe, test } from "node:test";
 import {
   assertReviewedLocalGenericReadArguments,
   assertSubset,
+  assertUpstreamReplySettled,
   buildPlanHash,
   canonicalJson,
   classifyTool,
@@ -150,6 +151,32 @@ void describe("canonical values and hashes", () => {
 });
 
 void describe("upstream result normalization and tool classification", () => {
+  void test("symbol writer diagnostics expose only fixed phases and keep timeout execution unsettled", () => {
+    for (const [marker, category] of [
+      ["CURRENT_SYMBOL_WRITE_REFUSED:MUTATION", "current-symbol-write:mutation"],
+      ["CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:STARTUP:cache", "current-symbol-write:post-mutation:startup:cache"],
+      ["CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:HOST", "current-symbol-write:post-mutation:host"],
+      ["CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT", "current-symbol-write:timeout"],
+      ["CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT_CLEANUP", "current-symbol-write:timeout-cleanup"],
+    ]) {
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: marker } }), (error: unknown) => {
+        assert.ok(error instanceof Error); assert.ok(error.message.includes(`[${category}]`)); return true;
+      });
+    }
+    for (const marker of ["CURRENT_SYMBOL_WRITE_REFUSED:PRIVATE_NATIVE_TEXT", "CURRENT_SYMBOL_WRITE_REFUSED:MUTATION:PRIVATE_NATIVE_TEXT",
+      "CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:STARTUP:cache:PRIVATE_NATIVE_TEXT", "CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT:HOST",
+      "CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:STARTUP", "CURRENT_SYMBOL_WRITE_REFUSED:POST_MUTATION:HOST:cache"]) {
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: marker } }), (error: unknown) => {
+        assert.ok(error instanceof Error); assert.match(error.message, /unclassified-upstream-failure/u);
+        assert.equal(error.message.includes("PRIVATE_NATIVE_TEXT"), false); return true;
+      });
+    }
+    for (const marker of ["CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT", "CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT_CLEANUP"]) {
+      assert.throws(() => { assertUpstreamReplySettled({ structuredContent: { ok: false, error: marker } }); },
+        /current-symbol-write:timeout(?:-cleanup)?;execution-unsettled/u);
+    }
+  });
+
   void test("publishes only allowlisted exact-reader diagnostic tokens", () => {
     const marker = "EASYEDA_EXACT_READ_FAILURE|pcb-components|getter-lookup|pcb_PrimitiveComponent|getState_X|unset";
     assert.throws(

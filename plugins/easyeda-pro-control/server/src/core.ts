@@ -574,6 +574,9 @@ export function assertUpstreamReplySettled(result: unknown): void {
   if (category === "native-lifecycle-timeout") {
     throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
   }
+  if (category === "current-symbol-write:timeout" || category === "current-symbol-write:timeout-cleanup") {
+    throw new Error(`The native symbol write deadline expired without proving execution ended [${category};execution-unsettled].`);
+  }
   if (isCurrentOpenNativeTimeoutCategory(category)) {
     throw new Error(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`);
   }

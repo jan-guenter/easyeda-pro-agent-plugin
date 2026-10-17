@@ -6,6 +6,168 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate072500: unused-symbol scope and precise write diagnostics
+
+Preparing0.3.0+codex.20261017072500 on
+feature/current-symbol-write-diagnostics-20261017, not published/installed yet.
+Complete hash-bound startup selection now refuses targets used by active
+schematic pages before native observation or writer transfer. The compiler
+independently rejects them. Pinned sch-main.js d9d6a955 proves SYMBOL.ON_UPDATE
+can enumerate linked sheets and load them into docMemory.docMap. This conflicts
+with the existing empty-cache prerequisite; waiting is not a valid correction.
+That source finding is a scope gap, not proof of the exact043703 failure.
+The old MUTATION marker covered both RPC rejection and immediate same() checks.
+New fixed POST_MUTATION/guard/startup-stage diagnostics separate those paths
+without exposing native errors. TIMEOUT_CLEANUP preserves execution-unsettled
+when timeout cleanup also fails. No guard is relaxed or ordinary route enabled.
+Root and independent source review accept the scope/diagnostic changes.
+Twelve focused startup/writer tests and strict targeted lint pass. Final whole
+verification, CI and installation remain pending. No further live043703 call.
+
+Complete read-only before/after audit covers35 SQL tables and18 documents.
+29tables and17peer documents are exact. The sole symbol has only the intended
+name/description changes plus DOCHEAD/META bookkeeping. One history row/chunk
+was appended; selected branch head, structure ticket/order serialization,
+project updated_at and sequence advanced as recorded. All parsed structure
+values are unchanged. The appended602byte EDIT_HEAD/DOCHEAD/META chunk is
+b8dc998ffa413013c3d6375f2502bb19e23841574573fea58636708af90e17d8.
+Actual persisted actor UUID is unchanged with empty project display names.
+This is diagnostic persistence evidence, not original transaction acceptance.
+An existing unused symbol23630514533a0345, API coverage empty symbol194400,
+has no active-page direct/device references and is unchanged. It is only a
+candidate for a future NEW preparation/lifecycle from the current changed
+fixture. No manual inverse, restoration, replay or new live attempt here.
+
+### Actual043703: stopped write retired; diagnosis complete
+
+Forward-write65 returned unclassified upstream failure. Original inspect67
+returns cleanup-close with retained preflight/clock/write replies and all three
+Windows samples, mutationMayHaveOccurredtrue/writeAcknowledgedfalse. Raw24
+reports CURRENT_SYMBOL_WRITE_REFUSED:MUTATION. No replay/manual inverse/Save.
+Cleanup-close68 and cleanup-observe-termination69 completed through original
+owner: terminated/retired/plan-invalidated, complete closed snapshot, nextPhase
+stopped. Recovery outcome unresolved, basis original-post-dispatch-evidence-
+incomplete; complete logical SQL changed. Postcopy153b93a5/598016bytes,
+checkpoint9b5700d1, SQLb68935f9/history05cd273e,18documents. This is not accepted
+mutation or a successful lifecycle. The complete read-only SQL delta and source
+diagnosis are recorded above. Keep EasyEDA closed. No further live call or
+ordinary activation; installed source/runtime caches stay unchanged.
+Production designs and their records untouched.
+
+Fresh sole facade965362/parent963611/startTicks19442613 independently admitted
+on installed043703/main7fd675a4. All1,283files/25,783,190bytes/modes and source395/
+runtime3/manifest match the delivery below. ExactNode24.18.0/core0; old874735
+absent. Current helper57e6144c/175,104bytes and all18 installed runtimepins/
+292,631,813bytes pass independent identity/hash checks. MainCI39004486729 and
+Windows39004486714 now pass completely. Prior033309 launcher/open inspect
+terminal. New ownerless validation-inspect passes the exact writer-profile
+history: plan-invalidated/seq29/hardStopfalse/orphanfalse, historical only,
+no owner/continuation/replay authority. Its recorded mutationMayHaveOccurred
+flag remains true; the separate retained closed-recovery classification proves
+unchanged SQL. Do not rewrite or conflate those historical fields.
+Fresh disposable598,016bytes/SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+no sidecars. New launch validation-043703-20261017-launch dispatched ONCE in
+functions18 completed: root29728/Job652672946e5247658674f2a6a2f440c0/
+helpere27bdf273f7d4f319f04bd9df9d2e04c, launchedSHA
+a2f30adb8455d73c4071388ce4e4809afd68bf76f3a6cbc855804abf4aa11eba.
+Never repeat it. Authenticated status20 passes exact043703/ded07x99dcxb504,
+no incomplete operations. New open validation-043703-20261017-open completed
+ONCE functions23 with exact activePCB/nativeidentity; terminal07 SHA4933cddd.
+New preparationCheckpoint descriptor064612668Z verifies561,152bytes/4ed9ca7c.
+Offline preparation6bac8a54 binds original0603WAF1002T5E and sealed test name
+EASYEDA_VALIDATE_043703_SYMBOL/descriptionDisposable current symbol metadata
+validation043703. New baseline-begin validation-043703-20261017-baseline
+completed ONCE functions28 awaiting-termination/normalcloseacknowledged.
+Original baseline-observe-termination/copy34 completed: closed baseline captured,
+source970d21b3/checkpoint4ed9ca7c, SQL4d01daaf/history20b0b062, sole startup
+blocker active-schematic-pages2. Artifact06-copy-result6886bytes/aa1e5dfa.
+Original ordinary-launch observe-termination independently proved29728/Job6526
+terminated with exact launchedSHAa2f30adb before replacement relaunch.
+Baseline-prepare-clock40 completed, reference accepted/main01688fb7,
+result8fffa7c0/7640bytes, original scratch retained. Baseline-relaunch52 completed,
+relaunched/launchacknowledged/capturereleased, native launch clock observed;
+10-capture-release-resultc4d8244a. Baseline-admit56 and caches60 pass;
+project-only-open62 completed once, artifact18 SHA4dcb2ff0, explicit disposable
+schematic-startup observation retained. Both clock stages accepted; renderer
+resulta8de9118/48479bytes. Validation-begin64 retains original owner and returns
+nextPhaseforward-write. Exact acknowledged forward-write dispatched ONCE in
+functions65; terminal stopped result and cleanup are recorded above. Never
+replay it or issue Save/manual inverse.
+All exact later validation phase arguments pass offline schema checks; this
+grants no execution authority. Production designs and their records remain
+untouched. Same facade/original handles must stay alive through verification
+and inverse or the explicitly offered cleanup path.
+
+### Delivered043703: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261017043703` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR50 merged tested head582f179bcf4865a4afbff1f6edac946190620b48 as
+main7fd675a4f06191efeb59b71665581f0055ac9c0b. Whole tree
+7c7add3233788039466218bb1a22ea2ee136d94a and plugin tree
+66a7de8a1995059095510dda58a725aac339060c equal the tested payload exactly.
+All11 PR checks passed: CI39003726278 has10,552 facade passes/five platform
+skips/zero failures, cancellations or todos;424 bridge passes across28files.
+Windows39003725911 passed. Full local verification exited0 with10,553 facade
+passes/four skips/zero failures and424 bridge passes. Whole types, strict
+type-aware lint, reproducible builds, API inventory and package/skill checks
+passed. Repository/privacy checks and all seven official skill validators passed.
+Independent source/release review accepted. Dependency checks passed151 registry
+signatures,40 attestations and zero reported vulnerabilities. Local verify log
+/tmp/easyeda-043703-verify-dOft3Skk/verify.log SHA
+fcedf2e2a662b8e5a19e530f7bf4d3bf1a4df57e0f0d64bf1bd6411f5447224f.
+Automatic mainWindows39004486714 and mainCI39004486729 verify-build passed;
+duplicate main facade jobs are still running and need a later status check.
+
+Official marketplace upgrade under umask022 completed exit0/errors[]. CLI
+confirms installed/enabled043703 and cached marketplace HEAD equals mergedmain.
+Root and independent inventories match all1,283files/25,783,190bytes,
+42directories0755,1,282files0644/one0755,seven skills and no extras or links.
+Inventory SHA7cfb79d8b0dd05dbea81a9952daf7ceb583c5e99eff527c0891cfc4d2f42ed64;
+source395 SHAc36a63a1defb9408038da949cf07c406f771b7e90bb8b128bab2397a7d32aeb0;
+runtime3 SHA564b3c2412c6bb3cde84b86a2cd9e564cac2c20f18059a3012ad19f69c8dfefd;
+manifest9b78dc6074705332fec2fb56e199245b5bd1e1caa3adf31530e220b2130b55b3.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 without installed module ancestors, upstream child or nonstdio socket.
+Catalog16tools/seven skills, historical-only preparationCheckpoint schema parity,
+strict discovery argument checks, fixed helper/all18pins and ordinary metadata
+action rejection pass. No live tool, actual profile or operation journal;
+synthetic profile unchanged/stderr0. Probe959501 exited0 through stdinEOF,
+without signals or process adoption. Private one-shot proof
+/tmp/easyeda-installed-release-043703-tnWonCtY/proof.json,5,275bytes
+SHA42d7e8d861de88b3ac46ff1fc4147eb7443579f1112c52a070dfd6c42bdb9e53.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/50#issuecomment-6229908027
+
+Retained host874735/parent873018/startTicks18494470 still loads033309 with its
+original pinnedNode24.18.0 executable and core0. Root and independent before/
+after identity checks pass. No host termination, manual cache change or hotpatch.
+Do not make further live calls from that host. The extension-development release
+workflow requires a fresh Codex session and independent installed043703 admission
+before live work. No pending local tool or CAD call. All033309 launcher/open/
+baseline/writer cleanup is terminal; never replay those IDs, navigation, close
+or Save. Fresh closed disposable hash remains
+970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+598,016bytes, with no WAL/SHM/journal sidecars. Production designs and their
+records remain untouched. Keep EasyEDA closed until the next supported launch.
+
+Next: one NEW disposable symbol-metadata forward/inverse lifecycle using the
+supported launcher and current-project-opening reference. The033309 run passed
+the former historical-clock failure point, then stopped before dispatch because
+the UI actor has no matching historical project-user row. Candidate043703 adds
+the pinned native empty-project-names case without substituting actors; its
+maintained SQL/actor preparer passes the exact retained fixture offline, but no
+connected writer lifecycle is claimed. Preserve exact phase acknowledgements,
+original owners and fresh backend head age at both writes. Completion requires
+forwardVerified/inverseVerified/metadataRestorationVerified and nextPhasecompleted,
+not original SQLite bytes. Only then review and register the separate ordinary
+forward-only metadata route. Legacy writers and generic library.symbol.modify
+stay blocked. Broader native structure completion, schematic/PCB geometry,
+component-library and manufacturing work remains in
+docs/current-symbol-clock-lifetime-2026-10-17.md and the exhaustive774-method
+coverage inventory. Fresh hashing changes have no measured connected speedup.
+This delivery handoff stays uncommitted until the next source change to avoid a
+record-only release cycle. Earlier pending statements below are historical.
+
 ### Candidate043703: explicit missing-project-user support
 
 Preparing `0.3.0+codex.20261017043703`, not published or installed yet.

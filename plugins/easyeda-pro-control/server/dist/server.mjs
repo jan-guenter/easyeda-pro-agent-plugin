@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "6f07fc44b2e159bc193ce9a275b5134cc6abcd4b155e17b9da4546c7417af79a";
+const __easyedaBundlePairId = "34d43caa945fabd4ed6919370d43e37012ac1f70d95f15f5eccfaef9547f9c34";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33421,6 +33421,132 @@ var init_current_disposable_open_diagnostics = __esm({
   }
 });
 
+// server/src/current-symbol-startup-guard.ts
+function buildCurrentSymbolStartupGuard(diagnosticStages2 = false) {
+  const at2 = (stage) => diagnosticStages2 ? `startupStage='${stage}';` : "";
+  return String.raw`
+const startup=(()=>{
+ ${at2("sch-holder")}
+ const sch=own(root,'SCH'),vars=own(sch,'gVars'),project=own(vars,'projectMgr'),cache=own(project,'componentCache');
+ const descriptor=Object.getOwnPropertyDescriptor(sch,'docMemoryManager');
+ if(!descriptor||typeof descriptor.get!=='function'||descriptor.set!==undefined)bad();
+ const getManager=descriptor.get,manager=apply(getManager,sch,[]),docs=own(manager,'docMap'),fetches=own(manager,'_docFetchPromiseMap');
+ ${at2("cache")}
+ const templates=own(cache,'symbolTemplate');
+ ${at2("scheduler")}
+ const runner=own(vars,'actionRunner'),realtime=own(runner,'realTimeSyncActionManager');
+ const runnerSet=own(realtime,'_runnerSet'),runnerIds=own(runnerSet,'_idMap'),runTimer=own(realtime,'_runTimer');
+ ${at2("cache")}
+ const MapOwner=own(root,'Map'),mapPrototype=own(MapOwner,'prototype'),mapSize=Object.getOwnPropertyDescriptor(mapPrototype,'size')?.get;
+ if(typeof mapSize!=='function')bad();
+ const emptyMap=value=>{if(Object.getPrototypeOf(value)!==mapPrototype||Reflect.ownKeys(value).length!==0||apply(mapSize,value,[])!==0)bad();};
+ const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+ const noCanvas=value=>{const canvas=own(value,'_canvas',true);if(canvas!==undefined&&canvas!==null)bad();};
+ const base=()=>{
+  ${at2("project-only-context")}
+  projectOnly.check();
+  ${at2("sch-holder")}
+  const currentDescriptor=Object.getOwnPropertyDescriptor(sch,'docMemoryManager');
+  if(own(root,'SCH')!==sch||own(sch,'gVars')!==vars||own(vars,'projectMgr')!==project||own(project,'uuid')!==target.projectUuid||own(project,'componentCache')!==cache||own(cache,'projectMgr')!==project||own(cache,'symbolTemplate')!==templates)bad();
+  if(currentDescriptor?.get!==getManager||currentDescriptor.set!==undefined||apply(getManager,sch,[])!==manager||own(manager,'docMap')!==docs||own(manager,'_docFetchPromiseMap')!==fetches)bad();
+  if(own(root,'Map')!==MapOwner||own(MapOwner,'prototype')!==mapPrototype||Object.getOwnPropertyDescriptor(mapPrototype,'size')?.get!==mapSize)bad();
+  ${at2("scheduler")}
+  if(own(vars,'actionRunner')!==runner||own(runner,'_currentAction')!==null||own(runner,'realTimeSyncActionManager')!==realtime||own(realtime,'transactionRunner')!==runner||own(realtime,'_isRunning')!==false)bad();
+  if(own(realtime,'_runnerSet')!==runnerSet||own(runnerSet,'_idMap')!==runnerIds||own(realtime,'_runTimer')!==runTimer||own(runTimer,'_mark')!==-1)bad();emptyMap(runnerIds);
+  const waiting=own(realtime,'_localActionOnceDidRunSubscription',true);if(waiting!==undefined&&waiting!==null)bad();
+  ${at2("cache")}
+  emptyMap(docs);emptyMap(fetches);
+ };
+ const sample=()=>{
+  base();const owners=[sch,vars,project,cache,templates,runner,realtime,runnerSet,runnerIds,runTimer,docs,fetches],keys=Reflect.ownKeys(plain(templates));
+  if(keys.length!==startupExpected.templates.length||keys.some(key=>typeof key!=='string'||!startupExpected.templates.some(item=>item.uuid===key)))bad();
+  for(const expected of startupExpected.templates){
+   ${at2("template")}
+   const doc=own(templates,expected.uuid),consistency=own(doc,'consistencyImpl'),handler=own(consistency,'decodeAndRealTimeSyncHandler');
+   ${at2("native-queue")}
+   // The pinned manager owns _base; its inherited base getter is never invoked.
+   const nativeManager=own(consistency,'manager'),nativeBase=own(nativeManager,'_base'),update=own(handler,'docUpdateImpl'),tasks=own(handler,'_realTimeSyncTask');
+   ${at2("parts")}
+   const shapes=own(doc,'shapeManager');
+   owners.push(doc,consistency,handler,nativeManager,nativeBase,update,tasks,shapes);
+   ${at2("template")}
+   if(own(doc,'uuid')!==expected.uuid||own(doc,'docType')!==expected.docType||own(doc,'path')!==target.projectUuid||own(doc,'project_uuid')!==target.projectUuid||own(doc,'projectMgr')!==project)bad();noCanvas(doc);
+   if(own(consistency,'docManager')!==doc||own(consistency,'handler')!==handler||own(handler,'consistencyImpl')!==consistency||own(handler,'_state')!=='initialized'||own(handler,'isPaused')!==false)bad();
+   ${at2("native-queue")}
+   const pending=plain(own(nativeBase,'pendCache')),taskMap=own(update,'taskMap'),parentMap=own(tasks,'_parentChildIdMapFromRemote');owners.push(pending,taskMap,parentMap);
+   if(own(nativeBase,'uuid')!==expected.uuid||own(nativeBase,'path')!==target.projectUuid||own(nativeBase,'isProject')!==true||own(nativeBase,'isInit')!==true||own(nativeBase,'isInitIng')!==false||own(nativeBase,'isDestroy')!==false||own(nativeBase,'pendTimer')!==null||own(nativeBase,'pendPromise')!==null||own(nativeBase,'pendCacheLength')!==0||Reflect.ownKeys(pending).length!==0)bad();
+   emptyMap(taskMap);emptyMap(parentMap);
+   if(own(tasks,'handler')!==handler||own(tasks,'shouldCommitModelChanged')!==false||own(tasks,'existLocalSaved')!==false||own(tasks,'existRemoteSaved')!==false||own(shapes,'docManager')!==doc)bad();
+   ${at2("parts")}
+   const parts=own(shapes,'_parts'),partMap=plain(own(shapes,'_partIdMap'));
+   if(!Array.isArray(parts)||Object.getPrototypeOf(parts)!==Array.prototype||Reflect.ownKeys(parts).length!==2||own(parts,'length')!==1||Reflect.ownKeys(partMap).length!==1)bad();
+   const part=own(parts,'0');if(own(partMap,expected.partId)!==part||own(part,'partId')!==expected.partId)bad();
+   owners.push(parts,partMap,part);
+  }
+  base();return owners;
+ };
+ const original=sample();
+ const check=()=>{const current=sample();${at2("sch-holder")}if(current.length!==original.length||current.some((value,index)=>value!==original[index]))bad();};
+ return{check};
+})();`;
+}
+var CURRENT_SYMBOL_STARTUP_STAGES;
+var init_current_symbol_startup_guard = __esm({
+  "server/src/current-symbol-startup-guard.ts"() {
+    CURRENT_SYMBOL_STARTUP_STAGES = Object.freeze([
+      "project-only-context",
+      "sch-holder",
+      "scheduler",
+      "cache",
+      "template",
+      "native-queue",
+      "parts"
+    ]);
+  }
+});
+
+// server/src/current-symbol-write-diagnostics.ts
+function currentSymbolWriteFailureCategory(message) {
+  if (typeof message !== "string" || message.length > 160) {
+    return null;
+  }
+  const [prefix4, phase5, guard, startup2, ...extra] = message.split(":");
+  if (prefix4 !== "CURRENT_SYMBOL_WRITE_REFUSED" || phase5 === void 0 || !phases.has(phase5) || extra.length > 0) {
+    return null;
+  }
+  if (guard === void 0) {
+    return `current-symbol-write:${phase5.toLowerCase().replaceAll("_", "-")}`;
+  }
+  if (phase5 === "TIMEOUT" || phase5 === "TIMEOUT_CLEANUP" || phase5 === "CLEANUP" || !guards.has(guard) || (guard === "STARTUP" ? startup2 === void 0 || !startupStages.has(startup2) : startup2 !== void 0)) {
+    return null;
+  }
+  return `current-symbol-write:${phase5.toLowerCase().replaceAll("_", "-")}:${guard.toLowerCase()}${startup2 === void 0 ? "" : `:${startup2}`}`;
+}
+var phases, guards, startupStages;
+var init_current_symbol_write_diagnostics = __esm({
+  "server/src/current-symbol-write-diagnostics.ts"() {
+    init_current_symbol_startup_guard();
+    phases = /* @__PURE__ */ new Set([
+      "HOST",
+      "DEADLINE",
+      "PERMISSION",
+      "BEFORE",
+      "CLOCK_BEFORE",
+      "FINAL_BEFORE",
+      "MUTATION",
+      "POST_MUTATION",
+      "ACK",
+      "CLOCK_AFTER",
+      "AFTER",
+      "TIMEOUT",
+      "TIMEOUT_CLEANUP",
+      "CLEANUP"
+    ]);
+    guards = /* @__PURE__ */ new Set(["PROJECT", "STARTUP", "ACTOR", "RPC", "HOST", "DATE"]);
+    startupStages = new Set(CURRENT_SYMBOL_STARTUP_STAGES);
+  }
+});
+
 // server/src/library-runtime-guard.ts
 function libraryRuntimeFailureCategory(message) {
   if (typeof message !== "string" || message.length > 180) {
@@ -34724,6 +34850,10 @@ function nativeFailureCategory(message) {
   if (currentOpenCategory !== null) {
     return currentOpenCategory;
   }
+  const currentSymbolWriteCategory = currentSymbolWriteFailureCategory(message);
+  if (currentSymbolWriteCategory !== null) {
+    return currentSymbolWriteCategory;
+  }
   const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : void 0;
   if (configuredFontCategory !== void 0) {
     return configuredFontCategory;
@@ -34807,6 +34937,7 @@ var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
     init_current_disposable_open_diagnostics();
+    init_current_symbol_write_diagnostics();
     init_library_runtime_guard();
     init_project_upload_barrier();
     init_metadata_native_diagnostics();
@@ -35365,6 +35496,9 @@ function assertUpstreamReplySettled(result) {
   }
   if (category === "native-lifecycle-timeout") {
     throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
+  }
+  if (category === "current-symbol-write:timeout" || category === "current-symbol-write:timeout-cleanup") {
+    throw new Error(`The native symbol write deadline expired without proving execution ended [${category};execution-unsettled].`);
   }
   if (isCurrentOpenNativeTimeoutCategory(category)) {
     throw new Error(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`);
@@ -67318,7 +67452,7 @@ async function prefix3(operationId5) {
     "Pre-relaunch abandonment requires its exact current closed-baseline profile."
   );
   const events = [];
-  for (const [index, phase5] of phases.entries()) {
+  for (const [index, phase5] of phases2.entries()) {
     const artifact2 = journal.artifacts[index];
     need7(
       artifact2 !== void 0 && artifact2.bytes <= MAX_BYTES6 && artifact2.path === join19(operationPath(operationId5).slice(0, -5), `${String(index + 1).padStart(2, "0")}-${phase5}.json`),
@@ -67489,7 +67623,7 @@ async function abandonCurrentSymbolBaselineBeforeRelaunch(operationId5) {
     busy4.delete(operationId5);
   }
 }
-var PROFILE10, CURRENT_BASELINE_PROFILE, FILE2, MAX_BYTES6, phases, hash16, identifier7, descriptor5, value, phaseEvidence, flags2, bodySchema3, envelopeSchema3, journalSchema, busy4;
+var PROFILE10, CURRENT_BASELINE_PROFILE, FILE2, MAX_BYTES6, phases2, hash16, identifier7, descriptor5, value, phaseEvidence, flags2, bodySchema3, envelopeSchema3, journalSchema, busy4;
 var init_current_symbol_baseline_abandonment = __esm({
   "server/src/current-symbol-baseline-abandonment.ts"() {
     init_zod();
@@ -67499,7 +67633,7 @@ var init_current_symbol_baseline_abandonment = __esm({
     CURRENT_BASELINE_PROFILE = "easyeda-pro-control.current-symbol-closed-baseline.v1";
     FILE2 = "abandoned-baseline-before-relaunch.json";
     MAX_BYTES6 = 262144;
-    phases = ["capture-intent", "capture-result", "close-intent", "close-result", "copy-intent", "copy-result", "stopped"];
+    phases2 = ["capture-intent", "capture-result", "close-intent", "close-result", "copy-intent", "copy-result", "stopped"];
     hash16 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     identifier7 = external_exports.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/iu);
     descriptor5 = external_exports.object({ path: external_exports.string().min(1).max(4096), bytes: external_exports.number().int().positive().max(268435456), sha256: hash16 }).strict();
@@ -75304,12 +75438,12 @@ function parseRetainedMainReferenceTransport(input, requestSha256, intentSha256)
     const state2 = streams["transportState"];
     const spawn9 = streams["spawnReturnObserved"];
     const closed = streams["transportCloseObserved"];
-    const guards = streams["observationGuardsComplete"];
+    const guards2 = streams["observationGuardsComplete"];
     const containment = streams["containmentRequest"];
-    need25((state2 === "closed" || state2 === "unresolved") && typeof spawn9 === "boolean" && typeof closed === "boolean" && typeof guards === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
-    need25(state2 === (spawn9 && closed && guards ? "closed" : "unresolved"));
+    need25((state2 === "closed" || state2 === "unresolved") && typeof spawn9 === "boolean" && typeof closed === "boolean" && typeof guards2 === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
+    need25(state2 === (spawn9 && closed && guards2 ? "closed" : "unresolved"));
     need25(closed || code === null && signal === null);
-    need25(spawn9 || !closed && !guards && code === null && signal === null && containment === "not-requested" && failure2 === "start-failure");
+    need25(spawn9 || !closed && !guards2 && code === null && signal === null && containment === "not-requested" && failure2 === "start-failure");
     need25(failure2 !== null || state2 === "closed" && containment === "not-requested");
   }
   return Object.freeze({ profile, requestSha256, intentSha256, returnedEncoding: "base64-streams-v1", returned: streams });
@@ -85863,29 +85997,29 @@ function assertContext(journal) {
   }
   return { projectUuid: projectUuid4, documentUuid: documentUuid5, tabId };
 }
-function verifyPcbTextRetainedSaveAuthority(journal, phases4) {
-  const operation = pcbTextLifecycleOperationSchema.parse(journal.plan.operation), prepared = preparation.parse(phases4.prepared);
+function verifyPcbTextRetainedSaveAuthority(journal, phases5) {
+  const operation = pcbTextLifecycleOperationSchema.parse(journal.plan.operation), prepared = preparation.parse(phases5.prepared);
   if (operation.action !== "pcb.text.create" || prepared.createdId !== journal.createdId || journal.after === void 0) {
     throw new Error("Retained PCB text recovery requires the original creation reservation.");
   }
   const context3 = assertContext(journal), legacy = prepared.adapterProfile === LEGACY_CREATE_PROFILE;
-  assertPcbTextLifecycleAcknowledgment(operation, { createdId: prepared.createdId }, phases4.apply);
+  assertPcbTextLifecycleAcknowledgment(operation, { createdId: prepared.createdId }, phases5.apply);
   const expected3 = expectedPcbTextLifecycleSource(operation, journal.before, { createdId: prepared.createdId });
   exact16(journal.after, legacy ? legacyExpected(expected3, prepared.createdId) : expected3, "Retained PCB text immediate effect differs from its original producer.");
-  const before = sourcePhase(phases4.before, journal.before);
-  const after = sourcePhase(phases4.after, journal.after);
-  if (!isRecord(phases4.after)) {
+  const before = sourcePhase(phases5.before, journal.before);
+  const after = sourcePhase(phases5.after, journal.after);
+  if (!isRecord(phases5.after)) {
     throw new Error("Retained PCB text after phase is missing.");
   }
-  exact16(phases4.after["proof"], compareDocumentSources(journal.before, journal.after), "Retained PCB text immediate proof changed.");
-  if (!isRecord(phases4.intent) || !Number.isSafeInteger(phases4.intent["sequence"]) || Number(phases4.intent["sequence"]) < 1) {
+  exact16(phases5.after["proof"], compareDocumentSources(journal.before, journal.after), "Retained PCB text immediate proof changed.");
+  if (!isRecord(phases5.intent) || !Number.isSafeInteger(phases5.intent["sequence"]) || Number(phases5.intent["sequence"]) < 1) {
     throw new Error("Retained PCB text Save intent is missing.");
   }
-  exact16(phases4.intent, {
+  exact16(phases5.intent, {
     profile: "easyeda-pro-control.design-save-attempt.v1",
     operationId: journal.operationId,
     planHash: journal.planHash,
-    sequence: phases4.intent["sequence"],
+    sequence: phases5.intent["sequence"],
     phase: "save-reopen",
     sourceSha256: journal.after.sha256,
     scope: { projectUuid: context3.projectUuid, documentUuid: context3.documentUuid, documentType: 3 }
@@ -85901,7 +86035,7 @@ function verifyPcbTextRetainedSaveAuthority(journal, phases4) {
     openProof: external_exports.object({ profile: external_exports.literal("easyeda-pro-control.native-document-open.v1"), tabId: external_exports.literal(context3.tabId), newFrameReady: external_exports.literal(true), exactContext: external_exports.literal(true), readinessSamples: external_exports.literal(2), activated: external_exports.boolean() }).strict(),
     exactSaveGuard: external_exports.object({ passes: external_exports.literal(2), labels, snapshotSha256: sourceHashes, saveInvokedInSameExecution: external_exports.literal(true), publicCompareAndSwapAvailable: external_exports.literal(false) }).strict(),
     document: external_exports.object({ uuid: external_exports.literal(context3.documentUuid), documentType: external_exports.literal(3), title: external_exports.string(), tabId: external_exports.literal(context3.tabId) }).strict()
-  }).strict().parse(phases4.save);
+  }).strict().parse(phases5.save);
   return {
     profile: "easyeda-pro-control.pcb-text-retained-save.v1",
     legacy,
@@ -85912,7 +86046,7 @@ function verifyPcbTextRetainedSaveAuthority(journal, phases4) {
     intended: journal.after,
     beforeRawSource: before.raw,
     intendedRawSource: after.raw,
-    beforePhase: phases4.before,
+    beforePhase: phases5.before,
     acknowledgment,
     prepared
   };
@@ -87004,8 +87138,8 @@ var init_design_execution = __esm({
       }
       static async assertFlatDispatch(journal, phase5, code) {
         const binding3 = assertFlatDisplayJournal(journal);
-        const phases4 = /* @__PURE__ */ new Map([["apply", "prepared"], ["inverse", "flat-inverse-prepared"], ["save-reopen", "flat-save-prepared"]]);
-        const preparedPhase = phases4.get(phase5);
+        const phases5 = /* @__PURE__ */ new Map([["apply", "prepared"], ["inverse", "flat-inverse-prepared"], ["save-reopen", "flat-save-prepared"]]);
+        const preparedPhase = phases5.get(phase5);
         if (preparedPhase === void 0) {
           throw new Error("Flat display dispatch lacks its exact sealed original preparation and phase.");
         }
@@ -88486,8 +88620,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const savedDescriptor = selectDesignPhaseDescriptor(journal.artifacts, "save-reopen");
         const savedIndex = savedDescriptor === void 0 ? -1 : journal.artifacts.indexOf(savedDescriptor);
         const priorArtifacts = journal.artifacts.slice(0, savedIndex);
-        const phases4 = ["after", "reconciled"];
-        const candidate = phases4.flatMap((phase5) => {
+        const phases5 = ["after", "reconciled"];
+        const candidate = phases5.flatMap((phase5) => {
           const descriptor10 = selectDesignPhaseDescriptor(priorArtifacts, phase5, true);
           return descriptor10 === void 0 ? [] : [{ phase: phase5, descriptor: descriptor10, index: priorArtifacts.indexOf(descriptor10) }];
         }).toSorted((left, right) => right.index - left.index)[0];
@@ -95147,7 +95281,7 @@ function validateCurrentDisposableOpenArguments(input) {
 }
 function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
   const target6 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
-  const phase5 = external_exports.enum(phases2).parse(phaseInput);
+  const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const navigation = phase5 === "open-project" || phase5 === "open-document";
   return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
@@ -95256,7 +95390,7 @@ finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{clea
 }
 function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   const target6 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
-  const phase5 = external_exports.enum(phases2).parse(phaseInput);
+  const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const result = currentDisposableOpenResultSchema.parse(raw);
   const expectedTab = `${target6.documentUuid}@${target6.projectUuid}`;
   const navigation = phase5 === "open-project" || phase5 === "open-document";
@@ -95278,7 +95412,7 @@ function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   }
   return result;
 }
-var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, hex64, hex32, documentId2, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases2, currentDisposableOpenResultSchema, limitations9;
+var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, hex64, hex32, documentId2, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases3, currentDisposableOpenResultSchema, limitations9;
 var init_current_disposable_open = __esm({
   "server/src/current-disposable-open.ts"() {
     init_zod();
@@ -95334,11 +95468,11 @@ var init_current_disposable_open = __esm({
       external_exports.object({ action: external_exports.literal("validation-inspect"), operationId }).strict()
     ]).refine((value2) => value2.action !== "open" || sha256Text(value2.rawWindowsPath) === value2.projectUuid, "Project identity must hash the exact raw Windows path.").refine((value2) => value2.action !== "baseline-begin" || value2.operationId !== value2.openingOperationId, "The baseline needs a distinct operation ID.");
     currentDisposableOpenQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
-    phases2 = ["preflight", "open-project", "open-document", "observe"];
+    phases3 = ["preflight", "open-project", "open-document", "observe"];
     currentDisposableOpenResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-disposable-open"),
-      phase: external_exports.enum(phases2),
+      phase: external_exports.enum(phases3),
       projectUuid: hex64,
       documentUuid: documentId2,
       projectPathMatched: external_exports.literal(true),
@@ -95369,7 +95503,7 @@ var init_current_disposable_open = __esm({
       "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
       "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
-      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Normal design writers remain disabled and this route is not yet connected-validated.",
+      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages; native linked-sheet propagation is unsupported. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Normal design writers remain disabled and this route is not yet connected-validated.",
       "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps."
     ];
   }
@@ -96190,7 +96324,7 @@ function sealed2(value2, key) {
   return object4;
 }
 function eventAt(events, phase5) {
-  const value2 = events[phases3.indexOf(phase5)];
+  const value2 = events[phases4.indexOf(phase5)];
   need46(value2 !== void 0, "phase is absent");
   return value2;
 }
@@ -96316,7 +96450,7 @@ function closure(events, operationId5, final, launch) {
 async function evidence(operationId5) {
   const journal = await loadOperation(identifier16.parse(operationId5)), plan2 = bag12(journal.plan);
   need46(
-    journal.operationId === operationId5 && journal["journalPath"] === operationPath(operationId5) && plan2["profile"] === BASELINE_PROFILE && journal["state"] === "plan-invalidated" && journal["hardStop"] === false && journal["orphanedCallPossible"] === false && journal["saved"] === false && journal["reopened"] === false && journal["finishSnapshotAttempted"] === true && journal["finishSnapshotCaptured"] === true && journal["finishSnapshotFailed"] === false && journal["sequence"] === phases3.length && journal.artifacts?.length === phases3.length,
+    journal.operationId === operationId5 && journal["journalPath"] === operationPath(operationId5) && plan2["profile"] === BASELINE_PROFILE && journal["state"] === "plan-invalidated" && journal["hardStop"] === false && journal["orphanedCallPossible"] === false && journal["saved"] === false && journal["reopened"] === false && journal["finishSnapshotAttempted"] === true && journal["finishSnapshotCaptured"] === true && journal["finishSnapshotFailed"] === false && journal["sequence"] === phases4.length && journal.artifacts?.length === phases4.length,
     "requires the completed successful captured-snapshot lifecycle"
   );
   for (const key of [
@@ -96333,7 +96467,7 @@ async function evidence(operationId5) {
     need46(journal[key] === true, "lifecycle attempt is missing");
   }
   const events = [];
-  for (const [index, phase5] of phases3.entries()) {
+  for (const [index, phase5] of phases4.entries()) {
     const artifact2 = descriptorSchema.parse(journal.artifacts[index]);
     need46(
       artifact2.bytes <= MAX_JSON_BYTES && artifact2.path === join51(operationPath(operationId5).slice(0, -5), `${String(index + 1).padStart(2, "0")}-${phase5}.json`),
@@ -96585,7 +96719,7 @@ async function analyzeCurrentSymbolBaseline(operationId5, runtime) {
   need46(Buffer.byteLength(JSON.stringify(result)) <= MAX_REPORT_BYTES, "complete report exceeds its byte bound");
   return Object.freeze(result);
 }
-var PROFILE14, BASELINE_PROFILE, MAX_JSON_BYTES, MAX_REPORT_BYTES, phases3, identifier16, hash30, descriptorSchema, decimal2, identitySchema, statSchema, fileIdentitySchema2, checkpointSchema6, copySchema;
+var PROFILE14, BASELINE_PROFILE, MAX_JSON_BYTES, MAX_REPORT_BYTES, phases4, identifier16, hash30, descriptorSchema, decimal2, identitySchema, statSchema, fileIdentitySchema2, checkpointSchema6, copySchema;
 var init_current_symbol_baseline_analysis = __esm({
   "server/src/current-symbol-baseline-analysis.ts"() {
     init_zod();
@@ -96599,7 +96733,7 @@ var init_current_symbol_baseline_analysis = __esm({
     BASELINE_PROFILE = "easyeda-pro-control.current-symbol-closed-baseline.v1";
     MAX_JSON_BYTES = 262144;
     MAX_REPORT_BYTES = 524288;
-    phases3 = [
+    phases4 = [
       "capture-intent",
       "capture-result",
       "close-intent",
@@ -124014,90 +124148,6 @@ var init_current_aged_sql_issuer = __esm({
   }
 });
 
-// server/src/current-symbol-startup-guard.ts
-function buildCurrentSymbolStartupGuard(diagnosticStages2 = false) {
-  const at2 = (stage) => diagnosticStages2 ? `startupStage='${stage}';` : "";
-  return String.raw`
-const startup=(()=>{
- ${at2("sch-holder")}
- const sch=own(root,'SCH'),vars=own(sch,'gVars'),project=own(vars,'projectMgr'),cache=own(project,'componentCache');
- const descriptor=Object.getOwnPropertyDescriptor(sch,'docMemoryManager');
- if(!descriptor||typeof descriptor.get!=='function'||descriptor.set!==undefined)bad();
- const getManager=descriptor.get,manager=apply(getManager,sch,[]),docs=own(manager,'docMap'),fetches=own(manager,'_docFetchPromiseMap');
- ${at2("cache")}
- const templates=own(cache,'symbolTemplate');
- ${at2("scheduler")}
- const runner=own(vars,'actionRunner'),realtime=own(runner,'realTimeSyncActionManager');
- const runnerSet=own(realtime,'_runnerSet'),runnerIds=own(runnerSet,'_idMap'),runTimer=own(realtime,'_runTimer');
- ${at2("cache")}
- const MapOwner=own(root,'Map'),mapPrototype=own(MapOwner,'prototype'),mapSize=Object.getOwnPropertyDescriptor(mapPrototype,'size')?.get;
- if(typeof mapSize!=='function')bad();
- const emptyMap=value=>{if(Object.getPrototypeOf(value)!==mapPrototype||Reflect.ownKeys(value).length!==0||apply(mapSize,value,[])!==0)bad();};
- const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
- const noCanvas=value=>{const canvas=own(value,'_canvas',true);if(canvas!==undefined&&canvas!==null)bad();};
- const base=()=>{
-  ${at2("project-only-context")}
-  projectOnly.check();
-  ${at2("sch-holder")}
-  const currentDescriptor=Object.getOwnPropertyDescriptor(sch,'docMemoryManager');
-  if(own(root,'SCH')!==sch||own(sch,'gVars')!==vars||own(vars,'projectMgr')!==project||own(project,'uuid')!==target.projectUuid||own(project,'componentCache')!==cache||own(cache,'projectMgr')!==project||own(cache,'symbolTemplate')!==templates)bad();
-  if(currentDescriptor?.get!==getManager||currentDescriptor.set!==undefined||apply(getManager,sch,[])!==manager||own(manager,'docMap')!==docs||own(manager,'_docFetchPromiseMap')!==fetches)bad();
-  if(own(root,'Map')!==MapOwner||own(MapOwner,'prototype')!==mapPrototype||Object.getOwnPropertyDescriptor(mapPrototype,'size')?.get!==mapSize)bad();
-  ${at2("scheduler")}
-  if(own(vars,'actionRunner')!==runner||own(runner,'_currentAction')!==null||own(runner,'realTimeSyncActionManager')!==realtime||own(realtime,'transactionRunner')!==runner||own(realtime,'_isRunning')!==false)bad();
-  if(own(realtime,'_runnerSet')!==runnerSet||own(runnerSet,'_idMap')!==runnerIds||own(realtime,'_runTimer')!==runTimer||own(runTimer,'_mark')!==-1)bad();emptyMap(runnerIds);
-  const waiting=own(realtime,'_localActionOnceDidRunSubscription',true);if(waiting!==undefined&&waiting!==null)bad();
-  ${at2("cache")}
-  emptyMap(docs);emptyMap(fetches);
- };
- const sample=()=>{
-  base();const owners=[sch,vars,project,cache,templates,runner,realtime,runnerSet,runnerIds,runTimer,docs,fetches],keys=Reflect.ownKeys(plain(templates));
-  if(keys.length!==startupExpected.templates.length||keys.some(key=>typeof key!=='string'||!startupExpected.templates.some(item=>item.uuid===key)))bad();
-  for(const expected of startupExpected.templates){
-   ${at2("template")}
-   const doc=own(templates,expected.uuid),consistency=own(doc,'consistencyImpl'),handler=own(consistency,'decodeAndRealTimeSyncHandler');
-   ${at2("native-queue")}
-   // The pinned manager owns _base; its inherited base getter is never invoked.
-   const nativeManager=own(consistency,'manager'),nativeBase=own(nativeManager,'_base'),update=own(handler,'docUpdateImpl'),tasks=own(handler,'_realTimeSyncTask');
-   ${at2("parts")}
-   const shapes=own(doc,'shapeManager');
-   owners.push(doc,consistency,handler,nativeManager,nativeBase,update,tasks,shapes);
-   ${at2("template")}
-   if(own(doc,'uuid')!==expected.uuid||own(doc,'docType')!==expected.docType||own(doc,'path')!==target.projectUuid||own(doc,'project_uuid')!==target.projectUuid||own(doc,'projectMgr')!==project)bad();noCanvas(doc);
-   if(own(consistency,'docManager')!==doc||own(consistency,'handler')!==handler||own(handler,'consistencyImpl')!==consistency||own(handler,'_state')!=='initialized'||own(handler,'isPaused')!==false)bad();
-   ${at2("native-queue")}
-   const pending=plain(own(nativeBase,'pendCache')),taskMap=own(update,'taskMap'),parentMap=own(tasks,'_parentChildIdMapFromRemote');owners.push(pending,taskMap,parentMap);
-   if(own(nativeBase,'uuid')!==expected.uuid||own(nativeBase,'path')!==target.projectUuid||own(nativeBase,'isProject')!==true||own(nativeBase,'isInit')!==true||own(nativeBase,'isInitIng')!==false||own(nativeBase,'isDestroy')!==false||own(nativeBase,'pendTimer')!==null||own(nativeBase,'pendPromise')!==null||own(nativeBase,'pendCacheLength')!==0||Reflect.ownKeys(pending).length!==0)bad();
-   emptyMap(taskMap);emptyMap(parentMap);
-   if(own(tasks,'handler')!==handler||own(tasks,'shouldCommitModelChanged')!==false||own(tasks,'existLocalSaved')!==false||own(tasks,'existRemoteSaved')!==false||own(shapes,'docManager')!==doc)bad();
-   ${at2("parts")}
-   const parts=own(shapes,'_parts'),partMap=plain(own(shapes,'_partIdMap'));
-   if(!Array.isArray(parts)||Object.getPrototypeOf(parts)!==Array.prototype||Reflect.ownKeys(parts).length!==2||own(parts,'length')!==1||Reflect.ownKeys(partMap).length!==1)bad();
-   const part=own(parts,'0');if(own(partMap,expected.partId)!==part||own(part,'partId')!==expected.partId)bad();
-   owners.push(parts,partMap,part);
-  }
-  base();return owners;
- };
- const original=sample();
- const check=()=>{const current=sample();${at2("sch-holder")}if(current.length!==original.length||current.some((value,index)=>value!==original[index]))bad();};
- return{check};
-})();`;
-}
-var CURRENT_SYMBOL_STARTUP_STAGES;
-var init_current_symbol_startup_guard = __esm({
-  "server/src/current-symbol-startup-guard.ts"() {
-    CURRENT_SYMBOL_STARTUP_STAGES = Object.freeze([
-      "project-only-context",
-      "sch-holder",
-      "scheduler",
-      "cache",
-      "template",
-      "native-queue",
-      "parts"
-    ]);
-  }
-});
-
 // server/src/current-symbol-startup-runtime.ts
 function need60(condition) {
   if (!condition) {
@@ -124215,6 +124265,9 @@ async function qualifyCurrentSymbolWriterStartup(engine2, generation5) {
     need60(history.semanticSha256 === premises.historySemanticSha256 && history.branchUuid === baseline2.preparation.target.branchUuid);
     const expectation = selectCurrentSymbolStartupExpectation(history);
     need60(expectation.sheetUuids.length === premises.activeSchematicPages);
+    if (expectation.templates.some((template) => template.uuid === baseline2.preparation.target.symbolUuid)) {
+      throw new Error("Current symbol writer refuses referenced-symbol propagation: native linked-sheet updates are unsupported.");
+    }
     if (source4.source.purpose === "ordinary-symbol-metadata") {
       need60(source4.source.startupExpectation !== void 0 && canonicalJson(expectation) === canonicalJson(source4.source.startupExpectation));
     }
@@ -124393,8 +124446,9 @@ function buildCurrentSymbolWriteProgram(input) {
   const selected3 = request4(input);
   return `const result=await(async()=>{
 const selected=${JSON.stringify(selected3)},target=selected.target,root=globalThis,apply=Reflect.apply;
-let expired=false,timer,clear,stage='HOST';
-const bad=()=>{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage);};
+let expired=false,timer,clear,stage='HOST',guard=null,startupStage='project-only-context';
+const refusal=()=>new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage+(guard===null||stage==='TIMEOUT'?'':':'+guard+(guard==='STARTUP'?':'+startupStage:'')));
+const bad=()=>{throw refusal();};
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
 const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
 const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
@@ -124404,7 +124458,7 @@ try{
  const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
  ${buildCurrentProjectOnlySymbolGuard()}
  const startupExpected=selected.startup;
- ${buildCurrentSymbolStartupGuard()}
+ ${buildCurrentSymbolStartupGuard(true)}
  const host=projectOnly.host,bus=own(host,'messageBus'),rpc=method(bus,'rpcCall'),edaOwner=eda;
  ${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
  if(!actorEqual(cachedActorProjection,selected.expectedActor)||!actorEqual(startupActorProjection,selected.expectedActor))bad();
@@ -124414,9 +124468,11 @@ try{
  const iso=own(datePrototype,'toISOString'),zone=own(datePrototype,'getTimezoneOffset');
  if(typeof nativeDate!=='function'||typeof dateNow!=='function'||typeof iso!=='function'||typeof zone!=='function')bad();
  const same=()=>{
-  projectOnly.check();startup.check();checkDualActor();methodCheck(rpc);methodCheck(clockRpc);
+  guard='PROJECT';projectOnly.check();guard='STARTUP';startup.check();guard='ACTOR';checkDualActor();guard='RPC';methodCheck(rpc);methodCheck(clockRpc);
+  guard='HOST';
   if(expired||own(host,'messageBus')!==bus||own(host,'concurrentBus')!==concurrent||own(root,notifyKey)!==concurrent||own(root,'_TAB_ID_')!==notifyTab||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
-  if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow||own(nativeDate,'prototype')!==datePrototype||own(datePrototype,'toISOString')!==iso||own(datePrototype,'getTimezoneOffset')!==zone)bad();
+  guard='DATE';if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear||own(root,'Date')!==nativeDate||own(nativeDate,'now')!==dateNow||own(nativeDate,'prototype')!==datePrototype||own(datePrototype,'toISOString')!==iso||own(datePrototype,'getTimezoneOffset')!==zone)bad();
+  guard=null;
  };
  let lastNow;
  const now=()=>{same();const value=integer(apply(dateNow,nativeDate,[]));if(value>8640000000000000||(lastNow!==undefined&&value<lastNow))bad();lastNow=value;const date=new nativeDate(value);if(apply(zone,date,[])!==selected.rendererTimezoneOffsetMinutes)bad();same();return{value,iso:apply(iso,date,[])};};
@@ -124452,7 +124508,8 @@ try{
   const patch={uuid:target.symbolUuid,title:selected.desired.name,description:selected.desired.description};
   stage='DEADLINE';deadline();
   // No await, public modifier, Save, retry, source change or classification patch between this deadline and the sole mutation.
-  stage='MUTATION';const raw=await apply(rpc.fn,bus,['/PrjDB/symbol/updateData',[patch,target.projectUuid],0]);same();
+  stage='MUTATION';const raw=await apply(rpc.fn,bus,['/PrjDB/symbol/updateData',[patch,target.projectUuid],0]);
+  stage='POST_MUTATION';same();
   stage='ACK';const ack=metadata(own(plain(raw),'message'),true);
   stage='CLOCK_AFTER';const documentAfter=await clock();
   if(documentAfter.rendererBeforeMs<documentBefore.rendererAfterMs||ack.updateTime<documentBefore.serverTimeMs||ack.updateTime>documentAfter.serverTimeMs)bad();
@@ -124463,8 +124520,8 @@ try{
  };
  same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;stage='TIMEOUT';reject(new Error('CURRENT_SYMBOL_WRITE_REFUSED:TIMEOUT'));},${CURRENT_SYMBOL_WRITE_TIMEOUT_MS}]);});
  return await Promise.race([run(),timeout]);
-}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+stage);}
-finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:CLEANUP');}}}
+}catch{throw refusal();}
+finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_SYMBOL_WRITE_REFUSED:'+(expired?'TIMEOUT_CLEANUP':'CLEANUP'));}}}
 })();
 const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
@@ -124523,7 +124580,10 @@ var init_current_symbol_write_program = __esm({
       documentWindow: windowSchema,
       rendererTimezoneOffsetMinutes: offset2,
       startup: currentSymbolStartupExpectationSchema
-    }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.expectedWorker.maxTicket && (value2.desired.name !== value2.expectedBefore.name || value2.desired.description !== value2.expectedBefore.description) && value2.peerNames.every((name6) => name6.trim().toLowerCase() !== value2.desired.name.trim().toLowerCase()) && Math.max(value2.backendWindow.minimumMs, value2.documentWindow.minimumMs) <= Math.min(value2.backendWindow.maximumMs, value2.documentWindow.maximumMs));
+    }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.expectedWorker.maxTicket && (value2.desired.name !== value2.expectedBefore.name || value2.desired.description !== value2.expectedBefore.description) && value2.peerNames.every((name6) => name6.trim().toLowerCase() !== value2.desired.name.trim().toLowerCase()) && Math.max(value2.backendWindow.minimumMs, value2.documentWindow.minimumMs) <= Math.min(value2.backendWindow.maximumMs, value2.documentWindow.maximumMs)).refine(
+      (value2) => !value2.startup.templates.some((template) => template.uuid === value2.target.symbolUuid),
+      "Current symbol metadata writes require a symbol not referenced by active schematic pages."
+    );
     sampleSchema = external_exports.object({
       rendererBeforeMs: time4,
       serverTimeMs: time4,
@@ -134682,7 +134742,7 @@ var init_src = __esm({
       "easyeda_control_project_open",
       {
         title: "Open and validate one disposable EasyEDA project",
-        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. A stopped disposable opener can request-normal-close through its original retained Job without a bridge call; quarantine remains until retire-after-termination proves termination and session closure. Close acknowledgement never permits replay or proves saved contents. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
+        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. Targets referenced by active schematic pages refuse before writer transfer; native linked-sheet propagation is unsupported. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. A stopped disposable opener can request-normal-close through its original retained Job without a bridge call; quarantine remains until retire-after-termination proves termination and session closure. Close acknowledgement never permits replay or proves saved contents. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
