@@ -30,14 +30,53 @@ void test("copy name admits the 501st checked candidate but refuses the unchecke
   assert.throws(() => deriveCurrentSymbolCopyName("A_9007199254740992", ["A_9007199254740992"]), /search exhausted/u);
 });
 
-void test("copy name refuses locale-dependent titles, controls, empty names and invalid generated names", () => {
-  for (const source of ["", "IC", "\u0130c", "\u212Amp", "Op\nAmp", "A\u007F", "A".repeat(513)]) {
+void test("copy name admits uppercase I only when both native ASCII foldings agree on every collision", () => {
+  const cases = [
+    { source: "IC", titles: ["IC"], expected: "IC_1", collisions: 1 },
+    { source: "IC", titles: ["IC", "Ic_1", "UnrelatedI"], expected: "IC_2", collisions: 2 },
+    { source: "Resistor", titles: ["Resistor", "UNUSED_IC_SYMBOL"], expected: "Resistor_1", collisions: 1 },
+    { source: "VALIDATION_SYMBOL", titles: ["VALIDATION_SYMBOL", "UNUSED_IC_SYMBOL"], expected: "VALIDATION_SYMBOL_1", collisions: 1 },
+    { source: "iC", titles: ["iC", "ic_1", "OTHER_I"], expected: "iC_2", collisions: 2 },
+  ];
+  for (const { source, titles, expected, collisions } of cases) {
+    const result = deriveCurrentSymbolCopyName(source, titles);
+    assert.deepEqual(result, { name: expected, collisions });
+    for (const locale of ["en", "tr", "az", "lt"]) {
+      const names = titles.map((title) => title.toLocaleLowerCase(locale));
+      assert.equal(new Set(names).size, titles.length);
+      assert.equal(names.includes(result.name.toLocaleLowerCase(locale)), false);
+      assert.equal(names.includes(source.toLocaleLowerCase(locale)), true);
+    }
+  }
+});
+
+void test("copy name refuses locale-dependent collisions in either direction before returning a name", () => {
+  for (const [source, peer] of [["IC", "ic_1"], ["ic", "IC_1"], ["Mix", "MIx_1"], ["MIx", "Mix_1"]] as const) {
+    assert.throws(() => deriveCurrentSymbolCopyName(source, [source, peer]), /locale-dependent collision/u);
+  }
+  assert.throws(() => deriveCurrentSymbolCopyName("IC", ["IC", "Ic_1", "ic_2"]), /locale-dependent collision/u);
+  // An unused ambiguous title still cannot bypass complete-inventory uniqueness.
+  assert.throws(() => deriveCurrentSymbolCopyName("A", ["A", "UNUSED_I", "unused_i"]), /duplicate folded/u);
+  assert.throws(() => deriveCurrentSymbolCopyName("IC", ["IC", "ic"]), /duplicate folded/u);
+});
+
+void test("copy name retains its candidate bound when uppercase I is admitted", () => {
+  const titles = ["IC", ...Array.from({ length: 499 }, (_, index) => `IC_${index + 1}`)];
+  assert.deepEqual(deriveCurrentSymbolCopyName("IC", titles), { name: "IC_500", collisions: 500 });
+  assert.throws(() => deriveCurrentSymbolCopyName("IC", [...titles, "ic_500"]), /locale-dependent collision/u);
+  assert.throws(() => deriveCurrentSymbolCopyName("IC", [...titles, "IC_500"]), /search exhausted/u);
+});
+
+void test("copy name refuses non-ASCII titles, controls, empty names and invalid generated names", () => {
+  for (const source of ["", "\u0130c", "\u212Amp", "Op\nAmp", "A\u007F", "A".repeat(513)]) {
     assert.throws(() => deriveCurrentSymbolCopyName(source, [source]), /policy/u);
   }
-  for (const peer of ["IC", "\u0131c", "\u00C9", "bad\tname"]) {
+  for (const peer of ["\u0130c", "\u0131c", "\u00C9", "bad\tname"]) {
     assert.throws(() => deriveCurrentSymbolCopyName("A", ["A", peer]), /policy/u);
   }
   assert.throws(() => deriveCurrentSymbolCopyName("A_1e309", ["A_1e309"]), /policy/u);
+  assert.throws(() => deriveCurrentSymbolCopyName("IC_-1e309", ["IC_-1e309"]), /policy/u);
+  assert.throws(() => deriveCurrentSymbolCopyName("A_Infinity", ["A_Infinity"]), /policy/u);
   assert.throws(() => deriveCurrentSymbolCopyName("A".repeat(512), ["A".repeat(512)]), /policy/u);
 });
 

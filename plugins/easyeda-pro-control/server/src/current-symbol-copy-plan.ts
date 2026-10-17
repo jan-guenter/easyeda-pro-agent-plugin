@@ -4,7 +4,7 @@ import { isRecord, sha256Json, sha256Text } from "./core.ts";
 import { deriveCurrentSymbolCopyName } from "./current-symbol-copy-name.ts";
 import { isNativeDocumentDeleted, parseNativeRecords } from "./native-history.ts";
 import type { NativeDocumentSnapshot } from "./native-history.ts";
-import { CURRENT_SYMBOL_COPY_CANVAS_TYPES, currentCanvasSegmentsCopySource, prepareCurrentCanvasSegmentsSavedSymbolProjection,
+import { CURRENT_SYMBOL_COPY_CANVAS_TYPES, currentCanvasSegmentsCopySource, currentSymbolCopyPlaceholderStep, prepareCurrentCanvasSegmentsSavedSymbolProjection,
   prepareCurrentCreatedCopySavedSymbolProjection, prepareSavedSymbolProjection, verifyCurrentCanvasSegmentsCopySourceOrder,
   verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives } from "./saved-symbol-projection.ts";
 import type { CurrentCanvasSegmentsSavedSymbolProjection, CurrentCreatedCopySavedSymbolProjection, SavedSymbolProjection } from "./saved-symbol-projection.ts";
@@ -87,13 +87,18 @@ function drawingPart(document: NativeDocumentSnapshot, rows: readonly string[]):
   const part = parts[0];
   need(parts.length === 1 && part !== undefined && part.id.length <= 256, "exactly one live part is required");
   need(document.records.some((entry) => DRAWING.has(entry.type)), "a nonempty supported drawing is required");
-  const live = new Map(document.records.map((entry) => [entry.id, entry]));
+  // All rows plus every placeholder step bound each native family counter.
+  const live = new Map(document.records.map((entry) => [entry.id, entry])); let numberingBudget = rows.length;
   for (const row of rows) {
     const records = parseNativeRecords(row);
     const record = records[0];
     need(records.length === 1 && record !== undefined && typeof record.header["type"] === "string" && TYPES.has(record.header["type"]),
       "unsupported canvas record or asset dependency");
-    if (record.body !== null) {
+    if (record.header["type"] === "ELE_PLACEHOLDER") {
+      const step = currentSymbolCopyPlaceholderStep(record.body);
+      need(step <= Number.MAX_SAFE_INTEGER - numberingBudget, "placeholder numbering exceeds exact integer capacity");
+      numberingBudget += step;
+    } else if (record.body !== null) {
       const body = record.body, type = record.header["type"];
       need(type === "PART" || type === "CANVAS" || body["partId"] === part.id, "drawing membership differs from the sole part");
       need(body["partId"] === undefined || body["partId"] === "" || body["partId"] === part.id, "foreign part reference");
