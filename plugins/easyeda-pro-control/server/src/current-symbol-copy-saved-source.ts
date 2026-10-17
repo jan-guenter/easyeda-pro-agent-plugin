@@ -66,7 +66,9 @@ export async function prepareCurrentCopiedSymbolSource(continuation: CurrentSymb
   const completed = completedCurrentSymbolCopyClockSource(source.clockPlan, source.dispatchOwner, snapshot.inventory);
   const { copyPlan, append } = completed;
   need(source.original.baseline.preparation === copyPlan && append.plan === copyPlan && append.targetUuid === source.writeResult.createdUuid);
-  const decoded = await decodeCurrentSymbolPreEditHistory(snapshot.inventory, copyPlan.source); current();
+  const decoded = await decodeCurrentSymbolPreEditHistory(snapshot.inventory, {
+    projectUuid: copyPlan.source.projectUuid, branchUuid: copyPlan.source.branchUuid,
+  }); current();
   need(decoded.history.semanticSha256 === source.snapshot.native.historySemanticSha256 && decoded.history.projectUuid === copyPlan.source.projectUuid &&
     decoded.history.branchUuid === copyPlan.source.branchUuid && decoded.history.projectOwnerUuid === copyPlan.ownerUuid &&
     decoded.maximumTicket === copyPlan.canvasHeaderTicket);

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4b8ebeae65207b57b0d9de499125acad575a625b0ea9f72ed0b0b76d636a07ab";
+const __easyedaBundlePairId = "bb2ae220149290bc47e4b9c7e5df0b0dc853d69b8624575f0698f54fe072a40f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -135274,7 +135274,10 @@ async function prepareCurrentCopiedSymbolSource(continuation, engine2) {
   const completed3 = completedCurrentSymbolCopyClockSource(source5.clockPlan, source5.dispatchOwner, snapshot8.inventory);
   const { copyPlan, append } = completed3;
   need81(source5.original.baseline.preparation === copyPlan && append.plan === copyPlan && append.targetUuid === source5.writeResult.createdUuid);
-  const decoded = await decodeCurrentSymbolPreEditHistory(snapshot8.inventory, copyPlan.source);
+  const decoded = await decodeCurrentSymbolPreEditHistory(snapshot8.inventory, {
+    projectUuid: copyPlan.source.projectUuid,
+    branchUuid: copyPlan.source.branchUuid
+  });
   current5();
   need81(decoded.history.semanticSha256 === source5.snapshot.native.historySemanticSha256 && decoded.history.projectUuid === copyPlan.source.projectUuid && decoded.history.branchUuid === copyPlan.source.branchUuid && decoded.history.projectOwnerUuid === copyPlan.ownerUuid && decoded.maximumTicket === copyPlan.canvasHeaderTicket);
   const document3 = decoded.history.documents.find((item2) => item2.uuid === append.targetUuid);

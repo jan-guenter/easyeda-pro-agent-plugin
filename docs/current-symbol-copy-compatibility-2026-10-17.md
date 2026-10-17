@@ -140,3 +140,34 @@ plugin validator passed. The archived engineering record is byte-exact, with
 current instructions kept separately. Repository privacy and whitespace checks
 passed. Full release verification and exact-payload GitHub CI must finish before
 publication; installation proof is separate from connected copy validation.
+
+## Saved-source handoff correction
+
+Installed193000 was independently admitted and ran one disposable copy. The
+native result returned a fresh UUID; normal closure proved the original root
+and Job terminated. The complete closed SQL comparison found exactly the
+intended new symbol, its two creation tickets and native structure bookkeeping.
+The 18 drawing records, including four numbering counters, were preserved;
+the source and existing documents were unchanged. No explicit Save ran.
+
+The next `verification-start` request stopped before any verifier slot, launch
+or navigation with `Current pre-edit history identity refused.` The saved-source
+adapter passed `{projectUuid, branchUuid, symbolUuid}` into a shared decoder
+whose contract requires exactly `{projectUuid, branchUuid}`. TypeScript's
+structural assignment admitted the extra field, and the earlier test double
+incorrectly required the larger object, masking the integration defect.
+
+The adapter now explicitly projects the two history-identity fields. The shared
+decoder stays strict; source/destination identity, original owner, SQL and
+checkpoint checks are unchanged. A focused regression runs the production
+saved-source preparation with synthetic private owners and asserts the exact
+decoder input while retaining the source and destination UUIDs. It is offline
+evidence, not a replacement live result.
+
+The stopped operation remains stopped, with the copied symbol retained in the
+disposable project. No copy, Save, inverse or reopening was retried. Its complete
+copy lifecycle is still unvalidated. A fresh installed session can use the new
+unused symbol for the separate drawn-symbol metadata workflow after fresh
+preparation and all its own gates; it cannot resume this old operation from JSON.
+Ordinary drawn-symbol editing remains blocked. Release verification and
+installation results are recorded in AGENTS.md.
