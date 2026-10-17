@@ -216,6 +216,13 @@ void test("disposable schemas and result checks reject injected arguments and fa
   }
   const catalog = queryCurrentDisposableOpen({ includeSchemas: true }); assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(catalog), /inputSchema/u);
+  const preparationCheckpoint = catalog["preparationCheckpoint"]; assert.ok(preparationCheckpoint !== null && typeof preparationCheckpoint === "object");
+  assert.equal(Reflect.get(preparationCheckpoint, "resultField"), "preparationCheckpoint");
+  assert.equal(Reflect.get(preparationCheckpoint, "inputField"), "baseline-begin.preparation.checkpoint");
+  assert.equal(Reflect.get(preparationCheckpoint, "historicalEvidenceOnly"), true);
+  assert.equal(Reflect.get(preparationCheckpoint, "omittedWhenNotRetained"), true);
+  assert.equal(Reflect.get(preparationCheckpoint, "writerAuthority"), false);
+  assert.match(JSON.stringify(preparationCheckpoint), /descriptorSchema/u);
   const clock = catalog["clockPreparation"]; assert.ok(clock !== null && typeof clock === "object");
   assert.equal(Reflect.get(clock, "connectedValidation"), false); assert.equal(Reflect.get(clock, "writerAuthority"), false);
   assert.deepEqual(Reflect.get(clock, "runtimeVersions"), { electron: "41.2.1-jlc-sa-win-x64.5", chrome: "146.0.7680.188", node: "24.14.1" });

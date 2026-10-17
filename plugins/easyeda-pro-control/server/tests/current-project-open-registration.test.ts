@@ -4,7 +4,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { createOperation, writePhaseArtifact } from "../src/artifacts.ts";
+import { createOperation, operationPath, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash } from "../src/core.ts";
 import { currentDisposableOpenRequestSchema, queryCurrentDisposableOpen } from "../src/current-disposable-open.ts";
 import { CurrentDisposableOpenCoordinator } from "../src/current-disposable-open-runtime.ts";
@@ -76,12 +76,24 @@ void test("actual project-open registration keeps strict lifecycle inputs and lo
   }
   await assert.rejects(invoke({ request: { action: "baseline-prepare-clock", operationId, acceptScratchProcessEffects: true } }), /unavailable/u);
   for (const validation of [{ action: "validation-begin", operationId, confirmDisposableProject: true },
-    { action: "validation-advance", operationId, step: { expectedPhase: "forward-write", confirmDisposableProject: true, acceptMetadataMutation: true } },
-    { action: "validation-inspect", operationId }]) {
+    { action: "validation-advance", operationId, step: { expectedPhase: "forward-write", confirmDisposableProject: true, acceptMetadataMutation: true } }]) {
     assert.equal(requestSchema.safeParse(validation).success, true);
     await assert.rejects(invoke({ request: validation }), /original production opening owner/u);
     await assert.rejects(invoke({ request: validation, expectedFingerprint: {} }), /cannot replace/u);
   }
+  const hash = "a".repeat(64), historicalWriterId = "current-writer-historical-inspection";
+  const writerPlan = { profile: "easyeda-pro-control.current-symbol-writer.v1", baselinePlan: { ...plan, purpose: "disposable-validation" },
+    baselineJournalSha256: hash, baselineCopyReceiptSha256: hash, startupSha256: hash };
+  await createOperation({ schema: OPERATION_SCHEMA, operationId: historicalWriterId, journalPath: operationPath(historicalWriterId), plan: writerPlan,
+    planHash: buildPlanHash(writerPlan), state: "writer-stopped", sequence: 0, artifacts: [], hardStop: true, orphanedCallPossible: true });
+  const historicalWriter = await invoke({ request: { action: "validation-inspect", operationId: historicalWriterId } });
+  const historicalFlagsSchema = z.object({ hardStop: z.literal(true), orphanedCallPossible: z.literal(true) });
+  const historicalWriterSchema = z.object({ result: z.object({ recordedState: z.literal("writer-stopped"), historicalEvidenceOnly: z.literal(true),
+    originalOwnerRetained: z.literal(false), continuationAuthorized: z.literal(false), replayAllowed: z.literal(false), executionAuthorized: z.literal(false),
+    recordedFlags: historicalFlagsSchema }) });
+  assert.ok(historicalWriterSchema.safeParse(historicalWriter).success);
+  await assert.rejects(invoke({ request: { action: "validation-inspect", operationId: historicalWriterId }, expectedFingerprint: {} }), /cannot replace/u);
+  await assert.rejects(invoke({ request: { action: "validation-begin", operationId: historicalWriterId, confirmDisposableProject: true } }), /original production opening owner/u);
   assert.equal(nativeOwners, 0); assert.equal(quarantineChecks, 0);
 });
 

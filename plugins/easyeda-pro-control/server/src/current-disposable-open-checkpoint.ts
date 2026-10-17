@@ -1,10 +1,10 @@
 import { join } from "node:path";
-import { controlDataDirectory, controlRootCapability, readArtifact } from "./artifacts.ts";
+import { controlDataDirectory, controlRootCapability, readArtifact, verifyExactManagedArtifact } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointAccessPolicy, CheckpointReceipt } from "./checkpoint.ts";
 import { canonicalJson, normalizeEasyedaProjectPath, sha256Text } from "./core.ts";
-import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
-import type { CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
+import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
+import type { CurrentDisposableOpenPreparationCheckpoint, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
 import { CURRENT_SYMBOL_OPERATION_PURPOSE } from "./current-symbol-operation.ts";
 import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
@@ -16,6 +16,8 @@ const MAX_SOURCE_BYTES = 268_435_456;
 export interface CurrentDisposableOpenCheckpoint {
   readonly profile: typeof PROFILE;
   readonly checkpoint: CheckpointReceipt;
+  /** Optional for historical journals. The checkpoint size is not its source size. */
+  readonly preparationCheckpoint?: Readonly<CurrentDisposableOpenPreparationCheckpoint>;
   readonly targetEvidence: Readonly<{
     projectUuid: string; branchUuid: string; documentUuid: string; docType: "PCB";
     sourceSha256: string; checkpointSha256: string; documentSemanticSha256: string;
@@ -80,6 +82,14 @@ async function unchanged(checkpoint: CheckpointReceipt, source: string): Promise
   }
 }
 
+async function verifyPreparationCheckpoint(checkpoint: CheckpointReceipt, input: CurrentDisposableOpenPreparationCheckpoint): Promise<void> {
+  const descriptor = currentDisposableOpenPreparationCheckpointSchema.parse(input);
+  if (descriptor.path !== checkpoint.checkpoint || descriptor.sha256 !== checkpoint.checkpointSha256) {
+    throw new Error("Disposable opening preparation checkpoint descriptor differs from its receipt.");
+  }
+  await verifyExactManagedArtifact(descriptor);
+}
+
 /** Preserve one managed SQLite snapshot before ordinary opening, whose native
  * effects may subsequently change the disposable source. This is not a promise
  * of byte-identical restoration, process closure or unchanged post-open storage.
@@ -91,9 +101,15 @@ export async function prepareCurrentDisposableOpenCheckpoint(input: CurrentDispo
     label: "current-disposable-open" }, await accessPolicy(source));
   assertSourceBinding(checkpoint, target, source);
   const evidence = await targetEvidence(checkpoint, target);
+  // Read only the managed snapshot to obtain its actual byte count. The full
+  // Hash check binds it to this receipt; unchanged below also checks identity.
+  const observed = await readArtifact(checkpoint.checkpoint, 0, 1);
+  const preparationCheckpoint = Object.freeze(currentDisposableOpenPreparationCheckpointSchema.parse({ path: observed.path,
+    bytes: observed.size, sha256: checkpoint.checkpointSha256 }));
+  await verifyPreparationCheckpoint(checkpoint, preparationCheckpoint);
   await unchanged(checkpoint, source);
   if (canonicalJson(input) !== inputText) { throw new Error("Disposable opening target changed during checkpoint preparation."); }
-  return Object.freeze({ profile: PROFILE, checkpoint, targetEvidence: evidence });
+  return Object.freeze({ profile: PROFILE, checkpoint, preparationCheckpoint, targetEvidence: evidence });
 }
 
 /** Reprove the retained backup, default-branch PCB membership and original
@@ -108,6 +124,7 @@ export async function verifyCurrentDisposableOpenCheckpoint(prepared: CurrentDis
   assertSourceBinding(checkpoint, target, source);
   const evidence = await targetEvidence(checkpoint, target);
   if (canonicalJson(evidence) !== canonicalJson(prepared.targetEvidence)) { throw new Error("Disposable opening target evidence changed."); }
+  if (prepared.preparationCheckpoint !== undefined) { await verifyPreparationCheckpoint(checkpoint, prepared.preparationCheckpoint); }
   await unchanged(checkpoint, source);
   if (canonicalJson(input) !== inputText || canonicalJson(prepared) !== preparedText) {
     throw new Error("Disposable opening retained admission changed during verification.");

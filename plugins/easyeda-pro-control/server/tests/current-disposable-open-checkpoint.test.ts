@@ -74,7 +74,12 @@ void test("disposable checkpoint rejects Windows aliases and raw-path identity m
 });
 
 void test("disposable checkpoint uses real private backup and preserved imported headers, then refuses source or evidence drift", async context => {
-  const f = await fixture(fixturePaths(context)), prepared = await prepareCurrentDisposableOpenCheckpoint(f.target);
+  const f = await fixture(fixturePaths(context));
+  const padded = new DatabaseSync(f.source);
+  try { padded.exec("CREATE TABLE discarded(value BLOB); INSERT INTO discarded VALUES(zeroblob(32768)); DROP TABLE discarded;"); }
+  finally { padded.close(); }
+  f.target.expectedSourceSha256 = digest(await readFile(f.source));
+  const prepared = await prepareCurrentDisposableOpenCheckpoint(f.target);
   assert.equal(prepared.targetEvidence.projectUuid, f.target.projectUuid);
   assert.equal(prepared.targetEvidence.branchUuid, BRANCH); assert.equal(prepared.targetEvidence.documentUuid, DOCUMENT);
   assert.equal(prepared.targetEvidence.docType, "PCB"); assert.equal(prepared.targetEvidence.sourceSha256, f.target.expectedSourceSha256);
@@ -82,8 +87,17 @@ void test("disposable checkpoint uses real private backup and preserved imported
   assert.equal(prepared.checkpoint.sourceDumpSha256, prepared.checkpoint.checkpointDumpSha256);
   const checkpointInfo = await stat(prepared.checkpoint.checkpoint), receiptInfo = await stat(prepared.checkpoint.receiptPath);
   assert.equal(checkpointInfo.mode % 512, 0o600); assert.equal(receiptInfo.mode % 512, 0o600);
+  assert.deepEqual(prepared.preparationCheckpoint, { path: prepared.checkpoint.checkpoint, bytes: checkpointInfo.size,
+    sha256: prepared.checkpoint.checkpointSha256 });
+  const sourceInfo = await stat(f.source); assert.ok(sourceInfo.size > checkpointInfo.size);
   assert.equal(digest(await readFile(f.source)), f.target.expectedSourceSha256);
   await verifyCurrentDisposableOpenCheckpoint(prepared, f.target);
+  const legacy = { ...prepared }; delete legacy.preparationCheckpoint;
+  await verifyCurrentDisposableOpenCheckpoint(legacy, f.target);
+  for (const changed of [{ bytes: sourceInfo.size }, { path: f.source }, { sha256: "0".repeat(64) }]) {
+    await assert.rejects(verifyCurrentDisposableOpenCheckpoint({ ...prepared,
+      preparationCheckpoint: { ...prepared.preparationCheckpoint, ...changed } }, f.target), /descriptor differs|byte length differs/u);
+  }
   await assert.rejects(verifyCurrentDisposableOpenCheckpoint({ ...prepared,
     targetEvidence: { ...prepared.targetEvidence, branchUuid: "88".repeat(16) } }, f.target), /target evidence changed/u);
   const database = new DatabaseSync(f.source);

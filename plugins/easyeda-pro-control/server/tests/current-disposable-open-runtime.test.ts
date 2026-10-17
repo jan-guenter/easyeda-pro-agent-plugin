@@ -418,6 +418,7 @@ void test("current ordinary opener journals both intents, projects strict checkp
   const value = fixture("success");
   const opened = await value.coordinator.run(value.input, FINGERPRINT);
   assert.equal(opened["state"], "completed"); assert.equal(resultValue(opened)["outcome"], "target-native-identity-observed");
+  assert.equal(Object.hasOwn(opened, "preparationCheckpoint"), false);
   assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document"]);
   assert.equal(value.calls.filter((call) => call === "verify-checkpoint").length, 1);
   assert.ok(value.calls.indexOf("verify-checkpoint") < value.calls.indexOf("dispatch:open-project"));
@@ -427,6 +428,25 @@ void test("current ordinary opener journals both intents, projects strict checkp
   assert.equal(value.calls.filter((call) => call === "prepare").length, 1);
   assert.equal(value.calls.filter((call) => call === "verify-checkpoint").length, 1);
   assert.equal(opened["explicitSaveDispatched"], false); assert.equal(opened["normalOpenEffectsMayHaveOccurred"], true);
+});
+
+void test("opening exposes only its retained preparation descriptor and historical inspection neither invents nor refreshes it", async () => {
+  const value = fixture("preparation-checkpoint");
+  const descriptor = { path: CHECKPOINT.checkpoint.checkpoint, bytes: 4096, sha256: CHECKPOINT.checkpoint.checkpointSha256 };
+  const prepared = { ...CHECKPOINT, preparationCheckpoint: descriptor };
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+    prepareCheckpoint: (): Promise<CurrentDisposableOpenCheckpoint> => Promise.resolve(structuredClone(prepared)),
+    verifyCheckpoint: (actual): Promise<void> => { assert.deepEqual(actual, prepared); return Promise.resolve(); } });
+  const opened = await coordinator.run(value.input, FINGERPRINT);
+  assert.deepEqual(opened["preparationCheckpoint"], descriptor); assert.equal(opened["writerAuthority"], false);
+  assert.ok(isRecord(opened["preparationCheckpoint"])); opened["preparationCheckpoint"].bytes = 1;
+  const before = [...value.calls];
+  const inspected = await coordinator.run({ action: "inspect", operationId: value.input.operationId });
+  assert.deepEqual(inspected["preparationCheckpoint"], descriptor); assert.deepEqual(value.calls, before);
+  const journal = value.journals.get(value.input.operationId); assert.ok(journal && isRecord(journal["checkpointProof"]));
+  journal["checkpointProof"]["preparationCheckpoint"] = { ...descriptor, sha256: "0".repeat(64) };
+  await assert.rejects(coordinator.run({ action: "inspect", operationId: value.input.operationId }), /malformed/u);
+  assert.deepEqual(value.calls, before);
 });
 
 void test("dormant ordinary entry seals startup before navigation and rejects disposable continuation", async () => {

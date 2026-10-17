@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "097a2cd2e358315ee596a1a59f71b1a3c3c3f70399bf9533269fd6c06e6e16dc";
+const __easyedaBundlePairId = "6f07fc44b2e159bc193ce9a275b5134cc6abcd4b155e17b9da4546c7417af79a";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -15548,7 +15548,7 @@ async function readJson(path5, maximumBytes, privateFile = false) {
   }
 }
 async function nodeDescriptorHash(file3, before) {
-  const hash39 = createHash("sha256");
+  const hash40 = createHash("sha256");
   if (!sameNodeFile(before, await file3.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
@@ -15559,12 +15559,12 @@ async function nodeDescriptorHash(file3, before) {
     if (total > NODE_MAX_BYTES) {
       throw new MachineProfileError("machine-node-too-large");
     }
-    hash39.update(bytes2);
+    hash40.update(bytes2);
   }
   if (total !== before.size || !sameNodeFile(before, await file3.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
-  return hash39.digest("hex");
+  return hash40.digest("hex");
 }
 async function assertKernelNodeCurrent(kernel) {
   if (await realpath("/proc/self/exe") !== kernel.nodeExecutable || await nodeDescriptorHash(kernel.file, kernel.information) !== kernel.nodeSha256) {
@@ -25248,10 +25248,10 @@ var require_util = __commonJS({
     var codegen_1 = require_codegen();
     var code_1 = require_code();
     function toHash(arr) {
-      const hash39 = {};
+      const hash40 = {};
       for (const item2 of arr)
-        hash39[item2] = true;
-      return hash39;
+        hash40[item2] = true;
+      return hash40;
     }
     exports2.toHash = toHash;
     function alwaysValidSchema(it, schema2) {
@@ -36882,7 +36882,7 @@ async function hashManagedJsonFile(path5, label) {
     const before = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, before, label);
     assertManagedJsonByteLimit(before.size, label);
-    const hash39 = createHash3("sha256");
+    const hash40 = createHash3("sha256");
     const buffer = Buffer.alloc(Math.min(1024 * 1024, before.size + 1));
     let total = 0;
     while (total <= before.size) {
@@ -36892,7 +36892,7 @@ async function hashManagedJsonFile(path5, label) {
         break;
       }
       total += bytesRead;
-      hash39.update(buffer.subarray(0, bytesRead));
+      hash40.update(buffer.subarray(0, bytesRead));
     }
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(before, after, label);
@@ -36901,7 +36901,7 @@ async function hashManagedJsonFile(path5, label) {
       throw new Error(`${label} changed while it was being read.`);
     }
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
-    return { bytes: total, sha256: hash39.digest("hex") };
+    return { bytes: total, sha256: hash40.digest("hex") };
   } finally {
     await closeManagedFile(opened);
   }
@@ -36941,7 +36941,7 @@ async function hashOpenManagedAttachment(opened, label, expectedBytes) {
   if (expectedBytes !== void 0 && before.size !== expectedBytes) {
     throw new Error(`${label} expected byte length changed before hashing.`);
   }
-  const hash39 = createHash3("sha256");
+  const hash40 = createHash3("sha256");
   let bytesRead = 0;
   for await (const chunk of handle.createReadStream({
     autoClose: false,
@@ -36952,7 +36952,7 @@ async function hashOpenManagedAttachment(opened, label, expectedBytes) {
       throw new TypeError("Evidence stream yielded a non-buffer chunk.");
     }
     bytesRead += chunk.length;
-    hash39.update(chunk);
+    hash40.update(chunk);
   }
   const after = await handle.stat();
   assertFileStayedUnchanged(before, after, label);
@@ -36963,7 +36963,7 @@ async function hashOpenManagedAttachment(opened, label, expectedBytes) {
   return {
     path: opened.absolute,
     bytes: after.size,
-    sha256: hash39.digest("hex"),
+    sha256: hash40.digest("hex"),
     mtimeMs: after.mtimeMs,
     identity: {
       device: String(after.dev),
@@ -40655,7 +40655,7 @@ function* createNativeAtomHeaderHistorySteps(binding3, occurrences) {
     fail();
   }
   const capturedBinding = Object.freeze(parsedBinding.data);
-  const hash39 = createHash4("sha256");
+  const hash40 = createHash4("sha256");
   const retained = [];
   let previous;
   let hasFirstTicket = false;
@@ -40678,7 +40678,7 @@ function* createNativeAtomHeaderHistorySteps(binding3, occurrences) {
     retained.push(captured);
     hasFirstTicket ||= Object.hasOwn(captured, "serializedFirstTicket");
     const encoded = canonicalJson(captured);
-    hash39.update(encoded).update("\n");
+    hash40.update(encoded).update("\n");
     previous = captured;
     batchRecords += 1;
     batchBytes += Buffer.byteLength(encoded);
@@ -40691,7 +40691,7 @@ function* createNativeAtomHeaderHistorySteps(binding3, occurrences) {
   if (!hasFirstTicket || occurrences.length !== occurrenceCount) {
     fail();
   }
-  const occurrencesSha256 = hash39.digest("hex");
+  const occurrencesSha256 = hash40.digest("hex");
   const commitment = { profile: PROFILE, ...capturedBinding, occurrenceCount: retained.length, occurrencesSha256 };
   const result = Object.freeze({ profile: PROFILE, ...capturedBinding, occurrences: Object.freeze(retained), occurrencesSha256, sha256: sha256Json(commitment) });
   generatedHistories.add(result);
@@ -41491,14 +41491,14 @@ async function readNativeHistoryCheckpoint(input) {
     if (!before.isFile() || before.nlink !== 1n || before.size > BigInt(MAX_DATABASE_BYTES)) {
       fail2();
     }
-    const hash39 = createHash6("sha256");
+    const hash40 = createHash6("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
       if (!Buffer.isBuffer(chunk)) {
         fail2();
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
-    if (hash39.digest("hex") !== expectedSha256) {
+    if (hash40.digest("hex") !== expectedSha256) {
       fail2("checkpoint-hash");
     }
     stage = "project-scope";
@@ -44187,16 +44187,16 @@ async function verifySchematicNativeProfile(assetsRoot) {
   }
   const file3 = await open6(path5, constants2.O_RDONLY | constants2.O_NOFOLLOW);
   try {
-    const hash39 = createHash7("sha256");
+    const hash40 = createHash7("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
     const current4 = await lstat6(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Installed schematic native implementation differs from its reviewed profile.");
     }
     return SCHEMATIC_NATIVE_IMPLEMENTATION;
@@ -44232,16 +44232,16 @@ async function verifyLibraryNativeProfile(assetsRoot) {
   }
   const file3 = await open7(path5, constants3.O_RDONLY | constants3.O_NOFOLLOW);
   try {
-    const hash39 = createHash8("sha256");
+    const hash40 = createHash8("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
     const current4 = await lstat7(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Native library implementation differs from the reviewed profile.");
     }
     return LIBRARY_NATIVE_IMPLEMENTATION;
@@ -44279,16 +44279,16 @@ async function verifyDeviceAssociationNativeProfile(assetsRoot) {
     }
     const file3 = await open8(path5, constants4.O_RDONLY | constants4.O_NOFOLLOW);
     try {
-      const hash39 = createHash9("sha256");
+      const hash40 = createHash9("sha256");
       for await (const chunk of file3.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Native device implementation stream is not binary.");
         }
-        hash39.update(chunk);
+        hash40.update(chunk);
       }
       const after = await file3.stat({ bigint: true });
       const current4 = await lstat8(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== implementation.sha256) {
         throw new Error("Native device implementation differs from the reviewed profile.");
       }
     } finally {
@@ -45790,8 +45790,8 @@ function document(history, uuid12, type2) {
   if (values2.length !== 1 || value2 === void 0) {
     fail4();
   }
-  const hash39 = sha256Json({ uuid: value2.uuid, docType: value2.docType, metadata: value2.metadata, records: value2.records.map(({ id: id9, type: recordType2, body: body4 }) => ({ id: id9, type: recordType2, body: body4 })) });
-  if (hash39 !== value2.semanticSha256) {
+  const hash40 = sha256Json({ uuid: value2.uuid, docType: value2.docType, metadata: value2.metadata, records: value2.records.map(({ id: id9, type: recordType2, body: body4 }) => ({ id: id9, type: recordType2, body: body4 })) });
+  if (hash40 !== value2.semanticSha256) {
     fail4();
   }
   return value2;
@@ -58586,15 +58586,15 @@ async function workerProfile(assetsRoot) {
   }
   const file3 = await open9(path5, constants5.O_RDONLY | constants5.O_NOFOLLOW);
   try {
-    const hash39 = createHash12("sha256");
+    const hash40 = createHash12("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         fail6();
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true }), current4 = await lstat9(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== WORKER.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== WORKER.sha256) {
       fail6();
     }
   } finally {
@@ -59387,11 +59387,11 @@ function symbolEvidence(model, history) {
   if (!(model.kind === "part" && rotation2 === 90 || model.kind === "netport" && (rotation2 === 180 || rotation2 === 270)) || model.body["isMirror"] !== false || symbol4 === void 0 || !same16(symbol4.records.find((row7) => row7.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row7) => row7.type === "PART" && row7.id === model.body["partId"])) {
     throw new Error("Unreviewed schematic component coordinate reconstruction.");
   }
-  const hash39 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id9, type: type2, body: body4 }) => ({ id: id9, type: type2, body: body4 })) });
-  if (hash39 !== symbol4.semanticSha256) {
+  const hash40 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id9, type: type2, body: body4 }) => ({ id: id9, type: type2, body: body4 })) });
+  if (hash40 !== symbol4.semanticSha256) {
     throw new Error("Coordinate reconstruction library evidence changed.");
   }
-  return { hash: hash39, rotation: rotation2 };
+  return { hash: hash40, rotation: rotation2 };
 }
 function multiply2(a, b) {
   const result = [];
@@ -64662,7 +64662,7 @@ async function readStableText(file3, label) {
 }
 async function sha256Handle(handle, label) {
   const before = await handle.stat({ bigint: true });
-  const hash39 = createHash14("sha256");
+  const hash40 = createHash14("sha256");
   const buffer = Buffer.allocUnsafe(1024 * 1024);
   let position = 0;
   while (true) {
@@ -64675,12 +64675,12 @@ async function sha256Handle(handle, label) {
     if (bytesRead === 0) {
       break;
     }
-    hash39.update(buffer.subarray(0, bytesRead));
+    hash40.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat({ bigint: true });
   assertStableFile(before, after, label);
-  return { info: after, sha256: hash39.digest("hex") };
+  return { info: after, sha256: hash40.digest("hex") };
 }
 async function trustedSqliteBinary() {
   for (const candidate of SQLITE_BINARY_CANDIDATES) {
@@ -66356,16 +66356,16 @@ async function verifyWitnessNativeProfile(assetsRoot) {
     need4(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath10(path5) === path5);
     const file3 = await open14(path5, constants8.O_RDONLY | constants8.O_NOFOLLOW);
     try {
-      const hash39 = createHash16("sha256");
+      const hash40 = createHash16("sha256");
       let consumed2 = 0n;
       for await (const chunk of file3.createReadStream({ autoClose: false })) {
         need4(Buffer.isBuffer(chunk));
         consumed2 += BigInt(chunk.length);
         need4(consumed2 <= before.size && consumed2 <= 128n * 1024n * 1024n);
-        hash39.update(chunk);
+        hash40.update(chunk);
       }
       const after = await file3.stat({ bigint: true }), named = await lstat15(path5, { bigint: true });
-      need4(consumed2 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath10(path5) === path5 && hash39.digest("hex") === pin4.sha256);
+      need4(consumed2 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath10(path5) === path5 && hash40.digest("hex") === pin4.sha256);
     } finally {
       await file3.close();
     }
@@ -68070,7 +68070,7 @@ async function observe2(input) {
       files.push({ handle, role, bound: bound2, identity: fileIdentity5 });
       deadline();
       same22(identity21(await handle.stat({ bigint: true })), fileIdentity5, "opened-file");
-      const hash39 = createHash18("sha256");
+      const hash40 = createHash18("sha256");
       const chunk = Buffer.alloc(Math.min(CLOSURE_LIMITS.chunkBytes, Number(before.size)));
       const jsonChunks = [];
       const expectedJson = values2.map((entry) => entry.jsonSha256).filter((entry) => entry !== null);
@@ -68082,13 +68082,13 @@ async function observe2(input) {
         deadline();
         requireEvidence(result2.bytesRead > 0 && result2.bytesRead <= count2, "closure-read-length");
         const bytes2 = chunk.subarray(0, result2.bytesRead);
-        hash39.update(bytes2);
+        hash40.update(bytes2);
         if (expectedJson.length > 0) {
           jsonChunks.push(Buffer.from(bytes2));
         }
         position += result2.bytesRead;
       }
-      const digest6 = hash39.digest("hex");
+      const digest6 = hash40.digest("hex");
       requireEvidence(digest6 === role.sha256, "closure-expected-bytes-changed");
       if (expectedJson.length > 0) {
         const parsedDigest = jsonDigest(Buffer.concat(jsonChunks));
@@ -70161,27 +70161,27 @@ async function absentSidecars2(path5) {
   }
 }
 async function hashFile(handle, bytes2) {
-  const hash39 = createHash21("sha256");
+  const hash40 = createHash21("sha256");
   const buffer = Buffer.alloc(Math.min(CHUNK_BYTES, bytes2));
   let position = 0;
   while (position < bytes2) {
     const result = await handle.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
     check2(result.bytesRead > 0, "File ended during bounded hash read.");
-    hash39.update(buffer.subarray(0, result.bytesRead));
+    hash40.update(buffer.subarray(0, result.bytesRead));
     position += result.bytesRead;
   }
   const eof = await handle.read(Buffer.alloc(1), 0, 1, bytes2);
   check2(eof.bytesRead === 0, "File grew during bounded hash read.");
-  return hash39.digest("hex");
+  return hash40.digest("hex");
 }
 async function copyBytes(source4, artifact2, bytes2) {
-  const hash39 = createHash21("sha256");
+  const hash40 = createHash21("sha256");
   const buffer = Buffer.alloc(Math.min(CHUNK_BYTES, bytes2));
   let position = 0;
   while (position < bytes2) {
     const result = await source4.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
     check2(result.bytesRead > 0, "Source ended during bounded copy.");
-    hash39.update(buffer.subarray(0, result.bytesRead));
+    hash40.update(buffer.subarray(0, result.bytesRead));
     let written = 0;
     while (written < result.bytesRead) {
       const output = await artifact2.write(buffer, written, result.bytesRead - written, position + written);
@@ -70190,7 +70190,7 @@ async function copyBytes(source4, artifact2, bytes2) {
     }
     position += result.bytesRead;
   }
-  return hash39.digest("hex");
+  return hash40.digest("hex");
 }
 async function copyClosedProjectBytes(input) {
   const { closureProof, source: source4, expectedSourceSha256, artifactDirectory } = input;
@@ -84193,7 +84193,7 @@ function replaceDocument(history, replacement) {
   return { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid12, docType, semanticSha256 }) => ({ uuid: uuid12, docType, semanticSha256 }))) };
 }
 function projectSettledPriorInverse(input, prior) {
-  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash39) => /^[a-f0-9]{64}$/u.test(hash39)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
+  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash40) => /^[a-f0-9]{64}$/u.test(hash40)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
     throw new Error("Related inverse lacks exact retained restoration evidence.");
   }
   verifyDesignBaseline({ checkpoint: input.before, source: input.expectedBefore, targets: [] });
@@ -86275,15 +86275,15 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
     }
     const file3 = await open20(path5, constants15.O_RDONLY | constants15.O_NOFOLLOW);
     try {
-      const hash39 = createHash26("sha256");
+      const hash40 = createHash26("sha256");
       for await (const chunk of file3.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Rule-check implementation stream is not binary.");
         }
-        hash39.update(chunk);
+        hash40.update(chunk);
       }
       const after = await file3.stat({ bigint: true }), current4 = await lstat23(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.size !== current4.size || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.size !== current4.size || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== implementation.sha256) {
         throw new Error("Rule-check implementation differs from its reviewed profile.");
       }
     } finally {
@@ -86433,14 +86433,14 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
 }
 function verifyFlatDisplayRetainedSaveAuthority(journal, prepared, acknowledgment) {
   const binding3 = assertFlatTransactionBinding(flatTransactionBinding(journal.plan), journal.plan.operation, journal.context);
-  const hash39 = sha256Text(canonicalJson(binding3));
-  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash39 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
+  const hash40 = sha256Text(canonicalJson(binding3));
+  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash40 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
     throw new Error("Retained flat display Save lacks its sealed final synchronous guard.");
   }
   const guard = acknowledgment["flatDisplaySaveGuard"];
   if (canonicalJson(guard) !== canonicalJson({
     profile: binding3.profile,
-    bindingSha256: hash39,
+    bindingSha256: hash40,
     observationSha256: prepared["observationSha256"],
     finalSynchronousCheck: true
   })) {
@@ -89919,15 +89919,15 @@ async function verifyDocumentContainerRenameNativeProfile(assetsRoot) {
   }
   const file3 = await open21(path5, constants16.O_RDONLY | constants16.O_NOFOLLOW);
   try {
-    const hash39 = createHash27("sha256");
+    const hash40 = createHash27("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native document rename implementation stream is not binary.");
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true }), current4 = await lstat24(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== implementation.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== implementation.sha256) {
       throw new Error("Native document rename implementation differs from the reviewed profile.");
     }
   } finally {
@@ -90164,15 +90164,15 @@ async function verifyProjectSchematicCreateNativeProfile(assetsRoot) {
   }
   const file3 = await open22(path5, constants17.O_RDONLY | constants17.O_NOFOLLOW);
   try {
-    const hash39 = createHash28("sha256");
+    const hash40 = createHash28("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native schematic creation implementation stream is not binary.");
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true }), current4 = await lstat25(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash39.digest("hex") !== implementation.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current4.dev || after.ino !== current4.ino || after.mtimeNs !== current4.mtimeNs || after.ctimeNs !== current4.ctimeNs || hash40.digest("hex") !== implementation.sha256) {
       throw new Error("Native schematic creation implementation differs from the reviewed profile.");
     }
   } finally {
@@ -92479,16 +92479,16 @@ async function verifyCurrentUiImplementation(assetsRoot) {
   try {
     const opened = await file3.stat({ bigint: true });
     needUi(opened.isFile() && before.dev === opened.dev && before.ino === opened.ino && before.size === opened.size && before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
-    const hash39 = createHash30("sha256");
+    const hash40 = createHash30("sha256");
     let consumed2 = 0n;
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       needUi(Buffer.isBuffer(chunk));
       consumed2 += BigInt(chunk.length);
       needUi(consumed2 <= before.size && consumed2 <= 128n * 1024n * 1024n);
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     const after = await file3.stat({ bigint: true }), named = await lstat26(path5, { bigint: true });
-    needUi(after.isFile() && consumed2 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath16(path5) === path5 && hash39.digest("hex") === CURRENT_UI_IMPLEMENTATION.sha256);
+    needUi(after.isFile() && consumed2 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath16(path5) === path5 && hash40.digest("hex") === CURRENT_UI_IMPLEMENTATION.sha256);
   } finally {
     await file3.close();
   }
@@ -93470,15 +93470,15 @@ async function hashPinnedFile(absolute, sha256, bytes2) {
   try {
     const before = await handle.stat({ bigint: true });
     requireValue14(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= 1073741824n && (bytes2 === void 0 ? before.size <= 65536n : before.size === BigInt(bytes2)), "Ordinary launch pinned file size or kind differs.");
-    const hash39 = createHash33("sha256");
+    const hash40 = createHash33("sha256");
     let count2 = 0;
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       requireValue14(Buffer.isBuffer(chunk), "Ordinary launch hash requires bytes.");
       count2 += chunk.length;
       requireValue14(count2 <= Number(before.size), "Ordinary launch file grew during hashing.");
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
-    requireValue14(count2 === Number(before.size) && hash39.digest("hex") === sha256 && sameFile4(before, await handle.stat({ bigint: true })) && sameFile4(before, await lstat29(absolute, { bigint: true })) && await realpath19(absolute) === absolute, "Ordinary launch pinned file identity differs.");
+    requireValue14(count2 === Number(before.size) && hash40.digest("hex") === sha256 && sameFile4(before, await handle.stat({ bigint: true })) && sameFile4(before, await lstat29(absolute, { bigint: true })) && await realpath19(absolute) === absolute, "Ordinary launch pinned file identity differs.");
   } finally {
     await handle.close();
   }
@@ -94597,16 +94597,16 @@ async function verifyFiles(assetsRoot, pins) {
     try {
       const before = await handle.stat({ bigint: true });
       requirePinned(before.isFile() && before.size === BigInt(pin4.bytes));
-      const hash39 = createHash34("sha256");
+      const hash40 = createHash34("sha256");
       let bytes2 = 0;
       for await (const chunk of handle.createReadStream({ autoClose: false })) {
         requirePinned(Buffer.isBuffer(chunk));
         bytes2 += chunk.length;
         requirePinned(bytes2 <= pin4.bytes);
-        hash39.update(chunk);
+        hash40.update(chunk);
       }
       const after = await handle.stat({ bigint: true }), named = await lstat30(path5, { bigint: true });
-      requirePinned(bytes2 === pin4.bytes && hash39.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath20(path5) === path5);
+      requirePinned(bytes2 === pin4.bytes && hash40.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath20(path5) === path5);
     } finally {
       await handle.close();
     }
@@ -94837,15 +94837,15 @@ function sameFile5(before, after) {
   return after.isFile() && !after.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.uid === after.uid && before.mode === after.mode && before.nlink === after.nlink && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
 }
 async function verifyBytes(file3, descriptor10) {
-  const hash39 = createHash35("sha256");
+  const hash40 = createHash35("sha256");
   let bytes2 = 0;
   for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
     requireCheckpoint(Buffer.isBuffer(chunk));
     bytes2 += chunk.length;
     requireCheckpoint(bytes2 <= descriptor10.bytes);
-    hash39.update(chunk);
+    hash40.update(chunk);
   }
-  requireCheckpoint(bytes2 === descriptor10.bytes && hash39.digest("hex") === descriptor10.sha256);
+  requireCheckpoint(bytes2 === descriptor10.bytes && hash40.digest("hex") === descriptor10.sha256);
 }
 async function requireNoSidecars(path5) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
@@ -95089,6 +95089,15 @@ function queryCurrentDisposableOpen(input = {}) {
     offline: true,
     invocationEnabledByDiscovery: false,
     total: 1,
+    preparationCheckpoint: {
+      resultField: "preparationCheckpoint",
+      inputField: "baseline-begin.preparation.checkpoint",
+      historicalEvidenceOnly: true,
+      currentStateVerified: false,
+      writerAuthority: false,
+      omittedWhenNotRetained: true,
+      ...query.includeSchemas ? { descriptorSchema: external_exports.toJSONSchema(currentDisposableOpenPreparationCheckpointSchema) } : {}
+    },
     clockPreparation: {
       helper: { ...CURRENT_MAIN_REFERENCE_HELPER_IDENTITY, file: "Easyeda.CurrentMainReference.dll" },
       runtimeProfileSha256: CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256,
@@ -95269,7 +95278,7 @@ function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   }
   return result;
 }
-var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, hex64, hex32, documentId2, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases2, currentDisposableOpenResultSchema, limitations9;
+var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, hex64, hex32, documentId2, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases2, currentDisposableOpenResultSchema, limitations9;
 var init_current_disposable_open = __esm({
   "server/src/current-disposable-open.ts"() {
     init_zod();
@@ -95289,6 +95298,7 @@ var init_current_disposable_open = __esm({
     targetFields = { rawWindowsPath: windowsPath2, projectUuid: hex64, documentUuid: documentId2, expectedSourceSha256: hex64 };
     currentDisposableOpenTargetSchema = external_exports.object(targetFields).strict().refine((value2) => sha256Text(value2.rawWindowsPath) === value2.projectUuid, "Project identity must hash the exact raw Windows path.");
     currentDisposableOpenSealedTargetSchema = external_exports.object({ ...targetFields, branchUuid: hex32 }).strict().refine((value2) => sha256Text(value2.rawWindowsPath) === value2.projectUuid, "Project identity must hash the exact raw Windows path.");
+    currentDisposableOpenPreparationCheckpointSchema = currentSymbolMetadataPreparationRequestSchema.shape.checkpoint;
     currentDisposableOpenRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("open"), operationId, ...targetFields, confirmDisposableProject: external_exports.literal(true), acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("observe"), operationId }).strict(),
@@ -95345,6 +95355,7 @@ var init_current_disposable_open = __esm({
     }).strict();
     limitations9 = [
       "One explicitly selected, already registered local disposable .eprj2 project and existing type-3 PCB only. The raw Windows registry path hashes to the project identity; the host separately binds the file checkpoint and PCB membership.",
+      "New opening results include preparationCheckpoint with the managed pre-navigation checkpoint's exact path, byte count and SHA-256. Use that descriptor as baseline-begin.preparation.checkpoint. It is historical preparation input, not current source, the later closed baseline, freshness, persistence or writer authority. Historical journals without a retained descriptor omit it; never substitute the source file's byte count.",
       "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
       "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
       "request-normal-close consumes one normal-close request through the original failed opening's retained application owner. It accepts no PID/window replacement, Save/Discard choice or force termination, and preserves quarantine. Original termination observation and retirement remain separate actions.",
@@ -103952,19 +103963,19 @@ async function hashExecutable(executablePath) {
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash39 = createHash37("sha256");
+    const hash40 = createHash37("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
       }
-      hash39.update(chunk);
+      hash40.update(chunk);
     }
     for (const after of [await file3.stat(), await lstat33(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
     }
-    return hash39.digest("hex");
+    return hash40.digest("hex");
   } finally {
     await file3.close();
   }
@@ -116985,7 +116996,7 @@ function sealFor(path5, info, kind, linkTarget, sha256) {
 function sameIdentity4(left, right) {
   return left.dev === right.dev && left.ino === right.ino && left.nlink === right.nlink && left.mode === right.mode && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
 }
-async function hashOpenFile(path5, expected3) {
+async function hashOpenFile(path5, expected3, buffer = Buffer.allocUnsafe(65536)) {
   let handle;
   try {
     handle = await open33(path5, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
@@ -116993,18 +117004,24 @@ async function hashOpenFile(path5, expected3) {
     if (!opened.isFile() || !sameIdentity4(expected3, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash39 = createHash41("sha256");
-    for await (const chunk of handle.createReadStream({ autoClose: false })) {
-      if (!Buffer.isBuffer(chunk)) {
-        throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
+    const hash40 = createHash41("sha256");
+    let offset3 = 0;
+    for (; ; ) {
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, offset3);
+      if (bytesRead === 0) {
+        break;
       }
-      hash39.update(chunk);
+      offset3 += bytesRead;
+      if (offset3 > opened.size) {
+        throw new Error(`Trusted upstream file changed while hashing: ${path5}`);
+      }
+      hash40.update(buffer.subarray(0, bytesRead));
     }
     const after = await handle.stat();
-    if (!sameIdentity4(opened, after)) {
+    if (offset3 !== opened.size || !sameIdentity4(opened, after)) {
       throw new Error(`Trusted upstream file changed while hashing: ${path5}`);
     }
-    return { bytes: after.size, sha256: hash39.digest("hex") };
+    return { bytes: after.size, sha256: hash40.digest("hex") };
   } finally {
     await handle?.close();
   }
@@ -117039,12 +117056,13 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   const seals = [];
   const visitedDirectories = /* @__PURE__ */ new Set();
   const visitedFiles = /* @__PURE__ */ new Set();
+  const buffers = Array.from({ length: 4 }, () => Buffer.allocUnsafe(65536));
   const pendingFiles = [];
   const flushFiles = async () => {
     const results = await Promise.allSettled(
-      pendingFiles.splice(0).map(async (job) => ({
+      pendingFiles.splice(0).map(async (job, index) => ({
         job,
-        file: await hashOpenFile(job.absolute, job.info)
+        file: await hashOpenFile(job.absolute, job.info, buffers[index])
       }))
     );
     for (const result of results) {
@@ -117220,7 +117238,7 @@ async function sha256OpenHandle(handle, expected3, label) {
   if (!before.isFile() || !sameIdentity4(before, expected3)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash39 = createHash41("sha256");
+  const hash40 = createHash41("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -117233,14 +117251,14 @@ async function sha256OpenHandle(handle, expected3, label) {
     if (bytesRead === 0) {
       throw new Error(`${label} ended before its recorded byte length.`);
     }
-    hash39.update(buffer.subarray(0, bytesRead));
+    hash40.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat();
   if (!sameIdentity4(before, after)) {
     throw new Error(`${label} changed while its bytes were captured.`);
   }
-  return hash39.digest("hex");
+  return hash40.digest("hex");
 }
 async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve16(path5);
@@ -119146,15 +119164,15 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash39 = createHash44("sha256");
+  const hash40 = createHash44("sha256");
   const source4 = createReadStream(path5);
   for await (const chunk of source4) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
       throw new TypeError("File hashing received a non-binary stream chunk.");
     }
-    hash39.update(chunk);
+    hash40.update(chunk);
   }
-  return hash39.digest("hex");
+  return hash40.digest("hex");
 }
 function requireVersionSegment(value2, label) {
   if (typeof value2 !== "string" || !/^[a-z0-9][a-z0-9._-]{2,80}$/iu.test(value2)) {
@@ -121175,6 +121193,13 @@ async function unchanged2(checkpoint, source4) {
     throw new Error("Disposable opening original source or checkpoint changed before navigation.");
   }
 }
+async function verifyPreparationCheckpoint(checkpoint, input) {
+  const descriptor10 = currentDisposableOpenPreparationCheckpointSchema.parse(input);
+  if (descriptor10.path !== checkpoint.checkpoint || descriptor10.sha256 !== checkpoint.checkpointSha256) {
+    throw new Error("Disposable opening preparation checkpoint descriptor differs from its receipt.");
+  }
+  await verifyExactManagedArtifact(descriptor10);
+}
 async function prepareCurrentDisposableOpenCheckpoint(input) {
   const target6 = currentDisposableOpenTargetSchema.parse(input);
   const inputText = canonicalJson(input), source4 = normalizedSource(target6);
@@ -121185,11 +121210,18 @@ async function prepareCurrentDisposableOpenCheckpoint(input) {
   }, await accessPolicy(source4));
   assertSourceBinding(checkpoint, target6, source4);
   const evidence2 = await targetEvidence(checkpoint, target6);
+  const observed2 = await readArtifact(checkpoint.checkpoint, 0, 1);
+  const preparationCheckpoint = Object.freeze(currentDisposableOpenPreparationCheckpointSchema.parse({
+    path: observed2.path,
+    bytes: observed2.size,
+    sha256: checkpoint.checkpointSha256
+  }));
+  await verifyPreparationCheckpoint(checkpoint, preparationCheckpoint);
   await unchanged2(checkpoint, source4);
   if (canonicalJson(input) !== inputText) {
     throw new Error("Disposable opening target changed during checkpoint preparation.");
   }
-  return Object.freeze({ profile: PROFILE18, checkpoint, targetEvidence: evidence2 });
+  return Object.freeze({ profile: PROFILE18, checkpoint, preparationCheckpoint, targetEvidence: evidence2 });
 }
 async function verifyCurrentDisposableOpenCheckpoint(prepared, input) {
   const target6 = currentDisposableOpenTargetSchema.parse(input);
@@ -121202,6 +121234,9 @@ async function verifyCurrentDisposableOpenCheckpoint(prepared, input) {
   const evidence2 = await targetEvidence(checkpoint, target6);
   if (canonicalJson(evidence2) !== canonicalJson(prepared.targetEvidence)) {
     throw new Error("Disposable opening target evidence changed.");
+  }
+  if (prepared.preparationCheckpoint !== void 0) {
+    await verifyPreparationCheckpoint(checkpoint, prepared.preparationCheckpoint);
   }
   await unchanged2(checkpoint, source4);
   if (canonicalJson(input) !== inputText || canonicalJson(prepared) !== preparedText) {
@@ -122583,9 +122618,9 @@ function data2(value2) {
   return result;
 }
 function seal(value2) {
-  const core = data2(value2), hash39 = core["journalSha256"];
+  const core = data2(value2), hash40 = core["journalSha256"];
   delete core["journalSha256"];
-  need51(typeof hash39 === "string" && HASH16.test(hash39) && hash39 === sha256Json(core), "self-seal");
+  need51(typeof hash40 === "string" && HASH16.test(hash40) && hash40 === sha256Json(core), "self-seal");
 }
 function unchanged3(before, after, permitted) {
   const left = data2(before), right = data2(after);
@@ -122620,9 +122655,9 @@ function markedFields(value2, expectedPhase) {
 }
 function authority(value2, launch) {
   const payload = data2(value2);
-  const hash39 = payload["authoritySha256"];
+  const hash40 = payload["authoritySha256"];
   delete payload["authoritySha256"];
-  need51(value2.schema === "easyeda-pro-control.execution-authority.v1" && typeof hash39 === "string" && HASH16.test(hash39) && hash39 === sha256Json(payload) && typeof value2.bindingSha256 === "string" && HASH16.test(value2.bindingSha256) && typeof value2.policySha256 === "string" && HASH16.test(value2.policySha256) && typeof value2.policyId === "string" && /^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value2.policyId) && typeof value2.capturedAt === "string" && Number.isFinite(Date.parse(value2.capturedAt)), "execution authority");
+  need51(value2.schema === "easyeda-pro-control.execution-authority.v1" && typeof hash40 === "string" && HASH16.test(hash40) && hash40 === sha256Json(payload) && typeof value2.bindingSha256 === "string" && HASH16.test(value2.bindingSha256) && typeof value2.policySha256 === "string" && HASH16.test(value2.policySha256) && typeof value2.policyId === "string" && /^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value2.policyId) && typeof value2.capturedAt === "string" && Number.isFinite(Date.parse(value2.capturedAt)), "execution authority");
   need51(typeof launch.jobId === "string" && /^[a-f0-9]{32}$/u.test(launch.jobId) && typeof launch.helperInstance === "string" && /^[a-f0-9]{32}$/u.test(launch.helperInstance) && launch.root.role === "easyeda-main", "launch");
   const processes2 = value2.processes;
   need51(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512 && processes2.every((process20) => typeof process20.pid === "number" && Number.isSafeInteger(process20.pid) && process20.pid > 0 && typeof process20.role === "string" && /^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(process20.role) && typeof process20.startIdentity === "string" && /^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u.test(process20.startIdentity) && process20.startIdentity.endsWith(`:job:${launch.jobId}`)) && new Set(processes2.map((process20) => process20.pid)).size === processes2.length && value2.processTreeSha256 === sha256Json(processes2), "process tree");
@@ -122913,6 +122948,9 @@ function projectActor(before, uuid12) {
   const tables = before.tables.filter((table9) => table9.name === "users"), users = tables[0];
   need53(tables.length === 1 && users !== void 0 && users.rows.length <= 4096, "Project users table is missing, ambiguous or exceeds its bound.");
   const rows2 = users.rows.filter((row8) => textCell(users, row8, "uuid", 32) === uuid12);
+  if (rows2.length === 0) {
+    return Object.freeze({ actor: Object.freeze({ uuid: uuid12, username: "", nickname: "" }), rowSha256: null, usersTableSha256: sha256Json(users) });
+  }
   const row7 = rows2[0];
   need53(rows2.length === 1 && row7 !== void 0, "Actor selection requires exactly one original project user.");
   const actor = validateActorProjection({
@@ -122941,11 +122979,13 @@ async function prepareCurrentSymbolTransactionActor(input) {
     ownDataFields(input.bounds.agedHead, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
   }
   const bounds = structuredClone(input.bounds), selectedProject = projectActor(input.before, startupActor.uuid);
+  const absence = selectedProject.usersTableSha256 === void 0 ? {} : { selectedProjectUsersTableSha256: selectedProject.usersTableSha256 };
   const selected3 = Object.freeze({
     startupActor,
     cachedActor,
     projectActor: selectedProject.actor,
-    selectedProjectUserRowSha256: selectedProject.rowSha256
+    selectedProjectUserRowSha256: selectedProject.rowSha256,
+    ...absence
   });
   const sqlPlan = await prepareCurrentSymbolNewHeadSqlPlan({
     before: input.before,
@@ -122954,10 +122994,11 @@ async function prepareCurrentSymbolTransactionActor(input) {
   });
   const plan2 = Object.freeze({
     profile: "easyeda-pro-control.current-symbol-transaction-actor-plan.v1",
-    selectionPolicy: "supplied-agreeing-ui-and-single-original-project-user",
+    selectionPolicy: selectedProject.rowSha256 === null ? "supplied-agreeing-ui-and-no-original-project-user" : "supplied-agreeing-ui-and-single-original-project-user",
     expectedActorUuid: selected3.startupActor.uuid,
     selectionSha256: sha256Json(selected3),
     selectedProjectUserRowSha256: selected3.selectedProjectUserRowSha256,
+    ...absence,
     beforeSqlSha256: sqlPlan.beforeSqlSha256,
     targetUuid: sqlPlan.targetUuid,
     expectedTicket: sqlPlan.expectedTicket,
@@ -122976,6 +123017,7 @@ async function verifyCurrentSymbolTransactionActor(plan2, after) {
     expectedActorUuid: prepared.selected.startupActor.uuid,
     selectionSha256: plan2.selectionSha256,
     selectedProjectUserRowSha256: plan2.selectedProjectUserRowSha256,
+    ...plan2.selectedProjectUsersTableSha256 === void 0 ? {} : { selectedProjectUsersTableSha256: plan2.selectedProjectUsersTableSha256 },
     beforeSqlSha256: plan2.beforeSqlSha256,
     afterSqlSha256: after.logicalSha256,
     targetUuid: plan2.targetUuid,
@@ -129276,6 +129318,79 @@ var init_current_symbol_baseline_runtime = __esm({
   }
 });
 
+// server/src/current-symbol-history-inspection.ts
+async function inspectCurrentSymbolHistory(operationId5, purpose) {
+  const id9 = external_exports.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/u).parse(operationId5);
+  const expectedPurpose = purposeSchema.parse(purpose);
+  const journal = await loadOperation(id9), plan2 = planSchema7.parse(journal.plan);
+  let baseline2;
+  if (plan2.profile === "easyeda-pro-control.current-symbol-verification.v1") {
+    baseline2 = plan2.writerPlan.baselinePlan;
+  } else if (plan2.profile === "easyeda-pro-control.current-symbol-writer.v1") {
+    baseline2 = plan2.baselinePlan;
+  } else {
+    baseline2 = plan2;
+  }
+  if (journal.operationId !== id9 || journal["journalPath"] !== operationPath(id9) || baseline2.purpose !== expectedPurpose) {
+    throw new Error("Current symbol historical inspection has another identity or purpose.");
+  }
+  const result = {
+    profile: "easyeda-pro-control.current-symbol-historical-inspection.v1",
+    operationId: id9,
+    purpose: expectedPurpose,
+    journalPath: operationPath(id9),
+    recordedPlanProfile: plan2.profile,
+    recordedState: external_exports.string().min(1).max(160).parse(journal["state"]),
+    recordedSequence: external_exports.number().int().nonnegative().parse(journal["sequence"]),
+    recordedFlags: flagsSchema.parse(journal),
+    artifacts: external_exports.array(descriptorSchema2).max(4096).parse(journal.artifacts),
+    historicalEvidenceOnly: true,
+    currentStateVerified: false,
+    originalOwnerRetained: false,
+    continuationAuthorized: false,
+    replayAllowed: false,
+    executionAuthorized: false
+  };
+  if (Buffer.byteLength(JSON.stringify({ result }), "utf8") > 524288) {
+    throw new Error("Current symbol historical inspection exceeds its complete output bound.");
+  }
+  return result;
+}
+var purposeSchema, hash39, baselinePlanSchema, writerPlanSchema, verificationPlanSchema, planSchema7, flagsSchema, descriptorSchema2;
+var init_current_symbol_history_inspection = __esm({
+  "server/src/current-symbol-history-inspection.ts"() {
+    init_zod();
+    init_artifacts();
+    purposeSchema = external_exports.enum(["disposable-validation", "ordinary-symbol-metadata"]);
+    hash39 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    baselinePlanSchema = external_exports.object({
+      profile: external_exports.literal("easyeda-pro-control.current-symbol-closed-baseline.v1"),
+      purpose: purposeSchema
+    }).loose();
+    writerPlanSchema = external_exports.object({
+      profile: external_exports.literal("easyeda-pro-control.current-symbol-writer.v1"),
+      baselinePlan: baselinePlanSchema,
+      baselineJournalSha256: hash39,
+      baselineCopyReceiptSha256: hash39,
+      startupSha256: hash39
+    }).strict();
+    verificationPlanSchema = external_exports.object({
+      profile: external_exports.literal("easyeda-pro-control.current-symbol-verification.v1"),
+      writerPlan: writerPlanSchema,
+      writerJournalSha256: hash39,
+      posteditCopyReceiptSha256: hash39
+    }).strict();
+    planSchema7 = external_exports.discriminatedUnion("profile", [baselinePlanSchema, writerPlanSchema, verificationPlanSchema]);
+    flagsSchema = external_exports.object({
+      hardStop: external_exports.boolean().optional(),
+      orphanedCallPossible: external_exports.boolean().optional(),
+      mutationMayHaveOccurred: external_exports.boolean().optional(),
+      finishSnapshotFailed: external_exports.boolean().optional()
+    });
+    descriptorSchema2 = external_exports.object({ path: external_exports.string().min(1).max(4096), bytes: external_exports.number().int().positive(), sha256: hash39 }).strict();
+  }
+});
+
 // server/src/current-symbol-inverse-runtime.ts
 var CurrentSymbolInverseCoordinator;
 var init_current_symbol_inverse_runtime = __esm({
@@ -129814,12 +129929,19 @@ function targetOnly(request6) {
     expectedSourceSha256: request6.expectedSourceSha256
   };
 }
+function hasValidPreparationCheckpoint(checkpoint) {
+  if (checkpoint["preparationCheckpoint"] === void 0) {
+    return true;
+  }
+  const descriptor10 = currentDisposableOpenPreparationCheckpointSchema.safeParse(checkpoint["preparationCheckpoint"]), receipt2 = checkpoint["checkpoint"];
+  return descriptor10.success && isRecord(receipt2) && descriptor10.data.path === receipt2["checkpoint"] && descriptor10.data.sha256 === receipt2["checkpointSha256"];
+}
 function isOpenJournal(value2) {
   if (!isRecord(value2) || !isRecord(value2["plan"]) || !isRecord(value2["checkpointProof"])) {
     return false;
   }
   const checkpoint = value2["checkpointProof"], plan2 = value2["plan"];
-  return plan2["profile"] === PROFILE22 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value2["operationId"] === "string" && typeof value2["journalPath"] === "string" && typeof value2["planHash"] === "string" && typeof value2["state"] === "string" && typeof value2["mutationState"] === "string" && typeof value2["saved"] === "boolean" && typeof value2["reopened"] === "boolean" && typeof value2["orphanedCallPossible"] === "boolean" && typeof value2["hardStop"] === "boolean" && typeof value2["mutationMayHaveOccurred"] === "boolean" && typeof value2["nextSafeAction"] === "string" && typeof value2["updatedAt"] === "string" && Number.isSafeInteger(value2["sequence"]) && typeof value2["projectDispatchConsumed"] === "boolean" && typeof value2["documentDispatchConsumed"] === "boolean" && Array.isArray(value2["artifacts"]) && value2["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value2["originalLaunch"]).success && (value2["failureDiagnostic"] === void 0 || currentOpenFailureDiagnosticSchema.safeParse(value2["failureDiagnostic"]).success) && (value2["normalCloseAttempted"] === void 0 || value2["normalCloseAttempted"] === true) && (value2["normalCloseAcknowledged"] === void 0 || value2["normalCloseAcknowledged"] === true && value2["normalCloseAttempted"] === true);
+  return plan2["profile"] === PROFILE22 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value2["operationId"] === "string" && typeof value2["journalPath"] === "string" && typeof value2["planHash"] === "string" && typeof value2["state"] === "string" && typeof value2["mutationState"] === "string" && typeof value2["saved"] === "boolean" && typeof value2["reopened"] === "boolean" && typeof value2["orphanedCallPossible"] === "boolean" && typeof value2["hardStop"] === "boolean" && typeof value2["mutationMayHaveOccurred"] === "boolean" && typeof value2["nextSafeAction"] === "string" && typeof value2["updatedAt"] === "string" && Number.isSafeInteger(value2["sequence"]) && typeof value2["projectDispatchConsumed"] === "boolean" && typeof value2["documentDispatchConsumed"] === "boolean" && Array.isArray(value2["artifacts"]) && value2["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && hasValidPreparationCheckpoint(checkpoint) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value2["originalLaunch"]).success && (value2["failureDiagnostic"] === void 0 || currentOpenFailureDiagnosticSchema.safeParse(value2["failureDiagnostic"]).success) && (value2["normalCloseAttempted"] === void 0 || value2["normalCloseAttempted"] === true) && (value2["normalCloseAcknowledged"] === void 0 || value2["normalCloseAcknowledged"] === true && value2["normalCloseAttempted"] === true);
 }
 function observationOutcome(result) {
   if (result["phase"] === "open-document" && result["publicResult"] === null) {
@@ -129849,6 +129971,7 @@ function summary9(journal) {
     persistenceVerified: false,
     writerAuthority: false,
     nextSafeAction: journal.nextSafeAction,
+    ...journal.checkpointProof.preparationCheckpoint === void 0 ? {} : { preparationCheckpoint: { ...journal.checkpointProof.preparationCheckpoint } },
     journalPath: journal.journalPath,
     artifacts: journal.artifacts
   };
@@ -129871,6 +129994,7 @@ var init_current_disposable_open_runtime = __esm({
     init_current_symbol_owned_preparation();
     init_current_symbol_baseline_runtime();
     init_current_symbol_clock_evidence();
+    init_current_symbol_history_inspection();
     init_current_symbol_validation_runtime();
     init_current_symbol_operation();
     init_current_symbol_startup();
@@ -129930,6 +130054,9 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(!this.busy, "Current disposable opening is already in progress.");
         if (request6.action === "validation-begin" || request6.action === "validation-advance" || request6.action === "validation-inspect") {
           requireValue15(expectedFingerprint === void 0, "Disposable validation cannot replace its original runtime fingerprint.");
+          if (request6.action === "validation-inspect" && !this.validations.has(request6.operationId) && !this.baselines.has(request6.operationId)) {
+            return this.inspectSymbolHistory(request6.operationId, "disposable-validation");
+          }
           requireValue15(
             this.productionServices && this.options.engine instanceof EasyedaControlEngine,
             "Disposable validation requires its original production opening owner."
@@ -130051,6 +130178,9 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(!this.busy, "Current ordinary symbol operation is already in progress.");
         if (request6.action === "metadata-begin" || request6.action === "metadata-advance" || request6.action === "metadata-inspect") {
           requireValue15(expectedFingerprint === void 0, "Ordinary metadata cannot replace its original runtime fingerprint.");
+          if (request6.action === "metadata-inspect" && !this.ordinaryOperations.has(request6.operationId) && !this.baselines.has(request6.operationId)) {
+            return this.inspectSymbolHistory(request6.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE);
+          }
           requireValue15(
             this.productionServices && this.options.engine instanceof EasyedaControlEngine,
             "Ordinary metadata requires its original production opening owner."
@@ -130179,6 +130309,14 @@ var init_current_disposable_open_runtime = __esm({
           purpose === "disposable-validation" ? retained !== CURRENT_SYMBOL_OPERATION_PURPOSE : retained === purpose,
           "Current symbol baseline belongs to another purpose or its ordinary owner is unavailable."
         );
+      }
+      async inspectSymbolHistory(operationId5, purpose) {
+        this.busy = true;
+        try {
+          return await inspectCurrentSymbolHistory(operationId5, purpose);
+        } finally {
+          this.busy = false;
+        }
       }
       /** Internal preparation only. The public opener request schema has no route
        * here. Later writer stages still need their independently issued witness,

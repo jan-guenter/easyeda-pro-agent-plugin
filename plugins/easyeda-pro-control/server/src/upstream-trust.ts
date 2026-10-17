@@ -412,6 +412,7 @@ function sameIdentity(left: Stats, right: Stats): boolean {
 async function hashOpenFile(
   path: string,
   expected: Stats,
+  buffer = Buffer.allocUnsafe(65_536),
 ): Promise<{ readonly bytes: number; readonly sha256: string }> {
   let handle: FileHandle | undefined;
   try {
@@ -421,14 +422,20 @@ async function hashOpenFile(
       throw new Error(`Trusted upstream file changed before open: ${path}`);
     }
     const hash = createHash("sha256");
-    for await (const chunk of handle.createReadStream({ autoClose: false })) {
-      if (!Buffer.isBuffer(chunk)) {
-        throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
+    let offset = 0;
+    for (;;) {
+      // Read fresh bytes through the same descriptor. Each closure worker owns
+      // Its buffer until settlement; no bytes or successful admission are cached.
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, offset);
+      if (bytesRead === 0) { break; }
+      offset += bytesRead;
+      if (offset > opened.size) {
+        throw new Error(`Trusted upstream file changed while hashing: ${path}`);
       }
-      hash.update(chunk);
+      hash.update(buffer.subarray(0, bytesRead));
     }
     const after = await handle.stat();
-    if (!sameIdentity(opened, after)) {
+    if (offset !== opened.size || !sameIdentity(opened, after)) {
       throw new Error(`Trusted upstream file changed while hashing: ${path}`);
     }
     return { bytes: after.size, sha256: hash.digest("hex") };
@@ -486,6 +493,8 @@ async function captureExecutionClosure(
   const seals: PathSeal[] = [];
   const visitedDirectories = new Set<string>();
   const visitedFiles = new Set<string>();
+  // Reuse only scratch storage across settled batches, never file observations.
+  const buffers = Array.from({ length: 4 }, () => Buffer.allocUnsafe(65_536));
   const pendingFiles: {
     readonly absolute: string;
     readonly info: Stats;
@@ -497,9 +506,9 @@ async function captureExecutionClosure(
     // Drain all descriptors before selecting the first traversal-order failure.
     // Completion order must not change evidence or error selection.
     const results = await Promise.allSettled(
-      pendingFiles.splice(0).map(async (job) => ({
+      pendingFiles.splice(0).map(async (job, index) => ({
         job,
-        file: await hashOpenFile(job.absolute, job.info),
+        file: await hashOpenFile(job.absolute, job.info, buffers[index]),
       })),
     );
     for (const result of results) {

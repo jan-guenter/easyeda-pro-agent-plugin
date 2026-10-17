@@ -3,8 +3,8 @@ import { z } from "zod";
 import { controlDataDirectory, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "./core.ts";
-import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram, currentDisposableOpenSealedTargetSchema,
-  parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "./current-disposable-open.ts";
+import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram,
+  currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenRequest, CurrentDisposableOpenSealedTarget, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "./current-disposable-open-diagnostics.ts";
 import type { CurrentOpenFailureContext, CurrentOpenFailureDiagnostic } from "./current-disposable-open-diagnostics.ts";
@@ -24,6 +24,7 @@ import type { CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-own
 // oxlint-disable-next-line import/no-cycle -- The baseline consumes the opener's private original-object transfer; public actions cannot construct that owner.
 import { CurrentSymbolBaselineCoordinator, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus } from "./current-symbol-baseline-runtime.ts";
 import { inspectCurrentSymbolClockEvidence } from "./current-symbol-clock-evidence.ts";
+import { inspectCurrentSymbolHistory } from "./current-symbol-history-inspection.ts";
 // oxlint-disable-next-line import/no-cycle -- The disposable route retains the original baseline; validation never reconstructs its private opener owner.
 import { CurrentSymbolValidationCoordinator } from "./current-symbol-validation-runtime.ts";
 import { CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest } from "./current-symbol-operation.ts";
@@ -179,6 +180,11 @@ function targetOnly(request: CurrentDisposableOpenTarget): CurrentDisposableOpen
   return { rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
     documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256 };
 }
+function hasValidPreparationCheckpoint(checkpoint: Value): boolean {
+  if (checkpoint["preparationCheckpoint"] === undefined) { return true; }
+  const descriptor = currentDisposableOpenPreparationCheckpointSchema.safeParse(checkpoint["preparationCheckpoint"]), receipt = checkpoint["checkpoint"];
+  return descriptor.success && isRecord(receipt) && descriptor.data.path === receipt["checkpoint"] && descriptor.data.sha256 === receipt["checkpointSha256"];
+}
 function isOpenJournal(value: unknown): value is OpenJournal {
   if (!isRecord(value) || !isRecord(value["plan"]) || !isRecord(value["checkpointProof"])) { return false; }
   const checkpoint = value["checkpointProof"], plan = value["plan"];
@@ -190,7 +196,7 @@ function isOpenJournal(value: unknown): value is OpenJournal {
     Number.isSafeInteger(value["sequence"]) && typeof value["projectDispatchConsumed"] === "boolean" && typeof value["documentDispatchConsumed"] === "boolean" &&
     Array.isArray(value["artifacts"]) && value["artifacts"].every((item: unknown) => isRecord(item) && typeof item["path"] === "string" &&
       typeof item["bytes"] === "number" && digest.safeParse(item["sha256"]).success) &&
-    checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) &&
+    checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && hasValidPreparationCheckpoint(checkpoint) &&
     isRecord(checkpoint["targetEvidence"]) && launchSchema.safeParse(value["originalLaunch"]).success &&
     (value["failureDiagnostic"] === undefined || currentOpenFailureDiagnosticSchema.safeParse(value["failureDiagnostic"]).success) &&
     (value["normalCloseAttempted"] === undefined || value["normalCloseAttempted"] === true) &&
@@ -209,6 +215,7 @@ function summary(journal: OpenJournal): Value {
     normalCloseAttempted: journal.normalCloseAttempted === true, normalCloseAcknowledged: journal.normalCloseAcknowledged === true,
     normalOpenEffectsMayHaveOccurred: journal.mutationMayHaveOccurred, explicitSaveDispatched: false,
     persistenceVerified: false, writerAuthority: false, nextSafeAction: journal.nextSafeAction,
+    ...(journal.checkpointProof.preparationCheckpoint === undefined ? {} : { preparationCheckpoint: { ...journal.checkpointProof.preparationCheckpoint } }),
     journalPath: journal.journalPath, artifacts: journal.artifacts };
 }
 
@@ -240,6 +247,9 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(!this.busy, "Current disposable opening is already in progress.");
     if (request.action === "validation-begin" || request.action === "validation-advance" || request.action === "validation-inspect") {
       requireValue(expectedFingerprint === undefined, "Disposable validation cannot replace its original runtime fingerprint.");
+      if (request.action === "validation-inspect" && !this.validations.has(request.operationId) && !this.baselines.has(request.operationId)) {
+        return this.inspectSymbolHistory(request.operationId, "disposable-validation");
+      }
       requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
         "Disposable validation requires its original production opening owner.");
       this.assertBaselinePurpose(request.operationId, "disposable-validation");
@@ -321,6 +331,9 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(!this.busy, "Current ordinary symbol operation is already in progress.");
     if (request.action === "metadata-begin" || request.action === "metadata-advance" || request.action === "metadata-inspect") {
       requireValue(expectedFingerprint === undefined, "Ordinary metadata cannot replace its original runtime fingerprint.");
+      if (request.action === "metadata-inspect" && !this.ordinaryOperations.has(request.operationId) && !this.baselines.has(request.operationId)) {
+        return this.inspectSymbolHistory(request.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE);
+      }
       requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
         "Ordinary metadata requires its original production opening owner.");
       this.assertBaselinePurpose(request.operationId, CURRENT_SYMBOL_OPERATION_PURPOSE);
@@ -402,6 +415,12 @@ export class CurrentDisposableOpenCoordinator {
     const retained = this.baselinePurposes.get(operationId);
     requireValue(purpose === "disposable-validation" ? retained !== CURRENT_SYMBOL_OPERATION_PURPOSE : retained === purpose,
       "Current symbol baseline belongs to another purpose or its ordinary owner is unavailable.");
+  }
+
+  private async inspectSymbolHistory(operationId: string, purpose: CurrentDisposableOpenPurpose): Promise<Value> {
+    this.busy = true;
+    try { return await inspectCurrentSymbolHistory(operationId, purpose); }
+    finally { this.busy = false; }
   }
 
   /** Internal preparation only. The public opener request schema has no route
