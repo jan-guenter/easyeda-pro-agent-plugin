@@ -256,7 +256,7 @@ void test("post-edit relaunch revalidation uses its own checkpoint and current p
       // This test consumes the completed issued snapshot below.
     });
     assert.notEqual(result.copy.sha256, input.baseline.copy.sha256);
-    await assert.rejects(value.loaded.revalidateFinish(value.engine, structuredClone(result)), /not issued/u);
+    await assert.rejects(async () => { await value.loaded.revalidateFinish(value.engine, structuredClone(result)); }, /not issued/u);
     if (fault === "source") {
       const changed = new DatabaseSync(value.source);
       try { changed.exec("INSERT INTO synthetic_open_effect VALUES('late drift')"); } finally { changed.close(); }

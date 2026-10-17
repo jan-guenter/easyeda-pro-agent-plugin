@@ -56,11 +56,21 @@ abandons the write. No generic recovery or production restriction was relaxed.
 Final types, strict type-aware lint, build and compatibility checks pass.
 Only facade source/bundle projections and reviewedAt changed; external pins
 remain exact. Repository/privacy and all seven official skill checks pass.
-The full local suite is running. One existing closed-SQL aux-bytes case failed;
-its original result is retained and under diagnosis. CI, publication and
-installation remain pending; no clean full-suite result is claimed yet.
+The original local suite ended10,798tests/10,716passes/78failures/four skips.
+It remains failed at /tmp/easyeda-release-181500-kiPInKaJ/verify.log, SHA
+0e468a1738bb76db31676f7455a95405faae9c81566e934534778aeccb938927.
+Final EOF formatting and compatibility refresh occurred while it was running.
+The first failure is confirmed manifest drift during fixture setup, before its
+writer or intended assertion; the frozen-source exact-case rerun passes.
+The run also found two stale tests: the source phase inventory omitted the new
+copy-only cleanup events, and a cloned-token rejection assertion missed the
+new synchronous original-token precheck. Both expectations are corrected,
+without runtime/pin changes or relaxing historical phase acceptance. Both full
+focused files pass57/57. Final exact-head CI, publication and installation are
+still required; the original full run is never relabeled clean.
 
-Frozen package index:1,339files/27,171,168bytes/42directories,43declared tools,
+Initial package index before those two test corrections:1,339files/
+27,171,168bytes/42directories,43declared tools,
 18restricted tools and seven skills;1,338files0644/one0755. Inventory SHA
 6b4897e4faa65e054dcb7c28d7d62b8628d3ee410384707700be762ac0b1365a;
 417-source fa37f4396d7df40500ec5755e1bb57378b93704ee922132b7708dad98038d565;
@@ -68,6 +78,17 @@ three-runtime02555837aa3d05f5e7171c1d8a8071e95cee8677d10bc6a3cc8870e62932869c;
 manifest6587fafeb8257132660f1ec5dea5fe56e4395664adce59716f00e2b11388d4b9.
 Three new-file trailing blank lines were removed after the local suite began;
 final type/lint/build/pins then passed again. Exact final-head CI remains required.
+Original expected.mjs remains preserved; installation helpers will use a new
+exclusive expected-final.mjs for the corrected test inventory. No probe has run.
+Corrected package index keeps1,339files/42directories and adds132test bytes,
+total27,171,300. Final inventory
+eefde54b4f59c7f5dab06290d0d70ba8f282c5e703b29b544e6af0faa3518f32;
+source/runtime/manifest hashes and modes are unchanged. Exact corrected clone
+case passes1/1, final global lint/types pass. Failure classification found19
+explicit manifest mismatches,40 isolation failures sharing one leaked synthetic
+fixture,16 consequent early-refusal assertions and one terminal quarantine with
+the old manifest still sealed. That last inner exception was not retained;
+do not claim it was separately observed. No additional independent cause found.
 
 No app launch, live status, project/database/profile read, CAD edit or Save
 occurred in this turn. Production designs and their records remain excluded.
@@ -9091,6 +9112,11 @@ specific dated case needed for the current change or retained-journal review.
 - Keep `server/native/easyeda-fd-sanitizer.S`, its linker script, the committed binary, and `server/src/descriptor-sanitizer-identity.ts` synchronized. The exact sanitizer identity is a compatibility boundary, not generated metadata to refresh automatically.
 
 ## Required verification
+
+Freeze source, generated bundles and compatibility pins before starting the
+suite. Its synthetic fixtures seal the manifest; regenerating it during a run
+invalidates their original evidence and can cause cascading quarantine failures.
+Preserve such a run as failed, and verify the final unchanged payload separately.
 
 Run on Linux x86_64 with Node exactly `24.18.0`, npm exactly `11.16.0`, and a soft `RLIMIT_CORE` of zero from `plugins/easyeda-pro-control`:
 
