@@ -1,4 +1,4 @@
-/** Bounded private byte/identity observation; never a semantic cache or authority issuer. */
+/** Bounded private byte/identity observation; never an admission cache or authority issuer. */
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import type { BigIntStats } from "node:fs";
@@ -30,9 +30,19 @@ function directoryIdentity(value: BigIntStats): Identity {
   return Object.freeze({ device: value.dev.toString(), inode: value.ino.toString(), mode: value.mode.toString(), uid: value.uid.toString(), gid: value.gid.toString() });
 }
 function same(actual: unknown, expected: unknown, label: string): void { requireEvidence(canonicalJson(actual) === canonicalJson(expected), `closure-${label}-changed`); }
-function jsonDigest(bytes: Buffer): string {
-  try { return sha256Json(JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes)) as unknown); }
+// Each entry retains only two fixed-length digests. Every observer freshly hashes
+// All bytes and checks paths, identities, sidecars, runtime and cleanup. Keeping
+// Residents when full avoids eviction churn during repeated sorted scans.
+const MAX_JSON_DIGEST_ENTRIES = 512;
+const jsonDigests = new Map<string, string>();
+function jsonDigest(bytes: Buffer, bytesSha256: string): string {
+  const previous = jsonDigests.get(bytesSha256);
+  if (previous !== undefined) { return previous; }
+  let digest: string;
+  try { digest = sha256Json(JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes)) as unknown); }
   catch { throw new ClosureEvidenceChangedError("closure-replayed-json-invalid"); }
+  if (jsonDigests.size < MAX_JSON_DIGEST_ENTRIES) { jsonDigests.set(bytesSha256, digest); }
+  return digest;
 }
 async function absent(path: string): Promise<void> {
   try { await lstat(path); }
@@ -127,19 +137,22 @@ async function observe(input: unknown): Promise<ClosureObservation> {
       const chunk = Buffer.alloc(Math.min(CLOSURE_LIMITS.chunkBytes, Number(before.size)));
       const jsonChunks: Buffer[] = [];
       const expectedJson = values.map((entry) => entry.jsonSha256).filter((entry) => entry !== null);
+      const retainedJsonDigest = expectedJson.length > 0 ? jsonDigests.get(role.sha256) : undefined;
       let position = 0;
       while (position < Number(before.size)) {
         deadline(); const count = Math.min(chunk.length, Number(before.size) - position);
         const result = await handle.read(chunk, 0, count, position); deadline();
         requireEvidence(result.bytesRead > 0 && result.bytesRead <= count, "closure-read-length");
         const bytes = chunk.subarray(0, result.bytesRead); hash.update(bytes);
-        if (expectedJson.length > 0) { jsonChunks.push(Buffer.from(bytes)); }
+        if (expectedJson.length > 0 && retainedJsonDigest === undefined) { jsonChunks.push(Buffer.from(bytes)); }
         position += result.bytesRead;
       }
       const digest = hash.digest("hex");
       requireEvidence(digest === role.sha256, "closure-expected-bytes-changed");
       if (expectedJson.length > 0) {
-        const parsedDigest = jsonDigest(Buffer.concat(jsonChunks));
+        // A prior parse is usable only after the complete fresh byte digest
+        // Matches. It grants no historical result or current-file authority.
+        const parsedDigest = retainedJsonDigest ?? jsonDigest(Buffer.concat(jsonChunks), digest);
         for (const expected of expectedJson) { requireEvidence(parsedDigest === expected, "closure-replayed-json-changed"); }
       }
       if (!role.managed) { manifestEligible(fileIdentity); }

@@ -10,7 +10,7 @@ import { canonicalJson, isRecord, sha256Json } from "../src/core.ts";
 
 type Bag = Record<string, unknown>;
 function record(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
-async function fixture(): Promise<{
+async function fixture(purpose: "disposable-validation" | "ordinary-symbol-metadata" = "disposable-validation"): Promise<{
   prepare: (predecessor?: unknown) => Promise<unknown>;
   original: (owner: unknown, engine?: unknown) => Bag;
   revalidate: (owner: unknown) => Promise<unknown>;
@@ -37,7 +37,7 @@ async function fixture(): Promise<{
   const requests: Bag[] = [];
   const result = {
     snapshot, initialMetadata: initial, journal,
-    writer: { original: { source: { runtime: { synthetic: "runtime" }, target: { ...target, documentUuid: "2".repeat(16), expectedSourceSha256: "3".repeat(64) },
+    writer: { original: { source: { purpose, runtime: { synthetic: "runtime" }, target: { ...target, documentUuid: "2".repeat(16), expectedSourceSha256: "3".repeat(64) },
       expectedFingerprint: { synthetic: "pinned" }, launchProjection: { synthetic: "old-launch" }, bridgeSession: { synthetic: "old-session" } },
     baseline: { preparation: { target, metadata: { before: initial, after } } } } },
     originalSnapshot: { launch, capture: { bridgeSession: session } },
@@ -105,6 +105,7 @@ void test("inverse owner requires the genuine predecessor and derives only the i
   assert.equal(f.state.preparations, 0); assert.equal(f.state.stats, 0);
   const owner = await f.prepare();
   const original = f.original(owner), source = record(original["source"]);
+  assert.equal(source["purpose"], "disposable-validation");
   assert.equal(record(owner)["openingOperationId"], record(f.predecessor)["operationId"]);
   assert.equal(record(owner)["operationId"], `inverse-${sha256Json({ operationId: "original-forward", snapshot: "1".repeat(64) })}`);
   assert.equal(f.state.preparations, 1); assert.equal(f.state.stats, 1); assert.equal(f.state.transfers, 0);
@@ -122,6 +123,12 @@ void test("inverse owner requires the genuine predecessor and derives only the i
   await assert.rejects(f.prepare(), /original successful verification/u); assert.equal(f.state.preparations, 1);
   f.state.issuerCurrent = false;
   assert.throws(() => f.original(owner), /Original verification owner/u);
+});
+
+void test("ordinary verification cannot provide inverse ownership", async () => {
+  const f = await fixture("ordinary-symbol-metadata");
+  await assert.rejects(f.prepare(), /original successful verification/u);
+  assert.equal(f.state.closedChecks, 0); assert.equal(f.state.stats, 0); assert.equal(f.state.preparations, 0);
 });
 
 void test("failed inverse preparation consumes its attempt without transferring closure", async () => {

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "569ff7f07fbf16fac1816f8562ec07cfc26ef1de090e64592b59955ce0eeb968";
+const __easyedaBundlePairId = "f10f3c3d6287e72e8fff0b9528baa49f105d7eebd794cbd65f557721141f41be";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -40110,7 +40110,7 @@ var init_extension_api_coverage_routes = __esm({
       "easyeda_control_library",
       "library.symbol.modify",
       "native-task-equivalent",
-      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version coordinator passed the installed101500 unused META-only disposable forward/inverse round trip. Its separate ordinary forward-only route is registered but not connected-tested. This legacy route remains blocked.",
+      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version coordinator passed the installed101500 unused META-only disposable forward/inverse round trip. Its separate ordinary forward-only route passed the installed123000 unused META-only lifecycle with exact closed SQL, reopened saved content and final closure. Those historical results do not admit this legacy route, which remains blocked.",
       ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts", "current-symbol-write-program.ts"],
       ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts", "current-symbol-write-program.test.ts"]
     );
@@ -40118,7 +40118,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_symbol_metadata",
       selector: "metadata-advance;forward-only-unused-meta-only-symbol",
       implementation: "native-task-equivalent",
-      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. The shared installed101500 disposable forward/inverse lifecycle is connected-validated; this new ordinary public entrypoint is not connected-tested.",
+      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority; the separately offline-tested disposable single-canvas-segment profile does not broaden this ordinary route.",
       source: ["current-symbol-operation.ts", "current-disposable-open-runtime.ts", "current-symbol-validation-runtime.ts", "current-symbol-startup-runtime.ts", "current-symbol-meta-only.ts", "current-symbol-write-budget.ts", "current-symbol-write-program.ts", "current-symbol-writer-runtime.ts", "current-symbol-verification-runtime.ts", "symbol-sql-comparator.ts"],
       tests: ["current-symbol-operation.test.ts", "current-symbol-validation-runtime.test.ts", "current-symbol-meta-only.test.ts", "current-symbol-write-budget.test.ts", "closed-symbol-disposable-mcp.test.ts"],
       documentTypes: [2],
@@ -68143,12 +68143,21 @@ function directoryIdentity(value2) {
 function same22(actual, expected3, label) {
   requireEvidence(canonicalJson(actual) === canonicalJson(expected3), `closure-${label}-changed`);
 }
-function jsonDigest(bytes2) {
+function jsonDigest(bytes2, bytesSha256) {
+  const previous = jsonDigests.get(bytesSha256);
+  if (previous !== void 0) {
+    return previous;
+  }
+  let digest6;
   try {
-    return sha256Json(JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2)));
+    digest6 = sha256Json(JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2)));
   } catch {
     throw new ClosureEvidenceChangedError("closure-replayed-json-invalid");
   }
+  if (jsonDigests.size < MAX_JSON_DIGEST_ENTRIES) {
+    jsonDigests.set(bytesSha256, digest6);
+  }
+  return digest6;
 }
 async function absent(path5) {
   try {
@@ -68287,6 +68296,7 @@ async function observe2(input) {
       const chunk = Buffer.alloc(Math.min(CLOSURE_LIMITS.chunkBytes, Number(before.size)));
       const jsonChunks = [];
       const expectedJson = values2.map((entry) => entry.jsonSha256).filter((entry) => entry !== null);
+      const retainedJsonDigest = expectedJson.length > 0 ? jsonDigests.get(role.sha256) : void 0;
       let position = 0;
       while (position < Number(before.size)) {
         deadline();
@@ -68296,7 +68306,7 @@ async function observe2(input) {
         requireEvidence(result2.bytesRead > 0 && result2.bytesRead <= count2, "closure-read-length");
         const bytes2 = chunk.subarray(0, result2.bytesRead);
         hash40.update(bytes2);
-        if (expectedJson.length > 0) {
+        if (expectedJson.length > 0 && retainedJsonDigest === void 0) {
           jsonChunks.push(Buffer.from(bytes2));
         }
         position += result2.bytesRead;
@@ -68304,7 +68314,7 @@ async function observe2(input) {
       const digest6 = hash40.digest("hex");
       requireEvidence(digest6 === role.sha256, "closure-expected-bytes-changed");
       if (expectedJson.length > 0) {
-        const parsedDigest = jsonDigest(Buffer.concat(jsonChunks));
+        const parsedDigest = retainedJsonDigest ?? jsonDigest(Buffer.concat(jsonChunks), digest6);
         for (const expected3 of expectedJson) {
           requireEvidence(parsedDigest === expected3, "closure-replayed-json-changed");
         }
@@ -68392,12 +68402,15 @@ async function revalidateClosedSymbolTerminalClosure(input, previous) {
   same22(current4, retained, "previous-observation");
   return current4;
 }
+var MAX_JSON_DIGEST_ENTRIES, jsonDigests;
 var init_closed_symbol_terminal_closure_observer = __esm({
   "server/src/closed-symbol-terminal-closure-observer.ts"() {
     init_artifacts();
     init_core3();
     init_machine_profile();
     init_closed_symbol_terminal_closure_plan();
+    MAX_JSON_DIGEST_ENTRIES = 512;
+    jsonDigests = /* @__PURE__ */ new Map();
   }
 });
 
@@ -72375,6 +72388,33 @@ function applyAtom(atoms, atom) {
   }
   return selected3 && atom.type !== "ELE_PLACEHOLDER" && atom.type !== "META_PLACEHOLDER";
 }
+function observeSingleCanvasHeader(scope6, value2, ticketValue) {
+  if (scope6 === void 0) {
+    return;
+  }
+  const ticket2 = number16(ticketValue), time5 = number16(value2["updateTime"]);
+  need16(time5 > 0, "single-canvas-segment requires explicit positive header times");
+  scope6.maximumHeaderTicket = Math.max(scope6.maximumHeaderTicket, ticket2);
+  if (time5 > scope6.latestHeaderTime) {
+    scope6.latestHeaderTime = time5;
+    scope6.latestHeaderCount = 1;
+    scope6.latestHeaderTicket = ticket2;
+  } else if (time5 === scope6.latestHeaderTime) {
+    scope6.latestHeaderCount += 1;
+  }
+}
+function observeSingleCanvasAtom(scope6, atom, chunkIndex) {
+  if (scope6 === void 0) {
+    return;
+  }
+  need16(!scope6.types.has(atom.id) || scope6.types.get(atom.id) === atom.type, "single-canvas-segment atom type changed");
+  scope6.types.set(atom.id, atom.type);
+  if (!IGNORED.has(atom.type)) {
+    need16(scope6.canvasChunkIndex === void 0 || scope6.canvasChunkIndex === chunkIndex, "canvas occurrences span multiple history segments");
+    scope6.canvasChunkIndex = chunkIndex;
+    need16(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
+  }
+}
 async function prepareSavedSymbolProjection(input) {
   const descriptor10 = await prepareProjection(input, "raw");
   need16(descriptor10.profile === "private.saved-symbol-getstr-projection.v1", "raw preparation profile differs");
@@ -72384,6 +72424,12 @@ async function prepareCurrentDocumentCacheSavedSymbolProjection(input) {
   need16(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "document-cache editor version refused");
   const descriptor10 = await prepareProjection(input, "current-document-cache");
   need16(descriptor10.profile === "private.current-document-cache-saved-symbol-getstr-projection.v1", "document-cache preparation profile differs");
+  return descriptor10;
+}
+async function prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) {
+  need16(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "single-canvas-segment editor version refused");
+  const descriptor10 = await prepareProjection(input, "current-single-canvas-segment-cache");
+  need16(descriptor10.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1", "single-canvas-segment preparation profile differs");
   return descriptor10;
 }
 async function prepareProjection(input, strategy) {
@@ -72419,8 +72465,10 @@ async function prepareProjection(input, strategy) {
   need16(document3?.docType === "SYMBOL", "target not an admitted SYMBOL");
   const atoms = /* @__PURE__ */ new Map();
   let maximum2 = 0, metadataTicket = 0, selected3, steps = 0;
-  for (const chunk of chunks) {
+  const singleCanvasScope = strategy === "current-single-canvas-segment-cache" ? { types: /* @__PURE__ */ new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 } : void 0;
+  for (const [chunkIndex, chunk] of chunks.entries()) {
     let current4, documentCacheEdit, edit;
+    let targetFragmentRecords = 0;
     const records2 = chunk.split("|\n");
     if (records2.at(-1) === "") {
       records2.pop();
@@ -72444,6 +72492,8 @@ async function prepareProjection(input, strategy) {
           updateTime: current4["updateTime"]
         };
         if (current4["uuid"] === targetUuid) {
+          targetFragmentRecords += 1;
+          observeSingleCanvasHeader(singleCanvasScope, current4, header["ticket"]);
           documentCacheEdit ??= {
             uuid: current4["uuid"],
             username: isRecord(current4["user"]) ? current4["user"]["username"] : void 0,
@@ -72453,6 +72503,7 @@ async function prepareProjection(input, strategy) {
           selected3 = applyHeader(current4, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected3);
         }
       } else if (current4?.["uuid"] === targetUuid) {
+        targetFragmentRecords += 1;
         const id9 = text18(header["id"]), type2 = text18(header["type"]);
         need16(type2 !== "NET" && type2 !== "RULE_SELECTOR", "case-insensitive cross-type key replay is not admitted");
         need16(type2 !== "META" || id9 === "META" && parsed2.body !== null, "noncanonical target META history refused");
@@ -72460,6 +72511,7 @@ async function prepareProjection(input, strategy) {
         const client = text18(hasClient ? header["client"] : current4["client"]), ticket2 = number16(header["ticket"]);
         need16(/^[a-f0-9]{16}$/u.test(client), "record client refused");
         const atom = { id: id9, type: type2, ticket: ticket2, client, raw: raw.slice(raw.indexOf("||") + 2) };
+        observeSingleCanvasAtom(singleCanvasScope, atom, chunkIndex);
         if (applyAtom(atoms, atom)) {
           metadataTicket = Math.max(metadataTicket, ticket2);
         }
@@ -72469,6 +72521,7 @@ async function prepareProjection(input, strategy) {
         await yieldProofEventLoop();
       }
     }
+    need16(singleCanvasScope === void 0 || targetFragmentRecords !== 1, "lone target DOCHEAD is omitted from the document cache");
   }
   need16(maximum2 === maximumTicket && selected3 !== void 0, "global ticket/header differs from the prepared edit");
   const meta3 = atoms.get("META")?.last;
@@ -72489,7 +72542,14 @@ async function prepareProjection(input, strategy) {
       await yieldProofEventLoop();
     }
   }
-  need16(strategy === "raw" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  need16(strategy !== "current-document-cache" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  if (singleCanvasScope !== void 0) {
+    need16(singleCanvasScope.canvasChunkIndex !== void 0 && canvas.length > 0, "single-canvas-segment requires historical canvas atoms");
+    need16(
+      singleCanvasScope.latestHeaderCount === 1 && singleCanvasScope.latestHeaderTicket === singleCanvasScope.maximumHeaderTicket,
+      "canvas header depends on segment arrival order"
+    );
+  }
   const common3 = {
     targetUuid,
     maximumTicket,
@@ -72499,12 +72559,29 @@ async function prepareProjection(input, strategy) {
     executionAuthorized: false,
     producerBindingVerified: false
   };
-  const descriptor10 = strategy === "raw" ? Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common3 }) : Object.freeze({
-    profile: "private.current-document-cache-saved-symbol-getstr-projection.v1",
-    ...common3,
-    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
-    cacheBranchObserved: false
-  });
+  let descriptor10;
+  if (strategy === "raw") {
+    descriptor10 = Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common3 });
+  } else if (singleCanvasScope === void 0) {
+    descriptor10 = Object.freeze({
+      profile: "private.current-document-cache-saved-symbol-getstr-projection.v1",
+      ...common3,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+      cacheBranchObserved: false
+    });
+  } else {
+    const { canvasChunkIndex } = singleCanvasScope;
+    need16(canvasChunkIndex !== void 0, "single-canvas-segment index missing");
+    descriptor10 = Object.freeze({
+      profile: "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1",
+      ...common3,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+      cacheBranchObserved: false,
+      canvasChunkIndex,
+      maximumTargetHeaderTime: singleCanvasScope.latestHeaderTime,
+      segmentOrderIndependent: true
+    });
+  }
   originals.set(descriptor10, { descriptor: descriptor10, header: selected3, metadata: metadata9, metadataTicket, currentEditVersion, canvas });
   return descriptor10;
 }
@@ -72557,6 +72634,21 @@ function verifyCurrentSavedSymbolProjectionAlternatives(raw, documentCache, obse
   return Object.freeze({
     ...verifySavedSymbolContent(matched, observation2),
     matchedProjection: matched === raw ? "complete-raw-history" : "current-document-cache",
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+    cacheBranchObserved: false
+  });
+}
+function verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(raw, documentCache, observation2) {
+  const cached2 = originals.get(documentCache), retained = originals.get(raw);
+  need16(
+    retained !== void 0 && cached2 !== void 0 && raw.profile === "private.saved-symbol-getstr-projection.v1" && documentCache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" && retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && cached2.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 && documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes && documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket && raw.canvasRecords > 0 && documentCache.canvasRecords === raw.canvasRecords,
+    "single-canvas-segment alternative has different complete history"
+  );
+  need16(isRecord(observation2) && typeof observation2["workerClient"] === "string" && typeof observation2["content"] === "string", "native observation shape/identity differs");
+  const matched = observation2["content"] === expectedSavedSymbolContent(raw, observation2["workerClient"]) ? raw : documentCache;
+  return Object.freeze({
+    ...verifySavedSymbolContent(matched, observation2),
+    matchedProjection: matched === raw ? "complete-raw-history" : "current-single-canvas-segment-cache",
     workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
     cacheBranchObserved: false
   });
@@ -95653,7 +95745,7 @@ var init_current_disposable_open = __esm({
       "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
       "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
-      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages and its complete original raw history must be META-only, including all tombstoned occurrences; native linked-sheet propagation and historical canvas are unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. The shared installed101500 unused META-only forward/inverse round trip is connected-validated. The separate easyeda_control_project_symbol_metadata ordinary forward-only entrypoint is registered but not connected-tested; generic design writers remain disabled.",
+      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages. Complete history must be META-only or satisfy the separately bounded single-canvas-segment profile: every historical drawing occurrence in one segment, stable atom types, lossless bodies and a unique latest header with maximal target ticket. The canvas profile also requires strictly newer write windows and inverse clock headroom; it has offline tests, not connected validation. Native linked-sheet propagation and other historical canvas shapes remain unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Installed101500 passed the unused META-only disposable forward/inverse round trip; installed123000 separately passed the ordinary META-only forward lifecycle on a disposable fixture. The ordinary route remains META-only; generic design writers remain disabled.",
       "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps."
     ];
   }
@@ -96133,6 +96225,7 @@ function queryCurrentSymbolOperation(input = {}) {
     executionAuthorized: false,
     writerReady: false,
     connectedValidation: false,
+    historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
     forwardOnly: true,
     inverseSupported: false,
     replayAllowed: false,
@@ -96235,7 +96328,7 @@ var init_current_symbol_operation = __esm({
     );
     currentSymbolOperationQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
     limitations12 = [
-      "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. The shared disposable lifecycle has connected validation; this ordinary route has not been connected-tested. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
+      "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. Installed123000 passed one ordinary unused META-only forward lifecycle on a disposable fixture, including exact closed SQL, reopened content and final closure. Installed101500 separately passed the disposable forward/inverse lifecycle. These historical cases do not validate every shape or a later runtime. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
       "One exact already registered local .eprj2 project and checkpoint-member PCB in its default branch. Preserve the exact raw Windows path hash, source hash, sealed branch and original retained launch; opening starts from an empty editor.",
       "Before the first ordinary navigation, derive the supported startup expectation from the preserved checkpoint. Recheck that expectation against the complete closed baseline, then require live startup qualification before writing. No disposable acceptance or unqualified schematic-startup bypass is accepted.",
       "Ordinary opening can migrate storage, replay caches, restore tabs, update shared metadata and automatically Save. Each opening or closure stage requires its own explicit acknowledgement. No unchanged-storage promise, explicit Save, Save/Discard choice, forced exit or file restoration is provided.",
@@ -124526,568 +124619,6 @@ var init_current_symbol_saved_read_program = __esm({
   }
 });
 
-// server/src/current-symbol-write-budget.ts
-function need60(condition, message) {
-  if (!condition) {
-    throw new Error(`Current symbol write budget: ${message}`);
-  }
-}
-function savedEnvelopeBytes(targetUuid, ticket2, desired, content, startup2) {
-  const target6 = { projectUuid: "0".repeat(64), branchUuid: "0".repeat(32), symbolUuid: targetUuid, ownerUuid: "0".repeat(32) };
-  const expectedBefore = {
-    name: desired.name,
-    description: desired.description,
-    tagsJson: JSON.stringify(desired.tags),
-    source: desired.source,
-    version: String(MAX_NATIVE_TIME),
-    ticket: ticket2
-  };
-  buildCurrentSavedSymbolReadProgram({ target: target6, expectedBefore, expectedActor: ACTOR, maximumTicket: ticket2, startup: startup2 });
-  const result = {
-    profile: "private.current-symbol-saved-read-observation.v1",
-    target: target6,
-    expectedBefore,
-    expectedActor: ACTOR,
-    observation: {
-      profile: "private.saved-symbol-content-observation.v1",
-      projectUuid: target6.projectUuid,
-      targetUuid,
-      maximumTicket: ticket2,
-      workerClient: CLIENT,
-      content,
-      executionAuthorized: false,
-      producerBindingVerified: false,
-      completionProved: false
-    },
-    samples: 2,
-    noEditorTabsObserved: true,
-    mutationDispatched: false,
-    explicitSaveDispatched: false,
-    executionAuthorized: false
-  };
-  const json3 = JSON.stringify(result), utf8Bytes = Buffer.byteLength(json3);
-  const bytes2 = Buffer.byteLength(JSON.stringify({ schema: EXACT_READ_ENVELOPE_SCHEMA, utf8Bytes, json: json3 }));
-  need60(
-    utf8Bytes <= CURRENT_SAVED_SYMBOL_ENVELOPE_LIMIT && bytes2 <= CURRENT_SAVED_SYMBOL_ENVELOPE_LIMIT,
-    "complete desired saved envelope exceeds its reader byte limit"
-  );
-  return bytes2;
-}
-function sqlText(value2) {
-  return { kind: "text", hex: Buffer.from(value2).toString("hex") };
-}
-function sqlField(table9, row7, name6) {
-  const index = table9.columns.findIndex((column) => column["name"] === name6);
-  const cell8 = row7.cells[index];
-  need60(index !== -1 && cell8 !== void 0, "fixed SQL effect column is missing");
-  return cell8;
-}
-function selectedSqlText(table9, row7, name6, value2) {
-  const cell8 = sqlField(table9, row7, name6);
-  return cell8.kind === "text" && cell8.hex === Buffer.from(value2).toString("hex");
-}
-function sqlInteger(cell8) {
-  need60(cell8.kind === "integer" && /^(?:0|[1-9][0-9]*)$/u.test(cell8.decimal), "SQL allocation is not a supported integer");
-  return BigInt(cell8.decimal);
-}
-function allocationCapacity(history, data5, sequence, writes) {
-  const maxima = [history, data5].map((table9) => {
-    let maximum2 = 0n;
-    for (const row7 of table9.rows) {
-      const id10 = sqlInteger(sqlField(table9, row7, "id"));
-      need60(row7.rowid !== null && id10 > 0n && id10 === sqlInteger(row7.rowid), "SQL allocation ID/rowid association differs");
-      if (id10 > maximum2) {
-        maximum2 = id10;
-      }
-    }
-    need60(maximum2 + BigInt(writes) <= BigInt(Number.MAX_SAFE_INTEGER), "SQL rowid allocation cannot contain the reserved writes");
-    return maximum2;
-  });
-  const rows2 = sequence.rows.filter((row7) => selectedSqlText(sequence, row7, "name", "history_data"));
-  need60(rows2.length === 1 && rows2[0] !== void 0, "SQL history-data sequence is not unique");
-  const id9 = sqlInteger(sqlField(sequence, rows2[0], "seq"));
-  need60(
-    id9 >= (maxima[1] ?? 0n) && id9 + BigInt(writes) <= BigInt(Number.MAX_SAFE_INTEGER),
-    "SQL sequence allocation cannot contain the reserved writes"
-  );
-}
-function sqlCapacity(before, branchUuid2, uploadBytes) {
-  const tables = new Map(before.tables.map((table9) => [table9.name, table9]));
-  const data5 = tables.get("history_data"), history = tables.get(`project_history_${branchUuid2}`), sequence = tables.get("sqlite_sequence");
-  need60(history !== void 0 && data5 !== void 0 && sequence !== void 0, "fixed history SQL tables are missing");
-  allocationCapacity(history, data5, sequence, uploadBytes.length);
-  let encodedGrowth = 0, insertedCells = 0, maximumCiphertextBase64Bytes = 0;
-  for (const n of uploadBytes) {
-    const fixed = n + Math.floor(n / 8) + Math.floor(n / 256) + Math.floor(n / 512) + 4;
-    const stored2 = n + Math.floor(n / 32) + Math.floor(n / 128) + Math.floor(n / 2048) + 7;
-    const ciphertextBytes = 4 * Math.ceil((Math.max(fixed, stored2) + 18 + 16) / 3);
-    maximumCiphertextBase64Bytes = Math.max(maximumCiphertextBase64Bytes, ciphertextBytes);
-    need60(ciphertextBytes <= 2097152, "generated SQL TEXT exceeds the maintained cell-byte limit");
-    const timestamp9 = sqlText("2000-01-01 00:00:00"), uuid12 = sqlText("0".repeat(32));
-    const historyValues = {
-      id: SQL_INTEGER,
-      uuid: uuid12,
-      parent: uuid12,
-      snapshot: { kind: "null" },
-      key: uuid12,
-      is_lock: SQL_INTEGER,
-      num: SQL_INTEGER,
-      created_at: timestamp9,
-      updated_at: timestamp9,
-      snapshot_num: SQL_INTEGER,
-      lock_time: timestamp9
-    };
-    const dataValues = {
-      id: SQL_INTEGER,
-      uuid: uuid12,
-      history_uuid: uuid12,
-      dataStr: sqlText("A".repeat(ciphertextBytes)),
-      created_at: timestamp9,
-      updated_at: timestamp9
-    };
-    for (const [table9, values2] of [[history, historyValues], [data5, dataValues]]) {
-      need60(!table9.withoutRowid && table9.columns.length === Object.keys(values2).length, "inserted SQL shape differs from the exact effect");
-      const cells = table9.columns.map((column) => {
-        const name6 = column["name"];
-        const cell8 = typeof name6 === "string" ? values2[name6] : void 0;
-        need60(cell8 !== void 0, "inserted SQL effect column is missing");
-        return cell8;
-      });
-      encodedGrowth += Buffer.byteLength(JSON.stringify({ rowid: SQL_INTEGER, cells })) + 1;
-      insertedCells += cells.length + 1;
-    }
-    const updates = [
-      ["projects", void 0, void 0, { updated_at: timestamp9, modifier_uuid: uuid12 }],
-      ["branches", "uuid", branchUuid2, { history_uuid: uuid12 }],
-      ["project_structures", "branch_uuid", branchUuid2, { ticket: SQL_INTEGER }],
-      ["sqlite_sequence", "name", "history_data", { seq: SQL_INTEGER }]
-    ];
-    for (const [name6, field3, value2, changes] of updates) {
-      const table9 = tables.get(name6);
-      need60(table9 !== void 0, "updated SQL table is missing");
-      const selectedRows = field3 === void 0 ? table9.rows : table9.rows.filter((row7) => selectedSqlText(table9, row7, field3, value2));
-      for (const row7 of selectedRows) {
-        for (const [column, cell8] of Object.entries(changes)) {
-          sqlField(table9, row7, column);
-          encodedGrowth += Buffer.byteLength(JSON.stringify(cell8));
-        }
-      }
-    }
-  }
-  const maximumRows = before.tables.reduce((sum, table9) => sum + table9.rows.length, 0) + 2 * uploadBytes.length;
-  const maximumCells = before.tables.reduce((sum, table9) => sum + table9.rows.length * (table9.columns.length + (table9.withoutRowid ? 0 : 1)), 0) + insertedCells;
-  const maximumEncodedBytes = Buffer.byteLength(JSON.stringify(before)) + encodedGrowth;
-  need60(maximumRows <= 1e5 && maximumCells <= 25e4, "complete SQL row/cell-count budget cannot contain the exact effect");
-  need60(maximumEncodedBytes <= MAX_ENCODED_BYTES, "complete SQL encoded budget cannot contain the exact effect");
-  return Object.freeze({
-    maximumRows,
-    maximumCells,
-    maximumEncodedBytes,
-    maximumCiphertextBase64Bytes,
-    physicalFileGrowthProved: false,
-    readerResourceCompletionProved: false
-  });
-}
-async function prepareCurrentSymbolWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
-  const chunks = [...decoded.chunks], desired = desiredSchema.parse(desiredInput);
-  const startup2 = currentSymbolStartupExpectationSchema.parse(startupInput);
-  const stages3 = restorationInput === void 0 ? [desired] : [desired, desiredSchema.parse(restorationInput)];
-  const { history, maximumTicket } = decoded;
-  need60(
-    Number.isSafeInteger(history.historyRowCount) && history.historyRowCount > 0 && history.historyRowCount + stages3.length <= 64,
-    "reserved appended history rows must fit the maintained 64-row decoder"
-  );
-  need60(
-    history.chunkCount === chunks.length && history.plaintextBytes === chunks.reduce((total, chunk) => total + Buffer.byteLength(chunk), 0),
-    "complete decoded history counts differ"
-  );
-  need60(
-    Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && !Object.is(maximumTicket, -0) && maximumTicket <= Number.MAX_SAFE_INTEGER - stages3.length - 1,
-    "the written ticket and exported outer ticket must remain supported safe integers"
-  );
-  let maximumSavedContentBytes = 0, maximumSavedEnvelopeBytes = 0, maximumUploadBytes = 0;
-  let paths = [chunks];
-  const uploadBytes = [];
-  for (const [index, stage] of stages3.entries()) {
-    const ticket2 = maximumTicket + index + 1;
-    const metadata9 = { title: stage.name, description: stage.description, tags: stage.tags, docType: 2, source: stage.source };
-    const nextPaths = [];
-    let stageUploadBytes = 0;
-    for (const path5 of paths) {
-      for (const stamp of [1, MAX_NATIVE_TIME]) {
-        const upload = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ ...ACTOR, updateTime: stamp })}|
-${JSON.stringify({ type: "DOCHEAD", ticket: ticket2 })}||${JSON.stringify({
-          docType: "SYMBOL",
-          client: CLIENT,
-          uuid: targetUuid,
-          updateTime: stamp,
-          version: String(stamp),
-          editVersion: "3.2.206"
-        })}|
-${JSON.stringify({ type: "META", ticket: ticket2, id: "META" })}||${JSON.stringify(metadata9)}`;
-        stageUploadBytes = Math.max(stageUploadBytes, Buffer.byteLength(upload));
-        const next = [...path5, upload];
-        nextPaths.push(next);
-        const input = { chunks: next, targetUuid, maximumTicket: ticket2, currentEditVersion: "3.2.206" };
-        const raw = await prepareSavedSymbolProjection(input);
-        const cache = await prepareCurrentDocumentCacheSavedSymbolProjection(input);
-        for (const projection8 of [raw, cache]) {
-          const content = expectedSavedSymbolContent(projection8, CLIENT);
-          const bytes2 = Buffer.byteLength(content);
-          maximumSavedContentBytes = Math.max(maximumSavedContentBytes, bytes2);
-          need60(bytes2 > 0 && bytes2 <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT, "complete desired saved content exceeds its reader byte limit");
-          maximumSavedEnvelopeBytes = Math.max(maximumSavedEnvelopeBytes, savedEnvelopeBytes(targetUuid, ticket2, stage, content, startup2));
-        }
-      }
-    }
-    uploadBytes.push(stageUploadBytes);
-    maximumUploadBytes = Math.max(maximumUploadBytes, stageUploadBytes);
-    paths = nextPaths;
-  }
-  return Object.freeze({
-    profile: "private.current-symbol-write-budget.v1",
-    targetUuid,
-    beforeMaximumTicket: maximumTicket,
-    reservedWrites: stages3.length,
-    afterMaximumTicket: maximumTicket + stages3.length,
-    afterHistoryRows: history.historyRowCount + stages3.length,
-    afterChunks: chunks.length + stages3.length,
-    maximumUploadBytes,
-    maximumRawHistoryBytes: history.plaintextBytes + uploadBytes.reduce((sum, bytes2) => sum + bytes2, 0),
-    maximumSavedContentBytes,
-    maximumSavedEnvelopeBytes,
-    sqlCapacity: sqlCapacity(before, history.branchUuid, uploadBytes),
-    savedContentLimit: CURRENT_SAVED_SYMBOL_CONTENT_LIMIT,
-    producerBindingVerified: false,
-    executionAuthorized: false
-  });
-}
-var desiredSchema, MAX_NATIVE_TIME, CLIENT, ACTOR, SQL_INTEGER;
-var init_current_symbol_write_budget = __esm({
-  "server/src/current-symbol-write-budget.ts"() {
-    init_zod();
-    init_current_symbol_saved_read_program();
-    init_exact_readers();
-    init_current_symbol_startup();
-    init_saved_symbol_projection();
-    init_symbol_dual_actor();
-    init_sqlite_inventory_core();
-    desiredSchema = external_exports.object({
-      name: external_exports.string().min(1).max(512),
-      description: external_exports.string().max(65536),
-      tags: external_exports.array(external_exports.string().max(512)).max(256),
-      source: external_exports.string().max(4096)
-    }).strict();
-    MAX_NATIVE_TIME = 864e13;
-    CLIENT = "0".repeat(16);
-    ACTOR = Object.freeze({
-      uuid: "0".repeat(32),
-      username: "\0".repeat(ACTOR_NAME_MAX_CODE_UNITS),
-      nickname: "\0".repeat(ACTOR_NAME_MAX_CODE_UNITS)
-    });
-    SQL_INTEGER = Object.freeze({ kind: "integer", decimal: String(Number.MAX_SAFE_INTEGER) });
-  }
-});
-
-// server/src/current-symbol-meta-only.ts
-function need61(condition) {
-  if (!condition) {
-    throw new Error("Current symbol metadata requires its complete original META-only baseline.");
-  }
-}
-async function assertMetadataOccurrences(chunks, targetUuid) {
-  let steps = 0;
-  for (const chunk of chunks) {
-    let current4;
-    const records2 = chunk.split("|\n");
-    if (records2.at(-1) === "") {
-      records2.pop();
-    }
-    for (const raw of records2) {
-      const record7 = parseNativeRecords(raw)[0];
-      need61(record7 !== void 0);
-      const type2 = record7.header["type"];
-      if (type2 === "DOCHEAD") {
-        current4 = record7.body?.["uuid"];
-      } else if (type2 !== "EDIT_HEAD" && current4 === targetUuid && (typeof type2 !== "string" || !METADATA_ATOMS.has(type2))) {
-        throw new Error("Current symbol metadata refuses every historical target canvas atom, including tombstones.");
-      }
-      steps += 1;
-      if (steps % 128 === 0) {
-        await yieldProofEventLoop();
-      }
-    }
-  }
-}
-async function assertCurrentSymbolMetaOnlyBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration) {
-  const bindingText = canonicalJson({ copy: binding3.copy, checkpoint: binding3.checkpoint });
-  const completion2 = readerCompletion(inventory2), expectedText = canonicalJson(expected3), selected3 = Object.freeze({ ...target6 });
-  const checkpointSha256 = binding3.checkpoint.checkpointSha256, rawCopySha256 = binding3.copy.sha256;
-  need61(/^[a-f0-9]{64}$/u.test(rawCopySha256) && /^[a-f0-9]{64}$/u.test(checkpointSha256) && binding3.copy.source.length > 0 && binding3.copy.source === binding3.checkpoint.source && rawCopySha256 === binding3.checkpoint.sourceSha256 && inventory2.checkpointSha256 === rawCopySha256 && expected3.checkpointSha256 === checkpointSha256);
-  need61(Object.keys(selected3).length === 4 && /^[a-f0-9]{32}$/u.test(selected3.ownerUuid) && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(selected3.symbolUuid));
-  const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: selected3.projectUuid, branchUuid: selected3.branchUuid });
-  const history = decoded.history;
-  need61(history.checkpointSha256 === rawCopySha256 && history.semanticSha256 === expected3.semanticSha256 && history.projectUuid === expected3.projectUuid && history.branchUuid === expected3.branchUuid && history.projectOwnerUuid === expected3.projectOwnerUuid && history.projectOwnerUuid === selected3.ownerUuid && history.headHistoryUuid === expected3.headHistoryUuid && history.historyRowCount === expected3.historyRowCount && history.chunkCount === expected3.chunkCount && history.plaintextBytes === expected3.plaintextBytes);
-  const projection8 = await prepareCurrentDocumentCacheSavedSymbolProjection({
-    chunks: decoded.chunks,
-    targetUuid: selected3.symbolUuid,
-    maximumTicket: decoded.maximumTicket,
-    currentEditVersion: "3.2.206"
-  });
-  await assertMetadataOccurrences(decoded.chunks, selected3.symbolUuid);
-  const writeBudget = await prepareCurrentSymbolWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration);
-  need61(projection8.canvasRecords === 0 && readerCompletion(inventory2) === completion2 && canonicalJson(expected3) === expectedText && canonicalJson({ copy: binding3.copy, checkpoint: binding3.checkpoint }) === bindingText);
-  return Object.freeze({
-    profile: "private.current-symbol-meta-only-baseline.v1",
-    targetUuid: selected3.symbolUuid,
-    beforeSqlSha256: inventory2.logicalSha256,
-    rawCopySha256,
-    checkpointSha256,
-    historySemanticSha256: history.semanticSha256,
-    rawHistorySha256: projection8.rawHistorySha256,
-    rawHistoryBytes: projection8.rawHistoryBytes,
-    canvasRecords: 0,
-    metadataBookkeepingOnly: true,
-    writeBudget,
-    cacheBranchObserved: false,
-    executionAuthorized: false
-  });
-}
-var METADATA_ATOMS;
-var init_current_symbol_meta_only = __esm({
-  "server/src/current-symbol-meta-only.ts"() {
-    init_core3();
-    init_cooperative_proof();
-    init_native_history();
-    init_current_symbol_write_budget();
-    init_saved_symbol_projection();
-    init_sqlite_inventory();
-    init_symbol_sql_comparator();
-    METADATA_ATOMS = /* @__PURE__ */ new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
-  }
-});
-
-// server/src/current-symbol-startup-runtime.ts
-function need62(condition) {
-  if (!condition) {
-    throw new Error("Current symbol writer startup qualification refused.");
-  }
-}
-function currentSymbolStartupCollectionEvidence(generation5, engine2) {
-  const collection = collections2.get(generation5);
-  if (collection === void 0) {
-    return void 0;
-  }
-  need62(collection.engine === engine2);
-  return Object.freeze({
-    profile: "private.current-symbol-startup-collection.v1",
-    raw: collection.raw ?? null,
-    rawRetained: Object.hasOwn(collection, "raw"),
-    intentArtifact: collection.intentArtifact ?? null,
-    resultArtifact: collection.resultArtifact ?? null,
-    resultPublicationAttempted: collection.resultPublicationAttempted,
-    failureObserved: collection.failureObserved,
-    executionAuthorized: false
-  });
-}
-function buildCurrentSymbolStartupObservation(target6, expectation) {
-  exact10(target6, ["projectUuid", "branchUuid"]);
-  need62(/^[a-f0-9]{64}$/u.test(target6.projectUuid) && /^[a-f0-9]{32}$/u.test(target6.branchUuid));
-  const selected3 = currentSymbolStartupExpectationSchema.parse(expectation);
-  return `let startupStage='project-only-context';
-const observation=(()=>{try{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target6)},startupExpected=${JSON.stringify(selected3)},expired=false;
-const bad=()=>{throw new Error('CURRENT_SYMBOL_STARTUP_FAILED');};
-const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
-const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
-const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
-${buildCurrentProjectOnlySymbolGuard()}
-${buildCurrentSymbolStartupGuard(true)}
-startup.check();startupStage='project-only-context';projectOnly.check();startup.check();
-return{profile:'private.current-symbol-startup-observation.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,executionAuthorized:false};
-}catch{return{profile:'private.current-symbol-startup-failure.v1',stage:startupStage,executionAuthorized:false};}})();
-const json=JSON.stringify(observation),utf8Bytes=new TextEncoder().encode(json).byteLength;
-const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
-if(utf8Bytes>${MAX_BYTES9}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${MAX_BYTES9})throw new Error('CURRENT_SYMBOL_STARTUP_ENVELOPE');
-return envelope;`;
-}
-function decodeCurrentSymbolStartupObservation(raw, target6, expectation) {
-  assertUpstreamReplySettled(raw);
-  const envelope2 = exact10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
-  need62(envelope2["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope2["json"] === "string" && envelope2["json"].length > 0 && envelope2["json"].length <= MAX_BYTES9 && Buffer.byteLength(JSON.stringify(envelope2)) <= MAX_BYTES9);
-  const observation2 = decodeExactReadEnvelope(envelope2);
-  if (isRecord(observation2) && observation2["profile"] === "private.current-symbol-startup-failure.v1") {
-    const failure2 = exact10(observation2, ["profile", "stage", "executionAuthorized"]), stage = failure2["stage"];
-    need62(failure2["executionAuthorized"] === false && CURRENT_SYMBOL_STARTUP_STAGES.some((allowed) => allowed === stage));
-    throw new Error(`Current symbol writer startup qualification refused [startup:${String(stage)}].`);
-  }
-  const expected3 = {
-    profile: "private.current-symbol-startup-observation.v1",
-    ...target6,
-    sheetUuids: expectation.sheetUuids,
-    templates: expectation.templates,
-    executionAuthorized: false
-  };
-  need62(canonicalJson(observation2) === canonicalJson(expected3));
-}
-function assertCurrentSymbolWriterStartup(value2, engine2, generation5) {
-  need62(value2 !== null && typeof value2 === "object");
-  const original2 = issued10.get(value2);
-  need62(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
-  const scope6 = engine2.upstream.currentAuthenticatedBridgeDispatchBinding?.();
-  need62(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scope6 === void 0 ? void 0 : canonicalJson(scope6)) === original2.source);
-  return original2;
-}
-async function revalidateCurrentSymbolWriterStartup(value2, engine2, generation5) {
-  const original2 = assertCurrentSymbolWriterStartup(value2, engine2, generation5);
-  const check3 = () => {
-    need62(assertCurrentSymbolWriterStartup(value2, engine2, generation5) === original2);
-  };
-  const fingerprint = original2.source.source.expectedFingerprint;
-  assertExpectedFingerprint(fingerprint);
-  validateSdkLocalRuntimeFingerprint(fingerprint);
-  const root = fingerprint.installedBundles.assetsRoot;
-  await verifyCurrentProjectOnlySymbolPreflightImplementation(root);
-  check3();
-  await verifyCurrentSymbolPersistenceImplementation(root);
-  check3();
-  await readExactUtf8Artifact(original2.resultArtifact);
-  check3();
-  return original2;
-}
-async function qualifyCurrentSymbolWriterStartup(engine2, generation5, remainingWrites = 1) {
-  const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
-  need62(scopeReader !== void 0);
-  const scope6 = scopeReader.call(engine2.upstream);
-  need62(scope6 !== void 0);
-  const scopeText = canonicalJson(scope6), source4 = assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
-  need62((remainingWrites === 1 || remainingWrites === 2) && (remainingWrites !== 2 || (source4.source.purpose ?? "disposable-validation") === "disposable-validation"));
-  need62(!attempts13.has(generation5));
-  attempts13.add(generation5);
-  const collection = { engine: engine2, resultPublicationAttempted: false, failureObserved: false };
-  collections2.set(generation5, collection);
-  const evidenceId = `current-startup-${sha256Json({ operationId: generation5.operationId })}`;
-  try {
-    const call = engine2.upstream.callTool;
-    const check3 = () => {
-      need62(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.upstream.callTool === call && assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source4);
-    };
-    await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
-    check3();
-    const baseline2 = source4.baseline, premises = baseline2.startupPremises;
-    need62(premises.sqlSchemaSupported && premises.databaseVersion === "25.10.31.1" && premises.targetPcbSuppliesNonzeroNativeCount && premises.blockers.every((entry) => entry === "active-schematic-pages"));
-    const history = await readNativeHistoryCheckpoint({
-      checkpointPath: baseline2.checkpoint.checkpoint,
-      expectedSha256: baseline2.checkpoint.checkpointSha256,
-      projectUuid: baseline2.preparation.target.projectUuid,
-      libraryAtomHeaders: "preserve"
-    });
-    check3();
-    need62(history.semanticSha256 === premises.historySemanticSha256 && history.branchUuid === baseline2.preparation.target.branchUuid);
-    const expectation = selectCurrentSymbolStartupExpectation(history);
-    need62(expectation.sheetUuids.length === premises.activeSchematicPages);
-    if (expectation.templates.some((template) => template.uuid === baseline2.preparation.target.symbolUuid)) {
-      throw new Error("Current symbol writer refuses referenced-symbol propagation: native linked-sheet updates are unsupported.");
-    }
-    if (source4.source.purpose === "ordinary-symbol-metadata") {
-      need62(source4.source.startupExpectation !== void 0 && canonicalJson(expectation) === canonicalJson(source4.source.startupExpectation));
-    }
-    const metadataScope = await assertCurrentSymbolMetaOnlyBaseline(
-      baseline2.inventory,
-      baseline2,
-      baseline2.preparation.target,
-      history,
-      baseline2.preparation.metadata.after,
-      expectation,
-      remainingWrites === 2 ? baseline2.preparation.metadata.before : void 0
-    );
-    check3();
-    const fingerprint = source4.source.expectedFingerprint;
-    assertExpectedFingerprint(fingerprint);
-    validateSdkLocalRuntimeFingerprint(fingerprint);
-    const assetsRoot = fingerprint.installedBundles.assetsRoot;
-    await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-    check3();
-    await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-    check3();
-    await engine2.assertBridgeDispatchAllowed();
-    check3();
-    const target6 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
-    const code = buildCurrentSymbolStartupObservation(target6, expectation);
-    const intent = await writePhaseArtifact(evidenceId, 0, "startup-intent", {
-      target: target6,
-      expectation,
-      codeSha256: sha256Text(code),
-      baselineSha256: sha256Json(baseline2),
-      captureSha256: sha256Json(source4.capture),
-      metadataScope,
-      executionAuthorized: false
-    });
-    collection.intentArtifact = Object.freeze(intent);
-    check3();
-    await readExactUtf8Artifact(intent);
-    check3();
-    const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
-    collection.raw = raw;
-    collection.resultPublicationAttempted = true;
-    const resultArtifact = await writePhaseArtifact(evidenceId, 0, "startup-result", { raw });
-    collection.resultArtifact = Object.freeze(resultArtifact);
-    check3();
-    decodeCurrentSymbolStartupObservation(raw, target6, expectation);
-    await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-    check3();
-    await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-    check3();
-    await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
-    check3();
-    const token = Object.freeze({
-      profile: "private.current-symbol-writer-startup.v1",
-      operationId: generation5.operationId,
-      expectation,
-      baselineSha256: sha256Json(baseline2),
-      startupLocalChangesExcluded: true,
-      runtimeHoldersObserved: true,
-      crossInvocationReceiverContinuityVerified: false,
-      globalIdleVerified: false,
-      persistenceVerified: false,
-      executionAuthorized: false
-    });
-    issued10.set(token, { engine: engine2, generation: generation5, source: source4, expectation, text: canonicalJson(token), resultArtifact });
-    return token;
-  } catch (error51) {
-    collection.failureObserved = true;
-    if (collection.intentArtifact !== void 0 && !collection.resultPublicationAttempted) {
-      collection.resultPublicationAttempted = true;
-      try {
-        collection.resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "startup-result", currentSymbolStartupCollectionEvidence(generation5, engine2)));
-      } catch (retentionError) {
-        throw new AggregateError([error51, retentionError], "Current startup read failed and partial evidence publication failed; original attempt is retained.", { cause: retentionError });
-      }
-    }
-    throw error51;
-  }
-}
-var attempts13, issued10, MAX_BYTES9, collections2;
-var init_current_symbol_startup_runtime = __esm({
-  "server/src/current-symbol-startup-runtime.ts"() {
-    init_artifacts();
-    init_core3();
-    init_current_disposable_open_profile();
-    init_current_project_only_symbol_guard();
-    init_current_symbol_baseline_runtime();
-    init_current_symbol_startup();
-    init_current_symbol_startup_guard();
-    init_exact_readers();
-    init_native_history();
-    init_current_symbol_meta_only();
-    init_sdk_local_runtime();
-    init_symbol_clock_controls();
-    attempts13 = /* @__PURE__ */ new WeakSet();
-    issued10 = /* @__PURE__ */ new WeakMap();
-    MAX_BYTES9 = 98304;
-    collections2 = /* @__PURE__ */ new WeakMap();
-  }
-});
-
 // server/src/current-symbol-write-program.ts
 function plainData(input, depth = 0) {
   if (depth > 5) {
@@ -125280,7 +124811,7 @@ function decodeCurrentSymbolWriteReply(raw, input) {
   }
   return Object.freeze(value2);
 }
-var CURRENT_SYMBOL_WRITE_TIMEOUT_MS, CURRENT_SYMBOL_WRITE_MAX_BYTES, integer7, time4, offset2, actorSchema2, windowSchema, beforeSchema2, currentSymbolWriteProgramInputSchema, sampleSchema, resultSchema4;
+var CURRENT_SYMBOL_WRITE_TIMEOUT_MS, CURRENT_SYMBOL_WRITE_MAX_BYTES, CURRENT_SYMBOL_WRITE_WINDOW_MS, CURRENT_SYMBOL_WRITE_TIME_CEILING, integer7, time4, offset2, actorSchema2, windowSchema, beforeSchema2, currentSymbolWriteProgramInputSchema, sampleSchema, resultSchema4;
 var init_current_symbol_write_program = __esm({
   "server/src/current-symbol-write-program.ts"() {
     init_zod();
@@ -125293,15 +124824,17 @@ var init_current_symbol_write_program = __esm({
     init_symbol_dual_actor();
     CURRENT_SYMBOL_WRITE_TIMEOUT_MS = 15e3;
     CURRENT_SYMBOL_WRITE_MAX_BYTES = 393216;
+    CURRENT_SYMBOL_WRITE_WINDOW_MS = 6e4;
+    CURRENT_SYMBOL_WRITE_TIME_CEILING = 864e13 - CURRENT_SYMBOL_WRITE_WINDOW_MS;
     integer7 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
-    time4 = integer7.max(864e13 - 6e4);
+    time4 = integer7.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
     offset2 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
     actorSchema2 = external_exports.object({
       uuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    windowSchema = external_exports.object({ minimumMs: time4, maximumMs: time4 }).strict().refine((value2) => value2.maximumMs - value2.minimumMs === 6e4);
+    windowSchema = external_exports.object({ minimumMs: time4, maximumMs: time4 }).strict().refine((value2) => value2.maximumMs - value2.minimumMs === CURRENT_SYMBOL_WRITE_WINDOW_MS);
     beforeSchema2 = currentProjectOnlySymbolPreflightRequestSchema.shape.expectedBefore;
     currentSymbolWriteProgramInputSchema = currentProjectOnlySymbolPreflightRequestSchema.extend({
       desired: external_exports.object({ name: external_exports.string().min(1).max(512).refine((value2) => value2.trim().length > 0), description: external_exports.string().max(65536) }).strict(),
@@ -125346,6 +124879,615 @@ var init_current_symbol_write_program = __esm({
       reopened: external_exports.literal(false),
       executionAuthorized: external_exports.literal(false)
     }).strict();
+  }
+});
+
+// server/src/current-symbol-write-budget.ts
+function need60(condition, message) {
+  if (!condition) {
+    throw new Error(`Current symbol write budget: ${message}`);
+  }
+}
+function savedEnvelopeBytes(targetUuid, ticket2, desired, content, startup2) {
+  const target6 = { projectUuid: "0".repeat(64), branchUuid: "0".repeat(32), symbolUuid: targetUuid, ownerUuid: "0".repeat(32) };
+  const expectedBefore = {
+    name: desired.name,
+    description: desired.description,
+    tagsJson: JSON.stringify(desired.tags),
+    source: desired.source,
+    version: String(MAX_NATIVE_TIME),
+    ticket: ticket2
+  };
+  buildCurrentSavedSymbolReadProgram({ target: target6, expectedBefore, expectedActor: ACTOR, maximumTicket: ticket2, startup: startup2 });
+  const result = {
+    profile: "private.current-symbol-saved-read-observation.v1",
+    target: target6,
+    expectedBefore,
+    expectedActor: ACTOR,
+    observation: {
+      profile: "private.saved-symbol-content-observation.v1",
+      projectUuid: target6.projectUuid,
+      targetUuid,
+      maximumTicket: ticket2,
+      workerClient: CLIENT,
+      content,
+      executionAuthorized: false,
+      producerBindingVerified: false,
+      completionProved: false
+    },
+    samples: 2,
+    noEditorTabsObserved: true,
+    mutationDispatched: false,
+    explicitSaveDispatched: false,
+    executionAuthorized: false
+  };
+  const json3 = JSON.stringify(result), utf8Bytes = Buffer.byteLength(json3);
+  const bytes2 = Buffer.byteLength(JSON.stringify({ schema: EXACT_READ_ENVELOPE_SCHEMA, utf8Bytes, json: json3 }));
+  need60(
+    utf8Bytes <= CURRENT_SAVED_SYMBOL_ENVELOPE_LIMIT && bytes2 <= CURRENT_SAVED_SYMBOL_ENVELOPE_LIMIT,
+    "complete desired saved envelope exceeds its reader byte limit"
+  );
+  return bytes2;
+}
+function sqlText(value2) {
+  return { kind: "text", hex: Buffer.from(value2).toString("hex") };
+}
+function sqlField(table9, row7, name6) {
+  const index = table9.columns.findIndex((column) => column["name"] === name6);
+  const cell8 = row7.cells[index];
+  need60(index !== -1 && cell8 !== void 0, "fixed SQL effect column is missing");
+  return cell8;
+}
+function selectedSqlText(table9, row7, name6, value2) {
+  const cell8 = sqlField(table9, row7, name6);
+  return cell8.kind === "text" && cell8.hex === Buffer.from(value2).toString("hex");
+}
+function sqlInteger(cell8) {
+  need60(cell8.kind === "integer" && /^(?:0|[1-9][0-9]*)$/u.test(cell8.decimal), "SQL allocation is not a supported integer");
+  return BigInt(cell8.decimal);
+}
+function allocationCapacity(history, data5, sequence, writes) {
+  const maxima = [history, data5].map((table9) => {
+    let maximum2 = 0n;
+    for (const row7 of table9.rows) {
+      const id10 = sqlInteger(sqlField(table9, row7, "id"));
+      need60(row7.rowid !== null && id10 > 0n && id10 === sqlInteger(row7.rowid), "SQL allocation ID/rowid association differs");
+      if (id10 > maximum2) {
+        maximum2 = id10;
+      }
+    }
+    need60(maximum2 + BigInt(writes) <= BigInt(Number.MAX_SAFE_INTEGER), "SQL rowid allocation cannot contain the reserved writes");
+    return maximum2;
+  });
+  const rows2 = sequence.rows.filter((row7) => selectedSqlText(sequence, row7, "name", "history_data"));
+  need60(rows2.length === 1 && rows2[0] !== void 0, "SQL history-data sequence is not unique");
+  const id9 = sqlInteger(sqlField(sequence, rows2[0], "seq"));
+  need60(
+    id9 >= (maxima[1] ?? 0n) && id9 + BigInt(writes) <= BigInt(Number.MAX_SAFE_INTEGER),
+    "SQL sequence allocation cannot contain the reserved writes"
+  );
+}
+function sqlCapacity(before, branchUuid2, uploadBytes) {
+  const tables = new Map(before.tables.map((table9) => [table9.name, table9]));
+  const data5 = tables.get("history_data"), history = tables.get(`project_history_${branchUuid2}`), sequence = tables.get("sqlite_sequence");
+  need60(history !== void 0 && data5 !== void 0 && sequence !== void 0, "fixed history SQL tables are missing");
+  allocationCapacity(history, data5, sequence, uploadBytes.length);
+  let encodedGrowth = 0, insertedCells = 0, maximumCiphertextBase64Bytes = 0;
+  for (const n of uploadBytes) {
+    const fixed = n + Math.floor(n / 8) + Math.floor(n / 256) + Math.floor(n / 512) + 4;
+    const stored2 = n + Math.floor(n / 32) + Math.floor(n / 128) + Math.floor(n / 2048) + 7;
+    const ciphertextBytes = 4 * Math.ceil((Math.max(fixed, stored2) + 18 + 16) / 3);
+    maximumCiphertextBase64Bytes = Math.max(maximumCiphertextBase64Bytes, ciphertextBytes);
+    need60(ciphertextBytes <= 2097152, "generated SQL TEXT exceeds the maintained cell-byte limit");
+    const timestamp9 = sqlText("2000-01-01 00:00:00"), uuid12 = sqlText("0".repeat(32));
+    const historyValues = {
+      id: SQL_INTEGER,
+      uuid: uuid12,
+      parent: uuid12,
+      snapshot: { kind: "null" },
+      key: uuid12,
+      is_lock: SQL_INTEGER,
+      num: SQL_INTEGER,
+      created_at: timestamp9,
+      updated_at: timestamp9,
+      snapshot_num: SQL_INTEGER,
+      lock_time: timestamp9
+    };
+    const dataValues = {
+      id: SQL_INTEGER,
+      uuid: uuid12,
+      history_uuid: uuid12,
+      dataStr: sqlText("A".repeat(ciphertextBytes)),
+      created_at: timestamp9,
+      updated_at: timestamp9
+    };
+    for (const [table9, values2] of [[history, historyValues], [data5, dataValues]]) {
+      need60(!table9.withoutRowid && table9.columns.length === Object.keys(values2).length, "inserted SQL shape differs from the exact effect");
+      const cells = table9.columns.map((column) => {
+        const name6 = column["name"];
+        const cell8 = typeof name6 === "string" ? values2[name6] : void 0;
+        need60(cell8 !== void 0, "inserted SQL effect column is missing");
+        return cell8;
+      });
+      encodedGrowth += Buffer.byteLength(JSON.stringify({ rowid: SQL_INTEGER, cells })) + 1;
+      insertedCells += cells.length + 1;
+    }
+    const updates = [
+      ["projects", void 0, void 0, { updated_at: timestamp9, modifier_uuid: uuid12 }],
+      ["branches", "uuid", branchUuid2, { history_uuid: uuid12 }],
+      ["project_structures", "branch_uuid", branchUuid2, { ticket: SQL_INTEGER }],
+      ["sqlite_sequence", "name", "history_data", { seq: SQL_INTEGER }]
+    ];
+    for (const [name6, field3, value2, changes] of updates) {
+      const table9 = tables.get(name6);
+      need60(table9 !== void 0, "updated SQL table is missing");
+      const selectedRows = field3 === void 0 ? table9.rows : table9.rows.filter((row7) => selectedSqlText(table9, row7, field3, value2));
+      for (const row7 of selectedRows) {
+        for (const [column, cell8] of Object.entries(changes)) {
+          sqlField(table9, row7, column);
+          encodedGrowth += Buffer.byteLength(JSON.stringify(cell8));
+        }
+      }
+    }
+  }
+  const maximumRows = before.tables.reduce((sum, table9) => sum + table9.rows.length, 0) + 2 * uploadBytes.length;
+  const maximumCells = before.tables.reduce((sum, table9) => sum + table9.rows.length * (table9.columns.length + (table9.withoutRowid ? 0 : 1)), 0) + insertedCells;
+  const maximumEncodedBytes = Buffer.byteLength(JSON.stringify(before)) + encodedGrowth;
+  need60(maximumRows <= 1e5 && maximumCells <= 25e4, "complete SQL row/cell-count budget cannot contain the exact effect");
+  need60(maximumEncodedBytes <= MAX_ENCODED_BYTES, "complete SQL encoded budget cannot contain the exact effect");
+  return Object.freeze({
+    maximumRows,
+    maximumCells,
+    maximumEncodedBytes,
+    maximumCiphertextBase64Bytes,
+    physicalFileGrowthProved: false,
+    readerResourceCompletionProved: false
+  });
+}
+function prepareCurrentSymbolWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "meta-only");
+}
+function prepareCurrentSingleCanvasSegmentWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput) {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "single-canvas-segment");
+}
+async function prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, strategy) {
+  const chunks = [...decoded.chunks], desired = desiredSchema.parse(desiredInput);
+  const startup2 = currentSymbolStartupExpectationSchema.parse(startupInput);
+  const stages3 = restorationInput === void 0 ? [desired] : [desired, desiredSchema.parse(restorationInput)];
+  const { history, maximumTicket } = decoded;
+  need60(
+    Number.isSafeInteger(history.historyRowCount) && history.historyRowCount > 0 && history.historyRowCount + stages3.length <= 64,
+    "reserved appended history rows must fit the maintained 64-row decoder"
+  );
+  need60(
+    history.chunkCount === chunks.length && history.plaintextBytes === chunks.reduce((total, chunk) => total + Buffer.byteLength(chunk), 0),
+    "complete decoded history counts differ"
+  );
+  need60(
+    Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && !Object.is(maximumTicket, -0) && maximumTicket <= Number.MAX_SAFE_INTEGER - stages3.length - 1,
+    "the written ticket and exported outer ticket must remain supported safe integers"
+  );
+  if (strategy === "single-canvas-segment") {
+    const baseline2 = await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
+    const firstMaximum = CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages3.length - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1);
+    need60(
+      baseline2.maximumTargetHeaderTime < firstMaximum - CURRENT_SYMBOL_WRITE_WINDOW_MS,
+      "strictly later document windows cannot fit the reserved write headroom"
+    );
+  }
+  let maximumSavedContentBytes = 0, maximumSavedEnvelopeBytes = 0, maximumUploadBytes = 0;
+  let paths = [chunks];
+  const uploadBytes = [];
+  for (const [index, stage] of stages3.entries()) {
+    const ticket2 = maximumTicket + index + 1;
+    const metadata9 = { title: stage.name, description: stage.description, tags: stage.tags, docType: 2, source: stage.source };
+    const nextPaths = [];
+    let stageUploadBytes = 0;
+    for (const path5 of paths) {
+      const stamps = strategy === "single-canvas-segment" ? [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages3.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)] : [1, MAX_NATIVE_TIME];
+      for (const stamp of stamps) {
+        const upload = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ ...ACTOR, updateTime: stamp })}|
+${JSON.stringify({ type: "DOCHEAD", ticket: ticket2 })}||${JSON.stringify({
+          docType: "SYMBOL",
+          client: CLIENT,
+          uuid: targetUuid,
+          updateTime: stamp,
+          version: String(stamp),
+          editVersion: "3.2.206"
+        })}|
+${JSON.stringify({ type: "META", ticket: ticket2, id: "META" })}||${JSON.stringify(metadata9)}`;
+        stageUploadBytes = Math.max(stageUploadBytes, Buffer.byteLength(upload));
+        const next = [...path5, upload];
+        nextPaths.push(next);
+        const input = { chunks: next, targetUuid, maximumTicket: ticket2, currentEditVersion: "3.2.206" };
+        const raw = await prepareSavedSymbolProjection(input);
+        const cache = await (strategy === "single-canvas-segment" ? prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : prepareCurrentDocumentCacheSavedSymbolProjection(input));
+        for (const projection8 of [raw, cache]) {
+          const content = expectedSavedSymbolContent(projection8, CLIENT);
+          const bytes2 = Buffer.byteLength(content);
+          maximumSavedContentBytes = Math.max(maximumSavedContentBytes, bytes2);
+          need60(bytes2 > 0 && bytes2 <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT, "complete desired saved content exceeds its reader byte limit");
+          maximumSavedEnvelopeBytes = Math.max(maximumSavedEnvelopeBytes, savedEnvelopeBytes(targetUuid, ticket2, stage, content, startup2));
+        }
+      }
+    }
+    uploadBytes.push(stageUploadBytes);
+    maximumUploadBytes = Math.max(maximumUploadBytes, stageUploadBytes);
+    paths = nextPaths;
+  }
+  return Object.freeze({
+    profile: strategy === "single-canvas-segment" ? "private.current-single-canvas-segment-write-budget.v1" : "private.current-symbol-write-budget.v1",
+    targetUuid,
+    beforeMaximumTicket: maximumTicket,
+    reservedWrites: stages3.length,
+    afterMaximumTicket: maximumTicket + stages3.length,
+    afterHistoryRows: history.historyRowCount + stages3.length,
+    afterChunks: chunks.length + stages3.length,
+    maximumUploadBytes,
+    maximumRawHistoryBytes: history.plaintextBytes + uploadBytes.reduce((sum, bytes2) => sum + bytes2, 0),
+    maximumSavedContentBytes,
+    maximumSavedEnvelopeBytes,
+    sqlCapacity: sqlCapacity(before, history.branchUuid, uploadBytes),
+    savedContentLimit: CURRENT_SAVED_SYMBOL_CONTENT_LIMIT,
+    producerBindingVerified: false,
+    executionAuthorized: false
+  });
+}
+var desiredSchema, MAX_NATIVE_TIME, CLIENT, ACTOR, SQL_INTEGER;
+var init_current_symbol_write_budget = __esm({
+  "server/src/current-symbol-write-budget.ts"() {
+    init_zod();
+    init_current_symbol_saved_read_program();
+    init_current_symbol_write_program();
+    init_exact_readers();
+    init_current_symbol_startup();
+    init_saved_symbol_projection();
+    init_symbol_dual_actor();
+    init_sqlite_inventory_core();
+    desiredSchema = external_exports.object({
+      name: external_exports.string().min(1).max(512),
+      description: external_exports.string().max(65536),
+      tags: external_exports.array(external_exports.string().max(512)).max(256),
+      source: external_exports.string().max(4096)
+    }).strict();
+    MAX_NATIVE_TIME = 864e13;
+    CLIENT = "0".repeat(16);
+    ACTOR = Object.freeze({
+      uuid: "0".repeat(32),
+      username: "\0".repeat(ACTOR_NAME_MAX_CODE_UNITS),
+      nickname: "\0".repeat(ACTOR_NAME_MAX_CODE_UNITS)
+    });
+    SQL_INTEGER = Object.freeze({ kind: "integer", decimal: String(Number.MAX_SAFE_INTEGER) });
+  }
+});
+
+// server/src/current-symbol-meta-only.ts
+function need61(condition) {
+  if (!condition) {
+    throw new Error("Current symbol metadata requires its complete original META-only baseline.");
+  }
+}
+async function hasCanvasOccurrences(chunks, targetUuid) {
+  let canvas = false, steps = 0;
+  for (const chunk of chunks) {
+    let current4;
+    const records2 = chunk.split("|\n");
+    if (records2.at(-1) === "") {
+      records2.pop();
+    }
+    for (const raw of records2) {
+      const record7 = parseNativeRecords(raw)[0];
+      need61(record7 !== void 0);
+      const type2 = record7.header["type"];
+      if (type2 === "DOCHEAD") {
+        current4 = record7.body?.["uuid"];
+      } else if (type2 !== "EDIT_HEAD" && current4 === targetUuid && (typeof type2 !== "string" || !METADATA_ATOMS.has(type2))) {
+        canvas = true;
+      }
+      steps += 1;
+      if (steps % 128 === 0) {
+        await yieldProofEventLoop();
+      }
+    }
+  }
+  return canvas;
+}
+async function assertCurrentSymbolMetaOnlyBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration) {
+  const result = await assertBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration, false);
+  return result.evidence;
+}
+function assertCurrentDisposableSymbolBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration) {
+  return assertBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration, true);
+}
+async function assertBaseline(inventory2, binding3, target6, expected3, desired, startup2, restoration, disposableCanvas) {
+  const bindingText = canonicalJson({ copy: binding3.copy, checkpoint: binding3.checkpoint });
+  const completion2 = readerCompletion(inventory2), expectedText = canonicalJson(expected3), selected3 = Object.freeze({ ...target6 });
+  const checkpointSha256 = binding3.checkpoint.checkpointSha256, rawCopySha256 = binding3.copy.sha256;
+  need61(/^[a-f0-9]{64}$/u.test(rawCopySha256) && /^[a-f0-9]{64}$/u.test(checkpointSha256) && binding3.copy.source.length > 0 && binding3.copy.source === binding3.checkpoint.source && rawCopySha256 === binding3.checkpoint.sourceSha256 && inventory2.checkpointSha256 === rawCopySha256 && expected3.checkpointSha256 === checkpointSha256);
+  need61(Object.keys(selected3).length === 4 && /^[a-f0-9]{32}$/u.test(selected3.ownerUuid) && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(selected3.symbolUuid));
+  const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: selected3.projectUuid, branchUuid: selected3.branchUuid });
+  const history = decoded.history;
+  need61(history.checkpointSha256 === rawCopySha256 && history.semanticSha256 === expected3.semanticSha256 && history.projectUuid === expected3.projectUuid && history.branchUuid === expected3.branchUuid && history.projectOwnerUuid === expected3.projectOwnerUuid && history.projectOwnerUuid === selected3.ownerUuid && history.headHistoryUuid === expected3.headHistoryUuid && history.historyRowCount === expected3.historyRowCount && history.chunkCount === expected3.chunkCount && history.plaintextBytes === expected3.plaintextBytes);
+  const hasCanvas = await hasCanvasOccurrences(decoded.chunks, selected3.symbolUuid);
+  if (hasCanvas && !disposableCanvas) {
+    throw new Error("Current symbol metadata refuses every historical target canvas atom, including tombstones.");
+  }
+  const input = { chunks: decoded.chunks, targetUuid: selected3.symbolUuid, maximumTicket: decoded.maximumTicket, currentEditVersion: "3.2.206" };
+  const projection8 = hasCanvas ? await prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : await prepareCurrentDocumentCacheSavedSymbolProjection(input);
+  const writeBudget = hasCanvas ? await prepareCurrentSingleCanvasSegmentWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration) : await prepareCurrentSymbolWriteBudget(decoded, selected3.symbolUuid, desired, inventory2, startup2, restoration);
+  need61(readerCompletion(inventory2) === completion2 && canonicalJson(expected3) === expectedText && canonicalJson({ copy: binding3.copy, checkpoint: binding3.checkpoint }) === bindingText);
+  const canvasClock = projection8.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" ? Object.freeze({ maximumTargetHeaderTime: projection8.maximumTargetHeaderTime, remainingWrites: restoration === void 0 ? 1 : 2 }) : void 0;
+  need61(hasCanvas ? canvasClock !== void 0 && projection8.canvasRecords > 0 : projection8.canvasRecords === 0);
+  const evidence2 = Object.freeze({
+    profile: hasCanvas ? "private.current-disposable-single-canvas-segment-baseline.v1" : "private.current-symbol-meta-only-baseline.v1",
+    targetUuid: selected3.symbolUuid,
+    beforeSqlSha256: inventory2.logicalSha256,
+    rawCopySha256,
+    checkpointSha256,
+    historySemanticSha256: history.semanticSha256,
+    rawHistorySha256: projection8.rawHistorySha256,
+    rawHistoryBytes: projection8.rawHistoryBytes,
+    canvasRecords: projection8.canvasRecords,
+    metadataBookkeepingOnly: !hasCanvas,
+    writeBudget,
+    cacheBranchObserved: false,
+    executionAuthorized: false,
+    ...canvasClock === void 0 ? {} : { permittedPurpose: "disposable-validation", canvasClock }
+  });
+  return Object.freeze({ evidence: evidence2, ...canvasClock === void 0 ? {} : { canvasClock } });
+}
+var METADATA_ATOMS;
+var init_current_symbol_meta_only = __esm({
+  "server/src/current-symbol-meta-only.ts"() {
+    init_core3();
+    init_cooperative_proof();
+    init_native_history();
+    init_current_symbol_write_budget();
+    init_saved_symbol_projection();
+    init_sqlite_inventory();
+    init_symbol_sql_comparator();
+    METADATA_ATOMS = /* @__PURE__ */ new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
+  }
+});
+
+// server/src/current-symbol-startup-runtime.ts
+function need62(condition) {
+  if (!condition) {
+    throw new Error("Current symbol writer startup qualification refused.");
+  }
+}
+function currentSymbolStartupCollectionEvidence(generation5, engine2) {
+  const collection = collections2.get(generation5);
+  if (collection === void 0) {
+    return void 0;
+  }
+  need62(collection.engine === engine2);
+  return Object.freeze({
+    profile: "private.current-symbol-startup-collection.v1",
+    raw: collection.raw ?? null,
+    rawRetained: Object.hasOwn(collection, "raw"),
+    intentArtifact: collection.intentArtifact ?? null,
+    resultArtifact: collection.resultArtifact ?? null,
+    resultPublicationAttempted: collection.resultPublicationAttempted,
+    failureObserved: collection.failureObserved,
+    executionAuthorized: false
+  });
+}
+function buildCurrentSymbolStartupObservation(target6, expectation) {
+  exact10(target6, ["projectUuid", "branchUuid"]);
+  need62(/^[a-f0-9]{64}$/u.test(target6.projectUuid) && /^[a-f0-9]{32}$/u.test(target6.branchUuid));
+  const selected3 = currentSymbolStartupExpectationSchema.parse(expectation);
+  return `let startupStage='project-only-context';
+const observation=(()=>{try{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target6)},startupExpected=${JSON.stringify(selected3)},expired=false;
+const bad=()=>{throw new Error('CURRENT_SYMBOL_STARTUP_FAILED');};
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+${buildCurrentProjectOnlySymbolGuard()}
+${buildCurrentSymbolStartupGuard(true)}
+startup.check();startupStage='project-only-context';projectOnly.check();startup.check();
+return{profile:'private.current-symbol-startup-observation.v1',projectUuid:target.projectUuid,branchUuid:target.branchUuid,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,executionAuthorized:false};
+}catch{return{profile:'private.current-symbol-startup-failure.v1',stage:startupStage,executionAuthorized:false};}})();
+const json=JSON.stringify(observation),utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+if(utf8Bytes>${MAX_BYTES9}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${MAX_BYTES9})throw new Error('CURRENT_SYMBOL_STARTUP_ENVELOPE');
+return envelope;`;
+}
+function decodeCurrentSymbolStartupObservation(raw, target6, expectation) {
+  assertUpstreamReplySettled(raw);
+  const envelope2 = exact10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  need62(envelope2["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope2["json"] === "string" && envelope2["json"].length > 0 && envelope2["json"].length <= MAX_BYTES9 && Buffer.byteLength(JSON.stringify(envelope2)) <= MAX_BYTES9);
+  const observation2 = decodeExactReadEnvelope(envelope2);
+  if (isRecord(observation2) && observation2["profile"] === "private.current-symbol-startup-failure.v1") {
+    const failure2 = exact10(observation2, ["profile", "stage", "executionAuthorized"]), stage = failure2["stage"];
+    need62(failure2["executionAuthorized"] === false && CURRENT_SYMBOL_STARTUP_STAGES.some((allowed) => allowed === stage));
+    throw new Error(`Current symbol writer startup qualification refused [startup:${String(stage)}].`);
+  }
+  const expected3 = {
+    profile: "private.current-symbol-startup-observation.v1",
+    ...target6,
+    sheetUuids: expectation.sheetUuids,
+    templates: expectation.templates,
+    executionAuthorized: false
+  };
+  need62(canonicalJson(observation2) === canonicalJson(expected3));
+}
+function assertCurrentSymbolWriterStartup(value2, engine2, generation5) {
+  need62(value2 !== null && typeof value2 === "object");
+  const original2 = issued10.get(value2);
+  need62(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
+  const scope6 = engine2.upstream.currentAuthenticatedBridgeDispatchBinding?.();
+  need62(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scope6 === void 0 ? void 0 : canonicalJson(scope6)) === original2.source);
+  return original2;
+}
+async function revalidateCurrentSymbolWriterStartup(value2, engine2, generation5) {
+  const original2 = assertCurrentSymbolWriterStartup(value2, engine2, generation5);
+  const check3 = () => {
+    need62(assertCurrentSymbolWriterStartup(value2, engine2, generation5) === original2);
+  };
+  const fingerprint = original2.source.source.expectedFingerprint;
+  assertExpectedFingerprint(fingerprint);
+  validateSdkLocalRuntimeFingerprint(fingerprint);
+  const root = fingerprint.installedBundles.assetsRoot;
+  await verifyCurrentProjectOnlySymbolPreflightImplementation(root);
+  check3();
+  await verifyCurrentSymbolPersistenceImplementation(root);
+  check3();
+  await readExactUtf8Artifact(original2.resultArtifact);
+  check3();
+  return original2;
+}
+async function qualifyCurrentSymbolWriterStartup(engine2, generation5, remainingWrites = 1) {
+  const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
+  need62(scopeReader !== void 0);
+  const scope6 = scopeReader.call(engine2.upstream);
+  need62(scope6 !== void 0);
+  const scopeText = canonicalJson(scope6), source4 = assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
+  const purpose = source4.source.purpose;
+  need62(purpose === "ordinary-symbol-metadata" || purpose === "disposable-validation");
+  need62((remainingWrites === 1 || remainingWrites === 2) && (remainingWrites !== 2 || purpose === "disposable-validation"));
+  need62(!attempts13.has(generation5));
+  attempts13.add(generation5);
+  const collection = { engine: engine2, resultPublicationAttempted: false, failureObserved: false };
+  collections2.set(generation5, collection);
+  const evidenceId = `current-startup-${sha256Json({ operationId: generation5.operationId })}`;
+  try {
+    const call = engine2.upstream.callTool;
+    const check3 = () => {
+      need62(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.upstream.callTool === call && assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source4);
+    };
+    await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
+    check3();
+    const baseline2 = source4.baseline, premises = baseline2.startupPremises;
+    need62(premises.sqlSchemaSupported && premises.databaseVersion === "25.10.31.1" && premises.targetPcbSuppliesNonzeroNativeCount && premises.blockers.every((entry) => entry === "active-schematic-pages"));
+    const history = await readNativeHistoryCheckpoint({
+      checkpointPath: baseline2.checkpoint.checkpoint,
+      expectedSha256: baseline2.checkpoint.checkpointSha256,
+      projectUuid: baseline2.preparation.target.projectUuid,
+      libraryAtomHeaders: "preserve"
+    });
+    check3();
+    need62(history.semanticSha256 === premises.historySemanticSha256 && history.branchUuid === baseline2.preparation.target.branchUuid);
+    const expectation = selectCurrentSymbolStartupExpectation(history);
+    need62(expectation.sheetUuids.length === premises.activeSchematicPages);
+    if (expectation.templates.some((template) => template.uuid === baseline2.preparation.target.symbolUuid)) {
+      throw new Error("Current symbol writer refuses referenced-symbol propagation: native linked-sheet updates are unsupported.");
+    }
+    if (purpose === "ordinary-symbol-metadata") {
+      need62(source4.source.startupExpectation !== void 0 && canonicalJson(expectation) === canonicalJson(source4.source.startupExpectation));
+    }
+    const eligibility = purpose === "disposable-validation" ? await assertCurrentDisposableSymbolBaseline(
+      baseline2.inventory,
+      baseline2,
+      baseline2.preparation.target,
+      history,
+      baseline2.preparation.metadata.after,
+      expectation,
+      remainingWrites === 2 ? baseline2.preparation.metadata.before : void 0
+    ) : { evidence: await assertCurrentSymbolMetaOnlyBaseline(
+      baseline2.inventory,
+      baseline2,
+      baseline2.preparation.target,
+      history,
+      baseline2.preparation.metadata.after,
+      expectation
+    ), canvasClock: void 0 };
+    check3();
+    const { evidence: metadataScope, canvasClock } = eligibility;
+    need62(canvasClock === void 0 || purpose === "disposable-validation" && canvasClock.remainingWrites === remainingWrites);
+    const fingerprint = source4.source.expectedFingerprint;
+    assertExpectedFingerprint(fingerprint);
+    validateSdkLocalRuntimeFingerprint(fingerprint);
+    const assetsRoot = fingerprint.installedBundles.assetsRoot;
+    await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
+    check3();
+    await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
+    check3();
+    await engine2.assertBridgeDispatchAllowed();
+    check3();
+    const target6 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
+    const code = buildCurrentSymbolStartupObservation(target6, expectation);
+    const intent = await writePhaseArtifact(evidenceId, 0, "startup-intent", {
+      target: target6,
+      expectation,
+      codeSha256: sha256Text(code),
+      baselineSha256: sha256Json(baseline2),
+      captureSha256: sha256Json(source4.capture),
+      metadataScope,
+      executionAuthorized: false
+    });
+    collection.intentArtifact = Object.freeze(intent);
+    check3();
+    await readExactUtf8Artifact(intent);
+    check3();
+    const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
+    collection.raw = raw;
+    collection.resultPublicationAttempted = true;
+    const resultArtifact = await writePhaseArtifact(evidenceId, 0, "startup-result", { raw });
+    collection.resultArtifact = Object.freeze(resultArtifact);
+    check3();
+    decodeCurrentSymbolStartupObservation(raw, target6, expectation);
+    await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
+    check3();
+    await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
+    check3();
+    await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
+    check3();
+    const token = Object.freeze({
+      profile: "private.current-symbol-writer-startup.v1",
+      operationId: generation5.operationId,
+      expectation,
+      baselineSha256: sha256Json(baseline2),
+      startupLocalChangesExcluded: true,
+      runtimeHoldersObserved: true,
+      crossInvocationReceiverContinuityVerified: false,
+      globalIdleVerified: false,
+      persistenceVerified: false,
+      executionAuthorized: false,
+      ...canvasClock === void 0 ? {} : { canvasClockPrerequisite: canvasClock }
+    });
+    issued10.set(token, Object.freeze({
+      engine: engine2,
+      generation: generation5,
+      source: source4,
+      expectation,
+      text: canonicalJson(token),
+      resultArtifact,
+      ...canvasClock === void 0 ? {} : { canvasClock }
+    }));
+    return token;
+  } catch (error51) {
+    collection.failureObserved = true;
+    if (collection.intentArtifact !== void 0 && !collection.resultPublicationAttempted) {
+      collection.resultPublicationAttempted = true;
+      try {
+        collection.resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "startup-result", currentSymbolStartupCollectionEvidence(generation5, engine2)));
+      } catch (retentionError) {
+        throw new AggregateError([error51, retentionError], "Current startup read failed and partial evidence publication failed; original attempt is retained.", { cause: retentionError });
+      }
+    }
+    throw error51;
+  }
+}
+var attempts13, issued10, MAX_BYTES9, collections2;
+var init_current_symbol_startup_runtime = __esm({
+  "server/src/current-symbol-startup-runtime.ts"() {
+    init_artifacts();
+    init_core3();
+    init_current_disposable_open_profile();
+    init_current_project_only_symbol_guard();
+    init_current_symbol_baseline_runtime();
+    init_current_symbol_startup();
+    init_current_symbol_startup_guard();
+    init_exact_readers();
+    init_native_history();
+    init_current_symbol_meta_only();
+    init_sdk_local_runtime();
+    init_symbol_clock_controls();
+    attempts13 = /* @__PURE__ */ new WeakSet();
+    issued10 = /* @__PURE__ */ new WeakMap();
+    MAX_BYTES9 = 98304;
+    collections2 = /* @__PURE__ */ new WeakMap();
   }
 });
 
@@ -125846,6 +125988,13 @@ var init_current_symbol_writer_runtime = __esm({
         });
         this.current(slot, scopeText);
         const startup2 = assertCurrentSymbolWriterStartup(slot.startup, this.engine, generation5);
+        if (startup2.canvasClock !== void 0) {
+          const { maximumTargetHeaderTime, remainingWrites } = startup2.canvasClock;
+          need63(
+            original2.source.purpose === "disposable-validation" && slot.clockPlan.documentWindow.minimumMs > maximumTargetHeaderTime && slot.clockPlan.documentWindow.maximumMs <= CURRENT_SYMBOL_WRITE_TIME_CEILING - (remainingWrites === 2 ? CURRENT_SYMBOL_WRITE_WINDOW_MS + 1 : 0),
+            "Disposable canvas metadata requires a strictly newer document window and reserved inverse window headroom."
+          );
+        }
         slot.writeInput = {
           ...request6,
           startup: startup2.expectation,
@@ -126214,6 +126363,8 @@ async function revalidateCurrentSavedSymbolSource(value2, engine2, continuation)
 }
 async function prepareCurrentSavedSymbolSource(continuation, engine2) {
   const source4 = assertOriginalCurrentSymbolWriterContinuation(continuation, engine2);
+  const purpose = source4.original.source.purpose;
+  need64(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata");
   const snapshot8 = assertOriginalCurrentSymbolFinishSnapshot(source4.snapshot, engine2);
   const current4 = () => {
     need64(assertOriginalCurrentSymbolWriterContinuation(continuation, engine2) === source4 && assertOriginalCurrentSymbolFinishSnapshot(source4.snapshot, engine2) === snapshot8);
@@ -126253,20 +126404,27 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     currentEditVersion: expectedDocumentEditVersion
   });
   current4();
+  need64(projection8.canvasRecords === 0 || purpose === "disposable-validation");
   const documentCacheProjection = projection8.canvasRecords === 0 ? await prepareCurrentDocumentCacheSavedSymbolProjection({
     chunks: decoded.decoded.chunks,
     targetUuid: metadataPlan2.targetUuid,
     maximumTicket: expectedTicket,
     currentEditVersion: expectedDocumentEditVersion
-  }) : void 0;
+  }) : await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({
+    chunks: decoded.decoded.chunks,
+    targetUuid: metadataPlan2.targetUuid,
+    maximumTicket: expectedTicket,
+    currentEditVersion: expectedDocumentEditVersion
+  });
   current4();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
-  const documentCacheProjectedContentBytes = documentCacheProjection === void 0 ? null : Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
+  const documentCacheProjectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
   need64(projectedContentBytes > 0 && projectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
-  need64(documentCacheProjectedContentBytes === null || documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
+  need64(documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
   const body4 = {
     profile: "private.current-symbol-saved-source.v1",
     operationId: source4.operationId,
+    purpose,
     posteditCheckpointSha256: source4.snapshot.checkpoint.checkpointSha256,
     posteditSqlSha256: snapshot8.inventory.logicalSha256,
     comparisonSha256: sha256Json(decoded.comparison),
@@ -126275,6 +126433,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     projectedContentBytes,
     maximumTicket: expectedTicket,
     documentCacheProjectedContentBytes,
+    cacheProjectionProfile: documentCacheProjection.profile,
     workerSourceSha256: producer.sha256,
     cacheBranchObserved: false,
     executionAuthorized: false,
@@ -126298,8 +126457,11 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
 }
 function verifyCurrentSavedSymbolContent(value2, engine2, continuation, observation2) {
   const original2 = assertCurrentSavedSymbolSource(value2, engine2, continuation);
+  const cache = original2.documentCacheProjection;
+  need64(cache.profile !== "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" || original2.source.original.source.purpose === "disposable-validation");
+  const relation = cache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" ? verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(original2.projection, cache, observation2) : verifyCurrentSavedSymbolProjectionAlternatives(original2.projection, cache, observation2);
   return Object.freeze({
-    ...verifyCurrentSavedSymbolProjectionAlternatives(original2.projection, original2.documentCacheProjection, observation2),
+    ...relation,
     sourceSha256: value2.sourceSha256,
     comparisonSha256: value2.comparisonSha256
   });
@@ -127552,6 +127714,7 @@ function currentSymbolInverseOwnershipTransferred(owner, engine2) {
 }
 async function prepareCurrentSymbolInverseOwner(engine2, predecessor) {
   const result = assertCurrentSymbolVerificationResult(predecessor, engine2);
+  need67(result.writer.original.source.purpose === "disposable-validation");
   need67(!attempts14.has(predecessor));
   attempts14.add(predecessor);
   await result.revalidateClosed();
@@ -134800,7 +134963,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its shared lifecycle passed an installed101500 disposable round trip. The separate easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones; this ordinary route is not yet connected-tested. Both require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. The separate disposable single-canvas-segment profile has offline tests only. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -134825,7 +134988,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. The separate project-symbol-metadata route supports original-owner name/description changes without an inverse; that ordinary route remains connected-untested. Complete historical canvas, including tombstones, is unsupported. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
+            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary metadata changes still reject all historical canvas, including tombstones. A separate disposable single-canvas-segment profile has offline tests only. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -134848,6 +135011,7 @@ var init_src = __esm({
               designMutation: true,
               connectedValidation: false,
               originalOwnerRequired: true,
+              historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
               sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
               phaseEffectAcknowledgementsRequired: true,
               inverseSupported: false,
@@ -134866,10 +135030,11 @@ var init_src = __esm({
             disposableValidation: {
               tool: "easyeda_control_project_open",
               actions: "validation-*",
-              scope: "sealed-disposable-unused-meta-only-symbol-name-description-forward-inverse",
+              scope: "sealed-disposable-unused-meta-only-or-single-canvas-segment-symbol-name-description-forward-inverse",
               designMutation: true,
               connectedValidation: false,
               sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
+              singleCanvasSegmentValidation: "offline-regression-only",
               normalWritersEnabled: false,
               phaseEffectAcknowledgementsRequired: true,
               originalOwnerRequired: true
@@ -135358,7 +135523,7 @@ var init_src = __esm({
       "easyeda_control_project_open",
       {
         title: "Open and validate one disposable EasyEDA project",
-        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets or with any historical drawing records, including tombstones, refuse before mutation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The shared lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
+        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets refuse before mutation. Complete history must be META-only or meet the separate single-canvas-segment profile: all canvas occurrences, including tombstones, in one history chunk; no cross-type identities or segment-order-dependent headers. Fresh document windows must follow every target header and reserve a later inverse window. This canvas profile has offline tests only, not connected validation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The META-only lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate META-only project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
@@ -136516,7 +136681,7 @@ var init_src = __esm({
         "easyeda_control_project_symbol_metadata",
         {
           title: "Change one unused META-only project symbol's metadata",
-          description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. The complete target raw history must be META-only: historical drawing records, even tombstones, refuse before mutation. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared lifecycle passed an installed101500 disposable round trip; this ordinary route has not been connected-tested.",
+          description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. The complete target raw history must be META-only: historical drawing records, even tombstones, refuse before mutation. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared META-only lifecycle passed an installed101500 disposable round trip. Installed123000 passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. Historical evidence grants no current-invocation authority or canvas support.",
           inputSchema,
           outputSchema: currentSymbolOperationToolOutputSchema,
           annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }

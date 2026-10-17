@@ -6,6 +6,158 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate143000: source reviewed; release verification running
+
+Version0.3.0+codex.20261017143000 on feature/ordinary-symbol-validation-20261017
+adds disposable-only single-canvas-segment metadata validation, exact raw/cache
+serialization alternatives, original-purpose eligibility, strictly newer clock
+windows and complete inverse-window/budget reserves. Ordinary remains META-only;
+referenced symbols and generic/legacy writers remain blocked. No connected
+drawn-symbol result is claimed. Main/independent review accepts all8core source/
+7test files. Author121focused tests and final83adjacent tests/types pass, strict
+type-aware lint clean. Separate bounded512entry byteSHA→JSONSHA cache passes13
+focused tests and independent review; all bytes/path/runtime checks remain fresh.
+No connected speedup is claimed. Root public contract/coverage54tests and status5
+tests pass; all774method inventory entries regenerated, counts unchanged.
+
+Dependencies are freshly installed under pinnedNode24.18.0/npm11.16.0/core0;
+151registry signatures/40attestations/audit0. Build/compatibility pass with
+398source90dc5d0d and3runtimec3ea88f8; external manifest pins are unchanged.
+Full existing verify runs in shell66154, private logs
+/tmp/easyeda-release-143000-il7C4kUj. Publication/install remain pending.
+New expected/inventory/probe helpers there are main/independent reviewed source
+only; frozen1296files/26059696bytes/42directories match staged Git objects and
+inventoryfc93dd1b, manifest6e963133. The new one-shot probe has NOT run; all
+synthetic roots/marker/proof are absent. Old123000 probe
+remains consumed. Loaded1344991 stays123000; never patch/terminate/adopt it.
+
+Read-only final managed-snapshot audit finds no existing eligible unused drawn
+symbol:23630514533a0345 isunusedMETA-only;df16405f230603d3 isused/multi-segment;
+2d631aca0f794995 and712b806fb1401a95 areused specialtypes18/20. Future connected
+canvas validation needs supported setup of a new unused ordinarytype2 symbol
+with single-segment canvas history. No fixture creation or rawhistory edit was
+performed. Production designs/records remain excluded. Original stash intact.
+
+### Live123000: ordinary metadata public-route lifecycle completed
+
+Fresh facade1344991/parent1343083/startTicks21913356 loads installed123000.
+Independent full installed inventory and all18 external clock-runtime pins pass;
+old1244697 is absent. Main CI39034421194 and Windows39034421146 completed
+successfully, including10609 facade passes/five skips and424 bridge passes.
+Local branch is feature/ordinary-symbol-validation-20261017. Prior delivery
+record is preserved; source-only drawn-symbol projector work leaves live gates,
+loaded runtime, versions and compatibility pins unchanged.
+
+Ordinary launch ordinary-123000-20261017-launch completed once: root29936,
+Job083c4da160724b129e315501b35e388d, launchedSHA
+6ed1c7908aef023190602c46eedbe201ae2a12a2e16210fb0a0dd7bc1f28293a.
+Authenticated status matches123000, dispatcher ded07x99dcxb504, no drift,
+bridge failure or incomplete operation. Initial identity-only context proved
+Start Page/undefined project/empty branch. Exact prelaunch disposable source
+was598016bytes/SHA6d7bf595413339586bd3516b8096d07a4480823b274803feae2637383add3f2a.
+Ordinary opening ordinary-123000-20261017-open completed once, with exactPCB
+native identity and no hard stop/orphan. Managed preparation checkpoint
+134022113Z is565248bytes/SHA
+fc79575b90d7d3b06ee7c3cbf11092251ac44e2132fc5d97a772d6f299e10611.
+Offline preparationf21df443 proves18 documents/47history rows/51chunks and
+090000 before metadata on unused symbol23630514533a0345. Requested name is
+EASYEDA_ORDINARY_123000_UNUSED_SYMBOL; description is
+"Disposable ordinary-route metadata validation 123000." Tags/source unchanged.
+Independent full preparation review accepts35 tables/18 documents, all812 raw
+records including six targetDOCHEADs/fiveMETAs and no canvas or tombstones,
+two active pages/three templates with the target unused, and one-write capacity.
+Baseline-begin20 acknowledged normal closure. Observe-termination23 captured
+the original raw baseline, source6d7bf595 and logicalSQLcdb94196 unchanged.
+Original launcher observation25 separately proved29936/its Job terminated with
+matching6ed1c790 launch digest before any baseline relaunch.
+Clock preparation26 completed with accepted reference284d5e53; never repeat its
+scratch attempt or closure. Original scratch process retained/full scan required,
+no application-clock or execution claim. Baseline relaunch32 completed once,
+admission36 and cache observation37 passed. Baseline-open-project41 completed
+supported-symbol-startup with unqualified acceptancefalse. Observe-clock44
+accepted aged-clock evidence. Metadata-begin45 retained the original owner and
+returned forward-write. Metadata-advance46 completed the single write,
+writeAcknowledgedtrue/postRecordedtrue, nofailure; never replay or issue an
+explicit Save. Forward-close49 acknowledged normal closure. Original-owner
+termination/snapshot/comparison50 passed exact intended fullSQL effect, new
+logicalSQL24a32a93/history48/chunk52/ticket770. Writer retired with original
+verification continuation. Verification-start55/admission56/caches58/open60
+completed; saved read62 passed exact416bytes/SHA7514aca1 under current-document-
+cache projection, cacheBranchObservedfalse. Verification-close64 acknowledged
+normal closure. Final65 completed: nextPhasecompleted, forwardVerifiedtrue,
+requestedMetadataVerifiedtrue, fullReopenReadbackInvarianttrue, terminated and
+retiredtrue, nofailure. Final complete reopenedSQL equals postedit24a32a93.
+Ordinary completion intentionally leaves requested metadata; inverseSupportedfalse.
+No explicit Save, inverse, restoration or replay. Independent final retained-
+evidence review accepts all54 artifacts/seal1566eed0, complete35table comparison,
+18documents/17unchanged peers and exact51chunk prefix plus sole3record append.
+Raw postedit/final copies b99dbffb and VACUUM checkpoints f0527b4e are separately
+verified; final SQL24a32a93 and saved416byte7514aca1 match. Cache-branch provenance
+is not inferred. EasyEDA is closed; never replay completed stages.
+Use the ordinary public tool throughout, with no disposable confirmations or
+replacement fingerprints. Record original launch termination before relaunch.
+Keep this facade alive through final verification and closure. Production
+designs and their records remain excluded; no explicit Save is authorized.
+
+### Delivered123000: published and installed; fresh Codex session required
+
+Published and installed/enabled `0.3.0+codex.20261017123000` through the existing
+Git marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Protected PR54 merged reviewed `fa36292b4a9e0e2ebb4f81c91d46796b03af1c2f` as
+main `232c47e1c36bdce6b46654de5db2d5413cea921f`. Whole tree
+`36ec05eac831098594c1dbb9d39bba5a535bebc4` and plugin tree
+`1549785e0c51be67d679512baab14924cf803a8d` equal the reviewed payload exactly.
+All 11 PR checks passed, including CI39033398672 and Windows39033398604.
+Independent log review confirms 10,614 facade tests: 10,609 passed, five skipped,
+zero failed, cancelled or todo. All 424 bridge tests passed in 28 files. Types,
+strict lint, reproducible builds, compatibility and repository checks passed.
+Final CI supersedes the local stale-wording assertion failure below; no second
+full local pass is claimed. Main Windows39034421146 and main CI39034421194
+verify-build passed. Duplicate main facade shards were still running at handoff;
+check their final result next session. The exact-payload PR CI is complete.
+
+Official marketplace upgrade under umask022 completed exit0, errors[] and
+stderr0. CLI confirms installed/enabled123000. Cached marketplace HEAD equals
+merged main232c47e, with the unchanged Git URL. Root and independent inventories match
+all 1293 files, 25,980,446 bytes and committed modes: 42 directories0755,
+1292 files0644 and one0755, seven skills, no extra files or links. Inventory SHA
+`c5d15767a01a37f562b7d2b433612f7b90ba2f2b59cbb7f662d258e3e6255531`;
+398-source SHA `b8c5020d7ea5ab39c427a4adb9642b07c89d81a369545916e032567f1e4209b4`;
+three-runtime SHA `6875b4d96785e977cf268f3497430708fe734b16b2b74cecc32826b6ba3a3433`;
+manifest SHA `d71966ea847edd8e26adf03f0e3c3d3bb013bec2fc6bd0038c023e681a66f004`.
+
+The new one-shot synthetic installed probe1338742 passed and exited normally
+through stdin EOF, without signals or process adoption. Configured startup
+handed ambient Node26.11.1 to pinned Node24.18.0 with core limit0, no installed
+module ancestors, upstream child or nonstdio socket. All 17 restricted tools
+and seven skills are present. Offline ordinary-metadata discovery, valid forward
+arguments, missing-ack rejection and inverse-phase rejection passed. No actual
+profile, live status, CAD operation or operation journal was used. Synthetic
+profile stayed unchanged, stderr0. Proof
+`/tmp/easyeda-release-123000-VRTqgOYp/proof.json` is 2831 bytes, SHA
+`1999eb4f29ef7e96133af7bceceb703eebd893f7a6e66e075171f6ea754996dd`.
+Independent review accepts the proof, marker, unchanged helper hashes and final
+synthetic state; probe PID1338742 is absent and no unresolved-child report exists.
+Never rerun this consumed one-shot probe.
+
+Loaded facade1244697 remains101500 and was not terminated, patched or rebound.
+The extension runtime and external compatibility pins are unchanged; no new
+extension import is required. A fresh Codex session must load123000 before any
+further live calls. After fresh installed-runtime admission, the next focused
+live task is a disposable check of the new ordinary metadata public entrypoint.
+Its shared101500 forward/inverse lifecycle is validated, but that does not claim
+connected validation of the new entrypoint. Do not replay the completed round
+trip or older terminal attempts. EasyEDA is closed; no explicit Save is pending.
+Production designs and their records stay excluded.
+
+Broader historically drawn/nonempty symbols, referenced-symbol propagation,
+schematic/PCB native structure completion, geometry, component libraries and
+manufacturing exports remain backlog, with concrete limits in the coverage
+inventory and `docs/current-symbol-clock-lifetime-2026-10-17.md`.
+The original stash `ebe1b55d7a430ae2e3168e373e155957b582eff9` remains intact;
+never apply it wholesale. Local main is fast-forwarded to232c47e; this delivery
+record is the only post-merge working-tree change, for the next continuation.
+
 ### Candidate123000: ordinary metadata route frozen; final CI still required
 
 Branch feature/current-symbol-roundtrip-20261017 starts from maine2e82365.

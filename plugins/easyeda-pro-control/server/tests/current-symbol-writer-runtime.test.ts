@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "../src/current-project-only-symbol-preflight.ts";
+import { CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS } from "../src/current-symbol-write-program.ts";
 
 type Bag = Record<string, unknown>;
 type Failure = "none" | "post-clock" | "post-clock-unchanged" | "owner-after-write" | "late-clock-plan" | "comparison" | "intent-write" | "transfer-write" | "snapshot" | "journal-drift" | "snapshot-revalidate" | "retirement-release" |
@@ -20,7 +21,12 @@ interface TestCoordinator {
 }
 function noOp(): undefined { return undefined; }
 function record(result: unknown): Bag { assert.ok(isRecord(result)); return result; }
-async function fixture(failure: Failure = "none"): Promise<{
+interface CanvasFixture {
+  readonly maximumTargetHeaderTime: number; readonly remainingWrites: 1 | 2;
+  readonly purpose?: "disposable-validation" | "ordinary-symbol-metadata";
+  readonly maximumMs?: number;
+}
+async function fixture(failure: Failure = "none", canvas?: CanvasFixture): Promise<{
   coordinator: TestCoordinator; start: () => Promise<unknown>; wrongStartup: () => Promise<unknown>;
   state: { alive: boolean; transferred: boolean; active: boolean; calls: string[]; clocks: number; mutations: number;
     closeCalls: number; probes: number; writes: string[]; releases: number; snapshots: number; comparisons: number };
@@ -58,7 +64,7 @@ async function fixture(failure: Failure = "none"): Promise<{
   };
   const baseline = { copy: { receiptSha256: "0".repeat(64) }, inventory: { synthetic: "original-before" },
     preparation: { target, patch: { name: "After" }, metadata: { before, after: { ...before, name: "After" }, peerNames: [] } } };
-  const original = { source: { runtime, expectedFingerprint: { installedBundles: { assetsRoot: "/synthetic/assets" } } }, baseline, capture, launch,
+  const original = { source: { purpose: canvas?.purpose ?? "disposable-validation", runtime, expectedFingerprint: { installedBundles: { assetsRoot: "/synthetic/assets" } } }, baseline, capture, launch,
     launchClock: { synthetic: "launch" }, captureClock: { synthetic: "capture" },
     originalPreparation: { closedTargetWitness: { observation: { value, runtimeObservation: { actor } } } } };
   const owner = Object.freeze({ profile: "private.current-symbol-writer-owner.v1", operationId: generation.operationId });
@@ -123,7 +129,12 @@ async function fixture(failure: Failure = "none"): Promise<{
   let dispatchOwner: unknown;
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-writer-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
-  const startupAssert = (received: unknown): Bag => { assert.equal(received, startup, "Original startup missing"); return { expectation: { sheetUuids: ["2".repeat(16)], templates: [] } }; };
+  const startupAssert = (received: unknown): Bag => {
+    assert.equal(received, startup, "Original startup missing");
+    return { expectation: { sheetUuids: ["2".repeat(16)], templates: [] }, ...(canvas === undefined ? {} : {
+      canvasClock: Object.freeze({ maximumTargetHeaderTime: canvas.maximumTargetHeaderTime, remainingWrites: canvas.remainingWrites }),
+    }) };
+  };
   const context = createContext({ Object, Reflect, Map, Date, Promise, AggregateError, structuredClone,
     canonicalJson, isRecord, sha256Json, sha256Text, buildPlanHash: sha256Json, assertExpectedFingerprint: noOp,
     validateSdkLocalRuntimeFingerprint: noOp, assertUpstreamReplySettled: noOp, currentProjectOnlySymbolPreflightRequestSchema,
@@ -154,10 +165,12 @@ async function fixture(failure: Failure = "none"): Promise<{
     prepareCurrentSymbolTransactionClock: (input: Bag): Promise<Bag> => {
       assert.equal(input["before"], baseline.inventory); dispatchOwner = input["dispatchOwner"];
       if (failure === "late-clock-plan") { return Promise.reject(new Error("Synthetic expired clock plan")); }
-      return Promise.resolve({ backendWindow: { minimumMs: 1000, maximumMs: 61_000 }, documentWindow: { minimumMs: 1002, maximumMs: 61_002 } });
+      const maximumMs = canvas?.maximumMs ?? 61_002;
+      return Promise.resolve({ backendWindow: { minimumMs: 1000, maximumMs: 61_000 }, documentWindow: { minimumMs: maximumMs - CURRENT_SYMBOL_WRITE_WINDOW_MS, maximumMs } });
     },
     buildCurrentSymbolWriteProgram: (input: Bag): string => { assert.deepEqual(input["startup"], { sheetUuids: ["2".repeat(16)], templates: [] }); return "write"; },
     CURRENT_SYMBOL_WRITE_TIMEOUT_MS: 15_000,
+    CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS,
     decodeCurrentSymbolWriteReply: (raw: unknown): Bag => { assert.equal(raw, writeRaw); return { documentAfter: sample }; },
     recordCurrentSymbolTransactionClockPost: (_plan: unknown, input: Bag): Promise<void> => { assert.equal(input["dispatchOwner"], dispatchOwner); return Promise.resolve(); },
     assertCurrentClosedSessionTerminationObservation: noOp, assertCurrentClosedSessionCopyAuthority: noOp,
@@ -205,6 +218,32 @@ async function fixture(failure: Failure = "none"): Promise<{
   };
 }
 const ID = "synthetic-current-writer";
+
+void test("canvas writers require original disposable purpose and a strictly newer clock before mutation", async () => {
+  for (const remainingWrites of [1, 2] as const) {
+    const accepted = await fixture("none", { maximumTargetHeaderTime: 1001, remainingWrites });
+    await accepted.start(); assert.equal(accepted.state.mutations, 1);
+    for (const canvas of [{ maximumTargetHeaderTime: 1002, remainingWrites }, { maximumTargetHeaderTime: 1003, remainingWrites },
+      { maximumTargetHeaderTime: 1001, remainingWrites, purpose: "ordinary-symbol-metadata" as const }]) {
+      const refused = await fixture("none", canvas);
+      await assert.rejects(refused.start(), /strictly newer document window/u);
+      assert.deepEqual(refused.state.calls, ["preflight", "clock"]); assert.equal(refused.state.mutations, 0);
+      assert.equal(refused.state.writes.includes("writer-dispatch-intent"), false);
+    }
+  }
+});
+
+void test("canvas forward reserves a complete strictly later inverse window, not merely one millisecond", async () => {
+  const maximumMs = CURRENT_SYMBOL_WRITE_TIME_CEILING - CURRENT_SYMBOL_WRITE_WINDOW_MS - 1;
+  const accepted = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 2, maximumMs });
+  await accepted.start(); assert.equal(accepted.state.mutations, 1);
+  for (const invalid of [maximumMs + 1, CURRENT_SYMBOL_WRITE_TIME_CEILING - 1, CURRENT_SYMBOL_WRITE_TIME_CEILING]) {
+    const refused = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 2, maximumMs: invalid });
+    await assert.rejects(refused.start(), /inverse window headroom/u); assert.equal(refused.state.mutations, 0);
+  }
+  const inverse = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 1, maximumMs: CURRENT_SYMBOL_WRITE_TIME_CEILING });
+  await inverse.start(); assert.equal(inverse.state.mutations, 1);
+});
 
 void test("private writer owns exactly one dispatch, original clock capture, normal closure and full comparison", async () => {
   const f = await fixture();

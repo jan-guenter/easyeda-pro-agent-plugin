@@ -13,13 +13,15 @@ import { ACTOR_NAME_MAX_CODE_UNITS, SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE } from "./s
 
 export const CURRENT_SYMBOL_WRITE_TIMEOUT_MS = 15_000;
 export const CURRENT_SYMBOL_WRITE_MAX_BYTES = 393_216;
+export const CURRENT_SYMBOL_WRITE_WINDOW_MS = 60_000;
+export const CURRENT_SYMBOL_WRITE_TIME_CEILING = 8_640_000_000_000_000 - CURRENT_SYMBOL_WRITE_WINDOW_MS;
 const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0));
-const time = integer.max(8_640_000_000_000_000 - 60_000);
+const time = integer.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
 const offset = z.number().int().min(-840).max(840).refine((value) => !Object.is(value, -0));
 const actorSchema = z.object({ uuid: z.string().regex(/^[a-f0-9]{32}$/u), username: z.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
   nickname: z.string().max(ACTOR_NAME_MAX_CODE_UNITS) }).strict();
 const windowSchema = z.object({ minimumMs: time, maximumMs: time }).strict()
-  .refine((value) => value.maximumMs - value.minimumMs === 60_000);
+  .refine((value) => value.maximumMs - value.minimumMs === CURRENT_SYMBOL_WRITE_WINDOW_MS);
 const beforeSchema = currentProjectOnlySymbolPreflightRequestSchema.shape.expectedBefore;
 export const currentSymbolWriteProgramInputSchema = currentProjectOnlySymbolPreflightRequestSchema.extend({
   desired: z.object({ name: z.string().min(1).max(512).refine((value) => value.trim().length > 0), description: z.string().max(65_536) }).strict(),

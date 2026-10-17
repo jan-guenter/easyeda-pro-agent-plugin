@@ -216,7 +216,8 @@ void test("disposable schemas and result checks reject injected arguments and fa
   }
   const catalog = queryCurrentDisposableOpen({ includeSchemas: true }); assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.equal(catalog["sharedLifecycleConnectedValidation"], "installed101500-disposable-meta-only-roundtrip");
-  assert.match(JSON.stringify(catalog), /ordinary forward-only entrypoint is registered but not connected-tested/u);
+  assert.match(JSON.stringify(catalog), /installed123000 separately passed the ordinary META-only forward lifecycle/u);
+  assert.match(JSON.stringify(catalog), /canvas profile.*offline tests, not connected validation/u);
   assert.match(JSON.stringify(catalog), /inputSchema/u);
   const preparationCheckpoint = catalog["preparationCheckpoint"]; assert.ok(preparationCheckpoint !== null && typeof preparationCheckpoint === "object");
   assert.equal(Reflect.get(preparationCheckpoint, "resultField"), "preparationCheckpoint");

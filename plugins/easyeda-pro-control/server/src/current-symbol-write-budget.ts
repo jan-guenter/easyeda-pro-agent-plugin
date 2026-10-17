@@ -1,10 +1,12 @@
 /** Pure pre-dispatch proof budgets. No clock, owner or execution token is issued. */
 import { z } from "zod";
 import { CURRENT_SAVED_SYMBOL_CONTENT_LIMIT, CURRENT_SAVED_SYMBOL_ENVELOPE_LIMIT, buildCurrentSavedSymbolReadProgram } from "./current-symbol-saved-read-program.ts";
+import { CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS } from "./current-symbol-write-program.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
-import { expectedSavedSymbolContent, prepareCurrentDocumentCacheSavedSymbolProjection, prepareSavedSymbolProjection } from "./saved-symbol-projection.ts";
+import { expectedSavedSymbolContent, prepareCurrentDocumentCacheSavedSymbolProjection, prepareCurrentSingleCanvasSegmentSavedSymbolProjection,
+  prepareSavedSymbolProjection } from "./saved-symbol-projection.ts";
 import { ACTOR_NAME_MAX_CODE_UNITS } from "./symbol-dual-actor.ts";
 import type { DecodedSymbolSqlRawHistory } from "./symbol-sql-comparator.ts";
 import { MAX_ENCODED_BYTES } from "./sqlite-inventory-core.ts";
@@ -13,6 +15,8 @@ import type { NativeSqlInventory, SqlCell, SqlRow, SqlTable } from "./sqlite-inv
 const desiredSchema = z.object({ name: z.string().min(1).max(512), description: z.string().max(65_536),
   tags: z.array(z.string().max(512)).max(256), source: z.string().max(4096) }).strict();
 const MAX_NATIVE_TIME = 8_640_000_000_000_000;
+type MetadataInput = Readonly<{ name: string; description: string; tags: readonly string[]; source: string }>;
+type BudgetStrategy = "meta-only" | "single-canvas-segment";
 const CLIENT = "0".repeat(16);
 // SQL actor selection bounds both project-user names to this many code units.
 // A NUL contributes six JSON bytes, the maximum for any individual code unit.
@@ -147,10 +151,27 @@ function sqlCapacity(before: NativeSqlInventory, branchUuid: string, uploadBytes
  * upload; both intermediate results and all endpoint combinations are checked.
  * These synthetic strings are never sent to EasyEDA or retained as native proof.
  */
-export async function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string,
-  desiredInput: Readonly<{ name: string; description: string; tags: readonly string[]; source: string }>, before: NativeSqlInventory,
+export function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string,
+  desiredInput: MetadataInput, before: NativeSqlInventory,
   startupInput: CurrentSymbolStartupExpectation,
-  restorationInput?: Readonly<{ name: string; description: string; tags: readonly string[]; source: string }>): Promise<Readonly<Record<string, unknown>>> {
+  restorationInput?: MetadataInput): Promise<Readonly<Record<string, unknown>>> {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "meta-only");
+}
+
+/** Separate pure budget for the fixed disposable single-canvas-segment profile.
+ * Its writer must prove a strictly newer document window and leave a complete
+ * later inverse window when reserving two writes. Synthetic endpoints bound
+ * serialized sizes; they neither observe nor promise those future clocks.
+ */
+export function prepareCurrentSingleCanvasSegmentWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string,
+  desiredInput: MetadataInput, before: NativeSqlInventory, startupInput: CurrentSymbolStartupExpectation,
+  restorationInput?: MetadataInput): Promise<Readonly<Record<string, unknown>>> {
+  return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "single-canvas-segment");
+}
+
+async function prepareWriteBudget(decoded: DecodedSymbolSqlRawHistory, targetUuid: string, desiredInput: MetadataInput,
+  before: NativeSqlInventory, startupInput: CurrentSymbolStartupExpectation, restorationInput: MetadataInput | undefined,
+  strategy: BudgetStrategy): Promise<Readonly<Record<string, unknown>>> {
   const chunks = [...decoded.chunks], desired = desiredSchema.parse(desiredInput);
   const startup = currentSymbolStartupExpectationSchema.parse(startupInput);
   const stages = restorationInput === undefined ? [desired] : [desired, desiredSchema.parse(restorationInput)];
@@ -161,6 +182,14 @@ export async function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlR
     "complete decoded history counts differ");
   need(Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && !Object.is(maximumTicket, -0) && maximumTicket <= Number.MAX_SAFE_INTEGER - stages.length - 1,
     "the written ticket and exported outer ticket must remain supported safe integers");
+  if (strategy === "single-canvas-segment") {
+    // Check the original history as well as every synthetic appended stage.
+    // A new header must not hide an initially ambiguous cache segment order.
+    const baseline = await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks, targetUuid, maximumTicket, currentEditVersion: "3.2.206" });
+    const firstMaximum = CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages.length - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1);
+    need(baseline.maximumTargetHeaderTime < firstMaximum - CURRENT_SYMBOL_WRITE_WINDOW_MS,
+      "strictly later document windows cannot fit the reserved write headroom");
+  }
   let maximumSavedContentBytes = 0, maximumSavedEnvelopeBytes = 0, maximumUploadBytes = 0;
   let paths = [chunks];
   const uploadBytes: number[] = [];
@@ -170,7 +199,9 @@ export async function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlR
     const nextPaths: string[][] = [];
     let stageUploadBytes = 0;
     for (const path of paths) {
-      for (const stamp of [1, MAX_NATIVE_TIME]) {
+      const stamps = strategy === "single-canvas-segment"
+        ? [CURRENT_SYMBOL_WRITE_TIME_CEILING - (stages.length - index - 1) * (CURRENT_SYMBOL_WRITE_WINDOW_MS + 1)] : [1, MAX_NATIVE_TIME];
+      for (const stamp of stamps) {
         const upload = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ ...ACTOR, updateTime: stamp })}|\n` +
           `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({ docType: "SYMBOL", client: CLIENT, uuid: targetUuid,
             updateTime: stamp, version: String(stamp), editVersion: "3.2.206" })}|\n` +
@@ -181,7 +212,8 @@ export async function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlR
         // Reuse the actual post-write proof bounds, including total bytes, chunks,
         // Records and individual records. Do not maintain a looser parallel parser.
         const raw = await prepareSavedSymbolProjection(input);
-        const cache = await prepareCurrentDocumentCacheSavedSymbolProjection(input);
+        const cache = await (strategy === "single-canvas-segment"
+          ? prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input) : prepareCurrentDocumentCacheSavedSymbolProjection(input));
         for (const projection of [raw, cache]) {
           const content = expectedSavedSymbolContent(projection, CLIENT);
           const bytes = Buffer.byteLength(content);
@@ -193,7 +225,8 @@ export async function prepareCurrentSymbolWriteBudget(decoded: DecodedSymbolSqlR
     }
     uploadBytes.push(stageUploadBytes); maximumUploadBytes = Math.max(maximumUploadBytes, stageUploadBytes); paths = nextPaths;
   }
-  return Object.freeze({ profile: "private.current-symbol-write-budget.v1", targetUuid, beforeMaximumTicket: maximumTicket,
+  return Object.freeze({ profile: strategy === "single-canvas-segment" ? "private.current-single-canvas-segment-write-budget.v1" : "private.current-symbol-write-budget.v1",
+    targetUuid, beforeMaximumTicket: maximumTicket,
     reservedWrites: stages.length, afterMaximumTicket: maximumTicket + stages.length, afterHistoryRows: history.historyRowCount + stages.length,
     afterChunks: chunks.length + stages.length, maximumUploadBytes,
     maximumRawHistoryBytes: history.plaintextBytes + uploadBytes.reduce((sum, bytes) => sum + bytes, 0), maximumSavedContentBytes, maximumSavedEnvelopeBytes,

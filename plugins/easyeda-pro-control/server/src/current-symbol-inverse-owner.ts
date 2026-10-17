@@ -72,6 +72,7 @@ export function currentSymbolInverseOwnershipTransferred(owner: CurrentSymbolInv
 export async function prepareCurrentSymbolInverseOwner(engine: EasyedaControlEngine,
   predecessor: CurrentSymbolVerificationResult): Promise<CurrentSymbolInverseBaselineOwner> {
   const result = assertCurrentSymbolVerificationResult(predecessor, engine);
+  need(result.writer.original.source.purpose === "disposable-validation");
   need(!attempts.has(predecessor)); attempts.add(predecessor);
   await result.revalidateClosed(); need(assertCurrentSymbolVerificationResult(predecessor, engine) === result);
   const snapshot = result.snapshot, target = result.saved.observation.target;

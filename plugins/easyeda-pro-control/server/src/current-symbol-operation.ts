@@ -52,7 +52,7 @@ export function parseCurrentSymbolOperationRequest(input: unknown): CurrentSymbo
 export const currentSymbolOperationQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
 
 const limitations = [
-  "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. The shared disposable lifecycle has connected validation; this ordinary route has not been connected-tested. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
+  "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. Installed123000 passed one ordinary unused META-only forward lifecycle on a disposable fixture, including exact closed SQL, reopened content and final closure. Installed101500 separately passed the disposable forward/inverse lifecycle. These historical cases do not validate every shape or a later runtime. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
   "One exact already registered local .eprj2 project and checkpoint-member PCB in its default branch. Preserve the exact raw Windows path hash, source hash, sealed branch and original retained launch; opening starts from an empty editor.",
   "Before the first ordinary navigation, derive the supported startup expectation from the preserved checkpoint. Recheck that expectation against the complete closed baseline, then require live startup qualification before writing. No disposable acceptance or unqualified schematic-startup bypass is accepted.",
   "Ordinary opening can migrate storage, replay caches, restore tabs, update shared metadata and automatically Save. Each opening or closure stage requires its own explicit acknowledgement. No unchanged-storage promise, explicit Save, Save/Discard choice, forced exit or file restoration is provided.",
@@ -69,7 +69,9 @@ const limitations = [
 export function queryCurrentSymbolOperation(input: unknown = {}): Record<string, unknown> {
   const query = currentSymbolOperationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_project_symbol_metadata", purpose: CURRENT_SYMBOL_OPERATION_PURPOSE, registrationEnabled: true, invocationEnabledByDiscovery: false,
-    executionAuthorized: false, writerReady: false, connectedValidation: false, forwardOnly: true, inverseSupported: false, replayAllowed: false,
+    executionAuthorized: false, writerReady: false, connectedValidation: false,
+    historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
+    forwardOnly: true, inverseSupported: false, replayAllowed: false,
     actions: ["open", "observe", "inspect", "request-normal-close", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock",
       "baseline-relaunch", "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close",
       "baseline-observe-finish", "baseline-inspect", "metadata-begin", "metadata-advance", "metadata-inspect"],

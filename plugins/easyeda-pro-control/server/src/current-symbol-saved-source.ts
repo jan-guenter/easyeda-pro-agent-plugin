@@ -13,12 +13,14 @@ import { selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.
 import type { EasyedaControlEngine } from "./engine.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
 import { CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, expectedSavedSymbolContent, prepareCurrentDocumentCacheSavedSymbolProjection,
-  prepareSavedSymbolProjection, verifyCurrentSavedSymbolProjectionAlternatives } from "./saved-symbol-projection.ts";
-import type { CurrentDocumentCacheSavedSymbolProjection, SavedSymbolProjection } from "./saved-symbol-projection.ts";
+  prepareCurrentSingleCanvasSegmentSavedSymbolProjection, prepareSavedSymbolProjection, verifyCurrentSavedSymbolProjectionAlternatives,
+  verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives } from "./saved-symbol-projection.ts";
+import type { CurrentDocumentCacheSavedSymbolProjection, CurrentSingleCanvasSegmentSavedSymbolProjection, SavedSymbolProjection } from "./saved-symbol-projection.ts";
 
 export interface CurrentSavedSymbolSource {
   readonly profile: "private.current-symbol-saved-source.v1";
   readonly operationId: string; readonly sourceSha256: string;
+  readonly purpose: "disposable-validation" | "ordinary-symbol-metadata";
   readonly posteditCheckpointSha256: string; readonly posteditSqlSha256: string;
   readonly comparisonSha256: string; readonly rawHistorySha256: string; readonly rawHistoryBytes: number;
   readonly projectedContentBytes: number; readonly maximumTicket: number;
@@ -29,7 +31,8 @@ interface Original {
   readonly engine: EasyedaControlEngine; readonly continuation: CurrentSymbolWriterContinuation;
   readonly source: CurrentSymbolWriterContinuationSource; readonly descriptor: CurrentSavedSymbolSource;
   readonly text: string; readonly request: CurrentSavedSymbolReadRequest; readonly requestText: string;
-  readonly projection: SavedSymbolProjection; readonly documentCacheProjection: CurrentDocumentCacheSavedSymbolProjection | undefined;
+  readonly projection: SavedSymbolProjection;
+  readonly documentCacheProjection: CurrentDocumentCacheSavedSymbolProjection | CurrentSingleCanvasSegmentSavedSymbolProjection;
 }
 const issued = new WeakMap<object, Original>();
 function need(value: boolean): asserts value { if (!value) { throw new Error("Current saved symbol source requires its original complete post-edit result."); } }
@@ -58,6 +61,8 @@ export async function revalidateCurrentSavedSymbolSource(value: unknown, engine:
 export async function prepareCurrentSavedSymbolSource(continuation: CurrentSymbolWriterContinuation,
   engine: EasyedaControlEngine): Promise<CurrentSavedSymbolSource> {
   const source = assertOriginalCurrentSymbolWriterContinuation(continuation, engine);
+  const purpose = source.original.source.purpose;
+  need(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata");
   const snapshot = assertOriginalCurrentSymbolFinishSnapshot(source.snapshot, engine);
   const current = (): void => { need(assertOriginalCurrentSymbolWriterContinuation(continuation, engine) === source &&
     assertOriginalCurrentSymbolFinishSnapshot(source.snapshot, engine) === snapshot); };
@@ -83,20 +88,22 @@ export async function prepareCurrentSavedSymbolSource(continuation: CurrentSymbo
     pin.bytes === producer.bytes && pin.sha256 === producer.sha256));
   const projection = await prepareSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
     maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion }); current();
+  need(projection.canvasRecords === 0 || purpose === "disposable-validation");
   const documentCacheProjection = projection.canvasRecords === 0
     ? await prepareCurrentDocumentCacheSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
-      maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion }) : undefined;
+      maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion })
+    : await prepareCurrentSingleCanvasSegmentSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
+      maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion });
   current();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection, "0".repeat(16)));
-  const documentCacheProjectedContentBytes = documentCacheProjection === undefined ? null
-    : Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
+  const documentCacheProjectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
   need(projectedContentBytes > 0 && projectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
-  need(documentCacheProjectedContentBytes === null || (documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT));
-  const body = { profile: "private.current-symbol-saved-source.v1" as const, operationId: source.operationId,
+  need(documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
+  const body = { profile: "private.current-symbol-saved-source.v1" as const, operationId: source.operationId, purpose,
     posteditCheckpointSha256: source.snapshot.checkpoint.checkpointSha256, posteditSqlSha256: snapshot.inventory.logicalSha256,
     comparisonSha256: sha256Json(decoded.comparison), rawHistorySha256: projection.rawHistorySha256,
     rawHistoryBytes: projection.rawHistoryBytes, projectedContentBytes, maximumTicket: expectedTicket,
-    documentCacheProjectedContentBytes, workerSourceSha256: producer.sha256, cacheBranchObserved: false as const,
+    documentCacheProjectedContentBytes, cacheProjectionProfile: documentCacheProjection.profile, workerSourceSha256: producer.sha256, cacheBranchObserved: false as const,
     executionAuthorized: false as const, completionProved: false as const };
   const descriptor: CurrentSavedSymbolSource = Object.freeze({ ...body, sourceSha256: sha256Json(body) });
   issued.set(descriptor, { engine, continuation, source, descriptor, text: canonicalJson(descriptor), request,
@@ -108,6 +115,11 @@ export async function prepareCurrentSavedSymbolSource(continuation: CurrentSymbo
 export function verifyCurrentSavedSymbolContent(value: CurrentSavedSymbolSource, engine: EasyedaControlEngine,
   continuation: CurrentSymbolWriterContinuation, observation: unknown): Readonly<Record<string, unknown>> {
   const original = assertCurrentSavedSymbolSource(value, engine, continuation);
-  return Object.freeze({ ...verifyCurrentSavedSymbolProjectionAlternatives(original.projection, original.documentCacheProjection, observation), sourceSha256: value.sourceSha256,
+  const cache = original.documentCacheProjection;
+  need(cache.profile !== "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" || original.source.original.source.purpose === "disposable-validation");
+  const relation = cache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1"
+    ? verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(original.projection, cache, observation)
+    : verifyCurrentSavedSymbolProjectionAlternatives(original.projection, cache, observation);
+  return Object.freeze({ ...relation, sourceSha256: value.sourceSha256,
     comparisonSha256: value.comparisonSha256 });
 }

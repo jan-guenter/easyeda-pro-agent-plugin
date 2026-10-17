@@ -139,9 +139,10 @@ Do not delete or rewrite the journal to make it pass. Record the unresolved
 operation for a separately supported recovery procedure.
 
 Installed101500 passed the narrow unused META-only disposable round trip,
-including opening and persistence verification. The new ordinary public
-entrypoint below is not separately connected-tested; other shapes remain outside
-that evidence.
+including opening and persistence verification. Installed123000 separately
+passed the ordinary forward-only public route on a disposable fixture, including
+final closure and unchanged reopened SQL. Other shapes and later runtimes remain
+outside those results.
 
 ## Retained baseline validation
 
@@ -313,12 +314,20 @@ sheet propagation can load hidden sheets, which this workflow does not support.
 Do not unlink components, delete sheets or weaken cache checks to pass. Choose
 an existing unused disposable symbol and prepare it from the current checkpoint.
 
-The complete raw target history must also contain metadata bookkeeping only.
-A currently empty symbol is insufficient: deleted drawing records remain in
-history and are outside the modeled cache replay. Newer snapshots check this
-before native startup observation or writer transfer. Do not delete geometry
-to make a target eligible. Use an existing metadata-only fixture or implement
-the missing drawing-content replay contract separately.
+Complete raw target history must satisfy either the META-only profile or the
+new disposable-only single-canvas-segment profile. The latter requires every
+historical drawing occurrence, including tombstones, to lie in one history
+segment; stable atom types; exact lossless bodies; and a unique latest DOCHEAD
+whose ticket is maximal for the target. Lone-DOCHEAD cache fragments, imported
+atom headers, unsupported normalized keys and multi-segment drawings refuse.
+A currently empty symbol is not sufficient. Do not delete geometry to make a
+target eligible. This new profile is offline-tested, not connected-validated.
+
+Its original startup owner retains the maximum target-header time. Each actual
+write window must be strictly newer, and the forward write reserves a complete
+later inverse window. The inverse rechecks the full post-edit history. These
+are derived prerequisites, not caller-selectable exceptions or clock overrides.
+The ordinary public route below remains META-only.
 
 The same pre-dispatch check reserves the complete proof budget. Disposable
 forward validation reserves both the requested change and the owner-derived
@@ -348,8 +357,9 @@ For a current META-only symbol, the content verifier derives exact raw-history
 and document-cache replay candidates from the complete preserved history.
 Native cache replay omits EDIT_HEAD; it can therefore synthesize the outer user
 from DOCHEAD. A match never ignores fields or proves the actual loading branch.
-The persisted SQL actor remains separately checked. Nonempty-canvas cache replay
-is outside this modeled case.
+The persisted SQL actor remains separately checked. The disposable single-canvas
+profile has a separate exact candidate and preserves raw drawing bodies and
+insertion order; a matching candidate still does not prove the loading branch.
 Only that fully verified result can supply the inverse. The inverse derives
 its patch from the initial metadata and its baseline from the actual verified
 post-edit snapshot; it obtains fresh clock evidence and repeats the same write
@@ -437,8 +447,11 @@ this disposable route or fabricate a disposable acknowledgement.
 
 Use the separate `easyeda_control_project_symbol_metadata` tool. Its offline
 actions are `project-symbol-operation` and `project-symbol-operation-validate`.
-The new entrypoint has strict schema/coordinator tests and reuses the validated
-disposable writer; it has not itself received a connected ordinary run.
+Installed123000 passed this entrypoint on a disposable fixture: one name and
+description change, exact closed SQL effect, saved content after cache-excluded
+reopening, and final normal closure with unchanged SQL. All 17 peer documents
+were unchanged. This evidence does not cover drawn or referenced symbols, other
+startup shapes, or later runtime generations.
 
 The project must be an already registered local file on the pinned current
 runtime, with a checkpoint-member PCB in its default branch. The target symbol

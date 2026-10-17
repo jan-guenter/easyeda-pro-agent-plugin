@@ -22,7 +22,8 @@ import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "./c
 import { assertCurrentSymbolWriterStartup, revalidateCurrentSymbolWriterStartup } from "./current-symbol-startup-runtime.ts";
 import { prepareCurrentSymbolTransactionClock, recordCurrentSymbolTransactionClockPost, verifyCurrentSymbolTransactionClock } from "./current-symbol-transaction-clock.ts";
 import type { CurrentSymbolTransactionClockPlan } from "./current-symbol-transaction-clock.ts";
-import { CURRENT_SYMBOL_WRITE_TIMEOUT_MS, buildCurrentSymbolWriteProgram, decodeCurrentSymbolWriteReply } from "./current-symbol-write-program.ts";
+import { CURRENT_SYMBOL_WRITE_TIMEOUT_MS, CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS,
+  buildCurrentSymbolWriteProgram, decodeCurrentSymbolWriteReply } from "./current-symbol-write-program.ts";
 import type { CurrentSymbolWriteProgramInput, CurrentSymbolWriteProgramResult } from "./current-symbol-write-program.ts";
 import { buildCurrentSymbolWriterClockProgram, decodeCurrentSymbolWriterClockReply } from "./current-symbol-writer-clock-program.ts";
 import type { EasyedaControlEngine, TrackedDispatchOperationJournal } from "./engine.ts";
@@ -326,6 +327,14 @@ export class CurrentSymbolWriterCoordinator {
       beforeClock: slot.beforeClock, armedClock: slot.armedClock, documentBefore });
     this.current(slot, scopeText);
     const startup = assertCurrentSymbolWriterStartup(slot.startup, this.engine, generation);
+    if (startup.canvasClock !== undefined) {
+      // Bound to the original startup, never a request flag. Every new header
+      // Must supersede all prior target headers, including the inverse's input.
+      const { maximumTargetHeaderTime, remainingWrites } = startup.canvasClock;
+      need(original.source.purpose === "disposable-validation" && slot.clockPlan.documentWindow.minimumMs > maximumTargetHeaderTime &&
+        slot.clockPlan.documentWindow.maximumMs <= CURRENT_SYMBOL_WRITE_TIME_CEILING - (remainingWrites === 2 ? CURRENT_SYMBOL_WRITE_WINDOW_MS + 1 : 0),
+      "Disposable canvas metadata requires a strictly newer document window and reserved inverse window headroom.");
+    }
     slot.writeInput = { ...request, startup: startup.expectation,
       desired: { name: baseline.preparation.metadata.after.name, description: baseline.preparation.metadata.after.description },
       peerNames: baseline.preparation.metadata.peerNames, expectedActor,

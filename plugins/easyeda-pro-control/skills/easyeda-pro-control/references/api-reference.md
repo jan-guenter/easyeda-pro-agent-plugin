@@ -419,8 +419,9 @@ Two matching bounded samples observe native metadata while retaining the outer
 RPC receiver and current project/tab references around awaits. This is not an
 atomic lock on the module-private project worker, complete source, hidden-editor
 absence, saved membership or persistence proof. No writer may accept this result
-as its complete before-state. The ordinary symbol rename still needs its own
-current-version lifecycle and complete closed-file proof.
+as its complete before-state. The separate ordinary metadata tool obtains its
+own full baseline and lifecycle proof; installed123000 passed one unused
+META-only case on a disposable fixture, not through this reader alone.
 
 ### Ordinary symbol metadata operation
 
@@ -438,8 +439,10 @@ closed, META-only project-local symbol. Complete raw history, startup effects,
 original owners, clocks, SQL effects and reopened content are checked. The
 forward-only route cannot consume disposable ownership or supply an inverse.
 Discovery returns `registrationEnabled:true`, but never execution authority.
-The shared writer passed disposable forward/inverse validation; the new ordinary
-entrypoint has offline tests, not its own connected run. Generic
+The shared writer passed installed101500 disposable forward/inverse validation;
+the ordinary entrypoint separately passed installed123000's unused META-only
+forward lifecycle on a disposable fixture. Neither result grants current-call
+authority or covers ordinary drawn-symbol editing. Generic
 `library.symbol.modify` and the older `symbol_metadata` tool stay blocked.
 
 ### Symbol observation with no editor tabs

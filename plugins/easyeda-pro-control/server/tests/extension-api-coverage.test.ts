@@ -58,7 +58,7 @@ void test("ordinary symbol coverage exposes only its forward-only META history r
   assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
   assert.deepEqual(route.documentTypes, [2]);
   for (const required of ["every tombstoned occurrence", "unused project-local symbol", "sealed pre-navigation startup", "reserve one write",
-    "final closed SQL equality", "No inverse", "installed101500", "not connected-tested"]) {
+    "final closed SQL equality", "No inverse", "installed101500", "installed123000", "Historical results grant no current-invocation authority"]) {
     assert.ok(route.scope.includes(required));
   }
   assert.equal(row.routes.find((entry) => entry.selector === "library.symbol.modify")?.executionState, "blocked");
@@ -66,6 +66,7 @@ void test("ordinary symbol coverage exposes only its forward-only META history r
   const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
   assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
   assert.equal(result["registrationEnabled"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["connectedValidation"], false);
+  assert.equal(result["historicalConnectedValidation"], "installed123000-ordinary-unused-meta-only-forward-only");
 });
 
 void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {

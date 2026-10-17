@@ -1,6 +1,48 @@
 # Current symbol validation and ordinary metadata editing
 
-## Current 101500 result
+## Current 123000 ordinary-route result
+
+Installed123000 completed the separate ordinary public route on the disposable
+fixture: one name/description write, normal closure, exact complete SQL effect,
+cache-excluded project reopening, exact 416-byte saved content, and final normal
+closure with unchanged SQL. The requested metadata remains; this forward-only
+route deliberately has no inverse. All 17 peer documents stayed unchanged.
+
+Independent review checked all 35 tables, 18 documents and 54 retained artifacts.
+The original 51 raw-history chunks are unchanged; the sole append contains
+EDIT_HEAD, DOCHEAD and META at ticket770. Final logical SQL is
+`24a32a934634e58a541b1c5d2f2932f2eaa86a8efad9bc6507595d0fb3403b3e`.
+Saved-content SHA is
+`7514aca12e2954f3c167bd1dec367624735d1fb40379422dcf1018358b5c8b52`.
+It matches the exact document-cache candidate; actual cache-branch provenance
+is not claimed. Original process/Job termination and retirement completed,
+without explicit Save, Discard, replay or production-project access.
+
+## Candidate 143000: disposable drawn-symbol scope
+
+The new profile supports metadata validation for an unused symbol whose entire
+historical drawing content occupies one raw-history segment. It preserves
+body bytes, insertion order, physical first tickets and distinct native headers.
+It refuses cross-type ID reuse, lossy body encodings, lone-DOCHEAD fragments,
+ambiguous latest headers, imported atom headers and multi-segment drawings.
+Each new header must strictly supersede the complete baseline's target headers;
+forward validation reserves a complete later inverse clock window. The inverse
+requalifies the actual forward-result history rather than reusing an old check.
+
+Selection comes only from the original disposable owner's purpose. Ordinary
+editing stays META-only, and referenced-symbol propagation stays unsupported.
+This implementation has focused offline tests but no connected drawn-symbol
+result. It needs installation in a fresh session and one eligible disposable
+case before any wider enablement.
+
+The update also retains at most512 byte-digest/canonical-JSON-digest pairs to
+avoid parsing identical historical evidence again. Every observation still
+reads and hashes all bytes and rechecks file identities, paths, sidecars,
+runtime, deadlines and cleanup. No ownership or admission decision is cached.
+Focused tests prove warm rereads and changed-evidence refusals; no connected
+latency improvement is claimed.
+
+## Earlier 101500 result
 
 The installed101500 disposable run completed both the forward edit and its
 internally derived inverse. Each write passed a complete 35-table closed SQL
@@ -28,9 +70,9 @@ baseline, writer and verifier owners. Its continuation accepts no new patch,
 target, fingerprint or inverse phase. Completion verifies the requested metadata
 and retires the verifier without retaining inverse ownership.
 
-The shared writer has the connected disposable evidence above. The newly
-registered ordinary entrypoint has source and actual-SDK contract tests, not a
-separate connected run. Its malformed-request checks cover unknown outer and
+The shared writer has the connected disposable evidence below; the ordinary
+entrypoint has the separate123000 result above. Its source and actual-SDK
+malformed-request checks cover unknown outer and
 nested keys, inverse phases and replacement fingerprints, followed by valid
 historical inspection without journal changes or a runtime child. Generic
 library modification and schematic/PCB writers remain blocked.
@@ -77,8 +119,8 @@ ordinary forward-only route remains internal and unregistered.
 
 ## Pre-dispatch scope and proof budgets
 
-The new source gate checks every target record in complete decoded raw history,
-not only the materialized live records. It rejects historical canvas records
+The ordinary META-only gate checks every target record in complete decoded raw
+history, not only the materialized live records. It rejects historical canvas records
 and their tombstones, including a canvas record later replaced by metadata
 bookkeeping. A presently empty canvas is not sufficient. Existing unreferenced-
 symbol, original-owner, actor, clock and complete SQL requirements remain.
@@ -134,7 +176,7 @@ the requested name and description; any future attempt starts from that state.
 Do not revive this operation or use a later diagnostic as its missing successful
 saved-content read.
 
-## Current cache-replay correction
+## Earlier 090000 META-only cache-replay correction
 
 Pinned `project-worker.js`, SHA-256
 `b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`,
@@ -148,13 +190,14 @@ branch was not observed, so its use is an inference from source and output, not
 retained provenance. The correction models an additional exact complete-string
 candidate only for the pinned current version and META-only symbols. It does not
 ignore user fields, normalize native output, replace SQL actors, or change the
-older raw-history projection. Nonempty symbol canvas cache replay remains
-unsupported until its separate header/canvas behavior is modeled.
+older raw-history projection. Nonempty symbol canvas cache replay was outside
+this correction; the separate143000 disposable profile is described above.
 
 Both producer hashes and the complete original SQL/source proof remain required.
 A matching candidate identifies a supported serialization, not which native
-loading branch executed. The stopped 072500 attempt stays failed. New connected
-validation is required before enabling the ordinary writer.
+loading branch executed. The stopped072500 attempt stays failed. Later101500
+and123000 runs supplied the separately recorded disposable and ordinary
+META-only lifecycle evidence above; they do not validate the new canvas profile.
 
 This update also bounds concurrent managed-artifact hashing to four streams
 across callers. Warm journal checks can overlap; cold parsing, sorted selection,
@@ -301,22 +344,30 @@ JSON cannot construct this private issuer or grant execution authority.
 
 Source review, focused regressions, final lint/types/build, CI and installation
 results are recorded in AGENTS.md as they complete. The101500 disposable round
-trip is accepted. The123000 ordinary public route still needs its own installed
-connected admission before any use; no production validation is planned.
+trip and123000 ordinary unused META-only lifecycle are accepted. Neither covers
+the new drawn-symbol profile or admits a later installed runtime. No production
+validation is planned.
 
 The inverse adoption correction passes 21 focused tests. Its real-storage
 regression reproduced the original error before the fix; changed disk or memory
 state still refuses before adoption intent or ownership transfer.
 
-1. Finish123000 release checks, GitHub CI and marketplace installation. Verify
+1. Finish143000 release checks, GitHub CI and marketplace installation. Verify
    the installed files and offline catalog; then load it in a fresh Codex session.
    Never hotpatch or terminate the loaded facade to update it.
-2. Give the new ordinary public route a focused disposable connected check after
-   installed-runtime admission. Do not repeat the completed101500 round trip or
-   revive older terminal attempts. No broader live campaign is needed to ship
-   this scoped update.
-3. Model and validate nonempty or historically drawn symbol-cache replay before
-   extending the META-only scope. Deleting geometry is not an admission workaround.
+2. Validate the new single-canvas-segment profile on an eligible disposable
+   symbol after fresh installed-runtime admission, preserving the drawing through
+   forward and inverse metadata edits. Do not replay101500 or123000, or revive
+   older terminal attempts. No broader live campaign is required for this update.
+   The final123000 managed snapshot has no eligible target: its unused ordinary
+   symbol is META-only; its drawn ordinary symbol is referenced and multi-segment;
+   the other symbols are used special types. Create a new unused ordinary symbol
+   through a supported fixture-setup workflow; do not unlink existing components,
+   rewrite raw history or treat this audit as creation authority.
+3. Extend ordinary drawn-symbol support only after that result is reviewed.
+   Multi-segment drawings, imported records and other rejected histories still
+   need separate cache-order/serialization models. Deleting geometry is not an
+   admission workaround.
 4. Implement referenced-symbol propagation separately, including dependent-page
    loading and its complete source and SQL effects. Unused-symbol evidence does
    not cover this capability.
