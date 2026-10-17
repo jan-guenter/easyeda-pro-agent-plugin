@@ -107,6 +107,13 @@ not permission to retry navigation. Older journals may lack this artifact. A
 later observed open tab does not reconstruct a missing initial acknowledgment
 or establish the initial failure's exact cause.
 
+Current disposable opening has its own original-owner `request-normal-close`
+and terminal-only `retire-after-termination` actions. Follow
+[the interrupted-call procedure](current-project-opening.md#interrupted-calls).
+That narrow close does not contact the bridge, clear quarantine, repeat
+navigation or prove file contents. The ordinary launcher's close remains
+subject to quarantine; do not switch to it after the scoped close is consumed.
+
 Rule checks have their own inspect, recover-authority, open-target, rebind-runtime and reconcile-no-mutation actions under `easyeda_control_check`. A failed or timed-out check is never rerun by recovery. Reconciliation compares the retained full calculation scope and complete saved SQLite baseline; it does not manufacture a report from an unknown check outcome. Other incomplete operations block a new check.
 
 ## Saved library edit awaiting reopen

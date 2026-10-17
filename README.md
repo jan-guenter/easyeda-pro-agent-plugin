@@ -19,7 +19,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261016211500` corrects a source-proven startup-holder
+Candidate `0.3.0+codex.20261017020000` adds a bounded native startup-prefix wait
+before post-open observations and a retained-owner normal-close action for a
+failed disposable opening. The close leaves quarantine set until termination
+and bridge closure are proved. Fixed diagnostics distinguish project, tab and
+snapshot mismatches without returning private values. The211500 opening stopped
+before symbol validation; its original process was closed and retired, and the
+disposable file remained byte-identical. Normal writers remain disabled.
+See [opening recovery and remaining work](docs/current-opening-recovery-2026-10-17.md).
+
+Update `0.3.0+codex.20261016211500` corrects a source-proven startup-holder
 mismatch and adds bounded failure categories. The200000 disposable run passed
 both clock controls, then refused before writer transfer. Original-owner cleanup
 completed with unchanged raw bytes, all 35 SQL tables and 18 native documents.

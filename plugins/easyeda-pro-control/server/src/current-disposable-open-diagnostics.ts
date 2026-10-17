@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 export const CURRENT_OPEN_NATIVE_STAGES = [
-  "setup", "before-registration", "pre-dispatch", "open-project", "project-acknowledgement",
+  "setup", "before-registration", "pre-dispatch", "prefix-subscribe", "open-project", "project-acknowledgement", "prefix-event",
   "open-document", "document-acknowledgement", "after-registration", "native-observation", "output", "cleanup",
 ] as const;
 export const CURRENT_OPEN_NATIVE_CODES = [
   "GUARD", "FIELD", "OBJECT", "TEXT", "ARRAY", "METHOD", "BINDING", "URL", "ACK", "OUTPUT", "EXCEPTION", "TIMEOUT",
+  "PROJECT", "BRANCH", "FORMAT", "HISTORY", "TABSHAPE", "TABOWNER", "TABACTIVE", "PROJECTION", "OWNERS", "REGISTRY", "PREFIX",
 ] as const;
 export const CURRENT_OPEN_HOST_STAGES = [
   "owner-check", "dispatch-guards", "scope", "runtime-admission", "reserve-navigation", "build-program",
