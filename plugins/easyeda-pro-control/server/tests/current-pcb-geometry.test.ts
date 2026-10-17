@@ -10,7 +10,7 @@ import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
 const methods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
-  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll"] as const;
+  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll"] as const;
 function inputFor(method: CurrentPcbGeometryRequest["method"] = methods[0], primitiveIds?: string[]): CurrentPcbGeometryRequest {
   return parseCurrentPcbGeometryRequest({ method, arguments: primitiveIds === undefined ? {} : { primitiveIds }, target });
 }
@@ -27,7 +27,11 @@ const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, l
   Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0, holeAspect: null,
     defaultPadShapeAspect: ["RECT", 60.1, 30.2, 25], expansionType: 1, topSolderExpansion: 4.1234567, bottomSolderExpansion: -2.5, pasteExpansion: 0, padRule: null },
     { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2, holeAspect: null,
-      defaultPadShapeAspect: ["OVAL", 30, 60], expansionType: 2, topSolderExpansion: 0, bottomSolderExpansion: 1.25, pasteExpansion: -0.75, padRule: { connectMode: 2 } }] };
+      defaultPadShapeAspect: ["OVAL", 30, 60], expansionType: 2, topSolderExpansion: 0, bottomSolderExpansion: 1.25, pasteExpansion: -0.75, padRule: { connectMode: 2 } }],
+  String: [{ globalIndex: "string-b", locked: false, layerId: 3, position: { x: 1.234567, y: -2.345678 }, value: "Raw \"text\"\nΩ={Value}",
+    fontFamily: "default", fontSize: 12, strokeWidth: 0.8, origin: 3, rotation: Math.PI / 4, reverse: false, reverseExpansion: 0, mirror: false },
+  { globalIndex: "string-a", locked: true, layerId: 4, position: { x: 0, y: 2 }, value: "", fontFamily: "", fontSize: 0,
+    strokeWidth: 0, origin: 9, rotation: -Math.PI / 2, reverse: true, reverseExpansion: -0.125, mirror: true }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; input?: CurrentPcbGeometryRequest; fastDeadline?: boolean; }
 function environment(options: Options = {}): { run: () => Promise<unknown>; evaluateChild: (source: string) => unknown } {
   const input = options.input ?? inputFor();
@@ -39,13 +43,13 @@ function environment(options: Options = {}): { run: () => Promise<unknown>; eval
     }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad'};
+globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -105,6 +109,10 @@ void test("current geometry copies ordered cross-realm native fields without pub
       x: -3, y: 4, rotation: -90, metallization: false, padType: 2, hole: null,
       defaultCopperShape: { shape: "OVAL", width: 30, height: 60 },
       maskExpansion: { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 }, thermal: { mode: 2 } }],
+    [{ primitiveId: "string-b", primitiveType: "String", primitiveLock: false, layer: 3, x: 1.234567 * 10, y: -2.345678 * 10,
+      text: "Raw \"text\"\nΩ={Value}", fontFamily: "default", fontSize: 120, lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0, mirror: false },
+    { primitiveId: "string-a", primitiveType: "String", primitiveLock: true, layer: 4, x: 0, y: 20, text: "", fontFamily: "",
+      fontSize: 0, lineWidth: 0, alignMode: 9, rotation: -90, reverse: true, expansion: -1.25, mirror: true }],
   ];
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
@@ -125,11 +133,11 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 11);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 13);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
-    const fixture = environment({ input: request, beforeChild: "rows={Line:[],Arc:[],Via:[],Component:[],Pad:[]};" });
+    const fixture = environment({ input: request, beforeChild: "rows={Line:[],Arc:[],Via:[],Component:[],Pad:[],String:[]};" });
     const emptyResult = validateCurrentPcbGeometryResult(request, decodeExactReadEnvelope(await fixture.run()));
     assert.deepEqual(emptyResult["value"], []);
   }
@@ -145,10 +153,72 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
 });
 
+void test("current String projection keeps all native alignments and ignores unprojected font and display state", async () => {
+  const input = inputFor("eda.pcb_PrimitiveString.getAll");
+  const fixture = environment({ input, beforeChild: `rows.String=Array.from({length:9},(_,i)=>({...rows.String[0],globalIndex:'string-'+i,origin:i+1}));
+for(const row of rows.String)for(const key of ['font','silkColor','formulaName','key','showKey','showValue','positionIsNull','net'])
+Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED_STATE');}});` });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
+  const value = result["value"]; assert.ok(Array.isArray(value));
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["alignMode"]), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const projectedRows: readonly unknown[] = value;
+  for (const row of projectedRows) {
+    assert.ok(row !== null && typeof row === "object");
+    for (const omitted of ["font", "silkColor", "key", "showKey", "showValue", "positionIsNull", "net"]) { assert.equal(Object.hasOwn(row, omitted), false); }
+  }
+  assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const filteredArguments of [{ layer: 3 }, { primitiveLock: false }]) {
+    assert.equal(validateCurrentPcbGeometryArguments({ ...input, arguments: filteredArguments })["valid"], false);
+  }
+  assert.equal(validateCurrentPcbGeometryArguments({ ...input, method: "eda.pcb_PrimitiveText.getAll" })["valid"], false);
+});
+
+void test("current String geometry refuses every malformed selected scalar before another native sample", async () => {
+  const input = inputFor("eda.pcb_PrimitiveString.get", ["string-b"]);
+  const malformed = ["delete rows.String[1].value;", "rows.String[1].value=null;", "rows.String[1].value=3;",
+    "rows.String[1].value='x'.repeat(65537);", "rows.String[1].fontFamily=null;", "rows.String[1].fontFamily='x'.repeat(1025);",
+    "rows.String[1].origin=0;", "rows.String[1].origin=10;", "rows.String[1].origin=1.5;",
+    "rows.String[1].reverse=0;", "rows.String[1].mirror=undefined;", "rows.String[1].locked=null;",
+    "rows.String[1].layerId=-1;", "rows.String[1].position.x=-0;", "rows.String[1].position.y=1e12;",
+    "rows.String[1].fontSize=NaN;", "rows.String[1].strokeWidth=Infinity;", "rows.String[1].rotation=1e12;",
+    "rows.String[1].reverseExpansion=-0;", "rows.String[1].reverseExpansion=1e12;",
+    "Object.defineProperty(rows.String[1],'value',{get(){getterReads++;throw new Error('ACCESSOR');}});",
+    "Object.setPrototypeOf(rows.String[1],{value:'inherited'});delete rows.String[1].value;",
+    "rows.String[1].globalIndex=rows.String[0].globalIndex;", "delete rows.String[1];",
+    "rows.String=Array.from({length:257},(_,i)=>({...rows.String[0],globalIndex:'string-'+i}));"];
+  for (const beforeChild of malformed) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, beforeChild);
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
+  }
+});
+
+void test("current String selection retains complete-family scalar stability and response byte bounds", async () => {
+  const input = inputFor("eda.pcb_PrimitiveString.get", ["string-b"]);
+  const changes = ["rows.String[1].value+='changed';", "rows.String[1].fontFamily='changed';", "rows.String[1].fontSize+=1;",
+    "rows.String[1].strokeWidth+=1;", "rows.String[1].origin=1;", "rows.String[1].rotation+=1;",
+    "rows.String[1].reverse=!rows.String[1].reverse;", "rows.String[1].reverseExpansion+=1;", "rows.String[1].mirror=!rows.String[1].mirror;",
+    "rows.String[1].position.x+=1;", "rows.String[1].position.y+=1;", "rows.String[1].layerId=3;", "rows.String[1].locked=false;", "rows.String.reverse();"];
+  for (const change of changes) {
+    const fixture = environment({ input, afterCall: `if(topic==='pcb/extensionAPI/string-getAll'&&dataReads===2){${change}}` });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, change);
+    assert.equal(fixture.evaluateChild("dataReads"), 2);
+  }
+  const oversized = environment({ input, beforeChild: "rows.String=Array.from({length:7},(_,i)=>({...rows.String[0],globalIndex:i===0?'string-b':'string-'+i,value:'x'.repeat(65536)}));" });
+  await assert.rejects(oversized.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(oversized.evaluateChild("dataReads"), 1);
+  const escapedEnvelope = environment({ input, beforeChild: "for(const row of rows.String)row.value=String.fromCharCode(34).repeat(65536);" });
+  await assert.rejects(escapedEnvelope.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(escapedEnvelope.evaluateChild("dataReads"), 2);
+  const missing = environment({ input: inputFor("eda.pcb_PrimitiveString.get", ["component-attribute"]) });
+  await assert.rejects(missing.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(missing.evaluateChild("dataReads"), 2);
+});
+
 void test("current geometry explicit IDs return exact caller order with distinct observed and returned counts", async () => {
   const cases = [["eda.pcb_PrimitiveLine.get", ["line-a", "line-b"]], ["eda.pcb_PrimitiveArc.get", ["arc-a"]],
     ["eda.pcb_PrimitiveVia.get", ["via-a"]], ["eda.pcb_PrimitiveComponent.get", ["component-a", "component-b"]],
-    ["eda.pcb_PrimitivePad.get", ["pad-a", "pad-b"]]] as const;
+    ["eda.pcb_PrimitivePad.get", ["pad-a", "pad-b"]], ["eda.pcb_PrimitiveString.get", ["string-a", "string-b"]]] as const;
   for (const [method, primitiveIds] of cases) {
     const input = inputFor(method, [...primitiveIds]);
     const fixture = environment({ input, beforeChild: "rows.Via[0].center._hashed=7;rows.Component[0].position._hashed=8;rows.Pad[0].center._hashed=9;" });

@@ -8,9 +8,9 @@ export const CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
 export const CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
 export const CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
 const collectionMethods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
-  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll"] as const;
+  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll"] as const;
 const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get", "eda.pcb_PrimitiveVia.get",
-  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get"] as const;
+  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get"] as const;
 const componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
 const methods = [...collectionMethods, ...selectedMethods, componentPadsMethod] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
@@ -53,6 +53,10 @@ const componentSchema = z.object({ ...identity, primitiveType: z.literal("Compon
   x: numberSchema, y: numberSchema, rotation: numberSchema, designator: boundedText.optional(), name: boundedText.optional(),
   manufacturer: boundedText.optional(), manufacturerPart: boundedText.optional(), supplier: boundedText.optional(),
   supplierPart: boundedText.optional() }).strict();
+const stringSchema = z.object({ ...identity, primitiveType: z.literal("String"), layer: layerSchema,
+  x: numberSchema, y: numberSchema, text: z.string().max(65_536), fontFamily: boundedText,
+  fontSize: numberSchema, lineWidth: numberSchema, alignMode: z.number().int().min(1).max(9),
+  rotation: numberSchema, reverse: z.boolean(), expansion: numberSchema, mirror: z.boolean() }).strict();
 const padSchema = z.object({ ...base, primitiveType: z.literal("Pad"), layer: z.union([z.literal(1), z.literal(2), z.literal(12)]),
   padNumber: boundedText, x: numberSchema, y: numberSchema, rotation: numberSchema, metallization: z.boolean(),
   padType: z.union([z.literal(0), z.literal(1), z.literal(2)]), hole: holeSchema,
@@ -67,7 +71,7 @@ export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
 const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry-observation"), target: targetSchema,
-  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   samples: z.literal(2), implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false),
   persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
 export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
@@ -88,16 +92,17 @@ const limitations = [
   "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
   "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
   "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
+  "String is the PCB text family, not pcb_PrimitiveText. Native string-getAll excludes views with a native parent, so get is limited to that same observed family and does not cover component attributes or inherited text. DTOs retain raw text and fontFamily, layer, placement, fontSize, lineWidth, alignMode 1..9, degree rotation, reverse, expansion and mirror. Native internal distances are multiplied by 10 to mil; rotation is multiplied by 180 then divided by Math.PI, matching the installed public mapper without defaults or coercion. Empty text/font names remain empty; null or undefined projected scalars refuse. Text has no net field. Raw value is not rendered text; key/show flags, color, outlines, font cache, positionIsNull and source ownership are omitted and not compared. Existing font caches are read by the native serializer, without loading fonts or refreshing geometry.",
   "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
   "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
   "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
   "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
-  "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+  "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily string, 65536 UTF-16 units per String text, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
   "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation.",
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" {
+export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -110,6 +115,8 @@ export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "L
     case "eda.pcb_PrimitivePad.getAll":
     case "eda.pcb_PrimitivePad.get":
     case componentPadsMethod: { return "Pad"; }
+    case "eda.pcb_PrimitiveString.getAll":
+    case "eda.pcb_PrimitiveString.get": { return "String"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }

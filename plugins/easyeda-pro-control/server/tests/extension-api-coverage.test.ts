@@ -278,6 +278,28 @@ void test("explicit-ID PCB object coverage advertises complete narrowed source D
     assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /1–256 unique IDs/u);
   }
 });
+
+void test("current PCB String coverage exposes bounded parentless-view read equivalents without writer authority", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const method of ["get", "getAll", "getAllPrimitiveId"]) {
+    const entry = rows.get(`eda.pcb_PrimitiveString.${method}`); assert.ok(entry);
+    const identitiesOnly = method === "getAllPrimitiveId";
+    const route = entry.routes.find((candidate) => candidate.tool === (identitiesOnly ? "easyeda_control_pcb_identities" : "easyeda_control_pcb_geometry"));
+    assert.ok(route); assert.equal(route.implementation, "native-task-equivalent");
+    assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(entry.completeDeclaredContractSupported, false); assert.equal(entry.currentGenerationLiveValidation, "not-recorded");
+    for (const text of ["two complete matching ordered samples", "excludes parented views", "No complete source ownership", "no public wrapper or SDK constructor"]) {
+      assert.ok(route.scope.includes(text));
+    }
+    if (identitiesOnly) { assert.match(route.scope, /Only globalIndex/u); assert.match(route.scope, /Line\/Arc\/Via only/u); }
+    else {
+      for (const text of ["distances multiply by10 to mil", "rotation multiplies by180 then divides by Math.PI", "No defaults/coercion", "Full-family bounds/stability"]) {
+        assert.ok(route.scope.includes(text));
+      }
+      if (method === "get") { assert.match(route.scope, /refuses any unavailable ID/u); }
+    }
+  }
+});
 void test("five reviewed empty or constant-false methods remain omitted with concrete implementation reasons", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["sch_Document.navigateToCoordinates", "sch_Document.navigateToRegion", "pcb_PrimitiveAttribute.create", "pcb_PrimitivePoured.create", "pcb_PrimitivePoured.modify"]) {

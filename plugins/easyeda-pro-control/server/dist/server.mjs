@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a12a0e09b5d10b8b3479633de257b219942e80bf990c1c9edd0760cbe1f2d041";
+const __easyedaBundlePairId = "bb202b1eaf5b6868789a264b79dacef079ab0ce608e68b69554db288c15acd99";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -11332,11 +11332,11 @@ function _stringbool(Classes, _params) {
   const _Codec = Classes.Codec ?? $ZodCodec;
   const _Boolean = Classes.Boolean ?? $ZodBoolean;
   const _String = Classes.String ?? $ZodString;
-  const stringSchema = new _String({ type: "string", error: params.error });
+  const stringSchema2 = new _String({ type: "string", error: params.error });
   const booleanSchema = new _Boolean({ type: "boolean", error: params.error });
   const codec2 = new _Codec({
     type: "pipe",
-    in: stringSchema,
+    in: stringSchema2,
     out: booleanSchema,
     transform: ((input, payload) => {
       let data5 = input;
@@ -14479,67 +14479,67 @@ function convertBaseSchema(schema2, ctx) {
   let zodSchema;
   switch (type2) {
     case "string": {
-      let stringSchema = z.string();
+      let stringSchema2 = z.string();
       if (schema2.format) {
         const format = schema2.format;
         if (format === "email") {
-          stringSchema = stringSchema.check(z.email());
+          stringSchema2 = stringSchema2.check(z.email());
         } else if (format === "uri" || format === "uri-reference") {
-          stringSchema = stringSchema.check(z.url());
+          stringSchema2 = stringSchema2.check(z.url());
         } else if (format === "uuid" || format === "guid") {
-          stringSchema = stringSchema.check(z.uuid());
+          stringSchema2 = stringSchema2.check(z.uuid());
         } else if (format === "date-time") {
-          stringSchema = stringSchema.check(z.iso.datetime());
+          stringSchema2 = stringSchema2.check(z.iso.datetime());
         } else if (format === "date") {
-          stringSchema = stringSchema.check(z.iso.date());
+          stringSchema2 = stringSchema2.check(z.iso.date());
         } else if (format === "time") {
-          stringSchema = stringSchema.check(z.iso.time());
+          stringSchema2 = stringSchema2.check(z.iso.time());
         } else if (format === "duration") {
-          stringSchema = stringSchema.check(z.iso.duration());
+          stringSchema2 = stringSchema2.check(z.iso.duration());
         } else if (format === "ipv4") {
-          stringSchema = stringSchema.check(z.ipv4());
+          stringSchema2 = stringSchema2.check(z.ipv4());
         } else if (format === "ipv6") {
-          stringSchema = stringSchema.check(z.ipv6());
+          stringSchema2 = stringSchema2.check(z.ipv6());
         } else if (format === "mac") {
-          stringSchema = stringSchema.check(z.mac());
+          stringSchema2 = stringSchema2.check(z.mac());
         } else if (format === "cidr") {
-          stringSchema = stringSchema.check(z.cidrv4());
+          stringSchema2 = stringSchema2.check(z.cidrv4());
         } else if (format === "cidr-v6") {
-          stringSchema = stringSchema.check(z.cidrv6());
+          stringSchema2 = stringSchema2.check(z.cidrv6());
         } else if (format === "base64") {
-          stringSchema = stringSchema.check(z.base64());
+          stringSchema2 = stringSchema2.check(z.base64());
         } else if (format === "base64url") {
-          stringSchema = stringSchema.check(z.base64url());
+          stringSchema2 = stringSchema2.check(z.base64url());
         } else if (format === "e164") {
-          stringSchema = stringSchema.check(z.e164());
+          stringSchema2 = stringSchema2.check(z.e164());
         } else if (format === "jwt") {
-          stringSchema = stringSchema.check(z.jwt());
+          stringSchema2 = stringSchema2.check(z.jwt());
         } else if (format === "emoji") {
-          stringSchema = stringSchema.check(z.emoji());
+          stringSchema2 = stringSchema2.check(z.emoji());
         } else if (format === "nanoid") {
-          stringSchema = stringSchema.check(z.nanoid());
+          stringSchema2 = stringSchema2.check(z.nanoid());
         } else if (format === "cuid") {
-          stringSchema = stringSchema.check(z.cuid());
+          stringSchema2 = stringSchema2.check(z.cuid());
         } else if (format === "cuid2") {
-          stringSchema = stringSchema.check(z.cuid2());
+          stringSchema2 = stringSchema2.check(z.cuid2());
         } else if (format === "ulid") {
-          stringSchema = stringSchema.check(z.ulid());
+          stringSchema2 = stringSchema2.check(z.ulid());
         } else if (format === "xid") {
-          stringSchema = stringSchema.check(z.xid());
+          stringSchema2 = stringSchema2.check(z.xid());
         } else if (format === "ksuid") {
-          stringSchema = stringSchema.check(z.ksuid());
+          stringSchema2 = stringSchema2.check(z.ksuid());
         }
       }
       if (typeof schema2.minLength === "number") {
-        stringSchema = stringSchema.min(schema2.minLength);
+        stringSchema2 = stringSchema2.min(schema2.minLength);
       }
       if (typeof schema2.maxLength === "number") {
-        stringSchema = stringSchema.max(schema2.maxLength);
+        stringSchema2 = stringSchema2.max(schema2.maxLength);
       }
       if (schema2.pattern) {
-        stringSchema = stringSchema.regex(new RegExp(schema2.pattern));
+        stringSchema2 = stringSchema2.regex(new RegExp(schema2.pattern));
       }
-      zodSchema = stringSchema;
+      zodSchema = stringSchema2;
       break;
     }
     case "number":
@@ -39761,6 +39761,25 @@ var init_extension_api_coverage_routes = __esm({
           inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.${method5}`, includeSchemas: true } } } }
         } });
       }
+    }
+    for (const method5 of ["get", "getAll", "getAllPrimitiveId"]) {
+      const identitiesOnly = method5 === "getAllPrimitiveId";
+      const adapter = identitiesOnly ? "current-pcb-identities" : "current-pcb-geometry";
+      groups.push({ namespace: "pcb_PrimitiveString", methods: [method5], route: {
+        tool: identitiesOnly ? "easyeda_control_pcb_identities" : "easyeda_control_pcb_geometry",
+        selector: `eda.pcb_PrimitiveString.${method5}`,
+        implementation: "native-task-equivalent",
+        scope: `Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. ${identitiesOnly ? "Empty arguments only. Returns at most 20000 distinct bounded IDs, with 393216-byte evidence limit. Only globalIndex leaves the adapter; text, font and geometry are not read by its projection. Positive generic type lookup remains Line/Arc/Via only." : `Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. ${method5 === "get" ? "Accepts only1..256 distinct primitiveIds in an array, returns caller order and refuses any unavailable ID. No scalar get or missing-ID skipping." : "Empty arguments only; native family order is preserved."}`}`,
+        source: [`${adapter}.ts`, `${adapter}-program.ts`, `${adapter}-runtime.ts`, "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+        tests: [`${adapter}.test.ts`, ...identitiesOnly ? [] : ["current-pcb-geometry-registration.test.ts"]],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
+          action: identitiesOnly ? "pcb-identities" : "pcb-geometry",
+          query: { method: `eda.pcb_PrimitiveString.${method5}`, includeSchemas: true }
+        } } }
+      } });
     }
     groups.push({ namespace: "lib_Symbol", methods: ["get"], route: {
       tool: "easyeda_control_project_symbol",
@@ -95922,6 +95941,9 @@ function currentPcbIdentityFamilies(request6) {
     case "eda.pcb_PrimitivePad.getAllPrimitiveId": {
       return ["Pad"];
     }
+    case "eda.pcb_PrimitiveString.getAllPrimitiveId": {
+      return ["String"];
+    }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: {
       return ["Line", "Arc", "Via"];
     }
@@ -96035,12 +96057,13 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_PrimitiveArc.getAllPrimitiveId",
       "eda.pcb_PrimitiveVia.getAllPrimitiveId",
       "eda.pcb_PrimitiveComponent.getAllPrimitiveId",
-      "eda.pcb_PrimitivePad.getAllPrimitiveId"
+      "eda.pcb_PrimitivePad.getAllPrimitiveId",
+      "eda.pcb_PrimitiveString.getAllPrimitiveId"
     ];
     methods2 = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD];
     targetSchema7 = currentPcbLayersRequestSchema.shape.target;
     idSchema2 = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
-    families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad"];
+    families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String"];
     currentPcbIdentitiesRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.enum(collectionMethods), arguments: external_exports.object({}).strict(), target: targetSchema7 }).strict(),
       external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema2 }).strict(), target: targetSchema7 }).strict()
@@ -96062,6 +96085,7 @@ var init_current_pcb_identities = __esm({
     limitations10 = [
       "Exact active ordinary project-owned type-3 PCB only. The retained frame and local native receiver are rechecked around every await; native tab/type identity brackets each sample. This is not an atomic lock or proof against switching away and back between observations.",
       "Selected IDs preserve the native selection array. Line, Arc, Via, Component and Pad IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made. Pad IDs do not distinguish free pads from component pads or prove parent associations.",
+      "String identifies PCB text and preserves the native string-getAll order, excluding views with a native parent. Component attributes and inherited text are outside that family. This filter does not establish complete source ownership or saved membership. The native serializer reads existing font caches, but this adapter copies only globalIndex and never returns text, font, color or geometry.",
       "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
       "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
       "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
@@ -96096,6 +96120,10 @@ function currentPcbGeometryFamily(request6) {
     case "eda.pcb_PrimitivePad.get":
     case componentPadsMethod: {
       return "Pad";
+    }
+    case "eda.pcb_PrimitiveString.getAll":
+    case "eda.pcb_PrimitiveString.get": {
+      return "String";
     }
     default: {
       throw new Error("Unsupported current PCB geometry method.");
@@ -96186,7 +96214,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations11]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema8, numberSchema, layerSchema2, boundedText4, idSchema3, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity28, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations11;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema8, numberSchema, layerSchema2, boundedText4, idSchema3, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity28, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, stringSchema, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations11;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -96202,14 +96230,16 @@ var init_current_pcb_geometry = __esm({
       "eda.pcb_PrimitiveArc.getAll",
       "eda.pcb_PrimitiveVia.getAll",
       "eda.pcb_PrimitiveComponent.getAll",
-      "eda.pcb_PrimitivePad.getAll"
+      "eda.pcb_PrimitivePad.getAll",
+      "eda.pcb_PrimitiveString.getAll"
     ];
     selectedMethods = [
       "eda.pcb_PrimitiveLine.get",
       "eda.pcb_PrimitiveArc.get",
       "eda.pcb_PrimitiveVia.get",
       "eda.pcb_PrimitiveComponent.get",
-      "eda.pcb_PrimitivePad.get"
+      "eda.pcb_PrimitivePad.get",
+      "eda.pcb_PrimitiveString.get"
     ];
     componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
     methods3 = [...collectionMethods2, ...selectedMethods, componentPadsMethod];
@@ -96292,6 +96322,22 @@ var init_current_pcb_geometry = __esm({
       supplier: boundedText4.optional(),
       supplierPart: boundedText4.optional()
     }).strict();
+    stringSchema = external_exports.object({
+      ...identity28,
+      primitiveType: external_exports.literal("String"),
+      layer: layerSchema2,
+      x: numberSchema,
+      y: numberSchema,
+      text: external_exports.string().max(65536),
+      fontFamily: boundedText4,
+      fontSize: numberSchema,
+      lineWidth: numberSchema,
+      alignMode: external_exports.number().int().min(1).max(9),
+      rotation: numberSchema,
+      reverse: external_exports.boolean(),
+      expansion: numberSchema,
+      mirror: external_exports.boolean()
+    }).strict();
     padSchema = external_exports.object({
       ...base3,
       primitiveType: external_exports.literal("Pad"),
@@ -96318,7 +96364,7 @@ var init_current_pcb_geometry = __esm({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-geometry-observation"),
       target: targetSchema8,
-      rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+      rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, stringSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
       samples: external_exports.literal(2),
       implementationKind: external_exports.literal("native-task-equivalent"),
       cadAuthority: external_exports.literal(false),
@@ -96347,11 +96393,12 @@ var init_current_pcb_geometry = __esm({
       "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
       "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
+      "String is the PCB text family, not pcb_PrimitiveText. Native string-getAll excludes views with a native parent, so get is limited to that same observed family and does not cover component attributes or inherited text. DTOs retain raw text and fontFamily, layer, placement, fontSize, lineWidth, alignMode 1..9, degree rotation, reverse, expansion and mirror. Native internal distances are multiplied by 10 to mil; rotation is multiplied by 180 then divided by Math.PI, matching the installed public mapper without defaults or coercion. Empty text/font names remain empty; null or undefined projected scalars refuse. Text has no net field. Raw value is not rendered text; key/show flags, color, outlines, font cache, positionIsNull and source ownership are omitted and not compared. Existing font caches are read by the native serializer, without loading fonts or refreshing geometry.",
       "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
       "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
       "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
       "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
-      "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily string, 65536 UTF-16 units per String text, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
       "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
   }
@@ -132075,7 +132122,8 @@ function buildCurrentPcbIdentitiesProgram(input) {
     Arc: "pcb/extensionAPI/arc-getAll",
     Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll",
-    Pad: "pcb/extensionAPI/pad-getAll"
+    Pad: "pcb/extensionAPI/pad-getAll",
+    String: "pcb/extensionAPI/string-getAll"
   };
   const reads = currentPcbIdentityFamilies(request6).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
   return `let timer,clear;
@@ -132234,7 +132282,8 @@ function buildCurrentPcbGeometryProgram(input) {
     Arc: "pcb/extensionAPI/arc-getAll",
     Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll",
-    Pad: "pcb/extensionAPI/pad-getAll"
+    Pad: "pcb/extensionAPI/pad-getAll",
+    String: "pcb/extensionAPI/string-getAll"
   };
   return `let timer,clear;
 try{
@@ -132344,6 +132393,15 @@ const copyRows=value=>{
   if(family==='Component'){
    const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
    rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation')),...componentMetadata(row)});continue;
+  }
+  // PCB217199c8@10397039 selects existing parentless views; yr.toJSON@7384285 retains internal units.
+  // API021d155b@1502811 scales these distances by 10 and radians by 180/PI. Never invoke SDK constructors with their defaults.
+  if(family==='String'){
+   const position=point(own(row,'position')),alignMode=integer(own(row,'origin'));if(alignMode<1||alignMode>9)bad();
+   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),text:text(own(row,'value'),65536),
+    fontFamily:text(own(row,'fontFamily'),1024),fontSize:num(num(own(row,'fontSize'))*10),lineWidth:num(num(own(row,'strokeWidth'))*10),
+    alignMode,rotation:num(num(own(row,'rotation'))*180/Math.PI),reverse:bool(own(row,'reverse')),
+    expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror'))});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){
@@ -135770,7 +135828,7 @@ var init_src = __esm({
       "easyeda_control_pcb_identities",
       {
         title: "Read selected and loaded PCB primitive identities",
-        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
+        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad/String IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbIdentitiesRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
@@ -135790,7 +135848,7 @@ var init_src = __esm({
       "easyeda_control_pcb_geometry",
       {
         title: "Read loaded PCB geometry and placement",
-        description: "Observe Line/Arc/Via geometry, Component metadata and Pad parameters on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. No SDK instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
+        description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters and parentless String text on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font and pose/style in mil/degrees; component attributes, rendered glyphs, color and ownership are excluded. No SDK instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
