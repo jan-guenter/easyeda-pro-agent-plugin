@@ -59,6 +59,12 @@ recompute it, not evidence that a freshly verified file became unsafe. Test a
 warm hit against changed bytes and sidecars, and measure connected latency
 separately before claiming a speedup.
 
+Parallel file hashing needs a shared bound across journal and phase batches,
+not a separate limit multiplied by each caller. Reserve before opening files,
+release after descriptor cleanup, and drain scheduled sibling checks on failure.
+Keep cold journal parsing and selected-result ordering deterministic. Tests
+should hold reads and closes independently to prove the limit and failure drain.
+
 ## Process-owning helper tests
 
 For an adapter that launches a native helper, distinguish the transport child's
@@ -83,6 +89,14 @@ post-edit snapshot, exclude both persistent upload-cache namespaces, and collect
 saved content in the newly admitted generation. Compare its final closed SQL
 inventory with the post-edit inventory. A failed write or partial snapshot must
 not receive a continuation, and a copied journal cannot reconstruct one.
+
+Reopened serialization can depend on native cache loading. Trace the cache
+producer and replay parser as well as the final serializer. On the pinned current
+worker, cached per-document history excludes EDIT_HEAD and may synthesize a
+different DOCHEAD user. Model exact supported alternatives from complete source;
+never ignore a differing field or change the persisted SQL actor. Report the
+matched serialization separately from observed cache provenance. A later model
+correction cannot turn a stopped original read into successful lifecycle evidence.
 
 For a disposable forward/inverse orchestrator, make continuation requests name
 the exact expected phase. A lost response must not turn a repeated request into

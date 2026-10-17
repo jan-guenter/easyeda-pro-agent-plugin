@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "34d43caa945fabd4ed6919370d43e37012ac1f70d95f15f5eccfaef9547f9c34";
+const __easyedaBundlePairId = "7cbac6087dc2782ad6ec96d878ce6ad6f64d176407e1507042e83990c2ba54d0";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -37011,6 +37011,25 @@ async function readManagedFile(path5, label = "Artifact") {
   }
 }
 async function hashManagedJsonFile(path5, label) {
+  if (activeOperationHashStreams < MAX_OPERATION_HASH_STREAMS) {
+    activeOperationHashStreams += 1;
+  } else {
+    const waiting = Promise.withResolvers();
+    pendingOperationHashStreams.push(waiting.resolve);
+    await waiting.promise;
+  }
+  try {
+    return await hashManagedJsonFileContents(path5, label);
+  } finally {
+    const releaseWaitingStream = pendingOperationHashStreams.shift();
+    if (releaseWaitingStream === void 0) {
+      activeOperationHashStreams -= 1;
+    } else {
+      releaseWaitingStream(true);
+    }
+  }
+}
+async function hashManagedJsonFileContents(path5, label) {
   const opened = await openSafeManagedFile(path5, label);
   try {
     const before = await opened.handle.stat();
@@ -38049,7 +38068,7 @@ function parseOperationJournal(operationId5, bytes2, previouslyValidated) {
   };
 }
 async function verifyOperationArtifacts(operationId5, artifacts) {
-  const concurrency = 4;
+  const concurrency = MAX_OPERATION_HASH_STREAMS;
   for (let offset3 = 0; offset3 < artifacts.length; offset3 += concurrency) {
     const results = await Promise.allSettled(artifacts.slice(offset3, offset3 + concurrency).map(async (descriptor10) => {
       const actual = await hashManagedJsonFile(descriptor10.path, "Operation phase artifact");
@@ -38288,40 +38307,51 @@ async function verifiedOperationProjection(operationId5, cache) {
 async function scanOperationProjections(select, cache) {
   const operationIds = await listOperationIds();
   const output = [];
-  for (const operationId5 of operationIds) {
-    let operation;
-    let cached2;
-    let currentValidation;
-    try {
-      cached2 = await verifiedOperationProjection(operationId5, cache);
-      if (cached2 === void 0) {
-        const loaded = await loadValidatedOperation(operationId5);
-        operation = loaded.operation;
-        currentValidation = loaded.validation;
+  for (let offset3 = 0; offset3 < operationIds.length; offset3 += MAX_OPERATION_HASH_STREAMS) {
+    const batch = operationIds.slice(offset3, offset3 + MAX_OPERATION_HASH_STREAMS);
+    const verified = await Promise.allSettled(batch.map((operationId5) => verifiedOperationProjection(operationId5, cache)));
+    for (const [index, operationId5] of batch.entries()) {
+      let operation;
+      let cached2;
+      let currentValidation;
+      try {
+        const result = verified[index];
+        if (result === void 0) {
+          throw new Error("Operation verification batch is incomplete.");
+        }
+        if (result.status === "rejected") {
+          throw toError(result.reason);
+        }
+        cached2 = result.value;
+        if (cached2 === void 0) {
+          const loaded = await loadValidatedOperation(operationId5);
+          operation = loaded.operation;
+          currentValidation = loaded.validation;
+        }
+      } catch (error51) {
+        const journalPath = join4(OPERATIONS_DIR, `${operationId5}.json`);
+        const message = errorMessage(error51);
+        operation = {
+          operationId: operationId5,
+          state: "journal-unreadable",
+          mutationState: "unknown",
+          hardStop: true,
+          mutationMayHaveOccurred: true,
+          journalPath,
+          lastError: {
+            name: errorName(error51).slice(0, 128),
+            message: message.length <= 2048 ? message : `${message.slice(0, 2047)}\u2026`
+          },
+          nextSafeAction: "Inspect and restore the named managed journal before any new mutation."
+        };
       }
-    } catch (error51) {
-      const journalPath = join4(OPERATIONS_DIR, `${operationId5}.json`);
-      const message = errorMessage(error51);
-      operation = {
-        operationId: operationId5,
-        state: "journal-unreadable",
-        mutationState: "unknown",
-        hardStop: true,
-        mutationMayHaveOccurred: true,
-        journalPath,
-        lastError: {
-          name: errorName(error51).slice(0, 128),
-          message: message.length <= 2048 ? message : `${message.slice(0, 2047)}\u2026`
-        },
-        nextSafeAction: "Inspect and restore the named managed journal before any new mutation."
-      };
-    }
-    const selected3 = operation === void 0 ? cached2?.value : select(operation);
-    if (cache !== void 0 && currentValidation !== void 0 && validatedOperationBytes.get(operationId5)?.bytesSha256 === currentValidation.bytesSha256) {
-      retainOperationProjection(cache, operationId5, currentValidation.bytesSha256, selected3);
-    }
-    if (selected3 !== void 0) {
-      output.push(selected3);
+      const selected3 = operation === void 0 ? cached2?.value : select(operation);
+      if (cache !== void 0 && currentValidation !== void 0 && validatedOperationBytes.get(operationId5)?.bytesSha256 === currentValidation.bytesSha256) {
+        retainOperationProjection(cache, operationId5, currentValidation.bytesSha256, selected3);
+      }
+      if (selected3 !== void 0) {
+        output.push(selected3);
+      }
     }
   }
   return output;
@@ -38437,7 +38467,7 @@ async function readArtifact(path5, offset3 = 0, length = 65536) {
 function controlDataDirectory() {
   return CONTROL_DATA_DIR;
 }
-var configuredControlDataDirectory, configuredHomeDirectory, CONTROL_DATA_DIR, OPERATIONS_DIR, BRIDGE_TOKEN_PATH, UPSTREAM_DATA_DIR, UPSTREAM_PUBLIC_ARTIFACT_DIR, BRIDGE_BUILD_DIR, FACADE_LEASE_PATH, EVIDENCE_INTEGRITY_MODEL, MAX_MANAGED_JSON_BYTES, MAX_OPERATION_CACHE_ENTRIES, MAX_OPERATION_PROOF_CACHE_BYTES, MAX_OPERATION_PROJECTION_CACHE_BYTES, MAX_OPERATION_PROJECTION_BYTES, retainedControlRoot, validatedOperationBytes, validatedOperationCacheBytes, scanOperationStates;
+var configuredControlDataDirectory, configuredHomeDirectory, CONTROL_DATA_DIR, OPERATIONS_DIR, BRIDGE_TOKEN_PATH, UPSTREAM_DATA_DIR, UPSTREAM_PUBLIC_ARTIFACT_DIR, BRIDGE_BUILD_DIR, FACADE_LEASE_PATH, EVIDENCE_INTEGRITY_MODEL, MAX_MANAGED_JSON_BYTES, MAX_OPERATION_CACHE_ENTRIES, MAX_OPERATION_PROOF_CACHE_BYTES, MAX_OPERATION_PROJECTION_CACHE_BYTES, MAX_OPERATION_PROJECTION_BYTES, MAX_OPERATION_HASH_STREAMS, activeOperationHashStreams, pendingOperationHashStreams, retainedControlRoot, validatedOperationBytes, validatedOperationCacheBytes, scanOperationStates;
 var init_artifacts = __esm({
   "server/src/artifacts.ts"() {
     init_core3();
@@ -38470,6 +38500,9 @@ var init_artifacts = __esm({
     MAX_OPERATION_PROOF_CACHE_BYTES = 4 * 1024 * 1024;
     MAX_OPERATION_PROJECTION_CACHE_BYTES = 1024 * 1024;
     MAX_OPERATION_PROJECTION_BYTES = 32 * 1024;
+    MAX_OPERATION_HASH_STREAMS = 4;
+    activeOperationHashStreams = 0;
+    pendingOperationHashStreams = [];
     validatedOperationBytes = /* @__PURE__ */ new Map();
     validatedOperationCacheBytes = 0;
     scanOperationStates = createOperationScanner((operation) => ({
@@ -40043,7 +40076,7 @@ var init_extension_api_coverage_routes = __esm({
       "easyeda_control_library",
       "library.symbol.modify",
       "native-task-equivalent",
-      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The current-version fixed compiler additionally checks immutable clock windows and exact live metadata but is private and unregistered; its lifecycle coordinator and disposable persistence validation remain unfinished.",
+      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version disposable lifecycle coordinator is implemented and exposed for unused-symbol validation with immutable clock windows and complete closed/reopened SQL checks. No accepted connected round trip is recorded; its ordinary forward-only route remains unregistered. This legacy route remains blocked.",
       ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts", "current-symbol-write-program.ts"],
       ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts", "current-symbol-write-program.test.ts"]
     );
@@ -72276,6 +72309,17 @@ function applyAtom(atoms, atom) {
   return selected3 && atom.type !== "ELE_PLACEHOLDER" && atom.type !== "META_PLACEHOLDER";
 }
 async function prepareSavedSymbolProjection(input) {
+  const descriptor10 = await prepareProjection(input, "raw");
+  need16(descriptor10.profile === "private.saved-symbol-getstr-projection.v1", "raw preparation profile differs");
+  return descriptor10;
+}
+async function prepareCurrentDocumentCacheSavedSymbolProjection(input) {
+  need16(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "document-cache editor version refused");
+  const descriptor10 = await prepareProjection(input, "current-document-cache");
+  need16(descriptor10.profile === "private.current-document-cache-saved-symbol-getstr-projection.v1", "document-cache preparation profile differs");
+  return descriptor10;
+}
+async function prepareProjection(input, strategy) {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
   need16(
     /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
@@ -72309,7 +72353,7 @@ async function prepareSavedSymbolProjection(input) {
   const atoms = /* @__PURE__ */ new Map();
   let maximum2 = 0, metadataTicket = 0, selected3, steps = 0;
   for (const chunk of chunks) {
-    let current4, edit;
+    let current4, documentCacheEdit, edit;
     const records2 = chunk.split("|\n");
     if (records2.at(-1) === "") {
       records2.pop();
@@ -72333,7 +72377,13 @@ async function prepareSavedSymbolProjection(input) {
           updateTime: current4["updateTime"]
         };
         if (current4["uuid"] === targetUuid) {
-          selected3 = applyHeader(current4, edit, header["ticket"], selected3);
+          documentCacheEdit ??= {
+            uuid: current4["uuid"],
+            username: isRecord(current4["user"]) ? current4["user"]["username"] : void 0,
+            nickname: isRecord(current4["user"]) ? current4["user"]["nickname"] : void 0,
+            updateTime: current4["updateTime"]
+          };
+          selected3 = applyHeader(current4, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected3);
         }
       } else if (current4?.["uuid"] === targetUuid) {
         const id9 = text18(header["id"]), type2 = text18(header["type"]);
@@ -72372,8 +72422,8 @@ async function prepareSavedSymbolProjection(input) {
       await yieldProofEventLoop();
     }
   }
-  const descriptor10 = Object.freeze({
-    profile: "private.saved-symbol-getstr-projection.v1",
+  need16(strategy === "raw" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  const common3 = {
     targetUuid,
     maximumTicket,
     rawHistorySha256: sha256Json(chunks.map((chunk) => digest3(chunk))),
@@ -72381,6 +72431,12 @@ async function prepareSavedSymbolProjection(input) {
     canvasRecords: canvas.length,
     executionAuthorized: false,
     producerBindingVerified: false
+  };
+  const descriptor10 = strategy === "raw" ? Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common3 }) : Object.freeze({
+    profile: "private.current-document-cache-saved-symbol-getstr-projection.v1",
+    ...common3,
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+    cacheBranchObserved: false
   });
   originals.set(descriptor10, { descriptor: descriptor10, header: selected3, metadata: metadata9, metadataTicket, currentEditVersion, canvas });
   return descriptor10;
@@ -72418,12 +72474,38 @@ function verifySavedSymbolContent(original2, observation2) {
     completionProved: false
   });
 }
-var originals, IGNORED;
+function verifyCurrentSavedSymbolProjectionAlternatives(raw, documentCache, observation2) {
+  const retained = originals.get(raw);
+  need16(retained !== void 0 && retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && raw.profile === "private.saved-symbol-getstr-projection.v1", "current original raw projection required");
+  if (documentCache !== void 0) {
+    const cached2 = originals.get(documentCache);
+    need16(
+      cached2 !== void 0 && documentCache.profile === "private.current-document-cache-saved-symbol-getstr-projection.v1" && cached2.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion && documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 && documentCache.canvasRecords === 0 && documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes && documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket && raw.canvasRecords === 0,
+      "document-cache alternative has different complete history"
+    );
+  }
+  need16(isRecord(observation2) && typeof observation2["workerClient"] === "string" && typeof observation2["content"] === "string", "native observation shape/identity differs");
+  const matched = observation2["content"] === expectedSavedSymbolContent(raw, observation2["workerClient"]) ? raw : documentCache;
+  need16(matched !== void 0, "native saved content differs from the complete raw-history projection");
+  return Object.freeze({
+    ...verifySavedSymbolContent(matched, observation2),
+    matchedProjection: matched === raw ? "complete-raw-history" : "current-document-cache",
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256,
+    cacheBranchObserved: false
+  });
+}
+var CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, originals, IGNORED;
 var init_saved_symbol_projection = __esm({
   "server/src/saved-symbol-projection.ts"() {
     init_core3();
     init_cooperative_proof();
     init_native_history();
+    CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION = Object.freeze({
+      relativePath: "pro-mgr/3.2.184.355087e9/js/project-worker.js",
+      bytes: 2181284,
+      sha256: "b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928",
+      editorVersion: "3.2.206"
+    });
     originals = /* @__PURE__ */ new WeakMap();
     IGNORED = /* @__PURE__ */ new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
   }
@@ -125663,6 +125745,8 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     startup: selectCurrentSymbolStartupExpectation(decoded.decoded.history)
   });
   need62(canonicalJson(request6.target) === canonicalJson(source4.writeInput.target) && canonicalJson(request6.expectedActor) === canonicalJson(source4.writeInput.expectedActor) && expectedDocumentEditVersion === "3.2.206");
+  const producer = CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION;
+  need62(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files.some((pin4) => pin4.relativePath === producer.relativePath && pin4.bytes === producer.bytes && pin4.sha256 === producer.sha256));
   const projection8 = await prepareSavedSymbolProjection({
     chunks: decoded.decoded.chunks,
     targetUuid: metadataPlan2.targetUuid,
@@ -125670,8 +125754,17 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     currentEditVersion: expectedDocumentEditVersion
   });
   current4();
+  const documentCacheProjection = projection8.canvasRecords === 0 ? await prepareCurrentDocumentCacheSavedSymbolProjection({
+    chunks: decoded.decoded.chunks,
+    targetUuid: metadataPlan2.targetUuid,
+    maximumTicket: expectedTicket,
+    currentEditVersion: expectedDocumentEditVersion
+  }) : void 0;
+  current4();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
+  const documentCacheProjectedContentBytes = documentCacheProjection === void 0 ? null : Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
   need62(projectedContentBytes > 0 && projectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
+  need62(documentCacheProjectedContentBytes === null || documentCacheProjectedContentBytes > 0 && documentCacheProjectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
   const body4 = {
     profile: "private.current-symbol-saved-source.v1",
     operationId: source4.operationId,
@@ -125682,6 +125775,9 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     rawHistoryBytes: projection8.rawHistoryBytes,
     projectedContentBytes,
     maximumTicket: expectedTicket,
+    documentCacheProjectedContentBytes,
+    workerSourceSha256: producer.sha256,
+    cacheBranchObserved: false,
     executionAuthorized: false,
     completionProved: false
   };
@@ -125694,7 +125790,8 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     text: canonicalJson(descriptor10),
     request: request6,
     requestText: canonicalJson(request6),
-    projection: projection8
+    projection: projection8,
+    documentCacheProjection
   });
   await revalidateCurrentSavedSymbolSource(descriptor10, engine2, continuation);
   current4();
@@ -125703,7 +125800,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
 function verifyCurrentSavedSymbolContent(value2, engine2, continuation, observation2) {
   const original2 = assertCurrentSavedSymbolSource(value2, engine2, continuation);
   return Object.freeze({
-    ...verifySavedSymbolContent(original2.projection, observation2),
+    ...verifyCurrentSavedSymbolProjectionAlternatives(original2.projection, original2.documentCacheProjection, observation2),
     sourceSha256: value2.sourceSha256,
     comparisonSha256: value2.comparisonSha256
   });
@@ -125712,6 +125809,7 @@ var issued11;
 var init_current_symbol_saved_source = __esm({
   "server/src/current-symbol-saved-source.ts"() {
     init_core3();
+    init_current_disposable_open_profile();
     init_current_symbol_baseline_copy();
     init_current_symbol_transaction_clock();
     init_current_symbol_writer_runtime();

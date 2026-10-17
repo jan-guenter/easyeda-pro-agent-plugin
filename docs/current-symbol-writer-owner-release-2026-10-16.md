@@ -180,7 +180,7 @@ Lost close acknowledgment does not permit another close attempt. This cleanup
 does not issue copy authority, a snapshot or saved-state proof; uncertain
 capture acquisition remains explicit.
 
-The current source review confirms the projection against WORKER
+The original source review traced the serializer against WORKER
 `b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`
 and MGR `005584e02cd9b2d49fdb387b2f997c1c8d3f88b0c48a7531c8097c483ed0bd2e`.
 WORKER symbol `getStr` at1939611 builds metadata and current-version DOCHEAD,
@@ -190,6 +190,13 @@ edit version. MGR at2068665 delegates the exact symbol/project IDs. Offsets are
 JavaScript string offsets in the pinned installed sources, read without
 execution. The compression path can clean in-memory caches; no global-idle or
 background-upload completion claim follows from matching content.
+
+The later072500 run exposed a loading-path distinction before that serializer:
+per-document cached history omits EDIT_HEAD and can synthesize a different
+DOCHEAD user. Its forward SQL proof passed, but saved-content verification
+failed and cleanup was terminal. See the [current cache-replay correction and
+limits](current-symbol-clock-lifetime-2026-10-17.md). The original raw-history
+model alone does not cover this loading path.
 
 This remains an unregistered private workflow. Actual140000 was independently
 admitted after restart, and its main CI passed. No new live EasyEDA lifecycle,

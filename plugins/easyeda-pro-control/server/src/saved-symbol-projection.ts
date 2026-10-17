@@ -16,7 +16,21 @@ export interface SavedSymbolProjection {
   readonly rawHistoryBytes: number; readonly canvasRecords: number;
   readonly executionAuthorized: false; readonly producerBindingVerified: false;
 }
-interface Prepared { readonly descriptor: SavedSymbolProjection; readonly header: Header; readonly metadata: ObjectData; readonly metadataTicket: number;
+export const CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION = Object.freeze({
+  relativePath: "pro-mgr/3.2.184.355087e9/js/project-worker.js", bytes: 2_181_284,
+  sha256: "b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928",
+  editorVersion: "3.2.206",
+} as const);
+export interface CurrentDocumentCacheSavedSymbolProjection extends Omit<SavedSymbolProjection, "profile"> {
+  readonly profile: "private.current-document-cache-saved-symbol-getstr-projection.v1";
+  readonly workerSourceSha256: typeof CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256;
+  readonly cacheBranchObserved: false;
+}
+type Projection = SavedSymbolProjection | CurrentDocumentCacheSavedSymbolProjection;
+interface ProjectionInput {
+  readonly chunks: readonly string[]; readonly targetUuid: string; readonly maximumTicket: number; readonly currentEditVersion: string | null;
+}
+interface Prepared { readonly descriptor: Projection; readonly header: Header; readonly metadata: ObjectData; readonly metadataTicket: number;
   readonly currentEditVersion: string | null; readonly canvas: readonly string[] }
 const originals = new WeakMap<object, Prepared>();
 const IGNORED = new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
@@ -73,6 +87,27 @@ function applyAtom(atoms: Map<string, AtomChain>, atom: Atom): boolean {
 export async function prepareSavedSymbolProjection(input: Readonly<{
   chunks: readonly string[]; targetUuid: string; maximumTicket: number; currentEditVersion: string | null;
 }>): Promise<SavedSymbolProjection> {
+  const descriptor = await prepareProjection(input, "raw");
+  need(descriptor.profile === "private.saved-symbol-getstr-projection.v1", "raw preparation profile differs");
+  return descriptor;
+}
+
+/** Current flowParseFull caches each document's original records without EDIT_HEAD.
+ * Pinned worker byte offsets: flowParseFull 239200, onDocHead 275156, getStr 1939611.
+ * Replaying that fragment synthesizes its actor from its first target DOCHEAD,
+ * not a preceding peer or original edit actor. Explicit header users survive.
+ * The worker's 100 MiB cache split exceeds our complete 8 MiB history bound.
+ * This models one possible producer path; it does not observe which path ran.
+ * Canvas cache production is deliberately not admitted by this narrow profile.
+ */
+export async function prepareCurrentDocumentCacheSavedSymbolProjection(input: ProjectionInput): Promise<CurrentDocumentCacheSavedSymbolProjection> {
+  need(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "document-cache editor version refused");
+  const descriptor = await prepareProjection(input, "current-document-cache");
+  need(descriptor.profile === "private.current-document-cache-saved-symbol-getstr-projection.v1", "document-cache preparation profile differs");
+  return descriptor;
+}
+
+async function prepareProjection(input: ProjectionInput, strategy: "raw" | "current-document-cache"): Promise<Projection> {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
   need(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
     "target/ticket input refused");
@@ -98,7 +133,7 @@ export async function prepareSavedSymbolProjection(input: Readonly<{
   const atoms = new Map<string, AtomChain>();
   let maximum = 0, metadataTicket = 0, selected: Header | undefined, steps = 0;
   for (const chunk of chunks) {
-    let current: ObjectData | undefined, edit: ObjectData | undefined;
+    let current: ObjectData | undefined, documentCacheEdit: ObjectData | undefined, edit: ObjectData | undefined;
     const records = chunk.split("|\n"); if (records.at(-1) === "") { records.pop(); }
     for (const raw of records) {
       need(Buffer.byteLength(raw) <= 262_144, "individual raw record exceeds the cooperative proof bound");
@@ -111,7 +146,9 @@ export async function prepareSavedSymbolProjection(input: Readonly<{
         edit ??= { uuid: current["uuid"], username: isRecord(current["user"]) ? current["user"]["username"] : undefined,
           nickname: isRecord(current["user"]) ? current["user"]["nickname"] : undefined, updateTime: current["updateTime"] };
         if (current["uuid"] === targetUuid) {
-          selected = applyHeader(current, edit, header["ticket"], selected);
+          documentCacheEdit ??= { uuid: current["uuid"], username: isRecord(current["user"]) ? current["user"]["username"] : undefined,
+            nickname: isRecord(current["user"]) ? current["user"]["nickname"] : undefined, updateTime: current["updateTime"] };
+          selected = applyHeader(current, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected);
         }
       } else if (current?.["uuid"] === targetUuid) {
         const id = text(header["id"]), type = text(header["type"]);
@@ -141,13 +178,19 @@ export async function prepareSavedSymbolProjection(input: Readonly<{
     if (!IGNORED.has(atom.type)) { canvas.push(line(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain.first.ticket ? undefined : chain.first.ticket)); }
     steps += 1; if (steps % 128 === 0) { await yieldProofEventLoop(); }
   }
-  const descriptor: SavedSymbolProjection = Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", targetUuid, maximumTicket,
-    rawHistorySha256: sha256Json(chunks.map((chunk) => digest(chunk))), rawHistoryBytes, canvasRecords: canvas.length, executionAuthorized: false, producerBindingVerified: false });
+  need(strategy === "raw" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  const common = { targetUuid, maximumTicket,
+    rawHistorySha256: sha256Json(chunks.map((chunk) => digest(chunk))), rawHistoryBytes, canvasRecords: canvas.length,
+    executionAuthorized: false, producerBindingVerified: false } as const;
+  const descriptor: Projection = strategy === "raw"
+    ? Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common })
+    : Object.freeze({ profile: "private.current-document-cache-saved-symbol-getstr-projection.v1", ...common,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
   originals.set(descriptor, { descriptor, header: selected, metadata, metadataTicket, currentEditVersion, canvas });
   return descriptor;
 }
 
-export function expectedSavedSymbolContent(original: SavedSymbolProjection, currentWorkerClient: string): string {
+export function expectedSavedSymbolContent(original: Projection, currentWorkerClient: string): string {
   const retained = originals.get(original);
   need(retained !== undefined && canonicalJson(original) === canonicalJson(retained.descriptor), "original pure projection required");
   need(/^[a-f0-9]{16}$/u.test(currentWorkerClient), "verification worker client refused");
@@ -159,7 +202,7 @@ export function expectedSavedSymbolContent(original: SavedSymbolProjection, curr
 }
 
 /** Exact relation only. A matching caller-supplied string grants no live read authority. */
-export function verifySavedSymbolContent(original: SavedSymbolProjection, observation: unknown): Readonly<Record<string, unknown>> {
+export function verifySavedSymbolContent(original: Projection, observation: unknown): Readonly<Record<string, unknown>> {
   need(isRecord(observation) && observation["profile"] === "private.saved-symbol-content-observation.v1" && observation["targetUuid"] === original.targetUuid &&
     observation["maximumTicket"] === original.maximumTicket && typeof observation["workerClient"] === "string" && typeof observation["content"] === "string",
   "native observation shape/identity differs");
@@ -167,4 +210,29 @@ export function verifySavedSymbolContent(original: SavedSymbolProjection, observ
   need(observation["content"] === expected, "native saved content differs from the complete raw-history projection");
   return Object.freeze({ profile: "private.saved-symbol-content-relation.v1", targetUuid: original.targetUuid, rawHistorySha256: original.rawHistorySha256,
     contentSha256: digest(expected), contentBytes: Buffer.byteLength(expected), exactContent: true, producerBindingVerified: false, executionAuthorized: false, completionProved: false });
+}
+
+/** Two exact source-derived strings, never field normalization. A match identifies
+ * the modeled projection, not an observed cache branch. Raw wins identical ties.
+ */
+export function verifyCurrentSavedSymbolProjectionAlternatives(raw: SavedSymbolProjection,
+  documentCache: CurrentDocumentCacheSavedSymbolProjection | undefined, observation: unknown): Readonly<Record<string, unknown>> {
+  const retained = originals.get(raw);
+  need(retained !== undefined && retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion &&
+    raw.profile === "private.saved-symbol-getstr-projection.v1", "current original raw projection required");
+  if (documentCache !== undefined) {
+    const cached = originals.get(documentCache);
+    need(cached !== undefined && documentCache.profile === "private.current-document-cache-saved-symbol-getstr-projection.v1" &&
+      cached.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion &&
+      documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 && documentCache.canvasRecords === 0 &&
+      documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes &&
+      documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket && raw.canvasRecords === 0,
+    "document-cache alternative has different complete history");
+  }
+  need(isRecord(observation) && typeof observation["workerClient"] === "string" && typeof observation["content"] === "string", "native observation shape/identity differs");
+  const matched = observation["content"] === expectedSavedSymbolContent(raw, observation["workerClient"]) ? raw : documentCache;
+  need(matched !== undefined, "native saved content differs from the complete raw-history projection");
+  return Object.freeze({ ...verifySavedSymbolContent(matched, observation),
+    matchedProjection: matched === raw ? "complete-raw-history" : "current-document-cache",
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
 }

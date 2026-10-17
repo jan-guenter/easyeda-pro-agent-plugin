@@ -37,6 +37,17 @@ caller operation ID. A permanent operation-ID reservation prevents replay;
 validation target claims are not reused. Unsupported edits and failure recovery
 remain unavailable. Do not submit it as an alternative to a refused operation.
 
+The separate disposable lifecycle admits only symbols unreferenced by active
+schematic pages. Its current META-only saved-content check models both raw-history
+and document-cache serialization from the pinned producer. It compares the entire
+string exactly; the cache form is not permission to omit or normalize user fields.
+A matched form does not prove which cache branch ran. SQL actor identity remains
+independently checked, and nonempty-canvas cache replay is not admitted. A stopped
+verification is still a failed lifecycle even if closed SQL proves the intended
+metadata persisted. Close through its original owner; never retry, manually invert
+or issue Save to repair that result. Ordinary metadata execution stays unregistered
+until a complete new disposable forward/inverse lifecycle passes review.
+
 These eight operations are blocked before dispatch:
 
 - `library.symbol.create` and `library.symbol.modify`;

@@ -6,6 +6,181 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate090000: exact cache replay and bounded historical scans
+
+Preparing0.3.0+codex.20261017090000 on
+feature/current-symbol-unused-validation-20261017 from main89a4d4a.
+Current saved-content verification gains a separately pinned META-only document-
+cache replay candidate alongside the unchanged raw-history model. Both require
+exact complete-string equality; no user fields are ignored and SQL actor proof
+is unchanged. Matched serialization is not observed cache provenance. Nonempty
+canvas cache replay remains unsupported. The producer is pinned project-worker
+b849bd12; existing before/after live source admission still applies.
+
+Warm journal checks share four managed-file hash slots across journal and phase
+batches. Cold parsing/selection stays sequential, every used byte is freshly
+hashed, and failed batches drain started work. No measured connected speedup.
+Packaged control/extension guidance records the failure boundary, cache model,
+unsupported scope and no-replay rule. Public catalog remains16tools/seven skills;
+ordinary metadata remains unregistered and broader writers remain blocked.
+
+Root and independent review accept both fixes. The cache projection passes52
+focused tests/types/strict lint; scanner43focusedtests and independent review
+pass. One root-reviewed read-only diagnostic reconstructed all44historyrows/
+48chunks from retained copies only: raw749a050d remains exact; old projection
+459bytes/275deda6 stays distinct, new cache415bytes/0c0cc0c3 matches every native
+byte. All inputs rehashed unchanged; no source project read or authority issued.
+That diagnostic does not revive072500 or prove which cache branch ran.
+
+Frozen396sources8dbf6029d671a94d267edbd9b90564e200f3112072f6375e4eca5cdac40a8968,
+runtime3 fc57440d028c0ca01b97f4dee3ad604b90ce6b983eb2fc874ced6a4fe6ee2389,
+manifest59033b7a04479b4538a6daa96f75d4d9526314870f5a7716dfc7d1368c1278e3.
+External compatibility fields and coreedf3e026 are unchanged. Fresh npmci passes
+151packages/zerovulnerabilities. Full existing release verification is running
+under /tmp/easyeda-090000-release-rTCib9vz; CI, publication and official marketplace
+installation remain pending. Existing-install dependency checks pass:151 registry signatures/40attestations/zero
+vulnerabilities. Logs are privately retained under
+/tmp/easyeda-release-dependency-checks-20261017-Oas6vJop. No new live call after
+terminal072500 cleanup, and no production-design or installed-cache change.
+
+### Live072500: forward persisted; saved-content mismatch; cleanup terminal
+
+Fresh installed072500 admission passes independently: sole facade1052908,
+parent1051238/startTicks19944543, exactNode24.18.0/core0, original965362 absent.
+All1,285 installed files/modes,396sources,three runtime files and18external
+runtime pins match the delivered hashes below. MainCI39015112219 and
+Windows39015112159 both finished successfully on89a4d4a. No installed-cache
+edit, owner termination or production-design access.
+
+New operation IDs validation-072500-20261017-launch/open/baseline are consumed.
+Ordinary launch root23392/Job699f8f96d92e4a5fbefb949e089c1315 authenticated;
+open completed exact disposablePCB463c2770e47a25bc. New preparation checkpoint
+081128664Z is561152bytes/9b5700d1d9f30fbf5a6ec246f5016ec392a7b41c5c199774258c8135e55b25e1.
+Unused symbol23630514533a0345 has zero active-page references; independent
+complete18document/startup review accepts the scope. Sealed patch is
+EASYEDA_VALIDATE_072500_UNUSED_SYMBOL with description
+"Disposable unused-symbol metadata validation 072500." Preparation
+12f3dfc23b5557d46a1da6676bac5959f0b3b4db4bf3db596cebed1a2b3895c1.
+
+Baseline normal-close and retained termination/copy completed. Original ordinary
+launcher also records terminated with matching launchedSHA
+6c9703668f6df4bceddc9f5c0e42058902cc9096292015003913ae1222db80c8.
+Closed raw source153b93a5/598016bytes, logicalSQLb68935f9 and native05cd273e
+remain exact. Sole historical blocker is two active schematic pages. Scratch
+reference, replacement relaunch/admission/cache observation, acknowledged
+project-only opening and renderer clock observation all completed. Validation
+begin returned forward-write; that write was dispatched ONCE in functions52
+and succeeded with writeAcknowledged/postRecorded true and every original
+before/armed/after clock sample/reply retained. No failure/cleanup uncertainty.
+Forward normal-close, termination and full SQL comparison completed. Exact
+intended effect passed with afterSQL3edebd2d133929b5d188482a603d47ef7670306f45f5964ed73db5c62e66c328;
+independent35table/18document comparison preserves29tables/17peer documents.
+Target-only metadata and modeled history/structure bookkeeping are exact;
+newhead918cde6a2b124650b292f6265b6ccc63/row44/chunk48/ticket766.
+Verification launch/admission/cache exclusion/project-only open completed, but
+one saved-content read66 failed the exact raw-history projection relation.
+Native metadata has intended name/description; exported DOCHEAD.user is
+{uuid:targetSymbolUuid}. Root and independent source review isolate the sole
+outer DOCHEAD.user difference. Pinned project-worker b849bd12 per-document
+cache excludes EDIT_HEAD, so cache replay synthesizes its actor from DOCHEAD.
+The actual cache branch was not retained; this cause remains an inference.
+Do not accept a later diagnostic as the missing original successful read.
+
+Validation inspect67 returned only cleanup-close. Original-owner close68 and
+termination/snapshot/retirement69 completed; nextPhase stopped, failedPhase
+forward-verification-read, retired true, no capture cleanup uncertainty. Final
+complete reopenedSQL equals the postedit3edebd2d exactly. No inverse, explicit
+Save, restoration, replay or successful round-trip claim. EasyEDA is closed;
+current disposable file598016bytes/SHA
+1ae5d54bedb702dd694f4b129fa01aac7a9b19498b10183cc8729b87803981a4,
+no sidecars. All072500 IDs/stages are consumed and terminal; never replay them.
+The043703 failed operation remains terminal/unresolved and must not be replayed.
+
+Source-only bounded warm-journal hashing improvement on
+feature/current-symbol-unused-validation-20261017 passes43focusedtests/types/
+strict targetedlint and independent review. Main reviewed complete diff; fresh
+hashes and all guards remain. Connected performance has not been measured.
+The conditional ordinary forward-only draft passed83focusedtests/types/lint
+and source review, but MUST NOT ship after the failed live read. Its exact
+owned-path changes are retained in local stash
+ebe1b55d7a430ae2e3168e373e155957b582eff9 (18files including newtest), preserving
+the scanner fix, root documentation corrections and this record. Only the
+unreferenced-target limitation remains in current-symbol-operation.ts. The
+ordinary route is still unregistered. No loaded-runtime change.
+
+### Delivered072500: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261017072500` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR51 merged final testede1121d315902dc31454102086221cb3d4196c1a4 as
+main89a4d4acf7ade7f0c11d4c75291353db4842d4e9. Whole tree
+f55dd138d65847184c655e67067dcac12848bbcc and plugin tree
+b86866afd16752747436c42cad543e32aa311fb6 equal the tested payload exactly.
+All11 final PR checks passed: CI39014179273 and Windows39014179279.
+Independent finalCI log totals:10563facade tests/10558passes/fiveskips/zero
+failures, cancellations or todos across eight shards. CI bridge build passes
+28files;424tests is separately confirmed by the complete local bridge run.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/51#issuecomment-6231421058
+Independent source/release review accepted. Twelve focused startup/writer
+tests and all five corrected race tests pass. Initial local fullverify retained
+10554passes/fourskips/five stale test-only core-pin failures; both literals were
+corrected without changing assertions. Final exact-head CI, not a claimed clean
+local rerun, validates the complete corrected tree. Bridge separately passed
+424tests/28files. Whole types, strict type-aware lint, reproducible builds,
+compatibility/API inventory, package/repository/privacy and all seven official
+skill checks passed. Dependencies have151 verified signatures/40 attestations/
+zero reported vulnerabilities. Initial log
+/tmp/easyeda-072500-verify-9idFDakf/verify.log SHAbd49ad619e1645767776d7025e935cdb97d601cb54d54592f35163401ac099c9.
+
+Official marketplace upgrade under umask022 completed exit0/errors[]. CLI
+confirms installed/enabled072500; cached marketplace HEAD equals mergedmain.
+Root and independent inventories match all1,285files/25,805,151bytes,42directories0755,
+1,284files0644/one0755,seven skills and no extras/links. Inventory SHA
+37f53ccd200525a20ee83cdd9414ee7ad189283a52db255fb58fe557d997e9bc;
+source396 3720d20fc7ceb0783b27e838bf01c00c338d2a11691b69b2f86c198aec392afe;
+runtime3 706d558d775774a93c5247b66dbcded92d0518072b80590bd9c21b384eb4d154;
+manifestc92e996a53841dce784285b552d1046a96b9bd529b5c7a8c3a7fb763cbecb5aa.
+All external compatibility fields remain unchanged. New one-shot synthetic
+offline probe1047369 passed and exited0 through stdinEOF without signals or
+process adoption. Actual configured startup hands ambientNode26.11.1 to pinned
+Node24.18.0/core0, with no installed module ancestors, upstream child or nonstdio
+socket. Catalog16tools/seven skills; new unreferenced-target scope is disclosed,
+ordinary metadata actions remain rejected, exact discovery/schema checks pass.
+No live tool, actual profile or operation journal was used; synthetic profile
+unchanged/stderr0. Proof /tmp/easyeda-installed-release-072500-iY8vJSRw/proof.json
+5,571bytes SHAbe4d508f96d8ef57725a16336e93694003043735c6f97668f6ed95cf861ea4e6.
+Never rerun that probe. Read-only inventory can be repeated if needed.
+
+Retained actual host965362/parent963611/startTicks19442613 still loads043703
+with its original pinnedNode24.18.0/core0. No host termination, manual cache
+change or hotpatch. No more live calls from that host. The extension-development
+release workflow requires a fresh Codex session and independent installed072500
+admission before live work. MainWindows39015112159 and mainCI39015112219
+verify-build pass; duplicate main facade shards are still running and need a
+later status check. No local tool or
+CAD call remains pending. Production designs and their records are untouched.
+
+Keep EasyEDA closed. All043703 launch/open/baseline/writer cleanup is terminal;
+never replay those IDs, navigation, write, close or Save. The stopped write DID
+persist the intended metadata, but original post-dispatch evidence is incomplete
+and recovery remains unresolved. Closed fixture is598,016bytes/SHA
+153b93a53fbc3c82a93bd4f1062289362d199db2d1737703d97246b72fb4aad6,
+no sidecars. No restoration or manual inverse is authorized by later comparison.
+
+Next: after fresh admission, prepare one NEW disposable forward/inverse lifecycle
+on existing unused symbol23630514533a0345 from the current changed checkpoint.
+Its retained offline feasibility passes below; no live writer readiness is
+claimed. Require fresh source/clock/owner checks and exact phase acknowledgements.
+Only complete forwardVerified/inverseVerified/metadataRestorationVerified with
+nextPhasecompleted establishes that scoped result. Referenced-symbol propagation
+needs separate implementation and full dependent-page/SQL proof; it is now
+explicitly refused. Ordinary route registration remains deferred until successful
+connected evidence is reviewed. Broader native structure completion, schematic/
+PCB geometry, component-library and manufacturing work remains documented in
+docs/current-symbol-clock-lifetime-2026-10-17.md and the774-method inventory.
+This delivery handoff stays uncommitted until the next source change to avoid
+a record-only release cycle. Earlier pending statements below are historical.
+
 ### Candidate072500: unused-symbol scope and precise write diagnostics
 
 Preparing0.3.0+codex.20261017072500 on
@@ -23,6 +198,28 @@ when timeout cleanup also fails. No guard is relaxed or ordinary route enabled.
 Root and independent source review accept the scope/diagnostic changes.
 Twelve focused startup/writer tests and strict targeted lint pass. Final whole
 verification, CI and installation remain pending. No further live043703 call.
+Frozen396sources3720d20fc7ceb0783b27e838bf01c00c338d2a11691b69b2f86c198aec392afe,
+runtime3 706d558d775774a93c5247b66dbcded92d0518072b80590bd9c21b384eb4d154,
+manifestc92e996a53841dce784285b552d1046a96b9bd529b5c7a8c3a7fb763cbecb5aa
+independently rehashed; all external compatibility fields unchanged.
+PR51 initialhead7b5c6d8 is superseded by finalhead
+e1121d315902dc31454102086221cb3d4196c1a4. The initial local fullverify
+finished10554passes/fourskips/fivefailures, all five from stale test-only core
+digest literals in the race child/parent fixtures. Those two literals now match
+reviewedcoreedf3e026; all original assertions remain. Five focused race cases
+and targetedlint pass after correction, independently reviewed. No runtime
+source/bundle change. Final exact-head CI remains pending; do not describe the
+initial full local run as clean. Its retained log is
+/tmp/easyeda-072500-verify-9idFDakf/verify.log. Bridge separately passes424tests/
+28files; package/skill checks pass. No pending local test shell.
+Dependency signatures151/attestations40/zero vulnerabilities; wholetypes/lint,
+build/compatibility, repository/privacy and all seven official skill checks pass.
+Private new installedprobe /tmp/easyeda-installed-release-072500-iY8vJSRw/probe.mjs
+de6d109e7a2036adbd72729b4adb94bd55611f7f46cbccbc5b398c2ac2122a28 and
+read-onlyinventory50211c3f5f8dbe419bf391e696a48bb9d88d6f67e09d5a6ef939624f6d544e1b
+fully reviewed, not run. Never rerun prior043703 probe. Sole actual043703
+host965362 remains untouched with original19442613 startTicks/core0. Fixture
+fresh hash153b93a5/598016bytes still matches postfailure with no sidecars.
 
 Complete read-only before/after audit covers35 SQL tables and18 documents.
 29tables and17peer documents are exact. The sole symbol has only the intended
@@ -37,6 +234,17 @@ An existing unused symbol23630514533a0345, API coverage empty symbol194400,
 has no active-page direct/device references and is unchanged. It is only a
 candidate for a future NEW preparation/lifecycle from the current changed
 fixture. No manual inverse, restoration, replay or new live attempt here.
+Root fully read and approved the104line read-only candidate diagnostic
+/tmp/easyeda-unreferenced-candidate-072500-wATDHLAw/inspect.mjs
+4997c14f2e6f718a69f7ac214c5a73e26337710b91cf0776d16da15f6469bf7f.
+One run passed maintained offline preparation and static35table/18document
+checks on exact retained29receipt/postcopy/checkpoint only; all3 unchanged.
+Candidate description is Disposable empty-symbol validation for194400,
+tags[]/sourceempty, version1791662740761/editVersion3.2.149.88089769,
+oneMETA/zeroPARTs/zero startupreferences. Preparation8f2f738fac5d53da835c9208523a0b7a7eb313b65df5d64d779e111620b4a1a2
+is advisory only; proposed diagnostic patch was never executed. Full SQL plan
+not prepared because a fresh native head-age/clock witness is still required.
+No original project read, filewrite, token, livequalification or writerauthority.
 
 ### Actual043703: stopped write retired; diagnosis complete
 
