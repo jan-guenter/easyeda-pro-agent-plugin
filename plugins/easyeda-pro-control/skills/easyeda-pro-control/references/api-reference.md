@@ -49,8 +49,8 @@ does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
-30 native equivalents, no lifecycle-only methods, 81 implemented-but-blocked
-methods and 451 omissions. Its routes include 336 available with runtime guards,
+31 native equivalents, no lifecycle-only methods, 81 implemented-but-blocked
+methods and 450 omissions. Its routes include 337 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 

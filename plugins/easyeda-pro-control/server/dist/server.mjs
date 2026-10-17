@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "128f6c9cff2768878934b7f012eed08d5bc3e5574961f65bb1b0ceebe5dfb35b";
+const __easyedaBundlePairId = "4b8ebeae65207b57b0d9de499125acad575a625b0ea9f72ed0b0b76d636a07ab";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -72364,6 +72364,14 @@ function body3(value2) {
   need16(isRecord(value2), "native object refused");
   return value2;
 }
+function currentSymbolCopyPlaceholderStep(value2) {
+  const item2 = body3(value2), maximum3 = item2["max"], type2 = item2["dataType"];
+  need16(
+    Object.keys(item2).length === 2 && typeof type2 === "string" && copyPlaceholderTypes.has(type2) && typeof maximum3 === "number" && Number.isSafeInteger(maximum3) && maximum3 > 0,
+    "copy placeholder must be an exact supported positive numbering counter without part/parent fields"
+  );
+  return maximum3;
+}
 function earlier(left, right) {
   return left.ticket < right.ticket || left.ticket === right.ticket && left.client < right.client;
 }
@@ -72586,6 +72594,7 @@ async function createdCopyScope(chunks, targetUuid, beforeMaximumTicket) {
   exactKeys(metadata9, ["title", "description", "tags", "docType", "source"]);
   need16(metadata9["docType"] === 2 && metadata9["source"] === "", "created-copy metadata is not ordinary source-free symbol metadata");
   const seen = /* @__PURE__ */ new Set();
+  let numberingBudget = records2.length - 4;
   for (const raw of records2.slice(4)) {
     const atom = parseNativeRecords(raw)[0];
     need16(atom !== void 0, "created-copy canvas record missing");
@@ -72599,6 +72608,11 @@ async function createdCopyScope(chunks, targetUuid, beforeMaximumTicket) {
     );
     const rawBody = raw.slice(raw.indexOf("||") + 2);
     need16(rawBody === "" || rawBody.startsWith("{") && rawBody.endsWith("}"), "created-copy canvas raw body would be discarded");
+    if (type2 === "ELE_PLACEHOLDER") {
+      const step = currentSymbolCopyPlaceholderStep(atom.body);
+      need16(step <= Number.MAX_SAFE_INTEGER - numberingBudget, "created-copy placeholder numbering exceeds exact integer capacity");
+      numberingBudget += step;
+    }
     seen.add(id10);
   }
   return { creationChunkIndex, metadataHeaderTime: first.time, canvasHeaderTime: second.time };
@@ -73041,7 +73055,7 @@ function verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(raw, docum
     cacheBranchObserved: false
   });
 }
-var CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, originals, createdCopyOriginals, CURRENT_SYMBOL_COPY_CANVAS_TYPES, copyCanvasTypes, IGNORED;
+var CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION, originals, createdCopyOriginals, CURRENT_SYMBOL_COPY_CANVAS_TYPES, copyCanvasTypes, copyPlaceholderTypes, IGNORED;
 var init_saved_symbol_projection = __esm({
   "server/src/saved-symbol-projection.ts"() {
     init_core3();
@@ -73066,9 +73080,11 @@ var init_saved_symbol_projection = __esm({
       "CIRCLE",
       "POLY",
       "TEXT",
-      "BEZIER"
+      "BEZIER",
+      "ELE_PLACEHOLDER"
     ]);
     copyCanvasTypes = new Set(CURRENT_SYMBOL_COPY_CANVAS_TYPES);
+    copyPlaceholderTypes = /* @__PURE__ */ new Set(["ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER"]);
     IGNORED = /* @__PURE__ */ new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
   }
 });
@@ -96813,7 +96829,8 @@ function queryCurrentSymbolCopyOperation(input = {}) {
     limitations: [
       "Start with the existing easyeda_control_project_open disposable opening. Only that original retained disposable owner, sealed local path and checkpoint-member PCB can transfer into this separate copy baseline. There is no ordinary-project opening or replacement-runtime input here.",
       "Copy one supported project-local symbol into the same project and branch through the fixed native cloneData operation: renameKey true, keepSource false. The app chooses the destination UUID and collision-free title. No caller destination, title, metadata patch, executable code or callback is accepted.",
-      "Complete original history, source metadata and raw canvas bytes must match the original managed checkpoint and closed SQL inventory. Initial scope supports one live PART and bounded self-contained PART/CANVAS/ATTR/ELLIPSE/PIN/RECT/ARC/CIRCLE/POLY/TEXT/BEZIER records. External resources, unsupported records and unsafe native object-key IDs refuse.",
+      "Complete original history, source metadata and raw canvas bytes must match the original managed checkpoint and closed SQL inventory. Initial scope supports one live PART and bounded self-contained PART/CANVAS/ATTR/ELLIPSE/PIN/RECT/ARC/CIRCLE/POLY/TEXT/BEZIER records, plus exact document-level ELE_PLACEHOLDER counters for supported numbered families. Counters preserve raw bodies and IDs, not part ownership. External resources, malformed/deleted/unsafe counters, unsupported records and unsafe native object-key IDs refuse.",
+      "All active symbol titles must be printable ASCII. Default and Turkish/Azeri lowercase inventories must each be unique and agree at every rename collision; uppercase I is not accepted by assuming a locale. Non-ASCII, locale-dependent collisions, non-finite numeric suffixes and exhausted name searches refuse.",
       "Fresh startup, original backend/UI actors, dual clocks, the unchanged unlocked-head age gate, raw/cache saved-content budgets and complete SQL effect proof are required before execution. Schema acceptance and offline tests do not validate live execution.",
       "Opening and normal closure may migrate storage, restore state and automatically persist changes. Each effectful stage requires its own acknowledgement. An optional unqualified schematic-startup acceptance permits observation only; the later copy startup qualification remains mandatory.",
       "copy-begin retains the original ready generation. copy-advance requires the exact next phase. Lost responses never permit write, navigation or closure replay; only explicitly pending observations may repeat. Native return identity is retained before post-read checks, never rediscovered by title.",
@@ -123356,13 +123373,16 @@ function need51(condition, message) {
 }
 function checkedTitle(value2) {
   need51(
-    typeof value2 === "string" && value2.length > 0 && value2.length <= 512 && /^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"),
-    "title is outside the printable ASCII/no-uppercase-I policy"
+    typeof value2 === "string" && value2.length > 0 && value2.length <= 512 && /^[\u0020-\u007E]+$/u.test(value2),
+    "title is outside the printable ASCII policy"
   );
   return value2;
 }
 function folded(value2) {
   return value2.toLowerCase();
+}
+function turkicFolded(value2) {
+  return value2.replaceAll("I", "\u0131").toLowerCase();
 }
 function nextName(value2) {
   const parts = value2.split("_"), suffix = parts.at(-1);
@@ -123371,6 +123391,7 @@ function nextName(value2) {
   if (parts.length === 1 || Number.isNaN(numeric2) || /^_+$/u.test(value2)) {
     return `${value2}_1`;
   }
+  need51(Number.isFinite(numeric2), "numeric suffix is outside the finite-number policy");
   parts[parts.length - 1] = String(numeric2 + 1);
   return parts.join("_");
 }
@@ -123378,7 +123399,7 @@ function deriveCurrentSymbolCopyName(sourceTitle, titles) {
   const source5 = checkedTitle(sourceTitle);
   need51(Array.isArray(titles) && titles.length > 0 && titles.length <= 4096, "title inventory count refused");
   need51(Reflect.ownKeys(titles).length === titles.length + 1, "title inventory has extra properties or holes");
-  const names2 = /* @__PURE__ */ new Set();
+  const names2 = /* @__PURE__ */ new Set(), turkicNames = /* @__PURE__ */ new Set();
   let bytes2 = 0, sourceCount = 0;
   for (let index = 0; index < titles.length; index += 1) {
     const descriptor10 = Object.getOwnPropertyDescriptor(titles, String(index));
@@ -123386,9 +123407,10 @@ function deriveCurrentSymbolCopyName(sourceTitle, titles) {
     const title7 = checkedTitle(descriptor10.value);
     bytes2 += title7.length;
     need51(bytes2 <= 1048576, "title inventory byte bound exceeded");
-    const key = folded(title7);
-    need51(!names2.has(key), "duplicate folded title refused");
+    const key = folded(title7), turkicKey = turkicFolded(title7);
+    need51(!names2.has(key) && !turkicNames.has(turkicKey), "duplicate folded title refused");
     names2.add(key);
+    turkicNames.add(turkicKey);
     if (title7 === source5) {
       sourceCount += 1;
     }
@@ -123396,7 +123418,9 @@ function deriveCurrentSymbolCopyName(sourceTitle, titles) {
   need51(sourceCount === 1, "exact source title must occur once");
   let name6 = source5;
   for (let collisions = 0; collisions <= 500; collisions += 1) {
-    if (!names2.has(folded(name6))) {
+    const collision = names2.has(folded(name6));
+    need51(collision === turkicNames.has(turkicFolded(name6)), "locale-dependent collision refused");
+    if (!collision) {
       return Object.freeze({ name: name6, collisions });
     }
     name6 = checkedTitle(nextName(name6));
@@ -123450,6 +123474,7 @@ function drawingPart(document3, rows2) {
   need52(parts.length === 1 && part !== void 0 && part.id.length <= 256, "exactly one live part is required");
   need52(document3.records.some((entry) => DRAWING.has(entry.type)), "a nonempty supported drawing is required");
   const live = new Map(document3.records.map((entry) => [entry.id, entry]));
+  let numberingBudget = rows2.length;
   for (const row7 of rows2) {
     const records2 = parseNativeRecords(row7);
     const record7 = records2[0];
@@ -123457,7 +123482,11 @@ function drawingPart(document3, rows2) {
       records2.length === 1 && record7 !== void 0 && typeof record7.header["type"] === "string" && TYPES2.has(record7.header["type"]),
       "unsupported canvas record or asset dependency"
     );
-    if (record7.body !== null) {
+    if (record7.header["type"] === "ELE_PLACEHOLDER") {
+      const step = currentSymbolCopyPlaceholderStep(record7.body);
+      need52(step <= Number.MAX_SAFE_INTEGER - numberingBudget, "placeholder numbering exceeds exact integer capacity");
+      numberingBudget += step;
+    } else if (record7.body !== null) {
       const body4 = record7.body, type2 = record7.header["type"];
       need52(type2 === "PART" || type2 === "CANVAS" || body4["partId"] === part.id, "drawing membership differs from the sole part");
       need52(body4["partId"] === void 0 || body4["partId"] === "" || body4["partId"] === part.id, "foreign part reference");

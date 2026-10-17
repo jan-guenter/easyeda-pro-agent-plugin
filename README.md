@@ -28,7 +28,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017181500` adds a separate disposable-only symbol-copy
+Update `0.3.0+codex.20261017193000` corrects two copy preflight limitations found
+in retained disposable evidence. ASCII names containing uppercase `I` now require
+identical collision decisions under both default and Turkish/Azeri lowercase.
+Exact native element-numbering counters are preserved and checked, rather than
+treated as drawing members. The complete retained-fixture planner and focused
+regressions pass; connected copying is still unvalidated. See the
+[compatibility findings](docs/current-symbol-copy-compatibility-2026-10-17.md).
+The long engineering history is archived separately from current agent instructions.
+
+Earlier update `0.3.0+codex.20261017181500` adds a separate disposable-only symbol-copy
 workflow. It retains the original returned UUID, verifies the complete closed
 SQL effect, reopens and checks the new symbol, then verifies final SQL equality.
 The supported source is a bounded single-part self-contained drawing; ordinary
@@ -447,9 +456,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 212 public subsets, 30 native equivalents,
-no lifecycle-only methods, 81 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 336 available with runtime guards,
+Current source classifications are 212 public subsets, 31 native equivalents,
+no lifecycle-only methods, 81 implemented-but-blocked methods and 450
+omissions. Their execution routes comprise 337 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

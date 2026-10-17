@@ -73,14 +73,28 @@ interface CanvasSegmentsScope {
 const originals = new WeakMap<object, Prepared>();
 const createdCopyOriginals = new WeakSet<object>();
 export const CURRENT_SYMBOL_COPY_CANVAS_TYPES = Object.freeze([
-  "PART", "CANVAS", "ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER",
+  "PART", "CANVAS", "ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER", "ELE_PLACEHOLDER",
 ] as const);
 const copyCanvasTypes: ReadonlySet<string> = new Set(CURRENT_SYMBOL_COPY_CANVAS_TYPES);
+const copyPlaceholderTypes: ReadonlySet<string> = new Set(["ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER"]);
 const IGNORED = new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Saved symbol projection: ${message}`); } }
 function number(value: unknown): number { need(typeof value === "number" && Number.isSafeInteger(value) && value >= 0, "native integer refused"); return value; }
 function text(value: unknown): string { need(typeof value === "string" && value.length > 0 && value.length <= 4096, "native string refused"); return value; }
 function body(value: unknown): ObjectData { need(isRecord(value), "native object refused"); return value; }
+/** Copy-only document numbering counters, not drawable children of a PART.
+ * Pinned WORKER b849bd12: getCanvasByConsistency at2146197 preserves these;
+ * clone at1940076, canvasString at1938805 and oO/Ni at266811 copy each raw
+ * body/id/ticket unchanged. setOrderNum at257123 reads only dataType/max.
+ * No delete/clearDelete behavior or additional numbered family is admitted.
+ */
+export function currentSymbolCopyPlaceholderStep(value: unknown): number {
+  const item = body(value), maximum = item["max"], type = item["dataType"];
+  need(Object.keys(item).length === 2 && typeof type === "string" && copyPlaceholderTypes.has(type) &&
+    typeof maximum === "number" && Number.isSafeInteger(maximum) && maximum > 0,
+  "copy placeholder must be an exact supported positive numbering counter without part/parent fields");
+  return maximum;
+}
 function earlier(left: Atom, right: Atom): boolean { return left.ticket < right.ticket || (left.ticket === right.ticket && left.client < right.client); }
 function digest(value: string): string { return createHash("sha256").update(value).digest("hex"); }
 function nativeUser(header: ObjectData, edit: ObjectData | undefined): ObjectData {
@@ -291,7 +305,9 @@ async function createdCopyScope(chunks: readonly string[], targetUuid: string, b
   need(meta.header["type"] === "META" && meta.header["ticket"] === beforeMaximumTicket + 1 && meta.header["id"] === "META", "created-copy META sequence differs");
   const metadata = body(meta.body); exactKeys(metadata, ["title", "description", "tags", "docType", "source"]);
   need(metadata["docType"] === 2 && metadata["source"] === "", "created-copy metadata is not ordinary source-free symbol metadata");
-  const seen = new Set<string>();
+  // One count per row plus every placeholder step conservatively bounds each
+  // Native per-family counter; this is not a native global-number assertion.
+  const seen = new Set<string>(); let numberingBudget = records.length - 4;
   for (const raw of records.slice(4)) {
     const atom = parseNativeRecords(raw)[0]; need(atom !== undefined, "created-copy canvas record missing");
     exactKeys(atom.header, ["type", "ticket", "id"]);
@@ -301,6 +317,11 @@ async function createdCopyScope(chunks: readonly string[], targetUuid: string, b
       "created-copy canvas type, identity or source ticket refused");
     const rawBody = raw.slice(raw.indexOf("||") + 2);
     need(rawBody === "" || (rawBody.startsWith("{") && rawBody.endsWith("}")), "created-copy canvas raw body would be discarded");
+    if (type === "ELE_PLACEHOLDER") {
+      const step = currentSymbolCopyPlaceholderStep(atom.body);
+      need(step <= Number.MAX_SAFE_INTEGER - numberingBudget, "created-copy placeholder numbering exceeds exact integer capacity");
+      numberingBudget += step;
+    }
     seen.add(id);
   }
   return { creationChunkIndex, metadataHeaderTime: first.time, canvasHeaderTime: second.time };

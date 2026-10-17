@@ -122,7 +122,7 @@ void test("created-copy refuses preexisting destination, cross-chunk headers, in
 
 void test("copy drawing allowlist excludes assets, unsupported encoders and unknown types including tombstones", async () => {
   assert.ok(Object.isFrozen(CURRENT_SYMBOL_COPY_CANVAS_TYPES));
-  assert.deepEqual(CURRENT_SYMBOL_COPY_CANVAS_TYPES, ["PART", "CANVAS", "ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER"]);
+  assert.deepEqual(CURRENT_SYMBOL_COPY_CANVAS_TYPES, ["PART", "CANVAS", "ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER", "ELE_PLACEHOLDER"]);
   for (const type of ["LINE", "BLOB", "FONT", "OBJ", "GROUP", "TABLE", "UNKNOWN", "META_PLACEHOLDER"]) {
     for (const raw of ['{"x":1}', ""]) {
       const chunk = creation(2000, [record("PART", 5, "p", PART), record(type, 11, "r", raw)]);
@@ -132,6 +132,25 @@ void test("copy drawing allowlist excludes assets, unsupported encoders and unkn
   const chunk = creation(2000, [record("PART", 5, "p", PART), record("RECT", 11, "r", "")]);
   const dead = await prepareCreation(chunk);
   assert.ok(expectedSavedSymbolContent(dead.raw, FRESH).endsWith('{"type":"RECT","ticket":11,"id":"r"}||'));
+});
+
+void test("created-copy placeholders preserve their exact counter bytes and reject foreign ownership or unsafe counts", async () => {
+  const part = record("PART", 5, "p", PART);
+  const placeholder = record("ELE_PLACEHOLDER", 11, "placeholder1", '{ "dataType": "PIN", "max": 3 }');
+  const result = await prepareCreation(creation(2000, [part, placeholder]));
+  for (const projection of [result.raw, result.documentCache]) {
+    assert.ok(expectedSavedSymbolContent(projection, FRESH).endsWith(placeholder));
+  }
+  for (const raw of ["", "{}", '{"dataType":"PIN","max":0}', '{"dataType":"PIN","max":1.5}',
+    '{"dataType":"PIN","max":9007199254740992}', '{"dataType":"PIN","max":1,"partId":"p"}',
+    '{"dataType":"PIN","max":1,"parentId":"p"}', '{"dataType":"OBJ","max":1}', '{"dataType":"PART","max":1}']) {
+    const chunk = creation(2000, [part, record("ELE_PLACEHOLDER", 11, "placeholder1", raw)]);
+    await assert.rejects(prepareCreation(chunk), /placeholder|native object/u);
+  }
+  const excessive = creation(2000, [part,
+    record("ELE_PLACEHOLDER", 11, "placeholder1", '{"dataType":"PIN","max":9007199254740988}'),
+    record("ELE_PLACEHOLDER", 12, "placeholder2", '{"dataType":"PIN","max":1}') ]);
+  await assert.rejects(prepareCreation(excessive), /numbering/u);
 });
 
 function sourceProjection(chunks: readonly string[]): ReturnType<typeof prepareCurrentCanvasSegmentsSavedSymbolProjection> {

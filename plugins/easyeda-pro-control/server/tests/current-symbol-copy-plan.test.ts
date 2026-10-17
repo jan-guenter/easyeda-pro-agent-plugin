@@ -98,7 +98,7 @@ void test("source identity, ordinary type, complete peer naming and source UTF8 
   }
   const named = await prepareCurrentSymbolCopyPlan(await baseline(sourceRaw().replace('"Peer"', '"source_1"')), SOURCE);
   assert.equal(named.destinationMetadata.title, "Source_2");
-  const unsupportedName = await baseline(sourceRaw().replace('"Peer"', '"I"'));
+  const unsupportedName = await baseline(sourceRaw().replace('"Peer"', '"Ω"'));
   await assert.rejects(prepareCurrentSymbolCopyPlan(unsupportedName, SOURCE), /title/u);
 });
 
@@ -120,6 +120,42 @@ void test("source tombstones and overwritten winners retain exact bodies but str
   const plan = await prepareCurrentSymbolCopyPlan(await baseline(sourceRaw(canvas)), SOURCE);
   assert.deepEqual(currentSymbolCopySourceRows(plan), [CANVAS[0], CANVAS[1], changed, row("PIN", 8, "gone")]);
   await verifyCurrentSymbolCopyAppend(plan, { targetUuid: NEW, chunk: append([...currentSymbolCopySourceRows(plan)]) });
+});
+
+void test("copy preserves exact document-level numbering placeholders through both saved projections", async () => {
+  const placeholders = [row("ELE_PLACEHOLDER", 6, "placeholder1", { dataType: "ATTR", max: 1 }),
+    row("ELE_PLACEHOLDER", 7, "placeholder2", { dataType: "PIN", max: 2 }),
+    row("ELE_PLACEHOLDER", 8, "placeholder3", { dataType: "PIN", max: 3 }),
+    row("ELE_PLACEHOLDER", 9, "placeholder4", { dataType: "RECT", max: 10 })];
+  const canvas = [CANVAS[0] ?? "", ...placeholders, ...CANVAS.slice(1)];
+  const plan = await prepareCurrentSymbolCopyPlan(await baseline(sourceRaw(canvas)), SOURCE);
+  assert.deepEqual(currentSymbolCopySourceRows(plan), canvas);
+  const created = await verifyCurrentSymbolCopyAppend(plan, { targetUuid: NEW, chunk: append(canvas) });
+  for (const projection of [created.projection.raw, created.projection.documentCache]) {
+    const content = expectedSavedSymbolContent(projection, CLIENT);
+    for (const placeholder of placeholders) { assert.ok(content.split("|\n").includes(placeholder)); }
+  }
+  for (const changed of [append(canvas).replace('"max":10', '"max":11'),
+    append(canvas.filter(value => value !== placeholders[0])), append(canvas.toReversed())]) {
+    await assert.rejects(verifyCurrentSymbolCopyAppend(plan, { targetUuid: NEW, chunk: changed }));
+  }
+});
+
+void test("copy placeholder counters reject ownership fields, unsupported families, tombstones and unsafe numbering", async () => {
+  const bodies = [undefined, {}, { dataType: "PIN" }, { max: 1 }, { dataType: "PIN", max: 0 }, { dataType: "PIN", max: -1 },
+    { dataType: "PIN", max: 1.5 }, { dataType: "PIN", max: "1" }, { dataType: "PIN", max: Number.MAX_SAFE_INTEGER + 1 },
+    { dataType: "PIN", max: Infinity }, { dataType: "PIN", max: Number.NaN }, { dataType: "PIN", max: 1, partId: "part" },
+    { dataType: "PIN", max: 1, parentId: "part" }, { dataType: "PIN", max: 1, extra: true },
+    ...["LINE", "BLOB", "FONT", "OBJ", "PART", "CANVAS", "ELE_PLACEHOLDER", "__proto__"].map(dataType => ({ dataType, max: 1 }))];
+  for (const value of bodies) {
+    const canvas = [...CANVAS, row("ELE_PLACEHOLDER", 6, "placeholder1", value)];
+    const before = await baseline(sourceRaw(canvas));
+    await assert.rejects(prepareCurrentSymbolCopyPlan(before, SOURCE), /placeholder|native object/u);
+  }
+  const excessive = [...CANVAS, row("ELE_PLACEHOLDER", 6, "placeholder1", { dataType: "PIN", max: Number.MAX_SAFE_INTEGER - 5 }),
+    row("ELE_PLACEHOLDER", 7, "placeholder2", { dataType: "PIN", max: 1 })];
+  const before = await baseline(sourceRaw(excessive));
+  await assert.rejects(prepareCurrentSymbolCopyPlan(before, SOURCE), /numbering/u);
 });
 
 void test("copy append rejects changed bodies, reordering, duplicate rows, alternate metadata and wrong ticket headers", async () => {

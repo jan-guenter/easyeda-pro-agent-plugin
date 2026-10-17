@@ -12,6 +12,11 @@ No application runtime, bridge, project file or database was accessed for this r
 Only installed application code, repository code and official documentation
 were read.
 
+The subsequent [compatibility correction](current-symbol-copy-compatibility-2026-10-17.md)
+records retained disposable-fixture preflight findings for ASCII title folding
+and native element counters. Those later reads and source changes do not claim
+connected copy execution.
+
 Prefer this route over initializing the existing META-only validation symbol.
 It preserves that completed fixture and avoids inventing PART bodies or
 combining editor initialization, drawing and Save into one new proof. A copy

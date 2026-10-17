@@ -20,13 +20,19 @@ copying does not modify it or propagate a metadata edit to linked sheets.
 
 The initial subset requires one live PART and a nonempty self-contained drawing.
 Supported records are PART, CANVAS, ATTR, ELLIPSE, PIN, RECT, ARC, CIRCLE, POLY,
-TEXT and BEZIER. External assets, BLOB/FONT/OBJ, multipart symbols, unknown
+TEXT and BEZIER, plus exact document-level ELE_PLACEHOLDER counters for supported
+numbered families. Counters retain their raw bodies and IDs; they are not drawing
+members and need no part ID. Malformed, deleted or unsafe counters refuse.
+External assets, BLOB/FONT/OBJ, multipart symbols, unknown
 records, unsafe native object-key IDs and unsupported history refuse. Do not
 delete or rewrite source records to make a refused source eligible.
 
-Native naming is reproduced for printable ASCII titles excluding uppercase
-`I`, including every active peer symbol/block name. Unicode, ambiguous folded
-names and exhausted collision loops refuse. The application chooses a fresh
+Native naming is reproduced for printable ASCII titles, including every active
+peer symbol/block name. Uppercase `I` is supported only when default and
+Turkish/Azeri folding both give unique inventories and the same collision
+decision at every candidate. Do not assume the workstation locale. Non-ASCII,
+locale-dependent collisions, ambiguous folded names, non-finite numeric suffixes
+and exhausted collision loops refuse. The application chooses a fresh
 16-hex UUID and collision-free title. The tool does not accept a destination
 UUID, chosen name, classification, metadata patch or external library. It clears
 template-source linkage while retaining supported drawing bodies and IDs.
