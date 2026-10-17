@@ -12,6 +12,7 @@ const ID = "disposable-validation-original", INVERSE_ID = "disposable-validation
 function object(value: unknown): Value { assert.ok(isRecord(value)); return value; }
 interface Harness {
   readonly calls: string[];
+  readonly writeBudgets: number[];
   readonly state: { failure?: string; authenticationPending: boolean; terminationPending: boolean; cleanupInspectionFails: boolean;
     purpose: "disposable-validation" | "ordinary-symbol-metadata"; startupExpectationRetained: boolean; fullReopenReadbackInvariant: boolean | undefined };
   readonly invoke: (name: string, argument?: unknown) => Promise<Value>;
@@ -20,6 +21,7 @@ interface Harness {
 async function fixture(purpose: Harness["state"]["purpose"] = "disposable-validation"): Promise<Harness> {
   const calls: string[] = [], state: Harness["state"] = { authenticationPending: false, terminationPending: false, cleanupInspectionFails: false,
     purpose, startupExpectationRetained: true, fullReopenReadbackInvariant: true };
+  const writeBudgets: number[] = [];
   const generation = Object.freeze({ operationId: ID }), inverseGeneration = Object.freeze({ operationId: INVERSE_ID });
   const agedClock = Object.freeze({ original: "aged-clock" }), inverseClock = Object.freeze({ original: "inverse-clock" });
   const forwardContinuation = Object.freeze({ original: "forward-continuation" }), inverseContinuation = Object.freeze({ original: "inverse-continuation" });
@@ -106,7 +108,10 @@ async function fixture(purpose: Harness["state"]["purpose"] = "disposable-valida
     CurrentSymbolWriterCoordinator: function CurrentSymbolWriterCoordinator(): Controller { const kind = writers === 0 ? "forward-writer" : "inverse-writer"; writers += 1; return new Controller(kind); },
     CurrentSymbolVerificationCoordinator: function CurrentSymbolVerificationCoordinator(): Controller { const kind = verifiers === 0 ? "forward-verifier" : "inverse-verifier"; verifiers += 1; return new Controller(kind); },
     CurrentSymbolInverseCoordinator: function CurrentSymbolInverseCoordinator(): Controller { return new Controller("inverse-baseline"); },
-    qualifyCurrentSymbolWriterStartup: (): Promise<unknown> => {
+    qualifyCurrentSymbolWriterStartup: (owner: unknown, selected: unknown, remainingWrites: number): Promise<unknown> => {
+      assert.equal(owner, engine); assert.ok(selected === generation || selected === inverseGeneration);
+      assert.equal(remainingWrites, selected === generation && state.purpose === "disposable-validation" ? 2 : 1);
+      writeBudgets.push(remainingWrites);
       assert.equal(scopeActive, true); calls.push("startup");
       return state.failure === "startup" ? Promise.reject(new Error("Synthetic startup refusal")) : Promise.resolve({ original: "startup" });
     },
@@ -117,7 +122,7 @@ async function fixture(purpose: Harness["state"]["purpose"] = "disposable-valida
   const raw = (name: string, argument?: unknown): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function"); return Reflect.apply(method, instance, [ID, argument]) as unknown;
   };
-  return { calls, state, invoke: async (name, argument): Promise<Value> => object(await raw(name, argument)), inspect: (): Value => object(raw("inspect")) };
+  return { calls, state, writeBudgets, invoke: async (name, argument): Promise<Value> => object(await raw(name, argument)), inspect: (): Value => object(raw("inspect")) };
 }
 function step(phase: unknown): Value {
   assert.equal(typeof phase, "string");
@@ -149,6 +154,7 @@ void test("disposable validation retains original forward/inverse owners through
   assert.equal(f.calls.filter((call) => call.endsWith(".execute")).length, 2);
   assert.equal(f.calls.filter((call) => call.endsWith(".collectSavedContent")).length, 2);
   assert.equal(f.calls.filter((call) => call.endsWith(".finishNormalClose")).length, 4);
+  assert.deepEqual(f.writeBudgets, [2, 1]);
   await assert.rejects(f.invoke("begin"), /one original baseline/u);
 });
 
@@ -238,6 +244,7 @@ void test("ordinary metadata completes its original forward lifecycle without re
   assert.equal(f.calls.filter((call) => call.endsWith(".execute")).length, 1);
   assert.equal(f.calls.filter((call) => call.endsWith(".collectSavedContent")).length, 1);
   assert.equal(f.calls.filter((call) => call.endsWith(".finishNormalClose")).length, 2);
+  assert.deepEqual(f.writeBudgets, [1]);
   assert.equal(f.calls.some((call) => call.startsWith("inverse-") || call.endsWith(".retainForInverse") || call.endsWith(".getResultContinuation")), false);
   const before = [...f.calls];
   await assert.rejects(f.invoke("beginOrdinary"), /one original baseline/u);

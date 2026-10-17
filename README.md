@@ -3,8 +3,9 @@
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
 On the current EasyEDA Pro 3.2.206 runtime, general schematic/PCB and library
-writers remain disabled. The separately exposed disposable symbol-metadata
-validation workflow is not yet a successful connected writer lifecycle.
+writers remain disabled. Disposable symbol-metadata validation has passed its
+forward edit, complete closed SQL comparison and reopened saved-content check.
+Inverse restoration has not yet passed, so ordinary editing remains disabled.
 Older implemented adapters and their historical proofs do not enable them on
 this newer runtime. See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
@@ -25,7 +26,17 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017090000` models exact current document-cache
+Update `0.3.0+codex.20261017101500` corrects inverse journal adoption after the
+090000 run passed forward verification but stopped before restoration. It also
+rejects historical drawing content before metadata dispatch and reserves the
+history, SQL and saved-result capacity required to verify both disposable edits.
+Raw database and normalized-checkpoint hashes stay separately bound; physical
+file growth, memory and deadlines remain runtime limits. The failed operation
+is terminal, with the forward metadata retained. No ordinary writer is enabled.
+A new installed-session round trip remains required. See the
+[current result and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017090000` models exact current document-cache
 serialization for META-only symbol verification and bounds parallel journal
 hashing. The 072500 run acknowledged its forward write and passed complete
 closed SQL checks, then stopped on a saved-header user mismatch. Original-owner

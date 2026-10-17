@@ -98,6 +98,13 @@ never ignore a differing field or change the persisted SQL actor. Report the
 matched serialization separately from observed cache provenance. A later model
 correction cannot turn a stopped original read into successful lifecycle evidence.
 
+Admit the saved verifier's supported input before dispatching its writer. A
+materialized empty symbol can still have tombstoned drawing atoms in raw history;
+check the complete original SQL history when cache replay excludes those atoms.
+Reserve the next edit's row, chunk, byte and ticket capacity, and bound the whole
+serialized saved result rather than only the caller's string lengths. A known
+post-write limit failure belongs in preflight, not recovery.
+
 For a disposable forward/inverse orchestrator, make continuation requests name
 the exact expected phase. A lost response must not turn a repeated request into
 the next mutation. Preserve the real stage owners and allow polling only for

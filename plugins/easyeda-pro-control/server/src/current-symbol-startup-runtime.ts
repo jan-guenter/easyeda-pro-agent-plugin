@@ -14,6 +14,7 @@ import { CURRENT_SYMBOL_STARTUP_STAGES, buildCurrentSymbolStartupGuard } from ".
 import type { EasyedaControlEngine } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
+import { assertCurrentSymbolMetaOnlyBaseline } from "./current-symbol-meta-only.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { exact } from "./symbol-clock-controls.ts";
 
@@ -118,10 +119,12 @@ export async function revalidateCurrentSymbolWriterStartup(value: unknown, engin
  * token cannot promise object identity across requests. Failure consumes once.
  */
 export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEngine,
-  generation: CurrentProjectOnlySymbolGeneration): Promise<CurrentSymbolWriterStartup> {
+  generation: CurrentProjectOnlySymbolGeneration, remainingWrites: 1 | 2 = 1): Promise<CurrentSymbolWriterStartup> {
   const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
   need(scopeReader !== undefined); const scope = scopeReader.call(engine.upstream); need(scope !== undefined);
   const scopeText = canonicalJson(scope), source = assertCurrentProjectOnlySymbolGeneration(generation, engine, scopeText);
+  need((remainingWrites === 1 || remainingWrites === 2) &&
+    (remainingWrites !== 2 || (source.source.purpose ?? "disposable-validation") === "disposable-validation"));
   need(!attempts.has(generation)); attempts.add(generation);
   const collection: Collection = { engine, resultPublicationAttempted: false, failureObserved: false }; collections.set(generation, collection);
   const evidenceId = `current-startup-${sha256Json({ operationId: generation.operationId })}`;
@@ -150,6 +153,8 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   if (source.source.purpose === "ordinary-symbol-metadata") {
     need(source.source.startupExpectation !== undefined && canonicalJson(expectation) === canonicalJson(source.source.startupExpectation));
   }
+  const metadataScope = await assertCurrentSymbolMetaOnlyBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
+    baseline.preparation.metadata.after, expectation, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined); check();
   const fingerprint = source.source.expectedFingerprint;
   assertExpectedFingerprint(fingerprint); validateSdkLocalRuntimeFingerprint(fingerprint);
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
@@ -159,7 +164,7 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   const target = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
   const code = buildCurrentSymbolStartupObservation(target, expectation);
   const intent = await writePhaseArtifact(evidenceId, 0, "startup-intent", { target, expectation, codeSha256: sha256Text(code), baselineSha256: sha256Json(baseline),
-    captureSha256: sha256Json(source.capture), executionAuthorized: false }); collection.intentArtifact = Object.freeze(intent); check();
+    captureSha256: sha256Json(source.capture), metadataScope, executionAuthorized: false }); collection.intentArtifact = Object.freeze(intent); check();
   await readExactUtf8Artifact(intent); check();
   const raw = await call.call(engine.upstream, "easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: true }, 25_000);
   collection.raw = raw;

@@ -139,8 +139,8 @@ Do not delete or rewrite the journal to make it pass. Record the unresolved
 operation for a separately supported recovery procedure.
 
 This adapter is source-tested. Connected opening and persistence validation
-must be reported separately; the current release makes no writer-lifecycle
-claim.
+must be reported separately; the complete forward/inverse lifecycle remains
+unvalidated.
 
 ## Retained baseline validation
 
@@ -312,6 +312,27 @@ sheet propagation can load hidden sheets, which this workflow does not support.
 Do not unlink components, delete sheets or weaken cache checks to pass. Choose
 an existing unused disposable symbol and prepare it from the current checkpoint.
 
+The complete raw target history must also contain metadata bookkeeping only.
+A currently empty symbol is insufficient: deleted drawing records remain in
+history and are outside the modeled cache replay. Newer snapshots check this
+before native startup observation or writer transfer. Do not delete geometry
+to make a target eligible. Use an existing metadata-only fixture or implement
+the missing drawing-content replay contract separately.
+
+The same pre-dispatch check reserves the complete proof budget. Disposable
+forward validation reserves both the requested change and the owner-derived
+original-metadata inverse; the inverse reserves its remaining single write.
+History, saved-content/input/output envelopes and complete logical SQL effects
+must fit their maintained limits at each stage. This does not guarantee physical
+SQLite allocation, available heap or deadline completion. Those runtime limits
+and terminal cleanup still apply. A budget result is not writer authority.
+
+Bind the raw closed copy and its separate native-history checkpoint to their
+own retained descriptors. `VACUUM INTO` can change file bytes, lineage hashes
+and the SQLite schema cookie while preserving all table and native-history
+semantics. A raw-copy hash is not a checkpoint hash. Do not substitute either
+descriptor or weaken full SQL comparison to make unequal hashes pass.
+
 Use `validation-inspect` to read `nextPhase`. Each `validation-advance` supplies
 that exact `step.expectedPhase` and only its schema-required acknowledgements.
 A repeated request with a consumed phase refuses rather than advancing into a
@@ -361,6 +382,17 @@ closed SQL proof, then failed saved-content verification on the cache-derived
 header user. Original-owner cleanup completed with final SQL equal to the verified
 post-write state. No inverse or Save was issued. The changed metadata remains;
 this operation is terminal and cannot be revived by the new projection model.
+
+The later 090000 run completed forward closed-SQL proof and reopened saved-content
+verification. Its 415-byte content matched the current-cache projection and final
+closed SQL matched the verified post-write state. Inverse preparation then refused
+at its neutral journal's sequence zero because the journal was sealed after its
+comparison text had been cached. No inverse mutation or ownership transfer
+occurred. Original-owner cleanup retired the attempt with
+`fullReopenReadbackInvariant:true`; the app is closed and the fixture retains the
+090000 metadata. This is accepted forward evidence, not a completed round trip.
+The correction needs a new installed disposable lifecycle; do not resume the
+retired attempt, issue a manual inverse or enable the ordinary route from it.
 
 After a facade restart, `validation-inspect` can read managed baseline, writer
 or verification history when no original coordinator remains. This returns

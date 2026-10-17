@@ -128,11 +128,11 @@ export class CurrentSymbolValidationCoordinator {
   }
 
   private async write(generation: CurrentProjectOnlySymbolGeneration, agedClock: OriginalCurrentAgedSqlClock,
-    writer: CurrentSymbolWriterCoordinator): Promise<Value> {
+    writer: CurrentSymbolWriterCoordinator, remainingWrites: 1 | 2): Promise<Value> {
     await this.engine.assertBridgeAndRecoveryAdmission(generation.operationId);
     const scope = this.engine.upstream.withAuthenticatedBridgeDispatchScope; need(scope !== undefined);
     let startup: Awaited<ReturnType<typeof qualifyCurrentSymbolWriterStartup>> | undefined;
-    await scope.call(this.engine.upstream, async () => { startup = await qualifyCurrentSymbolWriterStartup(this.engine, generation); });
+    await scope.call(this.engine.upstream, async () => { startup = await qualifyCurrentSymbolWriterStartup(this.engine, generation, remainingWrites); });
     need(startup !== undefined);
     return writer.execute(generation, startup, agedClock);
   }
@@ -141,7 +141,11 @@ export class CurrentSymbolValidationCoordinator {
     need(slot.purpose === "disposable-validation" || !phase.startsWith("inverse-"));
     const id = slot.operationId;
     switch (phase) {
-      case "forward-write": { return this.write(slot.generation, slot.agedClock, this.forwardWriter); }
+      case "forward-write": {
+        // The retained purpose, not the caller's step or operation name,
+        // Decides whether the untouched original metadata must also fit.
+        return this.write(slot.generation, slot.agedClock, this.forwardWriter, slot.purpose === "disposable-validation" ? 2 : 1);
+      }
       case "forward-close": { return this.forwardWriter.finishNormalClose(id); }
       case "forward-observe-termination": { return this.forwardWriter.observeFinish(id); }
       case "forward-verification-start": { return this.forwardVerifier.start(this.forwardWriter.getVerificationContinuation(id)); }
@@ -165,7 +169,7 @@ export class CurrentSymbolValidationCoordinator {
       case "inverse-clock": { return this.inverse.observeAgedClock(this.inverseId(slot)); }
       case "inverse-write": {
         const inverseId = this.inverseId(slot);
-        return this.write(this.inverse.getProjectOnlyGeneration(inverseId), this.inverse.getAgedClock(inverseId), this.inverseWriter);
+        return this.write(this.inverse.getProjectOnlyGeneration(inverseId), this.inverse.getAgedClock(inverseId), this.inverseWriter, 1);
       }
       case "inverse-close": { return this.inverseWriter.finishNormalClose(this.inverseId(slot)); }
       case "inverse-observe-termination": { return this.inverseWriter.observeFinish(this.inverseId(slot)); }

@@ -1,6 +1,74 @@
-# Current symbol validation: saved-content replay and referenced-symbol scope
+# Current symbol validation: reopened forward proof and inverse adoption
 
-## Current 072500 result
+## Current 090000 result
+
+The 090000 disposable run completed the forward write, complete closed SQL
+comparison and reopened saved-content verification. All 35 tables were checked.
+The raw closed baseline's logical SQL digest changed from `3edebd2d` to
+`de4e0f65` with exactly the modeled metadata/history/structure effect. The fresh
+verification generation returned 415 bytes of saved symbol content, exactly
+matching the current document-cache projection. Its final closed logical SQL
+was unchanged from the verified post-write state. This establishes the forward
+lifecycle for this unused, metadata-only disposable symbol, not the round trip.
+
+Inverse preparation then stopped while adopting its neutral journal, at sequence
+zero. `createOperation` seals that journal in place, but `adoptInverse` had cached
+its canonical `journalText` before sealing. The immediate unchanged check compared
+the sealed journal against the stale text and refused. No inverse mutation or
+closure-ownership transfer occurred. The source correction binds the cached
+text to the original sealed journal after successful creation, while preserving
+the checks against changed journals and copied ownership.
+
+The original owner completed normal closure and terminal retirement with
+`fullReopenReadbackInvariant:true`. EasyEDA is closed. The disposable symbol
+retains the 090000 name and description. Final status reported no incomplete
+operations or bridge failure. No explicit Save, manual inverse,
+restoration or replay was issued. The consumed attempt cannot be resumed after
+the correction; a future run starts from the retained 090000 metadata. The
+ordinary forward-only route remains internal and unregistered.
+
+## Pre-dispatch scope and proof budgets
+
+The new source gate checks every target record in complete decoded raw history,
+not only the materialized live records. It rejects historical canvas records
+and their tombstones, including a canvas record later replaced by metadata
+bookkeeping. A presently empty canvas is not sufficient. Existing unreferenced-
+symbol, original-owner, actor, clock and complete SQL requirements remain.
+
+Admission also reserves the supported proof capacity before writer transfer.
+Ordinary and inverse writes reserve one exact metadata stage; disposable forward
+validation reserves both its forward stage and restoration of the original
+metadata. The second patch comes from the original validation owner, not caller
+flags or copied JSON. Each stage must fit the existing raw/cache projectors,
+history rows/chunks/records/bytes, safe tickets, full saved-content serialization,
+saved-read input and doubly encoded output envelope. SQL bounds include both
+inserted rows, complete cells/encoded output, rowid/AUTOINCREMENT allocation and
+the source-derived compressed upload bound. Intermediate effects count even when
+the inverse produces shorter metadata. See the
+[compression derivation](current-symbol-producer-scope-2026-10-16.md#2026-10-17-addendum-compressed-upload-size-bound).
+
+These are logical capacity bounds, not a guarantee that the reader will finish.
+Physical SQLite allocation, the 256 MiB file limit, available native heap and
+deadlines remain runtime limits. A failure still requires original-owner cleanup
+and terminal handling; passing the budget grants no execution authority.
+
+The closed raw copy and its separate `VACUUM INTO` checkpoint need independent
+bindings. In the reviewed baseline, raw bytes had hash prefix `1ae5d54b` and raw
+logical SQL `3edebd2d`; checkpoint bytes had prefix `52b523cb` and checkpoint
+logical SQL `b9663f2f`. All 35 table inventories and schemas matched. The sole
+inventory difference was `schema_version`, 117 in the raw copy and 118 in the
+checkpoint. Native history semantics matched, but file-bound lineage hashes
+correctly differed. The gate binds each original descriptor separately and
+compares complete history semantics. It must not require equal file hashes,
+substitute one descriptor for the other, or globally ignore SQLite properties.
+
+The gate and budget have focused source-test, strict lint/typecheck and independent
+review evidence. They were not present in installed 090000 and have not gained
+connected validation from this run. The correction and gates target candidate
+`0.3.0+codex.20261017101500`. Publication, installation and a fresh complete
+disposable round trip remain separate tasks.
+
+## Earlier 072500 result
 
 The new unused-symbol run acknowledged the forward write and passed its complete
 closed SQL comparison. All 35 tables were checked: 29 stayed identical and six
@@ -184,21 +252,33 @@ JSON cannot construct this private issuer or grant execution authority.
 ## Verification and remaining work
 
 Source review, focused regressions, final lint/types/build, CI and installation
-results are recorded in AGENTS.md as they complete. No connected
-successful writer lifecycle or normal-writer enablement is claimed.
+results are recorded in AGENTS.md as they complete. The 090000 forward lifecycle
+is accepted; a complete forward/inverse lifecycle and ordinary writer enablement
+are still pending.
 
-1. After publication and installation, use a fresh Codex session with independent
-   installed-runtime admission before any live call.
-2. Run one new disposable forward/inverse lifecycle on an unused symbol through
-   complete closed SQL comparison and reopened saved-content verification.
-   Do not replay or invert the stopped 043703 or 072500 operations.
-3. Implement and validate referenced-symbol propagation separately, including
-   dependent-page loading and its complete source and SQL effects. The current
-   update deliberately omits this capability.
-4. Review successful connected evidence before registering the separate ordinary
-   forward-only route, with its exact supported scope. Keep the older generic
-   writers and generic library symbol modification blocked.
-5. Continue the documented schematic/PCB native structure completion, geometry,
+The inverse adoption correction passes 21 focused tests. Its real-storage
+regression reproduced the original error before the fix; changed disk or memory
+state still refuses before adoption intent or ownership transfer.
+
+1. Finish integration/release checks for that correction and the META-only,
+   tombstone and one/two-write proof-budget gates. Publish the reviewed build,
+   pass GitHub CI, install through the Git marketplace and verify installed
+   files/catalog. Do not hotpatch the running facade.
+2. Use a fresh Codex session with independent installed-runtime admission. Run
+   one new disposable forward/inverse lifecycle from the retained 090000 state,
+   through complete closed SQL comparison and reopened saved-content verification
+   for both writes. Preserve the inverse head-age requirement. Never replay the
+   retired 043703, 072500 or 090000 operations or manually invert their results.
+3. Review that complete connected evidence before registering the separate
+   ordinary forward-only route. Rebase its deferred draft against the current
+   scope and ownership checks. Keep the older generic writers and generic library
+   symbol modification blocked.
+4. Model and validate nonempty or historically drawn symbol-cache replay before
+   extending the META-only scope. Deleting geometry is not an admission workaround.
+5. Implement referenced-symbol propagation separately, including dependent-page
+   loading and its complete source and SQL effects. Unused-symbol evidence does
+   not cover this capability.
+6. Continue the documented schematic/PCB native structure completion, geometry,
    component-library and manufacturing-export backlog. The API inventory still
    contains 774 distinct methods; this update adds no public execution route.
 
