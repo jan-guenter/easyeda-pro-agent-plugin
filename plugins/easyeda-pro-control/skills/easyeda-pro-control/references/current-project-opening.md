@@ -322,6 +322,12 @@ The forward writer requests normal close, observes its original process/Job
 termination and compares the complete closed SQL effect. A new admitted
 verification generation excludes both inactive upload caches, reopens only the
 project, checks saved symbol content, closes, and compares complete SQL again.
+For a current META-only symbol, the content verifier derives exact raw-history
+and document-cache replay candidates from the complete preserved history.
+Native cache replay omits EDIT_HEAD; it can therefore synthesize the outer user
+from DOCHEAD. A match never ignores fields or proves the actual loading branch.
+The persisted SQL actor remains separately checked. Nonempty-canvas cache replay
+is outside this modeled case.
 Only that fully verified result can supply the inverse. The inverse derives
 its patch from the initial metadata and its baseline from the actual verified
 post-edit snapshot; it obtains fresh clock evidence and repeats the same write
@@ -349,6 +355,12 @@ found the other 17 documents unchanged and only native history/structure
 bookkeeping outside the target. That diagnostic does not authorize inverse,
 restoration, replay or ordinary writer use. The changed fixture is the baseline
 for any separately prepared future run, not evidence of a completed round trip.
+
+The later072500 unused-symbol attempt acknowledged its write and passed complete
+closed SQL proof, then failed saved-content verification on the cache-derived
+header user. Original-owner cleanup completed with final SQL equal to the verified
+post-write state. No inverse or Save was issued. The changed metadata remains;
+this operation is terminal and cannot be revived by the new projection model.
 
 After a facade restart, `validation-inspect` can read managed baseline, writer
 or verification history when no original coordinator remains. This returns

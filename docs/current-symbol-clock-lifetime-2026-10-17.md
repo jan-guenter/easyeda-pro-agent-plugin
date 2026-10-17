@@ -1,6 +1,51 @@
-# Current symbol validation: metadata dispatch and referenced-symbol scope
+# Current symbol validation: saved-content replay and referenced-symbol scope
 
-## Current result and correction
+## Current 072500 result
+
+The new unused-symbol run acknowledged the forward write and passed its complete
+closed SQL comparison. All 35 tables were checked: 29 stayed identical and six
+had exactly the modeled metadata/history/structure effects. All 17 peer documents
+were unchanged. Fresh verification reopening succeeded, but the saved-content
+check stopped on the exported `DOCHEAD.user`: the native result used the symbol
+UUID with no display names; the raw-history projection used the persisted actor
+UUID and empty names. Every other exported byte matched.
+
+Original-owner cleanup closed EasyEDA normally, observed termination and checked
+the complete final database against the verified post-write state. The operation
+is terminal and failed, not a completed forward/inverse lifecycle. No inverse,
+explicit Save, restoration or retry was issued. The disposable symbol retains
+the requested name and description; any future attempt starts from that state.
+Do not revive this operation or use a later diagnostic as its missing successful
+saved-content read.
+
+## Current cache-replay correction
+
+Pinned `project-worker.js`, SHA-256
+`b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`,
+has two history-loading paths. The raw path retains `EDIT_HEAD`. Its document
+cache writer omits that record; cached replay synthesizes the first actor from
+the document header instead. Explicit header users are still preserved. That
+modifier reaches `symbol.getStr` through the same native serializer.
+
+The observed result exactly matches the cache-derived form. The actual cache
+branch was not observed, so its use is an inference from source and output, not
+retained provenance. The correction models an additional exact complete-string
+candidate only for the pinned current version and META-only symbols. It does not
+ignore user fields, normalize native output, replace SQL actors, or change the
+older raw-history projection. Nonempty symbol canvas cache replay remains
+unsupported until its separate header/canvas behavior is modeled.
+
+Both producer hashes and the complete original SQL/source proof remain required.
+A matching candidate identifies a supported serialization, not which native
+loading branch executed. The stopped 072500 attempt stays failed. New connected
+validation is required before enabling the ordinary writer.
+
+This update also bounds concurrent managed-artifact hashing to four streams
+across callers. Warm journal checks can overlap; cold parsing, sorted selection,
+fresh hashes and path/identity checks remain. A failed batch drains its already
+started checks before returning. No connected latency improvement is claimed.
+
+## Earlier 043703 result and scope correction
 
 The 043703 disposable run passed the previous clock and missing-project-user
 failure points and dispatched the metadata write once. It then returned
@@ -139,14 +184,14 @@ JSON cannot construct this private issuer or grant execution authority.
 ## Verification and remaining work
 
 Source review, focused regressions, final lint/types/build, CI and installation
-results for 072500 are recorded in AGENTS.md as they complete. No connected
+results are recorded in AGENTS.md as they complete. No connected
 successful writer lifecycle or normal-writer enablement is claimed.
 
 1. After publication and installation, use a fresh Codex session with independent
    installed-runtime admission before any live call.
 2. Run one new disposable forward/inverse lifecycle on an unused symbol through
    complete closed SQL comparison and reopened saved-content verification.
-   Do not replay or invert the stopped 043703 operation.
+   Do not replay or invert the stopped 043703 or 072500 operations.
 3. Implement and validate referenced-symbol propagation separately, including
    dependent-page loading and its complete source and SQL effects. The current
    update deliberately omits this capability.

@@ -118,6 +118,14 @@ source can hide a universal admission failure. Preserve raw evidence and prove
 each allowed encoding difference; a comparison projection is not a saved
 checkpoint. Apply the same boundary through preflight, rollback and reconciliation.
 
+Trace how cached history reaches that exporter. The current project worker drops
+EDIT_HEAD when writing per-document caches; replay can synthesize the first actor
+from DOCHEAD rather than the persisted edit actor. An exact cache-derived candidate
+must preserve explicit header users, all metadata and record bytes. Keep the raw
+history model and SQL actor proof independent, pin the producer, and refuse shapes
+whose cache/canvas behavior has not been modeled. Output matching a candidate is
+not evidence that the corresponding cache branch was actually observed.
+
 Keep native membership separate from SDK getter projection. A schematic page's
 root-family set excludes inherited drawing-frame descendants that remain in its
 full ID index. A symbol editor instead owns Pins beneath its PART. Prove the

@@ -1,5 +1,5 @@
 /** Private current-version compiler. Supplied comparisons are not dispatch
- * authority. No public route calls this program. Its owner must journal once,
+ * authority. The disposable lifecycle owns its only registered route and must journal once,
  * qualify startup/source effects and verify the complete closed lifecycle.
  */
 import { z } from "zod";

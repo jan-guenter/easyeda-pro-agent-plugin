@@ -25,6 +25,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
+Update `0.3.0+codex.20261017090000` models exact current document-cache
+serialization for META-only symbol verification and bounds parallel journal
+hashing. The 072500 run acknowledged its forward write and passed complete
+closed SQL checks, then stopped on a saved-header user mismatch. Original-owner
+cleanup completed with the post-write database unchanged. The requested metadata
+remains in the disposable fixture; no inverse, Save or retry was issued. The
+complete round trip and ordinary writer enablement remain pending. Delivery
+results are recorded in AGENTS.md and the
+[current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
 Update `0.3.0+codex.20261017072500` restricts disposable metadata validation
 to unreferenced symbols and adds fixed post-mutation failure diagnostics.
 The 043703 run dispatched its edit, then stopped at an ambiguous `MUTATION`
