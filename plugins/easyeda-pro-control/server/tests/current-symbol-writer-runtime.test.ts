@@ -210,6 +210,8 @@ void test("private writer owns exactly one dispatch, original clock capture, nor
   const f = await fixture();
   await assert.rejects(f.wrongStartup(), /Original startup missing/u); assert.equal(f.state.transferred, false);
   await f.start(); assert.deepEqual(f.state.calls, ["preflight", "clock", "write"]); assert.equal(f.state.mutations, 1); assert.equal(f.state.clocks, 3);
+  assert.deepEqual(structuredClone(f.coordinator.inspect(ID)["retainedEvidence"]), { preflightReply: true, clockReply: true,
+    writeReply: true, beforeClock: true, armedClock: true, afterClock: true });
   assert.throws(() => f.coordinator.continuation(ID));
   assert.ok(f.state.writes.indexOf("writer-dispatch-intent") < f.state.writes.indexOf("writer-dispatch-reply"));
   await assert.rejects(f.start(), /already consumed/u);
@@ -240,6 +242,8 @@ for (const failure of ["post-clock", "owner-after-write", "late-clock-plan", "in
     assert.equal(f.state.mutations, failure === "post-clock" || failure === "owner-after-write" ? 1 : 0);
     assert.equal(f.state.clocks, failure === "post-clock" ? 3 : 2);
     if (failure === "post-clock" || failure === "owner-after-write") { assert.equal(summary["originalClockRepliesRetained"], true); }
+    assert.deepEqual(structuredClone(summary["retainedEvidence"]), { preflightReply: true, clockReply: true,
+      writeReply: failure === "post-clock" || failure === "owner-after-write", beforeClock: true, armedClock: true, afterClock: false });
     await assert.rejects(f.start(), /already consumed/u);
     if (failure === "owner-after-write") {
       await assert.rejects(f.coordinator.finishNormalClose(ID), /Synthetic owner/u); assert.equal(f.state.closeCalls, 0); return;

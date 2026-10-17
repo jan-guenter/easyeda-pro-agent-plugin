@@ -2,6 +2,12 @@
 
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
+On the current EasyEDA Pro 3.2.206 runtime, general schematic/PCB and library
+writers remain disabled. The separately exposed disposable symbol-metadata
+validation workflow is not yet a successful connected writer lifecycle.
+Older implemented adapters and their historical proofs do not enable them on
+this newer runtime. See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
 The scoped release limits `easyeda_control_design` execution to footprint
 editors under their existing guards. Schematic-page, symbol and PCB transactions,
 plus eight library metadata writers, are blocked pending native structure-job
@@ -19,7 +25,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261017020000` adds a bounded native startup-prefix wait
+Candidate `0.3.0+codex.20261017033309` fixes historical clock evidence being invalidated
+by legitimate writer capture/release steps. It also adds per-sample diagnostics,
+reduces repeated historical SQL parsing while retaining fresh integrity checks,
+and completes failed-opener close parity for the still-unregistered ordinary
+metadata workflow. The 020000 run stopped before its edit; original-owner cleanup
+proved complete SQL and raw-file equality. Normal writers remain disabled.
+See the [clock correction and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Update `0.3.0+codex.20261017020000` adds a bounded native startup-prefix wait
 before post-open observations and a retained-owner normal-close action for a
 failed disposable opening. The close leaves quarantine set until termination
 and bridge closure are proved. Fixed diagnostics distinguish project, tab and
