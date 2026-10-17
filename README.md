@@ -28,12 +28,21 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017123000` registers
+Update `0.3.0+codex.20261017143000` adds a disposable-only single-canvas-segment
+symbol-metadata validation profile and bounded historical JSON-digest reuse.
+Every cached digest still requires fresh byte, identity and runtime checks;
+connected latency improvement is not claimed. The new drawn-symbol profile is
+offline-tested and leaves ordinary editing META-only. Installed123000 has now
+passed the ordinary public route end to end on a disposable fixture, with exact
+SQL/reopened content and all 17 peer documents preserved. See the
+[current scope and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017123000` registers
 `easyeda_control_project_symbol_metadata` with strict offline schemas and
 purpose-bound ownership. It retains the shared writer validated by the 101500
-disposable round trip, but the new ordinary public route has not itself received
-a connected run. Referenced symbols and any historical drawing content remain
-unsupported. The update also corrects current-runtime doctor expectations and
+disposable round trip; its later installed-session ordinary run also passed.
+Referenced symbols and ordinary editing of historical drawing content remain
+unsupported. That update also corrects current-runtime doctor expectations and
 removes a redundant full-history scan used only to check an operation ID.
 See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md#ordinary-forward-only-symbol-metadata)
 and [evidence and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
@@ -919,12 +928,18 @@ Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/config
 
 ## First live use
 
+On the current3.2.206 runtime, use the separately guarded
+[ordinary metadata workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md#ordinary-forward-only-symbol-metadata)
+or the explicitly disposable validation workflow in that guide. The sequence
+below is for the older legacy-reviewed tuple; its tools are not registered for
+general design work on the current runtime.
+
 Before connecting, use `easyeda_control_api` to inspect exact operation schemas
 and validate the planned arguments offline. See the skill's [API reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/api-reference.md).
 
 1. Inspect `easyeda_control_runtime` status. For API editing, launch a contained instance. If EasyEDA was started separately, use `easyeda_control_native_ui` discover, retain the observed binding, inspect current windows, and request a confirmed normal close before `launch-contained`. Do not discard or save unrelated work at a prompt.
 2. Ask Codex to use `$easyeda-pro-control` and call `easyeda_control_status` on Start Page; require the imported private bridge to authenticate rather than treating its import dialog or build receipt as connection proof.
-3. Open a saved target with `easyeda_control_runtime`, `request.action:"open-existing"`, observed `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. It checks checkpoint/registry membership, exclusive tabs and the complete saved database unchanged. It does not create, replace, save or discard. See the [connection reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#open-an-existing-saved-project-from-start-page) for recovery; an unfinished transaction uses its own recovery path.
+3. Open a saved target with `easyeda_control_runtime`, `request.action:"open-existing"`, observed `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. It checks checkpoint/registry membership, exclusive tabs and the complete saved database unchanged. It does not create, replace, save or discard. See the [connection reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#legacy-existing-project-open-from-start-page) for recovery; an unfinished transaction uses its own recovery path.
 4. Use `easyeda_control_context` to prove the current project path/UUID and
    document UUID/type/tab.
 5. For the admitted tuple, use `easyeda_control_exact_read` with the current

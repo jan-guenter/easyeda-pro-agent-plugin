@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { controlDataDirectory, controlRootCapability } from "../src/artifacts.ts";
 import { createCheckpoint } from "../src/checkpoint.ts";
-import { assertCurrentSymbolMetaOnlyBaseline } from "../src/current-symbol-meta-only.ts";
+import { assertCurrentDisposableSymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "../src/current-symbol-meta-only.ts";
 import { readNativeHistoryCheckpoint } from "../src/native-history.ts";
 import { decodeCurrentSymbolPreEditHistory } from "../src/symbol-sql-comparator.ts";
-import { IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
+import { IDS, TIMES, applyEffect, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const IDENTITY = Object.freeze({ projectUuid: IDS.project, branchUuid: IDS.branch });
 const TARGET = Object.freeze({ ...IDENTITY, ownerUuid: IDS.actor, symbolUuid: IDS.target });
@@ -48,6 +48,33 @@ void test("a tombstoned canvas refuses despite a META-only materialized document
   const target = decoded.history.documents.find((document) => document.uuid === IDS.target);
   assert.deepEqual(target?.records.map((record) => record.type), ["META"]);
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /canvas/u);
+});
+
+void test("only the disposable entrypoint admits one historical canvas segment and requalifies the inverse baseline", async () => {
+  const input = await fixture();
+  const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
+  const forward = await assertCurrentDisposableSymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP, DESIRED);
+  assert.equal(forward.evidence["permittedPurpose"], "disposable-validation"); assert.equal(forward.evidence["canvasRecords"], 1);
+  assert.deepEqual(forward.canvasClock, { maximumTargetHeaderTime: 1, remainingWrites: 2 });
+  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /canvas/u);
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(structuredClone(input.before), binding(input), TARGET, decoded.history, DESIRED, STARTUP), /original inventory/u);
+  applyEffect(input.path);
+  const inverseInput = { path: input.path, before: await inventory(input.path) };
+  const inverseHistory = await decodeCurrentSymbolPreEditHistory(inverseInput.before, IDENTITY);
+  const inverse = await assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, inverseHistory.history, DESIRED, STARTUP);
+  assert.deepEqual(inverse.canvasClock, { maximumTargetHeaderTime: TIMES.document, remainingWrites: 1 });
+  const changed = { ...inverseHistory.history, plaintextBytes: inverseHistory.history.plaintextBytes + 1 };
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, changed, DESIRED, STARTUP), /META-only baseline/u);
+});
+
+void test("disposable eligibility never falls back around ambiguous history and retains the META-only path", async () => {
+  const crossed = await prepared('{"type":"LINE","ticket":3,"id":"shape"}||{"x":1}|\n{"type":"META_PLACEHOLDER","ticket":4,"id":"shape"}||');
+  const decoded = await decodeCurrentSymbolPreEditHistory(crossed.before, IDENTITY);
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(crossed.before, binding(crossed), TARGET, decoded.history, DESIRED, STARTUP), /type changed/u);
+  const empty = await prepared();
+  const emptyDecoded = await decodeCurrentSymbolPreEditHistory(empty.before, IDENTITY);
+  const result = await assertCurrentDisposableSymbolBaseline(empty.before, binding(empty), TARGET, emptyDecoded.history, DESIRED, STARTUP);
+  assert.equal(result.canvasClock, undefined); assert.equal(result.evidence["profile"], "private.current-symbol-meta-only-baseline.v1");
 });
 
 void test("all non-metadata atom chains refuse before mutation, including empty and superseded tombstones", async () => {

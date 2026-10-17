@@ -113,7 +113,7 @@ void test("registered disconnected status resamples runtime under a lease withou
   }
 });
 
-void test("restricted status distinguishes scoped metadata registration, shared live proof and disabled generic writers", async () => {
+void test("restricted status separates historical metadata validation, offline canvas support and current authority", async () => {
   const fixture = await registeredStatus({ facadeMode: "calculation-only" });
   const result = await fixture.invoke({});
   const facade = result["facade"], upstream = result["upstream"];
@@ -122,18 +122,23 @@ void test("restricted status distinguishes scoped metadata registration, shared 
   assert.equal(JSON.stringify(facade["availableTools"]), JSON.stringify(CALCULATION_ONLY_TOOLS));
   assert.ok(typeof facade["capabilityScope"] === "string");
   assert.match(facade["capabilityScope"], /META-only symbol lifecycle passed an installed101500 disposable forward\/inverse round trip/u);
-  assert.match(facade["capabilityScope"], /ordinary route remains connected-untested/u);
+  assert.match(facade["capabilityScope"], /Installed123000 passed the separate ordinary unused META-only forward-only route/u);
+  assert.match(facade["capabilityScope"], /historical validation grants no current-invocation authority/u);
+  assert.match(facade["capabilityScope"], /Ordinary metadata changes still reject all historical canvas/u);
+  assert.match(facade["capabilityScope"], /disposable single-canvas-segment profile has offline tests only/u);
   assert.match(facade["capabilityScope"], /Generic design writers remain disabled/u);
   const capabilities = upstream["capabilities"];
   assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "generic-design-routes" }));
   assert.equal(JSON.stringify(capabilities["projectSymbolMetadata"]), JSON.stringify({ tool: "easyeda_control_project_symbol_metadata",
     scope: "unreferenced-project-local-meta-only-history-name-description-forward-only", runtimeAdmissionRequired: true,
     designMutation: true, connectedValidation: false, originalOwnerRequired: true,
+    historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
     phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
-    scope: "sealed-disposable-unused-meta-only-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+    scope: "sealed-disposable-unused-meta-only-or-single-canvas-segment-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
+    singleCanvasSegmentValidation: "offline-regression-only",
     normalWritersEnabled: false, phaseEffectAcknowledgementsRequired: true, originalOwnerRequired: true }));
   const navigation = capabilities["navigation"];
   assert.ok(isRecord(navigation));

@@ -1,7 +1,8 @@
 /** Pure synthetic budget checks, never an editor or database mutation. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { prepareCurrentSymbolWriteBudget } from "../src/current-symbol-write-budget.ts";
+import { prepareCurrentSingleCanvasSegmentWriteBudget, prepareCurrentSymbolWriteBudget } from "../src/current-symbol-write-budget.ts";
+import { CURRENT_SYMBOL_WRITE_TIME_CEILING, CURRENT_SYMBOL_WRITE_WINDOW_MS } from "../src/current-symbol-write-program.ts";
 import { materializeNativeHistory } from "../src/native-history.ts";
 import { isRecord, sha256Json } from "../src/core.ts";
 import type { DecodedSymbolSqlRawHistory } from "../src/symbol-sql-comparator.ts";
@@ -168,4 +169,77 @@ void test("SQL rowid and AUTOINCREMENT allocation reserve the inverse before dis
   }
   const dataEdge = allocationEdge(before, "history_data", "id");
   await assert.rejects(budget(input, DESIRED, dataEdge), /sequence allocation/u);
+});
+
+function canvasInitial(raw = '{"x":1}', updateTime = 100): string {
+  return `${initial(2, undefined, "Before", updateTime)}|\n{"type":"LINE","ticket":2,"id":"drawn"}||${raw}`;
+}
+async function canvasBudget(input = decoded([canvasInitial()]), desired: Parameters<typeof prepareCurrentSymbolWriteBudget>[2] = DESIRED,
+  restore?: Parameters<typeof prepareCurrentSymbolWriteBudget>[5], inventory?: NativeSqlInventory): Promise<Readonly<Record<string, unknown>>> {
+  return prepareCurrentSingleCanvasSegmentWriteBudget(input, TARGET, desired, inventory ?? await baseline(), STARTUP, restore);
+}
+
+void test("separate canvas budget preserves drawing bytes without broadening the META-only budget", async () => {
+  const drawing = JSON.stringify({ label: "Ω\\".repeat(1500) });
+  const input = decoded([canvasInitial(drawing)]);
+  const before = JSON.stringify(input), metadataOnly = await budget(decoded()), result = await canvasBudget(input);
+  assert.equal(result["profile"], "private.current-single-canvas-segment-write-budget.v1");
+  assert.equal(result["reservedWrites"], 1); assert.equal(result["afterChunks"], 2);
+  assert.equal(result["executionAuthorized"], false); assert.equal(result["producerBindingVerified"], false);
+  assert.ok(Number(result["maximumSavedContentBytes"]) > Number(metadataOnly["maximumSavedContentBytes"]));
+  assert.ok(Number(result["maximumSavedEnvelopeBytes"]) > Number(metadataOnly["maximumSavedEnvelopeBytes"]));
+  assert.equal(JSON.stringify(input), before);
+  await assert.rejects(budget(input), /document-cache canvas/u);
+  await assert.rejects(canvasBudget(decoded()), /requires historical canvas/u);
+  const largeDrawing = JSON.stringify({ label: "x".repeat(60_000) });
+  const large = decoded([canvasInitial(largeDrawing)]);
+  await assert.rejects(canvasBudget(large, { ...DESIRED, description: "x".repeat(6000) }), /reader byte limit/u);
+});
+
+void test("canvas original eligibility and strictly later synthetic headers cannot be hidden by the appended edit", async () => {
+  const repeat = `${initial(3, undefined, "Later", 200)}|\n{"type":"LINE","ticket":3,"id":"drawn"}||`;
+  const multipleSegments = decoded([canvasInitial(), repeat], 3, 2);
+  const equalTime = decoded([canvasInitial(), initial(3, undefined, "Later", 100)], 3, 2);
+  const discarded = decoded([canvasInitial(' {"x":1}')]);
+  await assert.rejects(canvasBudget(multipleSegments), /multiple history segments/u);
+  await assert.rejects(canvasBudget(equalTime), /segment arrival order/u);
+  await assert.rejects(canvasBudget(discarded), /discarded/u);
+  const noSingleWindow = decoded([canvasInitial('{"x":1}', CURRENT_SYMBOL_WRITE_TIME_CEILING - CURRENT_SYMBOL_WRITE_WINDOW_MS)]);
+  await assert.rejects(canvasBudget(noSingleWindow), /reserved write headroom/u);
+  const firstCeiling = CURRENT_SYMBOL_WRITE_TIME_CEILING - CURRENT_SYMBOL_WRITE_WINDOW_MS - 1;
+  const noDoubleWindow = decoded([canvasInitial('{"x":1}', firstCeiling - CURRENT_SYMBOL_WRITE_WINDOW_MS)]);
+  await assert.rejects(canvasBudget(noDoubleWindow, DESIRED, DESIRED), /reserved write headroom/u);
+  const edgeInput = decoded([canvasInitial('{"x":1}', firstCeiling - CURRENT_SYMBOL_WRITE_WINDOW_MS - 1)]);
+  const edge = await canvasBudget(edgeInput, DESIRED, DESIRED);
+  assert.equal(edge["reservedWrites"], 2);
+});
+
+void test("canvas forward and larger exact restoration reserve intermediate output and summed SQL growth", async () => {
+  const before = await baseline(), input = decoded([canvasInitial()], 2, 62), restore = { ...DESIRED, name: "Original", description: "x".repeat(5000) };
+  const result = await canvasBudget(input, DESIRED, restore), single = await canvasBudget(input);
+  assert.equal(result["reservedWrites"], 2); assert.equal(result["afterHistoryRows"], 64); assert.equal(result["afterMaximumTicket"], 4);
+  assert.equal(result["afterChunks"], 3);
+  assert.ok(Number(result["maximumSavedContentBytes"]) > Number(single["maximumSavedContentBytes"]));
+  assert.ok(Number(result["maximumRawHistoryBytes"]) > input.history.plaintextBytes + Number(result["maximumUploadBytes"]));
+  const oneSql = single["sqlCapacity"], twoSql = result["sqlCapacity"]; assert.ok(isRecord(oneSql) && isRecord(twoSql));
+  assert.equal(Number(twoSql["maximumRows"]), Number(oneSql["maximumRows"]) + 2);
+  const growth = Number(oneSql["maximumEncodedBytes"]) - Buffer.byteLength(JSON.stringify(before));
+  const near = { ...before, properties: { ...before.properties,
+    syntheticPadding: "x".repeat(16_777_216 - Buffer.byteLength(JSON.stringify(before)) - growth - 100) } };
+  await canvasBudget(input, DESIRED, undefined, near);
+  await assert.rejects(canvasBudget(input, DESIRED, restore, near), /SQL encoded budget/u);
+  const noRestorationRow = decoded([canvasInitial()], 2, 63);
+  await assert.rejects(canvasBudget(noRestorationRow, DESIRED, restore), /64-row/u);
+  await assert.rejects(canvasBudget(input, DESIRED, { ...restore, description: "x".repeat(65_536) }), /reader byte limit/u);
+});
+
+void test("canvas envelopes count raw escaped drawing bodies as well as desired metadata", async () => {
+  const drawing = JSON.stringify({ label: "\\".repeat(500) });
+  const plainDrawing = JSON.stringify({ label: "x".repeat(1000) });
+  const input = decoded([canvasInitial(drawing)]), plainInput = decoded([canvasInitial(plainDrawing)]);
+  const desired = { ...DESIRED, description: "\\".repeat(19_000) };
+  const escaped = await canvasBudget(input, desired), plain = await canvasBudget(plainInput, desired);
+  assert.equal(escaped["maximumSavedContentBytes"], plain["maximumSavedContentBytes"]);
+  assert.ok(Number(escaped["maximumSavedEnvelopeBytes"]) > Number(plain["maximumSavedEnvelopeBytes"]));
+  assert.ok(Number(escaped["maximumSavedEnvelopeBytes"]) <= 393_216);
 });

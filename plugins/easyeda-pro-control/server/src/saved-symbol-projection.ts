@@ -26,12 +26,24 @@ export interface CurrentDocumentCacheSavedSymbolProjection extends Omit<SavedSym
   readonly workerSourceSha256: typeof CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256;
   readonly cacheBranchObserved: false;
 }
-type Projection = SavedSymbolProjection | CurrentDocumentCacheSavedSymbolProjection;
+export interface CurrentSingleCanvasSegmentSavedSymbolProjection extends Omit<CurrentDocumentCacheSavedSymbolProjection, "profile"> {
+  readonly profile: "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1";
+  readonly canvasChunkIndex: number;
+  readonly maximumTargetHeaderTime: number;
+  readonly segmentOrderIndependent: true;
+}
+type Projection = SavedSymbolProjection | CurrentDocumentCacheSavedSymbolProjection | CurrentSingleCanvasSegmentSavedSymbolProjection;
+type Strategy = "raw" | "current-document-cache" | "current-single-canvas-segment-cache";
 interface ProjectionInput {
   readonly chunks: readonly string[]; readonly targetUuid: string; readonly maximumTicket: number; readonly currentEditVersion: string | null;
 }
 interface Prepared { readonly descriptor: Projection; readonly header: Header; readonly metadata: ObjectData; readonly metadataTicket: number;
   readonly currentEditVersion: string | null; readonly canvas: readonly string[] }
+interface SingleCanvasSegmentScope {
+  readonly types: Map<string, string>;
+  canvasChunkIndex?: number;
+  latestHeaderTime: number; latestHeaderCount: number; latestHeaderTicket: number; maximumHeaderTicket: number;
+}
 const originals = new WeakMap<object, Prepared>();
 const IGNORED = new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Saved symbol projection: ${message}`); } }
@@ -80,6 +92,25 @@ function applyAtom(atoms: Map<string, AtomChain>, atom: Atom): boolean {
   return selected && atom.type !== "ELE_PLACEHOLDER" && atom.type !== "META_PLACEHOLDER";
 }
 
+function observeSingleCanvasHeader(scope: SingleCanvasSegmentScope | undefined, value: ObjectData, ticketValue: unknown): void {
+  if (scope === undefined) { return; }
+  const ticket = number(ticketValue), time = number(value["updateTime"]);
+  need(time > 0, "single-canvas-segment requires explicit positive header times");
+  scope.maximumHeaderTicket = Math.max(scope.maximumHeaderTicket, ticket);
+  if (time > scope.latestHeaderTime) { scope.latestHeaderTime = time; scope.latestHeaderCount = 1; scope.latestHeaderTicket = ticket; }
+  else if (time === scope.latestHeaderTime) { scope.latestHeaderCount += 1; }
+}
+
+function observeSingleCanvasAtom(scope: SingleCanvasSegmentScope | undefined, atom: Atom, chunkIndex: number): void {
+  if (scope === undefined) { return; }
+  need(!scope.types.has(atom.id) || scope.types.get(atom.id) === atom.type, "single-canvas-segment atom type changed"); scope.types.set(atom.id, atom.type);
+  if (!IGNORED.has(atom.type)) {
+    need(scope.canvasChunkIndex === undefined || scope.canvasChunkIndex === chunkIndex, "canvas occurrences span multiple history segments");
+    scope.canvasChunkIndex = chunkIndex;
+    need(atom.raw === "" || (atom.raw.startsWith("{") && atom.raw.endsWith("}")), "canvas body would be discarded by the native serializer");
+  }
+}
+
 /** Replays the already admitted no-snapshot, unpending, complete linear history.
  * Exact clock duplicates with different raw bodies remain explicitly unsupported:
  * native cache pointer replacement must be modeled before admitting that case.
@@ -107,7 +138,25 @@ export async function prepareCurrentDocumentCacheSavedSymbolProjection(input: Pr
   return descriptor;
 }
 
-async function prepareProjection(input: ProjectionInput, strategy: "raw" | "current-document-cache"): Promise<Projection> {
+/** Pure candidate; live callers must independently bind disposable ownership.
+ * Pinned WORKER xA at1709761 and pd at1851763 load segments concurrently;
+ * getCompressKeys at291095 emits insertion order without needNum/clearDelete.
+ * One canvas-bearing segment preserves its exact key order under that loading.
+ * onDocHead at275156 keeps the first equal-time header and updates its ticket
+ * only on a newer time: require a unique latest header with a maximal ticket.
+ * flowParseFull.end at240741 omits lone-DOCHEAD target cache fragments;
+ * refuse those rather than treating an omitted header as a replayed header.
+ * compress at289242 discards nonempty bodies without literal outer braces;
+ * refuse those lossy encodings instead of rewriting them in this projection.
+ */
+export async function prepareCurrentSingleCanvasSegmentSavedSymbolProjection(input: ProjectionInput): Promise<CurrentSingleCanvasSegmentSavedSymbolProjection> {
+  need(input.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "single-canvas-segment editor version refused");
+  const descriptor = await prepareProjection(input, "current-single-canvas-segment-cache");
+  need(descriptor.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1", "single-canvas-segment preparation profile differs");
+  return descriptor;
+}
+
+async function prepareProjection(input: ProjectionInput, strategy: Strategy): Promise<Projection> {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
   need(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
     "target/ticket input refused");
@@ -132,8 +181,11 @@ async function prepareProjection(input: ProjectionInput, strategy: "raw" | "curr
   need(document?.docType === "SYMBOL", "target not an admitted SYMBOL");
   const atoms = new Map<string, AtomChain>();
   let maximum = 0, metadataTicket = 0, selected: Header | undefined, steps = 0;
-  for (const chunk of chunks) {
+  const singleCanvasScope: SingleCanvasSegmentScope | undefined = strategy === "current-single-canvas-segment-cache"
+    ? { types: new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 } : undefined;
+  for (const [chunkIndex, chunk] of chunks.entries()) {
     let current: ObjectData | undefined, documentCacheEdit: ObjectData | undefined, edit: ObjectData | undefined;
+    let targetFragmentRecords = 0;
     const records = chunk.split("|\n"); if (records.at(-1) === "") { records.pop(); }
     for (const raw of records) {
       need(Buffer.byteLength(raw) <= 262_144, "individual raw record exceeds the cooperative proof bound");
@@ -146,11 +198,14 @@ async function prepareProjection(input: ProjectionInput, strategy: "raw" | "curr
         edit ??= { uuid: current["uuid"], username: isRecord(current["user"]) ? current["user"]["username"] : undefined,
           nickname: isRecord(current["user"]) ? current["user"]["nickname"] : undefined, updateTime: current["updateTime"] };
         if (current["uuid"] === targetUuid) {
+          targetFragmentRecords += 1;
+          observeSingleCanvasHeader(singleCanvasScope, current, header["ticket"]);
           documentCacheEdit ??= { uuid: current["uuid"], username: isRecord(current["user"]) ? current["user"]["username"] : undefined,
             nickname: isRecord(current["user"]) ? current["user"]["nickname"] : undefined, updateTime: current["updateTime"] };
           selected = applyHeader(current, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected);
         }
       } else if (current?.["uuid"] === targetUuid) {
+        targetFragmentRecords += 1;
         const id = text(header["id"]), type = text(header["type"]);
         // Native normalization is type-sensitive; these types are not symbol canvas primitives in the first profile.
         need(type !== "NET" && type !== "RULE_SELECTOR", "case-insensitive cross-type key replay is not admitted");
@@ -159,10 +214,12 @@ async function prepareProjection(input: ProjectionInput, strategy: "raw" | "curr
         const client = text(hasClient ? header["client"] : current["client"]), ticket = number(header["ticket"]);
         need(/^[a-f0-9]{16}$/u.test(client), "record client refused");
         const atom: Atom = { id, type, ticket, client, raw: raw.slice(raw.indexOf("||") + 2) };
+        observeSingleCanvasAtom(singleCanvasScope, atom, chunkIndex);
         if (applyAtom(atoms, atom)) { metadataTicket = Math.max(metadataTicket, ticket); }
       }
       steps += 1; if (steps % 128 === 0) { await yieldProofEventLoop(); }
     }
+    need(singleCanvasScope === undefined || targetFragmentRecords !== 1, "lone target DOCHEAD is omitted from the document cache");
   }
   need(maximum === maximumTicket && selected !== undefined, "global ticket/header differs from the prepared edit");
   const meta = atoms.get("META")?.last;
@@ -178,14 +235,27 @@ async function prepareProjection(input: ProjectionInput, strategy: "raw" | "curr
     if (!IGNORED.has(atom.type)) { canvas.push(line(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain.first.ticket ? undefined : chain.first.ticket)); }
     steps += 1; if (steps % 128 === 0) { await yieldProofEventLoop(); }
   }
-  need(strategy === "raw" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  need(strategy !== "current-document-cache" || canvas.length === 0, "document-cache canvas projection is not admitted");
+  if (singleCanvasScope !== undefined) {
+    need(singleCanvasScope.canvasChunkIndex !== undefined && canvas.length > 0, "single-canvas-segment requires historical canvas atoms");
+    need(singleCanvasScope.latestHeaderCount === 1 && singleCanvasScope.latestHeaderTicket === singleCanvasScope.maximumHeaderTicket,
+      "canvas header depends on segment arrival order");
+  }
   const common = { targetUuid, maximumTicket,
     rawHistorySha256: sha256Json(chunks.map((chunk) => digest(chunk))), rawHistoryBytes, canvasRecords: canvas.length,
     executionAuthorized: false, producerBindingVerified: false } as const;
-  const descriptor: Projection = strategy === "raw"
-    ? Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common })
-    : Object.freeze({ profile: "private.current-document-cache-saved-symbol-getstr-projection.v1", ...common,
+  let descriptor: Projection;
+  if (strategy === "raw") { descriptor = Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common }); }
+  else if (singleCanvasScope === undefined) {
+    descriptor = Object.freeze({ profile: "private.current-document-cache-saved-symbol-getstr-projection.v1", ...common,
       workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
+  } else {
+    const { canvasChunkIndex } = singleCanvasScope;
+    need(canvasChunkIndex !== undefined, "single-canvas-segment index missing");
+    descriptor = Object.freeze({ profile: "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1", ...common,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false,
+      canvasChunkIndex, maximumTargetHeaderTime: singleCanvasScope.latestHeaderTime, segmentOrderIndependent: true });
+  }
   originals.set(descriptor, { descriptor, header: selected, metadata, metadataTicket, currentEditVersion, canvas });
   return descriptor;
 }
@@ -234,5 +304,28 @@ export function verifyCurrentSavedSymbolProjectionAlternatives(raw: SavedSymbolP
   need(matched !== undefined, "native saved content differs from the complete raw-history projection");
   return Object.freeze({ ...verifySavedSymbolContent(matched, observation),
     matchedProjection: matched === raw ? "complete-raw-history" : "current-document-cache",
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
+}
+
+/** Separate exact relation for the disposable-only single-canvas profile.
+ * This helper is data-only; caller-owned JSON cannot authorize a saved read.
+ * The META-only selector above deliberately continues to reject this profile.
+ */
+export function verifyCurrentSingleCanvasSegmentSavedSymbolProjectionAlternatives(raw: SavedSymbolProjection,
+  documentCache: CurrentSingleCanvasSegmentSavedSymbolProjection, observation: unknown): Readonly<Record<string, unknown>> {
+  const cached = originals.get(documentCache), retained = originals.get(raw);
+  need(retained !== undefined && cached !== undefined && raw.profile === "private.saved-symbol-getstr-projection.v1" &&
+    documentCache.profile === "private.current-single-canvas-segment-saved-symbol-getstr-projection.v1" &&
+    retained.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion &&
+    cached.currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion &&
+    documentCache.workerSourceSha256 === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256 &&
+    documentCache.rawHistorySha256 === raw.rawHistorySha256 && documentCache.rawHistoryBytes === raw.rawHistoryBytes &&
+    documentCache.targetUuid === raw.targetUuid && documentCache.maximumTicket === raw.maximumTicket &&
+    raw.canvasRecords > 0 && documentCache.canvasRecords === raw.canvasRecords,
+  "single-canvas-segment alternative has different complete history");
+  need(isRecord(observation) && typeof observation["workerClient"] === "string" && typeof observation["content"] === "string", "native observation shape/identity differs");
+  const matched = observation["content"] === expectedSavedSymbolContent(raw, observation["workerClient"]) ? raw : documentCache;
+  return Object.freeze({ ...verifySavedSymbolContent(matched, observation),
+    matchedProjection: matched === raw ? "complete-raw-history" : "current-single-canvas-segment-cache",
     workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
 }

@@ -35,10 +35,11 @@ interface Harness {
   readonly calls: string[];
   readonly run: () => Promise<Bag>;
   readonly original: (value: unknown) => unknown;
+  readonly canvasClock: (value: unknown) => unknown;
   readonly source: object;
 }
 async function fixture(symbolUuid: string, purpose: "disposable-validation" | "ordinary-symbol-metadata",
-  historyMismatch = false, metadataRefusal = false, remainingWrites: 1 | 2 = 1): Promise<Harness> {
+  historyMismatch = false, metadataRefusal = false, remainingWrites: 1 | 2 = 1, canvas = false): Promise<Harness> {
   const calls: string[] = [], retainedHistory = history();
   const expectation = selectCurrentSymbolStartupExpectation(retainedHistory);
   const generation = Object.freeze({ operationId: OPERATION_ID }), lease = Object.freeze({ synthetic: "original-lease" });
@@ -66,6 +67,16 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
   const helper = /^function need\(.*$/mu.exec(text)?.[0], start = text.indexOf("export async function qualifyCurrentSymbolWriterStartup(");
   assert.ok(start > 0 && helper !== undefined);
   const program = stripTypeScriptTypes(`${helper}\n${text.slice(start)}`).replace("export async function", "async function");
+  const metadataScope = (inventory: unknown, binding: unknown, target: unknown, selectedHistory: unknown, desired: unknown, startup: unknown,
+    restoration?: unknown): Promise<Bag> => {
+    assert.equal(binding, baseline); assert.notEqual(baseline.copy.sha256, baseline.checkpoint.checkpointSha256);
+    assert.equal(inventory, baseline.inventory); assert.equal(target, baseline.preparation.target); assert.equal(selectedHistory, retainedHistory);
+    assert.equal(desired, baseline.preparation.metadata.after); assert.deepEqual(startup, expectation);
+    assert.equal(restoration, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined);
+    calls.push("metadata-scope");
+    if (metadataRefusal || (canvas && purpose === "ordinary-symbol-metadata")) { return Promise.reject(new Error("Synthetic unsupported complete metadata history")); }
+    return Promise.resolve({ profile: "private.current-symbol-meta-only-baseline.v1", executionAuthorized: false });
+  };
   const context = createContext({ Object, WeakMap, WeakSet, Promise, Error, AggregateError, canonicalJson, sha256Json, sha256Text,
     attempts: new WeakSet(), collections: new WeakMap(), issued: new WeakMap(), engine, generation, remainingWrites,
     selectCurrentSymbolStartupExpectation,
@@ -78,16 +89,12 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
         projectUuid: PROJECT, libraryAtomHeaders: "preserve" }); calls.push("closed-history");
       return Promise.resolve(historyMismatch ? { ...retainedHistory, semanticSha256: "0".repeat(64) } : retainedHistory);
     },
-    assertCurrentSymbolMetaOnlyBaseline: (inventory: unknown, binding: unknown, target: unknown, selectedHistory: unknown, desired: unknown, startup: unknown,
-      restoration: unknown): Promise<Bag> => {
-      assert.equal(binding, baseline); assert.notEqual(baseline.copy.sha256, baseline.checkpoint.checkpointSha256);
-      assert.equal(inventory, baseline.inventory); assert.equal(target, baseline.preparation.target); assert.equal(selectedHistory, retainedHistory);
-      assert.equal(desired, baseline.preparation.metadata.after);
-      assert.deepEqual(startup, expectation);
-      assert.equal(restoration, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined);
-      calls.push("metadata-scope");
-      if (metadataRefusal) { return Promise.reject(new Error("Synthetic unsupported complete metadata history")); }
-      return Promise.resolve({ profile: "private.current-symbol-meta-only-baseline.v1", executionAuthorized: false });
+    assertCurrentSymbolMetaOnlyBaseline: (...args: Parameters<typeof metadataScope>): Promise<Bag> => {
+      assert.equal(purpose, "ordinary-symbol-metadata"); return metadataScope(...args);
+    },
+    assertCurrentDisposableSymbolBaseline: async (...args: Parameters<typeof metadataScope>): Promise<Bag> => {
+      assert.equal(purpose, "disposable-validation");
+      return { evidence: await metadataScope(...args), ...(canvas ? { canvasClock: Object.freeze({ maximumTargetHeaderTime: 1000, remainingWrites }) } : {}) };
     },
     assertExpectedFingerprint: (): void => { calls.push("fingerprint"); },
     validateSdkLocalRuntimeFingerprint: (): void => { calls.push("runtime-pin"); },
@@ -113,6 +120,7 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
       assert.ok(isRecord(result)); return result;
     },
     original: (value: unknown): unknown => { context["selectedToken"] = value; return runInContext("issued.get(selectedToken)?.source", context) as unknown; },
+    canvasClock: (value: unknown): unknown => { context["selectedToken"] = value; return runInContext("issued.get(selectedToken)?.canvasClock", context) as unknown; },
   };
 }
 
@@ -124,6 +132,20 @@ void test("startup qualification rejects a referenced target before native obser
     await assert.rejects(selected.run(), /qualification refused/u);
     assert.deepEqual(selected.calls, ["owner-revalidation", "closed-history"]);
   }
+});
+
+void test("canvas eligibility is selected only by original disposable purpose and retains its exact clock prerequisite", async () => {
+  for (const remainingWrites of [1, 2] as const) {
+    const selected = await fixture(UNUSED, "disposable-validation", false, false, remainingWrites, true);
+    const token = await selected.run();
+    const clock = selected.canvasClock(token);
+    assert.deepEqual(clock, { maximumTargetHeaderTime: 1000, remainingWrites });
+    assert.equal(token["canvasClockPrerequisite"], clock); assert.equal(Object.isFrozen(clock), true);
+    assert.equal(selected.canvasClock(structuredClone(token)), undefined);
+  }
+  const ordinary = await fixture(UNUSED, "ordinary-symbol-metadata", false, false, 1, true);
+  await assert.rejects(ordinary.run(), /unsupported complete metadata history/u);
+  assert.deepEqual(ordinary.calls, ["owner-revalidation", "closed-history", "metadata-scope"]);
 });
 
 void test("unused targets retain the complete original startup qualification and non-authorizing token", async () => {

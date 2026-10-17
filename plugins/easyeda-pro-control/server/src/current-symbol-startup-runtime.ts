@@ -14,7 +14,8 @@ import { CURRENT_SYMBOL_STARTUP_STAGES, buildCurrentSymbolStartupGuard } from ".
 import type { EasyedaControlEngine } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
-import { assertCurrentSymbolMetaOnlyBaseline } from "./current-symbol-meta-only.ts";
+import { assertCurrentDisposableSymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "./current-symbol-meta-only.ts";
+import type { CurrentSymbolCanvasClockPrerequisite } from "./current-symbol-meta-only.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { exact } from "./symbol-clock-controls.ts";
 
@@ -29,11 +30,13 @@ export interface CurrentSymbolWriterStartup {
   readonly globalIdleVerified: false;
   readonly persistenceVerified: false;
   readonly executionAuthorized: false;
+  readonly canvasClockPrerequisite?: CurrentSymbolCanvasClockPrerequisite;
 }
 interface Original {
   readonly engine: EasyedaControlEngine; readonly generation: CurrentProjectOnlySymbolGeneration;
   readonly source: CurrentProjectOnlySymbolGenerationSource; readonly expectation: CurrentSymbolStartupExpectation;
   readonly text: string; readonly resultArtifact: ArtifactDescriptor;
+  readonly canvasClock?: CurrentSymbolCanvasClockPrerequisite;
 }
 const attempts = new WeakSet<CurrentProjectOnlySymbolGeneration>(), issued = new WeakMap<object, Original>();
 const MAX_BYTES = 98_304;
@@ -123,8 +126,10 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
   need(scopeReader !== undefined); const scope = scopeReader.call(engine.upstream); need(scope !== undefined);
   const scopeText = canonicalJson(scope), source = assertCurrentProjectOnlySymbolGeneration(generation, engine, scopeText);
+  const purpose = source.source.purpose;
+  need(purpose === "ordinary-symbol-metadata" || purpose === "disposable-validation");
   need((remainingWrites === 1 || remainingWrites === 2) &&
-    (remainingWrites !== 2 || (source.source.purpose ?? "disposable-validation") === "disposable-validation"));
+    (remainingWrites !== 2 || purpose === "disposable-validation"));
   need(!attempts.has(generation)); attempts.add(generation);
   const collection: Collection = { engine, resultPublicationAttempted: false, failureObserved: false }; collections.set(generation, collection);
   const evidenceId = `current-startup-${sha256Json({ operationId: generation.operationId })}`;
@@ -150,11 +155,16 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   if (expectation.templates.some((template) => template.uuid === baseline.preparation.target.symbolUuid)) {
     throw new Error("Current symbol writer refuses referenced-symbol propagation: native linked-sheet updates are unsupported.");
   }
-  if (source.source.purpose === "ordinary-symbol-metadata") {
+  if (purpose === "ordinary-symbol-metadata") {
     need(source.source.startupExpectation !== undefined && canonicalJson(expectation) === canonicalJson(source.source.startupExpectation));
   }
-  const metadataScope = await assertCurrentSymbolMetaOnlyBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
-    baseline.preparation.metadata.after, expectation, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined); check();
+  const eligibility = purpose === "disposable-validation"
+    ? await assertCurrentDisposableSymbolBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
+      baseline.preparation.metadata.after, expectation, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined)
+    : { evidence: await assertCurrentSymbolMetaOnlyBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
+      baseline.preparation.metadata.after, expectation), canvasClock: undefined };
+  check(); const { evidence: metadataScope, canvasClock } = eligibility;
+  need(canvasClock === undefined || (purpose === "disposable-validation" && canvasClock.remainingWrites === remainingWrites));
   const fingerprint = source.source.expectedFingerprint;
   assertExpectedFingerprint(fingerprint); validateSdkLocalRuntimeFingerprint(fingerprint);
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
@@ -178,8 +188,10 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   await revalidateCurrentProjectOnlySymbolGeneration(generation, engine, scopeText); check();
   const token: CurrentSymbolWriterStartup = Object.freeze({ profile: "private.current-symbol-writer-startup.v1", operationId: generation.operationId,
     expectation, baselineSha256: sha256Json(baseline), startupLocalChangesExcluded: true, runtimeHoldersObserved: true,
-    crossInvocationReceiverContinuityVerified: false, globalIdleVerified: false, persistenceVerified: false, executionAuthorized: false });
-  issued.set(token, { engine, generation, source, expectation, text: canonicalJson(token), resultArtifact }); return token;
+    crossInvocationReceiverContinuityVerified: false, globalIdleVerified: false, persistenceVerified: false, executionAuthorized: false,
+    ...(canvasClock === undefined ? {} : { canvasClockPrerequisite: canvasClock }) });
+  issued.set(token, Object.freeze({ engine, generation, source, expectation, text: canonicalJson(token), resultArtifact,
+    ...(canvasClock === undefined ? {} : { canvasClock }) })); return token;
   } catch (error) {
     collection.failureObserved = true;
     if (collection.intentArtifact !== undefined && !collection.resultPublicationAttempted) {
