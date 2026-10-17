@@ -3,9 +3,11 @@
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
 On the current EasyEDA Pro 3.2.206 runtime, general schematic/PCB and library
-writers remain disabled. Disposable symbol-metadata validation has passed its
-forward edit, complete closed SQL comparison and reopened saved-content check.
-Inverse restoration has not yet passed, so ordinary editing remains disabled.
+writers remain disabled. Disposable symbol-metadata validation has passed both
+forward and inverse edits, complete closed SQL comparisons and reopened-content
+checks. The separate current-version tool now supports forward-only name and/or
+description edits for unused, metadata-only project-local symbols. This is a
+narrow native equivalent, not general library or symbol-geometry editing.
 Older implemented adapters and their historical proofs do not enable them on
 this newer runtime. See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
@@ -26,14 +28,24 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017101500` corrects inverse journal adoption after the
+Update `0.3.0+codex.20261017123000` registers
+`easyeda_control_project_symbol_metadata` with strict offline schemas and
+purpose-bound ownership. It retains the shared writer validated by the 101500
+disposable round trip, but the new ordinary public route has not itself received
+a connected run. Referenced symbols and any historical drawing content remain
+unsupported. The update also corrects current-runtime doctor expectations and
+removes a redundant full-history scan used only to check an operation ID.
+See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md#ordinary-forward-only-symbol-metadata)
+and [evidence and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017101500` corrects inverse journal adoption after the
 090000 run passed forward verification but stopped before restoration. It also
 rejects historical drawing content before metadata dispatch and reserves the
 history, SQL and saved-result capacity required to verify both disposable edits.
 Raw database and normalized-checkpoint hashes stay separately bound; physical
 file growth, memory and deadlines remain runtime limits. The failed operation
-is terminal, with the forward metadata retained. No ordinary writer is enabled.
-A new installed-session round trip remains required. See the
+is terminal, with the forward metadata retained. Its later installed-session
+round trip passed; the 123000 update adds the separate ordinary route. See the
 [current result and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
 Earlier update `0.3.0+codex.20261017090000` models exact current document-cache

@@ -128,6 +128,7 @@ import { readCurrentPcbIdentities } from "./current-pcb-identities-runtime.ts";
 import { currentPcbGeometryRequestSchema } from "./current-pcb-geometry.ts";
 import { readCurrentPcbGeometry } from "./current-pcb-geometry-runtime.ts";
 import { currentSymbolMetadataRequestSchema } from "./current-symbol-metadata.ts";
+import { currentSymbolOperationRequestSchema } from "./current-symbol-operation.ts";
 import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
@@ -1844,6 +1845,7 @@ const artifactReadSuccessOutputSchema = z
     ...optionalFailureOutputShape,
   })
   .strict();
+const currentSymbolOperationToolOutputSchema = z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
   easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
@@ -1861,6 +1863,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_pcb_identities: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_geometry: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_symbol: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
   easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1894,7 +1897,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, local historical abandonment at the fixed sixteen-event pre-navigation or seven-phase current-baseline pre-relaunch boundary, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not normal design-writer authority. The project-open validation-* actions additionally permit one sealed disposable symbol-metadata forward/inverse validation with exact per-phase effect acknowledgements and original retained owners. This new validation path is not yet connected-validated; normal design writers remain disabled. No generic native controls, navigation, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; observations grant no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its shared lifecycle passed an installed101500 disposable round trip. The separate easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones; this ordinary route is not yet connected-tested. Both require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1938,7 +1941,7 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry observations, local historical abandonment, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. The project-open validation-* actions can mutate sealed disposable symbol name/description in one original-owner forward/inverse validation with phase-specific effect acknowledgements. This validation path is not connected-validated; normal design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
+        capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. The separate project-symbol-metadata route supports original-owner name/description changes without an inverse; that ordinary route remains connected-untested. Complete historical canvas, including tombstones, is unsupported. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
@@ -1951,12 +1954,17 @@ registerFacadeTool(
         pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
         pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
         projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
+        projectSymbolMetadata: { tool: "easyeda_control_project_symbol_metadata", scope: "unreferenced-project-local-meta-only-history-name-description-forward-only",
+          runtimeAdmissionRequired: true, designMutation: true, connectedValidation: false, originalOwnerRequired: true,
+          sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
+          phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
-        designAccess: { enabled: false, scope: "normal-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
+        designAccess: { enabled: false, scope: "generic-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
           scope: "registered-disposable-project-and-existing-pcb-opening-plus-owned-validation-reopening", retainedLaunchRequired: true, unchangedStorageGuaranteed: false },
         disposableValidation: { tool: "easyeda_control_project_open", actions: "validation-*",
-          scope: "sealed-disposable-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+          scope: "sealed-disposable-unused-meta-only-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+          sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
           normalWritersEnabled: false, phaseEffectAcknowledgementsRequired: true, originalOwnerRequired: true } },
     },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
@@ -2350,7 +2358,7 @@ registerFacadeTool(
   "easyeda_control_project_open",
   {
     title: "Open and validate one disposable EasyEDA project",
-    description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. Targets referenced by active schematic pages refuse before writer transfer; native linked-sheet propagation is unsupported. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. A stopped disposable opener can request-normal-close through its original retained Job without a bridge call; quarantine remains until retire-after-termination proves termination and session closure. Close acknowledgement never permits replay or proves saved contents. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
+    description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets or with any historical drawing records, including tombstones, refuse before mutation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The shared lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
     inputSchema: { request: z.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
@@ -2453,7 +2461,7 @@ registerFacadeTool(
   "easyeda_control_project_symbol",
   {
     title: "Read project-local symbol metadata",
-    description: "Read one exact project-local symbol on the separately pinned current runtime. The lib_Symbol.get request requires an active PCB context and observes bounded metadata twice. The project-only preflight request instead requires no editor tabs or hidden editors and compares exact caller-supplied expectedBefore metadata twice, with bounded UI actor/client/ticket/clock observations. Query offline project-symbol/project-symbol-validate or project-symbol-preflight/project-symbol-preflight-validate for the respective schemas. Both require the actual authenticated fingerprint. Supplied expectations are not source provenance; the private worker is not independently leased. No backend actor/clock qualification, startup completion, permission, saved membership, connectivity or writer authority. No cloud-library lookup, geometry load, navigation, mutation or explicit Save. Normal current writer execution remains blocked; only the separate project-open validation-* lifecycle can test a sealed disposable forward/inverse edit with its original owner and phase acknowledgements.",
+    description: "Read one exact project-local symbol on the separately pinned current runtime. lib_Symbol.get requires an active PCB context and observes bounded metadata twice. Project-only preflight instead requires no editor tabs or hidden editors and compares exact caller-supplied expectedBefore metadata twice, with bounded UI actor/client/ticket/clock observations. Query offline project-symbol/project-symbol-validate or project-symbol-preflight/project-symbol-preflight-validate. Both require the authenticated fingerprint. Supplied expectations are not source provenance; the private worker is not independently leased. No backend actor/clock qualification, startup completion, permission, saved membership, connectivity or writer authority. No cloud lookup, geometry load, navigation, mutation or explicit Save. The separate easyeda_control_project_symbol_metadata route provides original-owner forward-only changes for unused symbols with complete META-only history; project-open validation-* provides disposable forward/inverse validation. This read grants neither authority; generic writers remain blocked.",
     inputSchema: { request: z.unknown().pipe(z.union([currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema])), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
@@ -3606,6 +3614,40 @@ registerFacadeTool(
     { allowDuringOrphanRisk: true },
   ),
 );
+
+// Use the full-schema overload so the SDK rejects unknown outer keys before
+// The callback can retain a coordinator or consume an original operation.
+if (facadeToolRegistered(facadeMode, "easyeda_control_project_symbol_metadata")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(currentSymbolOperationRequestSchema),
+    expectedFingerprint: privateFingerprintSchema.optional() }).strict();
+  server.registerTool(
+    "easyeda_control_project_symbol_metadata",
+    {
+      title: "Change one unused META-only project symbol's metadata",
+      description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. The complete target raw history must be META-only: historical drawing records, even tombstones, refuse before mutation. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared lifecycle passed an installed101500 disposable round trip; this ordinary route has not been connected-tested.",
+      inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    },
+    serializedGuarded(async ({ request, expectedFingerprint }: z.output<typeof inputSchema>) => {
+      // Both routes share one coordinator and retained runtime; only the
+      // Distinct ordinary parser/entry selects ordinary purpose.
+      if (currentDisposableOpenCoordinator === undefined) {
+        const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+        const assertOwner = (): void => {
+          if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
+              ordinaryLaunchRuntime === undefined || windowsRuntime !== ordinaryLaunchRuntime ||
+              ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === undefined ||
+              process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            throw new Error("Symbol metadata requires this facade's unchanged retained ordinary launch.");
+          }
+        };
+        currentDisposableOpenCoordinator = new CurrentDisposableOpenCoordinator({ engine, assertOwner,
+          runtime: (): WindowsControlRuntime => { assertOwner(); return ownedWindowsRuntime(); } });
+      }
+      return { result: await currentDisposableOpenCoordinator.runOrdinary(request, expectedFingerprint) };
+    }, { allowDuringOrphanRisk: true }),
+  );
+}
 
 const transport = new StdioServerTransport();
 const shutdown = createSerializedShutdown(

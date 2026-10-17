@@ -36,8 +36,8 @@ does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
-29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 332 available with runtime guards,
+30 native equivalents, no lifecycle-only methods, 81 implemented-but-blocked
+methods and 451 omissions. Its routes include 333 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -421,6 +421,26 @@ atomic lock on the module-private project worker, complete source, hidden-editor
 absence, saved membership or persistence proof. No writer may accept this result
 as its complete before-state. The ordinary symbol rename still needs its own
 current-version lifecycle and complete closed-file proof.
+
+### Ordinary symbol metadata operation
+
+Discover `project-symbol-operation` with `includeSchemas:true`, then validate
+the exact request with `project-symbol-operation-validate` and
+`query:{request:...}`. The live tool is
+`easyeda_control_project_symbol_metadata`. Read the
+[ordinary workflow](current-project-opening.md#ordinary-forward-only-symbol-metadata)
+before opening or editing. Its strict outer object accepts `request` and an
+optional `expectedFingerprint`; only `open` may supply the fingerprint.
+
+This is a narrow native equivalent of `lib_Symbol.modify`, not execution of its
+public wrapper. It changes only name and/or non-null description on one unused,
+closed, META-only project-local symbol. Complete raw history, startup effects,
+original owners, clocks, SQL effects and reopened content are checked. The
+forward-only route cannot consume disposable ownership or supply an inverse.
+Discovery returns `registrationEnabled:true`, but never execution authority.
+The shared writer passed disposable forward/inverse validation; the new ordinary
+entrypoint has offline tests, not its own connected run. Generic
+`library.symbol.modify` and the older `symbol_metadata` tool stay blocked.
 
 ### Symbol observation with no editor tabs
 

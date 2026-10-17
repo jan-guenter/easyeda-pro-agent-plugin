@@ -1,4 +1,4 @@
-/** Dormant ordinary metadata contract. No runtime handler or tool registration. */
+/** Narrow ordinary metadata contract; runtime ownership is checked separately. */
 import { z } from "zod";
 import { sha256Text } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
@@ -52,22 +52,23 @@ export function parseCurrentSymbolOperationRequest(input: unknown): CurrentSymbo
 export const currentSymbolOperationQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
 
 const limitations = [
-  "Dormant request definitions only. No ordinary runtime route or tool is registered by this module; schema acceptance, discovery and offline tests grant no execution authority or connected validation.",
+  "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. The shared disposable lifecycle has connected validation; this ordinary route has not been connected-tested. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
   "One exact already registered local .eprj2 project and checkpoint-member PCB in its default branch. Preserve the exact raw Windows path hash, source hash, sealed branch and original retained launch; opening starts from an empty editor.",
   "Before the first ordinary navigation, derive the supported startup expectation from the preserved checkpoint. Recheck that expectation against the complete closed baseline, then require live startup qualification before writing. No disposable acceptance or unqualified schematic-startup bypass is accepted.",
   "Ordinary opening can migrate storage, replay caches, restore tabs, update shared metadata and automatically Save. Each opening or closure stage requires its own explicit acknowledgement. No unchanged-storage promise, explicit Save, Save/Discard choice, forced exit or file restoration is provided.",
   "A stopped ordinary opener can request-normal-close once through its own original retained Job, without bridge dispatch or a replacement PID/window. Quarantine remains until retire-after-termination proves original termination and session closure. Acknowledgement is not termination or saved-content proof; ambiguity consumes the close attempt.",
   "baseline-begin seals one closed ordinary symbol and only a name and/or non-null description patch. The target must be unreferenced by active schematic pages; native linked-sheet propagation is unsupported. Preserve tags, source and peer content. Checkpoint descriptors are evidence inputs, never replacement ownership or permission to mutate.",
+  "The complete original target history must be META-only, including every tombstoned occurrence. Drawn symbols and historical canvas records are unsupported even if the current symbol looks empty. Pre-dispatch proof budgets reserve the ordinary write's raw history, saved-content and logical SQL limits; physical allocation, heap and deadlines remain runtime limitations.",
   "Bind ordinary purpose in the original opening plan, generation and baseline owner. Keep the original retained owner through one write, normal closure, complete closed SQL comparison, cache-excluded project-only reopening, saved-content verification and final closed SQL equality. Copied JSON and disposable owners cannot provide that authority.",
   "metadata-begin retains the original ready baseline. Every metadata-advance keeps that baseline operation ID and supplies the exact next expectedPhase and only its required acknowledgements. No continuation accepts a replacement target, patch, runtime fingerprint, timestamp window, code or verifier.",
   "Forward-only completion retires the successful verifier without retaining an inverse. No inverse, rollback, restoration or mutation replay is exposed. A lost response or ambiguous failure consumes its stage; only explicitly pending observations may repeat, and failures permit only available original-owner cleanup or inspection.",
   "Keep exact runtime/source pins, supported startup shapes, inactive-cache checks, fresh Windows/document clocks and the unchanged 61000 ms unlocked-head age gate. Neither elapsed agent time nor a supplied boolean qualifies a clock or widens a fixed timestamp window.",
-  "The older closed-symbol coordinator, generic library.symbol.modify and unrelated design writers remain blocked. Any future ordinary registration requires reviewed connected evidence and purpose-bound runtime integration; this contract does not enable them.",
+  "The older closed-symbol coordinator, generic library.symbol.modify and unrelated design writers remain blocked. This separate purpose-bound route does not enable them or expose the disposable inverse workflow.",
 ] as const;
 
 export function queryCurrentSymbolOperation(input: unknown = {}): Record<string, unknown> {
   const query = currentSymbolOperationQuerySchema.parse(input);
-  return { offline: true, purpose: CURRENT_SYMBOL_OPERATION_PURPOSE, registrationEnabled: false, invocationEnabledByDiscovery: false,
+  return { offline: true, tool: "easyeda_control_project_symbol_metadata", purpose: CURRENT_SYMBOL_OPERATION_PURPOSE, registrationEnabled: true, invocationEnabledByDiscovery: false,
     executionAuthorized: false, writerReady: false, connectedValidation: false, forwardOnly: true, inverseSupported: false, replayAllowed: false,
     actions: ["open", "observe", "inspect", "request-normal-close", "retire-after-termination", "baseline-begin", "baseline-observe-termination", "baseline-prepare-clock",
       "baseline-relaunch", "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close",
@@ -78,8 +79,8 @@ export function queryCurrentSymbolOperation(input: unknown = {}): Record<string,
 
 export function validateCurrentSymbolOperationArguments(input: unknown): Record<string, unknown> {
   const parsed = currentSymbolOperationRequestSchema.safeParse(input);
-  return parsed.success ? { valid: true, request: parsed.data, registrationEnabled: false, executionAuthorized: false } : {
-    valid: false, registrationEnabled: false, executionAuthorized: false,
+  return parsed.success ? { valid: true, request: parsed.data, registrationEnabled: true, executionAuthorized: false } : {
+    valid: false, registrationEnabled: true, executionAuthorized: false,
     issues: parsed.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),
   };
 }

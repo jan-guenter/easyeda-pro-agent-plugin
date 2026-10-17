@@ -10,7 +10,7 @@ import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
 
-void test("all eight delayed project-structure writers report blocked coverage without removing argument discovery", () => {
+void test("all eight legacy project-structure writer routes remain blocked without removing argument discovery", () => {
   const mappings = [
     ["eda.lib_Symbol.create", "library.symbol.create"], ["eda.lib_Symbol.modify", "library.symbol.modify"],
     ["eda.dmt_Schematic.createSchematicPage", "document.page.create"], ["eda.dmt_Schematic.modifySchematicPageName", "document.page.rename"],
@@ -20,9 +20,10 @@ void test("all eight delayed project-structure writers report blocked coverage w
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const [path, action] of mappings) {
     const row = rows.get(path); assert.ok(row);
-    assert.equal(row.status, "implemented-but-blocked"); assert.equal(row.omission, null);
-    assert.equal(row.routes.length, 1);
-    const route = row.routes[0]; assert.ok(route);
+    const hasOrdinaryRoute = path === "eda.lib_Symbol.modify";
+    assert.equal(row.status, hasOrdinaryRoute ? "implemented-native-equivalent" : "implemented-but-blocked"); assert.equal(row.omission, null);
+    assert.equal(row.routes.length, hasOrdinaryRoute ? 2 : 1);
+    const route = row.routes.find((candidate) => candidate.selector === action); assert.ok(route);
     assert.equal(route.selector, action); assert.equal(route.tool, "easyeda_control_library");
     assert.equal(route.executionState, "blocked");
     assert.match(route.blockedReason ?? "", /operation-owned completion.*project_structures.*complete SQLite effect/u);
@@ -34,7 +35,7 @@ void test("all eight delayed project-structure writers report blocked coverage w
     const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
     const entry: unknown = entries[0]; assert.ok(isRecord(entry));
     assert.equal(entry["action"], action); assert.ok(isRecord(entry["inputSchema"]));
-    const compact = queryExtensionApiCoverage({ search: path, status: "implemented-but-blocked" });
+    const compact = queryExtensionApiCoverage({ search: path, status: row.status });
     assert.ok(JSON.stringify(compact).includes(route.blockedReason ?? "missing refusal"));
   }
   for (const path of ["eda.lib_Symbol.get", "eda.lib_Footprint.get", "eda.lib_Device.get", "eda.lib_3DModel.get",
@@ -47,6 +48,25 @@ void test("all eight delayed project-structure writers report blocked coverage w
   }
 });
 
+
+void test("ordinary symbol coverage exposes only its forward-only META history route without promoting legacy writes or live evidence", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.modify"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+  const route = row.routes.find((entry) => entry.tool === "easyeda_control_project_symbol_metadata"); assert.ok(route);
+  assert.equal(route.selector, "metadata-advance;forward-only-unused-meta-only-symbol"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.deepEqual(route.documentTypes, [2]);
+  for (const required of ["every tombstoned occurrence", "unused project-local symbol", "sealed pre-navigation startup", "reserve one write",
+    "final closed SQL equality", "No inverse", "installed101500", "not connected-tested"]) {
+    assert.ok(route.scope.includes(required));
+  }
+  assert.equal(row.routes.find((entry) => entry.selector === "library.symbol.modify")?.executionState, "blocked");
+  assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "project-symbol-operation", query: { includeSchemas: true } } } });
+  const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
+  assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
+  assert.equal(result["registrationEnabled"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["connectedValidation"], false);
+});
 
 void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();
@@ -86,7 +106,7 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(symbolCreate.executionState, "blocked");
   assert.match(symbolCreate.scope, /Permission denial can display a native dialog/u);
   assert.equal(rows.get("eda.lib_Symbol.create")?.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-but-blocked");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.routes[0]?.selector, "library.symbol.modify");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.status, "implemented-public-subset");
@@ -240,7 +260,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 212, "implemented-native-equivalent": 29, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 451,
+    "implemented-public-subset": 212, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 81, omitted: 451,
   });
 });
 
@@ -738,11 +758,16 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    const entries = result["entries"];
-    assert.ok(Array.isArray(entries));
-    assert.ok(entries.length > 0);
-    const first: unknown = entries[0];
-    assert.ok(isRecord(first) && isRecord(first["inputSchema"]));
+    if (request["action"] === "project-symbol-operation") {
+      assert.ok(isRecord(result["inputSchema"])); assert.ok(isRecord(result["stepSchema"]));
+      assert.equal(result["executionAuthorized"], false);
+    } else {
+      const entries = result["entries"];
+      assert.ok(Array.isArray(entries));
+      assert.ok(entries.length > 0);
+      const first: unknown = entries[0];
+      assert.ok(isRecord(first) && isRecord(first["inputSchema"]));
+    }
   }
 });
 

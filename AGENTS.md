@@ -6,6 +6,253 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate123000: ordinary metadata route frozen; final CI still required
+
+Branch feature/current-symbol-roundtrip-20261017 starts from maine2e82365.
+New0.3.0+codex.20261017123000 exposes the separate
+easyeda_control_project_symbol_metadata route, plus offline
+project-symbol-operation/project-symbol-operation-validate. The ordinary route
+is forward-only, purpose-bound, limited to unused local symbols with complete
+META-only history, and retains startup, clocks, fullSQL and reopened-content
+proofs. It has no inverse or replacement-owner continuation. Shared101500
+disposable lifecycle evidence below is accepted; the new ordinary public route
+is not separately connected-tested. Legacy/general writers remain blocked.
+Restricted/full catalogs are17/42; seven skills. Coverage774methods is212public,
+30native,81blocked,451omitted;333available routes,94blocked,two partial.
+
+Root and independent reviews accept core registration/runtime, actual-SDK
+strict envelopes and updated skill guidance. Core111focused tests, catalog/
+doctor/actualSDK21tests, both target typechecks and strict targeted lint pass.
+Unknown outer/nested fields, inverse phases and replacement fingerprints refuse
+before side effects; a following historical inspection preserves the synthetic
+journal and makes no process/network/Windows calls. The doctor selects only the
+exact current or legacy tuple. The opener removes only the second full scan
+used for ID uniqueness; full admission/exclusive publication remain.
+
+Fresh151dependency install,151signatures/40attestations and zero-vulnerability
+audit pass. Wholetypes/lint, build, APIinventory, repository/privacy and seven
+official skill validators pass. Fullverify completed10614facade tests with
+10609passes,fourskips and one stale wording assertion failure. The assertion
+still expected "Normal design writers remain disabled" instead of the accurate
+"generic design writers remain disabled". Only that test string changed;
+independent review and all five tests in the affected file pass afterward.
+No implementation or bundle changed. The final exact-commit CI must rerun the
+full suite; a second full local pass is not claimed. Remaining424bridge tests,
+skill/package validators and focused strictlint pass. Full-run log SHA
+724969d328e6cffa3acbcda151408b007eee943355f04fed17f889af931f4f50.
+Source398SHA
+b8c5020d7ea5ab39c427a4adb9642b07c89d81a369545916e032567f1e4209b4;
+runtime3SHA6875b4d96785e977cf268f3497430708fe734b16b2b74cecc32826b6ba3a3433.
+Only facade projections/review timestamp changed in compatibility; all external
+pins and dispatcher remain unchanged. Publication/install evidence will follow.
+Actual facade1244697 still runs101500 and stays untouched. No more live
+calls or CAD tests this session. EasyEDA is closed; production is excluded.
+
+### Live101500: disposable forward/inverse lifecycle completed
+
+Fresh facade1244697/parent1243006/startTicks21084537 loads installed101500;
+old1145198 is absent. Root and independent installed inventory checks pass all
+1290files/modes,398sources,three runtime files and seven skills against delivered
+e2e82365. Independent Node24.18.0/core0 and all18external clock runtime pins pass.
+MainCI39025383944 and Windows39025383973 both completed successfully.
+The prelaunch closed disposable598016bytes was exactlydf69bb99542058c042bbfe459c5b40a02dcd2787e6aa1b7c8f252797ead93712,
+without sidecars. The forward edit below supersedes that file baseline.
+All earlier attempts stay terminal; no production access.
+New validation-101500-20261017-launch completed functions17: root36376,
+Jobc8043d3a8db34ccfa55f84fe136144ca, launchedSHA
+6378c479822a4bc5d72263d44a843ad5afa178182d66c9a257317e851238265f.
+Status20 authenticated dispatcher ded07x99dcxb504, correct101500 bundle/manifest,
+no upstream drift, bridge failure or incomplete operations. Initial identity-only
+Start Page observation22 completed: active start-page, project undefined,
+branch empty. One opening validation-101500-20261017-open completed functions25,
+exact PCB/native identity proved; no navigation replay.
+Managed preparation checkpoint112351843Z is561152bytes/SHA
+1b9dc61bb4f928e349b8b91e1b181e9246e5d502aeb2a012157c33e9a24509f7.
+Root preparationc14a1767 and independent complete18document/35table review accept
+the unused23630514533a0345 symbol: three rawMETA occurrences, no drawing records
+or tombstones, no references across two pages/three templates. Exact090000
+name/description to101500 is the only planned patch; tags/source unchanged.
+Baseline validation-101500-20261017-baseline acknowledged normal close42 and
+captured original closed baseline47. Raw source remainsdf69bb99; logicalSQL
+de4e0f6589fc91920c95b4ec40117ecdb2c9577c2d07256b6120bf464483caa9.
+Sole historical startup blocker is active-schematic-pages(2). Ordinary launcher
+observe-termination separately returned terminated with matching6378c479 digest
+before any baseline relaunch. Scratch reference53, one relaunch57, admission59,
+inactive caches60, project-only open62 and renderer clock64 all completed.
+The two-page disposable startup observation remains explicitly acknowledged;
+live writer startup qualification is still required by the coordinator.
+validation-begin65 returned forward-write. One write66 acknowledged the exact
+101500 name/description and retained all original clocks/readback. Close69 and
+termination70 passed complete closed35table SQL proof: de4e0f65 to
+d4872e78f1b480132bb8ad6c7965d191a8279abb83fdad99a7e67091fc9705a6,
+newhead14e00904bee141cfbd7f611b6de17fd5/ticket768. No unexpected logical effect.
+Verification launch71/admission72/caches73/open77/read78/close80/finish81 completed.
+415byte saved content matches exact current-cache projection84b94919; source
+00dcb7f6c0538c906a52c43df4cb29e871b09c5819e6736e8874ddacfdfd3a7a.
+Final closed SQL staysd4872e78, forwardVerified:true. Inverse preparation83
+succeeded, including sealed-journal adoption and original-owner transfer.
+Derived inverse is inverse-af8e6910331a62d61d4b1470ed558af16dcefb290fa823cc30ad3974269b99bf.
+Its raw-copyf8e6ba69 and checkpoint0ce919f1 retain the samed4872e78 SQL;
+original090000 metadata is derived internally, never supplied by a new caller.
+One inverse relaunch86/admission87/caches88/open90/clock92 succeeded. Clock
+controls bind the newhead14e00904/11:46:48 literal. Root allowed964seconds from
+the forward return before one inverse-write dispatch in functions93 at12:02:53Z;
+the native fresh age gate remains unchanged. That write acknowledged, close95
+and termination96 passed complete inverse SQL effect:d4872e78 to
+cdb9419607f5c43091d84f928aa427c60385a1c7616beee67550ae85a94282a5,
+newhead43f674d0466a4589a395a1bc464b88fc/ticket769. Final verification launch97,
+admission98, caches100, open101, read102, close103 and finish104 completed.
+The 415byte reopened content exactly matches current-cache projection46358ac5;
+saved-read source711a8b169675e4f31bf177b9659df75e0767bf374dd639ef8463295f864e9178.
+Final closed SQL remainscdb94196. Terminal result13b965d7 reports completed,
+forwardVerified/inverseVerified/metadataRestorationVerified/fullReopenReadbackInvariant
+true, failedPhase null, verifier retired and termination terminated. No failure,
+cleanup uncertainty or explicit Save. The original selected metadata is restored,
+not historical SQLite bytes, tickets or timestamps. EasyEDA is closed.
+Never replay any write/open/close or issue Save. Independent terminal review
+accepts both effects, clock/adoption/closure links, all35tables/18documents and
+17unchanged peers. Final receipt-bound raw copy is598016bytes/SHA
+6d7bf595413339586bd3516b8096d07a4480823b274803feae2637383add3f2a;
+separate checkpoint565248bytes/SHA
+fc79575b90d7d3b06ee7c3cbf11092251ac44e2132fc5d97a772d6f299e10611.
+Final history47rows/51chunks/ticket769. Forward55artifacts/journal51b1ccfa and
+inverse50artifacts/journalc04e9fd8 are terminal, hardStop/orphanfalse. Final
+retirement79b03aab is3994bytes. Source-file state was not reconstructed by the
+independent review; the raw hash is receipt-bound. The accepted disposable case
+supports deliberate narrow ordinary integration, not unrestricted execution.
+Selective ordinary-route integration is underway. The immutable stash remains
+intact; no wholesale application, running-host patch or new live call.
+
+Source-only doctor correction is root/independent accepted: exact configured
+current tuple selects SDK_LOCAL_RUNTIME_PROFILE/restricted16, exact legacy tuple
+selects reviewed manifest/full41; missing/mixed/unknown tuples refuse. All four
+bundle hashes and exact catalog/schema checks remain; diagnostic results grant
+no execution/connected-validation authority. Eleven focused tests, both target
+typechecks and strict targeted lint pass. No actual-profile doctor, build,
+registration, pin, version, commit or installed-cache change. Files are
+scripts/doctor.ts, scripts/doctor-runtime-contract.ts and its focused test under
+the plugin. The accepted roundtrip now permits the separately scoped ordinary
+integration; its catalog adds one tool while the diagnostic selectors stay exact.
+Separate source-only performance work is limited to replacing the opener's
+second full journal/artifact scan used solely for ID uniqueness with a fresh
+safe exact-namespace check; preceding admission, later drift/recovery guards and
+exclusive publication must remain. No admission-result/stat-only caching or
+running-plugin changes. Other parsing/timing suggestions remain backlog.
+This four-file patch is root/independent accepted;46focused tests, both target
+typechecks and strict lint pass. ExactID helper rejects all existing journal/
+evidence names, unsafe/missing parents and unknown errors. Exclusive publication
+still refuses raced IDs before navigation. No measured connected speedup claim.
+
+### Delivered101500: published, installed and offline-verified; fresh session required
+
+Published and installed/enabled0.3.0+codex.20261017101500 through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR53 merged reviewed86fc2f193dd8d9c446e7d6b162adadd9c4bb7875 as
+maine2e82365e656e1d91776f2705477c9e72a4a1947. Whole tree
+bd9798b20010aeebeeb77b93c68f89c1a38ecd6b and plugin tree
+bdec3be80ce8acc9d59a98d641c70b50d613ea5c equal the reviewed payload exactly.
+All11PRchecks passed: CI39024415709 and Windows39024415692. CI facade totals
+10599tests/10594passes/fiveskips/zero failures,cancellations,todos. Localverify
+passed10599/10595/fourskips/zero failures, plus424bridge tests/28files. Types,
+strictlint, reproduciblebuild/compatibility/APIinventory, freshdependencies/
+signatures/audit, stagedprivacy/repository and all seven official skills pass.
+MainWindows39025383973 and mainCI39025383944 verify-build passed; duplicate
+main facade shards are still running and need a later status check. The required
+exact-payload PR CI is complete, not pending.
+
+Official marketplace upgrade underumask022 completed exit0/errors[]/stderr0.
+CLI confirms enabled101500; cached marketplaceHEAD equals mergedmaine2e8236.
+Root and independent installed inventories match1290files/25916688bytes/modes:
+42directories0755,1289files0644/one0755,seven skills, no extras/links. Inventory
+39b5075f33d24f207b8552be1225870f8c9a89d0fb6919d0b8787084777d5f9b;
+source3989938e85bcdb127f6860b68c41d52ea9feb6ce9f0feff56ea892eb628808c324e;
+runtime3 109c5e99197a09423a2a311878a28bb5f93d5a3053db192b4dcf3da35cfd0fec;
+manifestf05f82bc6673a579c67b0c63433c6caa990b645ac14fdfa60fad9602ff222f31.
+External compatibility pins, dispatcher,16restricted tools and ordinary writer
+registration remain unchanged. No generic writer was enabled.
+
+New one-shot synthetic installed probe1239082 passed, then exited normally via
+stdinEOF without signals/adoption. Actual configured startup handed ambient
+Node26.11.1 to pinnedNode24.18.0/core0, without installed module ancestors,
+upstream children or nonstdio sockets. Catalog16/seven skills and exact offline
+queries pass. No actual profile, live status/tool or operation journal was used;
+synthetic profile unchanged/stderr0. Proof
+/tmp/easyeda-release-101500-SuLQyeXO/proof.json is2831bytes/SHA
+c6d183f1cc20dd15fa277c5e516fe13a8828589b316f4be81969960f5fbe2250.
+Independent proof review also confirms the synthetic child is absent, its
+control directory contains only the synthetic profile and no upstream marker
+exists. Never rerun probe.mjs; inventory.mjs is read-only and may be repeated.
+
+Actual facade1145198/parent1143483 still loads090000 and was not terminated,
+adopted or hotpatched. No more live calls from it. The extension-development
+release workflow requires a fresh Codex session and independent101500 admission
+before live work. Leave EasyEDA closed. Final disposable598016bytes/SHA
+df69bb99542058c042bbfe459c5b40a02dcd2787e6aa1b7c8f252797ead93712 remains exact,
+without sidecars. Production designs and their records were not accessed.
+
+Next: check duplicate main CI, then after fresh installed admission run ONE NEW
+disposable forward/inverse lifecycle from current unused symbol23630514533a0345,
+name EASYEDA_VALIDATE_090000_UNUSED_SYMBOL and description
+"Disposable unused-symbol metadata validation 090000." All043703/072500/090000
+attempts are terminal. Inverse786c3ac5 remains neutral/plan-invalidated and must
+not be reused, edited or deleted. No edit, opening, close, inverse or Save replay.
+Only an accepted complete new round trip can justify the separate ordinary
+registration; its immutable stashebe1b55d7a430ae2e3168e373e155957b582eff9 is
+unapplied. The rebase requirements and legacy-doctor diagnostic backlog below
+remain open, along with referenced/drawn symbols and the broader API backlog.
+This uncommitted delivery record is for the next source change, not a new
+record-only release. Earlier pending publication/install statements are historical.
+
+### Candidate101500 release gate: local verification complete
+
+Reviewed payload86fc2f193dd8d9c446e7d6b162adadd9c4bb7875 is in protected PR53.
+Whole treebd9798b20010aeebeeb77b93c68f89c1a38ecd6b, plugin tree
+bdec3be80ce8acc9d59a98d641c70b50d613ea5c. Local fullverify passed10599facade
+tests/10595passes/fourskips/zerofailures,cancellations,todos;424bridge tests in
+28files. Wholetypes/strictlint, reproduciblebuild/compatibility/APIinventory,
+staged repository/privacy and seven official skill validators pass. Log
+/tmp/easyeda-release-101500-SuLQyeXO/verify.log has SHA
+65d4d66021e79a40f878cd0b9ade53b00c3b9ef295a3c94d7eacbfe7e904cf2b.
+PR CI39024415709 is running; Windows39024415692 and verify-build passed.
+Merge and official installation are still pending. Current loaded090000 is
+untouched; no additional live call after terminal cleanup. Ordinary registration
+and stash remain unchanged. This delivery record is retained uncommitted for
+the next source change; do not create a record-only release cycle.
+
+Root and independent frozen package inventories agree:1290files/25916688bytes,
+42directories,1289regular0644files/one0755,seven skills, inventorySHA
+39b5075f33d24f207b8552be1225870f8c9a89d0fb6919d0b8787084777d5f9b.
+Source3989938e85b/runtime3109c5e99/manifestf05f82bc are frozen. New private
+expected.mjs/inventory.mjs/probe.mjs under that release directory are reviewed;
+the installed inventory and synthetic one-shot probe have NOT run. Never rerun
+an older probe or use the old facade for the new installed version.
+
+Normal-profile offline doctor remains ok:false,43/45checks passing. Its two
+failures compare against legacy expectations: installed bundle hashes match
+SDK_LOCAL_RUNTIME_PROFILE's current tuple exactly, not the old manifest tuple;
+the current restricted catalog is the expected16tools, not the historical41.
+No pins or registrations were changed to turn this diagnostic green. Backlog:
+make doctor report separately pinned current-profile checks without admitting
+legacy capabilities. This diagnostic mismatch is not an unhandled live operation
+or a reason to relax compatibility. Other doctor checks passed; no live tool
+was invoked. Preserve the actual failure report and its scope.
+
+Read-only continuation audit of stashebe1b55d against86fc2f1 identifies these
+required later changes, NOT work enabled by this release: merge only ordinary
+result formatting into the new coordinator; preserve retained-purpose reserves
+disposableforward2/inverse1/ordinaryforward1 and original inverse metadata.
+Advertise complete META-only history/tombstone scope everywhere. Use strict
+route-local full-object SDK registration so unknown outer keys are rejected,
+not stripped; the stashed callback test from parent^3 does not prove that.
+Keep replacement fingerprints forbidden outside open and retain purpose/owner
+separation. Add an actual-SDK malformed-then-valid regression using the existing
+isolated harness when implementing the route. Coverage must give lib_Symbol.modify
+a separate route while legacy library.symbol.modify stays blocked; regenerate
+inventory and adjust restricted/full catalogs16/41to17/42, permissions and
+validators. Calculation16methods and missing-install3tool fallback stay unchanged.
+All of this remains conditional on a NEW accepted installed forward/inverse
+round trip; never apply the stash wholesale or count090000 as inverse evidence.
+
 ### Candidate101500: source frozen; release verification running
 
 Branch feature/current-symbol-inverse-adoption-20261017 starts from merged

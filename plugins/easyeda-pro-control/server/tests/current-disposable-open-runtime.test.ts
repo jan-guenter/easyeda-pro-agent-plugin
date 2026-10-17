@@ -9,7 +9,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { controlDataDirectory } from "../src/artifacts.ts";
+import { assertOperationIdUnused, controlDataDirectory, createOperation, ensureOperationStorage } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, assertUpstreamReplySettled, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram,
   currentDisposableOpenSealedTargetSchema, currentDisposableOpenTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "../src/current-disposable-open.ts";
@@ -107,7 +107,10 @@ function fixture(suffix: string): Fixture {
   };
   const services: CurrentDisposableOpenDependencies = {
     createOperation: save, updateOperation: save,
-    listOperations: () => Promise.resolve([...journals.values()]),
+    assertOperationIdUnused: (id) => {
+      calls.push(`unused-id:${id}`);
+      return journals.has(id) ? Promise.reject(new Error("Current disposable-open operation ID is consumed.")) : Promise.resolve();
+    },
     loadOperation: (id) => {
       const value = journals.get(id); assert.ok(value !== undefined && isRecord(value["plan"]) && typeof value["planHash"] === "string");
       return Promise.resolve({ ...structuredClone(value), operationId: id, plan: value["plan"], planHash: value["planHash"] });
@@ -199,6 +202,57 @@ function resultValue(value: Value): Value { const result = value["result"]; asse
 function dispatches(value: Fixture): string[] { return value.calls.filter((call) => call.startsWith("dispatch:")); }
 const RETIRE = { action: "retire-after-termination", confirmRetire: true, acceptUnknownFileEffects: true };
 const NORMAL_CLOSE = { action: "request-normal-close", confirmNormalClose: true, acceptUnknownFileEffects: true };
+
+void test("opening keeps full admission and later guards but uses only an exact unused-ID check", async () => {
+  const value = fixture("unused-id-check");
+  await value.coordinator.run(value.input, FINGERPRINT);
+  assert.equal(value.calls.filter((call) => call === "guard:bridge-native-edit").length, 1);
+  assert.equal(value.calls.filter((call) => call.startsWith("unused-id:")).length, 1);
+  assert.ok(value.calls.indexOf("guard:bridge-native-edit") < value.calls.indexOf(`unused-id:${value.input.operationId}`));
+  assert.ok(value.calls.indexOf(`unused-id:${value.input.operationId}`) < value.calls.indexOf("prepare"));
+  assert.equal(value.calls.filter((call) => call.startsWith("guard:combined:")).length, 3);
+  assert.equal(value.calls.filter((call) => call === "guard:recovery").length, 3);
+  assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document"]);
+  const source = await readFile(new URL("../src/current-disposable-open-runtime.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /listQualifiedOperationStates|services\.listOperations/u);
+});
+
+void test("existing IDs and failed exact-name observations refuse before checkpoint preparation or navigation", async () => {
+  for (const state of ["completed", "unknown", "malformed"] as const) {
+    const value = fixture(`existing-id-${state}`);
+    value.journals.set(value.input.operationId, { state });
+    await assert.rejects(value.coordinator.run(value.input, FINGERPRINT), /ID is consumed/u);
+    assert.deepEqual(value.calls, ["guard:bridge-native-edit", `unused-id:${value.input.operationId}`]);
+    assert.deepEqual(dispatches(value), []);
+  }
+  const value = fixture("unknown-id-observation");
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+    assertOperationIdUnused: (): Promise<void> => Promise.reject(new Error("synthetic namespace unavailable")),
+  });
+  await assert.rejects(coordinator.run(value.input, FINGERPRINT), /namespace unavailable/u);
+  assert.deepEqual(value.calls, ["guard:bridge-native-edit"]);
+});
+
+void test("an ID created after its absence check still fails exclusive publication before navigation", async () => {
+  await ensureOperationStorage();
+  const plan = { profile: "synthetic-existing-operation" }, value = fixture("raced-exclusive-id");
+  const existing = { schema: OPERATION_SCHEMA, operationId: value.input.operationId, plan, planHash: buildPlanHash(plan),
+    state: "completed", artifacts: [] };
+  let retainedPath = "", retainedText = "";
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services, assertOperationIdUnused, createOperation,
+    prepareCheckpoint: async (): Promise<CurrentDisposableOpenCheckpoint> => {
+      retainedPath = await createOperation(existing);
+      retainedText = await readFile(retainedPath, "utf8");
+      return structuredClone(CHECKPOINT);
+    },
+  });
+  await assert.rejects(coordinator.run(value.input, FINGERPRINT), /exist|EEXIST/u);
+  assert.notEqual(retainedPath, "");
+  assert.equal(await readFile(retainedPath, "utf8"), retainedText);
+  assert.deepEqual(value.calls, ["guard:bridge-native-edit"]);
+  assert.deepEqual(dispatches(value), []);
+  assert.equal(value.artifacts.size, 0);
+});
 
 void test("failed disposable opener requests native normal close once without bridge work or clearing quarantine", async () => {
   const value = fixture("owned-close"); value.state.uncertainPhase = "open-project";
@@ -449,7 +503,7 @@ void test("opening exposes only its retained preparation descriptor and historic
   assert.deepEqual(value.calls, before);
 });
 
-void test("dormant ordinary entry seals startup before navigation and rejects disposable continuation", async () => {
+void test("ordinary entry seals startup before navigation and rejects disposable continuation", async () => {
   const value = fixture("ordinary-symbol-purpose");
   const request = { action: "open", operationId: value.input.operationId, ...TARGET, acceptNormalOpenEffects: true };
   const opened = await value.coordinator.runOrdinary(request, FINGERPRINT);
@@ -474,6 +528,29 @@ void test("dormant ordinary entry seals startup before navigation and rejects di
   assert.deepEqual(value.calls, before);
   await value.coordinator.runOrdinary({ action: "observe", operationId: request.operationId });
   assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document", "dispatch:observe"]);
+});
+
+void test("every ordinary continuation refuses a replacement fingerprint before journal lookup or native work", async () => {
+  const value = fixture("ordinary-fingerprint-refusal");
+  const requests = [
+    { action: "baseline-begin", operationId: "ordinary-baseline-fingerprint", openingOperationId: value.input.operationId,
+      preparation: { checkpoint: { path: "/synthetic/checkpoint.eprj2", bytes: 4096, sha256: "a".repeat(64) },
+        target: { projectUuid: TARGET.projectUuid, branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), symbolUuid: "d".repeat(16) }, patch: { name: "Synthetic" } },
+      confirmNormalClose: true, acceptNormalOpenEffects: true },
+    ...["inspect", "observe", "baseline-inspect", "baseline-observe-termination", "baseline-admit", "baseline-observe-caches",
+      "baseline-observe-clock", "baseline-observe-finish", "metadata-inspect"].map((action) => ({ action, operationId: value.input.operationId })),
+    ...["request-normal-close", "baseline-finish-close"].map((action) => ({ action, operationId: value.input.operationId,
+      confirmNormalClose: true, acceptUnknownFileEffects: true })),
+    { action: "retire-after-termination", operationId: value.input.operationId, confirmRetire: true, acceptUnknownFileEffects: true },
+    { action: "baseline-prepare-clock", operationId: value.input.operationId, acceptScratchProcessEffects: true },
+    ...["baseline-relaunch", "baseline-open-project"].map((action) => ({ action, operationId: value.input.operationId, acceptNormalOpenEffects: true })),
+    { action: "metadata-begin", operationId: value.input.operationId, confirmWrite: true },
+    { action: "metadata-advance", operationId: value.input.operationId, step: { expectedPhase: "forward-write", confirmWrite: true, acceptMetadataMutation: true } },
+  ];
+  for (const request of requests) {
+    await assert.rejects(value.coordinator.runOrdinary(request, FINGERPRINT), /Ordinary continuation cannot replace its original runtime fingerprint/u);
+  }
+  assert.equal(value.journals.size, 0); assert.equal(value.artifacts.size, 0); assert.deepEqual(value.calls, []);
 });
 
 void test("ordinary startup refusal creates no journal or navigation and needs no disposable acceptance", async () => {
@@ -650,7 +727,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
     operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
-    listQualifiedOperationStates: services.listOperations, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
+    assertOperationIdUnused: services.assertOperationIdUnused, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
     prepareCurrentSymbolOperationCheckpoint: services.prepareOrdinaryCheckpoint, verifyCurrentSymbolOperationCheckpoint: services.verifyOrdinaryCheckpoint,
     verifyCurrentDisposableOpenCheckpoint: services.verifyCheckpoint, verifyCurrentDisposableOpenImplementation: services.verifyImplementation,
     validateSdkLocalRuntimeFingerprint: services.validateFingerprint,

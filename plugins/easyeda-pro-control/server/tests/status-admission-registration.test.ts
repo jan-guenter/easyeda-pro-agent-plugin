@@ -113,7 +113,7 @@ void test("registered disconnected status resamples runtime under a lease withou
   }
 });
 
-void test("restricted status distinguishes disposable validation mutations from disabled normal writers and live proof", async () => {
+void test("restricted status distinguishes scoped metadata registration, shared live proof and disabled generic writers", async () => {
   const fixture = await registeredStatus({ facadeMode: "calculation-only" });
   const result = await fixture.invoke({});
   const facade = result["facade"], upstream = result["upstream"];
@@ -121,12 +121,19 @@ void test("restricted status distinguishes disposable validation mutations from 
   assert.equal(facade["mode"], "calculation-only");
   assert.equal(JSON.stringify(facade["availableTools"]), JSON.stringify(CALCULATION_ONLY_TOOLS));
   assert.ok(typeof facade["capabilityScope"] === "string");
-  assert.match(facade["capabilityScope"], /validation-\* actions can mutate sealed disposable symbol name\/description/u);
-  assert.match(facade["capabilityScope"], /not connected-validated; normal design writers remain disabled/u);
+  assert.match(facade["capabilityScope"], /META-only symbol lifecycle passed an installed101500 disposable forward\/inverse round trip/u);
+  assert.match(facade["capabilityScope"], /ordinary route remains connected-untested/u);
+  assert.match(facade["capabilityScope"], /Generic design writers remain disabled/u);
   const capabilities = upstream["capabilities"];
-  assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "normal-design-routes" }));
+  assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "generic-design-routes" }));
+  assert.equal(JSON.stringify(capabilities["projectSymbolMetadata"]), JSON.stringify({ tool: "easyeda_control_project_symbol_metadata",
+    scope: "unreferenced-project-local-meta-only-history-name-description-forward-only", runtimeAdmissionRequired: true,
+    designMutation: true, connectedValidation: false, originalOwnerRequired: true,
+    sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
+    phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
-    scope: "sealed-disposable-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+    scope: "sealed-disposable-unused-meta-only-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
+    sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
     normalWritersEnabled: false, phaseEffectAcknowledgementsRequired: true, originalOwnerRequired: true }));
   const navigation = capabilities["navigation"];
   assert.ok(isRecord(navigation));

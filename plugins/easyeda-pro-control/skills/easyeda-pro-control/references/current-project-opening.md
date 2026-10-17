@@ -138,9 +138,10 @@ authority from process absence, PID, saved receipts or a new bridge session.
 Do not delete or rewrite the journal to make it pass. Record the unresolved
 operation for a separately supported recovery procedure.
 
-This adapter is source-tested. Connected opening and persistence validation
-must be reported separately; the complete forward/inverse lifecycle remains
-unvalidated.
+Installed101500 passed the narrow unused META-only disposable round trip,
+including opening and persistence verification. The new ordinary public
+entrypoint below is not separately connected-tested; other shapes remain outside
+that evidence.
 
 ## Retained baseline validation
 
@@ -391,8 +392,9 @@ comparison text had been cached. No inverse mutation or ownership transfer
 occurred. Original-owner cleanup retired the attempt with
 `fullReopenReadbackInvariant:true`; the app is closed and the fixture retains the
 090000 metadata. This is accepted forward evidence, not a completed round trip.
-The correction needs a new installed disposable lifecycle; do not resume the
-retired attempt, issue a manual inverse or enable the ordinary route from it.
+The later101500 run supplied the new installed disposable lifecycle required
+by that correction. The090000 attempt stays retired; never resume it or issue a
+manual inverse. Ordinary enablement uses the separate accepted101500 evidence.
 
 After a facade restart, `validation-inspect` can read managed baseline, writer
 or verification history when no original coordinator remains. This returns
@@ -425,12 +427,65 @@ both the RPC and immediate guards, so they cannot distinguish those causes.
 success. `TIMEOUT` and `TIMEOUT_CLEANUP` both mean execution may remain unsettled.
 No diagnostic stage grants retry or cleanup authority beyond the owner's reply.
 
-The ordinary forward-only metadata workflow is internal and unregistered.
-Do not substitute ordinary projects into this disposable route, fabricate a
-disposable acknowledgement, or call the older blocked symbol coordinator.
-Future ordinary use must bind its own purpose and supported startup expectation
-before navigation, retain the original owners, and complete full reopened
-saved-content/SQL verification without an automatic inverse.
+Installed101500 completed the disposable forward/inverse lifecycle with
+independent complete SQL, peer-content and saved-readback checks. This evidence
+covers the unused META-only case. It does not remove any per-operation check or
+validate the broader symbol modifier. Do not substitute ordinary projects into
+this disposable route or fabricate a disposable acknowledgement.
+
+## Ordinary forward-only symbol metadata
+
+Use the separate `easyeda_control_project_symbol_metadata` tool. Its offline
+actions are `project-symbol-operation` and `project-symbol-operation-validate`.
+The new entrypoint has strict schema/coordinator tests and reuses the validated
+disposable writer; it has not itself received a connected ordinary run.
+
+The project must be an already registered local file on the pinned current
+runtime, with a checkpoint-member PCB in its default branch. The target symbol
+must be closed, unused by active schematic pages and META-only throughout its
+complete raw history, including overwritten records and tombstones. A currently
+empty canvas is insufficient. Only `patch:{name?,description?}` is supported,
+with at least one field and no null description. Tags, source and peer content
+are preserved. Classification, geometry, cloud libraries and referenced symbols
+are outside this route.
+
+Start with the supported ordinary launcher and an empty editor in the same
+facade. Keep that facade alive until final closure. The tool's `open` action
+takes the same exact target fields as the disposable opener, but no
+`confirmDisposableProject`. Supply `acceptNormalOpenEffects:true` and the actual
+authenticated `expectedFingerprint` at the top level. Only `open` accepts that
+fingerprint; every continuation derives it from its original owner. Ordinary
+opening can migrate data, restore tabs, replay caches and automatically Save.
+The route derives a supported startup expectation before navigation and checks
+it again against the closed baseline. It has no unqualified-startup opt-in.
+
+After successful opening, use its `preparationCheckpoint` and exact symbol
+identities for `baseline-begin.preparation`. Supply a distinct baseline
+`operationId`, the `openingOperationId`, `confirmNormalClose:true` and
+`acceptNormalOpenEffects:true`. Do not supply `observationProjection`. Follow
+the retained baseline sequence above through termination, scratch-clock
+preparation, relaunch, admission, cache observation, project-only opening and
+renderer-clock observation. Record the original launcher's termination before
+the baseline relaunch replaces its Job. Use the ordinary tool throughout;
+disposable baselines and copied journals cannot provide ownership.
+
+Once ready, `metadata-begin` with the baseline ID and `confirmWrite:true`
+retains that baseline. It does not execute the edit. Every `metadata-advance`
+uses that same ID and the exact returned `expectedPhase`; discover the schema
+for each phase's required acknowledgements. `forward-write` requires
+`confirmWrite:true` and `acceptMetadataMutation:true`. The coordinator performs
+one edit, original-owner closure, complete closed SQL effect verification,
+fresh cache-excluded project-only reopening, exact saved-content comparison and
+final closed SQL equality. Do not add a separate Save.
+
+Only `nextPhase:completed` with `requestedMetadataVerified:true` reports the
+requested metadata lifecycle complete. Ordinary completion retires its verifier
+without deriving or retaining an inverse. No rollback, automatic restoration or
+write replay is offered. On failure, use only the returned original-owner cleanup
+or inspection actions. A lost response consumes its phase. After restart,
+historical `metadata-inspect` can report retained evidence but cannot reconstruct
+owners or resume mutation. Unknown outer/nested keys, inverse phases and
+replacement fingerprints refuse. Generic design/library writers stay blocked.
 
 ## Compare retained snapshots
 

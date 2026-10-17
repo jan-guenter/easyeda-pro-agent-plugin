@@ -236,6 +236,8 @@ void test("ordinary metadata completes its original forward lifecycle without re
   const result = f.inspect();
   assert.equal(result["profile"], "easyeda-pro-control.current-symbol-operation.v1");
   assert.equal(result["purpose"], "ordinary-symbol-metadata"); assert.equal(result["operationId"], ID);
+  assert.equal(result["genericWritersEnabled"], false); assert.equal(result["forwardOnly"], true); assert.equal(result["inverseSupported"], false);
+  assert.equal(result["normalWritersEnabled"], undefined); assert.equal(result["executionAuthorized"], false);
   assert.equal(result["forwardVerified"], true); assert.equal(result["requestedMetadataVerified"], true);
   assert.equal(result["inverseVerified"], false); assert.equal(result["metadataRestorationVerified"], false);
   assert.equal(result["historicalDatabaseBytesRestored"], false); assert.equal(result["inverseOperationId"], null);

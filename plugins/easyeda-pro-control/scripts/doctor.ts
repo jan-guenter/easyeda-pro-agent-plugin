@@ -44,7 +44,8 @@ import {
   removeEmptyPrivateTemporaryDirectory,
 } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
-import { FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { selectDoctorRuntimeContract } from "./doctor-runtime-contract.ts";
 import { MachineProfileError, loadRuntimeMachineProfile, machineProfileLaunchConfiguration } from "../server/src/machine-profile.ts";
 
 interface DoctorCheck {
@@ -62,7 +63,6 @@ interface McpConfiguration {
   readonly env: Record<string, string>;
 }
 
-const TOOL_NAMES = FACADE_TOOL_NAMES;
 const SQLITE_BINARY_CANDIDATES = [
   "/usr/bin/sqlite3",
   "/usr/local/bin/sqlite3",
@@ -814,6 +814,8 @@ const assetsRoot = mcpConfig.env["EASYEDA_ASSETS_ROOT"] ?? "";
 const pcbBundleVersion = mcpConfig.env["EASYEDA_PCB_BUNDLE_VERSION"] ?? "";
 const publicApiBundleVersion =
   mcpConfig.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] ?? "";
+const runtimeContract = "error" in reviewedCompatibility ? undefined :
+  selectDoctorRuntimeContract(pcbBundleVersion, publicApiBundleVersion, reviewedCompatibility.installedBundles);
 const installedBundleFiles = {
   pcbImplementation: join(
     assetsRoot,
@@ -876,16 +878,16 @@ if (installedBundlesExist && !("error" in reviewedCompatibility)) {
   };
   check(
     "installed-easyeda-bundle-hashes",
-    installedBundleHashes.pcbImplementation ===
-      reviewedCompatibility.installedBundles.pcbEditor
-        .implementationSha256 &&
+    runtimeContract !== undefined &&
+      installedBundleHashes.pcbImplementation ===
+        runtimeContract.bundleHashes.pcbImplementation &&
       installedBundleHashes.publicApiImplementation ===
-        reviewedCompatibility.installedBundles.publicApi
-          .implementationSha256 &&
+        runtimeContract.bundleHashes.publicApiImplementation &&
       installedBundleHashes.publicApiAdapter ===
-        reviewedCompatibility.installedBundles.publicApi.adapterSha256 &&
+        runtimeContract.bundleHashes.publicApiAdapter &&
       installedBundleHashes.publicApiDeclarations ===
-        reviewedCompatibility.installedBundles.publicApi.declarationsSha256,
+        runtimeContract.bundleHashes.publicApiDeclarations,
+    runtimeContract?.profile ?? "unreviewed-configured-runtime",
   );
 }
 
@@ -1023,10 +1025,12 @@ try {
   });
   check(
     "mcp-tool-catalog",
-    toolCatalog.count === TOOL_NAMES.length &&
+    runtimeContract !== undefined &&
+      toolCatalog.count === runtimeContract.toolNames.length &&
       toolCatalog.allHaveMeaningfulOutputSchema &&
       JSON.stringify(toolCatalog.names) ===
-        JSON.stringify([...TOOL_NAMES].toSorted()),
+        JSON.stringify([...runtimeContract.toolNames].toSorted()),
+    runtimeContract?.profile ?? "unreviewed-configured-runtime",
   );
 } catch (error) {
   toolCatalog = { error: errorMessage(error) };
@@ -1064,6 +1068,7 @@ const result = {
   observedVendoredBridgeSource,
   installedBundleFiles,
   installedBundleHashes,
+  runtimeContract: runtimeContract ?? null,
   reviewedCompatibility,
   reviewedCompatibilityFingerprint,
   distSha256,
