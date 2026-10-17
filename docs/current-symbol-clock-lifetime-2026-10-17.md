@@ -1,6 +1,43 @@
-# Current symbol clock lifetime correction
+# Current symbol validation: clock and actor follow-through
 
-## Connected result
+## Current result and correction
+
+The 033309 disposable run passed the previous historical-clock failure point.
+It then stopped before metadata dispatch because the selected account had no
+matching row in the project's historical `users` table. The only row belonged
+to the imported library, not the selected actor. This was an unsupported case,
+not evidence of ambiguous account selection.
+
+The pinned native history producer keeps the request's actor UUID and emits
+empty display names when the project-user lookup finds no row. The maintained
+full-SQL comparator already predicts this behavior. Candidate
+`0.3.0+codex.20261017043703` adds that explicit branch to the actor wrapper:
+agreeing UI identity remains mandatory, absence is bound to the complete original
+users table, and persisted names must be empty. It never substitutes another
+user, copies UI names into history, or accepts a new user row after the edit.
+Duplicate matches and malformed evidence still refuse.
+
+Original-owner normal closure and termination completed. Complete logical SQL
+and the raw file hash match the initial disposable baseline. No metadata edit,
+explicit Save or inverse was dispatched. The consumed operation is terminal;
+its evidence cannot authorize another attempt.
+
+The update also returns the exact managed preparation checkpoint descriptor
+from new opening results, permits bounded historical inspection after owner
+loss without continuation authority, and replaces per-file stream allocation
+with bounded descriptor-read buffers. Every file is still freshly hashed.
+No connected speedup or successful writer lifecycle is claimed.
+
+Review of the subsequent clock checks found no additional epoch mismatch:
+launch/capture observations retain their original generation identity, whereas
+fresh owned observations retain their stricter lifecycle-epoch requirement.
+Both kinds keep their existing checks. Actual permission, mutation, post-clock,
+closed SQL and reopened-content verification remain live work after installation.
+The maintained SQL/actor preparer also passed a read-only diagnostic using the
+exact retained fixture and recorded inputs. That check issued no live clock
+tokens or lifecycle authority and is not connected writer validation.
+
+## Earlier 020000 connected result
 
 The 020000 disposable run completed ordinary opening, closed-baseline capture,
 scratch Date controls, project-only reopening and renderer Date controls.

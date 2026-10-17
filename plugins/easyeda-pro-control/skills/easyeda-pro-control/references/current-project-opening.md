@@ -155,6 +155,12 @@ checkpoint descriptor and exact project, branch, owner and symbol IDs to assembl
 `preparation`. Do not supply `observationProjection`; the coordinator collects
 its own observation. Preparation still does not authorize editing.
 
+New opening results expose `preparationCheckpoint` for
+`baseline-begin.preparation.checkpoint`. It contains the managed snapshot's
+actual path, byte count and SHA-256. Do not substitute source-file size: SQLite
+backup bytes can differ. Historical journals without this field omit it; the
+descriptor is historical preparation evidence, not a fresh closed baseline.
+
 1. `baseline-begin` takes a new `operationId`, the original `openingOperationId`,
    `preparation`, and all three confirmations: `confirmNormalClose`,
    `confirmDisposableProject`, `acceptNormalOpenEffects`. It transfers ownership
@@ -327,6 +333,16 @@ ID or prompt response. Closed recovery may report `unchanged`,
 to continue a failed write. Missing original post-dispatch clock evidence or
 uncertain capture cleanup remains unresolved even if later SQL looks unchanged.
 Lost owners and conflicting journals require separate recovery work.
+
+After a facade restart, `validation-inspect` can read managed baseline, writer
+or verification history when no original coordinator remains. This returns
+recorded state, flags and verified artifact descriptors with
+`historicalEvidenceOnly:true` and `continuationAuthorized:false`. It does not
+reconstruct `nextPhase`, infer completion, clear quarantine or permit replay.
+Use `validation-inspect` for a baseline already transferred to its writer;
+`baseline-inspect` still expects the baseline profile. Older installed versions
+may refuse ownerless writer inspection. Neither refusal nor recorded terminal
+flags establish current application state.
 
 Source tests do not establish a live forward/inverse lifecycle. Record actual
 connected results before deliberately enabling any normal writer capability.

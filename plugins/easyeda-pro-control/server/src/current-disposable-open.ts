@@ -27,6 +27,8 @@ export type CurrentDisposableOpenTarget = z.infer<typeof currentDisposableOpenTa
 export const currentDisposableOpenSealedTargetSchema = z.object({ ...targetFields, branchUuid: hex32 }).strict()
   .refine((value) => sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.");
 export type CurrentDisposableOpenSealedTarget = z.infer<typeof currentDisposableOpenSealedTargetSchema>;
+export const currentDisposableOpenPreparationCheckpointSchema = currentSymbolMetadataPreparationRequestSchema.shape.checkpoint;
+export type CurrentDisposableOpenPreparationCheckpoint = z.infer<typeof currentDisposableOpenPreparationCheckpointSchema>;
 export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("open"), operationId, ...targetFields, confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("observe"), operationId }).strict(),
@@ -70,6 +72,7 @@ export type CurrentDisposableOpenResult = z.infer<typeof currentDisposableOpenRe
 
 const limitations = [
   "One explicitly selected, already registered local disposable .eprj2 project and existing type-3 PCB only. The raw Windows registry path hashes to the project identity; the host separately binds the file checkpoint and PCB membership.",
+  "New opening results include preparationCheckpoint with the managed pre-navigation checkpoint's exact path, byte count and SHA-256. Use that descriptor as baseline-begin.preparation.checkpoint. It is historical preparation input, not current source, the later closed baseline, freshness, persistence or writer authority. Historical journals without a retained descriptor omit it; never substitute the source file's byte count.",
   "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
   "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
   "request-normal-close consumes one normal-close request through the original failed opening's retained application owner. It accepts no PID/window replacement, Save/Discard choice or force termination, and preserves quarantine. Original termination observation and retirement remain separate actions.",
@@ -90,6 +93,9 @@ const limitations = [
 export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
   const query = currentDisposableOpenQuerySchema.parse(input);
   return { offline: true, invocationEnabledByDiscovery: false, total: 1,
+    preparationCheckpoint: { resultField: "preparationCheckpoint", inputField: "baseline-begin.preparation.checkpoint",
+      historicalEvidenceOnly: true, currentStateVerified: false, writerAuthority: false, omittedWhenNotRetained: true,
+      ...(query.includeSchemas ? { descriptorSchema: z.toJSONSchema(currentDisposableOpenPreparationCheckpointSchema) } : {}) },
     clockPreparation: {
       helper: { ...CURRENT_MAIN_REFERENCE_HELPER_IDENTITY, file: "Easyeda.CurrentMainReference.dll" },
       runtimeProfileSha256: CURRENT_MAIN_REFERENCE_RUNTIME_PROFILE_SHA256,

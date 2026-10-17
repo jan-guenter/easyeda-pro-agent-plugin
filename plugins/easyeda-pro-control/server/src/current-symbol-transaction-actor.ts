@@ -26,10 +26,11 @@ export interface CurrentSymbolTransactionActorInput {
 }
 export interface CurrentSymbolTransactionActorPlan extends Readonly<typeof LIMITATIONS> {
   readonly profile: "easyeda-pro-control.current-symbol-transaction-actor-plan.v1";
-  readonly selectionPolicy: "supplied-agreeing-ui-and-single-original-project-user";
+  readonly selectionPolicy: "supplied-agreeing-ui-and-single-original-project-user" | "supplied-agreeing-ui-and-no-original-project-user";
   readonly expectedActorUuid: string;
   readonly selectionSha256: string;
-  readonly selectedProjectUserRowSha256: string;
+  readonly selectedProjectUserRowSha256: string | null;
+  readonly selectedProjectUsersTableSha256?: string;
   readonly beforeSqlSha256: string;
   readonly targetUuid: string;
   readonly expectedTicket: number;
@@ -38,7 +39,8 @@ interface SelectedActor {
   readonly startupActor: ActorProjection;
   readonly cachedActor: ActorProjection;
   readonly projectActor: ActorProjection;
-  readonly selectedProjectUserRowSha256: string;
+  readonly selectedProjectUserRowSha256: string | null;
+  readonly selectedProjectUsersTableSha256?: string;
 }
 interface Prepared {
   readonly selected: SelectedActor;
@@ -68,13 +70,20 @@ function textCell(table: SqlTable, row: SqlRow, column: string, maximum: number)
   return text;
 }
 
-function projectActor(before: Inventory, uuid: string): Readonly<{ actor: ActorProjection; rowSha256: string }> {
+function projectActor(before: Inventory, uuid: string): Readonly<{ actor: ActorProjection; rowSha256: string | null; usersTableSha256?: string }> {
   const completion = readerCompletion(before);
   need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null,
     "Actor selection requires an original completed SQL inventory.");
   const tables = before.tables.filter((table) => table.name === "users"), users = tables[0];
   need(tables.length === 1 && users !== undefined && users.rows.length <= 4096, "Project users table is missing, ambiguous or exceeds its bound.");
   const rows = users.rows.filter((row) => textCell(users, row, "uuid", 32) === uuid);
+  if (rows.length === 0) {
+    // Pinned APP L3 keeps the exact request UUID and uses empty project display
+    // Names when its query finds no row. These are not empty UI observations or
+    // A substitute actor. Commit the complete original table as absence evidence;
+    // The unchanged SQL comparator must preserve every user row after the write.
+    return Object.freeze({ actor: Object.freeze({ uuid, username: "", nickname: "" }), rowSha256: null, usersTableSha256: sha256Json(users) });
+  }
   const row = rows[0];
   need(rows.length === 1 && row !== undefined, "Actor selection requires exactly one original project user.");
   const actor = validateActorProjection({ uuid, username: textCell(users, row, "username", ACTOR_NAME_MAX_CODE_UNITS),
@@ -97,15 +106,18 @@ export async function prepareCurrentSymbolTransactionActor(input: CurrentSymbolT
     ownDataFields(input.bounds.agedHead, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
   }
   const bounds = structuredClone(input.bounds), selectedProject = projectActor(input.before, startupActor.uuid);
-  // Project names come from the original SQL row, never from the UI caches.
+  // Project names come from the original SQL row or its proved absence, never
+  // From UI names. The existing one-row policy and projection stay unchanged.
+  const absence = selectedProject.usersTableSha256 === undefined ? {} : { selectedProjectUsersTableSha256: selectedProject.usersTableSha256 };
   const selected: SelectedActor = Object.freeze({ startupActor, cachedActor, projectActor: selectedProject.actor,
-    selectedProjectUserRowSha256: selectedProject.rowSha256 });
+    selectedProjectUserRowSha256: selectedProject.rowSha256, ...absence });
   const sqlPlan = await prepareCurrentSymbolNewHeadSqlPlan({ before: input.before, operation: input.operation,
     witness: { ...bounds, backendActorUuid: selected.startupActor.uuid } });
   const plan: CurrentSymbolTransactionActorPlan = Object.freeze({
-    profile: "easyeda-pro-control.current-symbol-transaction-actor-plan.v1", selectionPolicy: "supplied-agreeing-ui-and-single-original-project-user",
+    profile: "easyeda-pro-control.current-symbol-transaction-actor-plan.v1",
+    selectionPolicy: selectedProject.rowSha256 === null ? "supplied-agreeing-ui-and-no-original-project-user" : "supplied-agreeing-ui-and-single-original-project-user",
     expectedActorUuid: selected.startupActor.uuid, selectionSha256: sha256Json(selected), selectedProjectUserRowSha256: selected.selectedProjectUserRowSha256,
-    beforeSqlSha256: sqlPlan.beforeSqlSha256, targetUuid: sqlPlan.targetUuid, expectedTicket: sqlPlan.expectedTicket, ...LIMITATIONS,
+    ...absence, beforeSqlSha256: sqlPlan.beforeSqlSha256, targetUuid: sqlPlan.targetUuid, expectedTicket: sqlPlan.expectedTicket, ...LIMITATIONS,
   });
   preparations.set(plan, Object.freeze({ selected, sqlPlan }));
   return plan;
@@ -122,6 +134,7 @@ export async function verifyCurrentSymbolTransactionActor(plan: CurrentSymbolTra
   return Object.freeze({ profile: "easyeda-pro-control.current-symbol-transaction-actor-effect.v1",
     selectionPolicy: plan.selectionPolicy, expectedActorUuid: prepared.selected.startupActor.uuid,
     selectionSha256: plan.selectionSha256, selectedProjectUserRowSha256: plan.selectedProjectUserRowSha256,
+    ...(plan.selectedProjectUsersTableSha256 === undefined ? {} : { selectedProjectUsersTableSha256: plan.selectedProjectUsersTableSha256 }),
     beforeSqlSha256: plan.beforeSqlSha256, afterSqlSha256: after.logicalSha256, targetUuid: plan.targetUuid,
     transactionActorMatchesExpected: true, fullSqlEffect, ...LIMITATIONS });
 }

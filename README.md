@@ -25,7 +25,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261017033309` fixes historical clock evidence being invalidated
+Candidate `0.3.0+codex.20261017043703` supports the native case where the selected
+account has no historical project-user row: its UUID stays fixed, while persisted
+display names must be empty. It also adds ownerless historical inspection,
+preparation checkpoint descriptors in opening results, and lower-overhead fresh
+file hashing. The 033309 run passed the former clock failure point but stopped
+before editing at this missing-user case; cleanup proved the fixture unchanged.
+Normal writers remain disabled pending the complete disposable round trip.
+See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Update `0.3.0+codex.20261017033309` fixes historical clock evidence being invalidated
 by legitimate writer capture/release steps. It also adds per-sample diagnostics,
 reduces repeated historical SQL parsing while retaining fresh integrity checks,
 and completes failed-opener close parity for the still-unregistered ordinary

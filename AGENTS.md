@@ -6,6 +6,180 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate043703: explicit missing-project-user support
+
+Preparing `0.3.0+codex.20261017043703`, not published or installed yet.
+Root/independent source review confirms pinned APP52f51ce4 L3 preserves the
+request actor UUID and writes empty project display names when no users row
+matches. Actual033309 has zero matches, not duplicates. The maintained SQL
+comparator already models this case. New wrapper branch binds exact agreeing
+UI UUID and complete original users-table digest, with distinct absence policy
+and null selected-row digest. It never substitutes another UUID/UI names or
+accepts changed users. Existing one-row behavior and all clock/SQL/ownership
+guards remain unchanged.13 focused actor tests, whole types and strict targeted
+lint pass; root/independent review accepts sourcee35ae14d/tests6df297a4.
+Static downstream fixture and clock review found no further deterministic
+actor/clock mismatch; actual permission/write/post-clock/SQL/reopen remain
+unvalidated. Root read all147 lines of the private exact retained-file diagnostic
+75490bde and ran it once under pinnedNode24.18.0/core0. It passed maintained SQL
+inventory and actor preparation with expectedTicket765, exact complete users
+commitment7b7bcca6f66645ef3b694d46e95b7ef956d6471a3957fa279b2c18e9613d4fb3,
+no writes/live tokens/authority/replay. Recorded historical clocks are diagnostic
+inputs only. Historical inspection, opening descriptor and fresh hashing
+improvements are reviewed below. Final build/compatibility passed; fullverify
+running in shell78030/log /tmp/easyeda-043703-verify-dOft3Skk/verify.log.
+Independent source/release review accepts395sources/c36a63a1 and three runtime
+files/564b3c24, manifest9b78dc60; externalpins unchanged. Repository/privacy
+checks and all seven official skill validators pass. Fullsuite/CI/publication/
+install remain. Actual033309 host874735 and all its terminal
+operation records stay unchanged; no more live attempt before fresh session.
+
+### Actual033309: disposable validation resumed
+
+Fresh sole facade874735/parent873018/startTicks18494470 independently admitted
+on installed033309/main79ce23c; all1,280files/25,741,356bytes/modes, source394,
+runtime3 and manifest match the delivery below. PinnedNode24.18.0/core0;
+prior780503 is absent. Independent all18 runtime pins/292,631,813bytes and
+current helper175,104bytes/SHA57e6144cfb4f3f2d6b3b84f699902b209f85af671ef221e38ba40ce1f5a33870
+pass. Prior020000 launcher/open inspect terminal. Baseline-inspect refuses the
+transferred writer profile and validation-inspect requires its lost coordinator;
+no continuation attempted. Exact known journal remains plan-invalidated/seq29/
+hardStopfalse/orphanfalse; last three artifact hashes match, closed-recovery
+outcomeunchanged/mutationMayHaveOccurredfalse, no continuation/inverse authority.
+Fresh closed disposable598,016bytes/SHA970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199
+with no sidecars. New ordinary launch validation-033309-20261017-launch completed
+ONCE in functions19: root49856/Job337d993729504d33818d8c0515ad16a1/
+helper740f7b69ef474c8c84c320747b612028, launchedSHA90c255ccbc98b7028b0b32547cf2195ce53ecba35315288d0d6d9a674e2b14b0.
+Fresh status24 authenticated exact033309/ded07x99dcxb504 with no incomplete
+operations. New open validation-033309-20261017-open completed ONCE functions27
+with exact active PCB/native identity and no orphan/hardStop. Terminal07
+SHA4933cddbbeb9fb3d9c5cbfb6a71eed00ad62646b765b74232f853b6e16876e99.
+Checkpoint040748983Z is561,152bytes/SHA4ed9ca7c9ec086d5c79d7f059ca906eb66d12e08457a7f495848809b135f993f.
+Offline preparation verifies original0603WAF1002T5E metadata; sealed name
+EASYEDA_VALIDATE_033309_SYMBOL/descriptionDisposable current symbol metadata
+validation033309. New baseline-begin validation-033309-20261017-baseline
+completed ONCE functions38 awaiting-termination/normal close acknowledged.
+Original baseline-observe-termination/copy50 completed with baseline captured;
+06-copy-result SHAebc7e31c2964ae024609d37f93bcf5119bdc046b79910950d6bd6be2a6f1b7d0.
+Only startup-premise blocker is active-schematic-pages/two pages. Launcher
+observe-termination58 completed with exact90c255cc launch digest. Scratch
+baseline-prepare-clock59 completed/reference accepted, resultSHA
+6fac701bf8618f20875d80d54c889eddb0fa75a84813f1f5e62d02503be9a11e.
+Baseline relaunch66 completed and released original capture; new-session
+admission67 completed. Inactive-cache observation68 and project-only open70
+completed, retaining explicit disposable schematic-startup acceptance. Clock
+observation71 completed/agedClockAcceptedtrue, renderer resultSHA
+8d8d679c966cc7fa5b0ca634bccced367cbce62903066d196a7f27626a2a6814.
+Validation-begin72 transferred the original baseline with nextPhaseforward-write.
+Exact forward-write73 attempted ONCE and stopped before metadata dispatch:
+Actor selection requires exactly one original project user. Retained23 SHA
+0175ed5a6e855cc40a934bbee68b5255f35a0f6443c3e504959756f7bea42c5e contains
+preflight/backend clock reply and before/armed samples; writeRaw/after absent.
+Original inspection offered cleanup-close; cleanup-close and termination
+completed, retired/plan-invalidated/sequence29/hardStopfalse/orphanfalse.
+Complete closed recovery outcomeunchanged/exactLogicalSqlUnchangedtrue;
+28 SHA cfcf9244ff9f3ab74fcd4d0ee59a2a2ffedea749400f1278dc60c823f8be89b1.
+Final retirement intentSHA346f3905921f362dd7c11920ddc51cc7cf424e2b2501f101bd6ec4281949b41f.
+Root raw hash again970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+598,016bytes/no sidecars. No metadata dispatch/explicitSave/inverse or reopened
+writer verification. Never replay these IDs, close, Save or navigation.
+The clock-lifetime correction passed its former failure point; full writer
+lifecycle remains unvalidated. Keep EasyEDA closed; no further live attempt
+before reviewed update and a fresh Codex session.
+MainCI39000483760 and
+mainWindows39000483707 now pass completely. Never replay the launch.
+Production designs and their records untouched.
+
+Source-only historical inspection fallback is root/independent reviewed:
+exact supported baseline/writer/verifier profile chain and explicit purpose,
+managed journal/artifact rehashing and bounded descriptors/recorded flags.
+No nextPhase reconstruction, current-state inference, owner/continuation/replay
+authority or quarantine clearance. The original retained coordinators retain
+precedence.61 focused tests, whole types and strict targeted type-aware lint
+pass. Packaged guidance explains transferred-writer inspection. No build,
+version, ordinary registration, publication or installation change yet.
+New openings also expose their verified managed preparationCheckpoint descriptor;
+actual checkpoint bytes are measured independently of source-file size, hash/
+receipt/identity checks retained, old journals omit it. Root source/test review
+accepts;65 focused tests/types/targeted strict lint pass. Packaged guidance and
+offline discovery explain the historical-evidence boundary. Additional source
+performance work replaces per-file streams with explicit fresh descriptor reads
+and four reused64KiB scratch buffers. Root/independent source review accepts;
+five hashing regressions and four existing launcher parity/order/cleanup tests,
+types and strict targeted lint pass. Every byte is still freshly hashed; no
+admission, file freshness, process/clock or writer guard is waived. Earlier
+passive diagnostics show execution-closure7470ms and launcher-fingerprint9064ms;
+these do not establish the dominant baseline delay or a new-version speedup.
+Whole strict lint/all seven packaged skill checks and the official control
+skill validator pass. Fresh npmci/complete dependency tree,151 registry
+signatures/40 attestations and zero reported vulnerabilities pass.
+
+### Delivered033309: published and installed; fresh session required
+
+Published and installed/enabled `0.3.0+codex.20261017033309` through the existing
+Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Protected PR49 merged tested head1409886c877a9a905f823f2d4b20cd260df1edc5 as
+main79ce23c28cda3030f0f24f18179b69d25ca27a39. Whole tree
+7c7ab821d4784bf51d44cc41903dbddfc9ceb00f and plugin tree
+011ebeeea240cfaa91ed63c5968d1dafa437cb8f equal the tested payload exactly.
+All11 PR checks passed: LinuxCI38999515238 has10,538 facade passes/five skips/
+zero failures, cancellations or todos;424 bridge passes across28files.
+Windows38999515290 passed. Full local verification exited0 with10,539 facade
+passes/four skips/zero failures and424 bridge passes. Whole types, strict
+type-aware lint, reproducible builds, API inventory and package/skill checks
+passed. Separate184 repository checks and all seven official skill validators
+passed. Independent source/release review accepted. Dependency checks pass151
+registry signatures,40 attestations and zero vulnerabilities. Automatic main
+Windows39000483707 and mainCI39000483760 verify-build passed; duplicate main
+facade jobs are still running and need a later status check.
+
+Official marketplace upgrade under umask022 completed exit0/errors[]. CLI
+confirms installed/enabled033309 and cached marketplace HEAD equals mergedmain.
+Root and independent inventories match all1,280files/25,741,356bytes,
+42directories0755,1,279files0644/one0755,seven skills and no extras or links.
+Inventory SHA14566fc4dd218ce10302bb1b6fdc9504775183a5fc2d8ea8ca732e4d4ff80b0b;
+source394 SHA782df6f5fbf50ebae6a70558de362f8bb0f1fa6389b781619d6ef205ffd19ade;
+runtime3 SHA34d3ece8ff3ca22456d6b1de84d023c60c815db5f7608ad06e8ffa5104482abf;
+manifest41109e463fb257c63f65f8ca41a3ec320ad9a977e6723a587b137a0c28ed9870.
+Configured synthetic offline startup hands ambientNode26.11.1 to pinned
+Node24.18.0 without installed module ancestors, upstream child or nonstdio
+socket. Catalog16tools/seven skills, strict discovery argument checks, fixed
+helper/all18pins and ordinary metadata action rejection pass. No live tool,
+actual profile or operation journal; synthetic profile unchanged/stderr0.
+Probe870860 exited0 through stdinEOF, without signals or process adoption.
+Private proof `/tmp/easyeda-installed-release-wDOlwJvb/proof.json`,4,977bytes
+SHAd2ac8b4571ef54146138da4035e586c3f2ce67f3cc2bc68183bcab2281fbaba9.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/49#issuecomment-6229312469
+
+Retained host780503/parent778742/startTicks18054748 still loads020000 with its
+original pinnedNode24.18.0 executable and core0. Root and independent before/
+after identity checks pass. No host termination, manual cache change or hotpatch.
+Do not make further live calls from that host. The extension-development release
+workflow requires a fresh Codex session and independent installed033309 admission
+before live work. No pending local tool or CAD call. All020000 launcher/open/
+baseline/writer cleanup is terminal; never replay those IDs, navigation, close
+or Save. Fresh closed disposable hash remains970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+598,016bytes, with no WAL/SHM/journal sidecars. Production designs and their
+records remain untouched. Keep EasyEDA closed until the next supported launch.
+
+Next: one NEW disposable symbol-metadata forward/inverse lifecycle using the
+supported launcher and current-project-opening reference. The020000 run passed
+opening, baseline, scratch/renderer Date controls and startup qualification, but
+its forward writer stopped on stale historical-clock authority before metadata
+dispatch. Original-owner cleanup proved complete SQL and raw-file equality.
+The033309 issuer-local correction has source/offline evidence only. Preserve
+exact next-phase acknowledgements, original owners and fresh backend head age
+at both writes. Completion requires forwardVerified/inverseVerified/
+metadataRestorationVerified and nextPhasecompleted, not original SQLite bytes.
+Only then review and register the separate ordinary forward-only metadata route.
+Legacy writers and generic library.symbol.modify stay blocked. Broader native
+structure completion, schematic/PCB geometry, component-library and manufacturing
+work remains in docs/current-symbol-clock-lifetime-2026-10-17.md and the exhaustive
+774-method coverage inventory. Historical SQL reuse has no measured connected
+speedup claim. This delivery handoff stays uncommitted until the next source
+change to avoid a record-only release cycle. Earlier pending statements below
+are historical.
+
 ### Candidate20261017033309: clock lifetime and recovery follow-through
 
 Version `0.3.0+codex.20261017033309` is being prepared, not yet published or installed.
