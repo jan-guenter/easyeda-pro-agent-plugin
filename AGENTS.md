@@ -25,6 +25,12 @@ install/tree,151registry signatures/40attestations and zero-vulnerability audit
 pass. Build/sanitizer/generated SQL reader and compatibility checks pass;
 workflow actionlint passes. Full required verify is running; CI/publication/
 installation are not yet claimed by this candidate record. No new lint exemption.
+That full run exposed stale bundled-startup discovery counts (7/11 rather than
+8/13). Only the two exact expected counts changed; all five packaged-startup
+tests then passed with zero failures/skips, and targeted strict lint passed.
+The full original run remains retained, not relabeled as a clean run. Required
+CI will verify the final corrected commit. This two-byte test-only correction
+changes the package inventory below, not source or runtime hashes.
 
 The skill-creator workflow split the long control API reference into current
 PCB, symbol, utility and legacy task contracts. All22original heading anchors
@@ -37,7 +43,7 @@ SQL comparator and retained-owner lifecycle still need implementation.
 [Release scope and backlog](docs/current-pcb-text-2026-10-17.md) distinguish
 offline support from connected evidence.
 
-Frozen plugin index:1,301files/26,140,515bytes/42directories, inventory
+Initial frozen plugin index:1,301files/26,140,515bytes/42directories, inventory
 `cba7d169012db1fd0dd870c480521469875df18889deab2b3bdc55433e391da5`;
 398-source `e5e2062b8fbbf85eb96137aa2eec5ee3e8f266c71d4a6ebf54971848ba08db12`;
 three-runtime `405a8b4ec3c0b923187ea130830feb7f113582e8eea54323c94c41d42f8da690`;
