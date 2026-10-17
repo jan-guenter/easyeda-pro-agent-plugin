@@ -29,7 +29,7 @@ function edit(time: number): string { return `{"type":"EDIT_HEAD"}||${JSON.strin
 function metadata(ticket: number): string { return `${JSON.stringify({ type: "META", ticket, id: "META" })}||${JSON.stringify(META)}`; }
 async function fixture(failure: Failure = "none"): Promise<{
   prepare: (copied?: boolean) => Promise<Bag>; verify: (value: unknown, content: string, targetUuid?: string) => Bag;
-  raw: string; cached: string; state: { live: boolean; checkpointReads: number };
+  raw: string; cached: string; state: { live: boolean; checkpointReads: number; historyIdentities: Bag[] };
 }> {
   const continuation = Object.freeze({ synthetic: "original-continuation" }), engine = Object.freeze({ synthetic: "engine" });
   const sourceTarget = { projectUuid: "1".repeat(64), branchUuid: "3".repeat(32), symbolUuid: SOURCE };
@@ -52,7 +52,7 @@ async function fixture(failure: Failure = "none"): Promise<{
       startup: failure === "startup" ? { ...startup, sheetUuids: [] } : startup } });
   const completed = Object.freeze({ copyPlan: plan, append: { plan: failure === "append-plan-copy" ? structuredClone(plan) : plan,
     targetUuid: TARGET, projection }, expectedActor: ACTOR, comparison: { synthetic: "complete-original-comparison" } });
-  const state = { live: true, checkpointReads: 0 };
+  const state = { live: true, checkpointReads: 0, historyIdentities: [] as Bag[] };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-copy-saved-source.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Buffer, JSON, WeakMap, Error, Promise, canonicalJson, sha256Json,
@@ -68,7 +68,10 @@ async function fixture(failure: Failure = "none"): Promise<{
       assert.equal(clock, source.clockPlan); assert.equal(owner, source.dispatchOwner); assert.equal(received, inventory); return completed;
     },
     decodeCurrentSymbolPreEditHistory: (received: unknown, target: unknown): Promise<unknown> => {
-      assert.equal(received, inventory); assert.equal(target, plan.source);
+      assert.equal(received, inventory);
+      // The real decoder accepts exactly these two fields, not the symbol target.
+      assert.equal(canonicalJson(target), canonicalJson({ projectUuid: sourceTarget.projectUuid, branchUuid: sourceTarget.branchUuid }));
+      state.historyIdentities.push(structuredClone(bag(target)));
       return Promise.resolve({ history: failure === "owner" ? { ...history, projectOwnerUuid: "7".repeat(32) } : history, maximumTicket: 42 });
     },
     selectCurrentSymbolStartupExpectation: (): typeof startup => startup,
@@ -87,6 +90,13 @@ async function fixture(failure: Failure = "none"): Promise<{
     raw: expectedSavedSymbolContent(projection.raw, FRESH), cached: expectedSavedSymbolContent(projection.documentCache, FRESH), state,
   };
 }
+
+void test("copy saved source projects the exact two-field history identity from its three-field symbol source", async () => {
+  const f = await fixture(); const source = await f.prepare();
+  assert.deepEqual(f.state.historyIdentities, [{ projectUuid: "1".repeat(64), branchUuid: "3".repeat(32) }]);
+  assert.equal(source["sourceUuid"], SOURCE); assert.equal(source["destinationUuid"], TARGET);
+  assert.equal(f.state.checkpointReads, 1);
+});
 
 void test("copy saved source binds the original returned UUID and both exact content encodings", async () => {
   const f = await fixture(); await assert.rejects(f.prepare(true), /original continuation/u);

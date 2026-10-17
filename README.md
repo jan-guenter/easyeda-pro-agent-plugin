@@ -28,7 +28,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017193000` corrects two copy preflight limitations found
+Update `0.3.0+codex.20261017210000` fixes the symbol-copy verifier's history-identity
+handoff. Installed193000 created one disposable drawn symbol and passed exact
+closed SQL/source/peer checks, then stopped before verifier launch because a
+three-field symbol identity reached a strict two-field project/branch decoder.
+The corrected call preserves that decoder's checks. The created symbol remains;
+the stopped operation is not replayable and full reopen validation remains pending.
+See the [retained result and correction](docs/current-symbol-copy-compatibility-2026-10-17.md#saved-source-handoff-correction).
+
+Earlier update `0.3.0+codex.20261017193000` corrects two copy preflight limitations found
 in retained disposable evidence. ASCII names containing uppercase `I` now require
 identical collision decisions under both default and Turkish/Azeri lowercase.
 Exact native element-numbering counters are preserved and checked, rather than

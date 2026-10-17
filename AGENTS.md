@@ -4,12 +4,81 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate193000 fixes ASCII copy-title folding and preserves native element counters.
-Independent source/native review and the complete retained-fixture pure planner pass.
-Package is frozen: 1,339 files/27,183,722 bytes/42 directories/seven skills,
-inventory `c3f5087eaaa44a3c23f6ba647f2a4c06678c0b0c63c28aa55a7f1b567db0972c`.
-See [compatibility findings](docs/current-symbol-copy-compatibility-2026-10-17.md).
-Publication/installation still pending; actual loaded facade remains181500.
+Current193000 continuation: actual facade1848656/parent1846988/startTicks24334779
+independently admitted, exact installed files/modes and pinnedNode24/core0 pass.
+Both main CI39063751459 and Windows39063751415 are now SUCCESS. Old1757354 and
+consumed probe1844673 are absent. Initial disposable source wasb99dbffb; post-copy
+raw598016bytes is4ab68d8fc431ad07dc42e2ea4c6b6b9a04fa0f3155067af278bcc637e7860f4b.
+Launch `copy-193000-20261017-launch` completed once, root5548/Job
+ad8092cc9b6f4043a6ae42cc247d3d60, digest
+f2ac4a9d0727ed39efd6b07e2c60f940a52c8edecf4287db888c04e16693a3aa.
+Authenticated status passed, dispatcher ded07x99dcxb504, no incomplete operations.
+Initial editor-context passed StartPage/undefinedproject/emptybranch.
+`copy-193000-20261017-open` COMPLETED with exact active PCB/native identity;
+checkpoint565248bytes/f0527b4e. No hard stop/orphan. Do not replay navigation.
+Copy `baseline-begin` and `baseline-observe-termination` completed for
+`copy-193000-20261017-baseline`, source symbol df16405f230603d3. Complete closed SQL
+24a32a93/rawb99dbffb/checkpointf0527b4e and18rows/fourcounters independently verified.
+Ordinary launch termination recorded and exactf2ac4a9d/root5548/Jobad8092cc matched,
+BEFORE replacement relaunch. Sole startup blocker is2active-schematic-pages; explicit
+observation acceptance is allowed, not writer admission. `baseline-prepare-clock`
+completed and accepted; retained result3419b4ce. Sole replacement launch1328/Job
+dfd179a6e01344a0991de7ddb6dfa3d0 is admitted; original capture released.
+Cache observation, project-only opening and original clock observation completed.
+One copy write acknowledged destination3ebb13f574636857. Normal closure proved
+root1328/Jobdfd179a6 terminated; complete closed SQL matched the intended effect
+24a32a93→f75b5922 with source/peers unchanged. Creation times1792269819812/813
+are distinct, tickets771/772. `verification-start` then FAILED before verifier
+slot/launch: strict two-field history decoder received three-field symbol source.
+`copy-inspect` reports stopped/failedPhase verification-start, copyVerifiedfalse.
+No live call/process cleanup is pending. Do not resume/replay this operation,
+copy, navigation or Save. New unused symbol remains; full copy lifecycle unproved.
+Complete18-file scratch-clock profile/helper hashes independently match.
+
+Candidate210000: explicit project/branch projection fixes that handoff while
+preserving the shared decoder. Three focused tests/types/strict lint pass;
+reproducible build, dependency signatures/audit, repository/privacy and seven
+skill validators pass. Full release suite runs once on frozen source; pending.
+Source changes are local, not installed. External pins/bridge are unchanged.
+Next fresh installed session: independently admit runtime, prepare the existing
+new unused symbol for disposable drawn-symbol metadata forward/inverse validation.
+Old copy success cannot be reconstructed; do not create another copy to stand in
+for it. Ordinary drawn-symbol support remains a later deliberate implementation.
+Post-copy managed checkpoint:
+`/root/.easyeda-pro-control/checkpoints/EasyEDA_Control_Validation_20260911-current-symbol-finish-baseline-20261017T204431304Z.eprj2`,
+SHA b8a26d04ad4345c5f66ae9e7195399174d5c4439d8e8d2f73411e59f74117a69.
+Independent review proves all35tables/139rows, all18preexistingdocuments and52
+priorchunks preserved except the exact modeled six-table append/bookkeeping.
+New target passes pure disposable canvas eligibility and two-write budget
+(51rows/55chunks,29742bytes maxcontent); not live metadata authority or validation.
+
+Delivered193000 (local post-merge handoff): `0.3.0+codex.20261017193000`
+published via PR59/main `6f550dc32dfc20df3ee52ad4b5d60b3d7728dead`, reviewed payload
+`bdc992b41dc627508083055247c9057560d99746`. Required PR CI39062770200 and
+Windows39062770210 passed: 10,804 facade passes/five platform skips/zero failures;
+424 bridge passes. Clean local verify: 10,805 passes/four skips/zero failures,
+strict lint/types, dependency signatures/audit and all release validators pass.
+Main Windows39063751415 passed; main CI39063751459 was still running at handoff.
+Check its result next session; do not confuse prior-main Copilot39060515189 failure.
+
+Official Git marketplace upgrade installed/enabled193000. Cached marketplace HEAD
+equals merged main; all 1,339 files/27,183,722 bytes/42 directories/seven skills
+match committed bytes/modes, inventory
+`c3f5087eaaa44a3c23f6ba647f2a4c06678c0b0c63c28aa55a7f1b567db0972c`.
+Source417 `575e44c322f17d3121ef96eadb0b687154184bd567d18333ec9b25177916217e`,
+runtime3 `38baf8ff699d314e2063992758e91156297e4947431faf9c683244fc35654c79`,
+manifest `715b36c526c19b9047c3f6f006ce68db89e9dd7d0d066a91c410da284111455f`.
+One-shot configured offline probe passed ambient26 to pinned24, 18 restricted
+tools/seven skills, no upstream/socket and successful EOF exit1844673. Consumed
+proof `/tmp/easyeda-copy-release-LpDopd/proof.json`, SHA
+`eae23e43b39ea8b4a19fa7e2695c48923a92e8491cf26e399c4b29ec2de7ca80`.
+Never rerun that probe. Actual host1757354 still loads181500; no host termination,
+cache patch or live call after install. Fresh Codex session is required.
+
+ASCII copy-title folding/native counters are fixed; independent source/native
+review and complete retained-fixture pure planner pass. See the published
+[compatibility findings](docs/current-symbol-copy-compatibility-2026-10-17.md).
+Connected copying remains unvalidated; external pins/bridge are unchanged.
 
 Actual181500 facade1757354/parent1755364 was independently admitted. Its sole
 launch/open copy-181500-20261017-launch/open completed on the disposable PCB.
@@ -19,7 +88,7 @@ retained root46404/Job71820017f9b449abbf9cf71c1e01869b termination is proved.
 Closed disposable file remains598016bytes/SHA b99dbffbd3bc091c3078617ebf090e1c18804c56340c430a91a0fd8ba15e3b9d.
 Do not replay these completed operations. No live call is pending.
 
-Installed `0.3.0+codex.20261017181500`, published 2026-10-17 via PR58/main
+Previous `0.3.0+codex.20261017181500`, published 2026-10-17 via PR58/main
 `202fad87ed33b3ea88fd4f369ad617a9d10a5686` from
 `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Final CI39059441584/
 Windows39059441621 passed: 10,798 facade passes/five skips/zero failures, 424 bridge
@@ -38,7 +107,8 @@ Next after installing193000 and fresh-session admission: disposable copy,
 nonempty PCB String/drawn-symbol metadata validation, then scoped
 ordinary enablement. Backlog: referenced-symbol propagation, schematic/PCB structure,
 geometry, broader libraries/manufacturing. Computer Use's sandboxCwd failure is not
-RDP focus. Copilot39060515189 hit a prompt limit; its review remains incomplete.
+RDP focus. Prior-main Copilot39060515189 hit a prompt limit. PR59's Copilot review
+completed without open issues after instruction compaction; no human-review claim.
 
 ## Product truth and scope
 

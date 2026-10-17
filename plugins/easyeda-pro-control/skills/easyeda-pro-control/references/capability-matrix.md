@@ -16,14 +16,14 @@ PCB/footprint navigation also needs passive preference-side-effect admission.
 See [native navigation limits](native-ui.md#navigation-preference-side-effects);
 project-file invariance does not cover global preferences or backup pruning.
 
-The source inventory classifies 774 method paths as 212 public subsets, 30
-native equivalents, no lifecycle-only, 81 implemented-but-blocked and 451
-omitted. It maps 336 runtime-guarded available routes, 94 blocked routes and
+The source inventory classifies 774 method paths as 212 public subsets, 31
+native equivalents, no lifecycle-only, 81 implemented-but-blocked and 450
+omitted. It maps 337 runtime-guarded available routes, 94 blocked routes and
 two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
-The legacy-compatible catalog has 42 tools; the restricted current-version
-catalog has seventeen, with separate exact admission for each live capability.
+The legacy-compatible catalog has 43 tools; the restricted current-version
+catalog has eighteen, with separate exact admission for each live capability.
 
 Eight symbol/page/container metadata-writing routes are also blocked pending
 operation-owned structure-job completion and exact SQL-effect proof. Historical
@@ -41,6 +41,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 
 | Capability | Controlled path | Current boundary |
 |---|---|---|
+| Disposable drawn-symbol copy | disposable_symbol_copy; api disposable-symbol-copy/disposable-symbol-copy-validate | Fixed same-project native clone; original disposable owner, supported self-contained single-PART drawing, app-chosen UUID/title and cleared source linkage. Installed193000 acknowledged one copy and passed complete closed SQL/source/peer checks, but stopped before verifier launch. That result is not a completed copy lifecycle and cannot be replayed. Full reopened content and final closed SQL equality remain required; ordinary copying and deletion remain unsupported. See [the copy workflow](current-symbol-copy.md) |
 | Disposable META-only symbol-metadata validation | project_open validation-* | One sealed forward/inverse lifecycle with original owners, exact phase acknowledgements, complete closed SQL and reopened-content verification. Target must be unused by active sheets and have metadata-only raw history. The separate canvas-segments profile below does not broaden this case's evidence. Proof budgets reserve both writes, not physical file growth or resource completion. Installed101500 passed both edits, reopened-content checks, metadata restoration and independent full-SQL/peer review. Historical database bytes are not restored. See [the validation guide](current-project-opening.md) |
 | Current ordinary symbol metadata edit | project_symbol_metadata; api project-symbol-operation/project-symbol-operation-validate | Forward-only name and/or non-null description change for one closed unused META-only local symbol. Supported startup expectation, original purpose-bound owners, exact clocks, complete SQL effects and reopened content required. No inverse, explicit Save, replacement owner or general writer enablement. Installed123000 passed one ordinary public-route lifecycle on a disposable fixture, including full SQL/reopen/final closure and 17 unchanged peers. Other shapes and later runtimes remain separate. See [the workflow](current-project-opening.md#ordinary-forward-only-symbol-metadata) |
 | Disposable drawn-symbol metadata validation | project_open validation-* | Name/description forward and inverse only; original disposable owner and unused symbol required. At most 101 complete history chunks including reserved writes, stable atom types, lossless bodies, unambiguous cache actors and a unique latest/max-ticket header. Every saved line must be byte-exact and its order attainable by the pinned replay. Fresh strictly newer write windows and inverse headroom, complete SQL and exact saved-content candidates required. Offline-tested, not connected-validated. Ordinary drawn-symbol editing remains blocked. See [the validation workflow](current-project-opening.md#disposable-forwardinverse-validation) |
