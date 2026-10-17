@@ -13,7 +13,7 @@
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 333,
+      "available-with-runtime-guards": 336,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -21071,6 +21071,40 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveString.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. Accepts only1..256 distinct primitiveIds in an array, returns caller order and refuses any unavailable ID. No scalar get or missing-ID skipping.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveString.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveString.get",
           "implementation": "public-method",
@@ -21129,6 +21163,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveString.getAll",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. Empty arguments only; native family order is preserved.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveString.getAll",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",
@@ -21202,6 +21270,39 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_PrimitiveString.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. Empty arguments only. Returns at most 20000 distinct bounded IDs, with 393216-byte evidence limit. Only globalIndex leaves the adapter; text, font and geometry are not read by its projection. Positive generic type lookup remains Line/Arc/Via only.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_PrimitiveString.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",

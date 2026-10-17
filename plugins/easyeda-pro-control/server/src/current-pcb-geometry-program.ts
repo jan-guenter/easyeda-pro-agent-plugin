@@ -13,7 +13,7 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const primitiveIds = "primitiveIds" in request.arguments ? request.arguments.primitiveIds : null;
   const componentPrimitiveId = "primitiveId" in request.arguments ? request.arguments.primitiveId : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
-    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll" } as const;
+    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll" } as const;
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
@@ -122,6 +122,15 @@ const copyRows=value=>{
   if(family==='Component'){
    const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
    rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation')),...componentMetadata(row)});continue;
+  }
+  // PCB217199c8@10397039 selects existing parentless views; yr.toJSON@7384285 retains internal units.
+  // API021d155b@1502811 scales these distances by 10 and radians by 180/PI. Never invoke SDK constructors with their defaults.
+  if(family==='String'){
+   const position=point(own(row,'position')),alignMode=integer(own(row,'origin'));if(alignMode<1||alignMode>9)bad();
+   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),text:text(own(row,'value'),65536),
+    fontFamily:text(own(row,'fontFamily'),1024),fontSize:num(num(own(row,'fontSize'))*10),lineWidth:num(num(own(row,'strokeWidth'))*10),
+    alignMode,rotation:num(num(own(row,'rotation'))*180/Math.PI),reverse:bool(own(row,'reverse')),
+    expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror'))});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){

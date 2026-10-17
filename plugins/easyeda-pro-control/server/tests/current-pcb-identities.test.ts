@@ -16,7 +16,8 @@ function inputFor(method = selectedMethod, args: Record<string, unknown> = {}): 
 const request = inputFor();
 const defaults = { selected: ["selected-second", "selected-first"], Line: [{ globalIndex: "line-b" }, { globalIndex: "line-a" }],
   Arc: [{ globalIndex: "arc-a" }], Via: [{ globalIndex: "via-a" }],
-  Component: [{ globalIndex: "component-b" }, { globalIndex: "component-a" }], Pad: [{ globalIndex: "pad-b" }, { globalIndex: "pad-a" }] };
+  Component: [{ globalIndex: "component-b" }, { globalIndex: "component-a" }], Pad: [{ globalIndex: "pad-b" }, { globalIndex: "pad-a" }],
+  String: [{ globalIndex: "string-b" }, { globalIndex: "string-a" }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; fastDeadline?: boolean; input?: CurrentPcbIdentitiesRequest; }
 function environment(options: Options = {}): {
   run: () => Promise<unknown>; evaluateChild: (source: string) => unknown;
@@ -27,13 +28,13 @@ function environment(options: Options = {}): {
     if (topic === "getTabIdAndDocType" || topic === "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds") { assert.equal(arg, undefined); }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad'};
+globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -76,7 +77,8 @@ void test("current identity reader admits the target project fragment and reject
 void test("current PCB identities retain cross-realm receiver, full ordered IDs and positive three-family type evidence", async () => {
   for (const [method, expected] of [[selectedMethod, defaults.selected], ["eda.pcb_PrimitiveLine.getAllPrimitiveId", ["line-b", "line-a"]],
     ["eda.pcb_PrimitiveArc.getAllPrimitiveId", ["arc-a"]], ["eda.pcb_PrimitiveVia.getAllPrimitiveId", ["via-a"]],
-    ["eda.pcb_PrimitiveComponent.getAllPrimitiveId", ["component-b", "component-a"]], ["eda.pcb_PrimitivePad.getAllPrimitiveId", ["pad-b", "pad-a"]]] as const) {
+    ["eda.pcb_PrimitiveComponent.getAllPrimitiveId", ["component-b", "component-a"]], ["eda.pcb_PrimitivePad.getAllPrimitiveId", ["pad-b", "pad-a"]],
+    ["eda.pcb_PrimitiveString.getAllPrimitiveId", ["string-b", "string-a"]]] as const) {
     const input = inputFor(method);
     const fixture = environment({ input, beforeChild: "for(const row of rows.Line)Object.defineProperty(row,'geometry',{get(){getterReads++;throw new Error('PRIVATE_GEOMETRY');}});" });
     const result = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await fixture.run()));
@@ -106,7 +108,7 @@ void test("current PCB identity schemas and discovery reject filters, unknown me
     assert.throws(() => buildCurrentPcbIdentitiesProgram(invalid)); assert.equal(validateCurrentPcbIdentitiesArguments(invalid)["valid"], false);
   }
   const catalog = queryCurrentPcbIdentities({ includeSchemas: true });
-  assert.equal(catalog["total"], 7); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
+  assert.equal(catalog["total"], 8); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
   assert.equal(queryCurrentPcbIdentities({ method: selectedMethod })["total"], 1);
   const otherTarget = { ...target, projectUuid: "d".repeat(32), documentUuid: "e".repeat(32), tabId: `${"e".repeat(32)}@${"d".repeat(32)}` };
   const input = parseCurrentPcbIdentitiesRequest({ ...request, target: otherTarget });
@@ -115,11 +117,34 @@ void test("current PCB identity schemas and discovery reject filters, unknown me
   assert.deepEqual(validateCurrentPcbIdentitiesResult(input, raw)["target"], otherTarget);
 });
 
+void test("current String identities use the complete ordered native family without reading its other scalars", async () => {
+  const input = inputFor("eda.pcb_PrimitiveString.getAllPrimitiveId");
+  const fixture = environment({ input, beforeChild: "for(const row of rows.String)for(const key of ['value','font','position'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED');}});" });
+  const observation: unknown = decodeExactReadEnvelope(await fixture.run());
+  assert.deepEqual(validateCurrentPcbIdentitiesResult(input, observation)["value"], ["string-b", "string-a"]);
+  assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const beforeChild of ["rows.String[1].globalIndex='string-b';", "delete rows.String[1].globalIndex;",
+    "Object.defineProperty(rows.String[0],'globalIndex',{get(){getterReads++;return 'string-b';}});"] ) {
+    const invalid = environment({ input, beforeChild });
+    await assert.rejects(invalid.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+    assert.equal(invalid.evaluateChild("getterReads"), 0); assert.equal(invalid.evaluateChild("dataReads"), 1);
+  }
+  const drift = environment({ input, afterCall: "if(topic==='pcb/extensionAPI/string-getAll'&&dataReads===2)rows.String.reverse();" });
+  await assert.rejects(drift.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+  assert.equal(drift.evaluateChild("dataReads"), 2);
+  for (const filteredArguments of [{ layer: 3 }, { primitiveLock: false }]) {
+    assert.equal(validateCurrentPcbIdentitiesArguments({ ...input, arguments: filteredArguments })["valid"], false);
+  }
+  const classify = inputFor(CURRENT_PCB_IDENTITY_TYPE_METHOD, { id: "string-a" });
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input: classify }).run());
+  assert.throws(() => validateCurrentPcbIdentitiesResult(classify, raw), /not in an observed supported family/u);
+});
+
 void test("current PCB identities distinguish empty arrays from missing or unsupported type results and reject forged results", async () => {
   for (const method of [selectedMethod, "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
-    "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId"]) {
+    "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId"]) {
     const input = inputFor(method);
-    const fixture = environment({ input, beforeChild: "rows={selected:[],Line:[],Arc:[],Via:[],Component:[],Pad:[]};" });
+    const fixture = environment({ input, beforeChild: "rows={selected:[],Line:[],Arc:[],Via:[],Component:[],Pad:[],String:[]};" });
     const raw: unknown = decodeExactReadEnvelope(await fixture.run());
     assert.deepEqual(validateCurrentPcbIdentitiesResult(input, raw)["value"], []);
   }

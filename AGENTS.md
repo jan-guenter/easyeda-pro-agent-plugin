@@ -6,6 +6,147 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate170000: current PCB text readers and task-specific references
+
+Version `0.3.0+codex.20261017170000` on feature/current-pcb-text-20261017 adds
+current native String get/getAll/getAllPrimitiveId reads. The parentless loaded
+family exposes raw text/font and bounded placement/style in mil/degrees. It
+excludes component attributes, rendered glyphs and saved-source ownership;
+generic type lookup remains Line/Arc/Via. Full-family validation and byte bounds
+precede caller-ID selection. Existing runtime, receiver, identity, double-sample,
+writer, owner and quarantine gates are unchanged. Coverage is336available routes,
+94blocked/two partial; geometry13methods/identities8. Current live validation
+is unclaimed. No application launch, project access, CAD edit or Save occurred.
+
+Main and independent review accept the source contract and69focused tests,
+including the additional escaped-envelope case's named rerun. Full typecheck,
+targeted strict type-aware lint and inventory equality pass. Clean dependency
+install/tree,151registry signatures/40attestations and zero-vulnerability audit
+pass. Build/sanitizer/generated SQL reader and compatibility checks pass;
+workflow actionlint passes. Full required verify is running; CI/publication/
+installation are not yet claimed by this candidate record. No new lint exemption.
+That full run exposed stale bundled-startup discovery counts (7/11 rather than
+8/13). Only the two exact expected counts changed; all five packaged-startup
+tests then passed with zero failures/skips, and targeted strict lint passed.
+The full original run remains retained, not relabeled as a clean run. Required
+CI will verify the final corrected commit. This two-byte test-only correction
+changes the package inventory below, not source or runtime hashes.
+
+The skill-creator workflow split the long control API reference into current
+PCB, symbol, utility and legacy task contracts. All22original heading anchors
+remain, all77local links across eight affected files resolve, and independent
+review accepted a raw-PCB-text task route. README/current inventory counts agree.
+Installed-code/official-doc research produced the next
+[closed-symbol clone contract](docs/current-symbol-copy-contract-2026-10-17.md),
+not a copy implementation. Its planner, equal-time header projection, complete
+SQL comparator and retained-owner lifecycle still need implementation.
+[Release scope and backlog](docs/current-pcb-text-2026-10-17.md) distinguish
+offline support from connected evidence.
+
+Initial frozen plugin index:1,301files/26,140,515bytes/42directories, inventory
+`cba7d169012db1fd0dd870c480521469875df18889deab2b3bdc55433e391da5`;
+398-source `e5e2062b8fbbf85eb96137aa2eec5ee3e8f266c71d4a6ebf54971848ba08db12`;
+three-runtime `405a8b4ec3c0b923187ea130830feb7f113582e8eea54323c94c41d42f8da690`;
+manifest `a50afb8cfdf9130b15401ce0bf2b29d0736bc65fc06e0127d5c76477be06216e`.
+Independent Git-index derivation agrees exactly. External runtime/bridge pins
+are unchanged. New private170000helpers are prepared and fully read; no probe
+has run. Old one-shot helpers remain consumed and must never be rerun.
+Loaded1531115remains160000; no gateway termination, cache edit or hotload.
+Production designs and records remain excluded. Original stash ebe1b55d is intact.
+
+### Resumed160000: exact installed admission; next reader and fixture work
+
+Fresh facade1531115, parent Codex1529423/startTicks22970767, loads installed160000
+through pinned Node24.18.0 with core0 and no child. Root checked its command and
+executable; independent review reproduced the complete1,297-file/mode inventory
+and source/runtime hashes below. Old facade1445583 and consumed probe1527061
+are absent. Main CI39048582637 and Windows39048582606 now completed successfully,
+including all eight facade shards and the required aggregator. Offline project-open
+and lib_Symbol coverage discovery succeeded without live status or app startup.
+
+Supported Windows Computer Use initialization again failed before JavaScript on
+the host sandboxCwd URI check. No UI control or application launch occurred.
+Do not diagnose this as RDP focus or repeat foreground requests. Native UI cannot
+replace the blocked symbol creation/Save lifecycle. A new unused drawn symbol
+still needs a supported creation route; closed local-symbol copy is under source
+review. No fixture operation or completed metadata validation was replayed.
+
+Source work on feature/current-pcb-text-20261017 adds bounded current PCB String
+readers and splits the long API reference into task-specific contracts. Exact
+runtime/source gates stay unchanged. Implementation, review and release checks
+are in progress; no new connected validation is claimed. Production designs and
+their records remain excluded. Original stash ebe1b55d remains untouched.
+
+### Delivered160000: published and installed; fresh Codex session required
+
+Published and installed/enabled `0.3.0+codex.20261017160000` through the existing
+Git marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Protected PR56 merged reviewed `07b3b2e99a37a891629ae1859501835a1c19692f` as
+main `f81e9542474043e276743f52a6e40950447d0cee`. Whole tree
+`4a2e62137f5b9b98f0659629cb5a4bd27dbbe9cd` and plugin tree
+`55ccc521ebd1233dfade37f9358350ec8878623a` match the reviewed payload exactly.
+All11 exact-payload PR checks passed: CI39047552089 and Windows39047552046.
+Independent log review confirms10,656 facade tests,10,651passed/five platform
+skips/zero failed/cancelled/todo, plus424bridge tests in28files. Local required
+verify and repository validation completed exit0:10,652facade passed/four skips,
+zero failures,424bridge passed. Strict type-aware lint has zero warnings/errors;
+types, dependency signatures/audit, reproducible build, compatibility, package/
+repository privacy and all seven official skill validators passed. Local verify
+log SHA `bc42512dadd40fd5b1145a13d46124570389f3f986180da552f7405fe50b5ed0`.
+The staged privacy check caught two identifying references in carried handoff
+text. They were generalized before commit; the unchanged privacy gate then passed.
+Main Windows39048582606 and CI39048582637 verify-build passed. Eight duplicate
+main facade shards are still running at handoff; inspect their final status next
+session. No complete second main test run is claimed yet.
+
+Official marketplace upgrade under umask022 completed exit0, errors[] and
+stderr0. CLI confirms installed/enabled160000 and cached marketplace HEAD equals
+merged main f81e9542. Root and independent inventories match all1,297files,
+26,100,776bytes and committed modes:42directories0755,1,296files0644 and one0755,
+seven skills, no extras or links. Inventory SHA
+`97962fad028e4ec1f654bf2fb32261960436d4218d911ac45971c801f6ebfe9d`;
+398-source SHA `2898bb32403cfa700caa6f64a1492ded29a8e8b52ac877336b8e07bde3f188f8`;
+three-runtime SHA `276c83394490563ea80973a8be1cd75da67ab314a53b2883759e5f9f85458a88`;
+compatibility manifest SHA
+`465723a3e9977127c28f7735e72c35ec301cef8eeef0ff5bf9191ced80f85553`.
+
+The one-shot installed synthetic probe1527061 passed and exited normally via
+stdin EOF, without signals or adoption. Configured startup handed ambient
+Node26.11.1 to pinnedNode24.18.0/core0 without installed module ancestors,
+upstream children or nonstdio sockets. It listed17restricted tools/seven skills.
+Offline project-open discovery reports the101-chunk disposable-only scope;
+ordinary META-only discovery, exact forward arguments, missing-ack rejection
+and inverse rejection passed. No real profile, live status, CAD call or operation
+journal was used; synthetic profile unchanged, stderr0. Proof
+`/tmp/easyeda-release-160000-b2lfoeQO/proof.json` is3,164bytes, SHA
+`8a23f5d91da31831e46eadc1fbd75325636735c067c6d8b745c0cbdee1303ade`.
+PID1527061 is absent and no unresolved-child report exists. The synthetic control
+directory contains only its machine profile. Never rerun this consumed probe,
+the consumed143000 probe, or earlier one-shot helpers. The inventory helper is
+read-only/repeatable; it is not process or execution authority.
+Independent retained-proof review accepts the marker, unchanged helper hashes,
+process absence, private file modes and final synthetic state without rerunning it.
+
+Loaded facade1445583 remains143000 with no child in the final snapshot. It was
+not killed, patched or rebound. External runtime pins and the EasyEDA extension
+are unchanged; no new extension import is required. The extension-development
+release workflow requires a fresh Codex session to load160000 before live work.
+No application launch or project access occurred this turn. Last retained
+EasyEDA state is closed, not a new native observation. All production designs
+and their records remain excluded. Completed101500/123000 edits and verification
+must never be replayed. Original stash ebe1b55d remains untouched. Local main
+is fast-forwarded to f81e9542; only this post-merge delivery record is uncommitted.
+
+Next: admit the freshly loaded160000 process and finish the scoped disposable
+drawn-symbol lifecycle using an eligible unused symbol. Normal creation can
+produce multiple segments; the new profile models that bounded replay without
+rewriting history or unlinking components. Fixture setup still needs a supported
+workflow. Windows Computer Use initialization currently fails at host sandboxCwd
+before JavaScript; repeating RDP-focus requests cannot fix that host error.
+Ordinary drawn-symbol enablement follows only after reviewed connected evidence.
+Imported/longer/ambiguous histories, referenced-symbol propagation, schematic/
+PCB structure completion, geometry, libraries and manufacturing remain backlog.
+
 ### Candidate160000: bounded multi-segment disposable symbol replay
 
 Source version0.3.0+codex.20261017160000 on

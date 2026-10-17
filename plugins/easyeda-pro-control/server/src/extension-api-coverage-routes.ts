@@ -89,6 +89,26 @@ for (const family of ["Line", "Arc", "Via", "Component", "Pad"] as const) {
   }
 }
 
+for (const method of ["get", "getAll", "getAllPrimitiveId"] as const) {
+  const identitiesOnly = method === "getAllPrimitiveId";
+  const adapter = identitiesOnly ? "current-pcb-identities" : "current-pcb-geometry";
+  groups.push({ namespace: "pcb_PrimitiveString", methods: [method], route: {
+    tool: identitiesOnly ? "easyeda_control_pcb_identities" : "easyeda_control_pcb_geometry",
+    selector: `eda.pcb_PrimitiveString.${method}`, implementation: "native-task-equivalent",
+    scope: `Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. ${identitiesOnly
+      ? "Empty arguments only. Returns at most 20000 distinct bounded IDs, with 393216-byte evidence limit. Only globalIndex leaves the adapter; text, font and geometry are not read by its projection. Positive generic type lookup remains Line/Arc/Via only."
+      : `Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. ${method === "get"
+        ? "Accepts only1..256 distinct primitiveIds in an array, returns caller order and refuses any unavailable ID. No scalar get or missing-ID skipping."
+        : "Empty arguments only; native family order is preserved."}`}`,
+    source: [`${adapter}.ts`, `${adapter}-program.ts`, `${adapter}-runtime.ts`, "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: [`${adapter}.test.ts`, ...(identitiesOnly ? [] : ["current-pcb-geometry-registration.test.ts"])], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
+      action: identitiesOnly ? "pcb-identities" : "pcb-geometry", query: { method: `eda.pcb_PrimitiveString.${method}`, includeSchemas: true },
+    } } },
+  } });
+}
+
 groups.push({ namespace: "lib_Symbol", methods: ["get"], route: {
   tool: "easyeda_control_project_symbol", selector: "eda.lib_Symbol.get", implementation: "native-task-equivalent",
   scope: "Separately pinned current project-local symbol metadata subset. One exact symbolUuid and explicit active ordinary PCB project/branch/document/tab target. Two matching bounded metadata observations correlate the loaded project owner and require the symbol to remain absent from the complete registered editor tree. Hidden or unregistered editors are not independently excluded. Raw tagsJson is retained without normalization. Retained manager/RPC references do not directly lease the module-private worker; workerIdentityVerified remains false. Not a cloud-library lookup, complete library inventory, symbol geometry, lossless stored META or persistence proof, and not authority to rename or edit. No geometry load, navigation, write or Save; legacy library writers and their existing restrictions are unchanged. The same tool separately accepts project-symbol-preflight: exact caller-supplied metadata comparison in a loaded project with no editor tabs. Discover that distinct request through project-symbol-preflight/project-symbol-preflight-validate; it is not this lib_Symbol.get request and grants no source provenance, backend actor/clock qualification, permission, startup, persistence or writer authority.",

@@ -43,12 +43,16 @@ schematic pages. Its current META-only saved-content check models both raw-histo
 and document-cache serialization from the pinned producer. It compares the entire
 string exactly; the cache form is not permission to omit or normalize user fields.
 A matched form does not prove which cache branch ran. SQL actor identity remains
-independently checked, and nonempty-canvas cache replay is not admitted. A stopped
+independently checked. The separate bounded canvas-segments profile is available
+only for disposable validation and has no connected result; read its exact
+[history limits](current-project-opening.md#disposable-forwardinverse-validation).
+A stopped
 verification is still a failed lifecycle even if closed SQL proves the intended
 metadata persisted. Close through its original owner; never retry, manually invert
 or issue Save to repair that result. Installed101500 passed a complete disposable
 forward/inverse lifecycle with independent review. This validates that narrow
-shared writer, not every symbol shape or the new ordinary public entrypoint.
+shared writer, not every symbol shape. Installed123000 separately validated the
+ordinary unused META-only forward-only entrypoint on a disposable fixture.
 
 ## Structure-write completion restriction
 

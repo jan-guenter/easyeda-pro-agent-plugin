@@ -28,7 +28,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017160000` extends disposable symbol-metadata validation
+Update `0.3.0+codex.20261017170000` adds current-version PCB text readers for
+`get`, `getAll` and `getAllPrimitiveId`. They return bounded raw text, font,
+placement and style from parentless loaded String views, not component
+attributes, rendered glyphs or saved-source ownership. These native equivalents
+have source review and offline tests, not connected validation. The control
+skill now routes to shorter task-specific API references. See the
+[release scope](docs/current-pcb-text-2026-10-17.md) and
+[next symbol-copy implementation](docs/current-symbol-copy-contract-2026-10-17.md).
+
+Earlier update `0.3.0+codex.20261017160000` extends disposable symbol-metadata validation
 to bounded multi-segment drawing histories. It checks byte-exact records and
 possible concurrent replay order, with capacity reserved for both metadata
 writes. Imported records, ambiguous cache actors and histories beyond the
@@ -428,9 +437,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 212 public subsets, 29 native equivalents,
-no lifecycle-only methods, 82 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 331 available with runtime guards,
+Current source classifications are 212 public subsets, 30 native equivalents,
+no lifecycle-only methods, 81 implemented-but-blocked methods and 451
+omissions. Their execution routes comprise 336 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

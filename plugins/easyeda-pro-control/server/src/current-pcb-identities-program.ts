@@ -11,7 +11,7 @@ export function buildCurrentPcbIdentitiesProgram(input: unknown): string {
   const request = parseCurrentPcbIdentitiesRequest(input);
   const nativeTopics = { selected: "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds", Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
-    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll" } as const;
+    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll" } as const;
   const reads = currentPcbIdentityFamilies(request).map((family) => ({ family, topic: nativeTopics[family] }));
   return `let timer,clear;
 try{
