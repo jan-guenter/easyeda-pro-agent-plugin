@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 212,
-      "implemented-native-equivalent": 30,
+      "implemented-native-equivalent": 31,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 81,
-      "omitted": 451
+      "omitted": 450
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 336,
+      "available-with-runtime-guards": 337,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -44,7 +44,7 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 30,
-      "scoped-effect-adapter-needed": 106,
+      "scoped-effect-adapter-needed": 105,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -6370,14 +6370,52 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "lib_Symbol.copy has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_disposable_symbol_copy",
+          "selector": "copy-advance;disposable-project-local-supported-symbol",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate disposable-only native symbol clone with renameKey true and keepSource false; no generic public lib_Symbol.copy contract. Requires the original retained disposable opening, exact checkpoint source and complete closed SQL baseline, fixed supported self-contained drawing types, original startup/actor/dual-clock proof and pre-dispatch saved-content budgets. Retains the native returned UUID before postread; never rediscovers by title or repeats an ambiguous copy. One write, normal closure, complete closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Conservative structure-byte preservation, not full native tree projection. No ordinary projects, caller destination/name, explicit Save, inverse/delete or discovery authority. Offline regression only; current connected validation unclaimed.",
+          "source": [
+            "current-symbol-copy-operation.ts",
+            "current-symbol-copy-operation-runtime.ts",
+            "current-disposable-open-runtime.ts",
+            "current-symbol-copy-plan.ts",
+            "current-symbol-copy-startup-runtime.ts",
+            "current-symbol-copy-program.ts",
+            "current-symbol-copy-clock.ts",
+            "current-symbol-copy-writer-runtime.ts",
+            "current-symbol-copy-sql.ts",
+            "current-symbol-copy-verification-runtime.ts",
+            "current-symbol-copy-saved-read.ts"
+          ],
+          "tests": [
+            "current-symbol-copy-operation.test.ts",
+            "current-symbol-copy-operation-runtime.test.ts",
+            "current-symbol-copy-plan.test.ts",
+            "current-symbol-copy-program.test.ts",
+            "current-symbol-copy-sql.test.ts"
+          ],
+          "documentTypes": [
+            2
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "disposable-symbol-copy",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

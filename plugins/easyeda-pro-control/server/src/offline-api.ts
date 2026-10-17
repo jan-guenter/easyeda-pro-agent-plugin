@@ -17,6 +17,7 @@ import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCur
 import { currentPcbGeometryQuerySchema, queryCurrentPcbGeometry, validateCurrentPcbGeometryArguments } from "./current-pcb-geometry.ts";
 import { currentSymbolMetadataQuerySchema, queryCurrentSymbolMetadata, validateCurrentSymbolMetadataArguments } from "./current-symbol-metadata.ts";
 import { currentSymbolOperationQuerySchema, queryCurrentSymbolOperation, validateCurrentSymbolOperationArguments } from "./current-symbol-operation.ts";
+import { currentSymbolCopyOperationQuerySchema, queryCurrentSymbolCopyOperation, validateCurrentSymbolCopyOperationArguments } from "./current-symbol-copy-operation.ts";
 import { queryCurrentProjectOnlySymbolPreflight, validateCurrentProjectOnlySymbolPreflightArguments } from "./current-project-only-symbol-preflight.ts";
 import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, queryCurrentSymbolMetadataPreparation,
   validateCurrentSymbolMetadataPreparationArguments } from "./current-symbol-metadata-preparation.ts";
@@ -56,6 +57,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-symbol-operation"), query: currentSymbolOperationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("project-symbol-operation-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("disposable-symbol-copy"), query: currentSymbolCopyOperationQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("disposable-symbol-copy-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-symbol-preflight"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("project-symbol-preflight-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -74,7 +77,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused META-only symbol forward-only lifecycle and its exact acknowledgements. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused META-only symbol forward-only lifecycle and its exact acknowledgements. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -124,6 +127,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "project-symbol-validate": { result = validateCurrentSymbolMetadataArguments(request.query.request); break; }
     case "project-symbol-operation": { result = queryCurrentSymbolOperation(request.query ?? {}); break; }
     case "project-symbol-operation-validate": { result = validateCurrentSymbolOperationArguments(request.query.request); break; }
+    case "disposable-symbol-copy": { result = queryCurrentSymbolCopyOperation(request.query ?? {}); break; }
+    case "disposable-symbol-copy-validate": { result = validateCurrentSymbolCopyOperationArguments(request.query.request); break; }
     case "project-symbol-preflight": { result = queryCurrentProjectOnlySymbolPreflight(request.query ?? {}); break; }
     case "project-symbol-preflight-validate": { result = validateCurrentProjectOnlySymbolPreflightArguments(request.query.request); break; }
     case "project-symbol-preparation": { result = queryCurrentSymbolMetadataPreparation(request.query ?? {}); break; }

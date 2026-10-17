@@ -10,8 +10,8 @@ import type { FileHandle } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 // oxlint-disable-next-line import/no-cycle -- Reuse the baseline issuer's private registry; its retained coordinator calls this reader, and no alternate issuer is exposed.
-import { assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
-import type { CurrentSymbolBaselineCopy, CurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+import { assertOriginalCurrentSymbolBaselineCopy, assertOriginalCurrentSymbolCopyBaselineCopy, assertOriginalCurrentSymbolCopyFinishSnapshot, assertOriginalCurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
+import type { CurrentSymbolBaselineCopy, CurrentSymbolCopyBaselineCopy, CurrentSymbolCopyFinishSnapshot, CurrentSymbolFinishSnapshot } from "./current-symbol-baseline-copy.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 
 const CHUNK_BYTES = 1_048_576, MAX_BYTES = 268_435_456n;
@@ -120,6 +120,12 @@ export async function verifyCurrentSymbolPreopenSource(engine: EasyedaControlEng
   const observed = await verifySource(copy, current); current();
   return Object.freeze({ ...observed, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
+export async function verifyCurrentSymbolCopyPreopenSource(engine: EasyedaControlEngine,
+  copy: CurrentSymbolCopyBaselineCopy): Promise<Readonly<CurrentSymbolPreopenSourceObservation>> {
+  const current = (): void => { assertOriginalCurrentSymbolCopyBaselineCopy(copy, engine); };
+  const observed = await verifySource(copy, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
+}
 
 /** Reopening after a successful write must match the original post-edit
  * snapshot, not its old baseline. This rehashes raw bytes without reviving the
@@ -130,6 +136,15 @@ export async function verifyCurrentSymbolPosteditPreopenSource(engine: EasyedaCo
   const original = assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine);
   const current = (): void => {
     need(assertOriginalCurrentSymbolFinishSnapshot(snapshot, engine) === original, "Current preopen post-edit snapshot owner changed.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });
+}
+export async function verifyCurrentSymbolCopyPosteditPreopenSource(engine: EasyedaControlEngine,
+  snapshot: CurrentSymbolCopyFinishSnapshot): Promise<Readonly<CurrentSymbolPosteditPreopenSourceObservation>> {
+  const original = assertOriginalCurrentSymbolCopyFinishSnapshot(snapshot, engine);
+  const current = (): void => {
+    need(assertOriginalCurrentSymbolCopyFinishSnapshot(snapshot, engine) === original, "Current copy preopen snapshot owner changed.");
   };
   const observed = await verifySource(snapshot, current); current();
   return Object.freeze({ ...observed, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });

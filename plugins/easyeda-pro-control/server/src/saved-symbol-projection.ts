@@ -38,8 +38,23 @@ export interface CurrentCanvasSegmentsSavedSymbolProjection extends Omit<Current
   readonly rawPrefixOrderIndependent: boolean; readonly segmentOrderIndependent: false;
   readonly maximumConcurrentChunks: 101;
 }
-type Projection = SavedSymbolProjection | CurrentDocumentCacheSavedSymbolProjection | CurrentSingleCanvasSegmentSavedSymbolProjection | CurrentCanvasSegmentsSavedSymbolProjection;
-type Strategy = "raw" | "current-document-cache" | "current-single-canvas-segment-cache" | "current-canvas-segments-cache";
+export interface CurrentCreatedCopyCacheSavedSymbolProjection extends Omit<CurrentDocumentCacheSavedSymbolProjection, "profile"> {
+  readonly profile: "private.current-created-copy-cache-saved-symbol-getstr-projection.v1";
+}
+export interface CurrentCreatedCopySavedSymbolProjection {
+  readonly profile: "private.current-created-copy-saved-symbol-projections.v1";
+  readonly raw: SavedSymbolProjection;
+  readonly documentCache: CurrentCreatedCopyCacheSavedSymbolProjection;
+  readonly beforeMaximumTicket: number;
+  readonly creationChunkIndex: number;
+  readonly metadataHeaderTime: number;
+  readonly canvasHeaderTime: number;
+  readonly executionAuthorized: false;
+  readonly producerBindingVerified: false;
+}
+type Projection = SavedSymbolProjection | CurrentDocumentCacheSavedSymbolProjection | CurrentSingleCanvasSegmentSavedSymbolProjection |
+  CurrentCanvasSegmentsSavedSymbolProjection | CurrentCreatedCopyCacheSavedSymbolProjection;
+type Strategy = "raw" | "current-document-cache" | "current-single-canvas-segment-cache" | "current-canvas-segments-cache" | "current-created-copy-cache";
 interface ProjectionInput {
   readonly chunks: readonly string[]; readonly targetUuid: string; readonly maximumTicket: number; readonly currentEditVersion: string | null;
 }
@@ -56,6 +71,11 @@ interface CanvasSegmentsScope {
   latestHeaderChunkIndex?: number; rawHeader?: Header;
 }
 const originals = new WeakMap<object, Prepared>();
+const createdCopyOriginals = new WeakSet<object>();
+export const CURRENT_SYMBOL_COPY_CANVAS_TYPES = Object.freeze([
+  "PART", "CANVAS", "ATTR", "ELLIPSE", "PIN", "RECT", "ARC", "CIRCLE", "POLY", "TEXT", "BEZIER",
+] as const);
+const copyCanvasTypes: ReadonlySet<string> = new Set(CURRENT_SYMBOL_COPY_CANVAS_TYPES);
 const IGNORED = new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Saved symbol projection: ${message}`); } }
 function number(value: unknown): number { need(typeof value === "number" && Number.isSafeInteger(value) && value >= 0, "native integer refused"); return value; }
@@ -208,6 +228,131 @@ export async function prepareCurrentCanvasSegmentsSavedSymbolProjection(input: P
   return descriptor;
 }
 
+function exactKeys(value: ObjectData, keys: readonly string[]): void {
+  need(Object.keys(value).join("\0") === keys.join("\0"), "created-copy native field order or membership differs");
+}
+
+function createdCopyRecord(raw: string): ReturnType<typeof parseNativeRecords>[number] {
+  const parsed = parseNativeRecords(raw)[0]; need(parsed !== undefined, "created-copy generated record missing");
+  need(raw === `${JSON.stringify(parsed.header)}||${JSON.stringify(parsed.body)}`, "created-copy generated prefix bytes differ");
+  return parsed;
+}
+
+function createdCopyHeader(raw: string, targetUuid: string, ticket: number): Readonly<{ time: number; client: string }> {
+  const parsed = createdCopyRecord(raw);
+  exactKeys(parsed.header, ["type", "ticket"]);
+  need(parsed.header["type"] === "DOCHEAD" && parsed.header["ticket"] === ticket, "created-copy header sequence differs");
+  const value = body(parsed.body);
+  exactKeys(value, ["docType", "client", "uuid", "updateTime", "version", "editVersion"]);
+  const client = text(value["client"]), time = number(value["updateTime"]);
+  need(time > 0 && time <= 8_640_000_000_000_000 && /^[a-f0-9]{16}$/u.test(client) && value["docType"] === "SYMBOL" &&
+    value["uuid"] === targetUuid && value["version"] === String(time) &&
+    value["editVersion"] === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion,
+  "created-copy header identity, time or version differs");
+  return { time, client };
+}
+
+async function createdCopyScope(chunks: readonly string[], targetUuid: string, beforeMaximumTicket: number): Promise<Readonly<{
+  creationChunkIndex: number; metadataHeaderTime: number; canvasHeaderTime: number;
+}>> {
+  let baselineMaximum = 0, creationChunkIndex: number | undefined, steps = 0;
+  const recordsByChunk: string[][] = [];
+  for (const [index, chunk] of chunks.entries()) {
+    const records = chunk.split("|\n"); if (records.at(-1) === "") { records.pop(); }
+    recordsByChunk.push(records); let containsTarget = false, maximum = 0;
+    for (const raw of records) {
+      steps += 1; need(steps <= 250_000 && Buffer.byteLength(raw) <= 262_144, "created-copy raw record bound exceeded");
+      const parsed = parseNativeRecords(raw)[0]; need(parsed !== undefined, "created-copy empty record refused");
+      if (parsed.header["ticket"] !== undefined) { maximum = Math.max(maximum, number(parsed.header["ticket"])); }
+      if (parsed.header["type"] === "DOCHEAD" && parsed.body?.["uuid"] === targetUuid) { containsTarget = true; }
+      if (steps % 128 === 0) { await yieldProofEventLoop(); }
+    }
+    if (containsTarget) {
+      need(!chunk.endsWith("|\n"), "created-copy generated chunk has a trailing delimiter");
+      need(creationChunkIndex === undefined, "created-copy target occurs in multiple history chunks"); creationChunkIndex = index;
+    } else { baselineMaximum = Math.max(baselineMaximum, maximum); }
+  }
+  need(creationChunkIndex !== undefined && baselineMaximum === beforeMaximumTicket, "created-copy baseline maximum or new destination differs");
+  const records = recordsByChunk[creationChunkIndex];
+  need(records !== undefined && records.length >= 5, "created-copy complete creation chunk missing");
+  const editRaw = records[0], firstRaw = records[1], metaRaw = records[2], secondRaw = records[3];
+  need(editRaw !== undefined && firstRaw !== undefined && metaRaw !== undefined && secondRaw !== undefined, "created-copy creation prefix missing");
+  const edit = createdCopyRecord(editRaw);
+  exactKeys(edit.header, ["type"]); need(edit.header["type"] === "EDIT_HEAD", "created-copy EDIT_HEAD differs");
+  const actor = body(edit.body); exactKeys(actor, ["uuid", "username", "nickname", "updateTime"]);
+  text(actor["uuid"]);
+  need(typeof actor["username"] === "string" && actor["username"].length <= 4096 && typeof actor["nickname"] === "string" &&
+    actor["nickname"].length <= 4096 && number(actor["updateTime"]) > 0, "created-copy backend actor fields refused");
+  const first = createdCopyHeader(firstRaw, targetUuid, beforeMaximumTicket + 1);
+  const second = createdCopyHeader(secondRaw, targetUuid, beforeMaximumTicket + 2);
+  need(second.time >= first.time && second.client === first.client, "created-copy clocks regress or clients differ");
+  const meta = createdCopyRecord(metaRaw);
+  exactKeys(meta.header, ["type", "ticket", "id"]);
+  need(meta.header["type"] === "META" && meta.header["ticket"] === beforeMaximumTicket + 1 && meta.header["id"] === "META", "created-copy META sequence differs");
+  const metadata = body(meta.body); exactKeys(metadata, ["title", "description", "tags", "docType", "source"]);
+  need(metadata["docType"] === 2 && metadata["source"] === "", "created-copy metadata is not ordinary source-free symbol metadata");
+  const seen = new Set<string>();
+  for (const raw of records.slice(4)) {
+    const atom = parseNativeRecords(raw)[0]; need(atom !== undefined, "created-copy canvas record missing");
+    exactKeys(atom.header, ["type", "ticket", "id"]);
+    need(raw.slice(0, raw.indexOf("||")) === JSON.stringify(atom.header), "created-copy canvas header bytes differ");
+    const id = text(atom.header["id"]), type = text(atom.header["type"]); requireCopyKey(id);
+    need(copyCanvasTypes.has(type) && !seen.has(id) && id !== "META" && number(atom.header["ticket"]) <= beforeMaximumTicket,
+      "created-copy canvas type, identity or source ticket refused");
+    const rawBody = raw.slice(raw.indexOf("||") + 2);
+    need(rawBody === "" || (rawBody.startsWith("{") && rawBody.endsWith("}")), "created-copy canvas raw body would be discarded");
+    seen.add(id);
+  }
+  return { creationChunkIndex, metadataHeaderTime: first.time, canvasHeaderTime: second.time };
+}
+
+/** Separate pure model of one fresh closed-symbol clone upload. Native equal
+ * times retain its first DOCHEAD while the worker maximum still reaches M+2.
+ * Existing multi-segment metadata profiles keep their unique-latest guard.
+ * Fresh child headers omit user; raw EDIT_HEAD and cache fallback remain two
+ * distinct candidate serializations. This proves no copy/SQL/runtime effect.
+ */
+export async function prepareCurrentCreatedCopySavedSymbolProjection(input: Readonly<{
+  chunks: readonly string[]; targetUuid: string; beforeMaximumTicket: number; currentEditVersion: string;
+}>): Promise<CurrentCreatedCopySavedSymbolProjection> {
+  const { targetUuid, beforeMaximumTicket, currentEditVersion } = input;
+  need(typeof targetUuid === "string" && /^[a-f0-9]{16}$/u.test(targetUuid) && Number.isSafeInteger(beforeMaximumTicket) &&
+    beforeMaximumTicket >= 0 && !Object.is(beforeMaximumTicket, -0) && beforeMaximumTicket <= Number.MAX_SAFE_INTEGER - 3,
+  "created-copy target or M+3 ticket capacity refused");
+  need(currentEditVersion === CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.editorVersion, "created-copy editor version refused");
+  need(Array.isArray(input.chunks) && input.chunks.length > 0 && input.chunks.length <= 4096, "created-copy chunk count refused");
+  let total = 0; const chunks: string[] = [];
+  for (let index = 0; index < input.chunks.length; index += 1) {
+    const property = Object.getOwnPropertyDescriptor(input.chunks, String(index));
+    need(property !== undefined && Object.hasOwn(property, "value"), "created-copy chunk entry is not own data");
+    const chunk: unknown = property.value;
+    need(typeof chunk === "string" && chunk.length <= 8_388_608, "created-copy chunk is not bounded text");
+    total += Buffer.byteLength(chunk); need(total <= 8_388_608, "created-copy complete history byte bound exceeded");
+    need(Buffer.from(chunk).toString("utf8") === chunk, "created-copy chunk is not exact UTF8 text"); chunks.push(chunk);
+  }
+  const scope = await createdCopyScope(chunks, targetUuid, beforeMaximumTicket);
+  const preparedInput = { chunks, targetUuid, maximumTicket: beforeMaximumTicket + 2, currentEditVersion };
+  const raw = await prepareSavedSymbolProjection(preparedInput);
+  const documentCache = await prepareProjection(preparedInput, "current-created-copy-cache");
+  need(documentCache.profile === "private.current-created-copy-cache-saved-symbol-getstr-projection.v1", "created-copy cache profile differs");
+  const result = Object.freeze({ profile: "private.current-created-copy-saved-symbol-projections.v1", raw, documentCache,
+    beforeMaximumTicket, ...scope, executionAuthorized: false, producerBindingVerified: false } as const);
+  createdCopyOriginals.add(result); return result;
+}
+
+/** A matching candidate is exact content evidence only, never observed cache
+ * provenance. Require the original frozen wrapper, not recombined components.
+ */
+export function verifyCurrentCreatedCopySavedSymbolProjectionAlternatives(original: CurrentCreatedCopySavedSymbolProjection,
+  observation: unknown): Readonly<Record<string, unknown>> {
+  need(createdCopyOriginals.has(original), "original created-copy projection required");
+  need(isRecord(observation) && typeof observation["workerClient"] === "string" && typeof observation["content"] === "string", "native observation shape/identity differs");
+  const matched = observation["content"] === expectedSavedSymbolContent(original.raw, observation["workerClient"]) ? original.raw : original.documentCache;
+  return Object.freeze({ ...verifySavedSymbolContent(matched, observation),
+    matchedProjection: matched === original.raw ? "complete-raw-history" : "current-created-copy-cache",
+    workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
+}
+
 async function prepareProjection(input: ProjectionInput, strategy: Strategy): Promise<Projection> {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
   need(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
@@ -315,6 +460,10 @@ async function prepareProjection(input: ProjectionInput, strategy: Strategy): Pr
     executionAuthorized: false, producerBindingVerified: false } as const;
   let descriptor: Projection;
   if (strategy === "raw") { descriptor = Object.freeze({ profile: "private.saved-symbol-getstr-projection.v1", ...common }); }
+  else if (strategy === "current-created-copy-cache") {
+    descriptor = Object.freeze({ profile: "private.current-created-copy-cache-saved-symbol-getstr-projection.v1", ...common,
+      workerSourceSha256: CURRENT_SAVED_SYMBOL_DOCUMENT_CACHE_IMPLEMENTATION.sha256, cacheBranchObserved: false });
+  }
   else if (canvasSegmentsScope !== undefined) {
     const { latestHeaderChunkIndex, rawHeader } = canvasSegmentsScope;
     need(latestHeaderChunkIndex !== undefined && rawHeader !== undefined, "canvas-segments selected header missing");
@@ -441,6 +590,67 @@ function verifyCanvasFirstArrivalOrder(streams: readonly (readonly string[])[], 
     for (const index of indexes) { advance(index); }
   }
   need(streams.every((stream, index) => cursors[index] === stream.length), "canvas first-arrival order omits occurrences");
+}
+
+function requireCopyKey(id: string): void {
+  const numeric = Number(id);
+  // Native oO/Ni copies through ordinary {} dictionaries and for...in. Array
+  // Indices reorder there; inherited names and __proto__ are not ordinary keys.
+  need(!Object.hasOwn(Object.prototype, id) && id !== "prototype" &&
+    !(Number.isInteger(numeric) && numeric >= 0 && numeric < 4_294_967_295 && String(numeric) === id),
+  "copy canvas ID is unsafe for native ordinary-object enumeration");
+}
+
+function copyCanvas(original: CurrentCanvasSegmentsSavedSymbolProjection): Readonly<{
+  retained: Prepared; rows: readonly string[]; idsByLine: ReadonlyMap<string, string>;
+}> {
+  const retained = originals.get(original);
+  need(retained !== undefined && retained.descriptor === original && retained.canvasOrder !== undefined &&
+    original.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1", "original canvas-segments projection required");
+  const idsByLine = new Map<string, string>();
+  const rows = retained.canvas.map((encoded) => {
+    // These rows came from the retained serializer, not imported raw history.
+    // The imported-record parser deliberately rejects their firstTicket fields.
+    const separator = encoded.indexOf("||");
+    const header = body(JSON.parse(encoded.slice(0, separator)));
+    const id = text(header["id"]); requireCopyKey(id);
+    // Regenerate headers without the source lineage's firstTicket.
+    // A destination atom starts a new physical occurrence.
+    const copied = line(text(header["type"]), number(header["ticket"]), id, encoded.slice(separator + 2));
+    need(!idsByLine.has(copied), "copy canvas record duplicated"); idsByLine.set(copied, id); return copied;
+  });
+  return { retained, rows: Object.freeze(rows), idsByLine };
+}
+
+/** One legal native copy order from an original projection, never source or
+ * runtime authority. Full raw bodies survive; only regenerated headers change.
+ */
+export function currentCanvasSegmentsCopySource(original: CurrentCanvasSegmentsSavedSymbolProjection): readonly string[] {
+  return copyCanvas(original).rows;
+}
+
+function verifyCopyRows(rows: readonly string[], idsByLine: ReadonlyMap<string, string>, streams: readonly (readonly string[])[], copiedRows: readonly string[]): void {
+  need(Array.isArray(copiedRows) && copiedRows.length === rows.length && copiedRows.length <= 250_000, "copy canvas row count refused");
+  const selected: string[] = []; let bytes = 0;
+  for (let index = 0; index < copiedRows.length; index += 1) {
+    const property = Object.getOwnPropertyDescriptor(copiedRows, String(index));
+    need(property !== undefined && Object.hasOwn(property, "value"), "copy canvas array entry is not own data");
+    const value: unknown = property.value;
+    need(typeof value === "string" && value.length <= 262_144, "copy canvas row is not bounded text");
+    const size = Buffer.byteLength(value); bytes += size;
+    need(size <= 262_144 && bytes <= 8_388_608, "copy canvas byte bound exceeded");
+    need(Buffer.from(value).toString("utf8") === value, "copy canvas row is not exact UTF8 text");
+    const id = idsByLine.get(value); need(id !== undefined, "copy canvas row differs from original raw body/header"); selected.push(id);
+  }
+  verifyCanvasFirstArrivalOrder(streams, selected);
+}
+
+/** Match exact regenerated rows and a legal native per-stream first arrival.
+ * A copied descriptor, source-normalized body or caller-sorted order refuses.
+ */
+export function verifyCurrentCanvasSegmentsCopySourceOrder(original: CurrentCanvasSegmentsSavedSymbolProjection, copiedRows: readonly string[]): void {
+  const { retained, rows, idsByLine } = copyCanvas(original); need(retained.canvasOrder !== undefined, "copy canvas order witness missing");
+  verifyCopyRows(rows, idsByLine, retained.canvasOrder.streams, copiedRows);
 }
 
 /** Exact bounded line membership plus a producer-derived order witness. A

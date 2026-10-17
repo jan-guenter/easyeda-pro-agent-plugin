@@ -6,6 +6,185 @@ Last updated: 2026-10-17 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate181500: closed symbol-copy implementation frozen for release
+
+The restarted facade1621811/parent1620180 loads installed170000 under pinned
+Node24.18.0. Independent read-only admission confirms startTicks23256991,
+core0, no children and the exact delivered inventory/projections below.
+Old facade1531115 and consumed probe1618174 are absent. No one-shot probe was
+rerun. Final main CI39052300303 and Windows39052300300 both completed SUCCESS
+for main8b8f61f2, including all eight facade shards and their aggregator.
+Actual offline coverage still marks lib_Symbol.copy omitted; no writer was
+silently enabled by API discovery or this admission.
+
+Branch feature/current-symbol-copy-20261017 implements a separate closed-copy
+plan, native naming model and created-document saved projection. The plan
+requires an original complete SQL inventory, an ordinary single-part drawn
+symbol, bounded exact metadata and a restricted self-contained canvas. It
+preserves complete raw source/peer occurrences, includes overwritten/deleted
+references and JSON keys in destination-absence checks, and reserves M+1/M+2
+writes plus M+3 export headroom. Native copy strips source firstTicket/client;
+equal creation clocks retain the first DOCHEAD. Existing metadata profiles and
+their unique-header/+1-ticket guards are unchanged. The source-derived naming
+subset admits printable ASCII excluding uppercase I, refuses duplicate folded
+titles and native collision-loop exhaustion; it is not general Unicode naming.
+
+The candidate now composes distinct original copy preparation, baseline,
+generation, startup, aging/dual-clock, writer, saved-source and verification
+owners through easyeda_control_disposable_symbol_copy. Metadata token/profile
+checks remain strict. Complete SQL effects include both native structure posts:
+update existing rows to M+2, then insert one same-ticket row, with exact
+multiplicity and sequence checks. The native returned UUID survives post-call
+clock failure. Generated saved-reader capacity is reserved before mutation.
+Ordinary copying, names/classifications, assets, geometry, Save and inverse/delete
+are not exposed. Current connected validation remains unclaimed.
+
+Focused tests and independent source review pass. The plan/compiler rerun is
+18/18; saved-source/read/verifier18/18; public composition/coverage/contracts75/75.
+Global typecheck and strict type-aware lint pass. Public integration introduced
+real import cycles through the existing lexical owner registries; narrow inline
+explanations preserve original issuers rather than exposing registration hooks.
+No global lint category was relaxed. Independent skill forward-testing corrected
+missing launcher-termination and61-second head-age instructions. The same review
+found initial-preparation cleanup and ready-before-write cancellation gaps.
+Both copy-specific terminal-only fixes are complete and independently reviewed.
+Twelve focused cleanup/schema/phase and retained-capture-release tests pass.
+Failed preparation retains an exclusive failure artifact, original journal and
+consumed reservation. Cleanup requires original root/Job and bridge closure;
+unknown capture acquisition remains explicit. Ready copy-cleanup permanently
+abandons the write. No generic recovery or production restriction was relaxed.
+Final types, strict type-aware lint, build and compatibility checks pass.
+Only facade source/bundle projections and reviewedAt changed; external pins
+remain exact. Repository/privacy and all seven official skill checks pass.
+The original local suite ended10,798tests/10,716passes/78failures/four skips.
+It remains failed at /tmp/easyeda-release-181500-kiPInKaJ/verify.log, SHA
+0e468a1738bb76db31676f7455a95405faae9c81566e934534778aeccb938927.
+Final EOF formatting and compatibility refresh occurred while it was running.
+The first failure is confirmed manifest drift during fixture setup, before its
+writer or intended assertion; the frozen-source exact-case rerun passes.
+The run also found two stale tests: the source phase inventory omitted the new
+copy-only cleanup events, and a cloned-token rejection assertion missed the
+new synchronous original-token precheck. Both expectations are corrected,
+without runtime/pin changes or relaxing historical phase acceptance. Both full
+focused files pass57/57. Final exact-head CI, publication and installation are
+still required; the original full run is never relabeled clean.
+
+Initial package index before those two test corrections:1,339files/
+27,171,168bytes/42directories,43declared tools,
+18restricted tools and seven skills;1,338files0644/one0755. Inventory SHA
+6b4897e4faa65e054dcb7c28d7d62b8628d3ee410384707700be762ac0b1365a;
+417-source fa37f4396d7df40500ec5755e1bb57378b93704ee922132b7708dad98038d565;
+three-runtime02555837aa3d05f5e7171c1d8a8071e95cee8677d10bc6a3cc8870e62932869c;
+manifest6587fafeb8257132660f1ec5dea5fe56e4395664adce59716f00e2b11388d4b9.
+Three new-file trailing blank lines were removed after the local suite began;
+final type/lint/build/pins then passed again. Exact final-head CI remains required.
+Original expected.mjs remains preserved; installation helpers will use a new
+exclusive expected-final.mjs for the corrected test inventory. No probe has run.
+Corrected package index keeps1,339files/42directories and adds132test bytes,
+total27,171,300. Final inventory
+eefde54b4f59c7f5dab06290d0d70ba8f282c5e703b29b544e6af0faa3518f32;
+source/runtime/manifest hashes and modes are unchanged. Exact corrected clone
+case passes1/1, final global lint/types pass. Failure classification found19
+explicit manifest mismatches,40 isolation failures sharing one leaked synthetic
+fixture,16 consequent early-refusal assertions and one terminal quarantine with
+the old manifest still sealed. That last inner exception was not retained;
+do not claim it was separately observed. No additional independent cause found.
+
+No app launch, live status, project/database/profile read, CAD edit or Save
+occurred in this turn. Production designs and their records remain excluded.
+Candidate cachebuster181500 is assigned; installed170000 stays active.
+Preserve original stash ebe1b55d and all consumed probe markers. Continue the
+copy implementation on this branch; do not dispatch on the old loaded catalog.
+Private release directory /tmp/easyeda-release-181500-kiPInKaJ contains newly
+prepared inventory/probe helpers only; neither has run and no new one-shot
+marker exists. Dependency install/tree,151registry signatures/40attestations,
+zero-vulnerability audit and all seven official skill validators passed.
+
+### Delivered170000: PCB text readers installed; fresh Codex session required
+
+Published and installed/enabled `0.3.0+codex.20261017170000` through existing
+Git marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Protected [PR57](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/57)
+merged reviewed `729d0bfab77bab8fc6781dc3b327eff63a194dbd` as main
+`8b8f61f242c3b6023b570446c6109bd2409962dd`. Whole tree
+`4ec29a20eb723b227c65f3ec1003c4819a9414b0` and plugin tree
+`95d65872c399fc85c12b7194a4107e720cb98ceb` match the reviewed payload exactly.
+All11 exact-head PR checks passed: CI39051229560 and Windows39051229559.
+Independent shard-log review confirms10,661facade tests/10,656passed/five
+platform skips/zero failed/cancelled/todo across62suites; bridge424passed/28files.
+Full strict type-aware lint reports zero warnings/errors. Main Windows39052300300
+and CI39052300303 verify-build also passed; its duplicate facade shards are
+still running at this handoff. No complete second main-suite result is claimed.
+
+Local original full verification completed with10,656passes/four platform skips
+and one stale packaged-startup count assertion. It is retained as failed:
+`/tmp/easyeda-checks-170000-SK1rqa9N/verify.log`, SHA
+`cde94fa397f53e98fbd3c20bd71b9ec34fdc722955ea66b4e657bc33dc8146a3`.
+Only two expected counts changed (identities7to8, geometry11to13); the complete
+five-test startup rerun and targeted strict lint passed. Exact final-head CI
+then passed the complete suite. Bridge tests, package/repository/privacy,
+all seven official skill validators and reproducible bundle checks passed
+separately; no runtime fix or extra lint exemption was needed. Dependencies,
+151registry signatures/40attestations and zero-vulnerability audit passed.
+
+Official marketplace upgrade under umask022 completed exit0/errors[]/stderr0.
+CLI confirms installed/enabled170000 with the original Git URL; cached
+marketplace HEAD equals merged main8b8f61f2. Root installed inventory and the
+one-shot probe match all1,301files/26,140,515bytes/42directories and Git modes:
+1,300files0644,one0755,all directories0755,seven skills,no extras/links.
+Final inventory SHA
+`b5a22e5a9b0c3c606d90bbdcc6eebdc51861f8343727120f042162c947975b11`;
+398-source `e5e2062b8fbbf85eb96137aa2eec5ee3e8f266c71d4a6ebf54971848ba08db12`;
+three-runtime `405a8b4ec3c0b923187ea130830feb7f113582e8eea54323c94c41d42f8da690`;
+manifest `a50afb8cfdf9130b15401ce0bf2b29d0736bc65fc06e0127d5c76477be06216e`.
+The corrected test changes inventory but not package size or source/runtime pins.
+
+New one-shot synthetic probe1618174 passed and exited normally through stdin
+EOF, no signals or adoption. Actual configured startup handed Node26.11.1 to
+pinnedNode24.18.0/core0 with no installed module ancestors, upstream children
+or nonstdio sockets. It listed17restricted tools/seven skills; String3route
+coverage, geometry13/identities8 discovery, exact valid arguments and unsupported
+filter rejection passed. Ordinary META-only/disposable101-chunk restrictions
+remain. No real profile, live status, application call or operation journal was
+used. Synthetic profile unchanged, stderr0. Retained proof is3,629bytes at
+`/tmp/easyeda-release-170000-jIvZ88SY/proof.json`, SHA
+`f7406400589d3df08484b9a9ef27bf84d72f95555276e71bca67604cd0a5b8a9`.
+This probe and all older one-shot probes are consumed: never rerun them.
+The read-only inventory helper is repeatable but grants no execution authority.
+Independent retained-proof review accepts the marker, unchanged helper hashes,
+matching inventory/projections, actual1618174absence, private file/directory
+modes and synthetic control containing only its machine profile. No upstream
+execution marker or unresolved-child report exists. The proof was not rerun.
+
+Loaded facade1531115 remains the admitted160000 generation; it was not killed,
+patched or rebound. No extension import or external runtime-pin update is needed.
+The extension-development release workflow requires a fresh Codex session to
+load170000 before live work. This turn made no app launch, fixture read, CAD
+edit, Save or production-project access. Last retained EasyEDA state is closed,
+not a new observation. Production designs and their records stay excluded;
+completed101500/123000 operations must never be replayed. Original stash
+ebe1b55d remains intact. Local main is fast-forwarded; only this post-merge
+delivery record is uncommitted.
+
+Next: admit the newly loaded170000 process without replaying old probes, then
+implement the first pure slice of the
+[closed-symbol clone contract](docs/current-symbol-copy-contract-2026-10-17.md).
+Reuse decodeCurrentSymbolPreEditHistory/DecodedSymbolSqlRawHistory and exact
+native-history materialization, but add a separate copy plan/header projection.
+Keep existing-target metadata plans and +1-ticket SQL models unchanged. Clone
+needs destination absence, exact naming, M+1/M+2 headers, M+3 serialization
+headroom, same-stream equal-time first-header selection and exact copied atom
+header stripping. It must retain raw/peer occurrences; normalized project hashes
+alone are insufficient. The original returned UUID, complete insertion/structure
+SQL effects and owner-held close/reopen lifecycle remain later implementation
+steps. Do not ship a partial writer behind a confirmation flag.
+
+Current String connected validation, eligible drawn-symbol lifecycle and later
+ordinary enablement remain unclaimed. Referenced-symbol propagation, schematic/
+PCB structure completion, geometry, broader libraries and manufacturing exports
+remain backlog. Supported Windows Computer Use currently fails before JS at the
+host sandboxCwd URI check; no RDP-focus request or UI creation bypass is justified.
+
 ### Candidate170000: current PCB text readers and task-specific references
 
 Version `0.3.0+codex.20261017170000` on feature/current-pcb-text-20261017 adds
@@ -8933,6 +9112,11 @@ specific dated case needed for the current change or retained-journal review.
 - Keep `server/native/easyeda-fd-sanitizer.S`, its linker script, the committed binary, and `server/src/descriptor-sanitizer-identity.ts` synchronized. The exact sanitizer identity is a compatibility boundary, not generated metadata to refresh automatically.
 
 ## Required verification
+
+Freeze source, generated bundles and compatibility pins before starting the
+suite. Its synthetic fixtures seal the manifest; regenerating it during a run
+invalidates their original evidence and can cause cascading quarantine failures.
+Preserve such a run as failed, and verify the final unchanged payload separately.
 
 Run on Linux x86_64 with Node exactly `24.18.0`, npm exactly `11.16.0`, and a soft `RLIMIT_CORE` of zero from `plugins/easyeda-pro-control`:
 

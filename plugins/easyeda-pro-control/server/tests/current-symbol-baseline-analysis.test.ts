@@ -166,10 +166,11 @@ async function editPhase(operationId: string, phase: string, change: (value: Bag
   await writeFile(operationPath(operationId), JSON.stringify({ ...raw, journalSha256: sha256Json(raw) }));
 }
 
-void test("producer phases preserve the exact historical path and explicit separate inverse stages", async () => {
+void test("producer phases preserve the historical path and separate copy cleanup and inverse stages", async () => {
   const source = await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8");
   const actual = [...source.matchAll(/record\(slot, "([a-z-]+)"/gu)].map(match => match[1]).filter(phase => phase !== "stopped");
-  assert.deepEqual(actual, [...INVERSE_ADOPTION_PHASES, ...PHASES, ...INVERSE_CLEANUP_PHASES]);
+  assert.deepEqual(actual, [...INVERSE_ADOPTION_PHASES, ...PHASES.slice(0, 2),
+    "copy-initial-capture-release-intent", "copy-initial-capture-retired", ...PHASES.slice(2), ...INVERSE_CLEANUP_PHASES]);
   assert.match(source, /state: "plan-invalidated", hardStop: false, orphanedCallPossible: false/u);
 });
 void test("inverse adoption cannot substitute a historical phase even with the same complete artifact count", async () => {

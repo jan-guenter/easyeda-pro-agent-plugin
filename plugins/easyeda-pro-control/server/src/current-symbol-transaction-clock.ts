@@ -1,5 +1,6 @@
 /** Conditional persisted-value comparison. No dispatch issuer or writer authority. */
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
+import { reserveCurrentSymbolTransactionClockOwner } from "./current-symbol-clock-reservation.ts";
 import { decodeCurrentSymbolTransactionActorHistory, prepareCurrentSymbolTransactionActor, verifyCurrentSymbolTransactionActor } from "./current-symbol-transaction-actor.ts";
 import type { CurrentSymbolTransactionActorInput, CurrentSymbolTransactionActorPlan } from "./current-symbol-transaction-actor.ts";
 import { assertCurrentIssuedWindowsClockObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
@@ -54,7 +55,6 @@ interface Prepared {
   completed?: Readonly<{ after: Inventory; afterText: string; comparison: Readonly<Record<string, unknown>>; comparisonText: string }>;
 }
 const plans = new WeakMap<CurrentSymbolTransactionClockPlan, Prepared>();
-const owners = new WeakSet<object>();
 function need(condition: boolean, message = "Current symbol transaction clock refused."): asserts condition {
   if (!condition) { throw new Error(message); }
 }
@@ -155,8 +155,7 @@ export async function prepareCurrentSymbolTransactionClock(input: CurrentSymbolT
   fields(input, ["before", "operation", "startupActor", "cachedActor", "comparisonIdentity", "dispatchOwner", "launchClock", "captureClock",
     "beforeClock", "armedClock", "documentBefore"]);
   const owner = input.dispatchOwner;
-  need(owner !== null && typeof owner === "object" && !owners.has(owner), "Clock dispatch-owner reservation already consumed or missing.");
-  owners.add(owner);
+  reserveCurrentSymbolTransactionClockOwner(owner);
   fields(input.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
   data(input.comparisonIdentity);
   const identity = structuredClone(input.comparisonIdentity);

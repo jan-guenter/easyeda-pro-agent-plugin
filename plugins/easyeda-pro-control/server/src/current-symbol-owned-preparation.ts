@@ -10,6 +10,31 @@ import type { CurrentSymbolMetadataPreparationResult } from "./current-symbol-me
 import { currentClosedSymbolMetadataProjection } from "./current-symbol-closed-target.ts";
 import { readCurrentClosedSymbolMetadata } from "./current-symbol-closed-target-runtime.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
+import { prepareCurrentSymbolCopyCheckpoint } from "./current-symbol-copy-preparation.ts";
+import type { CurrentSymbolCopyCheckpointPreparation } from "./current-symbol-copy-preparation.ts";
+
+/** Fixed source selection only; no metadata patch or caller checkpoint path. */
+export const currentOwnedSymbolCopyRequestSchema = currentSymbolMetadataPreparationRequestSchema.shape.target.omit({ ownerUuid: true });
+export interface CurrentOwnedSymbolCopyPreparation {
+  readonly profile: "private.current-owned-symbol-copy-preparation.v1";
+  readonly openingOperationId: string;
+  readonly closedTargetWitness: Awaited<ReturnType<typeof readCurrentClosedSymbolMetadata>>;
+  readonly checkpointPreparation: CurrentSymbolCopyCheckpointPreparation;
+  readonly preparationSha256: string;
+  readonly postOpeningBaselineVerified: false;
+  readonly writerReady: false;
+  readonly executionAuthorized: false;
+}
+export interface OriginalCurrentOwnedSymbolCopyPreparation {
+  readonly preparation: CurrentOwnedSymbolCopyPreparation;
+  readonly generation: CurrentDisposableOpenGeneration;
+  readonly source: CurrentDisposableOpenGenerationSource;
+}
+const issuedCopyPreparations = new WeakMap<object, {
+  readonly original: OriginalCurrentOwnedSymbolCopyPreparation;
+  readonly engine: EasyedaControlEngine;
+  readonly text: string;
+}>();
 
 export interface CurrentOwnedSymbolMetadataPreparation {
   readonly profile: "private.current-owned-symbol-metadata-preparation.v1";
@@ -79,5 +104,49 @@ export async function prepareCurrentOwnedSymbolMetadata(engine: EasyedaControlEn
     closedTargetWitness, checkpointPreparation, postOpeningBaselineVerified: false as const, writerReady: false as const, executionAuthorized: false as const };
   const preparation = Object.freeze({ ...body, preparationSha256: sha256Json(body) });
   issuedPreparations.set(preparation, { original: Object.freeze({ preparation, generation, source }), engine, text: canonicalJson(preparation) });
+  return preparation;
+}
+
+export function assertOriginalCurrentOwnedSymbolCopyPreparation(value: unknown, engine: EasyedaControlEngine): OriginalCurrentOwnedSymbolCopyPreparation {
+  need(value !== null && typeof value === "object", "Original current symbol copy preparation is missing.");
+  const issued = issuedCopyPreparations.get(value);
+  need(issued !== undefined && issued.engine === engine && canonicalJson(value) === issued.text,
+    "Current symbol copy preparation was not issued unchanged by this engine.");
+  need(assertCurrentDisposableOpenGeneration(issued.original.generation, engine) === issued.original.source,
+    "Current symbol copy preparation original generation changed.");
+  return issued.original;
+}
+
+/** A fresh fixed read plus the original opener's managed checkpoint. This
+ * issues neither a SQL baseline nor a metadata-writer capability.
+ */
+export async function prepareCurrentOwnedSymbolCopy(engine: EasyedaControlEngine, generation: CurrentDisposableOpenGeneration,
+  input: unknown): Promise<CurrentOwnedSymbolCopyPreparation> {
+  const source = assertCurrentDisposableOpenGeneration(generation, engine);
+  const request = currentOwnedSymbolCopyRequestSchema.parse(input);
+  need(source.purpose === "disposable-validation" && request.projectUuid === source.target.projectUuid && request.branchUuid === source.target.branchUuid &&
+    request.symbolUuid !== source.target.documentUuid, "Current copy preparation differs from its disposable opening.");
+  const reader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
+  need(reader !== undefined, "Current copy preparation cannot inspect its authenticated scope.");
+  const scope = reader.call(engine.upstream), session = source.bridgeSession;
+  need(scope !== undefined && scope.gatewayInstanceId === session.gatewayInstanceId && scope.sessionId === session.sessionId &&
+    scope.sessionSequence === session.sequence, "Current copy preparation scope differs from its original session.");
+  const checkpoint = source.preNavigationCheckpoint.checkpoint, scopeText = canonicalJson(scope);
+  const current = (): void => {
+    need(assertCurrentDisposableOpenGeneration(generation, engine) === source && source.preNavigationCheckpoint.checkpoint === checkpoint &&
+      engine.upstream.currentAuthenticatedBridgeDispatchBinding === reader && canonicalJson(reader.call(engine.upstream)) === scopeText,
+    "Current copy preparation original owner, checkpoint or scope changed.");
+  };
+  await revalidateCurrentDisposableOpenGeneration(generation, engine); current();
+  const target = { projectUuid: source.target.projectUuid, branchUuid: source.target.branchUuid, documentUuid: source.target.documentUuid,
+    tabId: `${source.target.documentUuid}@${source.target.projectUuid}` };
+  const closedTargetWitness = await readCurrentClosedSymbolMetadata(engine,
+    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request.symbolUuid }, target }, source.expectedFingerprint); current();
+  const checkpointPreparation = await prepareCurrentSymbolCopyCheckpoint({ checkpoint, source: request, observation: closedTargetWitness.observation }); current();
+  await revalidateCurrentDisposableOpenGeneration(generation, engine); current();
+  const body = { profile: "private.current-owned-symbol-copy-preparation.v1" as const, openingOperationId: generation.operationId,
+    closedTargetWitness, checkpointPreparation, postOpeningBaselineVerified: false as const, writerReady: false as const, executionAuthorized: false as const };
+  const preparation = Object.freeze({ ...body, preparationSha256: sha256Json(body) });
+  issuedCopyPreparations.set(preparation, { original: Object.freeze({ preparation, generation, source }), engine, text: canonicalJson(preparation) });
   return preparation;
 }

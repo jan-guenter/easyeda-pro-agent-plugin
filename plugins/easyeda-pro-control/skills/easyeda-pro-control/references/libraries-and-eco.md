@@ -54,6 +54,14 @@ forward/inverse lifecycle with independent review. This validates that narrow
 shared writer, not every symbol shape. Installed123000 separately validated the
 ordinary unused META-only forward-only entrypoint on a disposable fixture.
 
+For a drawn-symbol fixture, the separate
+[disposable symbol-copy workflow](current-symbol-copy.md) copies one supported
+single-part project symbol without modifying its source. It has distinct
+original ownership, two-ticket creation/SQL effects and saved-reopen checks,
+not a metadata inverse. Source review and offline tests are complete; connected
+copy validation is not claimed. This does not enable generic `lib_Symbol.copy`,
+ordinary-project copying or any of the eight blocked operations below.
+
 ## Structure-write completion restriction
 
 These eight operations are blocked before dispatch:

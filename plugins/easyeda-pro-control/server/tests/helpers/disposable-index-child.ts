@@ -11,7 +11,7 @@ import { mock } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const scenario = process.argv[2];
-assert.ok(scenario === "seeded" || scenario === "missing-assets" || scenario === "invalid-assets" || scenario === "ordinary-history");
+assert.ok(scenario === "seeded" || scenario === "missing-assets" || scenario === "invalid-assets" || scenario === "ordinary-history" || scenario === "copy-history");
 assert.equal(process.argv.length, 3); assert.equal(process.versions.node, "24.18.0");
 const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
 assert.ok(root !== undefined && dirname(root) === "/tmp" && basename(root).startsWith(`easyeda-test-control-${String(process.pid)}-`));
@@ -64,8 +64,9 @@ syncBuiltinESMExports();
 process.env["EASYEDA_UPSTREAM_COMMAND"] = join(root, "must-not-execute");
 process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = "[]";
 process.env["EASYEDA_UPSTREAM_CWD"] = root;
-process.env["EASYEDA_PCB_BUNDLE_VERSION"] = scenario === "ordinary-history" ? "3.2.193.682ed44e" : "3.2.149.5378b690";
-process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = scenario === "ordinary-history" ? "0.3.50.ab46409c" : "0.2.53.aee2f57a";
+const currentHistory = scenario === "ordinary-history" || scenario === "copy-history";
+process.env["EASYEDA_PCB_BUNDLE_VERSION"] = currentHistory ? "3.2.193.682ed44e" : "3.2.149.5378b690";
+process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = currentHistory ? "0.3.50.ab46409c" : "0.2.53.aee2f57a";
 process.env["WSL_DISTRO_NAME"] = "DisposableIndexSynthetic";
 if (scenario === "missing-assets") { delete process.env["EASYEDA_ASSETS_ROOT"]; }
 else {
@@ -75,12 +76,18 @@ else {
 const artifacts = await import("../../src/artifacts.ts");
 const core = await import("../../src/core.ts");
 const hash = "a".repeat(64), operationId = "easyeda-index-original-unfinished";
-const plan = scenario === "ordinary-history" ? { profile: "easyeda-pro-control.current-symbol-writer.v1",
+const plan: Record<string, unknown> = { profile: "synthetic.index-unfinished.v1" };
+if (scenario === "ordinary-history") { Object.assign(plan, { profile: "easyeda-pro-control.current-symbol-writer.v1",
   baselinePlan: { profile: "easyeda-pro-control.current-symbol-closed-baseline.v1", purpose: "ordinary-symbol-metadata" },
-  baselineJournalSha256: hash, baselineCopyReceiptSha256: hash, startupSha256: hash } : { profile: "synthetic.index-unfinished.v1" };
+  baselineJournalSha256: hash, baselineCopyReceiptSha256: hash, startupSha256: hash }); }
+else if (scenario === "copy-history") { Object.assign(plan, {
+    profile: "easyeda-pro-control.current-symbol-copy-writer.v1",
+    baselinePlan: { profile: "easyeda-pro-control.current-symbol-closed-baseline.v1", purpose: "disposable-symbol-copy" },
+    baselineJournalSha256: hash, baselineCopyReceiptSha256: hash, copyPlanSha256: hash, startupSha256: hash,
+  }); }
 const journal = { schema: core.OPERATION_SCHEMA, operationId, journalPath: artifacts.operationPath(operationId), plan, planHash: core.buildPlanHash(plan),
-  state: scenario === "ordinary-history" ? "writer-stopped" : "library-needs-review", sequence: 0,
-  hardStop: scenario === "ordinary-history", orphanedCallPossible: scenario === "ordinary-history", artifacts: [] };
+  state: currentHistory ? "writer-stopped" : "library-needs-review", sequence: 0,
+  hardStop: currentHistory, orphanedCallPossible: currentHistory, artifacts: [] };
 await artifacts.createOperation(journal);
 const journalPath = artifacts.operationPath(operationId);
 const bytes = await fsPromises.readFile(journalPath), information = await fsPromises.lstat(journalPath);
