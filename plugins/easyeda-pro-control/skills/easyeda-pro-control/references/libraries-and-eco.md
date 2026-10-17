@@ -25,17 +25,18 @@ contract](api-reference.md#symbol-observation-with-no-editor-tabs) before use.
 Do not open a PCB solely for that comparison. Caller-supplied expectations
 neither verify source provenance nor enable renaming.
 
-## Structure-write completion restriction
+## Current ordinary metadata route
 
-The separate `easyeda_control_symbol_metadata` source entry implements one
-ordinary closed-symbol name/description operation, but currently refuses before
-runtime allocation pending successful disposable lifecycle validation. Its
-presence does not enable `library.symbol.modify` through the old library executor.
-It requires a fresh facade, exact project/branch/owner/symbol and companion-PCB
-identities, both name and non-null description, `confirmWrite:true`, and a unique
-caller operation ID. A permanent operation-ID reservation prevents replay;
-validation target claims are not reused. Unsupported edits and failure recovery
-remain unavailable. Do not submit it as an alternative to a refused operation.
+Use `easyeda_control_project_symbol_metadata` for a name and/or non-null
+description change to one closed, unused project-local symbol. Discover
+`project-symbol-operation` and validate with `project-symbol-operation-validate`
+first. Read [the retained-owner workflow](current-project-opening.md#ordinary-forward-only-symbol-metadata).
+It requires complete META-only raw history, including overwritten and deleted
+records, exact project/branch/owner/symbol and companion-PCB identities, and a
+supported startup expectation. Tags, source and peers stay unchanged. It has no
+inverse, general recovery, explicit Save or replacement-owner continuation.
+The older `easyeda_control_symbol_metadata` and `library.symbol.modify` remain
+blocked; they are not aliases for this route.
 
 The separate disposable lifecycle admits only symbols unreferenced by active
 schematic pages. Its current META-only saved-content check models both raw-history
@@ -45,8 +46,11 @@ A matched form does not prove which cache branch ran. SQL actor identity remains
 independently checked, and nonempty-canvas cache replay is not admitted. A stopped
 verification is still a failed lifecycle even if closed SQL proves the intended
 metadata persisted. Close through its original owner; never retry, manually invert
-or issue Save to repair that result. Ordinary metadata execution stays unregistered
-until a complete new disposable forward/inverse lifecycle passes review.
+or issue Save to repair that result. Installed101500 passed a complete disposable
+forward/inverse lifecycle with independent review. This validates that narrow
+shared writer, not every symbol shape or the new ordinary public entrypoint.
+
+## Structure-write completion restriction
 
 These eight operations are blocked before dispatch:
 

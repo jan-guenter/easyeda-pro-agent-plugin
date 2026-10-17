@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 212,
-      "implemented-native-equivalent": 29,
+      "implemented-native-equivalent": 30,
       "internal-lifecycle-only": 0,
-      "implemented-but-blocked": 82,
+      "implemented-but-blocked": 81,
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 332,
+      "available-with-runtime-guards": 333,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -6660,13 +6660,13 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "implemented-but-blocked",
+      "status": "implemented-native-equivalent",
       "routes": [
         {
           "tool": "easyeda_control_library",
           "selector": "library.symbol.modify",
           "implementation": "native-task-equivalent",
-          "scope": "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version disposable lifecycle coordinator is implemented and exposed for unused-symbol validation with immutable clock windows and complete closed/reopened SQL checks. No accepted connected round trip is recorded; its ordinary forward-only route remains unregistered. This legacy route remains blocked.",
+          "scope": "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version coordinator passed the installed101500 unused META-only disposable forward/inverse round trip. Its separate ordinary forward-only route is registered but not connected-tested. This legacy route remains blocked.",
           "source": [
             "project-symbol-metadata.ts",
             "library-execution.ts",
@@ -6697,6 +6697,47 @@
             }
           },
           "blockedReason": "Execution is unavailable until operation-owned completion of the native debounced project_structures write and its exact complete SQLite effect are proved. The task1 upload acknowledgment, stable polling and a point-in-time checkpoint do not drain the pending timer/task2 job."
+        },
+        {
+          "tool": "easyeda_control_project_symbol_metadata",
+          "selector": "metadata-advance;forward-only-unused-meta-only-symbol",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. The shared installed101500 disposable forward/inverse lifecycle is connected-validated; this new ordinary public entrypoint is not connected-tested.",
+          "source": [
+            "current-symbol-operation.ts",
+            "current-disposable-open-runtime.ts",
+            "current-symbol-validation-runtime.ts",
+            "current-symbol-startup-runtime.ts",
+            "current-symbol-meta-only.ts",
+            "current-symbol-write-budget.ts",
+            "current-symbol-write-program.ts",
+            "current-symbol-writer-runtime.ts",
+            "current-symbol-verification-runtime.ts",
+            "symbol-sql-comparator.ts"
+          ],
+          "tests": [
+            "current-symbol-operation.test.ts",
+            "current-symbol-validation-runtime.test.ts",
+            "current-symbol-meta-only.test.ts",
+            "current-symbol-write-budget.test.ts",
+            "closed-symbol-disposable-mcp.test.ts"
+          ],
+          "documentTypes": [
+            2
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "project-symbol-operation",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
         }
       ],
       "omission": null,

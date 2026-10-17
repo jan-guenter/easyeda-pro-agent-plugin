@@ -1988,6 +1988,37 @@ export function operationPath(operationId: string): string {
   return join(OPERATIONS_DIR, `${operationId}.json`);
 }
 
+/** Exact unused-name observation, not admission or a reservation. The initial
+ * full recovery scan and later exclusive journal publication remain required.
+ * Any existing journal or evidence directory consumes the name, regardless of
+ * its contents/type. Missing or replaced parents and unknown errors refuse.
+ */
+export async function assertOperationIdUnused(operationId: string): Promise<void> {
+  const paths = [operationPath(operationId), join(OPERATIONS_DIR, operationId)];
+  const directory = await openSafeManagedDirectory(OPERATIONS_DIR, false);
+  const absent = async (selected: OpenManagedDirectory): Promise<void> => {
+    for (const path of paths) {
+      let missing = false;
+      try { await lstat(boundManagedChild(selected, path)); }
+      catch (error) {
+        if (!isErrnoException(error) || error.code !== "ENOENT") { throw error; }
+        missing = true;
+      }
+      if (!missing) { throw new Error("Current disposable-open operation ID is consumed."); }
+    }
+  };
+  try {
+    await absent(directory);
+    const current = await openSafeManagedDirectory(OPERATIONS_DIR, false);
+    try {
+      if (current.info.dev !== directory.info.dev || current.info.ino !== directory.info.ino) {
+        throw new Error("Operation namespace changed during unused-ID observation.");
+      }
+      await absent(current);
+    } finally { await current.handle.close(); }
+  } finally { await directory.handle.close(); }
+}
+
 export async function createOperation(
   operation: UnknownRecord,
 ): Promise<string> {

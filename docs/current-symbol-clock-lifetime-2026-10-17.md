@@ -1,6 +1,54 @@
-# Current symbol validation: reopened forward proof and inverse adoption
+# Current symbol validation and ordinary metadata editing
 
-## Current 090000 result
+## Current 101500 result
+
+The installed101500 disposable run completed both the forward edit and its
+internally derived inverse. Each write passed a complete 35-table closed SQL
+comparison, a fresh project-only reopening, exact 415-byte saved-content
+verification and final closed SQL equality. Independent review checked all
+18 documents, including 17 unchanged peers, plus clock, adoption and closure
+receipt links. The original selected name and description were restored.
+Historical database bytes, tickets and timestamps were not restored.
+
+Both journals are terminal without a hard stop or orphan risk. The final
+retained SQL digest is
+`cdb9419607f5c43091d84f928aa427c60385a1c7616beee67550ae85a94282a5`.
+EasyEDA closed through its original owner. No explicit Save, manual inverse or
+replay was issued, and production projects were not accessed. This is acceptance
+of the unused META-only disposable case, not unrestricted symbol modification.
+
+## Ordinary route in 123000
+
+The new `easyeda_control_project_symbol_metadata` route enables one forward-only
+name and/or non-null description change under the same narrow writer checks.
+Offline discovery and validation use `project-symbol-operation` and
+`project-symbol-operation-validate`. It binds ordinary purpose before navigation,
+derives a supported startup expectation, and retains the original opening,
+baseline, writer and verifier owners. Its continuation accepts no new patch,
+target, fingerprint or inverse phase. Completion verifies the requested metadata
+and retires the verifier without retaining inverse ownership.
+
+The shared writer has the connected disposable evidence above. The newly
+registered ordinary entrypoint has source and actual-SDK contract tests, not a
+separate connected run. Its malformed-request checks cover unknown outer and
+nested keys, inverse phases and replacement fingerprints, followed by valid
+historical inspection without journal changes or a runtime child. Generic
+library modification and schematic/PCB writers remain blocked.
+
+The official [symbol modifier](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.modify.html)
+is still beta and exposes a broader library/classification/property contract.
+The page was checked on2026-10-17. The plugin route is a version-pinned native
+equivalent for the stated subset; its proof is not evidence that the public
+wrapper or unsupported arguments work.
+
+The update also fixes offline doctor selection: exact current PCB/API versions
+use their current pinned hashes and restricted catalog; the exact legacy tuple
+uses the legacy manifest and full catalog. Unknown or mixed tuples still refuse.
+A second full-history scan used only to reject duplicate operation IDs is
+replaced by a fresh, safe exact-namespace check. Full admission checks and
+exclusive journal creation remain. No connected speedup is claimed.
+
+## Earlier 090000 result
 
 The 090000 disposable run completed the forward write, complete closed SQL
 comparison and reopened saved-content verification. All 35 tables were checked.
@@ -62,11 +110,11 @@ correctly differed. The gate binds each original descriptor separately and
 compares complete history semantics. It must not require equal file hashes,
 substitute one descriptor for the other, or globally ignore SQLite properties.
 
-The gate and budget have focused source-test, strict lint/typecheck and independent
-review evidence. They were not present in installed 090000 and have not gained
-connected validation from this run. The correction and gates target candidate
-`0.3.0+codex.20261017101500`. Publication, installation and a fresh complete
-disposable round trip remain separate tasks.
+The gate and budget passed focused source tests, strict lint/typecheck and
+independent review before publication in `0.3.0+codex.20261017101500`. They were
+absent from090000, so that earlier run did not validate them. The later installed
+101500 round trip passed the narrow case described above; other supported sizes
+and resource limits are not thereby live-tested.
 
 ## Earlier 072500 result
 
@@ -252,34 +300,31 @@ JSON cannot construct this private issuer or grant execution authority.
 ## Verification and remaining work
 
 Source review, focused regressions, final lint/types/build, CI and installation
-results are recorded in AGENTS.md as they complete. The 090000 forward lifecycle
-is accepted; a complete forward/inverse lifecycle and ordinary writer enablement
-are still pending.
+results are recorded in AGENTS.md as they complete. The101500 disposable round
+trip is accepted. The123000 ordinary public route still needs its own installed
+connected admission before any use; no production validation is planned.
 
 The inverse adoption correction passes 21 focused tests. Its real-storage
 regression reproduced the original error before the fix; changed disk or memory
 state still refuses before adoption intent or ownership transfer.
 
-1. Finish integration/release checks for that correction and the META-only,
-   tombstone and one/two-write proof-budget gates. Publish the reviewed build,
-   pass GitHub CI, install through the Git marketplace and verify installed
-   files/catalog. Do not hotpatch the running facade.
-2. Use a fresh Codex session with independent installed-runtime admission. Run
-   one new disposable forward/inverse lifecycle from the retained 090000 state,
-   through complete closed SQL comparison and reopened saved-content verification
-   for both writes. Preserve the inverse head-age requirement. Never replay the
-   retired 043703, 072500 or 090000 operations or manually invert their results.
-3. Review that complete connected evidence before registering the separate
-   ordinary forward-only route. Rebase its deferred draft against the current
-   scope and ownership checks. Keep the older generic writers and generic library
-   symbol modification blocked.
-4. Model and validate nonempty or historically drawn symbol-cache replay before
+1. Finish123000 release checks, GitHub CI and marketplace installation. Verify
+   the installed files and offline catalog; then load it in a fresh Codex session.
+   Never hotpatch or terminate the loaded facade to update it.
+2. Give the new ordinary public route a focused disposable connected check after
+   installed-runtime admission. Do not repeat the completed101500 round trip or
+   revive older terminal attempts. No broader live campaign is needed to ship
+   this scoped update.
+3. Model and validate nonempty or historically drawn symbol-cache replay before
    extending the META-only scope. Deleting geometry is not an admission workaround.
-5. Implement referenced-symbol propagation separately, including dependent-page
+4. Implement referenced-symbol propagation separately, including dependent-page
    loading and its complete source and SQL effects. Unused-symbol evidence does
    not cover this capability.
-6. Continue the documented schematic/PCB native structure completion, geometry,
+5. Continue the documented schematic/PCB native structure completion, geometry,
    component-library and manufacturing-export backlog. The API inventory still
-   contains 774 distinct methods; this update adds no public execution route.
+   contains774distinct methods; the new ordinary route covers one narrow native
+   equivalent subset. Omission reasons and required work remain in its coverage
+   inventory. Further pure parsing caches and timing instrumentation are optional
+   performance work, not release blockers.
 
 Production designs and their records remain untouched.

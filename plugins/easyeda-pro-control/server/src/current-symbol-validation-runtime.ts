@@ -89,7 +89,8 @@ export class CurrentSymbolValidationCoordinator {
       originalOwnerRetained: true, forwardVerified: slot.forwardVerified, inverseVerified: slot.inverseVerified,
       metadataRestorationVerified: slot.forwardVerified && slot.inverseVerified, historicalDatabaseBytesRestored: false,
       requestedMetadataVerified: slot.purpose === "ordinary-symbol-metadata" && slot.forwardVerified,
-      normalWritersEnabled: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
+      ...(slot.purpose === "ordinary-symbol-metadata" ? { genericWritersEnabled: false, forwardOnly: true, inverseSupported: false } : { normalWritersEnabled: false }),
+      explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
 
   /** The expected phase is checked before consuming anything. A retry of a lost

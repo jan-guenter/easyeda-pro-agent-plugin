@@ -39,7 +39,7 @@ async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T>
     })]);
   } finally { if (timer !== undefined) { clearTimeout(timer); } }
 }
-async function fixture(context: TestContext, scenario: "seeded" | "missing-assets" | "invalid-assets",
+async function fixture(context: TestContext, scenario: "seeded" | "missing-assets" | "invalid-assets" | "ordinary-history",
   catalogOverflowControl = false): Promise<OfflineFixture> {
   assert.equal(process.versions.node, "24.18.0");
   const parentRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -200,7 +200,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 41); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 42); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
   assert.ok(entry.outputSchema !== undefined); assert.equal(entry.outputSchema.type, "object");
@@ -264,3 +264,64 @@ for (const scenario of ["missing-assets", "invalid-assets"] as const) {
     await f.unchangedAndOffline();
   });
 }
+
+/** Schema-valid synthetic data only. The continuation guard must refuse it
+ * before any runtime comparison, filesystem admission or owner allocation.
+ */
+function replacementFingerprint(): Record<string, unknown> {
+  const hash = "a".repeat(64);
+  return {
+    facadeImplementation: { version: "synthetic", operationSchema: "synthetic", mode: "source-tree", sha256: hash,
+      files: [{ path: "/synthetic/source.ts", relativePath: "source.ts", bytes: 1, sha256: hash }] },
+    reviewedCompatibilityManifest: { path: "/synthetic/reviewed.json", bytes: 1, sha256: hash,
+      schema: "easyeda-pro-control.reviewed-compatibility.v1", reviewedAt: "synthetic" },
+    upstreamServer: { version: "synthetic" }, upstreamImplementationDrift: false, toolCount: 1, toolCatalogSha256: hash,
+    upstreamLauncher: { command: "/synthetic/node", commandSha256: hash, args: ["/synthetic/upstream.js"],
+      entrypoint: "/synthetic/upstream.js", entrypointSha256: hash, cwd: "/synthetic",
+      executionClosure: { root: "/synthetic", directoryCount: 1, fileCount: 1, symlinkCount: 0, totalBytes: 1, sha256: hash },
+      implementationTree: { root: "/synthetic", fileCount: 1, sha256: hash },
+      dependencyLock: { type: "synthetic", path: "/synthetic/package-lock.json", sha256: hash } },
+    health: { payload: { version: "synthetic", node_version: "synthetic", bridge_connected: true,
+      easyeda_version: "synthetic", extension_version: "synthetic", extension_version_mismatch: false, registry_mismatch: false } },
+    bridge: { payload: { connected: true, bridge_version: "synthetic", diagnostics: { method_registry_hash: "synthetic" } } },
+    bridgeDispatcher: { payload: { source: "loader_status", dispatcher_build_id: "synthetic", total: 1 } },
+    installedBundles: { available: true, assetsRoot: "/synthetic/assets",
+      pcbEditor: { version: "3.2.193.682ed44e", implementationPath: "/synthetic/pcb.js", implementationSha256: hash },
+      publicApi: { version: "0.3.50.ab46409c", implementationPath: "/synthetic/api.js", implementationSha256: hash,
+        adapterPath: "/synthetic/adapter.js", adapterSha256: hash, declarationsPath: "/synthetic/api.d.ts", declarationsSha256: hash } },
+  };
+}
+
+void test("actual SDK ordinary metadata rejects replacement authority then permits only unchanged historical inspection", { timeout: 60_000 }, async context => {
+  const f = await fixture(context, "ordinary-history"), name = "easyeda_control_project_symbol_metadata";
+  const operationId = "easyeda-index-original-unfinished", request = { action: "metadata-inspect", operationId };
+  const listed = await f.listTools(); const entry = listed.tools.find(item => item.name === name);
+  assert.equal(listed.tools.length, 17); assert.ok(entry !== undefined);
+  assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
+  assert.equal(entry.annotations?.idempotentHint, false);
+  assert.ok(entry.outputSchema !== undefined && isRecord(entry.outputSchema.properties));
+  assert.ok(Object.hasOwn(entry.outputSchema.properties, "result")); assert.equal(entry.outputSchema["additionalProperties"], false);
+  await f.unchangedAndOffline();
+  for (const malformed of [{ request, unexpectedOuter: true }, { request: { ...request, unexpectedInner: true } },
+    { request: { ...request, patch: { name: "Replacement" } } },
+    { request: { action: "metadata-advance", operationId, step: { expectedPhase: "forward-verification-read", unexpectedInner: true } } },
+    { request: { action: "metadata-advance", operationId, step: { expectedPhase: "inverse-write", confirmWrite: true, acceptMetadataMutation: true } } }]) {
+    const response = await f.call(name, malformed);
+    assert.equal(response.isError, true); assert.match(JSON.stringify(response.content), /Input validation error/u);
+    await f.unchangedAndOffline();
+  }
+  const replacement = await f.call(name, { request, expectedFingerprint: replacementFingerprint() });
+  assert.equal(replacement.isError, true);
+  assert.match(JSON.stringify(replacement.content), /Ordinary continuation cannot replace/u);
+  assert.doesNotMatch(JSON.stringify(replacement.content), /Input validation error/u);
+  await f.unchangedAndOffline();
+  const inspected = await f.call(name, { request });
+  assert.notEqual(inspected.isError, true, JSON.stringify(inspected)); assert.ok(isRecord(inspected.structuredContent));
+  const result = inspected.structuredContent["result"]; assert.ok(isRecord(result));
+  assert.equal(result["purpose"], "ordinary-symbol-metadata"); assert.equal(result["historicalEvidenceOnly"], true);
+  for (const flag of ["originalOwnerRetained", "continuationAuthorized", "executionAuthorized", "replayAllowed"]) {
+    assert.equal(result[flag], false);
+  }
+  await f.unchangedAndOffline();
+});

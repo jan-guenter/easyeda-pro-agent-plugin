@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a7e8734450fc0d12a290140e4dda35c04c123021acd3ef1c4df78a6783157de1";
+const __easyedaBundlePairId = "569ff7f07fbf16fac1816f8562ec07cfc26ef1de090e64592b59955ce0eeb968";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -37991,6 +37991,40 @@ function operationPath(operationId5) {
   }
   return join4(OPERATIONS_DIR, `${operationId5}.json`);
 }
+async function assertOperationIdUnused(operationId5) {
+  const paths = [operationPath(operationId5), join4(OPERATIONS_DIR, operationId5)];
+  const directory2 = await openSafeManagedDirectory(OPERATIONS_DIR, false);
+  const absent3 = async (selected3) => {
+    for (const path5 of paths) {
+      let missing = false;
+      try {
+        await lstat3(boundManagedChild(selected3, path5));
+      } catch (error51) {
+        if (!isErrnoException(error51) || error51.code !== "ENOENT") {
+          throw error51;
+        }
+        missing = true;
+      }
+      if (!missing) {
+        throw new Error("Current disposable-open operation ID is consumed.");
+      }
+    }
+  };
+  try {
+    await absent3(directory2);
+    const current4 = await openSafeManagedDirectory(OPERATIONS_DIR, false);
+    try {
+      if (current4.info.dev !== directory2.info.dev || current4.info.ino !== directory2.info.ino) {
+        throw new Error("Operation namespace changed during unused-ID observation.");
+      }
+      await absent3(current4);
+    } finally {
+      await current4.handle.close();
+    }
+  } finally {
+    await directory2.handle.close();
+  }
+}
 async function createOperation(operation) {
   await ensureOperationStorage();
   const operationId5 = operation["operationId"];
@@ -40076,10 +40110,22 @@ var init_extension_api_coverage_routes = __esm({
       "easyeda_control_library",
       "library.symbol.modify",
       "native-task-equivalent",
-      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version disposable lifecycle coordinator is implemented and exposed for unused-symbol validation with immutable clock windows and complete closed/reopened SQL checks. No accepted connected round trip is recorded; its ordinary forward-only route remains unregistered. This legacy route remains blocked.",
+      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate. The separate current-version coordinator passed the installed101500 unused META-only disposable forward/inverse round trip. Its separate ordinary forward-only route is registered but not connected-tested. This legacy route remains blocked.",
       ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts", "current-symbol-write-program.ts"],
       ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts", "current-symbol-write-program.test.ts"]
     );
+    groups.push({ namespace: "lib_Symbol", methods: ["modify"], route: {
+      tool: "easyeda_control_project_symbol_metadata",
+      selector: "metadata-advance;forward-only-unused-meta-only-symbol",
+      implementation: "native-task-equivalent",
+      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only, including every tombstoned occurrence; historical canvas is unsupported even when currently empty. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write; physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. The shared installed101500 disposable forward/inverse lifecycle is connected-validated; this new ordinary public entrypoint is not connected-tested.",
+      source: ["current-symbol-operation.ts", "current-disposable-open-runtime.ts", "current-symbol-validation-runtime.ts", "current-symbol-startup-runtime.ts", "current-symbol-meta-only.ts", "current-symbol-write-budget.ts", "current-symbol-write-program.ts", "current-symbol-writer-runtime.ts", "current-symbol-verification-runtime.ts", "symbol-sql-comparator.ts"],
+      tests: ["current-symbol-operation.test.ts", "current-symbol-validation-runtime.test.ts", "current-symbol-meta-only.test.ts", "current-symbol-write-budget.test.ts", "closed-symbol-disposable-mcp.test.ts"],
+      documentTypes: [2],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-symbol-operation", query: { includeSchemas: true } } } }
+    } });
     add(
       "lib_Symbol",
       ["create"],
@@ -42469,9 +42515,9 @@ function validateExactReadPayload(payload, request6) {
         );
       }
     }
-    const limitations13 = payload.limitations;
+    const limitations14 = payload.limitations;
     if (request6.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations13) || typeof limitations13.componentPinOtherProperty !== "string" || typeof limitations13.componentOtherPropertyFiltering !== "string" || typeof limitations13.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations14) || typeof limitations14.componentPinOtherProperty !== "string" || typeof limitations14.componentOtherPropertyFiltering !== "string" || typeof limitations14.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42486,7 +42532,7 @@ function validateExactReadPayload(payload, request6) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations13) || typeof limitations13.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations14) || typeof limitations14.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
@@ -42598,8 +42644,8 @@ function validateExactReadPayload(payload, request6) {
       );
     }
   } else if (request6.kind === "pcb-inventory") {
-    const limitations13 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations13) || typeof limitations13["directPads"] !== "string" || typeof limitations13.componentPadCorrelation !== "string" || typeof limitations13["pouredCorrelation"] !== "string" || typeof limitations13.regionRuleTypes !== "string" || typeof limitations13.fillModes !== "string" || typeof limitations13.arcPrecision !== "string" || typeof limitations13.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations14 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations14) || typeof limitations14["directPads"] !== "string" || typeof limitations14.componentPadCorrelation !== "string" || typeof limitations14["pouredCorrelation"] !== "string" || typeof limitations14.regionRuleTypes !== "string" || typeof limitations14.fillModes !== "string" || typeof limitations14.arcPrecision !== "string" || typeof limitations14.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families3 = payload.families;
@@ -44803,18 +44849,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations13 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations14 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations13.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations14.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations13.push("complete-source-property-merge-required-before-component-modify");
+    limitations14.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations13.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations14.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations13.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations14.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity30 = "preserve";
   if (deleting) {
@@ -44823,7 +44869,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity30 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value2]) => expected(family2, field3, value2)), inverse, effect: { family: family2, target: target6, identity: identity30, fields: fields11, collateral }, requiredPreservation, limitations: limitations13 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value2]) => expected(family2, field3, value2)), inverse, effect: { family: family2, target: target6, identity: identity30, fields: fields11, collateral }, requiredPreservation, limitations: limitations14 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -95326,6 +95372,7 @@ function queryCurrentDisposableOpen(input = {}) {
     offline: true,
     invocationEnabledByDiscovery: false,
     total: 1,
+    sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
     preparationCheckpoint: {
       resultField: "preparationCheckpoint",
       inputField: "baseline-begin.preparation.checkpoint",
@@ -95606,7 +95653,7 @@ var init_current_disposable_open = __esm({
       "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
       "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
-      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages; native linked-sheet propagation is unsupported. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Normal design writers remain disabled and this route is not yet connected-validated.",
+      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages and its complete original raw history must be META-only, including all tombstoned occurrences; native linked-sheet propagation and historical canvas are unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. The shared installed101500 unused META-only forward/inverse round trip is connected-validated. The separate easyeda_control_project_symbol_metadata ordinary forward-only entrypoint is registered but not connected-tested; generic design writers remain disabled.",
       "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps."
     ];
   }
@@ -96071,6 +96118,139 @@ var init_current_pcb_geometry = __esm({
   }
 });
 
+// server/src/current-symbol-operation.ts
+function parseCurrentSymbolOperationRequest(input) {
+  return currentSymbolOperationRequestSchema.parse(input);
+}
+function queryCurrentSymbolOperation(input = {}) {
+  const query = currentSymbolOperationQuerySchema.parse(input);
+  return {
+    offline: true,
+    tool: "easyeda_control_project_symbol_metadata",
+    purpose: CURRENT_SYMBOL_OPERATION_PURPOSE,
+    registrationEnabled: true,
+    invocationEnabledByDiscovery: false,
+    executionAuthorized: false,
+    writerReady: false,
+    connectedValidation: false,
+    forwardOnly: true,
+    inverseSupported: false,
+    replayAllowed: false,
+    actions: [
+      "open",
+      "observe",
+      "inspect",
+      "request-normal-close",
+      "retire-after-termination",
+      "baseline-begin",
+      "baseline-observe-termination",
+      "baseline-prepare-clock",
+      "baseline-relaunch",
+      "baseline-admit",
+      "baseline-observe-caches",
+      "baseline-open-project",
+      "baseline-observe-clock",
+      "baseline-finish-close",
+      "baseline-observe-finish",
+      "baseline-inspect",
+      "metadata-begin",
+      "metadata-advance",
+      "metadata-inspect"
+    ],
+    limitations: [...limitations12],
+    ...query.includeSchemas ? {
+      inputSchema: external_exports.toJSONSchema(currentSymbolOperationRequestSchema),
+      stepSchema: external_exports.toJSONSchema(currentSymbolOperationStepSchema)
+    } : {}
+  };
+}
+function validateCurrentSymbolOperationArguments(input) {
+  const parsed2 = currentSymbolOperationRequestSchema.safeParse(input);
+  return parsed2.success ? { valid: true, request: parsed2.data, registrationEnabled: true, executionAuthorized: false } : {
+    valid: false,
+    registrationEnabled: true,
+    executionAuthorized: false,
+    issues: parsed2.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
+  };
+}
+var CURRENT_SYMBOL_OPERATION_PURPOSE, operationId2, currentSymbolOperationStepSchema, currentSymbolOperationRequestSchema, currentSymbolOperationQuerySchema, limitations12;
+var init_current_symbol_operation = __esm({
+  "server/src/current-symbol-operation.ts"() {
+    init_zod();
+    init_core3();
+    init_current_disposable_open();
+    init_current_symbol_metadata_preparation();
+    CURRENT_SYMBOL_OPERATION_PURPOSE = "ordinary-symbol-metadata";
+    operationId2 = external_exports.string().min(8).max(96).regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
+    currentSymbolOperationStepSchema = external_exports.discriminatedUnion("expectedPhase", [
+      external_exports.object({ expectedPhase: external_exports.literal("forward-write"), confirmWrite: external_exports.literal(true), acceptMetadataMutation: external_exports.literal(true) }).strict(),
+      external_exports.object({
+        expectedPhase: external_exports.enum(["forward-close", "forward-verification-close", "cleanup-close"]),
+        confirmNormalClose: external_exports.literal(true),
+        acceptUnknownFileEffects: external_exports.literal(true)
+      }).strict(),
+      external_exports.object({ expectedPhase: external_exports.enum(["forward-verification-start", "forward-verification-open"]), acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ expectedPhase: external_exports.enum([
+        "forward-observe-termination",
+        "forward-verification-admit",
+        "forward-verification-caches",
+        "forward-verification-read",
+        "forward-verification-finish",
+        "cleanup-observe-termination"
+      ]) }).strict()
+    ]);
+    currentSymbolOperationRequestSchema = external_exports.discriminatedUnion("action", [
+      external_exports.object({ action: external_exports.literal("open"), operationId: operationId2, ...currentDisposableOpenTargetSchema.shape, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("observe"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("request-normal-close"), operationId: operationId2, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("retire-after-termination"), operationId: operationId2, confirmRetire: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({
+        action: external_exports.literal("baseline-begin"),
+        operationId: operationId2,
+        openingOperationId: operationId2,
+        preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
+        confirmNormalClose: external_exports.literal(true),
+        acceptNormalOpenEffects: external_exports.literal(true)
+      }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-observe-termination"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-prepare-clock"), operationId: operationId2, acceptScratchProcessEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-relaunch"), operationId: operationId2, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-admit"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-observe-caches"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-open-project"), operationId: operationId2, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-observe-clock"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-finish-close"), operationId: operationId2, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-observe-finish"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("baseline-inspect"), operationId: operationId2 }).strict(),
+      external_exports.object({ action: external_exports.literal("metadata-begin"), operationId: operationId2, confirmWrite: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("metadata-advance"), operationId: operationId2, step: currentSymbolOperationStepSchema }).strict(),
+      external_exports.object({ action: external_exports.literal("metadata-inspect"), operationId: operationId2 }).strict()
+    ]).refine(
+      (value2) => value2.action !== "open" || sha256Text(value2.rawWindowsPath) === value2.projectUuid,
+      "Project identity must hash the exact raw Windows path."
+    ).refine(
+      (value2) => value2.action !== "baseline-begin" || value2.operationId !== value2.openingOperationId,
+      "The baseline needs a distinct operation ID."
+    );
+    currentSymbolOperationQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
+    limitations12 = [
+      "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. The shared disposable lifecycle has connected validation; this ordinary route has not been connected-tested. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
+      "One exact already registered local .eprj2 project and checkpoint-member PCB in its default branch. Preserve the exact raw Windows path hash, source hash, sealed branch and original retained launch; opening starts from an empty editor.",
+      "Before the first ordinary navigation, derive the supported startup expectation from the preserved checkpoint. Recheck that expectation against the complete closed baseline, then require live startup qualification before writing. No disposable acceptance or unqualified schematic-startup bypass is accepted.",
+      "Ordinary opening can migrate storage, replay caches, restore tabs, update shared metadata and automatically Save. Each opening or closure stage requires its own explicit acknowledgement. No unchanged-storage promise, explicit Save, Save/Discard choice, forced exit or file restoration is provided.",
+      "A stopped ordinary opener can request-normal-close once through its own original retained Job, without bridge dispatch or a replacement PID/window. Quarantine remains until retire-after-termination proves original termination and session closure. Acknowledgement is not termination or saved-content proof; ambiguity consumes the close attempt.",
+      "baseline-begin seals one closed ordinary symbol and only a name and/or non-null description patch. The target must be unreferenced by active schematic pages; native linked-sheet propagation is unsupported. Preserve tags, source and peer content. Checkpoint descriptors are evidence inputs, never replacement ownership or permission to mutate.",
+      "The complete original target history must be META-only, including every tombstoned occurrence. Drawn symbols and historical canvas records are unsupported even if the current symbol looks empty. Pre-dispatch proof budgets reserve the ordinary write's raw history, saved-content and logical SQL limits; physical allocation, heap and deadlines remain runtime limitations.",
+      "Bind ordinary purpose in the original opening plan, generation and baseline owner. Keep the original retained owner through one write, normal closure, complete closed SQL comparison, cache-excluded project-only reopening, saved-content verification and final closed SQL equality. Copied JSON and disposable owners cannot provide that authority.",
+      "metadata-begin retains the original ready baseline. Every metadata-advance keeps that baseline operation ID and supplies the exact next expectedPhase and only its required acknowledgements. No continuation accepts a replacement target, patch, runtime fingerprint, timestamp window, code or verifier.",
+      "Forward-only completion retires the successful verifier without retaining an inverse. No inverse, rollback, restoration or mutation replay is exposed. A lost response or ambiguous failure consumes its stage; only explicitly pending observations may repeat, and failures permit only available original-owner cleanup or inspection.",
+      "Keep exact runtime/source pins, supported startup shapes, inactive-cache checks, fresh Windows/document clocks and the unchanged 61000 ms unlocked-head age gate. Neither elapsed agent time nor a supplied boolean qualifies a clock or widens a fixed timestamp window.",
+      "The older closed-symbol coordinator, generic library.symbol.modify and unrelated design writers remain blocked. This separate purpose-bound route does not enable them or expose the disposable inverse workflow."
+    ];
+  }
+});
+
 // server/src/current-symbol-runtime-observation.ts
 var milliseconds2, clockSample, currentSymbolRuntimeObservationSchema, CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE;
 var init_current_symbol_runtime_observation = __esm({
@@ -96206,7 +96386,7 @@ function queryCurrentProjectOnlySymbolPreflight(input = {}) {
     effect: "current-project-only-symbol-preflight",
     liveValidation: "not-recorded",
     invocationEnabledByDiscovery: false,
-    limitations: [...limitations12],
+    limitations: [...limitations13],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightRequestSchema),
       resultSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightResultSchema)
@@ -96311,7 +96491,7 @@ function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   }
   return Object.freeze(result);
 }
-var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema9, beforeSchema, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations12;
+var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema9, beforeSchema, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations13;
 var init_current_project_only_symbol_preflight = __esm({
   "server/src/current-project-only-symbol-preflight.ts"() {
     init_zod();
@@ -96358,7 +96538,7 @@ var init_current_project_only_symbol_preflight = __esm({
       mutationDispatched: external_exports.literal(false),
       explicitSaveDispatched: external_exports.literal(false)
     }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.clientTicketObservation.maxTicket);
-    limitations12 = [
+    limitations13 = [
       "Requires the exact loaded local project/branch with only the native Start Page and optional hidden blank placeholder. Every editor tab, hidden/editor/export iframe, pending restoration and URL document command is refused. Bounded complete registry/DOM samples are observations, not continuous exclusion or a lock.",
       "Supplied expectedBefore values are exact name/description/raw tags/source/version/ticket comparisons, not source provenance or permission. A future owner must derive them from its original plan. Native source/version getter fallbacks remain lossy with respect to stored absence or falsy fields.",
       "Two matching symbol/project samples and four agreeing client/maxTicket and dual-UI actor/clock samples retain their receivers across awaits. They do not issue a worker lease, authenticate the backend actor, qualify its clock, or prove startup or durable effects.",
@@ -97034,6 +97214,14 @@ function queryOfflineApi(request6) {
       result = validateCurrentSymbolMetadataArguments(request6.query.request);
       break;
     }
+    case "project-symbol-operation": {
+      result = queryCurrentSymbolOperation(request6.query ?? {});
+      break;
+    }
+    case "project-symbol-operation-validate": {
+      result = validateCurrentSymbolOperationArguments(request6.query.request);
+      break;
+    }
     case "project-symbol-preflight": {
       result = queryCurrentProjectOnlySymbolPreflight(request6.query ?? {});
       break;
@@ -97157,6 +97345,7 @@ var init_offline_api = __esm({
     init_current_pcb_identities();
     init_current_pcb_geometry();
     init_current_symbol_metadata();
+    init_current_symbol_operation();
     init_current_project_only_symbol_preflight();
     init_current_symbol_metadata_preparation();
     init_historical_abandonment();
@@ -97191,6 +97380,8 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-operation"), query: currentSymbolOperationQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-operation-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-preflight"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-preflight-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -97208,7 +97399,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Query project-symbol-preflight for exact symbol metadata comparison with no editor tabs; caller expectations are not source provenance. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Compare retained baseline/final snapshots of a completed disposable lifecycle with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state, qualify startup effects or enable editing. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused META-only symbol forward-only lifecycle and its exact acknowledgements. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -103946,7 +104137,7 @@ function closedSymbolDisposableIndexRefusal(input, diagnostic) {
     return formatClosedSymbolDisposableResult({ ...result, entryObservation: null }, diagnostic);
   }
 }
-var NEXT, MAX_RESPONSE_BYTES2, uuid9, documentUuid3, projectUuid2, targetInput, metadataInput, requestInput, closedSymbolDisposableInputSchema, artifact, operationId2, common, stopped, completed, entryResult, entryObservation, indexRefusal, disposableResult, closedSymbolDisposableOutputSchema;
+var NEXT, MAX_RESPONSE_BYTES2, uuid9, documentUuid3, projectUuid2, targetInput, metadataInput, requestInput, closedSymbolDisposableInputSchema, artifact, operationId3, common, stopped, completed, entryResult, entryObservation, indexRefusal, disposableResult, closedSymbolDisposableOutputSchema;
 var init_closed_symbol_disposable_tool = __esm({
   "server/src/closed-symbol-disposable-tool.ts"() {
     init_zod();
@@ -103979,7 +104170,7 @@ var init_closed_symbol_disposable_tool = __esm({
       bytes: external_exports.number().int().min(1).max(131072),
       sha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
     }).strict();
-    operationId2 = external_exports.string().regex(/^easyeda-[a-z0-9-]{1,100}$/u);
+    operationId3 = external_exports.string().regex(/^easyeda-[a-z0-9-]{1,100}$/u);
     common = {
       profile: external_exports.literal("easyeda-pro-control.closed-symbol-disposable-result.v1"),
       action: external_exports.literal("run-disposable-once"),
@@ -103993,7 +104184,7 @@ var init_closed_symbol_disposable_tool = __esm({
       outcome: external_exports.literal("stopped"),
       phase: external_exports.enum(["request", "queue", "admission", "sql-runtime", "expectation", "construction", "claim", "coordinator", "terminal", "projection"]),
       reason: external_exports.enum(["entry-already-used", "validation-stopped"]),
-      operationId: operationId2.nullable(),
+      operationId: operationId3.nullable(),
       claimState: external_exports.enum(["not-attempted", "publication-unknown", "acknowledged"]),
       claimArtifact: artifact.nullable(),
       terminalArtifact: artifact.nullable(),
@@ -104004,7 +104195,7 @@ var init_closed_symbol_disposable_tool = __esm({
     completed = external_exports.object({
       ...common,
       outcome: external_exports.literal("completed"),
-      operationId: operationId2,
+      operationId: operationId3,
       headEligibility: external_exports.enum(["locked", "aged-unlocked"]),
       claimState: external_exports.literal("acknowledged"),
       claimArtifact: artifact,
@@ -104019,7 +104210,7 @@ var init_closed_symbol_disposable_tool = __esm({
     entryObservation = external_exports.discriminatedUnion("originalOutcome", [
       external_exports.object({
         originalOutcome: external_exports.literal("completed"),
-        operationId: operationId2,
+        operationId: operationId3,
         claimState: external_exports.literal("acknowledged"),
         claimArtifact: artifact,
         terminalArtifact: artifact,
@@ -104028,7 +104219,7 @@ var init_closed_symbol_disposable_tool = __esm({
       }).strict(),
       external_exports.object({
         originalOutcome: external_exports.literal("stopped"),
-        operationId: operationId2.nullable(),
+        operationId: operationId3.nullable(),
         claimState: external_exports.enum(["not-attempted", "publication-unknown", "acknowledged"]),
         claimArtifact: artifact.nullable(),
         terminalArtifact: artifact.nullable(),
@@ -120810,7 +121001,8 @@ var init_facade_mode = __esm({
       "easyeda_control_pcb_identities",
       "easyeda_control_history",
       "easyeda_control_pcb_geometry",
-      "easyeda_control_project_symbol"
+      "easyeda_control_project_symbol",
+      "easyeda_control_project_symbol_metadata"
     ]);
   }
 });
@@ -121199,74 +121391,6 @@ var init_current_pcb_layers_runtime = __esm({
       schema: "easyeda-pro-control.current-pcb-layers-runtime.v1",
       uiImplementation: CURRENT_UI_IMPLEMENTATION
     });
-  }
-});
-
-// server/src/current-symbol-operation.ts
-function parseCurrentSymbolOperationRequest(input) {
-  return currentSymbolOperationRequestSchema.parse(input);
-}
-var CURRENT_SYMBOL_OPERATION_PURPOSE, operationId3, currentSymbolOperationStepSchema, currentSymbolOperationRequestSchema, currentSymbolOperationQuerySchema;
-var init_current_symbol_operation = __esm({
-  "server/src/current-symbol-operation.ts"() {
-    init_zod();
-    init_core3();
-    init_current_disposable_open();
-    init_current_symbol_metadata_preparation();
-    CURRENT_SYMBOL_OPERATION_PURPOSE = "ordinary-symbol-metadata";
-    operationId3 = external_exports.string().min(8).max(96).regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
-    currentSymbolOperationStepSchema = external_exports.discriminatedUnion("expectedPhase", [
-      external_exports.object({ expectedPhase: external_exports.literal("forward-write"), confirmWrite: external_exports.literal(true), acceptMetadataMutation: external_exports.literal(true) }).strict(),
-      external_exports.object({
-        expectedPhase: external_exports.enum(["forward-close", "forward-verification-close", "cleanup-close"]),
-        confirmNormalClose: external_exports.literal(true),
-        acceptUnknownFileEffects: external_exports.literal(true)
-      }).strict(),
-      external_exports.object({ expectedPhase: external_exports.enum(["forward-verification-start", "forward-verification-open"]), acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ expectedPhase: external_exports.enum([
-        "forward-observe-termination",
-        "forward-verification-admit",
-        "forward-verification-caches",
-        "forward-verification-read",
-        "forward-verification-finish",
-        "cleanup-observe-termination"
-      ]) }).strict()
-    ]);
-    currentSymbolOperationRequestSchema = external_exports.discriminatedUnion("action", [
-      external_exports.object({ action: external_exports.literal("open"), operationId: operationId3, ...currentDisposableOpenTargetSchema.shape, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("observe"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("request-normal-close"), operationId: operationId3, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("retire-after-termination"), operationId: operationId3, confirmRetire: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({
-        action: external_exports.literal("baseline-begin"),
-        operationId: operationId3,
-        openingOperationId: operationId3,
-        preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
-        confirmNormalClose: external_exports.literal(true),
-        acceptNormalOpenEffects: external_exports.literal(true)
-      }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-observe-termination"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-prepare-clock"), operationId: operationId3, acceptScratchProcessEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-relaunch"), operationId: operationId3, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-admit"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-observe-caches"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-open-project"), operationId: operationId3, acceptNormalOpenEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-observe-clock"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-finish-close"), operationId: operationId3, confirmNormalClose: external_exports.literal(true), acceptUnknownFileEffects: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-observe-finish"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("baseline-inspect"), operationId: operationId3 }).strict(),
-      external_exports.object({ action: external_exports.literal("metadata-begin"), operationId: operationId3, confirmWrite: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("metadata-advance"), operationId: operationId3, step: currentSymbolOperationStepSchema }).strict(),
-      external_exports.object({ action: external_exports.literal("metadata-inspect"), operationId: operationId3 }).strict()
-    ]).refine(
-      (value2) => value2.action !== "open" || sha256Text(value2.rawWindowsPath) === value2.projectUuid,
-      "Project identity must hash the exact raw Windows path."
-    ).refine(
-      (value2) => value2.action !== "baseline-begin" || value2.operationId !== value2.openingOperationId,
-      "The baseline needs a distinct operation ID."
-    );
-    currentSymbolOperationQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
   }
 });
 
@@ -130111,7 +130235,7 @@ var init_current_symbol_validation_runtime = __esm({
           metadataRestorationVerified: slot.forwardVerified && slot.inverseVerified,
           historicalDatabaseBytesRestored: false,
           requestedMetadataVerified: slot.purpose === "ordinary-symbol-metadata" && slot.forwardVerified,
-          normalWritersEnabled: false,
+          ...slot.purpose === "ordinary-symbol-metadata" ? { genericWritersEnabled: false, forwardOnly: true, inverseSupported: false } : { normalWritersEnabled: false },
           explicitSaveDispatched: false,
           replayAllowed: false,
           executionAuthorized: false
@@ -130515,7 +130639,6 @@ var init_current_disposable_open_runtime = __esm({
   "server/src/current-disposable-open-runtime.ts"() {
     init_zod();
     init_artifacts();
-    init_closed_symbol_terminal_admission();
     init_core3();
     init_current_disposable_open();
     init_current_disposable_open_diagnostics();
@@ -130554,7 +130677,7 @@ var init_current_disposable_open_runtime = __esm({
       loadOperation,
       updateOperation,
       writePhaseArtifact,
-      listOperations: listQualifiedOperationStates,
+      assertOperationIdUnused,
       prepareCheckpoint: prepareCurrentDisposableOpenCheckpoint,
       verifyCheckpoint: verifyCurrentDisposableOpenCheckpoint,
       prepareOrdinaryCheckpoint: prepareCurrentSymbolOperationCheckpoint,
@@ -130704,11 +130827,15 @@ var init_current_disposable_open_runtime = __esm({
           this.busy = false;
         }
       }
-      /** Internal future ordinary entry only. No tool registers this method. Purpose
-       * comes from this distinct parser/entry, never a caller-supplied override.
+      /** Separate ordinary metadata route entry. Purpose comes from this distinct
+       * parser/entry, never a caller-supplied override or disposable route.
        */
       async runOrdinary(input, expectedFingerprint) {
         const request6 = parseCurrentSymbolOperationRequest(structuredClone(input));
+        requireValue15(
+          request6.action === "open" || expectedFingerprint === void 0,
+          "Ordinary continuation cannot replace its original runtime fingerprint."
+        );
         requireValue15(!this.busy, "Current ordinary symbol operation is already in progress.");
         if (request6.action === "metadata-begin" || request6.action === "metadata-advance" || request6.action === "metadata-inspect") {
           requireValue15(expectedFingerprint === void 0, "Ordinary metadata cannot replace its original runtime fingerprint.");
@@ -131324,9 +131451,8 @@ var init_current_disposable_open_runtime = __esm({
         const launch = launchSchema2.parse(status2.launch);
         await engine2.assertBridgeAndNativeUiEditingAdmission();
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-        const operations = await this.services.listOperations();
+        await this.services.assertOperationIdUnused(request6.operationId);
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-        requireValue15(!operations.some((operation) => operation["operationId"] === request6.operationId), "Current disposable-open operation ID is consumed.");
         this.services.validateFingerprint(fingerprint);
         const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? this.services.prepareOrdinaryCheckpoint(targetOnly(request6)) : this.services.prepareCheckpoint(targetOnly(request6)));
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
@@ -134115,7 +134241,7 @@ function registerFacadeTool(name6, config2, handler) {
     handler
   );
 }
-var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentDisposableOpenCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema2, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, toolOutputSchemas, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
+var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentDisposableOpenCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema2, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, currentSymbolOperationToolOutputSchema, toolOutputSchemas, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
 var init_src = __esm({
   async "server/src/index.ts"() {
     init_mcp();
@@ -134192,6 +134318,7 @@ var init_src = __esm({
     init_current_pcb_geometry();
     init_current_pcb_geometry_runtime();
     init_current_symbol_metadata();
+    init_current_symbol_operation();
     init_current_symbol_metadata_runtime();
     init_current_project_only_symbol_preflight();
     init_current_project_only_symbol_runtime();
@@ -134624,6 +134751,7 @@ var init_src = __esm({
       text: external_exports.string().optional(),
       ...optionalFailureOutputShape
     }).strict();
+    currentSymbolOperationToolOutputSchema = external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).strict();
     toolOutputSchemas = {
       easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
       easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
@@ -134641,6 +134769,7 @@ var init_src = __esm({
       easyeda_control_pcb_identities: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_pcb_geometry: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_project_symbol: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
       easyeda_control_history: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_check: external_exports.object({ result: routeAuditResultSchema.optional(), operationId: external_exports.string().optional(), state: external_exports.string().optional(), report: external_exports.unknown().optional(), proof: external_exports.unknown().optional(), reportArtifact: external_exports.unknown().optional(), nextSafeAction: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_native_ui: external_exports.object({ schema: external_exports.string().optional(), action: external_exports.string().optional(), result: external_exports.unknown().optional(), observations: external_exports.array(external_exports.unknown()).optional(), authority: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -134671,7 +134800,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, local historical abandonment at the fixed sixteen-event pre-navigation or seven-phase current-baseline pre-relaunch boundary, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not normal design-writer authority. The project-open validation-* actions additionally permit one sealed disposable symbol-metadata forward/inverse validation with exact per-phase effect acknowledgements and original retained owners. This new validation path is not yet connected-validated; normal design writers remain disabled. No generic native controls, navigation, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; observations grant no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its shared lifecycle passed an installed101500 disposable round trip. The separate easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/description change for an unused symbol with complete META-only history, including tombstones; this ordinary route is not yet connected-tested. Both require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -134696,7 +134825,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry observations, local historical abandonment, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. The project-open validation-* actions can mutate sealed disposable symbol name/description in one original-owner forward/inverse validation with phase-specific effect acknowledgements. This validation path is not connected-validated; normal design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
+            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. The separate project-symbol-metadata route supports original-owner name/description changes without an inverse; that ordinary route remains connected-untested. Complete historical canvas, including tombstones, is unsupported. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -134712,9 +134841,21 @@ var init_src = __esm({
             pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
             pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
             projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
+            projectSymbolMetadata: {
+              tool: "easyeda_control_project_symbol_metadata",
+              scope: "unreferenced-project-local-meta-only-history-name-description-forward-only",
+              runtimeAdmissionRequired: true,
+              designMutation: true,
+              connectedValidation: false,
+              originalOwnerRequired: true,
+              sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
+              phaseEffectAcknowledgementsRequired: true,
+              inverseSupported: false,
+              genericWritersEnabled: false
+            },
             historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
             ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
-            designAccess: { enabled: false, scope: "normal-design-routes" },
+            designAccess: { enabled: false, scope: "generic-design-routes" },
             navigation: {
               enabled: true,
               tool: "easyeda_control_project_open",
@@ -134725,9 +134866,10 @@ var init_src = __esm({
             disposableValidation: {
               tool: "easyeda_control_project_open",
               actions: "validation-*",
-              scope: "sealed-disposable-symbol-name-description-forward-inverse",
+              scope: "sealed-disposable-unused-meta-only-symbol-name-description-forward-inverse",
               designMutation: true,
               connectedValidation: false,
+              sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
               normalWritersEnabled: false,
               phaseEffectAcknowledgementsRequired: true,
               originalOwnerRequired: true
@@ -135216,7 +135358,7 @@ var init_src = __esm({
       "easyeda_control_project_open",
       {
         title: "Open and validate one disposable EasyEDA project",
-        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, empty editor, exact raw path/hash and acceptance of opening effects, which can migrate data, replay caches, restore tabs and automatically Save. baseline-* actions consume that original opening to prepare one closed symbol, normally close, capture its complete baseline, prepare one isolated scratch Date reference, relaunch, admit, exclude inactive caches, open only the project and observe fixed renderer clocks. validation-begin then retains that ready baseline for one sealed symbol-name/description forward/inverse test. Targets referenced by active schematic pages refuse before writer transfer; native linked-sheet propagation is unsupported. validation-advance requires the exact step.expectedPhase and only that phase's explicit effect acknowledgements; forward/inverse writes, opening and closing are never implicit retries. The inverse is derived internally from the original metadata and fully verified post-edit snapshot. Actual writer/verifier owners retain normal closure, complete SQL and saved-content readback through both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failures allow only available original-owner cleanup or inspection, never blind inversion. A stopped disposable opener can request-normal-close through its original retained Job without a bridge call; quarantine remains until retire-after-termination proves termination and session closure. Close acknowledgement never permits replay or proves saved contents. No explicit Save, Save/Discard choice, forced exit or file restoration. A successful inverse restores selected metadata, not historical database bytes/tickets/timestamps. Inspection is local; lost handles cannot be reconstructed. Normal design writers remain disabled; this new disposable validation path still requires connected validation. Use offline project-open/project-open-validate first.",
+        description: "Open one registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained launch, empty editor, exact raw path/hash and acceptance of migrations/cache replay/restored tabs/automatic Save. baseline-* prepares one closed symbol, normal closure, complete baseline, isolated scratch Date reference, replacement launch/admission, inactive-cache exclusion, project-only opening and renderer clocks. validation-begin retains that baseline for one sealed name/description forward/inverse test. Targets referenced by active sheets or with any historical drawing records, including tombstones, refuse before mutation. Proof budgets reserve both writes; physical allocation, heap and deadlines are not guaranteed. validation-advance requires the exact next phase and its acknowledgements; never replay writes, opening or closing. The inverse comes only from original metadata and the verified post-edit snapshot. Original writer/verifier owners retain full closed SQL and reopened-content proofs in both directions. No caller target, patch, fingerprint, code or verifier can replace the baseline. Failure permits only offered original-owner cleanup or inspection, not blind inversion. A stopped opener can request-normal-close through its original Job without a bridge call; quarantine remains until termination/session closure is proved. Close acknowledgement is not termination or saved-content proof. No explicit Save, Save/Discard choice, forced exit or restoration. Inverse restores metadata, not historical database bytes/tickets/timestamps. Lost handles cannot be reconstructed. The shared lifecycle passed an installed101500 disposable round trip; generic writers stay blocked. Use the separate project-symbol-metadata route for ordinary forward-only work and offline project-open/project-open-validate for this validation route.",
         inputSchema: { request: external_exports.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
@@ -135314,7 +135456,7 @@ var init_src = __esm({
       "easyeda_control_project_symbol",
       {
         title: "Read project-local symbol metadata",
-        description: "Read one exact project-local symbol on the separately pinned current runtime. The lib_Symbol.get request requires an active PCB context and observes bounded metadata twice. The project-only preflight request instead requires no editor tabs or hidden editors and compares exact caller-supplied expectedBefore metadata twice, with bounded UI actor/client/ticket/clock observations. Query offline project-symbol/project-symbol-validate or project-symbol-preflight/project-symbol-preflight-validate for the respective schemas. Both require the actual authenticated fingerprint. Supplied expectations are not source provenance; the private worker is not independently leased. No backend actor/clock qualification, startup completion, permission, saved membership, connectivity or writer authority. No cloud-library lookup, geometry load, navigation, mutation or explicit Save. Normal current writer execution remains blocked; only the separate project-open validation-* lifecycle can test a sealed disposable forward/inverse edit with its original owner and phase acknowledgements.",
+        description: "Read one exact project-local symbol on the separately pinned current runtime. lib_Symbol.get requires an active PCB context and observes bounded metadata twice. Project-only preflight instead requires no editor tabs or hidden editors and compares exact caller-supplied expectedBefore metadata twice, with bounded UI actor/client/ticket/clock observations. Query offline project-symbol/project-symbol-validate or project-symbol-preflight/project-symbol-preflight-validate. Both require the authenticated fingerprint. Supplied expectations are not source provenance; the private worker is not independently leased. No backend actor/clock qualification, startup completion, permission, saved membership, connectivity or writer authority. No cloud lookup, geometry load, navigation, mutation or explicit Save. The separate easyeda_control_project_symbol_metadata route provides original-owner forward-only changes for unused symbols with complete META-only history; project-open validation-* provides disposable forward/inverse validation. This read grants neither authority; generic writers remain blocked.",
         inputSchema: { request: external_exports.unknown().pipe(external_exports.union([currentSymbolMetadataRequestSchema, currentProjectOnlySymbolPreflightRequestSchema])), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
@@ -136365,6 +136507,41 @@ var init_src = __esm({
         { allowDuringOrphanRisk: true }
       )
     );
+    if (facadeToolRegistered(facadeMode, "easyeda_control_project_symbol_metadata")) {
+      const inputSchema = external_exports.object({
+        request: external_exports.unknown().pipe(currentSymbolOperationRequestSchema),
+        expectedFingerprint: privateFingerprintSchema.optional()
+      }).strict();
+      server.registerTool(
+        "easyeda_control_project_symbol_metadata",
+        {
+          title: "Change one unused META-only project symbol's metadata",
+          description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. The complete target raw history must be META-only: historical drawing records, even tombstones, refuse before mutation. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared lifecycle passed an installed101500 disposable round trip; this ordinary route has not been connected-tested.",
+          inputSchema,
+          outputSchema: currentSymbolOperationToolOutputSchema,
+          annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+        },
+        serializedGuarded(async ({ request: request6, expectedFingerprint }) => {
+          if (currentDisposableOpenCoordinator === void 0) {
+            const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
+            const assertOwner = () => {
+              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process19.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+                throw new Error("Symbol metadata requires this facade's unchanged retained ordinary launch.");
+              }
+            };
+            currentDisposableOpenCoordinator = new CurrentDisposableOpenCoordinator({
+              engine,
+              assertOwner,
+              runtime: () => {
+                assertOwner();
+                return ownedWindowsRuntime();
+              }
+            });
+          }
+          return { result: await currentDisposableOpenCoordinator.runOrdinary(request6, expectedFingerprint) };
+        }, { allowDuringOrphanRisk: true })
+      );
+    }
     transport = new StdioServerTransport();
     shutdown = createSerializedShutdown(
       server,

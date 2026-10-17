@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { sha256Text } from "../src/core.ts";
+import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { CURRENT_SYMBOL_OPERATION_PURPOSE, currentSymbolOperationRequestSchema, currentSymbolOperationStepSchema,
   parseCurrentSymbolOperationRequest, queryCurrentSymbolOperation, validateCurrentSymbolOperationArguments } from "../src/current-symbol-operation.ts";
 
@@ -44,7 +45,7 @@ void test("ordinary contract preserves all opening/baseline actions and exactly 
   assert.equal(new Set(steps.map((step) => step.expectedPhase)).size, 12);
   for (const request of requests) {
     assert.deepEqual(parseCurrentSymbolOperationRequest(request), request);
-    assert.deepEqual(validateCurrentSymbolOperationArguments(request), { valid: true, request, registrationEnabled: false, executionAuthorized: false });
+    assert.deepEqual(validateCurrentSymbolOperationArguments(request), { valid: true, request, registrationEnabled: true, executionAuthorized: false });
   }
   for (const step of steps) { assert.deepEqual(currentSymbolOperationStepSchema.parse(step), step); }
 });
@@ -124,11 +125,12 @@ void test("ordinary continuations refuse replacement targets, evidence, fingerpr
   }
 });
 
-void test("ordinary discovery and validation stay offline, dormant and explicit about mandatory original-owner startup and persistence", () => {
+void test("ordinary discovery and validation advertise registration without granting original-owner startup or execution authority", () => {
   const detailed = queryCurrentSymbolOperation({ includeSchemas: true }), discovery = queryCurrentSymbolOperation();
   for (const value of [discovery, detailed]) {
     assert.equal(value["offline"], true); assert.equal(value["purpose"], CURRENT_SYMBOL_OPERATION_PURPOSE);
-    for (const key of ["registrationEnabled", "invocationEnabledByDiscovery", "executionAuthorized", "writerReady", "connectedValidation", "inverseSupported", "replayAllowed"]) {
+    assert.equal(value["registrationEnabled"], true); assert.equal(value["tool"], "easyeda_control_project_symbol_metadata");
+    for (const key of ["invocationEnabledByDiscovery", "executionAuthorized", "writerReady", "connectedValidation", "inverseSupported", "replayAllowed"]) {
       assert.equal(value[key], false);
     }
     assert.equal(value["forwardOnly"], true);
@@ -144,6 +146,18 @@ void test("ordinary discovery and validation stay offline, dormant and explicit 
   }
   assert.throws(() => queryCurrentSymbolOperation({ includeSchemas: true, enable: true }));
   const invalid = validateCurrentSymbolOperationArguments({ action: "metadata-advance", operationId, step: { expectedPhase: "inverse-write" } });
-  assert.equal(invalid["valid"], false); assert.equal(invalid["registrationEnabled"], false); assert.equal(invalid["executionAuthorized"], false);
+  assert.equal(invalid["valid"], false); assert.equal(invalid["registrationEnabled"], true); assert.equal(invalid["executionAuthorized"], false);
   assert.ok(Array.isArray(invalid["issues"])); assert.ok(invalid["issues"].length > 0 && invalid["issues"].length <= 16);
+});
+
+void test("offline API exposes exact ordinary schemas and rejects inverse validation without enabling execution", () => {
+  assert.deepEqual(queryOfflineApi({ action: "project-symbol-operation", query: { includeSchemas: true } }),
+    { offline: true, result: queryCurrentSymbolOperation({ includeSchemas: true }) });
+  for (const request of [opening, baseline, ...requests.filter((value) => value.action === "metadata-advance"),
+    { action: "metadata-advance", operationId, step: { expectedPhase: "inverse-write" } }]) {
+    assert.deepEqual(queryOfflineApi({ action: "project-symbol-operation-validate", query: { request } }),
+      { offline: true, result: validateCurrentSymbolOperationArguments(request) });
+  }
+  assert.equal(apiRequestSchema.safeParse({ action: "project-symbol-operation", query: { enable: true } }).success, false);
+  assert.equal(apiRequestSchema.safeParse({ action: "project-symbol-operation-validate", query: { request: opening, execute: true } }).success, false);
 });

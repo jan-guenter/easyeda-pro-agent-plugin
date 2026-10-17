@@ -1,7 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This operation composes fixed checkpoint, current implementation, retained runtime and shared journal boundaries. */
 import { z } from "zod";
-import { controlDataDirectory, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
-import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
+import { assertOperationIdUnused, controlDataDirectory, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "./core.ts";
 import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram,
   currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "./current-disposable-open.ts";
@@ -84,7 +83,7 @@ export interface CurrentDisposableOpenOptions {
   readonly runtime: () => OpenRuntime;
   readonly assertOwner: () => void;
 }
-const defaults = { createOperation, loadOperation, updateOperation, writePhaseArtifact, listOperations: listQualifiedOperationStates,
+const defaults = { createOperation, loadOperation, updateOperation, writePhaseArtifact, assertOperationIdUnused,
   prepareCheckpoint: prepareCurrentDisposableOpenCheckpoint, verifyCheckpoint: verifyCurrentDisposableOpenCheckpoint,
   prepareOrdinaryCheckpoint: prepareCurrentSymbolOperationCheckpoint, verifyOrdinaryCheckpoint: verifyCurrentSymbolOperationCheckpoint,
   verifyImplementation: verifyCurrentDisposableOpenImplementation, validateFingerprint: validateSdkLocalRuntimeFingerprint };
@@ -323,11 +322,13 @@ export class CurrentDisposableOpenCoordinator {
     } finally { this.busy = false; }
   }
 
-  /** Internal future ordinary entry only. No tool registers this method. Purpose
-   * comes from this distinct parser/entry, never a caller-supplied override.
+  /** Separate ordinary metadata route entry. Purpose comes from this distinct
+   * parser/entry, never a caller-supplied override or disposable route.
    */
   public async runOrdinary(input: unknown, expectedFingerprint?: Value): Promise<Value> {
     const request = parseCurrentSymbolOperationRequest(structuredClone(input));
+    requireValue(request.action === "open" || expectedFingerprint === undefined,
+      "Ordinary continuation cannot replace its original runtime fingerprint.");
     requireValue(!this.busy, "Current ordinary symbol operation is already in progress.");
     if (request.action === "metadata-begin" || request.action === "metadata-advance" || request.action === "metadata-inspect") {
       requireValue(expectedFingerprint === undefined, "Ordinary metadata cannot replace its original runtime fingerprint.");
@@ -823,9 +824,8 @@ export class CurrentDisposableOpenCoordinator {
     const launch = launchSchema.parse(status.launch);
     await engine.assertBridgeAndNativeUiEditingAdmission();
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-    const operations = await this.services.listOperations();
+    await this.services.assertOperationIdUnused(request.operationId);
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-    requireValue(!operations.some((operation) => operation["operationId"] === request.operationId), "Current disposable-open operation ID is consumed.");
     this.services.validateFingerprint(fingerprint);
     const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
       ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
