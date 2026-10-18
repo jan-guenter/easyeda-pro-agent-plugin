@@ -4,6 +4,104 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+140500 candidate, 2026-10-18: actual facade2371047 (parent2369383,
+startTicks30405385) was independently admitted against the complete installed121700
+inventory below. Both preceding main CI39128803776 and Windows39128803768 passed.
+Work is on `feature/pcb-original-owner-binding-20261018`. The new disposable PCB
+rename workflow is implemented, registered and built, but not yet published,
+installed or live-validated. It connects original PCB ownership/baseline,
+SQL/native binding, startup/panel and actor/dual-clock checks, one fixed rename,
+original normal closure, complete stored-effect proof and fresh saved verification.
+No symbol ownership token is converted. Ordinary PCB rename remains disabled.
+Source/pin and phase/cleanup reviews accepted the scoped implementation. Focused
+tests, strict types/lint, dependency signatures/audit, build/compatibility,
+repository/privacy and all seven official skill checks pass. Full verification
+is running on the frozen candidate; no final full-suite result is claimed yet.
+
+Candidate `0.3.0+codex.20261018140500`: source452 SHA
+`5710123e9f5cfc4d1d07569b5dd46cc6dc5ac5a790368c73c52751c206ad1460`,
+runtime3 SHA`4b0fd760b3d63966255901b37447c9d5aad4ef7202dd5bcae03831cbf7fd0c32`,
+manifest SHA`f8a5f37bf916a7509d6e86e2e0c554d659329cc3af4fc9f6f47289c44abb17fd`.
+All external pins are unchanged. Full/restricted tool counts are45/20. Coverage
+records one new guarded disposable native-equivalent route, not general SDK
+rename support or connected writer validation. Details and remaining work are
+in `docs/current-pcb-rename-lifecycle-2026-10-18.md`.
+
+Live read-only preflight case uses NEW IDs
+`pcb-preflight-121700-20261018-launch`, `pcb-preflight-121700-20261018-open`,
+`pcb-preflight-121700-20261018-baseline`. Original opening completed once;
+baseline normal closure and raw/full SQL capture succeeded (41ac6062/09a74ea1).
+The ordinary launcher's original termination was proved and recorded before
+replacement launch. Admission, inactive caches and project-only opening passed.
+One read-only preflight completed with two matching PCB maps, exact expected
+metadata, native name availability and four matching client/ticket/actor samples.
+Observation838f691f; no rename or explicit Save. Original normal closure,
+termination, finish snapshot and retirement completed. Offline analysis verifies
+all24phases, raw41ac6062, full35table/148rowSQL09a74ea1 and all20native documents
+unchanged. Canonical terminaljournal0d2986aa. No live operation remains; EasyEDA
+is normally closed. Never replay this case or completed earlier lifecycles.
+Private preflight evidence1e432050 and analysis84256a84 are retained in
+`/tmp/easyeda-pcb-121700-preflight-yvKfCp`. Production designs and records remain
+excluded. The new workflow must be published and installed through the official
+Git marketplace, then loaded and independently admitted in a fresh Codex session
+before its first disposable writer lifecycle. Do not kill/rebind the current
+host-owned facade or replay the consumed preflight/probes. Nonempty PCB String
+validation and broader design/library/export adapters remain backlog. Preserve
+stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
+
+New retained-copy diagnostic matches all111500 PCB reader metadata (data452,
+header453, global777). Private proof3ffc8711 in
+`/tmp/easyeda-pcb-binding-retained-mAZ6Up/proof.json` is consumed; never replay
+its helper. Prior diagnostic failure compared raw journal SHA with canonical
+journalSha256; no historical journal mutation was found. Both failed/successful
+diagnostics remain preserved. Historical111500 lifecycle stays terminal.
+
+121700 delivered, 2026-10-18: PR64 merged as main
+`b0fa4e65c657aec8a094a39da6d284679dbff095`, reviewed payload
+`c050eeb3a5a51e74ca053945e6cc28b1b37500df`; their complete Git trees both
+`fe4f463ced63ff166bd6b257d796b92418d1a9d6`. PR CI39127898201 and Windows
+39127898058 passed, including all eight shards, reproducible build and required
+aggregate. Local full verify:10,903 facade passes/four platform skips/zero failures,
+424 bridge passes, strict types/lint and all release gates. Final independent
+source/pin and retained-reader audits accepted. No human review is claimed.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261018121700` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. Cached marketplace
+HEAD equals merged main. Root and independent comparison prove all1,363files/
+27,556,465bytes/42dirs/sevenskills match committed bytes/modes, with no extras,
+symlinks or hardlinks. Inventory SHA
+`1c5efc0759b616c175bd3b41972608b6621b98377523cc31780f4bef0b6b656f`;
+source430/4cd348dd, runtime3/5e848f09 and manifest4e0c4b7e match below.
+No redundant plugin-add, cache edit, permission change or owner termination.
+
+Fresh configured offline probe passed ambientNode26.11.1 to pinnedNode24.18.0,
+19 restricted tools/seven skills, strict PCB preflight request/result discovery
+and ten invalid request refusals, unchanged synthetic profile, no upstream/socket/
+journal. Original synthetic child2366509 exited0 on EOF without signals/adoption.
+Consumed proof `/tmp/easyeda-pcb-121700-release-2T0tOd/proof.json`,5792bytes,
+SHA`2dc2ce596db2d42b09d56cf71d185e8744b48bdf1e5e15decd5014fb998e686d`.
+Never replay it or earlier probes. Actual facade2272401 remains111500; fresh
+Codex session/admission is required before more live calls. Do not kill/rebind it.
+
+EasyEDA is normally closed. The111500 reader lifecycle below is terminal; all
+24 artifacts/35 SQL tables/148 rows/20 documents independently checked, raw
+41ac6062 and logicalSQL09a74ea1 unchanged. Native ticket452 is the maximum data
+ticket, not DOCHEAD453 or global777; pinned get/onDataChange/setEditData paths
+confirm that distinction. The earlier private audit's erroneous453 expectation
+is preserved; the separate source-bound audit passed. No product fix was needed.
+No rename, symbol patch, explicit Save, production-design or production-record
+access occurred. Never replay the reader lifecycle or the completed copy.
+
+Next: admit actual121700, live-check the new read-only PCB rename preflight on
+the disposable fixture, then implement the PCB-specific original owner/producer/
+actor/dual-clock coordinator and connect the frozen preparation/full-SQL proof
+to normal closure and fresh saved reopening. Nonempty PCB String validation and
+broader design/library/export adapters remain backlog. Existing symbol owner
+tokens must not be relabeled. Main Windows39128803768 passed; main CI39128803776
+is still running at handoff. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
+This delivery note is a local handoff addition; published/installed bytes stay exact.
+
 121700 candidate, 2026-10-18: actual111500 facade2272401 was independently
 admitted against its complete installed inventory, source, runtime and manifest.
 Both preceding main CI39124864554 and Windows39124864551 passed. The disposable

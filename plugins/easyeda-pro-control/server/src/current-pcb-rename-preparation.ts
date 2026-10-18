@@ -71,6 +71,13 @@ const preparations = new WeakMap<CurrentPcbRenamePreparation, Prepared>();
 function need(condition: boolean, message: string): asserts condition {
   if (!condition) { throw new Error(`Current PCB rename preparation: ${message}`); }
 }
+/** Internal data linkage only. A copied plan/hash cannot recover the original
+ * completed SQL reader, and this accessor grants no native ownership.
+ */
+export function inventoryForOriginalCurrentPcbRenamePreparation(preparation: CurrentPcbRenamePreparation): Inventory {
+  const prepared = preparations.get(preparation); need(prepared !== undefined, "original PCB preparation required");
+  need(readerCompletion(prepared.before).exitCode === 0, "original SQL reader is incomplete"); return prepared.before;
+}
 function data(value: unknown, names?: readonly string[]): Record<string, unknown> {
   need(isRecord(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null), "plain input required");
   const keys = Reflect.ownKeys(value), result: Record<string, unknown> = {};

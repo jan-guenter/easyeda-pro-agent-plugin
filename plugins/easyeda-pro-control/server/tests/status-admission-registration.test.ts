@@ -145,6 +145,10 @@ void test("restricted status separates historical metadata and canvas validation
     connectedValidation: false, originalOwnerRequired: true,
     historicalConnectedValidation: "installed094000-disposable-supported-drawn-symbol-copy", phaseEffectAcknowledgementsRequired: true,
     inverseSupported: false, ordinaryProjectsSupported: false, genericWritersEnabled: false }));
+  assert.equal(JSON.stringify(capabilities["disposablePcbRename"]), JSON.stringify({ tool: "easyeda_control_disposable_pcb_rename",
+    scope: "original-disposable-project-local-pcb-title-forward-only", runtimeAdmissionRequired: true, designMutation: true,
+    connectedValidation: false, originalOwnerRequired: true, phaseEffectAcknowledgementsRequired: true,
+    inverseSupported: false, ordinaryProjectsSupported: false, savedMetadataOnly: true, completeCanvasRead: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
     scope: "sealed-disposable-unused-meta-only-or-bounded-canvas-segments-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",

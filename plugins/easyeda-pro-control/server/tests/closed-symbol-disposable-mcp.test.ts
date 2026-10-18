@@ -200,7 +200,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 44); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 45); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
   assert.ok(entry.outputSchema !== undefined); assert.equal(entry.outputSchema.type, "object");
@@ -296,7 +296,7 @@ void test("actual SDK ordinary metadata rejects replacement authority then permi
   const f = await fixture(context, "ordinary-history"), name = "easyeda_control_project_symbol_metadata";
   const operationId = "easyeda-index-original-unfinished", request = { action: "metadata-inspect", operationId };
   const listed = await f.listTools(); const entry = listed.tools.find(item => item.name === name);
-  assert.equal(listed.tools.length, 19); assert.ok(entry !== undefined);
+  assert.equal(listed.tools.length, 20); assert.ok(entry !== undefined);
   assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
@@ -330,7 +330,7 @@ void test("actual SDK copy route has strict disposable schema and permits only n
   const f = await fixture(context, "copy-history"), name = "easyeda_control_disposable_symbol_copy";
   const operationId = "easyeda-index-original-unfinished", request = { action: "copy-inspect", operationId };
   const listed = await f.listTools(); const entry = listed.tools.find(item => item.name === name); assert.ok(entry);
-  assert.equal(listed.tools.length, 19); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 20); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true); assert.equal(entry.annotations?.idempotentHint, false);
   for (const malformed of [{ request, expectedFingerprint: replacementFingerprint() }, { request, extra: true },
     { request: { ...request, destinationUuid: "a".repeat(16) } },

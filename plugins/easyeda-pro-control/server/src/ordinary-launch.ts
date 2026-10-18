@@ -6,10 +6,11 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
-import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "./core.ts";
+import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json, sha256Text } from "./core.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
+import { WindowsControlRuntime } from "./windows-runtime.ts";
+// oxlint-disable-next-line import/max-dependencies -- Bind the production runtime issuer directly while preserving separate recovery and passive timing modules.
 import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
-// oxlint-disable-next-line import/max-dependencies -- Keep passive timing bookkeeping outside the authority and journal implementation.
 import { OrdinaryLaunchTimings } from "./ordinary-launch-timings.ts";
 import type { OrdinaryLaunchTimingStage } from "./ordinary-launch-timings.ts";
 
@@ -158,7 +159,57 @@ interface Operation {
   readonly closeIntent?: CloseIntent;
   readonly closeAcknowledgment?: CloseAcknowledgment;
 }
-interface RetainedLaunch { readonly operationId: string; readonly launch: WindowsAuthorityLaunch; readonly launched: Launched }
+interface RetainedLaunch {
+  readonly operationId: string;
+  readonly launch: WindowsAuthorityLaunch;
+  readonly launched: Launched;
+  readonly observeTermination: OrdinaryLaunchRuntime["observeLaunchTermination"];
+  readonly status: WindowsControlRuntime["status"] | undefined;
+}
+export interface OriginalRecordedOrdinaryTermination {
+  readonly profile: "private.original-recorded-ordinary-termination.v1";
+  readonly operationId: string;
+  readonly launch: Readonly<WindowsAuthorityLaunch>;
+  readonly launchedSha256: string;
+  readonly recordPath: string;
+  readonly recordSha256: string;
+  readonly recordBytes: number;
+  readonly terminationRecordPublished: true;
+  readonly designExecutionAuthorized: false;
+}
+interface RecordedTermination {
+  readonly value: OriginalRecordedOrdinaryTermination;
+  readonly launchText: string;
+  readonly operationText: string;
+  readonly current: () => void;
+}
+const recordedTerminations = new WeakMap<OrdinaryLaunchRuntime, RecordedTermination>();
+
+/** Original in-process receipt only. Matching JSON or another runtime cannot
+ * adopt handles, revive a prior launch or replace a completed ordinary record.
+ */
+export function assertOriginalOrdinaryTerminationRecord(value: unknown, runtime: OrdinaryLaunchRuntime,
+  launch: WindowsAuthorityLaunch): OriginalRecordedOrdinaryTermination {
+  const original = recordedTerminations.get(runtime);
+  requireValue(original !== undefined && value === original.value && canonicalJson(launchSchema.parse(launch)) === original.launchText,
+    "Ordinary termination requires its original recorded runtime and complete launch.");
+  original.current(); return original.value;
+}
+
+/** Recheck the original record immediately before a replacement launch. This
+ * never observes new processes or issues a token from historical file bytes.
+ */
+export async function assertOriginalRecordedOrdinaryTermination(runtime: OrdinaryLaunchRuntime,
+  launch: WindowsAuthorityLaunch): Promise<OriginalRecordedOrdinaryTermination> {
+  const original = recordedTerminations.get(runtime);
+  requireValue(original !== undefined, "Ordinary termination has no original published record for this runtime.");
+  const value = assertOriginalOrdinaryTerminationRecord(original.value, runtime, launch);
+  const operations = await inventory(); const operation = operations.find(candidate => candidate.operationId === value.operationId);
+  assertOriginalOrdinaryTerminationRecord(value, runtime, launch);
+  requireValue(canonicalJson(operation) === original.operationText, "Original ordinary termination operation changed.");
+  await hashPinnedFile(value.recordPath, value.recordSha256, value.recordBytes);
+  assertOriginalOrdinaryTerminationRecord(value, runtime, launch); return value;
+}
 const JOURNAL_DIRECTORY = "ordinary-launch-v1";
 const MAX_OPERATIONS = 4096;
 const MAX_RECORD_BYTES = 8192;
@@ -370,6 +421,8 @@ export class OrdinaryLaunchCoordinator {
   private readonly options: OrdinaryLaunchOptions;
   private readonly verify: (options: OrdinaryLaunchOptions) => Promise<string>;
   private readonly observeRecovery: typeof observeOrdinaryLaunchRecovery;
+  private readonly productionServices: boolean;
+  private pendingTerminationRecord: (() => void) | undefined;
   private runtime: OrdinaryLaunchRuntime | undefined;
   private retained: RetainedLaunch | undefined;
   private readonly closeAttempts = new Set<string>();
@@ -381,6 +434,7 @@ export class OrdinaryLaunchCoordinator {
     this.options = options;
     this.verify = dependencies.verifyInstallation ?? verifyOrdinaryLaunchInstallation;
     this.observeRecovery = dependencies.observeRecovery ?? observeOrdinaryLaunchRecovery;
+    this.productionServices = dependencies.verifyInstallation === undefined && dependencies.observeRecovery === undefined;
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
@@ -389,6 +443,7 @@ export class OrdinaryLaunchCoordinator {
     this.busy = true;
     let publishedIntent: Intent | undefined;
     let launchInvoked = false;
+    let terminationCompleted = false;
     // Preserve the first request's diagnostics on replay refusal. Refuse new
     // Diagnostic admissions at the cap without changing launch semantics.
     const timings = request.action === "launch" && !this.launchTimings.has(request.operationId) && this.launchTimings.size < MAX_TIMED_LAUNCHES
@@ -409,7 +464,9 @@ export class OrdinaryLaunchCoordinator {
       await measure("admission-initial", () => this.options.assertAllowed());
       requireValue(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
       if (request.action === "observe-application") { return await this.observeApplication(request.operationId, operation, operations); }
-      if (request.action === "observe-termination") { return await this.observe(request.operationId, operation); }
+      if (request.action === "observe-termination") {
+        const result = await this.observe(request.operationId, operation); terminationCompleted = true; return result;
+      }
       if (request.action === "observe-window") {
         const observed = await this.readWindow(request, operation, operations);
         return { action: request.action, operationId: request.operationId, launchedSha256: request.expectedLaunchedSha256,
@@ -427,9 +484,13 @@ export class OrdinaryLaunchCoordinator {
         reviewedExecutionScopeSha256: facadeSha256 });
       const runtime = this.runtime;
       const launchRuntime = runtime.launch;
+      const observeTermination = runtime.observeLaunchTermination;
+      // oxlint-disable-next-line typescript/unbound-method -- Retain identity; later calls use the original runtime receiver.
+      const runtimeStatus = runtime instanceof WindowsControlRuntime ? runtime.status : undefined;
       const assertCurrentLaunch = (): void => {
         this.options.assertLocalAllowed?.();
-        requireValue(this.runtime === runtime && runtime.launch === launchRuntime,
+        requireValue(this.runtime === runtime && runtime.launch === launchRuntime && runtime.observeLaunchTermination === observeTermination &&
+          (runtimeStatus === undefined || runtime instanceof WindowsControlRuntime && runtime.status === runtimeStatus),
           "Ordinary launch retained runtime or launch method changed before dispatch.");
       };
       const existing = z.object({ running: z.boolean() }).strict().parse(await measure("helper-presence", () => runtime.observeExistingApplication()));
@@ -465,7 +526,7 @@ export class OrdinaryLaunchCoordinator {
       launchInvoked = true;
       const launch = launchSchema.parse(await measure("launch-dispatch", () => launchRuntime.call(runtime)));
       const launched: Launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request.operationId, intentSha256: sha256Json(intent), launch };
-      this.retained = { operationId: request.operationId, launch, launched };
+      this.retained = { operationId: request.operationId, launch, launched, observeTermination, status: runtimeStatus };
       await measure("launched-publication", () => publish(request.operationId, "launched.json", launched));
       this.uncertain = false;
       return { ...describe(request.operationId, { operationId: request.operationId, intent, launched }), ...this.timingSummary(request.operationId) };
@@ -477,7 +538,11 @@ export class OrdinaryLaunchCoordinator {
         this.uncertain = false;
       }
       throw error;
-    } finally { this.busy = false; }
+    } finally {
+      this.busy = false;
+      const issue = this.pendingTerminationRecord; this.pendingTerminationRecord = undefined;
+      if (terminationCompleted) { issue?.(); }
+    }
   }
 
   private timingSummary(operationId: string): Readonly<Record<string, unknown>> {
@@ -575,18 +640,51 @@ export class OrdinaryLaunchCoordinator {
   private async observe(operationId: string, operation: Operation | undefined): Promise<Record<string, unknown>> {
     requireValue(operation !== undefined, "Ordinary launch operation was not found.");
     if (allowsNextLaunch(operation)) { return describe(operationId, operation); }
-    const retained = this.retained;
-    requireValue(this.runtime !== undefined && retained !== undefined && retained.operationId === operationId &&
+    const retained = this.retained, runtime = this.runtime;
+    requireValue(runtime !== undefined && retained !== undefined && retained.operationId === operationId &&
       canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary launch has no retained owner for this exact operation.");
-    await this.verify(this.options);
-    const observed = z.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: z.boolean() }).strict().parse(await this.runtime.observeLaunchTermination());
+    const launchText = canonicalJson(retained.launch), launchedText = canonicalJson(retained.launched), observe = retained.observeTermination;
+    const current = (): void => {
+      requireValue(this.runtime === runtime && this.retained === retained && runtime.observeLaunchTermination === observe &&
+        (retained.status === undefined || runtime instanceof WindowsControlRuntime && runtime.status === retained.status) &&
+        canonicalJson(retained.launch) === launchText && canonicalJson(retained.launched) === launchedText,
+      "Ordinary termination retained runtime, launch or observer changed.");
+    };
+    current(); const facadeSha256 = await this.verify(this.options); current();
+    const observed = z.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: z.boolean() }).strict().parse(await observe.call(runtime)); current();
     requireValue(observed.jobId === retained.launch.jobId && observed.helperInstance === retained.launch.helperInstance, "Ordinary termination observed another launch.");
     if (!observed.terminated) { return { ...describe(operationId, operation), terminationObserved: false }; }
     const terminated: Terminated = { schema: "easyeda-pro-control.ordinary-terminated.v1", operationId,
       launchedSha256: sha256Json(retained.launched), ...observed, terminated: true };
     this.uncertain = true;
     await publish(operationId, "terminated.json", terminated);
+    current();
     this.uncertain = false;
+    if (this.productionServices && runtime instanceof WindowsControlRuntime) {
+      requireValue(operation.intent?.facadeSha256 === facadeSha256 && operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE),
+        "Original ordinary termination producer differs from its launch.");
+      const status = retained.status;
+      requireValue(status !== undefined, "Original ordinary runtime status was not retained before launch.");
+      const recordPath = join(controlDataDirectory(), JOURNAL_DIRECTORY, operationId, "terminated.json"), recordText = `${JSON.stringify(terminated)}\n`;
+      const launch = Object.freeze({ ...retained.launch, root: Object.freeze({ ...retained.launch.root }) });
+      const value: OriginalRecordedOrdinaryTermination = Object.freeze({ profile: "private.original-recorded-ordinary-termination.v1", operationId, launch,
+        launchedSha256: terminated.launchedSha256, recordPath, recordSha256: sha256Text(recordText), recordBytes: Buffer.byteLength(recordText),
+        terminationRecordPublished: true, designExecutionAuthorized: false });
+      const recordCurrent = (): void => {
+        current();
+        requireValue(!this.busy && !this.uncertain && runtime.status === status &&
+          recordPath === join(controlDataDirectory(), JOURNAL_DIRECTORY, operationId, "terminated.json"),
+        "Original ordinary termination coordinator is incomplete or changed.");
+        const snapshot = status.call(runtime);
+        requireValue(snapshot.state === "owned" && canonicalJson(snapshot.launch) === launchText,
+          "Original ordinary termination no longer owns its prior launch.");
+      };
+      // Publication alone is insufficient: only the successful run's finally
+      // Clears busy and invokes this lexical issuer. No public action mints it.
+      this.pendingTerminationRecord = (): void => {
+        recordCurrent(); recordedTerminations.set(runtime, { value, launchText, operationText: canonicalJson({ ...operation, terminated }), current: recordCurrent });
+      };
+    }
     return describe(operationId, { ...operation, terminated });
   }
 
