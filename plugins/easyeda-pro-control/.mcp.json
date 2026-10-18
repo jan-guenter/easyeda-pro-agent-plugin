@@ -26,6 +26,7 @@
         "easyeda_control_project_pcb": { "approval_mode": "prompt" },
         "easyeda_control_project_symbol_metadata": { "approval_mode": "prompt" },
         "easyeda_control_disposable_symbol_copy": { "approval_mode": "prompt" },
+        "easyeda_control_disposable_pcb_rename": { "approval_mode": "prompt" },
         "easyeda_control_history": { "approval_mode": "prompt" },
         "easyeda_control_status": { "approval_mode": "approve" },
         "easyeda_control_discover": { "approval_mode": "approve" },

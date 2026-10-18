@@ -70,7 +70,8 @@ export function parseCurrentPcbRenamePreflightRequest(input: unknown): CurrentPc
 }
 export function queryCurrentPcbRenamePreflight(input: unknown = {}): Record<string, unknown> {
   const query = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
-  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{ effect: "current-pcb-rename-preflight", liveValidation: "not-recorded",
+  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{ effect: "current-pcb-rename-preflight",
+    liveValidation: "historical-installed121700-disposable-read-only-with-closed-sql-equality",
     invocationEnabledByDiscovery: false, limitations: [...notes], ...(query.includeSchemas ? {
       inputSchema: z.toJSONSchema(currentPcbRenamePreflightRequestSchema), resultSchema: z.toJSONSchema(currentPcbRenamePreflightResultSchema),
     } : {}) }] };

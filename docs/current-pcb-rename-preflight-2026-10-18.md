@@ -1,5 +1,13 @@
 # Current PCB rename preflight and immutable preparation
 
+## Follow-up
+
+Installed121700 passed the read-only preflight on2026-10-18, followed by
+normal closure and unchanged raw/full SQL/native history. The original candidate
+record below describes its pre-publication state. See the later
+[lifecycle implementation record](current-pcb-rename-lifecycle-2026-10-18.md)
+for the completed read-only case and separate, not-yet-live-validated writer.
+
 ## Candidate scope
 
 Candidate `0.3.0+codex.20261018121700` adds a read-only PCB rename preflight and

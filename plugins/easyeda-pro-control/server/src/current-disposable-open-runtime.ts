@@ -35,6 +35,8 @@ import { currentSymbolStartupExpectationSchema } from "./current-symbol-startup.
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
+import { parseCurrentPcbRenameOwnerRequest } from "./current-pcb-rename-owner.ts";
+import type { CurrentPcbRenameOwnerIntent } from "./current-pcb-rename-owner.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
@@ -130,6 +132,45 @@ const issuedGenerations = new WeakMap<object, {
   readonly current: () => void;
   readonly revalidate: () => Promise<void>;
 }>();
+export interface CurrentPcbRenameOpeningOwner {
+  readonly profile: "private.current-pcb-rename-opening-owner.v1";
+  readonly operationId: string;
+  readonly openingOperationId: string;
+}
+export interface CurrentPcbRenameOpeningOwnerSource {
+  readonly source: CurrentDisposableOpenGenerationSource;
+  readonly intent: CurrentPcbRenameOwnerIntent;
+}
+const issuedPcbRenameOpeningOwners = new WeakMap<object, {
+  readonly value: CurrentPcbRenameOpeningOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
+  state: "retained" | "completed" | "failed";
+}>();
+/** Original neutral opening transfer, never a converted symbol owner. This
+ * retains the historical opening after closure without reviving its session.
+ */
+export function assertCurrentPcbRenameOpeningOwner(value: unknown, engine: EasyedaControlEngine): CurrentPcbRenameOpeningOwnerSource {
+  requireValue(value !== null && typeof value === "object", "Current PCB opening owner is missing.");
+  const issued = issuedPcbRenameOpeningOwners.get(value);
+  requireValue(issued !== undefined && issued.value.source.engine === engine, "Current PCB opening owner was not issued by this engine.");
+  issued.current(); return issued.value;
+}
+export async function revalidateCurrentPcbRenameOpeningOwner(value: unknown, engine: EasyedaControlEngine): Promise<CurrentPcbRenameOpeningOwnerSource> {
+  const original = assertCurrentPcbRenameOpeningOwner(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current PCB opening owner is missing.");
+  const issued = issuedPcbRenameOpeningOwners.get(value); requireValue(issued !== undefined, "Current PCB opening owner was lost.");
+  await issued.revalidate();
+  requireValue(assertCurrentPcbRenameOpeningOwner(value, engine) === original, "Current PCB opening owner changed during revalidation.");
+  return original;
+}
+/** Failed scope exit keeps its original object for cleanup only. A successful
+ * in-scope transfer alone does not admit subsequent baseline collection.
+ */
+export function assertCompletedCurrentPcbRenameOpeningTransfer(value: unknown, engine: EasyedaControlEngine): CurrentPcbRenameOpeningOwnerSource {
+  const original = assertCurrentPcbRenameOpeningOwner(value, engine);
+  requireValue(value !== null && typeof value === "object" && issuedPcbRenameOpeningOwners.get(value)?.state === "completed",
+    "Current PCB opening transfer did not complete; its retained owner is cleanup-only.");
+  return original;
+}
 export interface CurrentSymbolBaselineOwner {
   readonly profile: "private.current-symbol-baseline-owner.v1";
   readonly operationId: string;
@@ -281,6 +322,7 @@ export class CurrentDisposableOpenCoordinator {
   private readonly copyOperations = new Map<string, CurrentSymbolCopyOperationCoordinator>();
   private readonly copyOpeningCleanups = new Map<string, CopyOpeningCleanup>();
   private readonly normalCloseAttempts = new Set<string>();
+  private readonly pcbRenameOpeningOwners = new Map<string, CurrentPcbRenameOpeningOwner>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -549,6 +591,94 @@ export class CurrentDisposableOpenCoordinator {
     this.busy = true;
     try { return await inspectCurrentSymbolHistory(operationId, purpose); }
     finally { this.busy = false; }
+  }
+
+  /** Original PCB transfer for the staged rename operation. No close, project
+   * navigation, native preflight or write is dispatched by this transfer.
+   */
+  public async preparePcbRenameOpeningOwner(openingOperationId: string, input: unknown): Promise<CurrentPcbRenameOpeningOwner> {
+    const request = parseCurrentPcbRenameOwnerRequest(input);
+    requireValue(!this.busy && request.operationId !== openingOperationId && !this.pcbRenameOpeningOwners.has(request.operationId),
+      "Current PCB opening transfer needs one distinct unused operation.");
+    requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+      "Current PCB opening owner cannot issue from injected opening services or an unowned engine.");
+    const engine = this.options.engine; this.busy = true;
+    try {
+      const loaded = await this.load(openingOperationId), slot = this.retainedJournal(loaded);
+      this.currentUntransferred(slot);
+      requireValue(openingPurpose(slot.journal.plan.purpose) === "disposable-validation" && slot.runtime instanceof WindowsControlRuntime &&
+        !this.normalCloseAttempts.has(openingOperationId) && slot.journal.normalCloseAttempted !== true,
+      "Current PCB opening owner requires its live disposable original opening.");
+      const runtime = slot.runtime, target = slot.journal.plan.intent.target;
+      requireValue(request.target.projectUuid === target.projectUuid && request.target.branchUuid === target.branchUuid &&
+        request.target.pcbUuid === target.documentUuid, "Current PCB opening transfer cannot retarget the opened PCB.");
+      await this.services.assertOperationIdUnused(request.operationId); this.currentUntransferred(slot);
+      await engine.assertBridgeAndRecoveryAdmission(openingOperationId); this.currentUntransferred(slot);
+      const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
+      requireValue(scope !== undefined, "Current PCB opening transfer needs an authenticated scope.");
+      const result: unknown = await scope.call(engine.upstream, async () => {
+        const generation = this.issueGeneration(slot, engine, runtime);
+        const source = await revalidateCurrentDisposableOpenGeneration(generation, engine); this.currentUntransferred(slot);
+        requireValue(source.purpose === "disposable-validation" && source.runtime === runtime &&
+          assertCurrentDisposableOpenGeneration(generation, engine) === source, "Current PCB opening generation changed.");
+        const owner = Object.freeze({ profile: "private.current-pcb-rename-opening-owner.v1" as const,
+          operationId: request.operationId, openingOperationId });
+        const intent = Object.freeze({ target: request.target, desiredTitle: request.desiredTitle });
+        const intentText = canonicalJson(intent), journalText = canonicalJson(slot.journal), sourceText = canonicalJson({ target: source.target,
+          expectedFingerprint: source.expectedFingerprint, checkpoint: source.preNavigationCheckpoint, launch: source.launchProjection, session: source.bridgeSession });
+        const upstream = engine.upstream, validator = engine.executionAuthorityValidator;
+        const dispatch = upstream.currentAuthenticatedBridgeDispatchBinding, lifecycle = upstream.bridgeSessionLifecycle;
+        // oxlint-disable-next-line typescript/unbound-method -- Retained for identity only; the later baseline calls each with its original receiver.
+        const capture = engine.captureClosedSessionAuthority, clock = engine.clockObservationForClosedCapture, release = engine.releaseClosedSessionAuthority;
+        // oxlint-disable-next-line typescript/unbound-method -- Identity check precedes the coordinator's retained receiver-bound status call.
+        const runtimeStatus = runtime.status;
+        const current = (): void => {
+          requireValue(runtime.status === runtimeStatus && engine.captureClosedSessionAuthority === capture &&
+            engine.clockObservationForClosedCapture === clock && engine.releaseClosedSessionAuthority === release,
+          "Current PCB opening capture producer or runtime status method changed.");
+          this.current(slot);
+          requireValue(this.pcbRenameOpeningOwners.get(request.operationId) === owner && baselineRuntimeReservations.has(runtime) &&
+            this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine && engine.upstream === upstream &&
+            engine.executionAuthorityValidator === validator && upstream.bridgeSessionLifecycle === lifecycle &&
+            upstream.currentAuthenticatedBridgeDispatchBinding === dispatch && canonicalJson(slot.journal) === journalText &&
+            canonicalJson(intent) === intentText && canonicalJson({ target: source.target, expectedFingerprint: source.expectedFingerprint,
+              checkpoint: source.preNavigationCheckpoint, launch: source.launchProjection, session: source.bridgeSession }) === sourceText,
+          "Current PCB opening transfer lost its original owner, intention or historical opening.");
+        };
+        const revalidate = async (): Promise<void> => {
+          current(); await engine.assertBridgeAndRecoveryAdmission(owner.operationId); current();
+          const persisted = await this.load(openingOperationId); current();
+          requireValue(canonicalJson(persisted) === journalText, "Current PCB opening persisted journal changed.");
+        };
+        // Every preceding await was read-only. Reserve atomically before the
+        // Original owner leaves this scope; competing transfers cannot win.
+        this.currentUntransferred(slot); baselineRuntimeReservations.add(runtime); this.baselineJobs.add(slot.launch.jobId);
+        this.generations.clear(); this.pcbRenameOpeningOwners.set(request.operationId, owner);
+        issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source, intent }), current, revalidate, state: "retained" }); current();
+        return owner;
+      });
+      assertCurrentPcbRenameOpeningOwner(result, engine);
+      const retained = this.pcbRenameOpeningOwners.get(request.operationId);
+      requireValue(retained !== undefined && retained === result, "Current PCB opening scope lost its transferred owner.");
+      const issued = issuedPcbRenameOpeningOwners.get(retained);
+      requireValue(issued !== undefined && issued.state === "retained", "Current PCB opening transfer outcome was already consumed.");
+      issued.state = "completed"; return retained;
+    } catch (error) {
+      const retained = this.pcbRenameOpeningOwners.get(request.operationId);
+      const issued = retained === undefined ? undefined : issuedPcbRenameOpeningOwners.get(retained);
+      if (issued !== undefined) { issued.state = "failed"; }
+      throw error;
+    } finally { this.generations.delete(openingOperationId); this.busy = false; }
+  }
+
+  /** Keep a transferred owner reachable if the authenticated scope's exit
+   * failed. This is the same object, not a fresh attempt or recovered authority.
+   */
+  public getPcbRenameOpeningOwner(operationId: string): CurrentPcbRenameOpeningOwner {
+    const owner = this.pcbRenameOpeningOwners.get(operationId);
+    requireValue(!this.busy && owner !== undefined && this.options.engine instanceof EasyedaControlEngine,
+      "Current PCB transfer requires its original retained owner.");
+    assertCurrentPcbRenameOpeningOwner(owner, this.options.engine); return owner;
   }
 
   /** Internal preparation only. The public opener request schema has no route

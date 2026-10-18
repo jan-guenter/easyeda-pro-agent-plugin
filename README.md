@@ -8,12 +8,16 @@ forward and inverse edits, complete closed SQL comparisons and reopened-content
 checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
-Update `0.3.0+codex.20261018121700` adds a read-only PCB rename preflight.
-It compares expected metadata against complete native PCB peers, checks desired
-title availability using the native lookup, and observes client, ticket and
-UI actor/clock samples. It neither renames the PCB nor qualifies the original
-worker, backend actor/clock or saved state. Connected preflight validation is
-not yet recorded. See the [implementation and remaining work](docs/current-pcb-rename-preflight-2026-10-18.md).
+Update `0.3.0+codex.20261018140500` adds a separate disposable PCB title-change workflow with
+original ownership, actor/dual-clock checks, one fixed rename, full closed SQL
+comparison and fresh saved metadata verification. It still needs its first live
+writer test. See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-rename.md)
+and [implementation record](docs/current-pcb-rename-lifecycle-2026-10-18.md).
+
+Installed `0.3.0+codex.20261018121700` passed the separate read-only PCB rename
+preflight. Native metadata, title availability and client/actor/clock samples
+matched. Normal closure left raw bytes, all35 SQL tables and all20 native
+documents unchanged. This validates that observation case, not a rename.
 
 The preceding111500 correction lets the no-editor PCB reader return one loaded
 project's PCB title, relationships and native metadata without opening its
@@ -25,12 +29,11 @@ case, not a rename or later runtime admission. See the
 The correction admits the local project's omitted inactive `store`
 flag; the 094000 reader incorrectly requires it. Do not alter project settings to
 work around that refusal. See the [correction and verification record](docs/current-pcb-metadata-recovery-2026-10-18.md).
-PCB rename remains disabled. Source now freezes an immutable rename plan from
-complete retained SQL, reserves bounded history/SQL capacity, and models the
-exact six-table effect including duplicate structure rows and historical
-stored-user headers. Its original producer/clock binding and whole-process
-closure/saved-reopen coordinator still need implementation; supplied clocks,
-pure preparation and comparisons do not authorize writing.
+Ordinary-project PCB rename remains disabled. The new disposable route models
+the exact six-table effect, duplicate structure rows and historical stored-user
+headers. It does not enable the public reuse-block rename wrapper, which can
+propagate changes into other documents. Supplied observations and pure
+preparation never authorize writing.
 
 Installed094000 also passed the separate disposable drawn-symbol copy lifecycle:
 one new symbol, unchanged source and all 18 other existing documents, exact saved

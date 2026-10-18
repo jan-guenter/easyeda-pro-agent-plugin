@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 212,
-      "implemented-native-equivalent": 31,
+      "implemented-native-equivalent": 32,
       "internal-lifecycle-only": 0,
-      "implemented-but-blocked": 81,
+      "implemented-but-blocked": 80,
       "omitted": 450
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 338,
+      "available-with-runtime-guards": 339,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -2329,7 +2329,7 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "implemented-but-blocked",
+      "status": "implemented-native-equivalent",
       "routes": [
         {
           "tool": "easyeda_control_library",
@@ -2376,6 +2376,50 @@
             }
           },
           "blockedReason": "Execution is unavailable until operation-owned completion of the native debounced project_structures write and its exact complete SQLite effect are proved. The task1 upload acknowledgment, stable polling and a point-in-time checkpoint do not drain the pending timer/task2 job."
+        },
+        {
+          "tool": "easyeda_control_disposable_pcb_rename",
+          "selector": "advance;rename-write;disposable-project-local-pcb-title",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate disposable-only title update through the pinned project-qualified PCB updateData path, not generic public dmt_Pcb.modifyPcbName enablement. Requires the original retained disposable opening, complete closed SQL baseline, native title/data-ticket projection, complete PCB peers, original startup/actor/dual-clock checks and exact phase acknowledgements. Preserves all target drawing and peer SQL rows; records native acknowledgment before postwrite checks. Complete title-only closed SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality are mandatory. Reopened native verification is metadata-only, not a complete PCB canvas read or transient AST/source equality proof. Trimmed printable ASCII without capital I only; linked/reuse PCBs refuse. No ordinary projects, caller clock/runtime/code/verifier, explicit Save, inverse/delete or authority from discovery. Current writer connected validation is unclaimed; earlier read-only preflight validation is not rename validation. The legacy library rename route remains blocked.",
+          "source": [
+            "current-pcb-rename-operation.ts",
+            "current-pcb-rename-operation-runtime.ts",
+            "current-pcb-rename-owner-baseline.ts",
+            "current-pcb-native-metadata.ts",
+            "current-pcb-rename-binding.ts",
+            "current-pcb-rename-startup-runtime.ts",
+            "current-pcb-rename-program.ts",
+            "current-pcb-rename-clock.ts",
+            "current-pcb-rename-writer-runtime.ts",
+            "current-pcb-rename-stored-effect.ts",
+            "current-pcb-rename-verification-runtime.ts",
+            "current-pcb-rename-saved-source.ts"
+          ],
+          "tests": [
+            "current-pcb-rename-registration.test.ts",
+            "current-pcb-rename-program.test.ts",
+            "current-pcb-rename-clock.test.ts",
+            "current-pcb-rename-writer-runtime.test.ts",
+            "current-pcb-rename-stored-effect.test.ts",
+            "current-pcb-rename-verification-runtime.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "disposable-pcb-rename",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
         }
       ],
       "omission": null,

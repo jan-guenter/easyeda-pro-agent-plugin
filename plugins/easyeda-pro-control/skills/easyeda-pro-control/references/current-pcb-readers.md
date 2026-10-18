@@ -75,22 +75,24 @@ Bounds are 4,096 PCB entries, 512 KiB including the escaped response and ten sec
 inside the application. Bounds do not cancel an already dispatched native read.
 Missing, changed, malformed or oversized evidence refuses without truncation.
 No editor opens, geometry loads, mutation or explicit Save are requested.
-This new preflight has no connected-validation claim.
+Installed121700 passed one disposable preflight with two matching PCB maps,
+native title availability and four matching client/ticket/actor samples. Normal
+closure and complete comparison proved unchanged raw bytes, all35 SQL tables
+and all20 native documents. This is historical read-only evidence, not writer
+validation or admission for another runtime.
 
-### PCB rename remains unsupported
+### Separate disposable rename workflow
 
-Source includes pure structure and native-history projections, an AST/batch-state
-guard, and a dedicated complete SQL comparator covering the history append,
-bookkeeping and every duplicate structure row. These are not connected to a
-writer. Supplied actor/timestamp comparisons do not establish native provenance
-or authorize dispatch.
+The separate [disposable rename workflow](current-pcb-rename.md) connects the
+original PCB opening, full SQL baseline, actor/clock checks, fixed title writer,
+normal closure and saved reopening. It still needs connected writer validation.
+Preflight alone does not issue its ownership or authorize writing.
 
 The private schematic rebuild queue exposes no operation-owned completion
 observer. Stable batch/pending-set samples and sleeps do not prove it drained.
-The remaining coordinator must retain the whole process generation through
-normal termination, verify the complete closed SQL effect, then perform
-cache-excluded saved reopening under a fresh owner. Native producer/clock
-binding and pre-dispatch capacity checks are also required. Do not substitute
+The coordinator retains the whole process generation through normal termination,
+verifies the complete closed SQL effect, then performs cache-excluded saved
+reopening under a fresh owner. Do not substitute
 the symbol comparator, which preserves structure bytes unchanged. Public
 reuse-block renaming propagates into other document families and remains outside
 this scope.
