@@ -4,6 +4,65 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+195000 delivery, 2026-10-18: protected PR70 merged as main
+`418a62a690e6341fac842ce861547da3bfebdf7a`, reviewed candidate
+`643f81a249b25be237439c2c0e1f7f502ee528e2`; complete Git trees both equal
+`085bab3fd0734ff981cb6618e3bde76ff9499e40`. Exact-head Linux CI39161075925
+passed build, all eight facade shards and aggregate; Windows39161075978 passed.
+Full local verification in original shell72256 passed 11,230 facade tests,
+four platform skips, zero failures and 424 bridge tests. Strict types and
+type-aware lint have zero warnings; reproducible bundles, coverage774, package,
+repository, dependency/signature/audit and seven official skill checks passed.
+Verification log SHA `1022fdb6a4d80c135181d97319a68afdd0393c0cfb528e81f0e2433cf9078e77`
+is retained in `/tmp/easyeda-195000-release-8yc1mn`. No local suite remains running.
+
+Official Git marketplace upgrade installed/enabled `0.3.0+codex.20261018195000`
+from https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain.
+Cached marketplace HEAD equals merged main. Root and independent maintained
+comparison prove exact 1,434 files/29,149,977 bytes/42 directories INCLUDING root,
+with committed bytes/modes and no extra package entries. Plugin subtree
+`3c04b499bc30e8124ddee764d2b792a4c482e483`; inventory
+`28037b9cbba6fef663538fdb923bf5a63fcfebadfe60e2f2610f5dcea9bb7668`.
+Source462/99990f25, runtime3/fef90a47, manifest715be804 match independently;
+external runtime/bridge pins and bridge identity are unchanged.
+
+NEW root/independently reviewed offline probe2378c347 completed ONCE in original
+shell47676, approved pins757cc061. Configured ambient Node26.11.1 hands off to
+pinned24.18.0; 20 restricted tools and six offline queries passed. Original child
+2973572/start32964107/parent2971811 exited0 on stdinEOF and is absent, without
+signals/adoption. Synthetic profile unchanged; no upstream execution or journal;
+facade lease removed after EOF. Two socket-absence samples are not network-isolation
+evidence. Installed inventory
+is exact before/after. Proof2,999bytes SHA
+`e016024d3aac7e502f5fb0b35e5d8c9264549d5b178d3a2ac96886b27a79f7b0`
+at `/tmp/easyeda-string-sch-release-probe-dTv4XA/proof.json`.
+NEVER rerun/import this consumed probe or prior probes. No tool, child or CAD
+action is pending. Main Windows39162109365 passed; duplicate main CI39162109301
+is still running. Check its outcome next session without replaying the passed
+exact-tree PR suite.
+
+Delivered: future-only deferred PCB backend-clock correction, expanded String
+display/color readback, and separate SCH preflight/original-SQL/complete-SQL models.
+These do not establish connected rename/String/SCH writer validation. The184000
+case below is terminal retired/unresolved after acknowledged rename and closed
+comparison refusal. Closed disposable raw d82dd6ff/598016 is retained; never
+resume/replay the case, write, Save, close or probe. No restoration or production
+access occurred. EasyEDA was closed through original-owner cleanup.
+
+No live MCP call after installation. Host2862670 remains loaded184000 and is
+left alone. The control skill requires a fresh Codex session to load/admit195000
+before a NEW disposable PCB rename lifecycle. Next: closed SQL, reopen metadata
+and final closure; safe native-created String fixture/writer with full SQL and
+saved visual verification; SCH native preflight, original actor/clock binding,
+deferred-subscriber/child-holder completion and writer/reopen integration.
+Remaining broader work includes symbol-copy reopen/referenced propagation,
+geometry/libraries/routing/rules/ECO/dialog/export/platform/bootstrap adapters.
+FileSource and unsupported legacy writers remain disabled with documented reasons.
+Keep stash ebe1b55d7a430ae2e3168e373e155957b582eff9, all worktrees and evidence.
+Primary branch is `feature/pcb-rename-live-195000-20261018`; the prior feature
+branch retains candidate643f81a. This delivery handoff is local; published/installed
+package bytes remain exact. The checkpoints below are historical, not replay orders.
+
 Candidate195000, 2026-10-18: future-only backend timing correction, expanded
 String display/color readback and separate SCH preflight/complete SQL models are
 root/independently reviewed. Clock12focusedtests/types/zero-warninglint pass;
