@@ -23,6 +23,7 @@ async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: 
   original: (owner: unknown, wrongEngine?: boolean) => unknown;
   completed: (owner: unknown) => unknown;
   revalidate: (owner: unknown) => Promise<unknown>;
+  evidence: (owner: unknown) => Promise<unknown>;
   reserved: () => boolean;
   mutate: (kind: "owner" | "validator" | "launch" | "disk" | "session" | "status" | "capture" | "clock" | "release") => void;
   release: () => void;
@@ -96,12 +97,14 @@ first.retained.set('${OPEN}',testOpening);sibling.retained.set('${OPEN}',testOpe
 ({begin:(request,useSibling)=>(useSibling?sibling:first).preparePcbRenameOpeningOwner('${OPEN}',request),
 get:id=>first.getPcbRenameOpeningOwner(id),original:(value,wrong)=>assertCurrentPcbRenameOpeningOwner(value,wrong?{}:testEngine),
 completed:value=>assertCompletedCurrentPcbRenameOpeningTransfer(value,testEngine),
-revalidate:value=>revalidateCurrentPcbRenameOpeningOwner(value,testEngine),reserved:()=>baselineRuntimeReservations.has(testOpening.runtime)});`, context));
+revalidate:value=>revalidateCurrentPcbRenameOpeningOwner(value,testEngine),
+evidence:value=>revalidateCurrentPcbRenameOpeningEvidence(value,testEngine),reserved:()=>baselineRuntimeReservations.has(testOpening.runtime)});`, context));
   const invoke = (name: string, args: unknown[]): unknown => { const method = api[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, undefined, args) as unknown; };
   return { request, begin: async (input = request, sibling = false): Promise<unknown> => await invoke("begin", [input, sibling]),
     get: (id = OWNER): unknown => invoke("get", [id]), original: (owner, wrong = false): unknown => invoke("original", [owner, wrong]),
     completed: (owner): unknown => invoke("completed", [owner]), revalidate: async (owner): Promise<unknown> => await invoke("revalidate", [owner]),
+    evidence: async (owner): Promise<unknown> => await invoke("evidence", [owner]),
     reserved: (): boolean => invoke("reserved", []) === true, release: (): void => { barrier.resolve(true); }, state,
     mutate: (kind): void => {
       if (kind === "owner") { state.owner = false; }
@@ -174,4 +177,14 @@ void test("PCB owner detects launch, validator and persisted-journal drift witho
   for (let index = 0; index < 20 && f.state.unused === 0; index += 1) { await Promise.resolve(); }
   f.mutate("session"); f.release(); await assert.rejects(pending, /authenticated session changed/u);
   assert.equal(f.reserved(), false); assert.deepEqual(f.state.actions, []);
+});
+
+void test("PCB closed-clock opening evidence rechecks the exact journal and original owner without claiming admission", async () => {
+  const f = await fixture(), owner = await f.begin();
+  const before = f.state.admissions;
+  assert.equal(await f.evidence(owner), f.completed(owner)); assert.equal(f.state.admissions, before);
+  f.mutate("disk"); await assert.rejects(f.evidence(owner), /persisted journal changed/u);
+  assert.equal(f.state.admissions, before); assert.deepEqual(f.state.actions, []);
+  const incomplete = await fixture({ scopeFailure: true }); await assert.rejects(incomplete.begin(), /scope exit failure/u);
+  await assert.rejects(incomplete.evidence(incomplete.get()), /completed|cleanup/u);
 });

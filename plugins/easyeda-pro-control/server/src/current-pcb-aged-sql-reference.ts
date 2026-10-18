@@ -9,10 +9,12 @@ import type { ArtifactDescriptor } from "./artifacts.ts";
 import { canonicalJson, isRecord, newOperationId, sha256Json } from "./core.ts";
 import { CURRENT_AGED_SQL_DATE_PARSER_SOURCE } from "./current-aged-sql-clock-controls.ts";
 import { selectCurrentUnlockedSqlHead } from "./current-aged-sql-head.ts";
+import { revalidateCurrentPcbRenameOpeningEvidence } from "./current-disposable-open-runtime.ts";
 // This helper only derives the shared append-only sidecar path; it issues no
 // Symbol owner or clock authority and cannot convert a historical token.
 import { currentSymbolClockEvidenceId } from "./current-symbol-clock-evidence.ts";
-import { assertOriginalCurrentPcbRenameBaseline, currentPcbRenameBaselineClockBinding, revalidateCurrentPcbRenameBaseline } from "./current-pcb-rename-owner-baseline.ts";
+import { assertCurrentPcbRenameClosedClockBinding, assertOriginalCurrentPcbRenameBaseline, currentPcbRenameBaselineClockBinding,
+  revalidateCurrentPcbRenameClosedClockEvidence } from "./current-pcb-rename-owner-baseline.ts";
 import type { CurrentPcbRenameBaseline } from "./current-pcb-rename-owner-baseline.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { MAIN_REFERENCE_PROFILE, validateMainReferenceRequest } from "./closed-symbol-main-reference-program.ts";
@@ -96,23 +98,44 @@ export class CurrentPcbAgedSqlReferenceStage {
     need(closureBinding.proof === proof, "Current PCB scratch reference requires its original baseline proof.");
     const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
     need(scopeReader !== undefined);
+    // oxlint-disable-next-line typescript/unbound-method -- Retain identity; all calls below use the original engine receiver.
+    const admission = engine.assertBridgeAndRecoveryAdmission;
     const unchanged = (): void => {
-      assertOriginalCurrentPcbRenameBaseline(baseline, engine);
+      assertCurrentPcbRenameClosedClockBinding(baseline, engine);
       const retained = currentPcbRenameBaselineClockBinding(baseline, engine);
       need(retained.proof === proof && canonicalJson(retained) === canonicalJson(closureBinding));
       need(input.baseline === baseline && input.proof === proof && canonicalJson(proof) === proofText &&
-        engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine.upstream) === undefined,
+        engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine.upstream) === undefined &&
+        engine.assertBridgeAndRecoveryAdmission === admission,
       "Current scratch reference requires its original closed baseline outside a bridge scope.");
       assertCurrentClosedSessionCopyAuthority(proof);
     };
     const current = async (): Promise<void> => {
-      unchanged(); await revalidateCurrentPcbRenameBaseline(baseline, engine); unchanged();
+      unchanged(); await revalidateCurrentPcbRenameClosedClockEvidence(baseline, engine); unchanged();
     };
-    await current(); await engine.assertBridgeDispatchAllowed(); await current();
-    await engine.assertRecoveryOperationIsolated(journalOperationId); await current();
-    const journal = await loadOperation(journalOperationId); unchanged();
-    const journalText = canonicalJson(journal);
-    need(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
+    // The public mutating route retains bridgeGate for this whole phase.
+    // Intermediate fixed readers and append-only evidence writers cannot dispatch
+    // CAD or native scratch actions. Targeted evidence, sidecars and original
+    // Owners are still revalidated after their awaits.
+    // Full admission is never cached or reused across boundaries. Only bounded
+    // Original-opening/selected-journal reads follow it, guarded synchronously
+    // After every await. They have no native or bridge effects and preserve the
+    // Final journal equality checks while the full scan may take substantial time.
+    let journalText: string | undefined;
+    const boundary = async (): ReturnType<typeof loadOperation> => {
+      await current();
+      const selected = await loadOperation(journalOperationId); unchanged();
+      const text = canonicalJson(selected);
+      need(selected.operationId === journalOperationId && selected["orphanedCallPossible"] === false &&
+        (journalText === undefined || text === journalText), "Current scratch selected journal changed at its admission boundary.");
+      journalText ??= text;
+      await admission.call(engine, journalOperationId); unchanged();
+      await revalidateCurrentPcbRenameOpeningEvidence(baseline.owner, engine); unchanged();
+      const finalSelected = await loadOperation(journalOperationId); unchanged();
+      need(canonicalJson(finalSelected) === journalText, "Current scratch selected journal changed after full admission.");
+      return finalSelected;
+    };
+    const journal = await boundary(); unchanged();
     const target = baseline.intent.target;
     const head = await selectCurrentUnlockedSqlHead(baseline.inventory, target); await current();
     const clock = await windowsClockObservationForResult(proof, "termination"); await current();
@@ -142,11 +165,16 @@ export class CurrentPcbAgedSqlReferenceStage {
     }));
     await current(); await readExactUtf8Artifact(intentArtifact); await current();
     need(canonicalJson(await loadOperation(journalOperationId)) === journalText); unchanged();
+    await boundary(); unchanged();
+    // Only the boundary's guarded, read-only target-journal proofs follow its
+    // Full scan. No intervening native, bridge or other external-effect action.
     const returned = await invokeMainReferenceTransport(invocation);
     this.returns.set(operationId, returned);
     const retained = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
     const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained));
-    await current();
+    // Retain the original raw return even if a new blocker rejects acceptance.
+    // No successful-result parser or issuer runs before fresh full admission.
+    await boundary(); unchanged();
     need(resultArtifact.path === resultPath && resultArtifact.bytes <= 196_608);
     const text = successfulRetainedMainReferenceText(retained, invocation.requestSha256, intentArtifact.sha256);
     need(text.text === returned.stdout);
@@ -166,6 +194,7 @@ export class CurrentPcbAgedSqlReferenceStage {
       BigInt(nativeBefore.qpcBefore) >= BigInt(clock.clock.after.qpcAfter));
     await readExactUtf8Artifact(resultArtifact); await current();
     need(canonicalJson(await loadOperation(journalOperationId)) === journalText); unchanged();
+    await boundary(); unchanged();
     assertCurrentIssuedWindowsClockObservation(clock);
     const result: OriginalCurrentPcbAgedSqlReference = Object.freeze({ profile: "private.original-current-pcb-aged-sql-reference.v1", operationId,
       request, controlsAfter, nativeBefore, nativeAfter, parserSource: CURRENT_AGED_SQL_DATE_PARSER_SOURCE, mainSha256: invocation.mainSha256,

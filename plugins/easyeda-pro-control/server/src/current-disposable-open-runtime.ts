@@ -143,6 +143,7 @@ export interface CurrentPcbRenameOpeningOwnerSource {
 }
 const issuedPcbRenameOpeningOwners = new WeakMap<object, {
   readonly value: CurrentPcbRenameOpeningOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
+  readonly revalidateEvidence: () => Promise<void>;
   state: "retained" | "completed" | "failed";
 }>();
 /** Original neutral opening transfer, never a converted symbol owner. This
@@ -160,6 +161,20 @@ export async function revalidateCurrentPcbRenameOpeningOwner(value: unknown, eng
   const issued = issuedPcbRenameOpeningOwners.get(value); requireValue(issued !== undefined, "Current PCB opening owner was lost.");
   await issued.revalidate();
   requireValue(assertCurrentPcbRenameOpeningOwner(value, engine) === original, "Current PCB opening owner changed during revalidation.");
+  return original;
+}
+/** Targeted original opening evidence only, not quarantine/isolation admission.
+ * The closed PCB clock stage supplies fresh full admission at each effect/result
+ * boundary. No caller-selected guard, cached approval or replacement owner.
+ */
+export async function revalidateCurrentPcbRenameOpeningEvidence(value: unknown, engine: EasyedaControlEngine): Promise<CurrentPcbRenameOpeningOwnerSource> {
+  const original = assertCompletedCurrentPcbRenameOpeningTransfer(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current PCB opening owner is missing.");
+  const issued = issuedPcbRenameOpeningOwners.get(value);
+  requireValue(issued !== undefined, "Current PCB opening owner was lost.");
+  await issued.revalidateEvidence();
+  requireValue(assertCompletedCurrentPcbRenameOpeningTransfer(value, engine) === original,
+    "Current PCB opening evidence changed during revalidation.");
   return original;
 }
 /** Failed scope exit keeps its original object for cleanup only. A successful
@@ -645,16 +660,20 @@ export class CurrentDisposableOpenCoordinator {
               checkpoint: source.preNavigationCheckpoint, launch: source.launchProjection, session: source.bridgeSession }) === sourceText,
           "Current PCB opening transfer lost its original owner, intention or historical opening.");
         };
-        const revalidate = async (): Promise<void> => {
-          current(); await engine.assertBridgeAndRecoveryAdmission(owner.operationId); current();
+        const revalidateEvidence = async (): Promise<void> => {
+          current();
           const persisted = await this.load(openingOperationId); current();
           requireValue(canonicalJson(persisted) === journalText, "Current PCB opening persisted journal changed.");
+        };
+        const revalidate = async (): Promise<void> => {
+          current(); await engine.assertBridgeAndRecoveryAdmission(owner.operationId); current();
+          await revalidateEvidence(); current();
         };
         // Every preceding await was read-only. Reserve atomically before the
         // Original owner leaves this scope; competing transfers cannot win.
         this.currentUntransferred(slot); baselineRuntimeReservations.add(runtime); this.baselineJobs.add(slot.launch.jobId);
         this.generations.clear(); this.pcbRenameOpeningOwners.set(request.operationId, owner);
-        issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source, intent }), current, revalidate, state: "retained" }); current();
+        issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source, intent }), current, revalidate, revalidateEvidence, state: "retained" }); current();
         return owner;
       });
       assertCurrentPcbRenameOpeningOwner(result, engine);

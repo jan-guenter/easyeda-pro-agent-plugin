@@ -10,7 +10,10 @@ import { createContext, runInContext } from "node:vm";
 import { canonicalJson, isRecord, sha256Json } from "../src/core.ts";
 
 type Bag = Record<string, unknown>;
-type Failure = "publication" | "validation" | "authority-after-return";
+type Failure = "publication" | "validation" | "authority-after-return" | "entry-blocker" | "pre-dispatch-blocker" |
+  "post-return-blocker" | "exit-blocker" | "admission-method" | "targeted-before-dispatch" | "targeted-after-return" | "journal-exit-targeted" |
+  "admission-before-dispatch-binding" | "admission-exit-binding" | "journal-final-admission" |
+  "opening-before-dispatch-admission" | "opening-final-admission";
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 async function fixture(failure?: Failure): Promise<{
   run: (options?: Readonly<{ copiedBaseline?: boolean; copiedProof?: boolean; sibling?: boolean }>) => Promise<unknown>;
@@ -18,7 +21,8 @@ async function fixture(failure?: Failure): Promise<{
   revalidate: (result: unknown) => Promise<unknown>;
   retained: (sibling?: boolean) => unknown;
   raw: unknown;
-  state: { alive: boolean; closedAuthority: boolean; artifactIntact: boolean; calls: number; writes: string[]; reads: number };
+  state: { alive: boolean; closedAuthority: boolean; artifactIntact: boolean; calls: number; writes: string[]; reads: number;
+    blocked: boolean; admissions: number; targetedChecks: number; targetedIntact: boolean; bindingIntact: boolean; openingIntact: boolean };
 }> {
   const evidenceId = "synthetic-clock-evidence", journalOperationId = "synthetic-pcb-close", operationId = "synthetic-pcb-reference";
   const target = { projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), ownerUuid: "3".repeat(32), pcbUuid: "4".repeat(16) };
@@ -34,12 +38,21 @@ async function fixture(failure?: Failure): Promise<{
   const nativeAfter = { ...sample, utcBeforeTicks: "639279792000040000", utcAfterTicks: "639279792000050000", qpcBefore: "240", qpcAfter: "250" };
   const controlsAfter = { syntheticControls: true }, observation = { reference: { mainReference: controlsAfter }, nativeBefore, nativeAfter };
   const raw = Object.freeze({ stdout: JSON.stringify(observation), syntheticOriginal: true });
-  const journal = { operationId: journalOperationId, planHash: "8".repeat(64), orphanedCallPossible: false };
+  const journal = { operationId: journalOperationId, planHash: "8".repeat(64), orphanedCallPossible: false, nextSafeAction: "Synthetic original journal" };
+  let lateTargetedChecks = 0, resultValidated = false;
   const head = { historyUuid: "9".repeat(32), createdAtLiteral: "2026-01-15 12:34:56" };
-  const state = { alive: true, closedAuthority: true, artifactIntact: true, calls: 0, writes: [] as string[], reads: 0 };
+  const state = { alive: true, closedAuthority: true, artifactIntact: true, calls: 0, writes: [] as string[], reads: 0,
+    blocked: failure === "entry-blocker", admissions: 0, targetedChecks: 0, targetedIntact: true, bindingIntact: true, openingIntact: true };
   const engine = { upstream: { currentAuthenticatedBridgeDispatchBinding: (): undefined => undefined },
-    assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(),
-    assertRecoveryOperationIsolated: (id: unknown): Promise<void> => { assert.equal(id, journalOperationId); return Promise.resolve(); } };
+    assertBridgeAndRecoveryAdmission: (id: unknown): Promise<void> => {
+      assert.equal(id, journalOperationId); state.admissions += 1;
+      if (failure === "admission-before-dispatch-binding" && state.admissions === 2 ||
+        failure === "admission-exit-binding" && state.admissions === 4) { state.bindingIntact = false; }
+      if (failure === "journal-final-admission" && state.admissions === 4) { journal.nextSafeAction = "Synthetic admission-time journal drift"; }
+      if (failure === "opening-before-dispatch-admission" && state.admissions === 2 ||
+        failure === "opening-final-admission" && state.admissions === 4) { state.openingIntact = false; }
+      assert.equal(state.blocked, false, "Synthetic new admission blocker"); return Promise.resolve();
+    } };
   const owned = (value: unknown, receivedEngine: unknown): typeof baseline => {
     assert.equal(value, baseline, "Synthetic original baseline required"); assert.equal(receivedEngine, engine);
     assert.equal(state.alive, true, "Synthetic baseline lost"); return baseline;
@@ -56,7 +69,21 @@ async function fixture(failure?: Failure): Promise<{
     randomBytes: (bytes: number): Buffer => { assert.equal(bytes, 32); return Buffer.alloc(32, 1); },
     newOperationId: (): string => "synthetic-wire-operation",
     assertOriginalCurrentPcbRenameBaseline: owned,
-    revalidateCurrentPcbRenameBaseline: (...args: Parameters<typeof owned>): Promise<typeof baseline> => Promise.resolve(owned(...args)),
+    assertCurrentPcbRenameClosedClockBinding: (...args: Parameters<typeof owned>): void => {
+      owned(...args); assert.equal(state.bindingIntact, true, "Synthetic live baseline binding drift");
+    },
+    revalidateCurrentPcbRenameOpeningEvidence: (value: unknown, candidate: unknown): Promise<void> => {
+      assert.equal(value, baseline.owner); assert.equal(candidate, engine);
+      assert.equal(state.openingIntact, true, "Synthetic original opening journal changed"); return Promise.resolve();
+    },
+    revalidateCurrentPcbRenameClosedClockEvidence: (...args: Parameters<typeof owned>): Promise<typeof baseline> => {
+      state.targetedChecks += 1; assert.equal(state.targetedIntact, true, "Synthetic targeted evidence drift");
+      if (resultValidated) {
+        lateTargetedChecks += 1;
+        if (failure === "journal-exit-targeted" && lateTargetedChecks === 2) { journal.nextSafeAction = "Synthetic changed journal"; }
+      }
+      return Promise.resolve(owned(...args));
+    },
     currentPcbRenameBaselineClockBinding: (...args: Parameters<typeof owned>): typeof binding => { owned(...args); return binding; },
     assertCurrentClosedSessionCopyAuthority: (value: unknown): void => {
       assert.equal(value, proof); assert.equal(state.closedAuthority, true, "Synthetic closed authority lost");
@@ -72,6 +99,9 @@ async function fixture(failure?: Failure): Promise<{
     validateMainReferenceRequest: (value: unknown): Bag => bag(value),
     compileCurrentAgedSqlReferenceTransport: (request: unknown): Promise<typeof invocation> => {
       const parsed = bag(request); assert.equal(parsed["createdAtLiteral"], head.createdAtLiteral);
+      if (failure === "pre-dispatch-blocker") { state.blocked = true; }
+      if (failure === "targeted-before-dispatch") { state.targetedIntact = false; }
+      if (failure === "admission-method") { engine.assertBridgeAndRecoveryAdmission = (): never => { throw new Error("Replacement admission must not run"); }; }
       assert.equal(parsed["baselineCopyReceiptSha256"], baseline.copy.receiptSha256); return Promise.resolve(invocation);
     },
     currentSymbolClockEvidenceId: (id: unknown): string => { assert.equal(id, operationId); return evidenceId; },
@@ -90,6 +120,8 @@ async function fixture(failure?: Failure): Promise<{
     invokeMainReferenceTransport: (value: unknown): Promise<typeof raw> => {
       assert.equal(value, invocation); state.calls += 1;
       if (failure === "authority-after-return") { state.closedAuthority = false; }
+      if (failure === "post-return-blocker") { state.blocked = true; }
+      if (failure === "targeted-after-return") { state.targetedIntact = false; }
       return Promise.resolve(raw);
     },
     retainMainReferenceTransportV2: (value: unknown, requestHash: unknown, intentHash: unknown): typeof retained => {
@@ -102,7 +134,12 @@ async function fixture(failure?: Failure): Promise<{
       return observation;
     },
     validateClockControls: (value: unknown): typeof controlsAfter => { assert.equal(value, controlsAfter); return controlsAfter; },
-    validateClockSample: (value: unknown): unknown => { assert.ok(value === nativeBefore || value === nativeAfter); return value; },
+    validateClockSample: (value: unknown): unknown => {
+      assert.ok(value === nativeBefore || value === nativeAfter);
+      if (value === nativeAfter) { resultValidated = true; }
+      if (failure === "exit-blocker") { state.blocked = true; }
+      return value;
+    },
     testEngine: engine,
   });
   const api = bag(runInContext(`${program}
@@ -125,6 +162,7 @@ revalidate:(value,baseline)=>revalidateOriginalCurrentPcbAgedSqlReference(value,
 void test("PCB scratch issuer retains only its original result, engine and baseline without granting APP or writer authority", async () => {
   const f = await fixture(), result = await f.run();
   assert.equal(f.original(result), result); assert.equal(await f.revalidate(result), result); assert.equal(f.retained(), f.raw);
+  assert.equal(f.state.admissions, 4); assert.ok(f.state.targetedChecks >= 10);
   assert.equal(f.retained(true), undefined); assert.equal(Object.isFrozen(result), true);
   const returned = bag(result);
   for (const flag of ["currentAppSourceQualified", "appClockDirectlyObserved", "executionAuthorized", "fullScanWireOutputRetained"]) {
@@ -160,5 +198,61 @@ for (const failure of ["publication", "validation", "authority-after-return"] as
     f.state.closedAuthority = true;
     await assert.rejects(f.run(), /already consumed/u); await assert.rejects(f.run({ sibling: true }), /already consumed/u);
     assert.equal(f.state.calls, 1); assert.deepEqual(f.state.writes, ["current-aged-reference-intent", "current-aged-reference-result"]);
+  });
+}
+
+for (const [failure, admissions, calls] of [["entry-blocker", 1, 0], ["pre-dispatch-blocker", 2, 0],
+  ["post-return-blocker", 3, 1], ["exit-blocker", 4, 1]] as const) {
+  void test(`PCB scratch rechecks full admission at ${failure} without dispatch or acceptance after refusal`, async () => {
+    const f = await fixture(failure);
+    await assert.rejects(f.run(), /new admission blocker/u);
+    assert.equal(f.state.admissions, admissions); assert.equal(f.state.calls, calls);
+    assert.equal(f.retained(), calls === 0 ? undefined : f.raw);
+    const expectedWrites: string[] = [];
+    if (failure !== "entry-blocker") { expectedWrites.push("current-aged-reference-intent"); }
+    if (calls === 1) { expectedWrites.push("current-aged-reference-result"); }
+    assert.deepEqual(f.state.writes, expectedWrites);
+    f.state.blocked = false;
+    await assert.rejects(f.run(), /already consumed/u); await assert.rejects(f.run({ sibling: true }), /already consumed/u);
+    assert.equal(f.state.calls, calls);
+  });
+}
+
+for (const failure of ["admission-method", "targeted-before-dispatch", "targeted-after-return"] as const) {
+  void test(`PCB scratch keeps original guard and targeted evidence checks for ${failure}`, async () => {
+    const f = await fixture(failure);
+    await assert.rejects(f.run(), /closed baseline outside|targeted evidence drift/u);
+    const calls = failure === "targeted-after-return" ? 1 : 0;
+    assert.equal(f.state.calls, calls); assert.equal(f.retained(), calls === 1 ? f.raw : undefined);
+    f.state.targetedIntact = true;
+    await assert.rejects(f.run(), /already consumed/u); assert.equal(f.state.calls, calls);
+  });
+}
+
+void test("PCB scratch rejects selected journal drift during the exit boundary's targeted reads", async () => {
+  const f = await fixture("journal-exit-targeted");
+  await assert.rejects(f.run(), /selected journal changed at its admission boundary/u);
+  assert.equal(f.state.calls, 1); assert.equal(f.retained(), f.raw); assert.equal(f.state.admissions, 3);
+  await assert.rejects(f.run(), /already consumed/u); await assert.rejects(f.run({ sibling: true }), /already consumed/u);
+  assert.equal(f.state.calls, 1);
+});
+
+for (const [failure, calls] of [["admission-before-dispatch-binding", 0], ["admission-exit-binding", 1]] as const) {
+  void test(`PCB scratch rejects live binding drift during ${failure} without another scan`, async () => {
+    const f = await fixture(failure);
+    await assert.rejects(f.run(), /live baseline binding drift/u);
+    assert.equal(f.state.calls, calls); assert.equal(f.state.admissions, calls === 0 ? 2 : 4);
+    assert.equal(f.retained(), calls === 0 ? undefined : f.raw);
+    f.state.bindingIntact = true; await assert.rejects(f.run(), /already consumed/u); assert.equal(f.state.calls, calls);
+  });
+}
+
+for (const [failure, calls] of [["journal-final-admission", 1], ["opening-before-dispatch-admission", 0], ["opening-final-admission", 1]] as const) {
+  void test(`PCB scratch rechecks selected and opening journals after ${failure}`, async () => {
+    const f = await fixture(failure);
+    await assert.rejects(f.run(), /selected journal changed after full admission|original opening journal changed/u);
+    assert.equal(f.state.calls, calls); assert.equal(f.state.admissions, calls === 0 ? 2 : 4);
+    assert.equal(f.retained(), calls === 0 ? undefined : f.raw);
+    await assert.rejects(f.run(), /already consumed/u); assert.equal(f.state.calls, calls);
   });
 }

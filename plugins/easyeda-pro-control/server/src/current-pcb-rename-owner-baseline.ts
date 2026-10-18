@@ -12,7 +12,7 @@ import { assertIssuedClosedFileCopy, copyClosedProjectBytes } from "./closed-fil
 import type { ClosedFileCopyReceipt } from "./closed-file-copy.ts";
 import { readClosedCopySqlInventory } from "./closed-file-sql.ts";
 import { canonicalJson, isRecord, normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
-import { assertCompletedCurrentPcbRenameOpeningTransfer, revalidateCurrentPcbRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
+import { assertCompletedCurrentPcbRenameOpeningTransfer, revalidateCurrentPcbRenameOpeningEvidence, revalidateCurrentPcbRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentPcbRenameOpeningOwner, CurrentPcbRenameOpeningOwnerSource } from "./current-disposable-open-runtime.ts";
 import { currentPcbStoredHeaderSchema } from "./current-pcb-stored-header.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "./engine.ts";
@@ -245,18 +245,66 @@ export async function captureCurrentPcbRenameBaseline(engine: EasyedaControlEngi
  * The baseline remains historical evidence after release, not relaunch authority.
  */
 export async function revalidateCurrentPcbRenameBaseline(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine): Promise<void> {
-  assertOriginalCurrentPcbRenameBaseline(value, engine); const original = baselines.get(value); need(original !== undefined, "baseline issuer was lost");
+  await revalidateBaselineEvidence(value, engine, revalidateCurrentPcbRenameOpeningOwner);
+}
+
+/** Fixed closed-clock reader. It preserves fresh original closure/helper and
+ * complete targeted file checks, but issues no global admission. Only the PCB
+ * scratch coordinator uses it between its four full admission boundaries.
+ */
+export async function revalidateCurrentPcbRenameClosedClockEvidence(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine): Promise<void> {
+  await assertClosedClockSidecarsAbsent(value, engine);
+  await revalidateBaselineEvidence(value, engine, revalidateCurrentPcbRenameOpeningEvidence);
+  await assertClosedClockSidecarsAbsent(value, engine);
+}
+
+/** Original live bindings only, paired with the fixed async evidence reader and
+ * fresh full admission. No file/admission result or clock sample is cached.
+ */
+export function assertCurrentPcbRenameClosedClockBinding(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine): void {
+  currentBaselineBinding(value, engine);
+}
+
+async function assertClosedClockSidecarsAbsent(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine): Promise<void> {
+  const original = currentBaselineBinding(value, engine);
+  const current = (): void => {
+    need(currentBaselineBinding(value, engine) === original, "closed-clock sidecar owner changed");
+  };
+  for (const path of [value.checkpoint.source, value.checkpoint.checkpoint, value.copy.artifact]) {
+    for (const suffix of ["-wal", "-shm", "-journal"]) {
+      current();
+      const absent = await lstat(`${path}${suffix}`).then(() => false, (error: unknown) => {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") { return true; }
+        throw error;
+      });
+      current(); need(absent, "closed-clock source, checkpoint or raw copy has a SQLite sidecar");
+    }
+  }
+}
+
+function currentBaselineBinding(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine): Original {
+  assertOriginalCurrentPcbRenameBaseline(value, engine);
+  const original = baselines.get(value); need(original !== undefined, "baseline issuer was lost");
+  need(assertCompletedCurrentPcbRenameOpeningTransfer(value.owner, engine) === original.source &&
+    engine.clockObservationForClosedCapture === original.clockReader && engine.upstream.currentAuthenticatedBridgeDispatchBinding === original.scopeReader &&
+    original.scopeReader.call(engine.upstream) === undefined, "original baseline owner, capture reader or no-dispatch scope changed");
+  closure(original.input, original.source); assertIssuedClosedFileCopy(value.copy); assertCurrentClosedSessionCopyAuthority(original.input.proof);
+  return original;
+}
+
+// Private composition only. The two exported readers bind fixed implementations;
+// No tool or exported function accepts a caller-supplied verifier or skip flag.
+async function revalidateBaselineEvidence(value: CurrentPcbRenameBaseline, engine: EasyedaControlEngine,
+  revalidateOpening: typeof revalidateCurrentPcbRenameOpeningOwner): Promise<void> {
+  const original = currentBaselineBinding(value, engine);
   const unchanged = (): void => {
-    need(assertOriginalCurrentPcbRenameBaseline(value, engine) === value && assertCompletedCurrentPcbRenameOpeningTransfer(value.owner, engine) === original.source &&
-      engine.clockObservationForClosedCapture === original.clockReader && engine.upstream.currentAuthenticatedBridgeDispatchBinding === original.scopeReader &&
-      original.scopeReader.call(engine.upstream) === undefined, "original baseline owner, capture reader or no-dispatch scope changed");
-    closure(original.input, original.source); assertIssuedClosedFileCopy(value.copy); assertCurrentClosedSessionCopyAuthority(original.input.proof);
+    need(currentBaselineBinding(value, engine) === original, "original baseline binding changed");
   };
   const current = async (): Promise<void> => {
     unchanged(); need(await assertClosedSessionCopyAuthority(original.input.proof) === original.input.proof, "original closed authority changed"); unchanged();
     need(await original.clockReader.call(engine, original.input.capture) === original.clock, "original capture was released or changed"); unchanged();
     need(await assertIssuedWindowsClockObservation(original.clock) === original.clock, "capture clock issuer changed"); unchanged();
-    need(await revalidateCurrentPcbRenameOpeningOwner(value.owner, engine) === original.source, "opening owner changed"); unchanged();
+    need(await revalidateOpening(value.owner, engine) === original.source, "opening owner changed"); unchanged();
   };
   await current(); await verifyReceipt(value.checkpoint, current);
   await verifyExactManagedArtifact({ path: value.copy.artifact, bytes: value.copy.bytes, sha256: value.copy.sha256 }); await current();
