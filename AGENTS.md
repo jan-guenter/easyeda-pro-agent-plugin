@@ -4,6 +4,105 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate195000, 2026-10-18: future-only backend timing correction, expanded
+String display/color readback and separate SCH preflight/complete SQL models are
+root/independently reviewed. Clock12focusedtests/types/zero-warninglint pass;
+String43 and SCH16focused tests also pass. The backend timestamp now uses the
+original termination observation's outer endpoint while retaining its frozen60s
+window, armed lower bound, immediate renderer bounds and original owner/SQL
+checks. This does not accept or revive the failed184000case below.
+Build/pins frozen: source462/99990f25, runtime3/fef90a47, manifest715be804;
+external runtime/bridge pins unchanged. Dependencies/signatures/audit/sanitizer,
+coverage774, repository and seven official skill validators pass. Full local
+`npm run verify` runs in original shell72256, log
+`/tmp/easyeda-195000-release-8yc1mn/verify.log`. Do not change frozen payloads.
+Not yet published/installed. All actual CAD/process cleanup is terminal;
+loaded184000 is untouched and must not replay the failed case.
+
+Live184000, 2026-10-18: actual sole facade2862670/start32551005, parent2861045,
+installed1428files/459source/3runtime and all external/18clock-runtime pins
+independently admitted against mergedmain34886eb. Initial status11 completed,
+no incomplete operations. New ordinary launch16 `pcb-rename-184000-20261018-launch`
+completed: root13256/Job65cb1ac5b425451087137bb4c32803bf, launch digest
+7aa4c1b43cab75adfdf382a710640d00b7a9f843cacd48da3c59758097902008.
+Authenticated status18 passes184000/ded07x99dcxb504. New disposable opening19
+`pcb-rename-184000-20261018-open` completed, exact PCB/native identity/no orphan;
+checkpoint6a9c4d9e/577536. Before launch raw41ac6062/598016 descriptor-stable,
+no sidecars. Rename `pcb-rename-184000-20261018-case`, desired title
+`PCB rename 184000`, began28; baseline-close31 and termination/capture33
+completed. Original13256/Job exit proved; baseline08 SHA95e61b01/4144bytes.
+Clock preparation43 completed once. Original ordinary launcher termination53
+recorded with matching7aa4c1b4 digest. Baseline replacement relaunch54 completed;
+original prior capture released, artifact10 SHA9a128c29/255bytes. New root13196,
+Jobc58dd3df4f71499fb6d1a1fc5f2abf6a. Admission77, inactive caches79,
+project-only open83 and startup/aged-clock84 all passed. The sole rename-write87
+returned acknowledged title `PCB rename 184000`, ticket778/time1792352535116.
+Normal close90 acknowledged. Termination/snapshot91 completed but comparison
+stopped: stored backend time is outside the immediate original writer bracket.
+Original-owner cleanup97 completed terminal retired/plan-invalidated,
+termination proved, hardStop/orphan cleared. Recovery remains unresolved;
+no verification continuation, reopen or full lifecycle acceptance. Never replay
+this case/write/close or issue explicit Save. Closed raw d82dd6ff/598016;
+snapshot28 bf7ea3c5/3760bytes, stopped29 d0598d7e/488121bytes retained.
+Never replay launch/open/begin/close/clock/admission.
+Keep original facade/handles alive. Main CI39156601909 now passed.
+Source-only String fields/correlation and SCH preflight/SQL metadata plus the
+combined full SQL preparation/comparator are root and independently reviewed;
+focused tests/types/zero-warning lint pass. Not installed or live validated.
+Pinned dependency install/tree/signatures/audit and sanitizer check passed in
+shell58025; no pending dependency tool.
+No production access or explicit Save. Stored/reopened rename is not yet verified. Prior173500case stays
+terminal; its instructions below are historical.
+
+184000 delivery, 2026-10-18: protected PR69 merged as main
+`34886eb776ff23fa8fb84b15e42c8f29fef7d8dd`, reviewed candidate
+`044bfc23214f15978f21b5eabb650a3eba2ff735`; both complete Git trees equal
+`22ff815871caa25838b994c5d7c5eaf880705c5b`. Exact PR CI39155615437 passed
+build/all8shards/aggregate; Windows39155615483 passed. Full local verification
+passed11,209facade tests/fourplatformskips/zerofailures and424bridge tests,
+strict types/zero-warning lint, reproducible bundles and package validators.
+Dependencies/signatures/audit, repository and seven official skill checks pass.
+Full verification log6427229b retained in `/tmp/easyeda-184000-release-LVqK0D`.
+
+Official Git marketplace upgrade installed/enabled `0.3.0+codex.20261018184000`
+from https://github.com/jan-guenter/easyeda-pro-agent-plugin.git at refmain.
+Root and independent maintained payload comparison pass exact1428files/
+29,044,956bytes/42directoriesINCLUDINGroot against cached mergedmain. Plugin
+subtree88e535a051e7d4ed082016ec5968e2752d95feee; inventory
+`ab933a01943129543fb11e000751dd5a94eb3aab42950c7e0d84b6d08865928b`.
+Source459/d4d25ce3, runtime3/c809feb3, manifest3274cbfa. External runtime pins
+and bridge identity are unchanged. The NEW root/independently reviewed offline
+probe29751d38 completed ONCE in original shell67921: configured ambientNode26.11.1
+hands off to pinned24.18.0,20restrictedtools/sixofflinequeries pass. Original
+child2857530/start32528326/parent2855240 exited0 on stdinEOF and is absent; no
+signals/adoption. Syntheticprofile unchanged/no upstreammarker/journal/lease;
+two socketabsence samples are not network-isolation evidence. Full installed
+inventory is unchanged before/after. Proof2994bytes SHA
+`075fb433280b658e2b3f8238c905b83273eebb781c2d3a99a4654e55fbb0fb53`
+at `/tmp/easyeda-panel-release-probe-S54Hqa/proof.json`. NEVER rerun/import
+the consumed probe or prior probes. No tool, child or CAD action remains pending.
+Main Windows39156601897 passed; duplicate main CI39156601909 is still running;
+check its outcome next session, without repeating the passed exact-tree PR suite.
+
+Live173500 case below is terminal retired, no writer/explicitSave and unchanged
+disposable raw41ac6062/598016. No further live MCP call after installation.
+Host2757974 remains loaded173500 and is left alone. A fresh Codex session must
+load/admit184000 before a NEW disposable PCB rename case. Never resume173500
+or older cases. Main/independent reviewed dormant-placeholder guard and seven
+fixed startup substages are delivered; no connected writer validation is claimed.
+Pure String patch and separate SCH header/history/structure models are delivered
+offline only; no live String/SCH writer is registered by this groundwork.
+Next: complete disposable PCB rename/writer/closedSQL/saved metadata/finalclose;
+safe source ownership and representative nonempty String fixture/readers/writer;
+separate schematic title deferred-subscriber/actor/clock/SQL/lifecycle integration;
+broader CAD/library/routing/rules/ECO/dialog/export/platform/bootstrap adapters.
+FileSource stays disabled. Production projects and records remain excluded.
+Keep stash ebe1b55d7a430ae2e3168e373e155957b582eff9, all worktrees and evidence.
+Primary branch `feature/pcb-rename-live-184000-20261018` follows mergedmain;
+previous feature branch retains candidate044bfc2. Delivery handoff is local;
+published/installed package bytes stay exact. The following checkpoints are
+historical, not permission to replay their completed operations.
+
 Candidate184000, 2026-10-18: dormant-panel correction, seven fixed startup
 substages and native-shaped fixtures are source-reviewed by root and an
 independent agent.21focusedtests/types/strictlint pass; no warnings. Frozen

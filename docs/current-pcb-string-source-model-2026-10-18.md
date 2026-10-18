@@ -1,8 +1,9 @@
 # Current PCB STRING source relation
 
-This increment adds an offline parser and comparison, not a reader transport or
-writer. Nothing is registered in MCP. It does not access EasyEDA, projects,
-checkpoints or journals, and does not change compatibility pins.
+The source parser and comparison are offline models, not a source transport or
+writer. They do not access EasyEDA, projects, checkpoints or journals. Separately,
+the existing loaded-String reader now projects the display/color fields described
+below; that expansion does not establish complete source or model ownership.
 
 `current-pcb-string-source.ts` retains the complete supplied source string,
 record order, all headers, peer bodies and unknown fields. It requires exact
@@ -20,8 +21,12 @@ Correlation accepts the raw result payloads of the existing String identity,
 getAll and optional explicit-ID get validators. The complete identity and getAll
 families must agree, all source STRINGs must be accounted for, and selected rows
 must agree with the complete family. Source order and reader order are retained
-separately. Color, zIndex, unknown fields and other unprojected fields remain
-preserved but cannot be verified by those reader DTOs.
+separately. The expanded reader DTO compares serialized silkColor exactly on
+silkscreen layers, preserving null versus explicit black; other layers encode
+null independently. Native `color.toString()||null` is lossy, so this does not
+prove raw model color or decoder/reopen equivalence. Key/show flags and
+positionIsNull are reader-only fields. zIndex, unknown fields and other
+unprojected fields remain preserved but cannot be verified by those DTOs.
 
 The model is based on installed PCB bundle SHA-256
 `217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33`:
@@ -101,8 +106,10 @@ execute application code. No connected or saved-result claim is made. Complete
 source provenance, native parent ownership, rendering, receiver ownership and
 persistence all remain explicitly unverified by this supplied-data relation.
 
-Next work is a current exact-frame FileSource observation and separate disposable
-String-create lifecycle with full SQL effects. The old decoder writer stays
+Next work is a safe exact-frame source/model observation and separate disposable
+String-create lifecycle with full SQL effects. FileSource remains disabled:
+its preference getter can repair shared rules, and its output omits stored
+metadata/assets and can be incomplete. The old decoder writer also stays
 disabled. The current native String-modify handler assigns layer, reverse,
 mirror and lock without undefined guards, so a later narrow patch adapter must
 reconstruct those four mandatory arguments from its verified baseline, not send
@@ -136,3 +143,42 @@ and independent source review accepted the native setter/encoder relation.
 This is source-only groundwork. It adds no MCP route, observer, token, writer,
 queue completion or saved/reopened verification. A safe original-frame observer,
 complete live/stored baselines and the full disposable lifecycle remain open.
+
+## Worker-source fallback is not renderer authority
+
+The existing frame project bus (`Dte` at PCB3131133) offers a possible route to
+worker `getDataByType` at2144808. It is not a complete model observer. In pinned
+worker `b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928`,
+`getCacheData` at2013292 can miss cache and invoke `getFlowParse` at2020301.
+That path parses history into the existing consistency manager and updates cache
+and history-index bookkeeping. Awaiting compression does not make those effects
+disappear. A future worker reader needs its own explicit effect contract.
+
+More importantly, renderer `cachePendData` at PCB3145459 can retain unpublished
+changes. A worker snapshot therefore cannot establish the active renderer's
+unsubmitted state, numeric model type, parent identity or missing model fields.
+Repeated equal worker snapshots do not solve that provenance gap. No fallback
+transport is enabled here. A narrow native String-create lifecycle, which can
+establish a new object's origin, is a separate feasible direction; it still needs
+full stored-effect checks, readback and saved/reopened validation.
+
+### Next implementation: one native-created String
+
+Start with a freshly opened, verified empty root PCB in the disposable project.
+The native handler at PCB10393687 generates its own ID through `Jr.addText`
+at7959947; do not reuse the decoder writer's caller-reserved-ID assumptions.
+Fix layer3, default font, fontSize120mil, lineWidth8mil, alignment3, rotation0,
+reverse=false, expansion0, mirror=false and unlocked state. Use simple exact
+coordinates and printable ASCII with a non-space glyph. In particular, create
+passes expansion unscaled, unlike modify; zero avoids that discrepancy.
+
+Command execution at7922332 and the composite upload at7916642 can flush other
+queued work. The returned ID precedes compiler pending publication, so it does
+not prove an isolated stored STRING addition. Required modules are a fixed
+request/projection, exact-frame one-shot create program, original-owner lifecycle
+and full SQL addition verifier. Bind the native-generated ID, reject extra
+objects or collateral changes, consume uncertainty without retry, and review a
+separate single-Save path. Compiler save at3147110 waits for pending publication;
+that alone proves neither complete persistence nor reopened equality. Finish
+with closed SQL, same-ID reopened readback, final closure and a visual check.
+This plan does not register a writer or qualify the Save path.

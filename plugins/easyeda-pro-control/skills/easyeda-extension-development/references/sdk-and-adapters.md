@@ -116,9 +116,11 @@ mirror and lock even when omitted. An x/y/text-only payload is unsafe: reconstru
 the four mandatory fields from an independently verified full STRING baseline.
 Leave unchanged optional font, rotation and geometry arguments absent. Rebuilding
 them from rounded source can change higher-precision native values. Preserve all
-nonpatch fields independently. The existing String readers omit color, zIndex,
-key/show state, positionIsNull and source ownership; their DTOs cannot supply that
-baseline. Do not revive the older decoder writer to fill this gap.
+nonpatch fields independently. Current String readers include key/show state,
+positionIsNull and serialized silkColor, but still omit zIndex, partition/group,
+model type and source ownership. Their color serializer collapses an empty string
+to null; it is not a raw-model color proof. These DTOs cannot supply the complete
+writer baseline. Do not revive the older decoder writer to fill this gap.
 
 The offline `current-pcb-string-patch.ts` candidate models x/y/text changes against
 supplied source and expanded native scalars. Its initial subset is unlocked,
@@ -204,6 +206,32 @@ The pure `current-schematic-stored-header.ts`, `current-schematic-rename-history
 and `current-schematic-rename-structure.ts` models describe SCH serialization and
 the container's structure `name/version/updateTime` delta. They grant no runtime,
 queue, full-SQL or saved-state authority, and do not implement sheet-title edits.
+
+The separate schematic preflight contract and original-SQL metadata projection
+use native `name/displayName`, not PCB `title/parent/docType` fields. Child
+SCH_PAGE headers can advance their parent's version/time through `onHeadChange`.
+The initial projection accepts only stable ordinary parent histories whose direct
+SCH header dominates every child clock; newer child-derived clocks and reparenting
+remain unsupported. Do not infer the container clock from its SCH header alone.
+Matching supplied data or a historical projection is not a live preflight.
+
+`current-schematic-rename-sql.ts` composes that original metadata with frozen
+intent, separate supplied clock windows, SCH history and structure models.
+Its complete SQL comparison covers the new history/chunk, branch head, project
+bookkeeping, all selected structure rows and sequence allocation; every unrelated
+table/cell must remain exact. Only a locked or independently aged new-history-head
+branch and lower-ticket structure updates are modeled. Supplied actor/client/
+clock values remain comparison inputs, not live provenance. Native observation,
+SCH subscriber completion, retained lifecycle ownership and saved reopening are
+still separate prerequisites; no live SCH route consumes this model yet.
+
+The next native observation should use the SCH key-value roster, exact target
+and `getIdByName` routes and compare them with that original SQL projection.
+Do not substitute PCB tokens or counters. In SCH `d9d6a955`, the update handler
+at6204757 schedules `ZTe=Ta(w9,500)` without awaiting it. The callback at5766787
+can initialize missing child holders and then rebuild content. A fixed delay,
+early AST title change or settled PCB batch counter proves neither its completion
+nor unchanged children. The SCH writer must establish these separately.
 
 Test adapters against the maintained producer, not only a hand-written fixture.
 PCB component inventory is identity-only; it has no per-component state map.

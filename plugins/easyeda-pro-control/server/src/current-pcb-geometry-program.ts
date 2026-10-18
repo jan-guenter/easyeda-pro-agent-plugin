@@ -127,10 +127,14 @@ const copyRows=value=>{
   // API021d155b@1502811 scales these distances by 10 and radians by 180/PI. Never invoke SDK constructors with their defaults.
   if(family==='String'){
    const position=point(own(row,'position')),alignMode=integer(own(row,'origin'));if(alignMode<1||alignMode>9)bad();
+   // yr.toJSON emits silkColor as color.toString()||null. Copy that serialized
+   // Observation only: null is not proof of absent raw color or source ownership.
+   const silkColor=text(own(row,'silkColor'),128,true);if(silkColor==='')bad();
    rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),text:text(own(row,'value'),65536),
     fontFamily:text(own(row,'fontFamily'),1024),fontSize:num(num(own(row,'fontSize'))*10),lineWidth:num(num(own(row,'strokeWidth'))*10),
     alignMode,rotation:num(num(own(row,'rotation'))*180/Math.PI),reverse:bool(own(row,'reverse')),
-    expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror'))});continue;
+    expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror')),key:text(own(row,'key'),1024),
+    showKey:bool(own(row,'showKey')),showValue:bool(own(row,'showValue')),positionIsNull:bool(own(row,'positionIsNull')),silkColor});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){
