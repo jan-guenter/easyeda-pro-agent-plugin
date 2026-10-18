@@ -4,29 +4,103 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate173500, 2026-10-18: branch `feature/pcb-startup-cbb-20261018` corrects
-the source-proven raw CBB contract mismatch and adds eight fixed PCB startup
-failure substages. Own-data property requirements, exact Object.is stability
-(including signed zero), settled AST/version/pending-set/owner checks remain.
-Old coarse `pcb-ast` failures remain decodable but cannot be retrospectively
-diagnosed. Root/independent review, focused guard/composed tests, strict types
-and targeted zero-warning lint pass. A maintained read-only installed-payload
-verifier replaces temporary inventory scripts; its six tests and types/lint
-pass. It compares committed bytes/modes/directories, rejects extra entries/links
-and never starts the plugin or grants runtime authority.
+Candidate184000, 2026-10-18: dormant-panel correction, seven fixed startup
+substages and native-shaped fixtures are source-reviewed by root and an
+independent agent.21focusedtests/types/strictlint pass; no warnings. Frozen
+source459/d4d25ce3, runtime3/c809feb3, manifest3274cbfa. External runtime/bridge
+pins are unchanged. Dependency install/tree/signatures/audit, repository and
+seven official skill validators pass. Full local `npm run verify` is running
+in original shell57173; log `/tmp/easyeda-184000-release-LVqK0D/verify.log`.
+Do not change frozen package files during this run. Not yet published/installed.
+Fresh offline probe `/tmp/easyeda-panel-release-probe-S54Hqa/probe.mjs`29751d38
+is prepared and root/independently reviewed as inert text, NEVER run/imported;
+pins remain unapproved until merged release/install inventory is known. Do not
+reuse any consumed prior probe. Installed/loaded173500 remains untouched.
 
-Candidate `0.3.0+codex.20261018173500` is built, not yet published/installed.
-Source455/8b38ecab, runtime3/0069318d, manifest1e98fc74 are frozen. Only facade
-projections/review time changed; external pins and bridge identity are exact.
-Dependency install/tree/signatures/audit and build/compatibility pass. Full
-local release verification is running; exact-payload CI remains required.
-Evidence directory: `/tmp/easyeda-startup-cbb-release-AFV8Ws`.
+Live173500, 2026-10-18: actual facade2757974/start32132952, parent2756222,
+was independently admitted against the installed173500 package. Complete1420-file
+inventory,455source/3runtimefiles, configured profile/environment, ordinary/open/
+persistence external pins and all18clock-runtime files match. Initial status16
+completed with no incomplete operations and the current bundle fingerprint;
+gateway started with no authenticated connection before application launch.
+NEW ordinary launch `pcb-rename-173500-20261018-launch` completed20:
+root29924/Jobfb4c692c0de14b789aec13ffeac821e4, launch5537fd80. Authenticated
+status23 passes current173500/ded07x99dcxb504 with no incomplete operations.
+Opening `pcb-rename-173500-20261018-open` completed25 with exact active PCB/
+native identity and no orphan. Rename `pcb-rename-173500-20261018-case` began30,
+retaining original capture. Baseline close34 and termination/capture39 completed;
+original29924/Job exit is proved. Baseline08 is3d4cb15c/4144bytes, rawcopy41ac6062,
+managedcheckpoint6a9c4d9e, completeSQL09a74ea1, originalmetadataPCB1/maximumticket777.
+`baseline-prepare-clock`46 completed once; original ordinary launch52 is recorded
+terminated with matching5537fd80 digest. Baseline relaunch54 completed with new
+root44168/Job92da9215f4cd4d7686dadf9395ec5ba4/helper099ef0415cf1420a81d18411f947ed78.
+Admission62, inactive-cache observation64 and project-only open66 passed.
+Startup68 stopped at `startup:auxiliary-panel` before any writer. Original-owner
+cleanup-close71 and cleanup-observe-termination completed: root44168/Job exit is
+proved, capture released, generation retired/plan-invalidated, case terminal.
+Retirement22 isee6a547e/1835bytes. Never resume this case or replay its operations.
+Fresh post-closure disposable raw file is41ac6062/598016, descriptor-stable/no
+sidecars, exactly equal to prelaunch. No rename, explicit Save, inverse or
+production access. MainCI39151346191 passed.
+Independent pinned-source audits prove UI3823ed6e statically creates the hidden
+device-standardization DIV; current IDabsence wrongly rejects that dormant
+placeholder. SCH6187767 separately returns when the active DIV selector is empty.
+This is a proven source mismatch, not retrospective diagnosis of unseen live DOM
+values. Precise retained dormant-container correction/fixed diagnostics and
+native-shaped fixtures are in progress; installed173500 remains untouched.
+Source-only String patch planner/root+independent review/sevenfocusedtests/types/
+strictlint passed. Three separate pure SCH models/root+independent review/
+21focusedtests/types/strictlint passed. Final sourceString7dffe830 and
+SCHheadera97a3323/history3552c26b/structure2277b77e. Root combined28tests passed.
+Narrow extension-reference corrections/officialskillvalidator pass. These source/
+tests/docs are committed as97964dc, not published; installedfiles/pins/bundles
+remain untouched. No live String/SCH writer is registered by this groundwork.
+
+173500 delivered, 2026-10-18: protected PR68 merged as main
+`60103dcf0aef94b7a178088c4deff429e6b65534`, reviewed candidate
+`bfdeb4decf88cbbced7e07ba3eb6a94885fbecbc`. Both complete Git trees equal
+`bad04b5a3456adf1c7d2850158d54822b146fde1`. Exact PR CI39150357055 passed all
+eight facade shards, required aggregate, strict types/lint, bridge/build and
+validators; Windows39150357014 passed. Full local verification passed11,178
+facade tests/fourplatformskips/zerofailures and424bridge tests. Dependency
+install/tree/signatures/audit, repository and all seven official skill checks
+passed. Main Windows39151346298 passed; main CI39151346191 is still running at
+this checkpoint, so check it next session rather than claiming its result.
+
+Official Git marketplace upgrade installed/enabled `0.3.0+codex.20261018173500`
+from https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. CachedHEAD
+equals mergedmain. All1420files/28,971,555bytes/42directoriesINCLUDINGroot/seven
+skills match committed bytes/modes, with no extras/symlinks/hardlinks. Plugin
+tree `5802d9b4c1868becb4555aa88adb02ca4a5b9ea1`; inventory SHA
+`13c0c551f57b702b8521e62a46b485b206e174ae4fb1c16e83598d18b9f798f4`.
+Source455/8b38ecab, runtime3/0069318d and manifest1e98fc74 are exact. Only facade
+projections/review time changed; external pins and bridge identity are unchanged.
+
+The raw CBB guard correction and eight fixed failure substages are delivered.
+Own-data requirements, Object.is stability including signed zero, settled AST,
+version, pending-set and owner checks remain. Historical coarse `pcb-ast` remains
+decodable but cannot establish the failed invocation's unseen value. A maintained
+read-only `scripts/verify-installed-payload.ts` replaces temporary inventory
+scripts; it grants no runtime authority and may be used for fresh file comparison.
+Root/independent source, payload and retained offline-evidence reviews passed.
+
+The NEW configured offline probe completed ONCE: ambientNode26.11.1 handed off to
+pinned24.18.0,20restrictedtools/sixofflinequeries (discovery,two valid/three invalid
+parser cases). Originalchild2751355/start32103466/parent2749627 exited0 on stdinEOF,
+no signals/adoption, PIDabsent. Syntheticprofileunchanged/no upstreammarker/
+journal/lease; socketabsence was sampled twice, not a network-isolation claim.
+Proof `/tmp/easyeda-startup-cbb-release-AFV8Ws/proof.json`,2992bytes SHA
+`2ed4fb872aee21c8ff325303e0c46f3f4814712e0912da4d9bba8e5b694f13c6`.
+Never rerun/import that consumed probe or older probes. Maintained inventory was
+independently repeated read-only, not used as process authority. Delivery record:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/68#issuecomment-6253159838.
+
 No live MCP, EasyEDA launch, CAD change, Save or production access this session.
-The previous main CI39147799193 has now passed. The host-owned loaded163148
-facade2662096 is left alone; no restart/rebind/cache patch is permitted.
-
-Next after publication/install: fresh-session actual-payload admission, then a
-NEW disposable PCB rename case. The retired152547 case must never be resumed.
+Host-owned facade2662096 still loads163148 and was left alone; no termination,
+rebind or cache patch. This session did not admit it for live use. A fresh Codex
+session must load/admit173500 before a NEW disposable PCB rename case. The
+retired152547 case must never be resumed. This is the next task, not another
+startup-source correction or repeated empty read.
 Remaining: full writer/closed SQL/saved metadata/final closure; safe current
 source preflight and nonempty String fixture/readers/writer; separate ordinary
 schematic-container title lifecycle; broader CAD/library/routing/rules/ECO/
@@ -34,6 +108,10 @@ dialog/export/platform/bootstrap adapters. FileSource stays disabled for its
 proven shared-rule repair and incomplete export. Do not repeat old empty reads
 or revive legacy writers. Production designs and their records are excluded.
 Keep stash `ebe1b55d7a430ae2e3168e373e155957b582eff9`, all worktrees and evidence.
+Primary worktree follows mergedmain on `feature/pcb-rename-live-173500-20261018`.
+Candidate branch `feature/pcb-startup-cbb-20261018` preserves the published tree.
+This delivery note is local handoff state; published/installed package bytes stay
+exact. The previous main CI39147799193 also passed.
 
 The following checkpoints are historical; their pending/next instructions are
 not permission to replay completed work.

@@ -69,6 +69,14 @@ The fixed writer excludes active auxiliary supplier/standardization panels and
 requires settled project, schematic and PCB holders. It does not claim that
 sampling a settled AST proves complete canvas equality.
 
+The standardization panel has a normal hidden placeholder even before use.
+Its presence alone is not activation. The guard requires that exact dormant
+container and excludes active, initialized, replaced or changed state. Fixed
+startup diagnostic labels identify the failing check without returning private
+DOM contents. A historical `auxiliary-panel` failure does not identify its
+unseen values. Do not hide, clear or recreate a panel to bypass a refusal;
+use the offered original-owner cleanup and preserve the failed case.
+
 Before `rename-write`, the original unlocked SQL history head must be at least
 61 seconds old under the retained native date/clock interpretation. If it is
 too recent, wait before the sole write attempt. Do not attempt early and retry

@@ -113,10 +113,21 @@ and never turn one observed conversion into global null/color equivalence.
 
 On current PCB bundle `217199c8`, native `string-modify` assigns layer, reverse,
 mirror and lock even when omitted. An x/y/text-only payload is unsafe: reconstruct
-the complete native request from an independently verified full STRING baseline,
-preserving every nonpatch field. The existing String readers omit color, zIndex,
+the four mandatory fields from an independently verified full STRING baseline.
+Leave unchanged optional font, rotation and geometry arguments absent. Rebuilding
+them from rounded source can change higher-precision native values. Preserve all
+nonpatch fields independently. The existing String readers omit color, zIndex,
 key/show state, positionIsNull and source ownership; their DTOs cannot supply that
 baseline. Do not revive the older decoder writer to fill this gap.
+
+The offline `current-pcb-string-patch.ts` candidate models x/y/text changes against
+supplied source and expanded native scalars. Its initial subset is unlocked,
+parentless default-font silkscreen text with printable ASCII. The view's effective
+coordinate threshold is `1e-8` internal units, stricter than the handler's `1e-10`.
+Text setters can change font/type for unsupported glyphs. Candidate projections
+preserve headers and unknown fields only for comparison; they are neither native
+uploads nor saved-source predictions. No observer, dispatch or provenance comes
+from matching caller-supplied data.
 
 The same current bundle's `FileSource({})` skips explicit compiler Save but can
 still mutate the design. Its preference getter can repair missing rule defaults
@@ -183,6 +194,16 @@ Native Save clears the pending flag and republishes geometry, so the same gap
 affects schematic-page, symbol and PCB design transactions. Those routes and the
 eight metadata writers currently refuse execution. Restore them only after
 modeling the complete effect and obtaining operation-owned completion evidence.
+
+Current schematic-container renaming also has a distinct delayed subscriber.
+`SCHEMATIC.ON_UPDATE` schedules a 500 ms debounced rebuild that reads the container
+and its sheets, then can notify every opened schematic drawing. A fixed wait or
+settled PCB batch counters do not prove that callback finished. Use a separate
+SCH owner and completion/effect model, with no editor tabs for the initial scope.
+The pure `current-schematic-stored-header.ts`, `current-schematic-rename-history.ts`
+and `current-schematic-rename-structure.ts` models describe SCH serialization and
+the container's structure `name/version/updateTime` delta. They grant no runtime,
+queue, full-SQL or saved-state authority, and do not implement sheet-title edits.
 
 Test adapters against the maintained producer, not only a hand-written fixture.
 PCB component inventory is identity-only; it has no per-component state map.
