@@ -34,7 +34,8 @@ first. Read [the retained-owner workflow](current-project-opening.md#ordinary-fo
 It requires complete META-only or supported bounded canvas-segments raw history,
 including overwritten and deleted records, exact project/branch/owner/symbol and
 companion-PCB identities, and a supported startup expectation. Exactly one write
-is reserved; ordinary drawn-symbol execution has no connected result yet.
+is reserved. Installed080000 passed one ordinary unused drawn-symbol case on
+the disposable fixture, including full SQL, exact saved content and final closure.
 Tags, source and peers stay unchanged. It has no
 inverse, general recovery, explicit Save or replacement-owner continuation.
 The older `easyeda_control_symbol_metadata` and `library.symbol.modify` remain
@@ -48,8 +49,9 @@ A matched form does not prove which cache branch ran. SQL actor identity remains
 independently checked. The bounded canvas-segments profile supports the separate
 disposable forward/inverse validation and ordinary one-write route. Installed210000
 passed the disposable drawn-symbol round trip, including original metadata
-restoration and unchanged peers/drawing records; the ordinary drawn-symbol
-entrypoint has no connected result yet. Read its exact
+restoration and unchanged peers/drawing records. Installed080000 separately
+passed the ordinary one-write case with all peers/drawing records unchanged.
+These cases do not admit a later runtime or other histories. Read its exact
 [history limits](current-project-opening.md#disposable-forwardinverse-validation).
 A stopped
 verification is still a failed lifecycle even if closed SQL proves the intended

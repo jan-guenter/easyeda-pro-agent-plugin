@@ -26,7 +26,7 @@ private calls, compatibility changes or newly granted permission.
 
 After offline discovery, read only the reference for the operation you will use:
 
-- [Current PCB readers](current-pcb-readers.md): layers, IDs, geometry, raw text and component pads.
+- [Current PCB readers](current-pcb-readers.md): project metadata without an editor, layers, IDs, geometry, raw text and component pads.
 - [Current symbol metadata](current-symbol-readers.md): metadata observation and checkpoint preparation.
 - [Current utility readers](current-utility-readers.md): geometry calculations, units, shortcuts and extension metadata.
 - [Legacy SDK readers](legacy-sdk-readers.md): older-tuple schematic, PCB and library read contracts.
@@ -50,7 +50,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 31 native equivalents, no lifecycle-only methods, 81 implemented-but-blocked
-methods and 450 omissions. Its routes include 337 available with runtime guards,
+methods and 450 omissions. Its routes include 338 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -137,6 +137,13 @@ limits live in that task-specific reference.
 Read [local environment and unit methods](current-utility-readers.md#local-environment-and-unit-methods)
 before using this route. Its exact arguments, fields, units, bounds and evidence
 limits live in that task-specific reference.
+
+## Project-local PCB metadata without an editor
+
+Query `project-pcb` or validate an exact request with `project-pcb-validate`.
+Read [the no-editor PCB contract](current-pcb-readers.md#project-local-pcb-metadata-without-an-editor)
+before calling `easyeda_control_project_pcb`. This metadata observation neither
+opens the PCB nor qualifies a rename or saved-state claim.
 
 ## PCB identities on the current tuple
 

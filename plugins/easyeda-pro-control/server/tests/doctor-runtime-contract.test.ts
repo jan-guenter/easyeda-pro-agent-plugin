@@ -28,7 +28,8 @@ void test("doctor keeps exact current installed identity and restricted catalog 
   assert.deepEqual(result.bundleHashes, { pcbImplementation: current.pcbEditor.implementationSha256,
     publicApiImplementation: current.publicApi.implementationSha256, publicApiAdapter: current.publicApi.adapterSha256,
     publicApiDeclarations: current.publicApi.declarationsSha256 });
-  assert.deepEqual(result.toolNames, CALCULATION_ONLY_TOOLS); assert.equal(result.toolNames.length, 18);
+  assert.deepEqual(result.toolNames, CALCULATION_ONLY_TOOLS); assert.equal(result.toolNames.length, 19);
+  assert.equal(result.toolNames.includes("easyeda_control_project_pcb"), true);
   assert.equal(result.toolNames.includes("easyeda_control_project_symbol_metadata"), true);
   assert.equal(result.toolNames.includes("easyeda_control_design"), false);
   assert.equal(result.executionAuthorized, false); assert.equal(result.connectedValidation, false);
@@ -42,7 +43,7 @@ void test("doctor preserves the exact reviewed legacy tuple and full catalog", (
   assert.deepEqual(result.bundleHashes, { pcbImplementation: legacy.pcbEditor.implementationSha256,
     publicApiImplementation: legacy.publicApi.implementationSha256, publicApiAdapter: legacy.publicApi.adapterSha256,
     publicApiDeclarations: legacy.publicApi.declarationsSha256 });
-  assert.deepEqual(result.toolNames, FACADE_TOOL_NAMES); assert.equal(result.toolNames.length, 43);
+  assert.deepEqual(result.toolNames, FACADE_TOOL_NAMES); assert.equal(result.toolNames.length, 44);
   assert.equal(result.executionAuthorized, false); assert.equal(result.connectedValidation, false);
 });
 

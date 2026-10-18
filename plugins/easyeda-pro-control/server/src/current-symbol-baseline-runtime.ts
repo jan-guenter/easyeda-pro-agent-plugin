@@ -287,14 +287,30 @@ export function currentSymbolFinishSnapshotStatus(attempted: unknown, captured: 
   if (attempted === true) { return "attempted"; }
   return attempted === false ? "not-attempted" : "not-recorded";
 }
-function clockStageNextSafeAction(slot: Slot): string | undefined {
+function clockStageNextSafeAction(slot: Slot, observedJournal: unknown = slot.journal): string | undefined {
   if (slot.clockReferenceAttempted && !slot.clockReferenceAccepted) {
     return "Clock reference attempt consumed. Inspect its retained sidecar and original scratch return; do not retry or launch the replacement generation.";
   }
   if (slot.agedClockAttempted && !slot.agedClockAccepted && !slot.finishCloseAttempted && !slot.finished) {
     return "Clock observation attempt consumed. Inspect its retained sidecar; do not retry or write. The original baseline-finish-close and baseline-observe-finish remain available.";
   }
-  return undefined;
+  // Guidance only: clock observation deliberately leaves the sealed baseline
+  // Journal unchanged. Never turn history, a transferred owner or an inverse
+  // Baseline into a new begin instruction; continuations still revalidate owners.
+  if (slot.journal.state !== "project-only-opened" || !slot.projectOpened || slot.projectOnlyGeneration === undefined ||
+    !slot.clockReferenceAccepted || slot.writerTransfer !== undefined || slot.finishing || slot.finishCloseAttempted || slot.finished ||
+    slot.journal.orphanedCallPossible || slot.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" ||
+    canonicalJson(slot.journal) !== slot.journalText || canonicalJson(observedJournal) !== slot.journalText) { return undefined; }
+  const route = {
+    "ordinary-symbol-metadata": { tool: "easyeda_control_project_symbol_metadata", begin: "metadata-begin", writePhase: "forward-write" },
+    "disposable-symbol-copy": { tool: "easyeda_control_disposable_symbol_copy", begin: "copy-begin", writePhase: "copy-write" },
+    "disposable-validation": { tool: "easyeda_control_project_open", begin: "validation-begin", writePhase: "forward-write" },
+  }[slot.purpose];
+  const cleanup = "For original-owner cleanup instead, use baseline-finish-close then baseline-observe-finish through the same tool. Do not repeat navigation or issue Save.";
+  if (!slot.agedClockAttempted) {
+    return `Project-only return retained. Use ${route.tool} action baseline-observe-clock once with the original baseline operationId. This collects clock evidence only; startup and writer authority remain unqualified. ${cleanup}`;
+  }
+  return `Original clock observation accepted. If the lifecycle has not already begun, use ${route.tool} action ${route.begin} once with its required acknowledgements and the original baseline operationId to retain it. After beginning, follow the returned lifecycle phase; do not repeat begin. The later ${route.writePhase} phase separately qualifies startup, clocks and intended effects before any mutation; this observation authorizes no direct edit. ${cleanup}`;
 }
 function summary(slot: Slot): Value {
   return { operationId: slot.owner.operationId, openingOperationId: slot.owner.openingOperationId, state: slot.journal.state,
@@ -1232,7 +1248,7 @@ export class CurrentSymbolBaselineCoordinator {
       need(completed && slot.projectOpenObservation !== undefined, "Current project-only scope did not complete.");
       await this.engine.assertBridgeDispatchAllowed(); await current();
       slot.journal.state = "project-only-opened";
-      slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Use baseline-finish-close then baseline-observe-finish for retained normal closure. Do not navigate again, Save or write.";
+      slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Keep the original facade and use baseline-inspect for purpose-bound clock/lifecycle guidance, or baseline-finish-close then baseline-observe-finish for retained normal closure. This opening authorizes no direct edit. Do not repeat navigation or issue Save.";
       await CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", { observation: slot.projectOpenObservation,
         observationSha256: sha256Json(slot.projectOpenObservation), dispatchClock: slot.projectOpenClock,
         sourceBeforeDispatch: slot.preopenSource, runtimeFingerprintSha256: sha256Json(initial),
@@ -1774,7 +1790,7 @@ export class CurrentSymbolBaselineCoordinator {
       finishSnapshotAttempted: journal["finishSnapshotAttempted"] ?? null, finishSnapshotCaptured: journal["finishSnapshotCaptured"] ?? null,
       finishSnapshotStatus: currentSymbolFinishSnapshotStatus(journal["finishSnapshotAttempted"], journal["finishSnapshotCaptured"], journal["finishSnapshotFailed"]),
       unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
-      nextSafeAction: (slot === undefined ? undefined : clockStageNextSafeAction(slot)) ?? journal["nextSafeAction"],
+      nextSafeAction: (slot === undefined ? undefined : clockStageNextSafeAction(slot, journal)) ?? journal["nextSafeAction"],
       originalOwnerRetained: this.slots.has(operationId), writerReady: false, executionAuthorized: false };
   }
 }

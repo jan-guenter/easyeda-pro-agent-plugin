@@ -15,6 +15,7 @@ export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_pcb_identities", "easyeda_control_history",
   "easyeda_control_pcb_geometry",
   "easyeda_control_project_symbol",
+  "easyeda_control_project_pcb",
   "easyeda_control_project_symbol_metadata",
   "easyeda_control_disposable_symbol_copy",
 ]);

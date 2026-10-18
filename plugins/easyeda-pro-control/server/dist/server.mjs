@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "7e5ded7e8515f8eeba91654fc03cf7709c6d622437ecb7675dc91286bc7f2afc";
+const __easyedaBundlePairId = "8f2c8fdbf815d90d11ae1d50493d9a7126eaf1b36d290e8436472475d6282abd";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -12169,13 +12169,13 @@ var init_json_schema_processors = __esm({
       const keyBag = keyType._zod.bag;
       const patterns = keyBag?.patterns;
       if (def.mode === "loose" && patterns && patterns.size > 0) {
-        const valueSchema2 = process2(def.valueType, ctx, {
+        const valueSchema3 = process2(def.valueType, ctx, {
           ...params,
           path: [...params.path, "patternProperties", "*"]
         });
         json3.patternProperties = {};
         for (const pattern of patterns) {
-          json3.patternProperties[pattern.source] = valueSchema2;
+          json3.patternProperties[pattern.source] = valueSchema3;
         }
       } else {
         if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
@@ -14585,13 +14585,13 @@ function convertBaseSchema(schema2, ctx) {
       }
       if (schema2.propertyNames) {
         const keySchema = convertSchema(schema2.propertyNames, ctx);
-        const valueSchema2 = schema2.additionalProperties && typeof schema2.additionalProperties === "object" ? convertSchema(schema2.additionalProperties, ctx) : z.any();
+        const valueSchema3 = schema2.additionalProperties && typeof schema2.additionalProperties === "object" ? convertSchema(schema2.additionalProperties, ctx) : z.any();
         if (Object.keys(shape).length === 0) {
-          zodSchema = z.record(keySchema, valueSchema2);
+          zodSchema = z.record(keySchema, valueSchema3);
           break;
         }
         const objectSchema2 = z.object(shape).passthrough();
-        const recordSchema2 = z.looseRecord(keySchema, valueSchema2);
+        const recordSchema2 = z.looseRecord(keySchema, valueSchema3);
         zodSchema = z.intersection(objectSchema2, recordSchema2);
         break;
       }
@@ -24032,9 +24032,9 @@ var init_protocol = __esm({
        * Note that this will replace any previous request handler for the same method.
        */
       setRequestHandler(requestSchema2, handler) {
-        const method5 = getMethodLiteral(requestSchema2);
-        this.assertRequestHandlerCapability(method5);
-        this._requestHandlers.set(method5, (request9, extra) => {
+        const method6 = getMethodLiteral(requestSchema2);
+        this.assertRequestHandlerCapability(method6);
+        this._requestHandlers.set(method6, (request9, extra) => {
           const parsed2 = parseWithCompat(requestSchema2, request9);
           return Promise.resolve(handler(parsed2, extra));
         });
@@ -24042,15 +24042,15 @@ var init_protocol = __esm({
       /**
        * Removes the request handler for the given method.
        */
-      removeRequestHandler(method5) {
-        this._requestHandlers.delete(method5);
+      removeRequestHandler(method6) {
+        this._requestHandlers.delete(method6);
       }
       /**
        * Asserts that a request handler has not already been set for the given method, in preparation for a new one being automatically installed.
        */
-      assertCanSetRequestHandler(method5) {
-        if (this._requestHandlers.has(method5)) {
-          throw new Error(`A request handler for ${method5} already exists, which would be overridden`);
+      assertCanSetRequestHandler(method6) {
+        if (this._requestHandlers.has(method6)) {
+          throw new Error(`A request handler for ${method6} already exists, which would be overridden`);
         }
       }
       /**
@@ -24059,8 +24059,8 @@ var init_protocol = __esm({
        * Note that this will replace any previous notification handler for the same method.
        */
       setNotificationHandler(notificationSchema, handler) {
-        const method5 = getMethodLiteral(notificationSchema);
-        this._notificationHandlers.set(method5, (notification) => {
+        const method6 = getMethodLiteral(notificationSchema);
+        this._notificationHandlers.set(method6, (notification) => {
           const parsed2 = parseWithCompat(notificationSchema, notification);
           return Promise.resolve(handler(parsed2));
         });
@@ -24068,8 +24068,8 @@ var init_protocol = __esm({
       /**
        * Removes the notification handler for the given method.
        */
-      removeNotificationHandler(method5) {
-        this._notificationHandlers.delete(method5);
+      removeNotificationHandler(method6) {
+        this._notificationHandlers.delete(method6);
       }
       /**
        * Cleans up the progress handler associated with a task.
@@ -31679,33 +31679,33 @@ var init_server = __esm({
 });
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
-function assertToolsCallTaskCapability(requests, method5, entityName) {
+function assertToolsCallTaskCapability(requests, method6, entityName) {
   if (!requests) {
-    throw new Error(`${entityName} does not support task creation (required for ${method5})`);
+    throw new Error(`${entityName} does not support task creation (required for ${method6})`);
   }
-  switch (method5) {
+  switch (method6) {
     case "tools/call":
       if (!requests.tools?.call) {
-        throw new Error(`${entityName} does not support task creation for tools/call (required for ${method5})`);
+        throw new Error(`${entityName} does not support task creation for tools/call (required for ${method6})`);
       }
       break;
     default:
       break;
   }
 }
-function assertClientRequestTaskCapability(requests, method5, entityName) {
+function assertClientRequestTaskCapability(requests, method6, entityName) {
   if (!requests) {
-    throw new Error(`${entityName} does not support task creation (required for ${method5})`);
+    throw new Error(`${entityName} does not support task creation (required for ${method6})`);
   }
-  switch (method5) {
+  switch (method6) {
     case "sampling/createMessage":
       if (!requests.sampling?.createMessage) {
-        throw new Error(`${entityName} does not support task creation for sampling/createMessage (required for ${method5})`);
+        throw new Error(`${entityName} does not support task creation for sampling/createMessage (required for ${method6})`);
       }
       break;
     case "elicitation/create":
       if (!requests.elicitation?.create) {
-        throw new Error(`${entityName} does not support task creation for elicitation/create (required for ${method5})`);
+        throw new Error(`${entityName} does not support task creation for elicitation/create (required for ${method6})`);
       }
       break;
     default:
@@ -31796,8 +31796,8 @@ var init_server2 = __esm({
         if (typeof methodValue !== "string") {
           throw new Error("Schema method literal must be a string");
         }
-        const method5 = methodValue;
-        if (method5 === "tools/call") {
+        const method6 = methodValue;
+        if (method6 === "tools/call") {
           const wrappedHandler = async (request9, extra) => {
             const validatedRequest = safeParse3(CallToolRequestSchema, request9);
             if (!validatedRequest.success) {
@@ -31825,53 +31825,53 @@ var init_server2 = __esm({
         }
         return super.setRequestHandler(requestSchema2, handler);
       }
-      assertCapabilityForMethod(method5) {
-        switch (method5) {
+      assertCapabilityForMethod(method6) {
+        switch (method6) {
           case "sampling/createMessage":
             if (!this._clientCapabilities?.sampling) {
-              throw new Error(`Client does not support sampling (required for ${method5})`);
+              throw new Error(`Client does not support sampling (required for ${method6})`);
             }
             break;
           case "elicitation/create":
             if (!this._clientCapabilities?.elicitation) {
-              throw new Error(`Client does not support elicitation (required for ${method5})`);
+              throw new Error(`Client does not support elicitation (required for ${method6})`);
             }
             break;
           case "roots/list":
             if (!this._clientCapabilities?.roots) {
-              throw new Error(`Client does not support listing roots (required for ${method5})`);
+              throw new Error(`Client does not support listing roots (required for ${method6})`);
             }
             break;
           case "ping":
             break;
         }
       }
-      assertNotificationCapability(method5) {
-        switch (method5) {
+      assertNotificationCapability(method6) {
+        switch (method6) {
           case "notifications/message":
             if (!this._capabilities.logging) {
-              throw new Error(`Server does not support logging (required for ${method5})`);
+              throw new Error(`Server does not support logging (required for ${method6})`);
             }
             break;
           case "notifications/resources/updated":
           case "notifications/resources/list_changed":
             if (!this._capabilities.resources) {
-              throw new Error(`Server does not support notifying about resources (required for ${method5})`);
+              throw new Error(`Server does not support notifying about resources (required for ${method6})`);
             }
             break;
           case "notifications/tools/list_changed":
             if (!this._capabilities.tools) {
-              throw new Error(`Server does not support notifying of tool list changes (required for ${method5})`);
+              throw new Error(`Server does not support notifying of tool list changes (required for ${method6})`);
             }
             break;
           case "notifications/prompts/list_changed":
             if (!this._capabilities.prompts) {
-              throw new Error(`Server does not support notifying of prompt list changes (required for ${method5})`);
+              throw new Error(`Server does not support notifying of prompt list changes (required for ${method6})`);
             }
             break;
           case "notifications/elicitation/complete":
             if (!this._clientCapabilities?.elicitation?.url) {
-              throw new Error(`Client does not support URL elicitation (required for ${method5})`);
+              throw new Error(`Client does not support URL elicitation (required for ${method6})`);
             }
             break;
           case "notifications/cancelled":
@@ -31880,38 +31880,38 @@ var init_server2 = __esm({
             break;
         }
       }
-      assertRequestHandlerCapability(method5) {
+      assertRequestHandlerCapability(method6) {
         if (!this._capabilities) {
           return;
         }
-        switch (method5) {
+        switch (method6) {
           case "completion/complete":
             if (!this._capabilities.completions) {
-              throw new Error(`Server does not support completions (required for ${method5})`);
+              throw new Error(`Server does not support completions (required for ${method6})`);
             }
             break;
           case "logging/setLevel":
             if (!this._capabilities.logging) {
-              throw new Error(`Server does not support logging (required for ${method5})`);
+              throw new Error(`Server does not support logging (required for ${method6})`);
             }
             break;
           case "prompts/get":
           case "prompts/list":
             if (!this._capabilities.prompts) {
-              throw new Error(`Server does not support prompts (required for ${method5})`);
+              throw new Error(`Server does not support prompts (required for ${method6})`);
             }
             break;
           case "resources/list":
           case "resources/templates/list":
           case "resources/read":
             if (!this._capabilities.resources) {
-              throw new Error(`Server does not support resources (required for ${method5})`);
+              throw new Error(`Server does not support resources (required for ${method6})`);
             }
             break;
           case "tools/call":
           case "tools/list":
             if (!this._capabilities.tools) {
-              throw new Error(`Server does not support tools (required for ${method5})`);
+              throw new Error(`Server does not support tools (required for ${method6})`);
             }
             break;
           case "tasks/get":
@@ -31919,7 +31919,7 @@ var init_server2 = __esm({
           case "tasks/result":
           case "tasks/cancel":
             if (!this._capabilities.tasks) {
-              throw new Error(`Server does not support tasks capability (required for ${method5})`);
+              throw new Error(`Server does not support tasks capability (required for ${method6})`);
             }
             break;
           case "ping":
@@ -31927,14 +31927,14 @@ var init_server2 = __esm({
             break;
         }
       }
-      assertTaskCapability(method5) {
-        assertClientRequestTaskCapability(this._clientCapabilities?.tasks?.requests, method5, "Client");
+      assertTaskCapability(method6) {
+        assertClientRequestTaskCapability(this._clientCapabilities?.tasks?.requests, method6, "Client");
       }
-      assertTaskHandlerCapability(method5) {
+      assertTaskHandlerCapability(method6) {
         if (!this._capabilities) {
           return;
         }
-        assertToolsCallTaskCapability(this._capabilities.tasks?.requests, method5, "Server");
+        assertToolsCallTaskCapability(this._capabilities.tasks?.requests, method6, "Server");
       }
       async _oninitialize(request9) {
         const requestedVersion = request9.params.protocolVersion;
@@ -33174,11 +33174,11 @@ function exactReaderFailureCategory(message) {
   if (typeof message !== "string" || message.length > 512) {
     return null;
   }
-  const [prefix4, kind, stage, api2, method5, expectation, ...extra] = message.split("|");
-  if (prefix4 !== "EASYEDA_EXACT_READ_FAILURE" || extra.length > 0 || kind === void 0 || !exactDiagnosticAllowed.kind.has(kind) || stage === void 0 || !exactDiagnosticAllowed.stage.has(stage) || api2 === void 0 || !exactDiagnosticAllowed.api.has(api2) || method5 === void 0 || !exactDiagnosticAllowed.method.has(method5) || expectation === void 0 || !exactDiagnosticAllowed.expectation.has(expectation)) {
+  const [prefix4, kind, stage, api2, method6, expectation, ...extra] = message.split("|");
+  if (prefix4 !== "EASYEDA_EXACT_READ_FAILURE" || extra.length > 0 || kind === void 0 || !exactDiagnosticAllowed.kind.has(kind) || stage === void 0 || !exactDiagnosticAllowed.stage.has(stage) || api2 === void 0 || !exactDiagnosticAllowed.api.has(api2) || method6 === void 0 || !exactDiagnosticAllowed.method.has(method6) || expectation === void 0 || !exactDiagnosticAllowed.expectation.has(expectation)) {
     return null;
   }
-  return ["exact-reader", kind, stage, api2, method5, expectation].join(":");
+  return ["exact-reader", kind, stage, api2, method6, expectation].join(":");
 }
 function firstJsonDifference(left, right) {
   const before = JSON.stringify(left);
@@ -33391,14 +33391,14 @@ var init_current_disposable_open_diagnostics = __esm({
     for (const stage of CURRENT_OPEN_NATIVE_STAGES) {
       for (const code of CURRENT_OPEN_NATIVE_CODES) {
         const category = `native-current-disposable-open:${stage}:${code}`;
-        const fields12 = { nativeStage: stage, nativeCode: code };
+        const fields13 = { nativeStage: stage, nativeCode: code };
         nativeMessages.set(`CURRENT_DISPOSABLE_OPEN_FAILED:${stage}:${code}`, category);
-        nativeCategories.set(category, fields12);
+        nativeCategories.set(category, fields13);
         for (const prefix4 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
-          wrappedCategories.set(`${prefix4} [${category}].`, fields12);
+          wrappedCategories.set(`${prefix4} [${category}].`, fields13);
         }
         if (code === "TIMEOUT") {
-          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields12);
+          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields13);
         }
       }
     }
@@ -33699,21 +33699,21 @@ var init_metadata_native_diagnostics = __esm({
 });
 
 // server/src/schematic-native-ids.ts
-function isSchematicNativeIdMethod(method5) {
-  return SCHEMATIC_NATIVE_ID_METHODS.some((entry) => entry === method5);
+function isSchematicNativeIdMethod(method6) {
+  return SCHEMATIC_NATIVE_ID_METHODS.some((entry) => entry === method6);
 }
-function buildSchematicNativeIdsExpression(method5, diagnostics) {
-  if (!isSchematicNativeIdMethod(method5)) {
+function buildSchematicNativeIdsExpression(method6, diagnostics) {
+  if (!isSchematicNativeIdMethod(method6)) {
     throw new Error("Unsupported schematic native ID method.");
   }
   if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
     throw new Error("Unsupported schematic native ID diagnostics.");
   }
   let family2 = "bus";
-  if (method5.includes("PrimitiveText")) {
+  if (method6.includes("PrimitiveText")) {
     family2 = "text";
   }
-  if (method5.includes("PrimitiveWire")) {
+  if (method6.includes("PrimitiveWire")) {
     family2 = "wire";
   }
   return `(() => {
@@ -34103,8 +34103,8 @@ var init_symbol_pin_enumeration = __esm({
 });
 
 // server/src/schematic-text-read.ts
-function isSchematicTextReadMethod(method5) {
-  return SCHEMATIC_TEXT_READ_METHODS.some((entry) => entry === method5);
+function isSchematicTextReadMethod(method6) {
+  return SCHEMATIC_TEXT_READ_METHODS.some((entry) => entry === method6);
 }
 function buildSchematicTextReadExpression(input, diagnostics) {
   const request9 = schematicTextReadRequestSchema.parse(input);
@@ -34260,8 +34260,8 @@ var init_schematic_text_read = __esm({
 function sortedDistinct(ids2) {
   return ids2.every((id10, index) => index === 0 || (ids2[index - 1] ?? "") < id10);
 }
-function isSchematicNetGroupReadMethod(method5) {
-  return SCHEMATIC_NETGROUP_READ_METHODS.some((entry) => entry === method5);
+function isSchematicNetGroupReadMethod(method6) {
+  return SCHEMATIC_NETGROUP_READ_METHODS.some((entry) => entry === method6);
 }
 function buildSchematicNetGroupReadExpression(input, diagnostics) {
   const request9 = schematicNetGroupReadRequestSchema.parse(input);
@@ -34449,8 +34449,8 @@ var init_schematic_netgroup_read = __esm({
 });
 
 // server/src/schematic-primitive-read.ts
-function isSchematicPrimitiveReadMethod(method5) {
-  return SCHEMATIC_PRIMITIVE_READ_METHODS.some((entry) => entry === method5);
+function isSchematicPrimitiveReadMethod(method6) {
+  return SCHEMATIC_PRIMITIVE_READ_METHODS.some((entry) => entry === method6);
 }
 function buildSchematicPrimitiveReadExpression(input, diagnostics) {
   const request9 = schematicPrimitiveReadRequestSchema.parse(input);
@@ -35217,9 +35217,9 @@ var init_native_diagnostics = __esm({
         }
       }
     }
-    schematicIdCategories = new Map(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method5) => [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
-      `Public SDK read could not produce a complete bounded observation; method=${method5}|stage=call|code=${code}|getter=none`,
-      `native-schematic-ids:${method5}:${label}`
+    schematicIdCategories = new Map(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method6) => [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method6}|stage=call|code=${code}|getter=none`,
+      `native-schematic-ids:${method6}:${label}`
     ])));
     componentPropertyCategories = new Map(
       [...SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES.map((code) => [`SCH_COMPONENT_PROPERTIES_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
@@ -35233,13 +35233,13 @@ var init_native_diagnostics = __esm({
         `native-symbol-pins:${SYMBOL_PIN_ENUMERATION_METHOD}:${label}`
       ])
     );
-    schematicTextCategories = new Map(SCHEMATIC_TEXT_READ_METHODS.flatMap((method5) => [...SCHEMATIC_TEXT_GUARD_CODES.map((code) => [`SCH_TEXT_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
-      `Public SDK read could not produce a complete bounded observation; method=${method5}|stage=call|code=${code}|getter=none`,
-      `native-schematic-text:${method5}:${label}`
+    schematicTextCategories = new Map(SCHEMATIC_TEXT_READ_METHODS.flatMap((method6) => [...SCHEMATIC_TEXT_GUARD_CODES.map((code) => [`SCH_TEXT_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method6}|stage=call|code=${code}|getter=none`,
+      `native-schematic-text:${method6}:${label}`
     ])));
-    schematicNetGroupCategories = new Map(SCHEMATIC_NETGROUP_READ_METHODS.flatMap((method5) => [...SCHEMATIC_NETGROUP_GUARD_CODES.map((code) => [`SCH_NETGROUP_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
-      `Public SDK read could not produce a complete bounded observation; method=${method5}|stage=call|code=${code}|getter=none`,
-      `native-schematic-netgroup:${method5}:${label}`
+    schematicNetGroupCategories = new Map(SCHEMATIC_NETGROUP_READ_METHODS.flatMap((method6) => [...SCHEMATIC_NETGROUP_GUARD_CODES.map((code) => [`SCH_NETGROUP_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method6}|stage=call|code=${code}|getter=none`,
+      `native-schematic-netgroup:${method6}:${label}`
     ])));
     schematicSelectionCategories = new Map(
       [...SCHEMATIC_SELECTION_GUARD_CODES.map((code) => [`SCH_SELECTION_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
@@ -35247,9 +35247,9 @@ var init_native_diagnostics = __esm({
         `native-selection-replacement:${SCHEMATIC_SELECTION_METHOD}:${label}`
       ])
     );
-    schematicPrimitiveCategories = new Map(SCHEMATIC_PRIMITIVE_READ_METHODS.flatMap((method5) => [...SCHEMATIC_PRIMITIVE_GUARD_CODES.map((code) => [`SCH_PRIMITIVE_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
-      `Public SDK read could not produce a complete bounded observation; method=${method5}|stage=call|code=${code}|getter=none`,
-      `native-schematic-primitive:${method5}:${label}`
+    schematicPrimitiveCategories = new Map(SCHEMATIC_PRIMITIVE_READ_METHODS.flatMap((method6) => [...SCHEMATIC_PRIMITIVE_GUARD_CODES.map((code) => [`SCH_PRIMITIVE_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method6}|stage=call|code=${code}|getter=none`,
+      `native-schematic-primitive:${method6}:${label}`
     ])));
     configuredFontCategories = new Map(
       [...CONFIGURED_FONT_GUARD_CODES.map((code) => [`CONFIGURED_FONTS_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
@@ -38795,8 +38795,8 @@ async function linuxProcessStartTime(pid2) {
   if (closingParenthesis === -1) {
     throw new Error(`Could not parse process identity for pid ${pid2}.`);
   }
-  const fields12 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields12[19];
+  const fields13 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields13[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error(`Could not parse process start time for pid ${pid2}.`);
   }
@@ -39531,23 +39531,23 @@ function advisoryRisk(namespace, name6) {
   }
   return "unknown";
 }
-function methodEntry(namespace, method5, detail) {
+function methodEntry(namespace, method6, detail) {
   const entry = {
-    path: `eda.${namespace.name}.${method5.name}`,
+    path: `eda.${namespace.name}.${method6.name}`,
     namespace: namespace.name,
-    className: method5.className,
-    risk: advisoryRisk(namespace.name, method5.name),
+    className: method6.className,
+    risk: advisoryRisk(namespace.name, method6.name),
     riskBasis: "method-name-heuristic-not-an-authorization",
     declared: true,
     executable: false,
     runtimeAvailability: "not-probed",
     validation: "declaration-only",
-    documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method5.className.toLowerCase()}.${method5.name.toLowerCase()}.html`
+    documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method6.className.toLowerCase()}.${method6.name.toLowerCase()}.html`
   };
   if (detail) {
-    entry.signature = method5.signature;
-    entry.sourceLine = method5.sourceLine;
-    entry.stabilityTags = [...method5.tags];
+    entry.signature = method6.signature;
+    entry.sourceLine = method6.sourceLine;
+    entry.stabilityTags = [...method6.tags];
     entry.receiverClassAlternatives = [...namespace.classNames];
     entry.inputSchema = null;
     entry.inputSchemaNote = "TypeScript signature, not a JSON argument schema; obtain the strict facade operation schema for execution.";
@@ -39581,7 +39581,7 @@ function queryExtensionApiCatalog(input = {}) {
     executable: false,
     runtimeAvailability: "not-probed",
     validation: "declaration-only"
-  })) : snapshot8.namespaces.filter((entry) => query.namespace === void 0 || entry.name === query.namespace).flatMap((namespace) => namespace.methods.filter((method5) => search === void 0 || `${namespace.name}.${method5.name} ${method5.signature}`.toLowerCase().includes(search)).map((method5) => methodEntry(namespace, method5, query.detail)));
+  })) : snapshot8.namespaces.filter((entry) => query.namespace === void 0 || entry.name === query.namespace).flatMap((namespace) => namespace.methods.filter((method6) => search === void 0 || `${namespace.name}.${method6.name} ${method6.signature}`.toLowerCase().includes(search)).map((method6) => methodEntry(namespace, method6, query.detail)));
   const page = [];
   let bytes2 = 2;
   for (const entry of entries4.slice(query.offset, query.offset + query.limit)) {
@@ -39609,7 +39609,7 @@ function queryExtensionApiCatalog(input = {}) {
       "Documentation URLs refer to the current official site, which can differ from either frozen declaration snapshot."
     ],
     totals: { namespaces: snapshot8.namespaces.length, methods: snapshot8.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), types: snapshot8.types.length },
-    namespaces: snapshot8.namespaces.filter((namespace) => query.kind === "methods" && (query.namespace === void 0 || namespace.name === query.namespace) && (search === void 0 || namespace.methods.some((method5) => `${namespace.name}.${method5.name} ${method5.signature}`.toLowerCase().includes(search)))).map((entry) => ({ name: entry.name, classNames: [...entry.classNames], declaredMethods: entry.methods.length })),
+    namespaces: snapshot8.namespaces.filter((namespace) => query.kind === "methods" && (query.namespace === void 0 || namespace.name === query.namespace) && (search === void 0 || namespace.methods.some((method6) => `${namespace.name}.${method6.name} ${method6.signature}`.toLowerCase().includes(search)))).map((entry) => ({ name: entry.name, classNames: [...entry.classNames], declaredMethods: entry.methods.length })),
     page: {
       kind: query.kind,
       offset: query.offset,
@@ -39695,8 +39695,8 @@ function add(namespace, methods9, tool, selector4, implementation, scope6, sourc
 function maintainedApiCoverageRoutes() {
   const result = /* @__PURE__ */ new Map();
   for (const group of groups) {
-    for (const method5 of group.methods) {
-      const path5 = `eda.${group.namespace}.${method5}`;
+    for (const method6 of group.methods) {
+      const path5 = `eda.${group.namespace}.${method6}`;
       const routes = result.get(path5) ?? [];
       routes.push(structuredClone(group.route));
       result.set(path5, routes);
@@ -39709,8 +39709,20 @@ var init_extension_api_coverage_routes = __esm({
   "server/src/extension-api-coverage-routes.ts"() {
     groups = [];
     topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
-    for (const [namespace, method5] of [["dmt_Project", "openProject"], ["dmt_EditorControl", "openDocument"]]) {
-      groups.push({ namespace, methods: [method5], route: {
+    groups.push({ namespace: "dmt_Pcb", methods: ["getPcbInfo"], route: {
+      tool: "easyeda_control_project_pcb",
+      selector: "eda.dmt_Pcb.getPcbInfo;loaded-local-project-no-editors",
+      implementation: "native-task-equivalent",
+      scope: "One explicit project/branch/PCB identity in an already loaded local path-hash project with no editor tabs or hidden frames. Fixed project-qualified native metadata getter, captured RPC receivers and two matching bounded observations bracketed by project-owner checks. Preserves native title/display title, parent, board, source/version, ticket and updateTime. Source/version/board fallbacks are observed getter semantics, not lossless storage. No public-wrapper parity, worker lease, saved membership, startup completion or writer authority. No canvas load, navigation, cloud lookup, mutation or Save. Other PCB metadata, full inventory and renaming remain separate.",
+      source: ["current-project-pcb-metadata.ts", "current-project-pcb-metadata-program.ts", "current-project-pcb-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],
+      tests: ["current-project-pcb-metadata.test.ts", "current-project-pcb-metadata-runtime.test.ts", "facade-mode.test.ts"],
+      documentTypes: [3],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-pcb", query: { includeSchemas: true } } } }
+    } });
+    for (const [namespace, method6] of [["dmt_Project", "openProject"], ["dmt_EditorControl", "openDocument"]]) {
+      groups.push({ namespace, methods: [method6], route: {
         tool: "easyeda_control_project_open",
         selector: "open;registered-local-disposable-pcb",
         implementation: "public-method",
@@ -39723,7 +39735,7 @@ var init_extension_api_coverage_routes = __esm({
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-open", query: { includeSchemas: true } } } }
       } });
     }
-    for (const [namespace, method5] of [
+    for (const [namespace, method6] of [
       ["pcb_SelectControl", "getAllSelectedPrimitives_PrimitiveId"],
       ["pcb_PrimitiveLine", "getAllPrimitiveId"],
       ["pcb_PrimitiveArc", "getAllPrimitiveId"],
@@ -39732,9 +39744,9 @@ var init_extension_api_coverage_routes = __esm({
       ["pcb_PrimitivePad", "getAllPrimitiveId"],
       ["pcb_Primitive", "getPrimitiveTypeByPrimitiveId"]
     ]) {
-      groups.push({ namespace, methods: [method5], route: {
+      groups.push({ namespace, methods: [method6], route: {
         tool: "easyeda_control_pcb_identities",
-        selector: `eda.${namespace}.${method5}`,
+        selector: `eda.${namespace}.${method6}`,
         implementation: "native-task-equivalent",
         scope: "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via/Component/Pad IDs enumerate loaded views. Type lookup admits only a positive unique membership in Line/Arc/Via, not Component/Pad; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, ComponentPad associations, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
         source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
@@ -39742,34 +39754,34 @@ var init_extension_api_coverage_routes = __esm({
         documentTypes: [3],
         validation: "offline-regression;current-live-unclaimed",
         executionState: "available-with-runtime-guards",
-        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method5}`, includeSchemas: true } } } }
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method6}`, includeSchemas: true } } } }
       } });
     }
     for (const family2 of ["Line", "Arc", "Via", "Component", "Pad"]) {
       const namespace = `pcb_Primitive${family2}`;
-      for (const method5 of ["getAll", "get"]) {
-        groups.push({ namespace, methods: [method5], route: {
+      for (const method6 of ["getAll", "get"]) {
+        groups.push({ namespace, methods: [method6], route: {
           tool: "easyeda_control_pcb_geometry",
-          selector: `eda.${namespace}.${method5}`,
+          selector: `eda.${namespace}.${method6}`,
           implementation: "native-task-equivalent",
-          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad state; fixed projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Pad hole is null or a strict ROUND/SLOT DTO with nonnegative mil dimensions, mil offsets and degree rotation relative to the pad. Holeless rows skip unused native hole scalars; native zero dimensions do not establish fabrication validity. Default copper ELLIPSE/OVAL/RECT parameters retain native0.1mil rounding and RECT corner ratio percent, not radius. POLYGON returns only a not-projected marker; its omitted path is not compared. NGON refuses and physical-layer stacks remain omitted. Mask mode1/2 and top/bottom solder plus one shared paste value are observed mil, not refreshed rules or explicit overrides. Nullable thermal mode0 includes mil clearance/spokeWidth and degree angle; modes1/2 omit unused dimensions. Null is not no connection; inherited values and actual pours remain unverified. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library enrichment and reverse ownership are omitted. Net labels and lock flags are not connectivity or editing authority. No filters, complete saved membership, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method5 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
+          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad state; fixed projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Pad hole is null or a strict ROUND/SLOT DTO with nonnegative mil dimensions, mil offsets and degree rotation relative to the pad. Holeless rows skip unused native hole scalars; native zero dimensions do not establish fabrication validity. Default copper ELLIPSE/OVAL/RECT parameters retain native0.1mil rounding and RECT corner ratio percent, not radius. POLYGON returns only a not-projected marker; its omitted path is not compared. NGON refuses and physical-layer stacks remain omitted. Mask mode1/2 and top/bottom solder plus one shared paste value are observed mil, not refreshed rules or explicit overrides. Nullable thermal mode0 includes mil clearance/spokeWidth and degree angle; modes1/2 omit unused dimensions. Null is not no connection; inherited values and actual pours remain unverified. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library enrichment and reverse ownership are omitted. Net labels and lock flags are not connectivity or editing authority. No filters, complete saved membership, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method6 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
           source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
           tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
           documentTypes: [3],
           validation: "offline-regression;current-live-unclaimed",
           executionState: "available-with-runtime-guards",
-          inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.${method5}`, includeSchemas: true } } } }
+          inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.${method6}`, includeSchemas: true } } } }
         } });
       }
     }
-    for (const method5 of ["get", "getAll", "getAllPrimitiveId"]) {
-      const identitiesOnly = method5 === "getAllPrimitiveId";
+    for (const method6 of ["get", "getAll", "getAllPrimitiveId"]) {
+      const identitiesOnly = method6 === "getAllPrimitiveId";
       const adapter = identitiesOnly ? "current-pcb-identities" : "current-pcb-geometry";
-      groups.push({ namespace: "pcb_PrimitiveString", methods: [method5], route: {
+      groups.push({ namespace: "pcb_PrimitiveString", methods: [method6], route: {
         tool: identitiesOnly ? "easyeda_control_pcb_identities" : "easyeda_control_pcb_geometry",
-        selector: `eda.pcb_PrimitiveString.${method5}`,
+        selector: `eda.pcb_PrimitiveString.${method6}`,
         implementation: "native-task-equivalent",
-        scope: `Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. ${identitiesOnly ? "Empty arguments only. Returns at most 20000 distinct bounded IDs, with 393216-byte evidence limit. Only globalIndex leaves the adapter; text, font and geometry are not read by its projection. Positive generic type lookup remains Line/Arc/Via only." : `Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. ${method5 === "get" ? "Accepts only1..256 distinct primitiveIds in an array, returns caller order and refuses any unavailable ID. No scalar get or missing-ID skipping." : "Empty arguments only; native family order is preserved."}`}`,
+        scope: `Separately pinned current API/UI/PCB String loaded-view read on an explicit ordinary active type-3 project/branch/document/tab. The captured native frame and receiver, native identity bracketing and two complete matching ordered samples retain the existing guards. Native string-getAll excludes parented views; component attributes and inherited text are outside this subset. Existing font caches are observed by the native serializer, not loaded or refreshed. No complete source ownership, saved membership, rendered-text/font validity, connectivity or persistence claim; no public wrapper or SDK constructor, selection, navigation, edit or Save. Vendor enumeration/serialization precedes bounds and is not cancelled by the deadline. ${identitiesOnly ? "Empty arguments only. Returns at most 20000 distinct bounded IDs, with 393216-byte evidence limit. Only globalIndex leaves the adapter; text, font and geometry are not read by its projection. Positive generic type lookup remains Line/Arc/Via only." : `Returns at most 256 plain String DTOs with identity/lock, native layer, placement, raw text/fontFamily, fontSize, lineWidth, alignMode1..9, rotation, reverse, expansion and mirror. Native distances multiply by10 to mil; rotation multiplies by180 then divides by Math.PI. No defaults/coercion, net field, display flags, color, font-cache or outline data. Empty strings stay empty; missing/null projected values, signed zero and nonfinite data refuse. Text bound65536UTF-16 units, fontFamily1024, identity256, scalar magnitude1e12, combined evidence393216bytes. Full-family bounds/stability apply before selection. ${method6 === "get" ? "Accepts only1..256 distinct primitiveIds in an array, returns caller order and refuses any unavailable ID. No scalar get or missing-ID skipping." : "Empty arguments only; native family order is preserved."}`}`,
         source: [`${adapter}.ts`, `${adapter}-program.ts`, `${adapter}-runtime.ts`, "current-pcb-layers.ts", "sdk-local-runtime.ts"],
         tests: [`${adapter}.test.ts`, ...identitiesOnly ? [] : ["current-pcb-geometry-registration.test.ts"]],
         documentTypes: [3],
@@ -39777,7 +39789,7 @@ var init_extension_api_coverage_routes = __esm({
         executionState: "available-with-runtime-guards",
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
           action: identitiesOnly ? "pcb-identities" : "pcb-geometry",
-          query: { method: `eda.pcb_PrimitiveString.${method5}`, includeSchemas: true }
+          query: { method: `eda.pcb_PrimitiveString.${method6}`, includeSchemas: true }
         } } }
       } });
     }
@@ -39902,12 +39914,12 @@ var init_extension_api_coverage_routes = __esm({
     add("pcb_Net", ["getAllNetsName"], "easyeda_control_exact_read", "pcb-rules", "public-method", "Net-name inventory as part of exact rule reads.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
     for (const family2 of ["line", "arc", "via", "pad", "polyline", "region", "pour", "fill", "component"]) {
       const className = `${family2[0]?.toUpperCase() ?? ""}${family2.slice(1)}`;
-      for (const method5 of ["create", "modify", "delete"]) {
+      for (const method6 of ["create", "modify", "delete"]) {
         add(
           `pcb_Primitive${className}`,
-          [method5],
+          [method6],
           "easyeda_control_design",
-          `pcb.${family2}.${method5}`,
+          `pcb.${family2}.${method6}`,
           "native-task-equivalent",
           "Operation-specific public/native transaction for representable reviewed PCB records; exact source delta, lock ancestry and persistence guards. Does not expose arbitrary public class instances or every declared property.",
           ["design-action.ts", "design-native-adapter.ts", "design-source-proof.ts"],
@@ -39915,12 +39927,12 @@ var init_extension_api_coverage_routes = __esm({
         );
       }
     }
-    for (const method5 of ["create", "modify", "delete"]) {
+    for (const method6 of ["create", "modify", "delete"]) {
       add(
         "pcb_PrimitiveString",
-        [method5],
+        [method6],
         "easyeda_control_design",
-        `footprint.text.${method5}`,
+        `footprint.text.${method6}`,
         "native-task-equivalent",
         "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
         ["footprint-action.ts", "footprint-public-geometry.ts", "footprint-lifecycle.ts", "design-action.ts", "design-execution.ts"],
@@ -39939,14 +39951,14 @@ var init_extension_api_coverage_routes = __esm({
       ["pcb-text-action.test.ts", "design-native-adapter.test.ts", "pcb-dispatch-profile.test.ts", "design-persistence.test.ts"],
       [3]
     );
-    for (const method5 of ["create", "delete"]) {
+    for (const method6 of ["create", "delete"]) {
       add(
         "pcb_PrimitiveString",
-        [method5],
+        [method6],
         "easyeda_control_design",
-        `pcb.text.${method5}`,
+        `pcb.text.${method6}`,
         "native-task-equivalent",
-        `One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Creation profile v2 fixes specialColor to explicit native-UI-default #000000; existing null/black values remain distinct and unchanged. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation. ${method5 === "create" ? "Creation-only retained-Save reconciliation requires the original six sealed phases and one successful Save/close/reopen acknowledgment. Exact v2 source, or the narrowly proven legacy v1 two-STRING cached-decoder case, may finish by read-only full-project proof. Legacy storage stays null, observed export stays black, and no Save, navigation or creation is repeated. Missing evidence or other deltas refuse." : "Consumed-Save deletion has no retained-Save recovery route."}`,
+        `One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Creation profile v2 fixes specialColor to explicit native-UI-default #000000; existing null/black values remain distinct and unchanged. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation. ${method6 === "create" ? "Creation-only retained-Save reconciliation requires the original six sealed phases and one successful Save/close/reopen acknowledgment. Exact v2 source, or the narrowly proven legacy v1 two-STRING cached-decoder case, may finish by read-only full-project proof. Legacy storage stays null, observed export stays black, and no Save, navigation or creation is repeated. Missing evidence or other deltas refuse." : "Consumed-Save deletion has no retained-Save recovery route."}`,
         [
           "pcb-text-lifecycle.ts",
           "pcb-text-lifecycle-runtime.ts",
@@ -39954,13 +39966,13 @@ var init_extension_api_coverage_routes = __esm({
           "pcb-exact-frame.ts",
           "design-action.ts",
           "design-execution.ts",
-          ...method5 === "create" ? ["pcb-text-retained-save.ts", "pcb-text-reload-history.ts", "native-history.ts"] : []
+          ...method6 === "create" ? ["pcb-text-retained-save.ts", "pcb-text-reload-history.ts", "native-history.ts"] : []
         ],
         [
           "pcb-text-lifecycle.test.ts",
           "pcb-text-action.test.ts",
           "design-persistence.test.ts",
-          ...method5 === "create" ? ["pcb-text-retained-save.test.ts", "pcb-text-retained-save-coordinator.test.ts", "pcb-text-reload-history.test.ts"] : []
+          ...method6 === "create" ? ["pcb-text-retained-save.test.ts", "pcb-text-retained-save-coordinator.test.ts", "pcb-text-reload-history.test.ts"] : []
         ],
         [3]
       );
@@ -39996,10 +40008,10 @@ var init_extension_api_coverage_routes = __esm({
       overwriteNetByNetRules: "rules.net-to-net.replace",
       overwriteRegionRules: "rules.region.replace"
     };
-    for (const [method5, action] of Object.entries(ruleMethods)) {
+    for (const [method6, action] of Object.entries(ruleMethods)) {
       add(
         "pcb_Drc",
-        [method5],
+        [method6],
         "easyeda_control_design",
         `pcb.${action}`,
         "native-task-equivalent",
@@ -40031,12 +40043,12 @@ var init_extension_api_coverage_routes = __esm({
         ["symbol-action.test.ts", "symbol-persistence.test.ts"]
       );
     }
-    for (const method5 of ["create", "modify", "delete"]) {
+    for (const method6 of ["create", "modify", "delete"]) {
       add(
         "sch_PrimitiveComponent",
-        [method5],
+        [method6],
         "easyeda_control_design",
-        `sch.component.${method5}`,
+        `sch.component.${method6}`,
         "native-task-equivalent",
         "Type-1 ordinary parts only; creation uses existing project single-part assets, modification preserves hidden/inherited properties and refuses unsupported rotations or new attributes.",
         ["schematic-component-create.ts", "schematic-native-adapter.ts", "schematic-electrical-adapter.ts", "schematic-source-proof.ts"],
@@ -40044,11 +40056,11 @@ var init_extension_api_coverage_routes = __esm({
       );
       add(
         "sch_PrimitiveWire",
-        [method5],
+        [method6],
         "easyeda_control_design",
-        `sch.wire.${method5}`,
-        method5 === "modify" ? "native-task-equivalent" : "public-method",
-        method5 === "modify" ? "Existing unlocked cardinal wire with explicit style and omitted net; awaited native completion and full topology/persistence proof. Historical wire-v2 disposable lifecycle does not validate this facade generation." : "Source-supported cardinal wire transaction only; new named-net defaults are refused. No claim of public wrapper correctness for every declared shape.",
+        `sch.wire.${method6}`,
+        method6 === "modify" ? "native-task-equivalent" : "public-method",
+        method6 === "modify" ? "Existing unlocked cardinal wire with explicit style and omitted net; awaited native completion and full topology/persistence proof. Historical wire-v2 disposable lifecycle does not validate this facade generation." : "Source-supported cardinal wire transaction only; new named-net defaults are refused. No claim of public wrapper correctness for every declared shape.",
         ["schematic-source-proof.ts", "schematic-native-wire.ts"],
         ["schematic-source-proof.test.ts", "schematic-native-wire.test.ts"]
       );
@@ -40118,9 +40130,9 @@ var init_extension_api_coverage_routes = __esm({
     for (const [family2, api2] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]]) {
       add(api2, ["get"], "easyeda_control_library", `library.${family2}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
     }
-    for (const method5 of ["create", "modify"]) {
-      add("lib_Footprint", [method5], "easyeda_control_library", `library.footprint.${method5}`, "public-method", "Current-project footprint metadata only; classifications and lossy null-description cases refused; complete selected-branch persistence proof.", ["library-runtime.ts", "library-persistence-proof.ts"], ["library-execution.test.ts"]);
-      add("lib_Device", [method5], "easyeda_control_library", `library.device.${method5}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
+    for (const method6 of ["create", "modify"]) {
+      add("lib_Footprint", [method6], "easyeda_control_library", `library.footprint.${method6}`, "public-method", "Current-project footprint metadata only; classifications and lossy null-description cases refused; complete selected-branch persistence proof.", ["library-runtime.ts", "library-persistence-proof.ts"], ["library-execution.test.ts"]);
+      add("lib_Device", [method6], "easyeda_control_library", `library.device.${method6}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
     }
     add("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.open", "public-method", "Existing exact current-project symbol; waits for coherent library editor context and proves unchanged selected branch.", ["library-runtime.ts"], ["library-execution.test.ts"]);
     add(
@@ -40137,7 +40149,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_symbol_metadata",
       selector: "metadata-advance;forward-only-unused-meta-or-canvas-segments-symbol",
       implementation: "native-task-equivalent",
-      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas requires stable atom types, lossless raw bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 complete chunks including the reserved write; stricter reader limits still apply. Saved canvas lines stay byte-exact with a native replay-order witness. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write only; canvas document windows must be strictly newer than every target header and within the fixed time ceiling. Physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Tags, source, classification, otherProperty and geometry changes are unsupported. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority; ordinary drawn-symbol connected validation remains unclaimed.",
+      scope: "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas requires stable atom types, lossless raw bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 complete chunks including the reserved write; stricter reader limits still apply. Saved canvas lines stay byte-exact with a native replay-order witness. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write only; canvas document windows must be strictly newer than every target header and within the fixed time ceiling. Physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Tags, source, classification, otherProperty and geometry changes are unsupported. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority. Installed080000 passed the ordinary unused canvas-segments forward lifecycle on a disposable fixture with complete SQL, exact reopened content and final closure.",
       source: ["current-symbol-operation.ts", "current-disposable-open-runtime.ts", "current-symbol-validation-runtime.ts", "current-symbol-startup-runtime.ts", "current-symbol-meta-only.ts", "current-symbol-write-budget.ts", "current-symbol-write-program.ts", "current-symbol-writer-runtime.ts", "current-symbol-verification-runtime.ts", "current-symbol-saved-source.ts", "saved-symbol-projection.ts", "symbol-sql-comparator.ts"],
       tests: ["current-symbol-operation.test.ts", "current-symbol-validation-runtime.test.ts", "current-symbol-meta-only.test.ts", "current-symbol-write-budget.test.ts", "current-symbol-startup-runtime.test.ts", "current-symbol-writer-runtime.test.ts", "current-symbol-saved-source.test.ts", "closed-symbol-disposable-mcp.test.ts"],
       documentTypes: [2],
@@ -40212,10 +40224,10 @@ var init_extension_api_coverage_routes = __esm({
       ["document-page-rename.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"],
       ["document-page-rename.test.ts", "document-page-rename-transaction.test.ts"]
     );
-    for (const [namespace, method5, family2] of [["dmt_Pcb", "modifyPcbName", "pcb"], ["dmt_Schematic", "modifySchematicName", "schematic"]]) {
+    for (const [namespace, method6, family2] of [["dmt_Pcb", "modifyPcbName", "pcb"], ["dmt_Schematic", "modifySchematicName", "schematic"]]) {
       add(
         namespace,
-        [method5],
+        [method6],
         "easyeda_control_library",
         `document.${family2}.rename`,
         "native-task-equivalent",
@@ -40278,8 +40290,8 @@ var init_extension_api_coverage_routes = __esm({
       getTestPointFile: "test-points",
       getIpc2581CFile: "ipc2581c"
     };
-    for (const [method5, selector4] of Object.entries(exports)) {
-      add("pcb_ManufactureData", [method5], "easyeda_control_library", `export.pcb.${selector4}`, "public-method", "Bounded actual File result up to 2 MiB, exclusive managed artifact, unchanged source/context; no model generation, arbitrary path, order or fabrication approval.", ["library-operations.ts", "library-runtime.ts"], ["library-operations.test.ts", "library-execution.test.ts"]);
+    for (const [method6, selector4] of Object.entries(exports)) {
+      add("pcb_ManufactureData", [method6], "easyeda_control_library", `export.pcb.${selector4}`, "public-method", "Bounded actual File result up to 2 MiB, exclusive managed artifact, unchanged source/context; no model generation, arbitrary path, order or fabrication approval.", ["library-operations.ts", "library-runtime.ts"], ["library-operations.test.ts", "library-execution.test.ts"]);
     }
     for (const family2 of ["pcb", "sch"]) {
       add(`${family2}_Drc`, ["check"], "easyeda_control_check", "run", "native-task-equivalent", "Fixed reviewed native calculation/report, scoped complete state and saved SQLite invariance; SDK boolean alone is not accepted.", ["native-rule-report.ts", "check-execution.ts"], ["native-rule-report.test.ts", "check-execution.test.ts"]);
@@ -40425,17 +40437,17 @@ function designParameterEffects(input) {
 }
 function compilePrimitive(operation, family2) {
   const catalog2 = primitiveCatalog[family2];
-  const method5 = operation.action.split(".")[2];
-  if (method5 !== "create" && method5 !== "modify" && method5 !== "delete") {
+  const method6 = operation.action.split(".")[2];
+  if (method6 !== "create" && method6 !== "modify" && method6 !== "delete") {
     throw new Error("Unreviewed primitive operation.");
   }
   const target6 = "target" in operation ? operation.target : null;
   const properties = "properties" in operation ? operation.properties : {};
   const patch3 = "patch" in operation ? operation.patch : {};
-  const fields12 = method5 === "create" ? Object.keys(properties) : Object.keys(patch3);
+  const fields13 = method6 === "create" ? Object.keys(properties) : Object.keys(patch3);
   let args;
   let inverse;
-  if (method5 === "create") {
+  if (method6 === "create") {
     args = catalog2.fields.map((field4) => propertyArgument(field4, Reflect.get(properties, field4)));
     inverse = { kind: "delete-created", api: catalog2.api, resultOf: operation.id };
   } else {
@@ -40443,9 +40455,9 @@ function compilePrimitive(operation, family2) {
       throw new Error("Missing primitive target.");
     }
     args = [targetArgument(target6)];
-    if (method5 === "modify") {
+    if (method6 === "modify") {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(patch3).map(([field4, value2]) => [field4, propertyArgument(field4, value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target6, fields: fields12 };
+      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target6, fields: fields13 };
     } else {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
@@ -40456,20 +40468,20 @@ function compilePrimitive(operation, family2) {
     beforeReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target6)] });
   }
   const afterReads = [sourceRead, identities4];
-  if (method5 !== "delete") {
+  if (method6 !== "delete") {
     afterReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target6 ?? { resultOf: operation.id })] });
   }
-  const values2 = method5 === "create" ? properties : patch3;
+  const values2 = method6 === "create" ? properties : patch3;
   const expectedFields = Object.entries(values2).map(([field4, value2]) => expectedField(family2, field4, value2));
   const collateral = family2 === "component" ? ["target-owned-pads", "target-owned-attributes", "target-owned-footprint-graphics"] : [];
   if (["line", "arc", "via", "pad", "pour", "fill"].includes(family2)) {
     collateral.push("derived-connectivity-and-copper-invalidation");
   }
   let resultKind = "boolean";
-  if (method5 === "create") {
+  if (method6 === "create") {
     resultKind = "created-primitive";
   }
-  if (method5 === "modify") {
+  if (method6 === "modify") {
     resultKind = "modified-primitive";
   }
   return {
@@ -40477,13 +40489,13 @@ function compilePrimitive(operation, family2) {
     id: operation.id,
     action: operation.action,
     documentType: 3,
-    call: { api: catalog2.api, method: method5, args },
+    call: { api: catalog2.api, method: method6, args },
     resultKind,
     beforeReads,
     afterReads,
     expectedFields,
     inverse,
-    effect: { family: family2, target: target6, identity: method5 === "modify" ? "preserve" : method5, fields: fields12, collateral },
+    effect: { family: family2, target: target6, identity: method6 === "modify" ? "preserve" : method6, fields: fields13, collateral },
     limitations: ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged", ...family2 === "pad" ? ["standalone-pad-only-unless-parent-collateral-is-explicitly-proven", "specialPad-unimplemented-in-sdk"] : [], ...family2 === "region" ? ["public-reader-omits-NO_VIAS"] : [], ...family2 === "fill" ? ["public-reader-hardcodes-fillMode"] : [], ...family2 === "arc" || family2 === "via" ? ["public-reader-rounds-geometry"] : []]
   };
 }
@@ -40519,10 +40531,10 @@ function compileGroup(operation) {
   const stem = group === "netclass" ? "NetClass" : "EqualLengthNetGroup";
   const groupStem = pair2 ? "DifferentialPair" : stem;
   const readMethod = `getAll${groupStem}${group === "netclass" ? "es" : "s"}`;
-  let method5;
+  let method6;
   const args = [literal2(operation.name)];
   if (verb === "create") {
-    method5 = `create${groupStem}`;
+    method6 = `create${groupStem}`;
     if ("positiveNet" in operation) {
       args.push(literal2(operation.positiveNet), literal2(operation.negativeNet));
     } else if ("nets" in operation && "color" in operation) {
@@ -40531,15 +40543,15 @@ function compileGroup(operation) {
       throw new Error("Missing group creation fields.");
     }
   } else if (verb === "delete") {
-    method5 = `delete${groupStem}`;
+    method6 = `delete${groupStem}`;
   } else if (verb === "rename" && "newName" in operation) {
-    method5 = `modify${groupStem}Name`;
+    method6 = `modify${groupStem}Name`;
     args.push(literal2(operation.newName));
   } else if ((verb === "add-nets" || verb === "remove-nets") && "nets" in operation) {
-    method5 = verb === "add-nets" ? `addNetTo${stem}` : `removeNetFrom${stem}`;
+    method6 = verb === "add-nets" ? `addNetTo${stem}` : `removeNetFrom${stem}`;
     args.push(literal2(operation.nets));
   } else if ((verb === "set-positive" || verb === "set-negative") && "net" in operation) {
-    method5 = verb === "set-positive" ? "modifyDifferentialPairPositiveNet" : "modifyDifferentialPairNegativeNet";
+    method6 = verb === "set-positive" ? "modifyDifferentialPairPositiveNet" : "modifyDifferentialPairNegativeNet";
     args.push(literal2(operation.net));
   } else {
     throw new Error("Unreviewed group operation.");
@@ -40578,7 +40590,7 @@ function compileGroup(operation) {
     id: operation.id,
     action: operation.action,
     documentType: 3,
-    call: { api: "pcb_Drc", method: method5, args },
+    call: { api: "pcb_Drc", method: method6, args },
     resultKind: "boolean",
     beforeReads: reads,
     afterReads: reads,
@@ -40655,8 +40667,8 @@ function buildDesignOperationCallExpression(input, createdIds = {}) {
         return JSON.stringify(primitiveId.parse(resolved2));
       }
       case "polygon": {
-        const method5 = argument.complex ? "createComplexPolygon" : "createPolygon";
-        return `(() => { const polygon = eda.pcb_MathPolygon.${method5}(${JSON.stringify(argument.source)}); if (!polygon) throw new Error("DESIGN_POLYGON_INVALID"); return polygon; })()`;
+        const method6 = argument.complex ? "createComplexPolygon" : "createPolygon";
+        return `(() => { const polygon = eda.pcb_MathPolygon.${method6}(${JSON.stringify(argument.source)}); if (!polygon) throw new Error("DESIGN_POLYGON_INVALID"); return polygon; })()`;
       }
       case "object": {
         return `{${Object.entries(argument.properties).map(([key, value2]) => `${JSON.stringify(key)}:${argumentExpression(value2)}`).join(",")}}`;
@@ -41929,11 +41941,11 @@ function compareDocumentSources(before, after) {
       if (previous === void 0 || canonicalJson(previous) === canonicalJson(object4)) {
         return [];
       }
-      const fields12 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object4.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object4.body[key] })).toSorted();
+      const fields13 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object4.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object4.body[key] })).toSorted();
       if (previous.type !== object4.type) {
-        fields12.push("$type");
+        fields13.push("$type");
       }
-      return [{ before: previous, after: object4, fields: fields12 }];
+      return [{ before: previous, after: object4, fields: fields13 }];
     })
   };
 }
@@ -41976,11 +41988,11 @@ function assertExactTransportValue(value2, depth = 0) {
   if (typeof value2 !== "object" || value2 === null) {
     throw new Error("Exact reader transport contains a non-JSON value.");
   }
-  const fields12 = Array.isArray(value2) ? value2 : Object.values(value2);
-  if (fields12.length > 2e4) {
+  const fields13 = Array.isArray(value2) ? value2 : Object.values(value2);
+  if (fields13.length > 2e4) {
     throw new Error("Exact reader transport exceeds its collection bound.");
   }
-  for (const field4 of fields12) {
+  for (const field4 of fields13) {
     assertExactTransportValue(field4, depth + 1);
   }
 }
@@ -42075,8 +42087,8 @@ function assertExactRecordKeys(value2, requiredKeys, label) {
     throw new Error(`${label} has missing or unexpected fields.`);
   }
 }
-function assertFiniteFields(value2, fields12, label) {
-  for (const field4 of fields12) {
+function assertFiniteFields(value2, fields13, label) {
+  for (const field4 of fields13) {
     if (typeof value2[field4] !== "number" || !Number.isFinite(value2[field4])) {
       throw new TypeError(`${label}.${field4} must be finite.`);
     }
@@ -42196,7 +42208,7 @@ function assertMaskExpansion(value2, label) {
   if (value2 === null) {
     return;
   }
-  const fields12 = /* @__PURE__ */ new Set([
+  const fields13 = /* @__PURE__ */ new Set([
     "topSolderMask",
     "bottomSolderMask",
     "topPasteMask",
@@ -42205,7 +42217,7 @@ function assertMaskExpansion(value2, label) {
   if (!isUnknownRecord(value2)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
-  if (Object.keys(value2).some((key) => !fields12.has(key))) {
+  if (Object.keys(value2).some((key) => !fields13.has(key))) {
     throw new Error(`${label} has an unexpected field.`);
   }
   assertFiniteFields(value2, Object.keys(value2), label);
@@ -42557,9 +42569,9 @@ function validateExactReadPayload(payload, request9) {
         );
       }
     }
-    const limitations14 = payload.limitations;
+    const limitations15 = payload.limitations;
     if (request9.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations14) || typeof limitations14.componentPinOtherProperty !== "string" || typeof limitations14.componentOtherPropertyFiltering !== "string" || typeof limitations14.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations15) || typeof limitations15.componentPinOtherProperty !== "string" || typeof limitations15.componentOtherPropertyFiltering !== "string" || typeof limitations15.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42574,7 +42586,7 @@ function validateExactReadPayload(payload, request9) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations14) || typeof limitations14.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations15) || typeof limitations15.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
@@ -42686,8 +42698,8 @@ function validateExactReadPayload(payload, request9) {
       );
     }
   } else if (request9.kind === "pcb-inventory") {
-    const limitations14 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations14) || typeof limitations14["directPads"] !== "string" || typeof limitations14.componentPadCorrelation !== "string" || typeof limitations14["pouredCorrelation"] !== "string" || typeof limitations14.regionRuleTypes !== "string" || typeof limitations14.fillModes !== "string" || typeof limitations14.arcPrecision !== "string" || typeof limitations14.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations15 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations15) || typeof limitations15["directPads"] !== "string" || typeof limitations15.componentPadCorrelation !== "string" || typeof limitations15["pouredCorrelation"] !== "string" || typeof limitations15.regionRuleTypes !== "string" || typeof limitations15.fillModes !== "string" || typeof limitations15.arcPrecision !== "string" || typeof limitations15.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families3 = payload.families;
@@ -44841,21 +44853,21 @@ function compileSchematicOperation(input) {
   if (operation.action === "sch.component-pin.no-connect") {
     values2 = { noConnected: operation.noConnected };
   }
-  const fields12 = Object.keys(values2);
-  let method5 = "modify";
+  const fields13 = Object.keys(values2);
+  let method6 = "modify";
   let resultKind = "modified-primitive";
   let args = [];
   let inverse;
   if (creating) {
-    method5 = "create";
+    method6 = "create";
     if (family2 === "port") {
-      method5 = "createNetPort";
+      method6 = "createNetPort";
     }
     if (family2 === "net-flag") {
-      method5 = "createNetFlag";
+      method6 = "createNetFlag";
     }
     if (family2 === "net-label") {
-      method5 = "createNetLabel";
+      method6 = "createNetLabel";
     }
     resultKind = "created-primitive";
     args = definition.fields.map((field4) => literal3(Reflect.get(values2, field4)));
@@ -44869,12 +44881,12 @@ function compileSchematicOperation(input) {
     }
     args = [{ kind: "target", target: target6 }];
     if (deleting) {
-      method5 = "delete";
+      method6 = "delete";
       resultKind = "boolean";
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     } else {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(values2).map(([field4, value2]) => [field4, literal3(value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target6, fields: fields12 };
+      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target6, fields: fields13 };
     }
   }
   const familyIdentities = { purpose: "family-identities", api: definition.api, method: "getAllPrimitiveId", args: [] };
@@ -44891,18 +44903,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations14 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations15 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations14.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations15.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations14.push("complete-source-property-merge-required-before-component-modify");
+    limitations15.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations14.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations15.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations14.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations15.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity31 = "preserve";
   if (deleting) {
@@ -44911,7 +44923,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity31 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field4, value2]) => expected(family2, field4, value2)), inverse, effect: { family: family2, target: target6, identity: identity31, fields: fields12, collateral }, requiredPreservation, limitations: limitations14 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method6, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field4, value2]) => expected(family2, field4, value2)), inverse, effect: { family: family2, target: target6, identity: identity31, fields: fields13, collateral }, requiredPreservation, limitations: limitations15 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -46115,25 +46127,25 @@ function storedTemplateBodies(sheet, source5, model) {
     if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
       fail4();
     }
-    const body4 = structuredClone(stored2.body), fields12 = [];
+    const body4 = structuredClone(stored2.body), fields13 = [];
     if (stored2.type === "ATTR") {
       if (!same5(body4["zIndex"], live.body["zIndex"])) {
         if (!Number.isSafeInteger(live.body["zIndex"]) || number8(live.body["zIndex"]) < 0) {
           fail4();
         }
         body4["zIndex"] = live.body["zIndex"];
-        fields12.push("zIndex");
+        fields13.push("zIndex");
       }
       if (!Object.hasOwn(body4, "strikeout") && live.body["strikeout"] === false) {
         body4["strikeout"] = false;
-        fields12.push("strikeout");
+        fields13.push("strikeout");
       }
     }
     if (!same5(body4, live.body)) {
       fail4();
     }
-    if (fields12.length > 0) {
-      hydration.push({ id: stored2.id, fields: fields12 });
+    if (fields13.length > 0) {
+      hydration.push({ id: stored2.id, fields: fields13 });
     }
   }
   return hydration;
@@ -47513,7 +47525,7 @@ function diagnosticRecord(value2) {
 function contextFailureDiagnostics(payload) {
   const source5 = diagnosticRecord(payload);
   const result = {};
-  const fields12 = {
+  const fields13 = {
     project: ["uuid", "projectUuid", "path"],
     document: ["uuid", "documentUuid", "documentType", "tabId", "parentProjectUuid", "parentLibraryUuid"],
     pcb: ["uuid", "documentUuid", "tabId"],
@@ -47537,7 +47549,7 @@ function contextFailureDiagnostics(payload) {
   const pathStatus = statuses["projectPath"];
   result["projectPathCall"] = typeof pathStatus === "string" && allowedStatuses.has(pathStatus) ? pathStatus : "unreported";
   result["contextStable"] = source5["contextStable"] === true;
-  for (const [label, keys2] of Object.entries(fields12)) {
+  for (const [label, keys2] of Object.entries(fields13)) {
     const item2 = diagnosticRecord(source5[label]);
     const status2 = statuses[label];
     const projected4 = {
@@ -48291,8 +48303,8 @@ return await (async () => {
 
 // server/src/editor-tab-lookups.ts
 import { join as join9 } from "node:path";
-function isEditorTabLookupMethod(method5) {
-  return method5 === TAB_METHOD || method5 === SPLIT_METHOD;
+function isEditorTabLookupMethod(method6) {
+  return method6 === TAB_METHOD || method6 === SPLIT_METHOD;
 }
 function contextIdentity(context3) {
   const projectUuid4 = context3.project.uuid ?? context3.project.projectUuid, uuid12 = context3.document.uuid ?? context3.document.documentUuid;
@@ -49579,8 +49591,8 @@ var init_pcb_selected_objects = __esm({
 });
 
 // server/src/pcb-source-objects.ts
-function isPcbSourceObjectsMethod(method5) {
-  return method5 === PCB_SOURCE_OBJECT_METHOD || method5 === PCB_SOURCE_OBJECTS_METHOD;
+function isPcbSourceObjectsMethod(method6) {
+  return method6 === PCB_SOURCE_OBJECT_METHOD || method6 === PCB_SOURCE_OBJECTS_METHOD;
 }
 function pcbSourceObjectIds(input) {
   const request9 = pcbSourceObjectsRequestSchema.parse(input);
@@ -49941,11 +49953,11 @@ function assertPlainInput(value2, depth, budget) {
   if (!Array.isArray(value2) && prototype !== Object.prototype && prototype !== null) {
     throw new Error("Public SDK read arguments require plain data.");
   }
-  const fields12 = Object.getOwnPropertyDescriptors(value2);
-  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields12).length > 4096) {
+  const fields13 = Object.getOwnPropertyDescriptors(value2);
+  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields13).length > 4096) {
     throw new Error("Invalid public SDK read argument collection.");
   }
-  for (const [key, descriptor10] of Object.entries(fields12)) {
+  for (const [key, descriptor10] of Object.entries(fields13)) {
     budget.characters += key.length;
     if (key.length > 256 || budget.characters > 131072) {
       throw new Error("Public SDK read argument keys exceed the bound.");
@@ -49960,7 +49972,7 @@ function assertPlainInput(value2, depth, budget) {
       assertPlainInput(descriptor10.value, depth + 1, budget);
     }
   }
-  if (Array.isArray(value2) && Object.keys(fields12).length !== value2.length + 1) {
+  if (Array.isArray(value2) && Object.keys(fields13).length !== value2.length + 1) {
     throw new Error("Sparse public SDK arrays are not accepted.");
   }
 }
@@ -49972,8 +49984,8 @@ function validatePublicSdkReadRequest(input, documentType3) {
   }
   return request9;
 }
-function publicSdkReadImplementationKind(method5) {
-  const definition = definitions.get(method5);
+function publicSdkReadImplementationKind(method6) {
+  const definition = definitions.get(method6);
   if (definition === void 0) {
     throw new Error("Unsupported fixed SDK method.");
   }
@@ -50397,8 +50409,8 @@ function validatePublicSdkReadPayload(input, requestInput2) {
         if (definition.primitiveType === "ComponentPad" && row7["ParentComponentPrimitiveId"] !== request9.arguments["primitiveId"]) {
           throw new Error("Public SDK component pad belongs to a different parent.");
         }
-        const fields12 = row7["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
-        if (Object.keys(row7).toSorted().join("\n") !== fields12.toSorted().join("\n")) {
+        const fields13 = row7["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
+        if (Object.keys(row7).toSorted().join("\n") !== fields13.toSorted().join("\n")) {
           throw new Error("Public SDK primitive projection is incomplete or contains unknown fields.");
         }
         validatePrimitiveFields(row7, rowIndex, definition, undefinedPointers);
@@ -50554,24 +50566,24 @@ var init_public_sdk_read = __esm({
       limitations: [...CONFIGURED_FONT_LIMITATIONS]
     });
     for (const request9 of editorTabLookupRequestSchema.options) {
-      const method5 = request9.shape.method.value;
+      const method6 = request9.shape.method.value;
       add2(
-        method5,
+        method6,
         ALL_DOCUMENTS,
-        method5.endsWith("getSplitScreenIdByTabId") ? "string" : "records",
+        method6.endsWith("getSplitScreenIdByTabId") ? "string" : "records",
         request9.shape.arguments,
-        method5.endsWith("getSplitScreenIdByTabId") ? ["tabId"] : ["splitScreenId"],
+        method6.endsWith("getSplitScreenIdByTabId") ? ["tabId"] : ["splitScreenId"],
         { parameterSupport: "narrowed", limitations: [
           "Requires a verified complete current-project checkpoint and two matching owned editor-tree observations; only an existing owned tab or nonempty leaf is admitted.",
           "Returns identity/type/project/library-owner fields only, never titles or raw tab data. Missing, parent, foreign, duplicate or ambiguous empty containers refuse; no navigation, preference changes or Save."
         ] }
       );
     }
-    for (const method5 of ["getEditorCurrentVersion", "getEditorCompliedDate"]) {
-      add2(`eda.sys_Environment.${method5}`, ALL_DOCUMENTS, "string");
+    for (const method6 of ["getEditorCurrentVersion", "getEditorCompliedDate"]) {
+      add2(`eda.sys_Environment.${method6}`, ALL_DOCUMENTS, "string");
     }
-    for (const method5 of ["isClient", "isWeb", "isEasyEDAProEdition", "isJLCEDAProEdition", "isProPrivateEdition", "isOnlineMode", "isHalfOfflineMode", "isOfflineMode"]) {
-      add2(`eda.sys_Environment.${method5}`, ALL_DOCUMENTS, "boolean");
+    for (const method6 of ["isClient", "isWeb", "isEasyEDAProEdition", "isJLCEDAProEdition", "isProPrivateEdition", "isOnlineMode", "isHalfOfflineMode", "isOfflineMode"]) {
+      add2(`eda.sys_Environment.${method6}`, ALL_DOCUMENTS, "boolean");
     }
     add2("eda.sys_I18n.getCurrentLanguage", ALL_DOCUMENTS, "string");
     add2("eda.sys_I18n.getAllSupportedLanguages", ALL_DOCUMENTS, "strings");
@@ -50585,15 +50597,15 @@ var init_public_sdk_read = __esm({
       ["tag", "namespace", "language", "args"],
       { restParameter: "args", parameterSupport: "narrowed", limitations: ["Official eda translation namespace only; at most 16 scalar interpolation values. Arbitrary extension namespaces and object conversion hooks are not admitted."] }
     );
-    for (const method5 of ["isLeftPanelLocked", "isRightPanelLocked", "isBottomPanelLocked"]) {
-      add2(`eda.sys_PanelControl.${method5}`, ALL_DOCUMENTS, "boolean");
+    for (const method6 of ["isLeftPanelLocked", "isRightPanelLocked", "isBottomPanelLocked"]) {
+      add2(`eda.sys_PanelControl.${method6}`, ALL_DOCUMENTS, "boolean");
     }
     add2("eda.sys_Window.getCurrentTheme", ALL_DOCUMENTS, "string");
     add2("eda.sys_ShortcutKey.getShortcutKeys", ALL_DOCUMENTS, "records", external_exports.object({ includeSystem: external_exports.boolean().optional() }).strict(), ["includeSystem"]);
     add2("eda.sys_Unit.getFrontendDataUnit", ALL_DOCUMENTS, "string", emptyArguments2, [], { optionalResult: true });
-    for (const [method5, parameter] of [["milToMm", "mil"], ["milToInch", "mil"], ["mmToMil", "mm"], ["mmToInch", "mm"], ["inchToMil", "inch"], ["inchToMm", "inch"]]) {
+    for (const [method6, parameter] of [["milToMm", "mil"], ["milToInch", "mil"], ["mmToMil", "mm"], ["mmToInch", "mm"], ["inchToMil", "inch"], ["inchToMm", "inch"]]) {
       add2(
-        `eda.sys_Unit.${method5}`,
+        `eda.sys_Unit.${method6}`,
         ALL_DOCUMENTS,
         "number",
         external_exports.object({ [parameter]: coordinate3, numberOfDecimals: external_exports.number().int().min(0).max(12).optional() }).strict(),
@@ -50612,22 +50624,22 @@ var init_public_sdk_read = __esm({
       { optionalResult: true, parameterSupport: "narrowed", limitations: ["At most 32 polylines with 128 points each; results describe the public geometry algorithm, not native electrical connectivity."] }
     );
     add2("eda.pcb_Document.getCanvasOrigin", PCB_DOCUMENTS, "origin");
-    for (const method5 of ["convertCanvasOriginToDataOrigin", "convertDataOriginToCanvasOrigin"]) {
-      add2(`eda.pcb_Document.${method5}`, PCB_DOCUMENTS, "point", external_exports.object({ x: coordinate3, y: coordinate3 }).strict(), ["x", "y"]);
+    for (const method6 of ["convertCanvasOriginToDataOrigin", "convertDataOriginToCanvasOrigin"]) {
+      add2(`eda.pcb_Document.${method6}`, PCB_DOCUMENTS, "point", external_exports.object({ x: coordinate3, y: coordinate3 }).strict(), ["x", "y"]);
     }
     boundedPolygon = polygonSourceSchema.max(1024);
     boundedComplexPolygon = external_exports.union([boundedPolygon, external_exports.array(boundedPolygon).min(1).max(8)]);
     splitPolygonGroups = external_exports.array(boundedComplexPolygon).min(1).max(8);
     SPLIT_POLYGON_METHOD = "eda.pcb_MathPolygon.splitPolygon";
-    for (const method5 of ["calculateWidth", "calculateHeight", "calculateBBoxHeight", "createComplexPolygon"]) {
+    for (const method6 of ["calculateWidth", "calculateHeight", "calculateBBoxHeight", "createComplexPolygon"]) {
       add2(
-        `eda.pcb_MathPolygon.${method5}`,
+        `eda.pcb_MathPolygon.${method6}`,
         ALL_DOCUMENTS,
-        method5 === "createComplexPolygon" ? "polygon" : "number",
+        method6 === "createComplexPolygon" ? "polygon" : "number",
         external_exports.object({ complexPolygon: boundedComplexPolygon }).strict(),
         ["complexPolygon"],
         {
-          optionalResult: method5 === "createComplexPolygon",
+          optionalResult: method6 === "createComplexPolygon",
           parameterSupport: "narrowed",
           limitations: ["JSON polygon arrays only, at most eight polygons of 1024 tokens. No native handles. Constructor returns serialized getSource data, not a reusable native object."]
         }
@@ -50648,13 +50660,13 @@ var init_public_sdk_read = __esm({
     });
     add2("eda.pcb_Document.getCalculatingRatlineStatus", [3], "string");
     add2("eda.pcb_Document.getCurrentFilterConfiguration", PCB_DOCUMENTS, "record", emptyArguments2, [], { optionalResult: true });
-    for (const method5 of ["getAllNetClasses", "getAllEqualLengthNetGroups", "getAllPadPairGroups", "getNetRules", "getRegionRules"]) {
-      add2(`eda.pcb_Drc.${method5}`, [3], "records");
+    for (const method6 of ["getAllNetClasses", "getAllEqualLengthNetGroups", "getAllPadPairGroups", "getNetRules", "getRegionRules"]) {
+      add2(`eda.pcb_Drc.${method6}`, [3], "records");
     }
     add2("eda.pcb_Drc.getAllDifferentialPairs", [3], "json", emptyArguments2, [], { limitations: ["The public SDK may return a record instead of an array; this observation does not assert complete differential-pair native state."] });
     add2("eda.pcb_Drc.getNetByNetRules", [3], "record");
-    for (const method5 of ["getCurrentRuleConfigurationName", "getDefaultRuleConfigurationName"]) {
-      add2(`eda.pcb_Drc.${method5}`, [3], "string", emptyArguments2, [], { optionalResult: true });
+    for (const method6 of ["getCurrentRuleConfigurationName", "getDefaultRuleConfigurationName"]) {
+      add2(`eda.pcb_Drc.${method6}`, [3], "string", emptyArguments2, [], { optionalResult: true });
     }
     add2("eda.pcb_Drc.getCurrentRuleConfiguration", [3], "record", emptyArguments2, [], { optionalResult: true });
     add2("eda.pcb_Drc.getRuleConfiguration", [3], "record", external_exports.object({ configurationName: name3 }).strict(), ["configurationName"], { optionalResult: true });
@@ -50693,11 +50705,11 @@ var init_public_sdk_read = __esm({
       parameterSupport: "narrowed",
       limitations: [...PCB_SOURCE_OBJECTS_LIMITATIONS]
     });
-    for (const method5 of ["getAllNetName", "getAllNetsName"]) {
-      add2(`eda.pcb_Net.${method5}`, [3], "strings");
+    for (const method6 of ["getAllNetName", "getAllNetsName"]) {
+      add2(`eda.pcb_Net.${method6}`, [3], "strings");
     }
-    for (const [method5, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]]) {
-      add2(`eda.pcb_Net.${method5}`, [3], output, external_exports.object({ net: text3 }).strict(), ["net"], { optionalResult: true });
+    for (const [method6, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]]) {
+      add2(`eda.pcb_Net.${method6}`, [3], output, external_exports.object({ net: text3 }).strict(), ["net"], { optionalResult: true });
     }
     for (const [prefix4, documents] of [["pcb", PCB_DOCUMENTS], ["sch", SCHEMATIC_DOCUMENTS]]) {
       add2(
@@ -50720,8 +50732,8 @@ var init_public_sdk_read = __esm({
     add2("eda.pcb_ManufactureData.getBomTemplates", [3], "strings");
     add2("eda.sch_ManufactureData.getBomTemplates", [1], "strings");
     add2("eda.sch_ManufactureData.getAssemblyVariantsConfigs", [1], "records");
-    for (const method5 of SCHEMATIC_NATIVE_ID_METHODS) {
-      add2(method5, [1], "ids", emptyArguments2, method5.includes("PrimitiveWire") ? ["net"] : [], {
+    for (const method6 of SCHEMATIC_NATIVE_ID_METHODS) {
+      add2(method6, [1], "ids", emptyArguments2, method6.includes("PrimitiveWire") ? ["net"] : [], {
         implementationKind: "native-task-equivalent",
         parameterSupport: "narrowed",
         limitations: [
@@ -50852,8 +50864,8 @@ var init_public_sdk_read = __esm({
       Poured: { schema: emptyArguments2, parameters: [] },
       Region: { schema: external_exports.object({ layer: layer([...layerCopper, 12]).optional(), ruleType: regionRuleTypes, primitiveLock: optionalLock }).strict(), parameters: ["layer", "ruleType", "primitiveLock"] }
     };
-    for (const [family2, fields12] of Object.entries(pcbGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields12}`.split(" ");
+    for (const [family2, fields13] of Object.entries(pcbGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields13}`.split(" ");
       const filter = pcbFilters[family2];
       if (filter === void 0) {
         throw new Error("Missing fixed PCB primitive filter.");
@@ -50872,8 +50884,8 @@ var init_public_sdk_read = __esm({
       add2(`eda.pcb_Primitive${family2}.getAll`, PCB_DOCUMENTS, "primitive", filter.schema, filter.parameters, options);
       add2(`eda.pcb_Primitive${family2}.getAllPrimitiveId`, PCB_DOCUMENTS, "ids", filter.schema, filter.parameters, { limitations: options.limitations, parameterSupport: options.parameterSupport });
     }
-    for (const [family2, fields12] of Object.entries(schGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields12}`.split(" ");
+    for (const [family2, fields13] of Object.entries(schGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields13}`.split(" ");
       let filter = { schema: emptyArguments2, parameters: [] };
       if (family2 === "Attribute") {
         filter = { schema: external_exports.object({ parentPrimitiveId: id3.optional() }).strict(), parameters: ["parentPrimitiveId"] };
@@ -51180,8 +51192,8 @@ function closeSdkClippingArguments(input) {
   const parsed2 = sdkClippingArgumentsSchema.parse(input);
   return { polygon1: closeRing(parsed2.polygon1), polygon2: closeRing(parsed2.polygon2) };
 }
-function isSdkClippingMethod(method5) {
-  return SDK_CLIPPING_METHODS.some((candidate) => candidate === method5);
+function isSdkClippingMethod(method6) {
+  return SDK_CLIPPING_METHODS.some((candidate) => candidate === method6);
 }
 function containsPoint(edges, point6) {
   let inside = false;
@@ -51220,8 +51232,8 @@ function resultGroups(raw, accepted) {
   }
   return groups2;
 }
-function regionExpected(method5, first, second) {
-  switch (method5) {
+function regionExpected(method6, first, second) {
+  switch (method6) {
     case "eda.sys_Math.union": {
       return first || second;
     }
@@ -51253,10 +51265,10 @@ function regionCount(groups2, point6) {
   }
   return result;
 }
-function validateSdkClippingResult(input, method5, raw) {
+function validateSdkClippingResult(input, method6, raw) {
   const args = sdkClippingArgumentsSchema.parse(input);
   const accepted = arrangement(args.polygon1, args.polygon2);
-  const groups2 = method5 === "eda.sys_Math.intersects" ? [] : resultGroups(raw, accepted);
+  const groups2 = method6 === "eda.sys_Math.intersects" ? [] : resultGroups(raw, accepted);
   const result = groups2.map((group) => ({ outer: edgesOf(group.outer), holes: group.holes.map(edgesOf) }));
   const xs = [...new Set(accepted.vertices.map((point6) => point6.x))].toSorted((a, b) => a - b);
   const ys = [...new Set(accepted.vertices.map((point6) => point6.y))].toSorted((a, b) => a - b);
@@ -51274,8 +51286,8 @@ function validateSdkClippingResult(input, method5, raw) {
       const point6 = { x: (x + nextX) / 2, y: (y + nextY) / 2 };
       const first = containsPoint(accepted.first, point6), second = containsPoint(accepted.second, point6);
       overlaps ||= first && second;
-      if (method5 !== "eda.sys_Math.intersects") {
-        const expected3 = regionExpected(method5, first, second);
+      if (method6 !== "eda.sys_Math.intersects") {
+        const expected3 = regionExpected(method6, first, second);
         const actual = regionCount(result, point6);
         if (actual !== Number(expected3)) {
           throw new Error("Clipping result does not match the complete bounded input regions.");
@@ -51283,7 +51295,7 @@ function validateSdkClippingResult(input, method5, raw) {
       }
     }
   }
-  if (method5 === "eda.sys_Math.intersects") {
+  if (method6 === "eda.sys_Math.intersects") {
     if (typeof raw !== "boolean" || raw !== overlaps) {
       throw new Error("Clipping intersection predicate contradicts the admitted regions.");
     }
@@ -51396,11 +51408,11 @@ function parseSdkMathRequest(input) {
 }
 function sdkMathDescriptors() {
   return sdkMathRequestSchema.options.map((schema2) => {
-    const method5 = schema2.shape.method.value;
-    const definition = definitions2[method5];
+    const method6 = schema2.shape.method.value;
+    const definition = definitions2[method6];
     return {
-      path: method5,
-      method: method5,
+      path: method6,
+      method: method6,
       inputSchema: external_exports.toJSONSchema(schema2),
       parameters: [...definition.parameters],
       resultKind: definition.result,
@@ -51425,14 +51437,14 @@ function validateSdkMathArguments(input) {
 function buildSdkMathProgram(input) {
   const request9 = parseSdkMathRequest(input);
   const definition = definitions2[request9.method];
-  const method5 = request9.method.slice("eda.sys_Math.".length);
+  const method6 = request9.method.slice("eda.sys_Math.".length);
   const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
   const callArguments = isSdkClippingMethod(request9.method) ? closeSdkClippingArguments(request9.arguments) : request9.arguments;
   return `try {
 const fail=()=>{throw new Error('SDK_MATH_INVALID_RESULT');};
 const args=${JSON.stringify(callArguments)};
 const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}};freeze(args);
-const owner=eda.sys_Math,method=owner?.${method5};if(!owner||typeof method!=='function')fail();
+const owner=eda.sys_Math,method=owner?.${method6};if(!owner||typeof method!=='function')fail();
 const scalar=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1e15)fail();return value;};
 const object=(value,keys)=>{if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==keys.length)fail();const out={};for(const key of keys){const item=Object.getOwnPropertyDescriptor(value,key);if(!item||!Object.hasOwn(item,'value')||!item.enumerable)fail();out[key]=scalar(item.value);}return out;};
 const point=value=>{const result=object(value,['x','y']);if(Math.abs(result.x)>1e12||Math.abs(result.y)>1e12)fail();return result;};
@@ -51449,7 +51461,7 @@ const project=value=>{
 };
 const read=()=>project(method.call(owner,${argumentsCode}));
 const first=read(),second=read();
-if(eda.sys_Math!==owner||owner.${method5}!==method||JSON.stringify(first)!==JSON.stringify(second))fail();
+if(eda.sys_Math!==owner||owner.${method6}!==method||JSON.stringify(first)!==JSON.stringify(second))fail();
 const json=JSON.stringify({ok:true,kind:'sdk-math',method:${JSON.stringify(request9.method)},value:first});
 const utf8Bytes=new TextEncoder().encode(json).byteLength;
 const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
@@ -51599,11 +51611,11 @@ function parseSdkSystemRequest(input) {
 }
 function sdkSystemDescriptors() {
   return sdkSystemRequestSchema.options.map((schema2) => {
-    const method5 = schema2.shape.method.value;
-    const definition = definitions3[method5];
+    const method6 = schema2.shape.method.value;
+    const definition = definitions3[method6];
     return {
-      path: method5,
-      method: method5,
+      path: method6,
+      method: method6,
       inputSchema: external_exports.toJSONSchema(schema2),
       parameters: [...definition.parameters],
       resultKind: definition.result,
@@ -51631,20 +51643,20 @@ function buildSdkSystemProgram(input) {
   const request9 = parseSdkSystemRequest(input);
   const definition = definitions3[request9.method];
   const namespace = request9.method.startsWith("eda.sys_Unit.") ? "sys_Unit" : "sys_Environment";
-  const method5 = request9.method.slice(`eda.${namespace}.`.length);
+  const method6 = request9.method.slice(`eda.${namespace}.`.length);
   const argumentProperties = Object.entries(request9.arguments).map(([key, value2]) => `${JSON.stringify(key)}:${Object.is(value2, -0) ? "-0" : JSON.stringify(value2)}`).join(",");
   const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
   return `try {
 const fail=()=>{throw new Error('SDK_SYSTEM_INVALID_RESULT');};
 const args=Object.freeze({${argumentProperties}});
-const owner=eda.${namespace},method=owner?.${method5};if(!owner||typeof method!=='function')fail();
+const owner=eda.${namespace},method=owner?.${method6};if(!owner||typeof method!=='function')fail();
 const kind=${JSON.stringify(definition.result)};
 const project=value=>{
  if(kind==='number'){if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1e12)fail();return value;}
  if(kind==='boolean'){if(typeof value!=='boolean')fail();return value;}
  if(typeof value!=='string'||value.length<1||value.length>128||!/^[\\u0020-\\u007E]+$/.test(value))fail();return value;
 };
-const read=()=>{if(eda.${namespace}!==owner||owner.${method5}!==method)fail();const value=project(method.call(owner,${argumentsCode}));if(eda.${namespace}!==owner||owner.${method5}!==method)fail();return value;};
+const read=()=>{if(eda.${namespace}!==owner||owner.${method6}!==method)fail();const value=project(method.call(owner,${argumentsCode}));if(eda.${namespace}!==owner||owner.${method6}!==method)fail();return value;};
 const first=read(),second=read();if(!Object.is(first,second))fail();
 const json=JSON.stringify({ok:true,kind:'sdk-system',method:${JSON.stringify(request9.method)},value:first,...(kind==='number'?{negativeZero:Object.is(first,-0)}:{})});
 const utf8Bytes=new TextEncoder().encode(json).byteLength;
@@ -51778,8 +51790,8 @@ var init_sdk_system = __esm({
 function omitted(code, reason, nextRequirement, evidence2 = []) {
   return { code, reason, nextRequirement, evidence: evidence2 };
 }
-function omissionFor(namespace, method5, declarations, reviewed) {
-  const short = `${namespace}.${method5}`;
+function omissionFor(namespace, method6, declarations, reviewed) {
+  const short = `${namespace}.${method6}`;
   if (!reviewed) {
     return omitted("not-in-reviewed-runtime", `${short} is declared only by the newer official reference and is absent from the pinned installed declaration.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]);
   }
@@ -51795,40 +51807,40 @@ function omissionFor(namespace, method5, declarations, reviewed) {
   if (lossy !== void 0) {
     return omitted("lossy-or-unawaited-public-reader", lossy, "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.", ["assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"]);
   }
-  if (/^place.*Order$/u.test(method5)) {
+  if (/^place.*Order$/u.test(method6)) {
     return omitted("external-commercial-action", `${short} submits a board, component, assembly or enclosure order and is outside disposable local CAD validation.`, "A separate explicit purchasing/submission contract, destination review, confirmation and non-production test service are required; do not invoke during a coverage test.");
   }
   if (["sys_ClientUrl", "sys_WebSocket", "sys_MessageBus", "sys_ExternalApi"].includes(namespace)) {
     return omitted("unrestricted-transport-or-service", `${short} exposes destinations, channels or service endpoints rather than a bounded CAD operation. Some declarations carry callbacks or arbitrary message data.`, "Implement fixed destination/channel adapters with authority, lifetime, cancellation and response schemas. Existing internal private transport is not caller access to this public method.");
   }
-  if (namespace.endsWith("_Event") || namespace === "sys_Timer" || /(?:EventListener|ShortcutKey|register|unregister)/u.test(method5)) {
+  if (namespace.endsWith("_Event") || namespace === "sys_Timer" || /(?:EventListener|ShortcutKey|register|unregister)/u.test(method6)) {
     return omitted("callback-or-registration-lifecycle", `${short} creates, removes or observes extension-owned callbacks or registrations; JSON arguments cannot transfer executable closures or safely own persistent handles.`, "Implement typed subscriptions with bounded event buffers, lease ownership, cancellation, disconnect cleanup and no caller code; registration state must not be shared implicitly.");
   }
   if (["sys_HeaderMenu", "sys_RightClickMenu", "sys_Dialog", "sys_MessageBox", "sys_IFrame", "sys_LoadingAndProgressBar", "sys_Message", "sys_ToastMessage", "sys_PanelControl"].includes(namespace)) {
     return omitted("interactive-ui-resource", `${short} controls an interactive dialog, menu, frame, notification or panel resource; successful return does not establish completion or user choice.`, "Add a process-bound typed UI-resource owner, observable result/cancellation and cleanup. Existing native_ui can inspect and operate visible controls but does not implement this API method.");
   }
-  if (namespace === "sys_Storage" || namespace === "sys_Setting" || namespace === "sys_Log" || namespace === "sys_FontManager" || method5 === "setKeepProjectHasOnlyOneBoard") {
+  if (namespace === "sys_Storage" || namespace === "sys_Setting" || namespace === "sys_Log" || namespace === "sys_FontManager" || method6 === "setKeepProjectHasOnlyOneBoard") {
     return omitted("extension-or-global-settings-state", `${short} reads or changes extension/global application state that is not bounded by a disposable project checkpoint.`, "Define named key/font/log/config scopes, secret filtering, backups for mutation and cleanup before exposing this method. Project rollback cannot undo these effects.");
   }
-  if (namespace === "sys_FileSystem" || namespace === "sys_FormatConversion" || namespace === "sys_FileManager" || /(?:File|RenderImage)$/u.test(method5) || /^(?:upload|import).*File/u.test(method5)) {
+  if (namespace === "sys_FileSystem" || namespace === "sys_FormatConversion" || namespace === "sys_FileManager" || /(?:File|RenderImage)$/u.test(method6) || /^(?:upload|import).*File/u.test(method6)) {
     return omitted("managed-file-contract-needed", `${short} consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.`, "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.");
   }
-  if (["dmt_Team", "dmt_Workspace", "dmt_Folder", "lib_LibrariesList", "lib_Classification"].includes(namespace) || /(?:UserInfo|ProjectInfo|ProjectsUuid|search|getByLcscIds|Collaborat|moveProject)/u.test(method5)) {
+  if (["dmt_Team", "dmt_Workspace", "dmt_Folder", "lib_LibrariesList", "lib_Classification"].includes(namespace) || /(?:UserInfo|ProjectInfo|ProjectsUuid|search|getByLcscIds|Collaborat|moveProject)/u.test(method6)) {
     return omitted("account-or-library-scope-needed", `${short} reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.`, "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.");
   }
-  if (namespace === "pcb_RayTracerEngine" || namespace === "pcb_ImageTool" || namespace === "sch_SimulationEngine" || method5.includes("WithMouse") || method5.startsWith("placeCbb")) {
+  if (namespace === "pcb_RayTracerEngine" || namespace === "pcb_ImageTool" || namespace === "sch_SimulationEngine" || method6.includes("WithMouse") || method6.startsWith("placeCbb")) {
     return omitted("interactive-engine-lifecycle", `${short} starts or controls rendering, image processing, simulation or interactive placement rather than returning a completed JSON CAD effect.`, "Add cancellable job ownership, bounded progress/results and process/context reproof; placement or generated geometry also needs an exact source/connectivity effect model.");
   }
-  if (method5 === "importChanges" || method5 === "autoRouting" || method5 === "autoLayout" || method5 === "clearRouting" || method5 === "setNetlist") {
+  if (method6 === "importChanges" || method6 === "autoRouting" || method6 === "autoLayout" || method6 === "clearRouting" || method6 === "setNetlist") {
     return omitted("multi-object-electrical-effect", `${short} can replace connectivity or alter many placed/routed objects; current per-record transactions do not define its complete intended delta.`, "Implement a previewed explicit change set, preserved component/pad/net identities, complete-project source verifier and saved/reopened disposable validation. ECO dialogs are not an API completion receipt.");
   }
-  if (method5 === "generateIndicatorMarkers" || method5.startsWith("doCrossProbe") || method5 === "doSelectPrimitives" || method5 === "urlPushState" || method5 === "urlReplaceState") {
+  if (method6 === "generateIndicatorMarkers" || method6.startsWith("doCrossProbe") || method6 === "doSelectPrimitives" || method6 === "urlPushState" || method6 === "urlReplaceState") {
     return omitted("selection-marker-or-history-mutation", `${short} changes selected objects, indicator markers, cross-probe state or browser navigation history; it is not a read or pure calculation.`, "Implement typed exact target/state ownership, observe completion and preserve or explicitly restore prior selection, markers or history. Cross-probe can affect another document and needs both contexts bound.");
   }
-  if (/^(?:create|delete|remove|modify|set|overwrite|copy|move|reorder|update|add|rename|save|restore|start|stop|clear|lock|unlock|highlight|unhighlight|select|unselect|toggle|switch|push|import|upload|rebuild|trigger|dispose)/u.test(method5)) {
+  if (/^(?:create|delete|remove|modify|set|overwrite|copy|move|reorder|update|add|rename|save|restore|start|stop|clear|lock|unlock|highlight|unhighlight|select|unselect|toggle|switch|push|import|upload|rebuild|trigger|dispose)/u.test(method6)) {
     return omitted("scoped-effect-adapter-needed", `${short} has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.`, "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.");
   }
-  if (/^(?:open|close|activate|zoom|navigate|tile|merge)/u.test(method5)) {
+  if (/^(?:open|close|activate|zoom|navigate|tile|merge)/u.test(method6)) {
     return omitted("navigation-or-viewport-adapter-needed", `${short} changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.`, "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.");
   }
   if (declarations.some((entry) => /(?:=>|\bFunction\b|\bFile\b|\bBlob\b|\bElement\b|\bComponent\b|\bI(?:PCB|SCH)_Primitive\w*\b|\bIPCB_(?:Complex)?Polygon\b)/u.test(entry.signature))) {
@@ -51870,17 +51882,17 @@ function inventoryExtensionApiCoverage() {
   const methods9 = /* @__PURE__ */ new Map();
   for (const snapshot8 of extensionApiSnapshots) {
     for (const namespace of snapshot8.namespaces) {
-      for (const method5 of namespace.methods) {
-        const path5 = `eda.${namespace.name}.${method5.name}`;
-        const group = methods9.get(path5) ?? { namespace: namespace.name, method: method5.name, declarations: [], methods: [] };
+      for (const method6 of namespace.methods) {
+        const path5 = `eda.${namespace.name}.${method6.name}`;
+        const group = methods9.get(path5) ?? { namespace: namespace.name, method: method6.name, declarations: [], methods: [] };
         group.declarations.push({
           reference: snapshot8.reference,
-          className: method5.className,
-          signature: method5.signature,
-          sourceLine: method5.sourceLine,
-          documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method5.className.toLowerCase()}.${method5.name.toLowerCase()}.html`
+          className: method6.className,
+          signature: method6.signature,
+          sourceLine: method6.sourceLine,
+          documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method6.className.toLowerCase()}.${method6.name.toLowerCase()}.html`
         });
-        group.methods.push(method5);
+        group.methods.push(method6);
         methods9.set(path5, group);
       }
     }
@@ -52148,8 +52160,8 @@ var init_extension_api_coverage = __esm({
 });
 
 // server/src/sdk-read-validation-history.ts
-function getSdkReadValidationHistory(method5) {
-  const selected3 = cases.filter((entry) => entry.method === method5);
+function getSdkReadValidationHistory(method6) {
+  const selected3 = cases.filter((entry) => entry.method === method6);
   const generationIds = new Set(selected3.map((entry) => entry.generationId));
   const selectedGenerations = generations.filter((generation5) => generationIds.has(generation5.id));
   const paths = new Set(selectedGenerations.flatMap((generation5) => generation5.adapterBindings.map((binding4) => binding4.path)));
@@ -52837,8 +52849,8 @@ function expectedRegionRules(compiled2, before) {
     if (target6 === void 0 || !constraint && target6.type !== "POUR") {
       throw new Error("Region rule target must be an existing pour or constraint ID.");
     }
-    const fields12 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
-    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields12), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
+    const fields13 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
+    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields13), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
     if (Object.keys(value2).some((key) => !allowed.has(key))) {
       throw new Error("Unreviewed region rule field.");
     }
@@ -52848,7 +52860,7 @@ function expectedRegionRules(compiled2, before) {
     }
     wanted.add(id10);
     const ruleKeyValue = {};
-    for (const [label, raw] of Object.entries(fields12)) {
+    for (const [label, raw] of Object.entries(fields13)) {
       const family2 = String(raw), rule2 = reference(before, value2[label], family2);
       if (rule2 !== null && (constraint || !["PLANE", "COPPER"].includes(family2) || rule2 !== "default")) {
         ruleKeyValue[family2] = rule2;
@@ -53420,8 +53432,8 @@ function assertPrimitiveRepresentation(type2, body4) {
     return unsupported2("blind via requires an explicit existing blind-layer rule");
   }
   if (type2 === "PAD" || type2 === "VIA") {
-    const fields12 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
-    const masks = fields12.map((field4) => body4[field4]);
+    const fields13 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
+    const masks = fields13.map((field4) => body4[field4]);
     if (!masks.every((value2) => value2 === null) && !masks.every((value2) => typeof value2 === "number" && Number.isFinite(value2))) {
       return unsupported2("native mask mode is shared: use all explicit numeric expansions or all rule defaults");
     }
@@ -54133,9 +54145,9 @@ function values(record7, key) {
   }
   return value2;
 }
-function assertDefaultFields(record7, fields12) {
+function assertDefaultFields(record7, fields13) {
   const keys2 = values(record7, "ruleKeyValue");
-  for (const field4 of fields12) {
+  for (const field4 of fields13) {
     const value2 = keys2[field4];
     if (value2 !== void 0 && value2 !== null && value2 !== "default") {
       throw new Error("Public group operation would reset a member rule override; assign or preserve it explicitly first.");
@@ -54180,14 +54192,14 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
     if (verb === "rename" && before.objects.some((record7) => record7.type === "RULE_SELECTOR" && record7 !== group && record7.id.includes(JSON.stringify([selector4, first.value])))) {
       throw new Error("Native group rename cannot preserve associated between-net selectors.");
     }
-    let fields12 = ["DIFFER_ENTAIL"];
+    let fields13 = ["DIFFER_ENTAIL"];
     if (family2 === "netclass") {
-      fields12 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
+      fields13 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
     } else if (family2 === "equal-length") {
-      fields12 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
+      fields13 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
     }
     if (verb === "add-nets") {
-      assertDefaultFields(group, fields12);
+      assertDefaultFields(group, fields13);
     }
     for (const record7 of before.objects.filter((entry) => entry.type === "NET")) {
       const next = expected3.objects.find((entry) => entry.id === record7.id);
@@ -54196,7 +54208,7 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
         if (!Array.isArray(key) || typeof key[1] !== "string") {
           throw new TypeError("Invalid native net identity.");
         }
-        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields12);
+        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields13);
       }
     }
     if (family2 === "differential-pair") {
@@ -56303,8 +56315,8 @@ var init_footprint_public_line = __esm({
 function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}) {
   const operation = footprintOperationSchema.parse(input);
   const family2 = operation.action.split(".")[1] ?? "", verb = operation.action.split(".")[2];
-  const fields12 = mapping[family2], stem = stems[family2];
-  if (fields12 === void 0 || stem === void 0) {
+  const fields13 = mapping[family2], stem = stems[family2];
+  if (fields13 === void 0 || stem === void 0) {
     throw new Error("Unreviewed footprint public geometry family.");
   }
   assertFootprintProfileSupported(operation, before, ids2);
@@ -56359,7 +56371,7 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   }
   const baseline2 = {};
   if (target6 !== void 0) {
-    for (const [key, sourceKey] of Object.entries(fields12)) {
+    for (const [key, sourceKey] of Object.entries(fields13)) {
       if (!Object.hasOwn(target6.body, sourceKey)) {
         throw new Error("Incomplete footprint geometry source baseline.");
       }
@@ -56945,14 +56957,14 @@ function schematicUserRestoration(previous, current5, beforeCheckpointSha256, af
 function verifyTargetMetadata(previous, current5, beforeCheckpointSha256, afterCheckpointSha256) {
   const before = previous.metadata;
   const after = current5.metadata;
-  const fields12 = changedFields(before, after);
-  if (fields12.some((field4) => field4 !== "user" && !VOLATILE_METADATA.has(field4))) {
+  const fields13 = changedFields(before, after);
+  if (fields13.some((field4) => field4 !== "user" && !VOLATILE_METADATA.has(field4))) {
     throw new Error("Saved document metadata changed outside the intended edit.");
   }
-  if (fields12.includes("user")) {
+  if (fields13.includes("user")) {
     return schematicUserRestoration(previous, current5, beforeCheckpointSha256, afterCheckpointSha256);
   }
-  if (fields12.length === 0) {
+  if (fields13.length === 0) {
     return void 0;
   }
   const time6 = after["updateTime"];
@@ -56979,8 +56991,8 @@ function deriveDesignBaselineTargets(before, expectedAfter) {
     if (after === void 0 || after.type !== record7.type) {
       return [{ id: record7.id, fields: Object.keys(record7.body).toSorted() }];
     }
-    const fields12 = changedFields(record7.body, after.body);
-    return fields12.length === 0 ? [] : [{ id: record7.id, fields: fields12 }];
+    const fields13 = changedFields(record7.body, after.body);
+    return fields13.length === 0 ? [] : [{ id: record7.id, fields: fields13 }];
   }).toSorted((left, right) => left.id.localeCompare(right.id));
 }
 function verifyDesignBaseline(input) {
@@ -57179,13 +57191,13 @@ function projectFootprintPadHistory(input) {
       throw new Error("Footprint pad target is absent from durable baseline.");
     }
     const after = live.body, before = stored2.body;
-    const fields12 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field4) => canonicalJson({ value: before[field4] }) !== canonicalJson({ value: after[field4] }));
-    if (fields12.length > 0) {
+    const fields13 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field4) => canonicalJson({ value: before[field4] }) !== canonicalJson({ value: after[field4] }));
+    if (fields13.length > 0) {
       const land = before["defaultPad"];
       if (before["hole"] !== null || after["hole"] !== null || before["layerId"] !== 1 && before["layerId"] !== 2 || before["layerId"] !== after["layerId"] || before["netName"] !== "" || before["parentId"] !== void 0 && before["parentId"] !== null && before["parentId"] !== "" || canonicalJson(before["specialPad"]) !== "[]" || !isRecord(land) || !["ELLIPSE", "OVAL", "RECT"].includes(String(land["padType"]))) {
         throw new Error("Unsupported footprint pad load/export representation.");
       }
-      for (const field4 of fields12) {
+      for (const field4 of fields13) {
         const observed2 = after[field4], value2 = before[field4];
         let admitted = false;
         if (field4 === "padOffsetX" || field4 === "padOffsetY") {
@@ -57284,9 +57296,9 @@ function resolvedTarget2(operation, ids2) {
 }
 function patchFields(family2, properties, previous) {
   const result = {};
-  const fields12 = FIELDS[family2] ?? SHAPE_FIELDS;
+  const fields13 = FIELDS[family2] ?? SHAPE_FIELDS;
   for (const [key, value2] of Object.entries(properties).filter(([property]) => !DERIVED_FIELDS.has(property))) {
-    const field4 = fields12[key];
+    const field4 = fields13[key];
     if (field4 === void 0) {
       throw new Error("Unmapped symbol geometry property.");
     }
@@ -57660,11 +57672,11 @@ function decodeModelTransform(value2) {
       translationMil: { x: numbers[9], y: numbers[10], z: numbers[11] }
     });
   }
-  const fields12 = text28.split(",");
-  if (fields12.length !== 9 || fields12.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
+  const fields13 = text28.split(",");
+  if (fields13.length !== 9 || fields13.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
     throw new Error("Native legacy model transform requires exactly nine numeric fields.");
   }
-  const values2 = fields12.map(Number);
+  const values2 = fields13.map(Number);
   return modelTransformSchema.parse({
     format: "legacy",
     dimensionsMil: { x: values2[0], y: values2[1], z: values2[2] },
@@ -58324,7 +58336,7 @@ var init_pcb_text_lifecycle = __esm({
 function fail5() {
   throw new Error("Schematic null style lacks exact native library reconstruction.");
 }
-function schematicLibraryStyle(history, native, stored2, exported, fields12) {
+function schematicLibraryStyle(history, native, stored2, exported, fields13) {
   const model = native.components.find((entry) => entry.id === stored2.body["parentId"]);
   const symbolId = model?.attributes.find((entry) => entry.key === "Symbol")?.value;
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
@@ -58338,7 +58350,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields12) {
   }
   const roots = symbol4.records.filter((row7) => row7.type === "ATTR" && row7.body["partId"] === model.body["partId"] && (row7.body["parentId"] === "" || row7.body["parentId"] === model.body["partId"]) && row7.body["key"] === stored2.body["key"]);
   const attrs = model.attributes.filter((attr) => attr.id === stored2.id && attr.key === stored2.body["key"]), root = roots[0];
-  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields12.length === 0 || fields12.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same12(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
+  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields13.length === 0 || fields13.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same12(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
     fail5();
   }
   const pins = symbol4.records.filter((row7) => row7.type === "PIN" && row7.body["partId"] === model.body["partId"]);
@@ -58348,7 +58360,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields12) {
   })) {
     fail5();
   }
-  return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields12 };
+  return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields13 };
 }
 var same12;
 var init_schematic_library_style = __esm({
@@ -58395,20 +58407,20 @@ function projectAttributes(side, document3, source5, native, before, differences
       throw new Error("Schematic stored attribute identity differs from source.");
     }
     const kind = parentKind(exported, source5, native);
-    const fields12 = [.../* @__PURE__ */ new Set([...Object.keys(record7.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record7.body, exported.body, key)).toSorted();
-    if (kind === "pin" && fields12.some((key) => key !== "strikeout")) {
+    const fields13 = [.../* @__PURE__ */ new Set([...Object.keys(record7.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record7.body, exported.body, key)).toSorted();
+    if (kind === "pin" && fields13.some((key) => key !== "strikeout")) {
       throw new Error("Pin attributes admit only the reviewed strikeout storage encoding.");
     }
-    const styleFields = fields12.filter((key) => !["zIndex", "strikeout"].includes(key));
+    const styleFields = fields13.filter((key) => !["zIndex", "strikeout"].includes(key));
     const libraryStyle = styleFields.length === 0 ? void 0 : schematicLibraryStyle(history, native, record7, exported, styleFields);
     if (side === "after" && styleFields.some((key) => !fieldEqual(old.get(record7.id)?.body ?? {}, record7.body, key))) {
       throw new Error("Changed durable attribute style is neither retained nor the exact captured model style.");
     }
-    if (fields12.includes("strikeout") && !(!Object.hasOwn(record7.body, "strikeout") && exported.body["strikeout"] === false || record7.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
+    if (fields13.includes("strikeout") && !(!Object.hasOwn(record7.body, "strikeout") && exported.body["strikeout"] === false || record7.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
       throw new Error("Schematic strikeout difference is not the exact missing/false encoding.");
     }
     let hiddenNullOrder;
-    if (fields12.includes("zIndex")) {
+    if (fields13.includes("zIndex")) {
       const current5 = exported.body["zIndex"];
       const stored2 = record7.body["zIndex"];
       const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
@@ -58430,7 +58442,7 @@ function projectAttributes(side, document3, source5, native, before, differences
       parentId: exported.body["parentId"],
       parentKind: kind,
       key: exported.body["key"],
-      fields: fields12,
+      fields: fields13,
       storedBodySha256: sha256Json(record7.body),
       sourceBodySha256: sha256Json(exported.body),
       storedZIndex: record7.body["zIndex"],
@@ -61960,8 +61972,8 @@ function compileAsset(operation) {
     throw new Error("Unknown library family.");
   }
   const api2 = assetApis[family2];
-  const method5 = operation.action.split(".").at(-1) ?? "";
-  const result = base(operation, "library", { api: api2, method: method5, args: [] });
+  const method6 = operation.action.split(".").at(-1) ?? "";
+  const result = base(operation, "library", { api: api2, method: method6, args: [] });
   result.requiredProofs.push("exact-library-identity-and-write-authority", "library-inventory-and-duplicate-search", "library-backup-before-mutation", "library-persistence-and-reopen");
   result.effect.family = `library.${family2}`;
   result.effect.collateral.push("unrelated-library-assets", "placed-device-and-pad-bindings", "project-design-records");
@@ -61969,7 +61981,7 @@ function compileAsset(operation) {
     result.beforeReads.push({ purpose: "identity-metadata", api: api2, method: "get", args: [ref(operation.target), literal4(operation.libraryUuid)] });
     result.afterReads.push(...result.beforeReads);
   }
-  if (method5 === "get" && "target" in operation) {
+  if (method6 === "get" && "target" in operation) {
     result.call.args = [ref(operation.target), literal4(operation.libraryUuid)];
     result.resultKind = "metadata";
     result.effect.identity = "read";
@@ -61986,13 +61998,13 @@ function compileAsset(operation) {
     result.limitations.push("Changes the device default for exactly acknowledged inheriting instances; preserves all stored instance records and model bindings. No geometry or collision claim.");
     return result;
   }
-  if (method5 === "delete" && "target" in operation) {
+  if (method6 === "delete" && "target" in operation) {
     result.call.args = [ref(operation.target), literal4(operation.libraryUuid)];
     result.effect.identity = "delete";
     result.requiredProofs.push("no-unapproved-asset-dependants", "exact-target-absence-after-delete");
     return result;
   }
-  if (method5 === "copy" && "targetLibraryUuid" in operation) {
+  if (method6 === "copy" && "targetLibraryUuid" in operation) {
     result.call.args = [ref(operation.target), literal4(operation.libraryUuid), literal4(operation.targetLibraryUuid), optional2(operation.classification), literal4(operation.name)];
     result.afterReads = [{ purpose: "identity-metadata", api: api2, method: "get", args: [ref({ resultOf: operation.id }), literal4(operation.targetLibraryUuid)] }];
     result.expectedFields = [{ field: "name", value: operation.name, authority: "metadata", comparison: "equals" }];
@@ -62464,18 +62476,18 @@ function array2(value2, length) {
   return result;
 }
 function descriptor(value2, directory2, maximum3, filename) {
-  const fields12 = exact(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields12["bytes"], path5 = text7(fields12["path"]);
+  const fields13 = exact(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields13["bytes"], path5 = text7(fields13["path"]);
   need(isAbsolute9(path5) && resolve5(path5) === path5 && dirname3(path5) === directory2 && !/[\0\r\n]/u.test(path5) && (filename === void 0 || basename4(path5) === filename), "Terminal artifact path refused.");
   need(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum3, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash11(fields12["sha256"]) });
+  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash11(fields13["sha256"]) });
 }
 function sql(value2) {
-  const fields12 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash11(fields12["checkpointSha256"]), schemaSha256: hash11(fields12["schemaSha256"]), logicalSha256: hash11(fields12["logicalSha256"]) });
+  const fields13 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash11(fields13["checkpointSha256"]), schemaSha256: hash11(fields13["schemaSha256"]), logicalSha256: hash11(fields13["logicalSha256"]) });
 }
 function generation(value2, ordinal, directory2) {
-  const fields12 = exact(value2, [
+  const fields13 = exact(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -62487,20 +62499,20 @@ function generation(value2, ordinal, directory2) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields12["ordinal"] === ordinal && !Object.is(fields12["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor(fields12["copyArtifact"], directory2, 268435456);
+  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields13["ordinal"] === ordinal && !Object.is(fields13["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor(fields13["copyArtifact"], directory2, 268435456);
   need(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename4(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash11(fields12["generationSha256"]),
-    launchReceiptSha256: hash11(fields12["launchReceiptSha256"]),
-    closeIntentSha256: hash11(fields12["closeIntentSha256"]),
-    closeReceiptSha256: hash11(fields12["closeReceiptSha256"]),
-    terminationProofSha256: hash11(fields12["terminationProofSha256"]),
-    checkpointReceiptSha256: hash11(fields12["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash11(fields12["copyReceiptSha256"]),
+    generationSha256: hash11(fields13["generationSha256"]),
+    launchReceiptSha256: hash11(fields13["launchReceiptSha256"]),
+    closeIntentSha256: hash11(fields13["closeIntentSha256"]),
+    closeReceiptSha256: hash11(fields13["closeReceiptSha256"]),
+    terminationProofSha256: hash11(fields13["terminationProofSha256"]),
+    checkpointReceiptSha256: hash11(fields13["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash11(fields13["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql(fields12["sqlDigests"])
+    sqlDigests: sql(fields13["sqlDigests"])
   });
 }
 function parseClosedSymbolTerminalArtifact(value2, operationId7) {
@@ -62724,18 +62736,18 @@ function array3(value2, length) {
   return result;
 }
 function descriptor2(value2, directory2, maximum3, filename) {
-  const fields12 = exact2(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields12["bytes"], path5 = text8(fields12["path"]);
+  const fields13 = exact2(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields13["bytes"], path5 = text8(fields13["path"]);
   need2(isAbsolute10(path5) && resolve6(path5) === path5 && dirname4(path5) === directory2 && !/[\0\r\n]/u.test(path5) && (filename === void 0 || basename5(path5) === filename), "Terminal artifact path refused.");
   need2(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum3, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash12(fields12["sha256"]) });
+  return Object.freeze({ path: path5, bytes: bytes2, sha256: hash12(fields13["sha256"]) });
 }
 function sql2(value2) {
-  const fields12 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash12(fields12["checkpointSha256"]), schemaSha256: hash12(fields12["schemaSha256"]), logicalSha256: hash12(fields12["logicalSha256"]) });
+  const fields13 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash12(fields13["checkpointSha256"]), schemaSha256: hash12(fields13["schemaSha256"]), logicalSha256: hash12(fields13["logicalSha256"]) });
 }
 function generation2(value2, ordinal, directory2) {
-  const fields12 = exact2(value2, [
+  const fields13 = exact2(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -62747,20 +62759,20 @@ function generation2(value2, ordinal, directory2) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields12["ordinal"] === ordinal && !Object.is(fields12["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor2(fields12["copyArtifact"], directory2, 268435456);
+  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields13["ordinal"] === ordinal && !Object.is(fields13["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor2(fields13["copyArtifact"], directory2, 268435456);
   need2(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename5(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash12(fields12["generationSha256"]),
-    launchReceiptSha256: hash12(fields12["launchReceiptSha256"]),
-    closeIntentSha256: hash12(fields12["closeIntentSha256"]),
-    closeReceiptSha256: hash12(fields12["closeReceiptSha256"]),
-    terminationProofSha256: hash12(fields12["terminationProofSha256"]),
-    checkpointReceiptSha256: hash12(fields12["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash12(fields12["copyReceiptSha256"]),
+    generationSha256: hash12(fields13["generationSha256"]),
+    launchReceiptSha256: hash12(fields13["launchReceiptSha256"]),
+    closeIntentSha256: hash12(fields13["closeIntentSha256"]),
+    closeReceiptSha256: hash12(fields13["closeReceiptSha256"]),
+    terminationProofSha256: hash12(fields13["terminationProofSha256"]),
+    checkpointReceiptSha256: hash12(fields13["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash12(fields13["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql2(fields12["sqlDigests"])
+    sqlDigests: sql2(fields13["sqlDigests"])
   });
 }
 function parseClosedSymbolAgedTerminalArtifact(value2, operationId7) {
@@ -63030,12 +63042,12 @@ function same18(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function verifyTargetMetadata2(before, after) {
-  const fields12 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
-  if (fields12.length === 0) {
+  const fields13 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
+  if (fields13.length === 0) {
     return;
   }
   const time6 = after["updateTime"];
-  if (fields12.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time6 !== "number" || !Number.isSafeInteger(time6) || time6 < 0 || after["version"] !== String(time6) || typeof before["updateTime"] === "number" && time6 < before["updateTime"]) {
+  if (fields13.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time6 !== "number" || !Number.isSafeInteger(time6) || time6 < 0 || after["version"] !== String(time6) || typeof before["updateTime"] === "number" && time6 < before["updateTime"]) {
     throw new Error("Target library metadata changed outside the reviewed native edit header.");
   }
 }
@@ -63317,12 +63329,12 @@ function validateWorkerExpectation(input, projectUuid4, active2, targetUuid) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null) {
     fail8();
   }
-  const fields12 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
-  if (Reflect.ownKeys(input).length !== fields12.length) {
+  const fields13 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
+  if (Reflect.ownKeys(input).length !== fields13.length) {
     fail8();
   }
   const values2 = {};
-  for (const key of fields12) {
+  for (const key of fields13) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       fail8();
@@ -64063,10 +64075,10 @@ async function appendClosedSymbolEvent(journal, input) {
   requireValue(!busy.has(operationId7), "Closed journal append already running.");
   busy.add(operationId7);
   try {
-    const fields12 = exact3(input, ["step", "kind", "generation", "requestSha256", "data"]);
-    const data8 = jsonData(fields12["data"]);
-    const capturedGeneration = jsonData(fields12["generation"]);
-    const requestSha256 = text9(fields12["requestSha256"], HASH4);
+    const fields13 = exact3(input, ["step", "kind", "generation", "requestSha256", "data"]);
+    const data8 = jsonData(fields13["data"]);
+    const capturedGeneration = jsonData(fields13["generation"]);
+    const requestSha256 = text9(fields13["requestSha256"], HASH4);
     const loaded = await loadClosedSymbolJournal(operationId7);
     const predecessor = loaded.journal;
     const predecessorText = canonicalJson(predecessor);
@@ -64076,7 +64088,7 @@ async function appendClosedSymbolEvent(journal, input) {
     };
     const sequence = predecessor.sequence + 1;
     const position = expected2(sequence);
-    requireValue(position.step === fields12["step"] && position.kind === fields12["kind"], "Closed journal phase order/replay refused.");
+    requireValue(position.step === fields13["step"] && position.kind === fields13["kind"], "Closed journal phase order/replay refused.");
     const event3 = parseEvent({
       profile: EVENT,
       operationId: operationId7,
@@ -64539,15 +64551,15 @@ function exact4(value2, keys2) {
   if (names2.length !== keys2.length || names2.some((key) => typeof key !== "string" || !keys2.includes(key))) {
     throw new Error("Admission exact object fields required.");
   }
-  const fields12 = [];
+  const fields13 = [];
   for (const key of keys2) {
     const descriptor10 = descriptors[key];
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
       throw new Error("Admission enumerable own data fields required.");
     }
-    fields12.push([key, descriptor10.value]);
+    fields13.push([key, descriptor10.value]);
   }
-  return Object.freeze(Object.fromEntries(fields12));
+  return Object.freeze(Object.fromEntries(fields13));
 }
 function selectTerminalProfile(value2) {
   const envelope2 = exact4(value2, ["profile", "body", "bodySha256"]);
@@ -64565,9 +64577,9 @@ function selectTerminalProfile(value2) {
 }
 function matchesHistoricalAdmission(value2, expected3, selection2) {
   try {
-    const fields12 = exact4(value2, RESULT_KEYS);
-    const descriptor10 = parseClosedSymbolTerminalArtifact(fields12["terminalArtifact"], expected3.operationId);
-    return fields12["profile"] === selection2.historicalProfile && fields12["operationId"] === expected3.operationId && fields12["classification"] === "historical-completion-verified" && fields12["historicalCompletionRecorded"] === true && fields12["terminalOutcomeVerified"] === true && fields12["storedJournalSha256"] === expected3.storedJournalSha256 && fields12["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields12["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields12[key] === false);
+    const fields13 = exact4(value2, RESULT_KEYS);
+    const descriptor10 = parseClosedSymbolTerminalArtifact(fields13["terminalArtifact"], expected3.operationId);
+    return fields13["profile"] === selection2.historicalProfile && fields13["operationId"] === expected3.operationId && fields13["classification"] === "historical-completion-verified" && fields13["historicalCompletionRecorded"] === true && fields13["terminalOutcomeVerified"] === true && fields13["storedJournalSha256"] === expected3.storedJournalSha256 && fields13["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields13["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields13[key] === false);
   } catch {
     return false;
   }
@@ -73398,7 +73410,7 @@ var init_closed_symbol_admission = __esm({
         const sessionText = canonicalJson(session());
         const current5 = () => {
           requireValue7(
-            this.validatorMethods.every((method5) => typeof method5 === "function") && this.engine.executionAuthorityValidator === this.validator && [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture].every((method5, index) => method5 === this.validatorMethods[index]),
+            this.validatorMethods.every((method6) => typeof method6 === "function") && this.engine.executionAuthorityValidator === this.validator && [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture].every((method6, index) => method6 === this.validatorMethods[index]),
             "Closed admission retained execution validator changed or is unavailable."
           );
           requireValue7(canonicalJson(this.runtime.status()) === statusText, "Closed admission current runtime owner changed.");
@@ -75117,8 +75129,8 @@ function validateMainReferenceRequest(input) {
   need20(value2["profile"] === MAIN_REFERENCE_PROFILE);
   const historyUuid = value2["historyUuid"], nonce = value2["nonce"], operationId7 = value2["operationId"];
   need20(typeof nonce === "string" && /^[a-f0-9]{64}$/u.test(nonce) && typeof operationId7 === "string" && /^easyeda-\d{8}t\d{6}z-[a-f0-9]{8}$/u.test(operationId7) && typeof historyUuid === "string" && /^[a-f0-9]{32}$/u.test(historyUuid));
-  const fields12 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
-  for (const field4 of fields12) {
+  const fields13 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
+  for (const field4 of fields13) {
     need20(typeof value2[field4] === "string" && /^[a-f0-9]{64}$/u.test(value2[field4]));
   }
   const scope6 = validateClockControlScope({ createdAtLiteral: value2["createdAtLiteral"], referenceUtcMs: value2["referenceUtcMs"] });
@@ -75568,9 +75580,9 @@ async function compileCurrentAgedSqlReferenceMetadata(input) {
   command = replaceOnce(command, `$helperBytes=${base5.helperIdentity.bytes}`, `$helperBytes=${helperIdentity.bytes}`);
   command = replaceOnce(command, "-ceq'Easyeda.MainReference'", "-ceq'Easyeda.CurrentMainReference'");
   const oldInput = JSON.parse(base5.stdin);
-  const fields12 = exact10(oldInput, ["profile", "helperBase64", "mainBase64", "requestBase64"]);
-  need22(fields12["profile"] === base5.stdinProfile && fields12["mainBase64"] === Buffer.from(buildMainReferenceProgram(base5.request)).toString("base64") && fields12["requestBase64"] === Buffer.from(canonicalJson(base5.request)).toString("base64"));
-  const stdin = JSON.stringify({ ...fields12, helperBase64: helper.toString("base64"), mainBase64: Buffer.from(main).toString("base64") });
+  const fields13 = exact10(oldInput, ["profile", "helperBase64", "mainBase64", "requestBase64"]);
+  need22(fields13["profile"] === base5.stdinProfile && fields13["mainBase64"] === Buffer.from(buildMainReferenceProgram(base5.request)).toString("base64") && fields13["requestBase64"] === Buffer.from(canonicalJson(base5.request)).toString("base64"));
+  const stdin = JSON.stringify({ ...fields13, helperBase64: helper.toString("base64"), mainBase64: Buffer.from(main).toString("base64") });
   need22(stdin.length > 0 && stdin.length <= 524288 && Buffer.byteLength(stdin) === stdin.length);
   return Object.freeze({
     ...base5,
@@ -76601,8 +76613,8 @@ var init_closed_symbol_witness = __esm({
             "Witness original producer receipts changed."
           );
           need28(
-            this.engine.executionAuthorityValidator === validator && validatorMethods.every((method5) => typeof method5 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method5, index) => method5 === validatorMethods[index]) && // oxlint-disable-next-line typescript/unbound-method -- Identity comparison only.
-            [this.engine.captureClosedSessionAuthority, this.engine.releaseClosedSessionAuthority, this.engine.dispatchWithOrphanTracking, this.engine.runtimeIdentity].every((method5, index) => method5 === engineMethods[index]) && this.runtime.clockObservationForLaunch === launchClockReader && this.engine.clockObservationForClosedCapture === captureClockReader,
+            this.engine.executionAuthorityValidator === validator && validatorMethods.every((method6) => typeof method6 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method6, index) => method6 === validatorMethods[index]) && // oxlint-disable-next-line typescript/unbound-method -- Identity comparison only.
+            [this.engine.captureClosedSessionAuthority, this.engine.releaseClosedSessionAuthority, this.engine.dispatchWithOrphanTracking, this.engine.runtimeIdentity].every((method6, index) => method6 === engineMethods[index]) && this.runtime.clockObservationForLaunch === launchClockReader && this.engine.clockObservationForClosedCapture === captureClockReader,
             "Witness retained authority or clock issuer changed."
           );
           need28(
@@ -77076,7 +77088,7 @@ var init_closed_symbol_write = __esm({
           }
           need30(this.admission.originalCapture(operationId7, "edit-admission") === capture3 && this.relaunch.originalLaunch(operationId7, "edit-launch") === launch && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText, "Closed symbol write original generation changed.");
           need30(
-            this.engine.executionAuthorityValidator === validator && validatorMethods.every((method5) => typeof method5 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method5, index) => method5 === validatorMethods[index]) && methodIdentities().every((method5, index) => method5 === engineMethods[index]),
+            this.engine.executionAuthorityValidator === validator && validatorMethods.every((method6) => typeof method6 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method6, index) => method6 === validatorMethods[index]) && methodIdentities().every((method6, index) => method6 === engineMethods[index]),
             "Closed symbol write retained authority methods changed."
           );
           need30(
@@ -77942,7 +77954,7 @@ var init_closed_symbol_saved_read = __esm({
             this.admission.originalCapture(operationId7, "verify-admission") === capture3 && this.relaunch.originalLaunch(operationId7, "verify-launch") === launch && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && this.startup.originalReturn(operationId7, "verify-marker-read") === startupRaw && this.navigation.originalReturn(operationId7, "verify-open") === openRaw && canonicalJson(startupRaw) === startupText && canonicalJson(openRaw) === openText,
             "Saved read original lifecycle receipts changed."
           );
-          need34(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method5) => typeof method5 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method5, index) => method5 === validatorMethods[index]) && methodIdentities().every((method5, index) => method5 === methods9[index]), "Saved read authority methods changed.");
+          need34(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method6) => typeof method6 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method6, index) => method6 === validatorMethods[index]) && methodIdentities().every((method6, index) => method6 === methods9[index]), "Saved read authority methods changed.");
           need34(
             canonicalJson(this.runtime.status()) === statusText && this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && this.engine.upstream.bridgeSessionLifecycle === sessionReader && canonicalJson(scopeReader.call(this.engine.upstream) ?? null) === canonicalJson(binding4),
             "Saved read current runtime or scope changed."
@@ -78224,7 +78236,7 @@ var init_closed_symbol_startup = __esm({
           working();
           unchanged4();
           requireValue13(this.admission.originalCapture(operationId7, PHASES6[phase5]) === capture3 && canonicalJson(capture3) === captureText, "Startup original capture changed.");
-          requireValue13(this.engine.executionAuthorityValidator === this.validator && this.validatorMethods.every((method5) => typeof method5 === "function") && [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture].every((method5, index) => method5 === this.validatorMethods[index]), "Startup execution validator changed.");
+          requireValue13(this.engine.executionAuthorityValidator === this.validator && this.validatorMethods.every((method6) => typeof method6 === "function") && [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture].every((method6, index) => method6 === this.validatorMethods[index]), "Startup execution validator changed.");
           requireValue13(canonicalJson(this.runtime.status()) === statusText, "Startup runtime owner changed.");
           requireValue13(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && this.engine.upstream.bridgeSessionLifecycle === sessionReader && canonicalJson(scopeReader.call(this.engine.upstream) ?? null) === canonicalJson(binding4), "Startup authenticated scope changed.");
           const session = sessionReader.call(this.engine.upstream);
@@ -85050,18 +85062,18 @@ function convertedRecord(record7, after, input, partId2) {
     return { record: record7 };
   }
   let body4 = { ...record7.body };
-  const fields12 = [];
+  const fields13 = [];
   for (const [field4, legacy] of [["groupId", ""], ...record7.type === "ATTR" ? [["version", "2.0"]] : []]) {
     if (field4 !== void 0 && body4[field4] === legacy && !Object.hasOwn(next.body, field4) && !Object.hasOwn(source5.body, field4) && !Object.hasOwn(sourceAfter.body, field4)) {
       body4 = Object.fromEntries(Object.entries(body4).filter(([key]) => key !== field4));
-      fields12.push(field4);
+      fields13.push(field4);
     }
   }
   if (record7.type === "ATTR" && body4["parentId"] === "" && source5.body["parentId"] === partId2 && sourceAfter.body["parentId"] === partId2 && next.body["parentId"] === partId2) {
     body4["parentId"] = partId2;
-    fields12.push("parentId");
+    fields13.push("parentId");
   }
-  if (fields12.length === 0) {
+  if (fields13.length === 0) {
     return { record: record7 };
   }
   if (!equal5(body4, source5.body)) {
@@ -85070,7 +85082,7 @@ function convertedRecord(record7, after, input, partId2) {
   return { record: { ...record7, body: body4 }, effect: {
     id: record7.id,
     type: record7.type,
-    fields: fields12.toSorted(),
+    fields: fields13.toSorted(),
     beforeBodySha256: sha256Json(record7.body),
     afterBodySha256: sha256Json(body4)
   } };
@@ -86582,8 +86594,8 @@ async function verifyFlatInverseCheckpoint(checkpoint, source5) {
     controlRoot: await controlRootCapability(),
     artifactRoots: [join40(dirname17(expectedSource), "backups"), join40(controlDataDirectory(), "checkpoints")]
   });
-  const fields12 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields12.some((field4) => verified[field4] !== expected3[field4])) {
+  const fields13 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields13.some((field4) => verified[field4] !== expected3[field4])) {
     throw new Error("Flat inverse durable baseline changed immediately before dispatch; no inverse was dispatched.");
   }
 }
@@ -95065,11 +95077,11 @@ function parseCurrentPcbLayersRequest(input) {
 }
 function queryCurrentPcbLayers(input = {}) {
   const query = currentPcbLayersQuerySchema.parse(input);
-  const selected3 = methods.filter((method5) => query.method === void 0 || method5 === query.method);
-  const entries4 = selected3.map((method5) => {
+  const selected3 = methods.filter((method6) => query.method === void 0 || method6 === query.method);
+  const entries4 = selected3.map((method6) => {
     const entry = {
-      path: method5,
-      method: method5,
+      path: method6,
+      method: method6,
       effect: "current-pcb-layer-metadata-read",
       parameters: [],
       invocationEnabledByDiscovery: false,
@@ -96165,7 +96177,7 @@ var init_current_disposable_open = __esm({
       "After original termination, baseline-observe-finish attempts one final closed raw SQL/native-history snapshot before releasing its retained captures. Snapshot status is separate from retirement and does not classify startup effects. An explicitly recorded snapshot failure can finish retirement from the same retained proof without another close, probe or copy; other stopped states cannot use that exception. Older journals report snapshot evidence as not-recorded.",
       "Keep the same facade alive throughout baseline validation. Inspection remains local after owner loss; continuing from journal JSON, replaying an ambiguous stage or reconstructing handles is forbidden. Unsupported stopped states remain review-only.",
       "Optional baseline-prepare-clock runs once after the closed baseline and before relaunch, using a source-qualified disjoint scratch process for the exact unlocked history-head date literal. It retains separate evidence and requires acceptScratchProcessEffects:true. baseline-observe-clock then compares fixed renderer Date controls in the original project-only generation. Neither action arms a mutation, changes timestamp windows, qualifies startup or enables a writer; ambiguous attempts cannot be repeated.",
-      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages. Complete history must be META-only or satisfy the separately bounded canvas-segments profile: at most 101 complete history chunks including reserved writes, stable atom types, lossless bodies, unambiguous cache actors and a unique latest header with maximal target ticket. Saved canvas order must be attainable by the pinned concurrent replay, with byte-exact lines. The canvas profile also requires strictly newer write windows and inverse clock headroom; Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. Native linked-sheet propagation and other historical canvas shapes remain unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Installed101500 passed the unused META-only disposable forward/inverse round trip; installed123000 separately passed the ordinary META-only forward lifecycle on a disposable fixture. The separate ordinary route accepts complete META-only or bounded canvas-segments history with exactly one write and no inverse. Ordinary drawn-symbol connected validation remains unclaimed; generic design writers remain disabled.",
+      "validation-begin consumes only the retained ready baseline for disposable forward/inverse metadata validation. The target must be unreferenced by active schematic pages. Complete history must be META-only or satisfy the separately bounded canvas-segments profile: at most 101 complete history chunks including reserved writes, stable atom types, lossless bodies, unambiguous cache actors and a unique latest header with maximal target ticket. Saved canvas order must be attainable by the pinned concurrent replay, with byte-exact lines. The canvas profile also requires strictly newer write windows and inverse clock headroom; Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. Native linked-sheet propagation and other historical canvas shapes remain unsupported. Predispatch proof budgets reserve both forward and exact restoration uploads. validation-advance requires the exact retained step.expectedPhase and that phase's effect acknowledgements. Only forward-write and inverse-write dispatch the sealed symbol-name/description edit; the inverse is derived internally from the original metadata and fully verified post-edit snapshot. No caller patch, target, fingerprint, code, verifier or reconstructed owner is accepted. Installed101500 passed the unused META-only disposable forward/inverse round trip; installed123000 separately passed the ordinary META-only forward lifecycle on a disposable fixture. The separate ordinary route accepts complete META-only or bounded canvas-segments history with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Generic design writers remain disabled.",
       "Validation retains the original writer, normal-close proof, complete SQL comparison, fresh cache-excluded project-only reopening and saved-content verification through each direction. Only genuinely pending authentication or termination observations repeat. A failed stage grants only available original-owner cleanup, never mutation replay, Save, blind inversion or restoration. Successful inverse verification restores selected metadata and preserves peer content; it does not restore historical SQLite bytes, tickets or timestamps."
     ];
   }
@@ -96208,12 +96220,12 @@ function currentPcbIdentityFamilies(request9) {
 }
 function queryCurrentPcbIdentities(input = {}) {
   const query = currentPcbIdentitiesQuerySchema.parse(input);
-  const entries4 = methods2.filter((method5) => query.method === void 0 || query.method === method5).map((method5) => {
+  const entries4 = methods2.filter((method6) => query.method === void 0 || query.method === method6).map((method6) => {
     const entry = {
-      path: method5,
-      method: method5,
+      path: method6,
+      method: method6,
       effect: "current-pcb-loaded-view-identity-read",
-      parameters: method5 === CURRENT_PCB_IDENTITY_TYPE_METHOD ? ["id"] : [],
+      parameters: method6 === CURRENT_PCB_IDENTITY_TYPE_METHOD ? ["id"] : [],
       invocationEnabledByDiscovery: false,
       limitations: [...limitations10],
       provenance: {
@@ -96386,16 +96398,16 @@ function currentPcbGeometryFamily(request9) {
 }
 function queryCurrentPcbGeometry(input = {}) {
   const query = currentPcbGeometryQuerySchema.parse(input);
-  const entries4 = methods3.filter((method5) => query.method === void 0 || query.method === method5).map((method5) => {
+  const entries4 = methods3.filter((method6) => query.method === void 0 || query.method === method6).map((method6) => {
     let parameters = [];
-    if (method5 === componentPadsMethod) {
+    if (method6 === componentPadsMethod) {
       parameters = ["primitiveId"];
-    } else if (method5.endsWith(".get")) {
+    } else if (method6.endsWith(".get")) {
       parameters = ["primitiveIds"];
     }
     const entry = {
-      path: method5,
-      method: method5,
+      path: method6,
+      method: method6,
       effect: "current-pcb-loaded-view-geometry-read",
       parameters,
       invocationEnabledByDiscovery: false,
@@ -96658,6 +96670,145 @@ var init_current_pcb_geometry = __esm({
   }
 });
 
+// server/src/current-project-pcb-metadata.ts
+function fields7(input, names2) {
+  if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
+    throw new Error("CURRENT_PROJECT_PCB_METADATA_SHAPE");
+  }
+  const result = {};
+  for (const name6 of names2) {
+    const descriptor10 = Object.getOwnPropertyDescriptor(input, name6);
+    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
+      throw new Error("CURRENT_PROJECT_PCB_METADATA_SHAPE");
+    }
+    result[name6] = descriptor10.value;
+  }
+  return result;
+}
+function parseCurrentProjectPcbMetadataRequest(input) {
+  const value2 = fields7(input, ["method", "target"]);
+  return currentProjectPcbMetadataRequestSchema.parse({ method: value2["method"], target: fields7(value2["target"], ["projectUuid", "branchUuid", "pcbUuid"]) });
+}
+function queryCurrentProjectPcbMetadata(input = {}) {
+  const query = currentProjectPcbMetadataQuerySchema.parse(input);
+  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+    path: method2,
+    method: method2,
+    parameters: ["pcbUuid"],
+    effect: "current-project-only-pcb-metadata-read",
+    implementationKind: "native-task-equivalent",
+    liveValidation: "not-recorded",
+    limitations: [...limitations12],
+    provenance: {
+      apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
+      apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
+      implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
+      implementationKind: "native-task-equivalent",
+      liveValidation: "not-recorded"
+    },
+    ...query.includeSchemas ? { inputSchema: external_exports.toJSONSchema(currentProjectPcbMetadataRequestSchema), resultSchema: external_exports.toJSONSchema(currentProjectPcbMetadataResultSchema) } : {}
+  }] };
+}
+function validateCurrentProjectPcbMetadataArguments(input) {
+  try {
+    return { valid: true, request: parseCurrentProjectPcbMetadataRequest(input), executionAuthorized: false };
+  } catch (error51) {
+    return { valid: false, executionAuthorized: false, issues: error51 instanceof external_exports.ZodError ? error51.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) })) : [{ path: [], message: "Expected exact own-data method and target fields." }] };
+  }
+}
+function resultFor(input, raw) {
+  const request9 = parseCurrentProjectPcbMetadataRequest(input), result = currentProjectPcbMetadataResultSchema.parse(raw);
+  if (result.method !== request9.method || canonicalJson(result.target) !== canonicalJson(request9.target) || result.value.uuid !== request9.target.pcbUuid || result.value.projectUuid !== request9.target.projectUuid) {
+    throw new Error("CURRENT_PROJECT_PCB_METADATA_TARGET");
+  }
+  if (Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES) {
+    throw new Error("CURRENT_PROJECT_PCB_METADATA_BOUND");
+  }
+  Object.freeze(result.target);
+  Object.freeze(result.value);
+  return Object.freeze(result);
+}
+function validateCurrentProjectPcbMetadataResult(input, raw) {
+  return {
+    ...resultFor(input, raw),
+    effect: "current-project-only-pcb-metadata-read",
+    authority: "observed-project-metadata-only;not-write-or-persistence-authority",
+    liveValidation: "not-recorded",
+    limitations: [...limitations12]
+  };
+}
+function decodeCurrentProjectPcbMetadataReply(raw, input) {
+  assertUpstreamReplySettled(raw);
+  const envelope2 = fields7(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES) {
+    throw new Error("CURRENT_PROJECT_PCB_METADATA_ENVELOPE");
+  }
+  return resultFor(input, decodeExactReadEnvelope(envelope2));
+}
+var CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, method2, documentId3, projectId3, branchId, integer6, targetSchema9, currentProjectPcbMetadataRequestSchema, currentProjectPcbMetadataQuerySchema, valueSchema2, currentProjectPcbMetadataResultSchema, limitations12;
+var init_current_project_pcb_metadata = __esm({
+  "server/src/current-project-pcb-metadata.ts"() {
+    init_zod();
+    init_core3();
+    init_current_disposable_open_profile();
+    init_exact_readers();
+    init_sdk_local_runtime();
+    CURRENT_PROJECT_PCB_METADATA_MAX_BYTES = 64 * 1024;
+    CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS = 1e4;
+    method2 = "eda.dmt_Pcb.getPcbInfo";
+    documentId3 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
+    projectId3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    branchId = external_exports.string().regex(/^[a-f0-9]{32}$/u);
+    integer6 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
+    targetSchema9 = external_exports.object({ projectUuid: projectId3, branchUuid: branchId, pcbUuid: documentId3 }).strict();
+    currentProjectPcbMetadataRequestSchema = external_exports.object({ method: external_exports.literal(method2), target: targetSchema9 }).strict();
+    currentProjectPcbMetadataQuerySchema = external_exports.object({ method: external_exports.literal(method2).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
+    valueSchema2 = external_exports.object({
+      uuid: documentId3,
+      projectUuid: projectId3,
+      ownerUuid: branchId,
+      title: external_exports.string().max(512),
+      displayTitle: external_exports.string().max(512),
+      parentUuid: external_exports.union([external_exports.literal(""), documentId3]),
+      source: external_exports.string().max(4096),
+      version: external_exports.string().max(128),
+      boardUuid: external_exports.string().max(128),
+      ticket: integer6,
+      updateTime: integer6.max(864e13),
+      docType: external_exports.literal(3)
+    }).strict();
+    currentProjectPcbMetadataResultSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("current-project-pcb-metadata-observation"),
+      method: external_exports.literal(method2),
+      target: targetSchema9,
+      value: valueSchema2,
+      samples: external_exports.literal(2),
+      currentTabId: external_exports.enum(["tab_page1", "0"]),
+      implementationKind: external_exports.literal("native-task-equivalent"),
+      noEditorTabsObserved: external_exports.literal(true),
+      hiddenEditorsAbsentObserved: external_exports.literal(true),
+      dirtyTabsAbsentObserved: external_exports.literal(true),
+      cachedProjectReadOnlyAbsentObserved: external_exports.literal(true),
+      concurrentStrictModeAbsentObserved: external_exports.literal(true),
+      workerIdentityVerified: external_exports.literal(false),
+      cadAuthority: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false),
+      sourceMembershipVerified: external_exports.literal(false),
+      permissionVerified: external_exports.literal(false),
+      mutationDispatched: external_exports.literal(false),
+      explicitSaveDispatched: external_exports.literal(false)
+    }).strict();
+    limitations12 = [
+      "One existing PCB in the exact loaded local path-hash project and branch. Only the native Start Page and optional hidden blank placeholder are admitted. Editor tabs, hidden/export editors, pending restoration, document URL commands, historical, archived, store, CBB and V2 projects refuse.",
+      "Two matching project-qualified PCB metadata samples, bracketed by four project identity/owner checks, retain the outer RPC receiver and complete no-editor registry/DOM owners across awaits. These observations are not continuous exclusion, a lock, worker identity, permission or writer authority.",
+      "Native-equivalent metadata, not IDMT_PcbItem or public wrapper parity. Native title and display_title are retained separately without renormalization. Source, version and board already use native value || empty-string fallback; original absence/falsy values cannot be recovered. Parent/board membership is not proved. Creator, modifier, createTime and fixed empty description are not returned.",
+      "Only /PrjDB/project/getData and /PrjDB/pcb/getData with explicit project identity are dispatched. No getNeedData/canvas request, public getAllPcbsInfo tree traversal, cloud fetch, clock/client call, navigation, storage-completion request, mutation or explicit Save is made.",
+      "At most 128 containers, 255 tree nodes, 256 registry tabs and 65536 UTF-8 envelope bytes. Missing/accessor-backed/oversized/non-finite values refuse without coercion. The ten-second deadline prevents later reads but cannot cancel an already dispatched native request. Offline tests and discovery are not connected validation."
+    ];
+  }
+});
+
 // server/src/current-symbol-operation.ts
 function parseCurrentSymbolOperationRequest(input) {
   return currentSymbolOperationRequestSchema.parse(input);
@@ -96674,6 +96825,7 @@ function queryCurrentSymbolOperation(input = {}) {
     writerReady: false,
     connectedValidation: false,
     historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
+    historicalCanvasConnectedValidation: "installed080000-ordinary-unused-canvas-segments-forward-only",
     forwardOnly: true,
     inverseSupported: false,
     replayAllowed: false,
@@ -96698,7 +96850,7 @@ function queryCurrentSymbolOperation(input = {}) {
       "metadata-advance",
       "metadata-inspect"
     ],
-    limitations: [...limitations12],
+    limitations: [...limitations13],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentSymbolOperationRequestSchema),
       stepSchema: external_exports.toJSONSchema(currentSymbolOperationStepSchema)
@@ -96714,7 +96866,7 @@ function validateCurrentSymbolOperationArguments(input) {
     issues: parsed2.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
   };
 }
-var CURRENT_SYMBOL_OPERATION_PURPOSE, operationId2, currentSymbolOperationStepSchema, currentSymbolOperationRequestSchema, currentSymbolOperationQuerySchema, limitations12;
+var CURRENT_SYMBOL_OPERATION_PURPOSE, operationId2, currentSymbolOperationStepSchema, currentSymbolOperationRequestSchema, currentSymbolOperationQuerySchema, limitations13;
 var init_current_symbol_operation = __esm({
   "server/src/current-symbol-operation.ts"() {
     init_zod();
@@ -96775,14 +96927,14 @@ var init_current_symbol_operation = __esm({
       "The baseline needs a distinct operation ID."
     );
     currentSymbolOperationQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
-    limitations12 = [
+    limitations13 = [
       "The separate easyeda_control_project_symbol_metadata route accepts this forward-only contract. Installed123000 passed one ordinary unused META-only forward lifecycle on a disposable fixture, including exact closed SQL, reopened content and final closure. Installed101500 separately passed the disposable forward/inverse lifecycle. These historical cases do not validate every shape or a later runtime. Registration, schema acceptance and discovery grant no execution authority; exact original-owner runtime checks remain mandatory.",
       "One exact already registered local .eprj2 project and checkpoint-member PCB in its default branch. Preserve the exact raw Windows path hash, source hash, sealed branch and original retained launch; opening starts from an empty editor.",
       "Before the first ordinary navigation, derive the supported startup expectation from the preserved checkpoint. Recheck that expectation against the complete closed baseline, then require live startup qualification before writing. No disposable acceptance or unqualified schematic-startup bypass is accepted.",
       "Ordinary opening can migrate storage, replay caches, restore tabs, update shared metadata and automatically Save. Each opening or closure stage requires its own explicit acknowledgement. No unchanged-storage promise, explicit Save, Save/Discard choice, forced exit or file restoration is provided.",
       "A stopped ordinary opener can request-normal-close once through its own original retained Job, without bridge dispatch or a replacement PID/window. Quarantine remains until retire-after-termination proves original termination and session closure. Acknowledgement is not termination or saved-content proof; ambiguity consumes the close attempt.",
       "baseline-begin seals one closed ordinary symbol and only a name and/or non-null description patch. The target must be unreferenced by active schematic pages; native linked-sheet propagation is unsupported. Preserve tags, source and peer content. Checkpoint descriptors are evidence inputs, never replacement ownership or permission to mutate.",
-      "The complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas histories require stable atom types, lossless raw bodies, unambiguous cache actors and a unique latest/max-ticket header; the complete history including the reserved write must fit the first 101-chunk loader batch and all stricter reader limits. Saved canvas lines stay byte-exact with a valid native replay-order witness. Ordinary canvas editing has offline regression coverage; its connected lifecycle is unclaimed.",
+      "The complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas histories require stable atom types, lossless raw bodies, unambiguous cache actors and a unique latest/max-ticket header; the complete history including the reserved write must fit the first 101-chunk loader batch and all stricter reader limits. Saved canvas lines stay byte-exact with a valid native replay-order witness. Installed080000 passed one ordinary unused canvas-segments forward lifecycle on a disposable fixture; later generations and other histories remain unvalidated.",
       "Pre-dispatch proof budgets reserve exactly one ordinary write's raw history, saved-content and logical SQL limits. Canvas metadata also requires a document window strictly newer than every target header, within the unchanged fixed time ceiling. No inverse budget is admitted for ordinary purpose; physical allocation, heap and deadlines remain runtime limitations.",
       "Bind ordinary purpose in the original opening plan, generation and baseline owner. Keep the original retained owner through one write, normal closure, complete closed SQL comparison, cache-excluded project-only reopening, saved-content verification and final closed SQL equality. Copied JSON and disposable owners cannot provide that authority.",
       "metadata-begin retains the original ready baseline. Every metadata-advance keeps that baseline operation ID and supplies the exact next expectedPhase and only its required acknowledgements. No continuation accepts a replacement target, patch, runtime fingerprint, timestamp window, code or verifier.",
@@ -97052,7 +97204,7 @@ function queryCurrentProjectOnlySymbolPreflight(input = {}) {
     effect: "current-project-only-symbol-preflight",
     liveValidation: "not-recorded",
     invocationEnabledByDiscovery: false,
-    limitations: [...limitations13],
+    limitations: [...limitations14],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightRequestSchema),
       resultSchema: external_exports.toJSONSchema(currentProjectOnlySymbolPreflightResultSchema)
@@ -97066,7 +97218,7 @@ function validateCurrentProjectOnlySymbolPreflightArguments(input) {
     return { valid: false, executionAuthorized: false, issues: error51 instanceof external_exports.ZodError ? error51.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String).join("."), message: issue2.message.slice(0, 512) })) : [{ path: "", message: "Expected exact own-data target and expectedBefore fields." }] };
   }
 }
-function fields7(input, names2) {
+function fields8(input, names2) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_SHAPE");
   }
@@ -97081,10 +97233,10 @@ function fields7(input, names2) {
   return value2;
 }
 function request(input) {
-  const value2 = fields7(input, ["target", "expectedBefore"]);
+  const value2 = fields8(input, ["target", "expectedBefore"]);
   return currentProjectOnlySymbolPreflightRequestSchema.parse({
-    target: fields7(value2["target"], ["projectUuid", "branchUuid", "symbolUuid", "ownerUuid"]),
-    expectedBefore: fields7(value2["expectedBefore"], ["name", "description", "tagsJson", "source", "version", "ticket"])
+    target: fields8(value2["target"], ["projectUuid", "branchUuid", "symbolUuid", "ownerUuid"]),
+    expectedBefore: fields8(value2["expectedBefore"], ["name", "description", "tagsJson", "source", "version", "ticket"])
   });
 }
 function buildCurrentProjectOnlySymbolPreflightProgram(input) {
@@ -97147,7 +97299,7 @@ return envelope;`;
 function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   const selected3 = request(expected3);
   assertUpstreamReplySettled(raw);
-  const envelope2 = fields7(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope2 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_ENVELOPE");
   }
@@ -97157,7 +97309,7 @@ function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   }
   return Object.freeze(result);
 }
-var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema9, beforeSchema, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations13;
+var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema10, beforeSchema, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations14;
 var init_current_project_only_symbol_preflight = __esm({
   "server/src/current-project-only-symbol-preflight.ts"() {
     init_zod();
@@ -97168,19 +97320,19 @@ var init_current_project_only_symbol_preflight = __esm({
     init_current_project_only_symbol_guard();
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS = 1e4;
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES = CURRENT_SYMBOL_METADATA_MAX_BYTES;
-    targetSchema9 = external_exports.object({
+    targetSchema10 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       symbolUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     }).strict();
     beforeSchema = currentSymbolMetadataResultSchema.shape.value.omit({ uuid: true, projectUuid: true, ownerUuid: true });
-    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema9, expectedBefore: beforeSchema }).strict();
+    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema10, expectedBefore: beforeSchema }).strict();
     ticketSchema = beforeSchema.shape.ticket;
     currentProjectOnlySymbolPreflightResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-project-only-symbol-preflight"),
-      target: targetSchema9,
+      target: targetSchema10,
       expectedBefore: beforeSchema,
       samples: external_exports.literal(2),
       currentTabId: external_exports.enum(["tab_page1", "0"]),
@@ -97204,7 +97356,7 @@ var init_current_project_only_symbol_preflight = __esm({
       mutationDispatched: external_exports.literal(false),
       explicitSaveDispatched: external_exports.literal(false)
     }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.clientTicketObservation.maxTicket);
-    limitations13 = [
+    limitations14 = [
       "Requires the exact loaded local project/branch with only the native Start Page and optional hidden blank placeholder. Every editor tab, hidden/editor/export iframe, pending restoration and URL document command is refused. Bounded complete registry/DOM samples are observations, not continuous exclusion or a lock.",
       "Supplied expectedBefore values are exact name/description/raw tags/source/version/ticket comparisons, not source provenance or permission. A future owner must derive them from its original plan. Native source/version getter fallbacks remain lossy with respect to stored absence or falsy fields.",
       "Two matching symbol/project samples and four agreeing client/maxTicket and dual-UI actor/clock samples retain their receivers across awaits. They do not issue a worker lease, authenticate the backend actor, qualify its clock, or prove startup or durable effects.",
@@ -97880,6 +98032,14 @@ function queryOfflineApi(request9) {
       result = validateCurrentSymbolMetadataArguments(request9.query.request);
       break;
     }
+    case "project-pcb": {
+      result = queryCurrentProjectPcbMetadata(request9.query ?? {});
+      break;
+    }
+    case "project-pcb-validate": {
+      result = validateCurrentProjectPcbMetadataArguments(request9.query.request);
+      break;
+    }
     case "project-symbol-operation": {
       result = queryCurrentSymbolOperation(request9.query ?? {});
       break;
@@ -98019,6 +98179,7 @@ var init_offline_api = __esm({
     init_current_pcb_identities();
     init_current_pcb_geometry();
     init_current_symbol_metadata();
+    init_current_project_pcb_metadata();
     init_current_symbol_operation();
     init_current_symbol_copy_operation();
     init_current_project_only_symbol_preflight();
@@ -98055,6 +98216,8 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("project-pcb"), query: currentProjectPcbMetadataQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("project-pcb-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-operation"), query: currentSymbolOperationQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-operation-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("disposable-symbol-copy"), query: currentSymbolCopyOperationQuerySchema.optional() }).strict(),
@@ -98076,7 +98239,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Ordinary drawn-symbol connected validation is unclaimed. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-pcb/project-pcb-validate for one loaded project's PCB metadata without editor tabs; no canvas or saved-state/rename authority. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -104458,7 +104621,7 @@ function current(binding4) {
     binding4.runtime = runtime;
     binding4.methods = observed2;
   }
-  if (runtime !== binding4.runtime || observed2.some((method5, index) => typeof method5 !== "function" || method5 !== binding4.methods?.[index])) {
+  if (runtime !== binding4.runtime || observed2.some((method6, index) => typeof method6 !== "function" || method6 !== binding4.methods?.[index])) {
     throw new Error("Windows execution validator runtime owner or methods changed.");
   }
   return runtime;
@@ -105511,7 +105674,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash34, targetSchema10, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash34, targetSchema11, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -105522,7 +105685,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash34 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema10 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema11 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -105532,7 +105695,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema10,
+      target: targetSchema11,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash34, imageSha256: hash34 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -105842,8 +106005,8 @@ var init_client2 = __esm({
         if (typeof methodValue !== "string") {
           throw new Error("Schema method literal must be a string");
         }
-        const method5 = methodValue;
-        if (method5 === "elicitation/create") {
+        const method6 = methodValue;
+        if (method6 === "elicitation/create") {
           const wrappedHandler = async (request9, extra) => {
             const validatedRequest = safeParse3(ElicitRequestSchema, request9);
             if (!validatedRequest.success) {
@@ -105887,7 +106050,7 @@ var init_client2 = __esm({
           };
           return super.setRequestHandler(requestSchema2, wrappedHandler);
         }
-        if (method5 === "sampling/createMessage") {
+        if (method6 === "sampling/createMessage") {
           const wrappedHandler = async (request9, extra) => {
             const validatedRequest = safeParse3(CreateMessageRequestSchema, request9);
             if (!validatedRequest.success) {
@@ -105917,9 +106080,9 @@ var init_client2 = __esm({
         }
         return super.setRequestHandler(requestSchema2, handler);
       }
-      assertCapability(capability, method5) {
+      assertCapability(capability, method6) {
         if (!this._serverCapabilities?.[capability]) {
-          throw new Error(`Server does not support ${capability} (required for ${method5})`);
+          throw new Error(`Server does not support ${capability} (required for ${method6})`);
         }
       }
       async connect(transport2, options) {
@@ -105978,17 +106141,17 @@ var init_client2 = __esm({
       getInstructions() {
         return this._instructions;
       }
-      assertCapabilityForMethod(method5) {
-        switch (method5) {
+      assertCapabilityForMethod(method6) {
+        switch (method6) {
           case "logging/setLevel":
             if (!this._serverCapabilities?.logging) {
-              throw new Error(`Server does not support logging (required for ${method5})`);
+              throw new Error(`Server does not support logging (required for ${method6})`);
             }
             break;
           case "prompts/get":
           case "prompts/list":
             if (!this._serverCapabilities?.prompts) {
-              throw new Error(`Server does not support prompts (required for ${method5})`);
+              throw new Error(`Server does not support prompts (required for ${method6})`);
             }
             break;
           case "resources/list":
@@ -105997,21 +106160,21 @@ var init_client2 = __esm({
           case "resources/subscribe":
           case "resources/unsubscribe":
             if (!this._serverCapabilities?.resources) {
-              throw new Error(`Server does not support resources (required for ${method5})`);
+              throw new Error(`Server does not support resources (required for ${method6})`);
             }
-            if (method5 === "resources/subscribe" && !this._serverCapabilities.resources.subscribe) {
-              throw new Error(`Server does not support resource subscriptions (required for ${method5})`);
+            if (method6 === "resources/subscribe" && !this._serverCapabilities.resources.subscribe) {
+              throw new Error(`Server does not support resource subscriptions (required for ${method6})`);
             }
             break;
           case "tools/call":
           case "tools/list":
             if (!this._serverCapabilities?.tools) {
-              throw new Error(`Server does not support tools (required for ${method5})`);
+              throw new Error(`Server does not support tools (required for ${method6})`);
             }
             break;
           case "completion/complete":
             if (!this._serverCapabilities?.completions) {
-              throw new Error(`Server does not support completions (required for ${method5})`);
+              throw new Error(`Server does not support completions (required for ${method6})`);
             }
             break;
           case "initialize":
@@ -106020,11 +106183,11 @@ var init_client2 = __esm({
             break;
         }
       }
-      assertNotificationCapability(method5) {
-        switch (method5) {
+      assertNotificationCapability(method6) {
+        switch (method6) {
           case "notifications/roots/list_changed":
             if (!this._capabilities.roots?.listChanged) {
-              throw new Error(`Client does not support roots list changed notifications (required for ${method5})`);
+              throw new Error(`Client does not support roots list changed notifications (required for ${method6})`);
             }
             break;
           case "notifications/initialized":
@@ -106035,24 +106198,24 @@ var init_client2 = __esm({
             break;
         }
       }
-      assertRequestHandlerCapability(method5) {
+      assertRequestHandlerCapability(method6) {
         if (!this._capabilities) {
           return;
         }
-        switch (method5) {
+        switch (method6) {
           case "sampling/createMessage":
             if (!this._capabilities.sampling) {
-              throw new Error(`Client does not support sampling capability (required for ${method5})`);
+              throw new Error(`Client does not support sampling capability (required for ${method6})`);
             }
             break;
           case "elicitation/create":
             if (!this._capabilities.elicitation) {
-              throw new Error(`Client does not support elicitation capability (required for ${method5})`);
+              throw new Error(`Client does not support elicitation capability (required for ${method6})`);
             }
             break;
           case "roots/list":
             if (!this._capabilities.roots) {
-              throw new Error(`Client does not support roots capability (required for ${method5})`);
+              throw new Error(`Client does not support roots capability (required for ${method6})`);
             }
             break;
           case "tasks/get":
@@ -106060,21 +106223,21 @@ var init_client2 = __esm({
           case "tasks/result":
           case "tasks/cancel":
             if (!this._capabilities.tasks) {
-              throw new Error(`Client does not support tasks capability (required for ${method5})`);
+              throw new Error(`Client does not support tasks capability (required for ${method6})`);
             }
             break;
           case "ping":
             break;
         }
       }
-      assertTaskCapability(method5) {
-        assertToolsCallTaskCapability(this._serverCapabilities?.tasks?.requests, method5, "Server");
+      assertTaskCapability(method6) {
+        assertToolsCallTaskCapability(this._serverCapabilities?.tasks?.requests, method6, "Server");
       }
-      assertTaskHandlerCapability(method5) {
+      assertTaskHandlerCapability(method6) {
         if (!this._capabilities) {
           return;
         }
-        assertClientRequestTaskCapability(this._capabilities.tasks?.requests, method5, "Client");
+        assertClientRequestTaskCapability(this._capabilities.tasks?.requests, method6, "Client");
       }
       async ping(options) {
         return this.request({ method: "ping" }, EmptyResultSchema, options);
@@ -108930,24 +109093,24 @@ var require_websocket = __commonJS({
     ].forEach((property) => {
       Object.defineProperty(WebSocket2.prototype, property, { enumerable: true });
     });
-    ["open", "error", "close", "message"].forEach((method5) => {
-      Object.defineProperty(WebSocket2.prototype, `on${method5}`, {
+    ["open", "error", "close", "message"].forEach((method6) => {
+      Object.defineProperty(WebSocket2.prototype, `on${method6}`, {
         enumerable: true,
         get() {
-          for (const listener of this.listeners(method5)) {
+          for (const listener of this.listeners(method6)) {
             if (listener[kForOnEventAttribute]) return listener[kListener];
           }
           return null;
         },
         set(handler) {
-          for (const listener of this.listeners(method5)) {
+          for (const listener of this.listeners(method6)) {
             if (listener[kForOnEventAttribute]) {
-              this.removeListener(method5, listener);
+              this.removeListener(method6, listener);
               break;
             }
           }
           if (typeof handler !== "function") return;
-          this.addEventListener(method5, handler, {
+          this.addEventListener(method6, handler, {
             [kForOnEventAttribute]: true
           });
         }
@@ -109939,8 +110102,8 @@ function processStartTime(stat3) {
   if (closingParenthesis < 1) {
     throw new Error("The supervised backend process stat record is malformed.");
   }
-  const fields12 = stat3.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields12[19];
+  const fields13 = stat3.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields13[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error("The supervised backend process start identity is unavailable.");
   }
@@ -110161,9 +110324,9 @@ async function establishedServerSocketInode(socket) {
   for (const table10 of tables) {
     const text28 = await readFile6(table10, "utf8");
     for (const line6 of text28.split(/\r?\n/u).slice(1)) {
-      const fields12 = line6.trim().split(/\s+/u);
-      if (fields12.length >= 10 && fields12[1] === expectedLocal && fields12[2] === expectedRemote && fields12[3] === "01" && fields12[9] !== void 0) {
-        matches.push(fields12[9]);
+      const fields13 = line6.trim().split(/\s+/u);
+      if (fields13.length >= 10 && fields13[1] === expectedLocal && fields13[2] === expectedRemote && fields13[3] === "01" && fields13[9] !== void 0) {
+        matches.push(fields13[9]);
       }
     }
   }
@@ -113281,29 +113444,29 @@ var init_acorn = __esm({
         this.parsePropertyName(element);
       }
     };
-    pp$8.parseClassMethod = function(method5, isGenerator, isAsync2, allowsDirectSuper) {
-      var key = method5.key;
-      if (method5.kind === "constructor") {
+    pp$8.parseClassMethod = function(method6, isGenerator, isAsync2, allowsDirectSuper) {
+      var key = method6.key;
+      if (method6.kind === "constructor") {
         if (isGenerator) {
           this.raise(key.start, "Constructor can't be a generator");
         }
         if (isAsync2) {
           this.raise(key.start, "Constructor can't be an async method");
         }
-      } else if (method5.static && checkKeyName(method5, "prototype")) {
+      } else if (method6.static && checkKeyName(method6, "prototype")) {
         this.raise(key.start, "Classes may not have a static property named prototype");
       }
-      var value2 = method5.value = this.parseMethod(isGenerator, isAsync2, allowsDirectSuper);
-      if (method5.kind === "get" && value2.params.length !== 0) {
+      var value2 = method6.value = this.parseMethod(isGenerator, isAsync2, allowsDirectSuper);
+      if (method6.kind === "get" && value2.params.length !== 0) {
         this.raiseRecoverable(value2.start, "getter should have no params");
       }
-      if (method5.kind === "set" && value2.params.length !== 1) {
+      if (method6.kind === "set" && value2.params.length !== 1) {
         this.raiseRecoverable(value2.start, "setter should have exactly one param");
       }
-      if (method5.kind === "set" && value2.params[0].type === "RestElement") {
+      if (method6.kind === "set" && value2.params[0].type === "RestElement") {
         this.raiseRecoverable(value2.params[0].start, "Setter cannot use rest params");
       }
-      return this.finishNode(method5, "MethodDefinition");
+      return this.finishNode(method6, "MethodDefinition");
     };
     pp$8.parseClassField = function(field4) {
       if (checkKeyName(field4, "constructor")) {
@@ -121679,6 +121842,7 @@ var init_facade_mode = __esm({
       "easyeda_control_history",
       "easyeda_control_pcb_geometry",
       "easyeda_control_project_symbol",
+      "easyeda_control_project_pcb",
       "easyeda_control_project_symbol_metadata",
       "easyeda_control_disposable_symbol_copy"
     ]);
@@ -122227,8 +122391,8 @@ async function unchanged2(checkpoint, source5) {
     throw new Error("Disposable opening checkpoint receipt changed.");
   }
   const verified = await verifyCheckpoint(checkpoint.receiptPath, await accessPolicy(source5));
-  const fields12 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields12.some((field4) => verified[field4] !== checkpoint[field4])) {
+  const fields13 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields13.some((field4) => verified[field4] !== checkpoint[field4])) {
     throw new Error("Disposable opening original source or checkpoint changed before navigation.");
   }
 }
@@ -122981,7 +123145,7 @@ var init_current_start_page = __esm({
 });
 
 // server/src/current-project-only-open.ts
-function fields8(input, names2) {
+function fields9(input, names2) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_SHAPE");
   }
@@ -122996,7 +123160,7 @@ function fields8(input, names2) {
   return value2;
 }
 function target5(input) {
-  return currentDisposableOpenSealedTargetSchema.parse(fields8(input, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
+  return currentDisposableOpenSealedTargetSchema.parse(fields9(input, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
 }
 function buildCurrentProjectOnlyOpenProgram(input) {
   const selected3 = target5(input);
@@ -123096,7 +123260,7 @@ return envelope;`;
 function decodeCurrentProjectOnlyOpenReply(raw, expected3) {
   const selected3 = target5(expected3);
   assertUpstreamReplySettled(raw);
-  const envelope2 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope2 = fields9(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_ENVELOPE");
   }
@@ -123157,7 +123321,7 @@ function text25(value2, maximum3 = 128) {
   need50(Buffer.from(decoded).equals(bytes2), "Startup SQL TEXT is not exact UTF8.");
   return decoded;
 }
-function integer6(value2) {
+function integer7(value2) {
   need50(value2.kind === "integer", "Startup SQL requires INTEGER.");
   return BigInt(value2.decimal);
 }
@@ -123177,7 +123341,7 @@ function unique3(owner, name6, expected3) {
   return rows2[0];
 }
 function rowId(owner, row7) {
-  const id10 = integer6(cell6(owner, row7, "id"));
+  const id10 = integer7(cell6(owner, row7, "id"));
   need50(id10 > 0n && row7.rowid?.kind === "integer" && row7.rowid.decimal === id10.toString(), "Startup SQL ID/rowid differs.");
   return id10;
 }
@@ -123206,7 +123370,7 @@ async function selectCurrentStartupSql(input) {
   need50(projects.rows.length === 1, "Startup SQL requires exactly one project.");
   const branch = unique3(branches, "uuid", branchUuid2), project3 = unique3(projects, "uuid", projectUuid4);
   need50(
-    text25(cell6(projects, project3, "branch_uuid")) === branchUuid2 && text25(cell6(projects, project3, "owner_uuid")) === ownerUuid && text25(cell6(branches, branch, "project_uuid")) === projectUuid4 && text25(cell6(branches, branch, "history_uuid")) === headHistoryUuid && integer6(cell6(branches, branch, "delete_status")) === 0n && integer6(cell6(branches, branch, "node")) === 0n,
+    text25(cell6(projects, project3, "branch_uuid")) === branchUuid2 && text25(cell6(projects, project3, "owner_uuid")) === ownerUuid && text25(cell6(branches, branch, "project_uuid")) === projectUuid4 && text25(cell6(branches, branch, "history_uuid")) === headHistoryUuid && integer7(cell6(branches, branch, "delete_status")) === 0n && integer7(cell6(branches, branch, "node")) === 0n,
     "Startup SQL project, default branch, owner or head differs."
   );
   const parent = cell6(branches, branch, "parent_uuid");
@@ -123215,7 +123379,7 @@ async function selectCurrentStartupSql(input) {
     need50(UUID4.test(parentUuid) && parentUuid !== branchUuid2, "Startup SQL branch parent differs.");
     const start = unique3(branches, "uuid", parentUuid);
     need50(
-      text25(cell6(branches, start, "name")) === "start" && text25(cell6(branches, start, "project_uuid")) === projectUuid4 && integer6(cell6(branches, start, "node")) === 1n && integer6(cell6(branches, start, "delete_status")) === 0n && cell6(branches, start, "parent_uuid").kind === "null" && cell6(branches, start, "history_uuid").kind === "null",
+      text25(cell6(branches, start, "name")) === "start" && text25(cell6(branches, start, "project_uuid")) === projectUuid4 && integer7(cell6(branches, start, "node")) === 1n && integer7(cell6(branches, start, "delete_status")) === 0n && cell6(branches, start, "parent_uuid").kind === "null" && cell6(branches, start, "history_uuid").kind === "null",
       "Startup SQL permits only the terminal empty start-node parent."
     );
   }
@@ -123241,7 +123405,7 @@ async function selectCurrentStartupSql(input) {
     const row7 = indexed.get(next);
     need50(row7 !== void 0, "Startup SQL history parent is missing.");
     need50(
-      cell6(histories, row7, "snapshot").kind === "null" && integer6(cell6(histories, row7, "snapshot_num")) === 0n,
+      cell6(histories, row7, "snapshot").kind === "null" && integer7(cell6(histories, row7, "snapshot_num")) === 0n,
       "Startup SQL history snapshots are unsupported."
     );
     const previous = selected3.at(-1);
@@ -123256,7 +123420,7 @@ async function selectCurrentStartupSql(input) {
   const chunkIndex = await indexHistoryChunkUuids(data8);
   let chunks = 0;
   for (const row7 of selected3.toReversed()) {
-    const historyUuid = text25(cell6(histories, row7, "uuid")), num = integer6(cell6(histories, row7, "num"));
+    const historyUuid = text25(cell6(histories, row7, "uuid")), num = integer7(cell6(histories, row7, "num"));
     need50(num >= 0n && num <= 1024n && chunks + Number(num) + 1 <= MAX_HISTORY, "Startup SQL history chunk count is outside the bound.");
     for (let ordinal = 0; ordinal <= Number(num); ordinal += 1) {
       const chunk = chunkIndex.get(ordinal === 0 ? historyUuid : `${historyUuid}-${ordinal}`);
@@ -124853,7 +125017,7 @@ function need57(condition, message = "Current symbol transaction clock refused."
     throw new Error(message);
   }
 }
-function fields9(value2, required2, optional3 = []) {
+function fields10(value2, required2, optional3 = []) {
   need57(value2 !== null && typeof value2 === "object" && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys2 = Reflect.ownKeys(value2);
   need57(keys2.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys2.includes(key)), "Clock input fields differ.");
@@ -124877,7 +125041,7 @@ function data3(value2, depth = 0) {
   need57(isRecord(value2));
   const keys2 = Reflect.ownKeys(value2);
   need57(keys2.length <= 16);
-  fields9(value2, Object.keys(value2));
+  fields10(value2, Object.keys(value2));
   const copy = {};
   for (const key of keys2) {
     need57(typeof key === "string");
@@ -124886,7 +125050,7 @@ function data3(value2, depth = 0) {
   return Object.freeze(copy);
 }
 function documentSample(value2) {
-  fields9(value2, [
+  fields10(value2, [
     "rendererBeforeMs",
     "serverTimeMs",
     "rendererAfterMs",
@@ -124958,7 +125122,7 @@ function operationId5(binding4) {
   return value2;
 }
 async function prepareCurrentSymbolTransactionClock(input) {
-  fields9(input, [
+  fields10(input, [
     "before",
     "operation",
     "startupActor",
@@ -124973,7 +125137,7 @@ async function prepareCurrentSymbolTransactionClock(input) {
   ]);
   const owner = input.dispatchOwner;
   reserveCurrentSymbolTransactionClockOwner(owner);
-  fields9(input.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
+  fields10(input.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
   data3(input.comparisonIdentity);
   const identity31 = structuredClone(input.comparisonIdentity);
   const operation = data3(input.operation);
@@ -125042,7 +125206,7 @@ async function recordCurrentSymbolTransactionClockPost(plan2, input) {
   const prepared = plans4.get(plan2);
   need57(prepared !== void 0 && prepared.stage === "armed", "Clock post observation requires its original unconsumed plan.");
   prepared.stage = "post-consumed";
-  fields9(input, ["dispatchOwner", "afterClock", "documentAfter"]);
+  fields10(input, ["dispatchOwner", "afterClock", "documentAfter"]);
   need57(input.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const document3 = documentSample(input.documentAfter), token = input.afterClock;
   need57(token !== prepared.before.token && token !== prepared.armed.token, "Post Windows bracket requires a distinct original observation.");
@@ -125064,7 +125228,7 @@ async function verifyCurrentSymbolTransactionClock(plan2, input) {
   const post = prepared?.post;
   need57(prepared !== void 0 && post !== void 0 && prepared.stage === "post-recorded", "Clock verification requires its original unconsumed post observation.");
   prepared.stage = "verification-consumed";
-  fields9(input, ["dispatchOwner", "terminationProof", "after"]);
+  fields10(input, ["dispatchOwner", "terminationProof", "after"]);
   need57(input.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const proof = input.terminationProof;
   const afterInventory = input.after;
@@ -125519,7 +125683,7 @@ function request3(input) {
   const value2 = exact10(input, ["scope", "target", "actor"]);
   return Object.freeze({
     scope: validateClockControlScope(value2["scope"]),
-    target: targetSchema11.parse(exact10(value2["target"], ["projectUuid", "branchUuid"])),
+    target: targetSchema12.parse(exact10(value2["target"], ["projectUuid", "branchUuid"])),
     actor: validateActorProjection(value2["actor"])
   });
 }
@@ -125549,10 +125713,10 @@ function decodeCurrentAgedSqlRendererReply(raw, expected3) {
   const envelope2 = exact10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   need61(envelope2["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope2["json"] === "string" && envelope2["json"].length > 0 && envelope2["json"].length <= MAX_BYTES8 && Buffer.byteLength(JSON.stringify(envelope2)) <= MAX_BYTES8);
   const value2 = exact10(decodeExactReadEnvelope(envelope2), ["profile", "target", "controls", "mutationDispatched", "executionAuthorized"]);
-  need61(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema11.parse(value2["target"])) === canonicalJson(selected3.target));
+  need61(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema12.parse(value2["target"])) === canonicalJson(selected3.target));
   return validateCurrentAgedSqlClockControls(value2["controls"], selected3.scope, "renderer");
 }
-var MAX_BYTES8, targetSchema11, OLD_URL_CHECK;
+var MAX_BYTES8, targetSchema12, OLD_URL_CHECK;
 var init_current_aged_sql_renderer_program = __esm({
   "server/src/current-aged-sql-renderer-program.ts"() {
     init_zod();
@@ -125563,7 +125727,7 @@ var init_current_aged_sql_renderer_program = __esm({
     init_symbol_clock_controls();
     init_symbol_dual_actor();
     MAX_BYTES8 = 98304;
-    targetSchema11 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
+    targetSchema12 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
     OLD_URL_CHECK = String.raw`if(typeof href!=='string'||!/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)#?$/.test(href)||location.origin!=='https://client'||!document||document.nodeType!==9||document.defaultView!==root||document.URL!==href)bad();`;
   }
 });
@@ -126139,7 +126303,7 @@ function decodeCurrentSymbolWriteReply(raw, input) {
   }
   return Object.freeze(value2);
 }
-var CURRENT_SYMBOL_WRITE_TIMEOUT_MS, CURRENT_SYMBOL_WRITE_MAX_BYTES, CURRENT_SYMBOL_WRITE_WINDOW_MS, CURRENT_SYMBOL_WRITE_TIME_CEILING, integer7, time4, offset2, actorSchema2, windowSchema, beforeSchema2, currentSymbolWriteProgramInputSchema, sampleSchema, resultSchema4;
+var CURRENT_SYMBOL_WRITE_TIMEOUT_MS, CURRENT_SYMBOL_WRITE_MAX_BYTES, CURRENT_SYMBOL_WRITE_WINDOW_MS, CURRENT_SYMBOL_WRITE_TIME_CEILING, integer8, time4, offset2, actorSchema2, windowSchema, beforeSchema2, currentSymbolWriteProgramInputSchema, sampleSchema, resultSchema4;
 var init_current_symbol_write_program = __esm({
   "server/src/current-symbol-write-program.ts"() {
     init_zod();
@@ -126154,8 +126318,8 @@ var init_current_symbol_write_program = __esm({
     CURRENT_SYMBOL_WRITE_MAX_BYTES = 393216;
     CURRENT_SYMBOL_WRITE_WINDOW_MS = 6e4;
     CURRENT_SYMBOL_WRITE_TIME_CEILING = 864e13 - CURRENT_SYMBOL_WRITE_WINDOW_MS;
-    integer7 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
-    time4 = integer7.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
+    integer8 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
+    time4 = integer8.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
     offset2 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
     actorSchema2 = external_exports.object({
       uuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
@@ -126168,7 +126332,7 @@ var init_current_symbol_write_program = __esm({
       desired: external_exports.object({ name: external_exports.string().min(1).max(512).refine((value2) => value2.trim().length > 0), description: external_exports.string().max(65536) }).strict(),
       peerNames: external_exports.array(external_exports.string().min(1).max(512)).max(4096),
       expectedActor: actorSchema2,
-      expectedWorker: external_exports.object({ client: external_exports.string().regex(/^[a-f0-9]{16}$/u), maxTicket: integer7.max(Number.MAX_SAFE_INTEGER - 1) }).strict(),
+      expectedWorker: external_exports.object({ client: external_exports.string().regex(/^[a-f0-9]{16}$/u), maxTicket: integer8.max(Number.MAX_SAFE_INTEGER - 1) }).strict(),
       backendWindow: windowSchema,
       documentWindow: windowSchema,
       rendererTimezoneOffsetMinutes: offset2,
@@ -126193,8 +126357,8 @@ var init_current_symbol_write_program = __esm({
       after: beforeSchema2.extend({ updateTime: time4 }).strict(),
       actor: actorSchema2,
       client: external_exports.string().regex(/^[a-f0-9]{16}$/u),
-      beforeMaxTicket: integer7,
-      afterMaxTicket: integer7,
+      beforeMaxTicket: integer8,
+      afterMaxTicket: integer8,
       documentBefore: sampleSchema,
       documentAfter: sampleSchema,
       mutationDispatched: external_exports.literal(true),
@@ -126878,7 +127042,7 @@ function decodeCurrentSymbolWriterClockReply(raw, input) {
   }
   return Object.freeze(result.sample);
 }
-var currentSymbolWriterClockRequestSchema, integer8, sample, resultSchema5;
+var currentSymbolWriterClockRequestSchema, integer9, sample, resultSchema5;
 var init_current_symbol_writer_clock_program = __esm({
   "server/src/current-symbol-writer-clock-program.ts"() {
     init_zod();
@@ -126891,11 +127055,11 @@ var init_current_symbol_writer_clock_program = __esm({
       target: currentSymbolWriteProgramInputSchema.shape.target,
       expectedActor: currentSymbolWriteProgramInputSchema.shape.expectedActor
     }).strict();
-    integer8 = external_exports.number().int().min(0).max(864e13).refine((value2) => !Object.is(value2, -0));
+    integer9 = external_exports.number().int().min(0).max(864e13).refine((value2) => !Object.is(value2, -0));
     sample = external_exports.object({
-      rendererBeforeMs: integer8,
-      serverTimeMs: integer8,
-      rendererAfterMs: integer8,
+      rendererBeforeMs: integer9,
+      serverTimeMs: integer9,
+      rendererAfterMs: integer9,
       rendererBeforeIso: external_exports.string().max(32),
       rendererAfterIso: external_exports.string().max(32),
       rendererTimezoneOffsetMinutes: external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0)),
@@ -127040,7 +127204,7 @@ var init_current_symbol_writer_runtime = __esm({
         this.engine = engine2;
       }
       current(slot, scopeText) {
-        need66(this.slots.get(slot.owner.operationId) === slot && !slot.retired && assertCurrentSymbolWriterOwner(slot.owner, this.engine, scopeText) === slot.source && methods5(this.engine).every((method5, index) => method5 === slot.methods[index]) && slot.journal === slot.source.journal);
+        need66(this.slots.get(slot.owner.operationId) === slot && !slot.retired && assertCurrentSymbolWriterOwner(slot.owner, this.engine, scopeText) === slot.source && methods5(this.engine).every((method6, index) => method6 === slot.methods[index]) && slot.journal === slot.source.journal);
       }
       async unchanged(slot, scopeText) {
         this.current(slot, scopeText);
@@ -127642,7 +127806,7 @@ var init_current_symbol_writer_runtime = __esm({
         const frozen = canonicalJson(projection8());
         const current5 = () => {
           need66(
-            this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && methods5(this.engine).every((method5, index) => method5 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
+            this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && methods5(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "Current symbol verification continuation was changed or its writer did not retire successfully."
           );
           need66(assertOriginalCurrentSymbolFinishSnapshot(snapshot8, this.engine).inventory === slot.snapshotInventory);
@@ -127980,7 +128144,7 @@ var init_current_symbol_saved_read = __esm({
 });
 
 // server/src/current-upload-queue-read.ts
-function fields10(input, names2) {
+function fields11(input, names2) {
   if (input === null || typeof input !== "object" || Array.isArray(input) || Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null || Reflect.ownKeys(input).length !== names2.length) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
   }
@@ -127995,7 +128159,7 @@ function fields10(input, names2) {
   return result;
 }
 function scope5(input) {
-  const value2 = fields10(input, ["projectUuid", "branchUuid"]);
+  const value2 = fields11(input, ["projectUuid", "branchUuid"]);
   const branchUuid2 = value2["branchUuid"], projectUuid4 = value2["projectUuid"];
   if (typeof projectUuid4 !== "string" || projectUuid4.length !== 64 || !/^[a-f0-9]{64}$/u.test(projectUuid4) || typeof branchUuid2 !== "string" || branchUuid2.length !== 32 || !/^[a-f0-9]{32}$/u.test(branchUuid2)) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
@@ -128050,7 +128214,7 @@ return envelope;`;
 }
 function decodeCurrentUploadQueueReadReply(raw, expected3) {
   assertUpstreamReplySettled(raw);
-  const envelope2 = fields10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope2 = fields11(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope2["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope2["json"] !== "string" || envelope2["json"].length === 0 || envelope2["json"].length > CURRENT_UPLOAD_QUEUE_MAX_BYTES || !Number.isSafeInteger(envelope2["utf8Bytes"]) || Buffer.byteLength(envelope2["json"], "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES) {
     throw new Error("CURRENT_UPLOAD_QUEUE_ENVELOPE");
   }
@@ -128058,7 +128222,7 @@ function decodeCurrentUploadQueueReadReply(raw, expected3) {
 }
 function validateCurrentUploadQueueReadResult(input, expected3) {
   const target6 = scope5(expected3);
-  const value2 = fields10(input, [
+  const value2 = fields11(input, [
     "profile",
     "projectUuid",
     "branchUuid",
@@ -128338,7 +128502,7 @@ var init_current_symbol_verification_runtime = __esm({
           const endpointText = canonicalJson(endpoint3["publicEndpoint"]), priorLaunchText = canonicalJson(previousLaunch), priorText = canonicalJson(prior);
           const infrastructure = (scopeText) => {
             assertWindowsRuntimeValidator(validator, runtime);
-            need69(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods6(this.engine, runtime).every((method5, index) => method5 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
+            need69(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods6(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need69(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
             const state2 = lifecycleReader.call(upstream2);
@@ -129862,14 +130026,26 @@ function currentSymbolFinishSnapshotStatus(attempted3, captured, failed) {
   }
   return attempted3 === false ? "not-attempted" : "not-recorded";
 }
-function clockStageNextSafeAction(slot) {
+function clockStageNextSafeAction(slot, observedJournal = slot.journal) {
   if (slot.clockReferenceAttempted && !slot.clockReferenceAccepted) {
     return "Clock reference attempt consumed. Inspect its retained sidecar and original scratch return; do not retry or launch the replacement generation.";
   }
   if (slot.agedClockAttempted && !slot.agedClockAccepted && !slot.finishCloseAttempted && !slot.finished) {
     return "Clock observation attempt consumed. Inspect its retained sidecar; do not retry or write. The original baseline-finish-close and baseline-observe-finish remain available.";
   }
-  return void 0;
+  if (slot.journal.state !== "project-only-opened" || !slot.projectOpened || slot.projectOnlyGeneration === void 0 || !slot.clockReferenceAccepted || slot.writerTransfer !== void 0 || slot.finishing || slot.finishCloseAttempted || slot.finished || slot.journal.orphanedCallPossible || slot.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" || canonicalJson(slot.journal) !== slot.journalText || canonicalJson(observedJournal) !== slot.journalText) {
+    return void 0;
+  }
+  const route = {
+    "ordinary-symbol-metadata": { tool: "easyeda_control_project_symbol_metadata", begin: "metadata-begin", writePhase: "forward-write" },
+    "disposable-symbol-copy": { tool: "easyeda_control_disposable_symbol_copy", begin: "copy-begin", writePhase: "copy-write" },
+    "disposable-validation": { tool: "easyeda_control_project_open", begin: "validation-begin", writePhase: "forward-write" }
+  }[slot.purpose];
+  const cleanup = "For original-owner cleanup instead, use baseline-finish-close then baseline-observe-finish through the same tool. Do not repeat navigation or issue Save.";
+  if (!slot.agedClockAttempted) {
+    return `Project-only return retained. Use ${route.tool} action baseline-observe-clock once with the original baseline operationId. This collects clock evidence only; startup and writer authority remain unqualified. ${cleanup}`;
+  }
+  return `Original clock observation accepted. If the lifecycle has not already begun, use ${route.tool} action ${route.begin} once with its required acknowledgements and the original baseline operationId to retain it. After beginning, follow the returned lifecycle phase; do not repeat begin. The later ${route.writePhase} phase separately qualifies startup, clocks and intended effects before any mutation; this observation authorizes no direct edit. ${cleanup}`;
 }
 function summary8(slot) {
   return {
@@ -130403,7 +130579,7 @@ var init_current_symbol_baseline_runtime = __esm({
           const current5 = () => {
             this.outsideScope(slot);
             need74(
-              slot.copyOpeningCleanupMethods !== void 0 && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === slot.copyOpeningCleanupMethods?.[index]) && !slot.journal.orphanedCallPossible && slot.journal.bridgeDispatchBeforeOrphan === void 0 && slot.journal.bridgeSessionBeforeOrphan === void 0 && slot.journal.executionAuthorityBeforeOrphan === void 0,
+              slot.copyOpeningCleanupMethods !== void 0 && relaunchMethods(this.engine, this.runtime).every((method6, index) => method6 === slot.copyOpeningCleanupMethods?.[index]) && !slot.journal.orphanedCallPossible && slot.journal.bridgeDispatchBeforeOrphan === void 0 && slot.journal.bridgeSessionBeforeOrphan === void 0 && slot.journal.executionAuthorityBeforeOrphan === void 0,
               "Initial copy capture cleanup cannot replace methods or adopt tracked dispatch authority."
             );
             const status2 = this.runtime.status();
@@ -130688,7 +130864,7 @@ var init_current_symbol_baseline_runtime = __esm({
             assertWindowsRuntimeValidator(validator, this.runtime);
             const scope6 = scopeReader.call(upstream2);
             need74(
-              this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === methods9[index]) && (scopeText === void 0 ? scope6 === void 0 : scope6 !== void 0 && canonicalJson(scope6) === scopeText) && this.slots.get(operationId7) === slot && slot.source === source5 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source5.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText && canonicalJson({ target: source5.target, expectedFingerprint: source5.expectedFingerprint, preNavigationCheckpoint: source5.preNavigationCheckpoint }) === sourceText,
+              this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method6, index) => method6 === methods9[index]) && (scopeText === void 0 ? scope6 === void 0 : scope6 !== void 0 && canonicalJson(scope6) === scopeText) && this.slots.get(operationId7) === slot && slot.source === source5 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source5.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText && canonicalJson({ target: source5.target, expectedFingerprint: source5.expectedFingerprint, preNavigationCheckpoint: source5.preNavigationCheckpoint }) === sourceText,
               "Current symbol relaunch infrastructure, capture or ended scope changed."
             );
             assertBaselineCopy(copy, this.engine);
@@ -131338,7 +131514,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertBridgeDispatchAllowed();
           await current5();
           slot.journal.state = "project-only-opened";
-          slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Use baseline-finish-close then baseline-observe-finish for retained normal closure. Do not navigate again, Save or write.";
+          slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Keep the original facade and use baseline-inspect for purpose-bound clock/lifecycle guidance, or baseline-finish-close then baseline-observe-finish for retained normal closure. This opening authorizes no direct edit. Do not repeat navigation or issue Save.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", {
             observation: slot.projectOpenObservation,
             observationSha256: sha256Json(slot.projectOpenObservation),
@@ -131968,7 +132144,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       async inverseCleanupCurrent(slot) {
         need74(
-          slot.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" && currentSymbolInverseOwnershipTransferred(slot.owner, this.engine) && !slot.finished && slot.writerTransfer === void 0 && slot.inverseCleanupMethods !== void 0 && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === slot.inverseCleanupMethods?.[index]),
+          slot.owner.profile === "private.current-symbol-inverse-baseline-owner.v1" && currentSymbolInverseOwnershipTransferred(slot.owner, this.engine) && !slot.finished && slot.writerTransfer === void 0 && slot.inverseCleanupMethods !== void 0 && relaunchMethods(this.engine, this.runtime).every((method6, index) => method6 === slot.inverseCleanupMethods?.[index]),
           "Inverse cleanup requires its original transferred owner and native methods."
         );
         this.outsideScope(slot);
@@ -132143,7 +132319,7 @@ var init_current_symbol_baseline_runtime = __esm({
           finishSnapshotCaptured: journal["finishSnapshotCaptured"] ?? null,
           finishSnapshotStatus: currentSymbolFinishSnapshotStatus(journal["finishSnapshotAttempted"], journal["finishSnapshotCaptured"], journal["finishSnapshotFailed"]),
           unqualifiedSchematicStartupEffectsAccepted: journal["projectOpeningMode"] === "unqualified-schematic-startup-observation",
-          nextSafeAction: (slot === void 0 ? void 0 : clockStageNextSafeAction(slot)) ?? journal["nextSafeAction"],
+          nextSafeAction: (slot === void 0 ? void 0 : clockStageNextSafeAction(slot, journal)) ?? journal["nextSafeAction"],
           originalOwnerRetained: this.slots.has(operationId7),
           writerReady: false,
           executionAuthorized: false
@@ -132905,8 +133081,8 @@ function dataFields(value2, names2) {
   return copy;
 }
 function captureWitness(value2) {
-  const fields12 = dataFields(value2);
-  const result = witnessSchema.parse({ ...fields12, ...fields12["agedHead"] === void 0 ? {} : { agedHead: dataFields(fields12["agedHead"]) } });
+  const fields13 = dataFields(value2);
+  const result = witnessSchema.parse({ ...fields13, ...fields13["agedHead"] === void 0 ? {} : { agedHead: dataFields(fields13["agedHead"]) } });
   if (result.agedHead !== void 0) {
     Object.freeze(result.agedHead);
   }
@@ -132918,7 +133094,7 @@ function text27(value2) {
   need77(Buffer.from(result).equals(bytes2), "SQL TEXT is not exact UTF8");
   return result;
 }
-function integer9(value2) {
+function integer10(value2) {
   need77(value2?.kind === "integer", "expected SQL INTEGER");
   return BigInt(value2.decimal);
 }
@@ -132958,8 +133134,8 @@ function insert(owner, id10, values2) {
 function maximumId(owner) {
   let maximum3 = 0n;
   for (const row7 of owner.rows) {
-    const id10 = integer9(field3(owner, row7, "id"));
-    need77(id10 > 0n && row7.rowid !== null && integer9(row7.rowid) === id10, "positive ID/rowid association differs");
+    const id10 = integer10(field3(owner, row7, "id"));
+    need77(id10 > 0n && row7.rowid !== null && integer10(row7.rowid) === id10, "positive ID/rowid association differs");
     if (id10 > maximum3) {
       maximum3 = id10;
     }
@@ -132970,7 +133146,7 @@ function maximumId(owner) {
 function sequenceAllocation(before, owner) {
   const sequence = table9(before, "sqlite_sequence");
   const row7 = unique4(sequence, "name", owner.name);
-  const value2 = integer9(field3(sequence, row7, "seq"));
+  const value2 = integer10(field3(sequence, row7, "seq"));
   need77(value2 >= maximumId(owner) && value2 < BigInt(Number.MAX_SAFE_INTEGER), "AUTOINCREMENT capacity exhausted");
   return { row: row7, id: value2 + 1n };
 }
@@ -132987,7 +133163,7 @@ function wallMs(value2) {
   return result;
 }
 function headEligibility(head2, owner, witness) {
-  const locked = integer9(field3(owner, head2, "is_lock"));
+  const locked = integer10(field3(owner, head2, "is_lock"));
   need77(locked === 0n || locked === 1n, "history lock refused");
   if (locked === 1n) {
     need77(witness.agedHead === void 0, "locked head cannot consume age witness");
@@ -133007,7 +133183,7 @@ function branchParent(before, branch, witness) {
   const uuid12 = text27(parent);
   need77(UUID5.test(uuid12) && uuid12 !== witness.branchUuid, "branch parent identity refused");
   const start = unique4(branches, "uuid", uuid12);
-  need77(text27(field3(branches, start, "name")) === "start" && integer9(field3(branches, start, "node")) === 1n && integer9(field3(branches, start, "delete_status")) === 0n && text27(field3(branches, start, "project_uuid")) === witness.projectUuid && field3(branches, start, "parent_uuid").kind === "null" && field3(branches, start, "history_uuid").kind === "null", "branch parent is not the terminal empty start node");
+  need77(text27(field3(branches, start, "name")) === "start" && integer10(field3(branches, start, "node")) === 1n && integer10(field3(branches, start, "delete_status")) === 0n && text27(field3(branches, start, "project_uuid")) === witness.projectUuid && field3(branches, start, "parent_uuid").kind === "null" && field3(branches, start, "history_uuid").kind === "null", "branch parent is not the terminal empty start node");
 }
 function actor(before, uuid12) {
   const users = table9(before, "users");
@@ -133070,11 +133246,11 @@ function sqlBudget(prepared, plaintextBytes) {
   return Object.freeze({ maximumCiphertextBase64Bytes, maximumEncodedSqlBytes });
 }
 async function prepareCurrentSymbolCopySqlPlan(input) {
-  const fields12 = dataFields(input, ["before", "copyPlan", "witness"]);
+  const fields13 = dataFields(input, ["before", "copyPlan", "witness"]);
   const before = input.before;
   const copy = input.copyPlan;
-  need77(fields12["before"] === before && fields12["copyPlan"] === copy, "input identity changed during capture");
-  const witness = captureWitness(fields12["witness"]);
+  need77(fields13["before"] === before && fields13["copyPlan"] === copy, "input identity changed during capture");
+  const witness = captureWitness(fields13["witness"]);
   assertCurrentSymbolCopyPlanInventory(copy, before);
   supported2(before, witness.branchUuid);
   const completion2 = readerCompletion(before);
@@ -133095,7 +133271,7 @@ async function prepareCurrentSymbolCopySqlPlan(input) {
   const structures = structureTable.rows.filter((row7) => text27(field3(structureTable, row7, "branch_uuid")) === witness.branchUuid);
   const first = structures[0];
   need77(first !== void 0, "baseline structure rows are missing");
-  const structureText = text27(field3(structureTable, first, "structure")), structureTicket = integer9(field3(structureTable, first, "ticket"));
+  const structureText = text27(field3(structureTable, first, "structure")), structureTicket = integer10(field3(structureTable, first, "ticket"));
   const structure = JSON.parse(structureText);
   need77(
     isRecord(structure) && JSON.stringify(structure) === structureText && Object.keys(structure).length === 7 && ["boards", "schematics", "sheets", "pcbs", "panels", "blockSymbols", "owner"].every((name6) => isRecord(structure[name6])),
@@ -133103,7 +133279,7 @@ async function prepareCurrentSymbolCopySqlPlan(input) {
   );
   need77(structureTicket >= 0n && structureTicket <= BigInt(copy.maximumTicket), "baseline structure ticket refused");
   for (const row7 of structures) {
-    need77(text27(field3(structureTable, row7, "project_uuid")) === witness.projectUuid && integer9(field3(structureTable, row7, "ticket")) === structureTicket && text27(field3(structureTable, row7, "structure")) === structureText, "baseline structure multiplicity is ambiguous");
+    need77(text27(field3(structureTable, row7, "project_uuid")) === witness.projectUuid && integer10(field3(structureTable, row7, "ticket")) === structureTicket && text27(field3(structureTable, row7, "structure")) === structureText, "baseline structure multiplicity is ambiguous");
   }
   const prepared = {
     before,
@@ -133155,7 +133331,7 @@ async function prepareCurrentSymbolCopySqlPlan(input) {
   return plan2;
 }
 function newRow2(owner, id10) {
-  const matches = owner.rows.filter((row7) => integer9(field3(owner, row7, "id")) === id10);
+  const matches = owner.rows.filter((row7) => integer10(field3(owner, row7, "id")) === id10);
   need77(matches.length === 1 && matches[0] !== void 0, "exact newly allocated row missing");
   return matches[0];
 }
@@ -133366,7 +133542,7 @@ function need78(condition, message = "Current symbol transaction clock refused."
     throw new Error(message);
   }
 }
-function fields11(value2, required2, optional3 = []) {
+function fields12(value2, required2, optional3 = []) {
   need78(value2 !== null && typeof value2 === "object" && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys2 = Reflect.ownKeys(value2);
   need78(keys2.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys2.includes(key)), "Clock input fields differ.");
@@ -133390,7 +133566,7 @@ function data5(value2, depth = 0) {
   need78(isRecord(value2));
   const keys2 = Reflect.ownKeys(value2);
   need78(keys2.length <= 16);
-  fields11(value2, Object.keys(value2));
+  fields12(value2, Object.keys(value2));
   const copy = {};
   for (const key of keys2) {
     need78(typeof key === "string");
@@ -133399,7 +133575,7 @@ function data5(value2, depth = 0) {
   return Object.freeze(copy);
 }
 function documentSample2(value2) {
-  fields11(value2, [
+  fields12(value2, [
     "rendererBeforeMs",
     "serverTimeMs",
     "rendererAfterMs",
@@ -133471,7 +133647,7 @@ function operationId6(binding4) {
   return value2;
 }
 async function prepareCurrentSymbolCopyClock(input) {
-  fields11(input, [
+  fields12(input, [
     "before",
     "copyPlan",
     "startupActor",
@@ -133486,7 +133662,7 @@ async function prepareCurrentSymbolCopyClock(input) {
   ]);
   const owner = input.dispatchOwner;
   reserveCurrentSymbolTransactionClockOwner(owner);
-  fields11(input.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
+  fields12(input.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
   data5(input.comparisonIdentity);
   const identity31 = structuredClone(input.comparisonIdentity);
   const copyPlan = input.copyPlan;
@@ -133555,7 +133731,7 @@ async function recordCurrentSymbolCopyClockPost(plan2, input) {
   const prepared = plans6.get(plan2);
   need78(prepared !== void 0 && prepared.stage === "armed", "Clock post observation requires its original unconsumed plan.");
   prepared.stage = "post-consumed";
-  fields11(input, ["dispatchOwner", "afterClock", "documentAfter", "returnedUuid"]);
+  fields12(input, ["dispatchOwner", "afterClock", "documentAfter", "returnedUuid"]);
   const returnedUuid = input.returnedUuid;
   assertCurrentSymbolCopyDestination(prepared.copyPlan, returnedUuid);
   need78(input.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
@@ -133579,7 +133755,7 @@ async function verifyCurrentSymbolCopyClock(plan2, input) {
   const post = prepared?.post;
   need78(prepared !== void 0 && post !== void 0 && prepared.stage === "post-recorded", "Clock verification requires its original unconsumed post observation.");
   prepared.stage = "verification-consumed";
-  fields11(input, ["dispatchOwner", "terminationProof", "after"]);
+  fields12(input, ["dispatchOwner", "terminationProof", "after"]);
   need78(input.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const proof = input.terminationProof;
   const afterInventory = input.after;
@@ -133815,7 +133991,7 @@ function decodeCurrentSymbolCopySavedReadReply(raw, original2, input) {
   }
   return Object.freeze(result);
 }
-var actorSchema3, targetSchema12, versionSchema2, beforeSchema3, currentSymbolCopySavedReadRequestSchema, observationSchema3, resultSchema6;
+var actorSchema3, targetSchema13, versionSchema2, beforeSchema3, currentSymbolCopySavedReadRequestSchema, observationSchema3, resultSchema6;
 var init_current_symbol_copy_saved_read_program = __esm({
   "server/src/current-symbol-copy-saved-read-program.ts"() {
     init_zod();
@@ -133833,11 +134009,11 @@ var init_current_symbol_copy_saved_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema12 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
+    targetSchema13 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
     versionSchema2 = external_exports.string().regex(/^[1-9][0-9]{0,15}$/u).refine((value2) => Number.isSafeInteger(Number(value2)) && Number(value2) <= 864e13);
     beforeSchema3 = currentSavedSymbolReadRequestSchema.shape.expectedBefore.extend({ source: external_exports.literal(""), version: versionSchema2 }).strict();
     currentSymbolCopySavedReadRequestSchema = external_exports.object({
-      target: targetSchema12,
+      target: targetSchema13,
       expectedBefore: beforeSchema3,
       expectedActor: actorSchema3,
       maximumTicket: external_exports.number().int().positive().max(Number.MAX_SAFE_INTEGER - 1).refine((value2) => !Object.is(value2, -0)),
@@ -133845,8 +134021,8 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket + 1 === value2.maximumTicket);
     observationSchema3 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema12.shape.projectUuid,
-      targetUuid: targetSchema12.shape.symbolUuid,
+      projectUuid: targetSchema13.shape.projectUuid,
+      targetUuid: targetSchema13.shape.symbolUuid,
       maximumTicket: currentSymbolCopySavedReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -133856,7 +134032,7 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict();
     resultSchema6 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-saved-read-observation.v1"),
-      target: targetSchema12,
+      target: targetSchema13,
       expectedBefore: beforeSchema3,
       expectedActor: actorSchema3,
       observation: observationSchema3,
@@ -134192,7 +134368,7 @@ function decodeCurrentSymbolCopyStoppedReply(raw, original2, input) {
   Object.freeze(value2.target);
   return Object.freeze(value2);
 }
-var CURRENT_SYMBOL_COPY_PROGRAM_MAX_BYTES, CURRENT_SYMBOL_COPY_MAX_BYTES, CURRENT_SYMBOL_COPY_TIMEOUT_MS, base4, integer10, time5, offset3, nativeId6, client, observationSchema4, currentSymbolCopyProgramInputSchema, metadataSchema4, sampleSchema2, createdSchema, resultSchema7, stoppedSchema;
+var CURRENT_SYMBOL_COPY_PROGRAM_MAX_BYTES, CURRENT_SYMBOL_COPY_MAX_BYTES, CURRENT_SYMBOL_COPY_TIMEOUT_MS, base4, integer11, time5, offset3, nativeId6, client, observationSchema4, currentSymbolCopyProgramInputSchema, metadataSchema4, sampleSchema2, createdSchema, resultSchema7, stoppedSchema;
 var init_current_symbol_copy_program = __esm({
   "server/src/current-symbol-copy-program.ts"() {
     init_zod();
@@ -134208,15 +134384,15 @@ var init_current_symbol_copy_program = __esm({
     CURRENT_SYMBOL_COPY_MAX_BYTES = CURRENT_SYMBOL_WRITE_MAX_BYTES;
     CURRENT_SYMBOL_COPY_TIMEOUT_MS = CURRENT_SYMBOL_WRITE_TIMEOUT_MS;
     base4 = currentSymbolWriteProgramInputSchema.shape;
-    integer10 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
-    time5 = integer10.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
+    integer11 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
+    time5 = integer11.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
     offset3 = base4.rendererTimezoneOffsetMinutes;
     nativeId6 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
     client = external_exports.string().regex(/^[a-f0-9]{16}$/u);
     observationSchema4 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
       targetUuid: nativeId6,
-      maximumTicket: integer10,
+      maximumTicket: integer11,
       workerClient: client,
       content: external_exports.string().min(1).max(CURRENT_SYMBOL_COPY_PROGRAM_MAX_BYTES)
     }).strict();
@@ -134224,7 +134400,7 @@ var init_current_symbol_copy_program = __esm({
       target: base4.target,
       expectedBefore: base4.expectedBefore,
       expectedActor: base4.expectedActor,
-      expectedWorker: external_exports.object({ client, maxTicket: integer10.max(Number.MAX_SAFE_INTEGER - 3) }).strict(),
+      expectedWorker: external_exports.object({ client, maxTicket: integer11.max(Number.MAX_SAFE_INTEGER - 3) }).strict(),
       backendWindow: base4.backendWindow,
       documentWindow: base4.documentWindow,
       rendererTimezoneOffsetMinutes: offset3,
@@ -134261,8 +134437,8 @@ var init_current_symbol_copy_program = __esm({
       created: createdSchema,
       actor: base4.expectedActor,
       client,
-      beforeMaxTicket: integer10,
-      afterMaxTicket: integer10,
+      beforeMaxTicket: integer11,
+      afterMaxTicket: integer11,
       documentBefore: sampleSchema2,
       documentAfter: sampleSchema2,
       sourceContentMatched: external_exports.literal(true),
@@ -134289,7 +134465,7 @@ var init_current_symbol_copy_program = __esm({
       destinationCollision: external_exports.boolean(),
       failureStage: external_exports.enum(["ACK", "POST_MUTATION", "CLOCK_AFTER", "AFTER", "TIMEOUT", "CLEANUP", "TIMEOUT_CLEANUP"]),
       client,
-      beforeMaxTicket: integer10,
+      beforeMaxTicket: integer11,
       mutationDispatched: external_exports.literal(true),
       readbackComplete: external_exports.literal(false),
       explicitSaveDispatched: external_exports.literal(false),
@@ -134417,7 +134593,7 @@ function decodeCurrentSymbolCopySourceReadReply(raw, original2, input) {
   Object.freeze(result.observation);
   return Object.freeze(result);
 }
-var actorSchema4, targetSchema13, beforeSchema4, currentSymbolCopySourceReadRequestSchema, observationSchema5, resultSchema8;
+var actorSchema4, targetSchema14, beforeSchema4, currentSymbolCopySourceReadRequestSchema, observationSchema5, resultSchema8;
 var init_current_symbol_copy_source_read_program = __esm({
   "server/src/current-symbol-copy-source-read-program.ts"() {
     init_zod();
@@ -134435,10 +134611,10 @@ var init_current_symbol_copy_source_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema13 = currentSavedSymbolReadRequestSchema.shape.target;
+    targetSchema14 = currentSavedSymbolReadRequestSchema.shape.target;
     beforeSchema4 = currentSavedSymbolReadRequestSchema.shape.expectedBefore;
     currentSymbolCopySourceReadRequestSchema = external_exports.object({
-      target: targetSchema13,
+      target: targetSchema14,
       expectedBefore: beforeSchema4,
       expectedActor: actorSchema4,
       maximumTicket: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 3).refine((value2) => !Object.is(value2, -0)),
@@ -134446,8 +134622,8 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.maximumTicket);
     observationSchema5 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema13.shape.projectUuid,
-      targetUuid: targetSchema13.shape.symbolUuid,
+      projectUuid: targetSchema14.shape.projectUuid,
+      targetUuid: targetSchema14.shape.symbolUuid,
       maximumTicket: currentSymbolCopySourceReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -134457,7 +134633,7 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict();
     resultSchema8 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-source-read-observation.v1"),
-      target: targetSchema13,
+      target: targetSchema14,
       expectedBefore: beforeSchema4,
       expectedActor: actorSchema4,
       observation: observationSchema5,
@@ -134601,7 +134777,7 @@ var init_current_symbol_copy_writer_runtime = __esm({
         this.engine = engine2;
       }
       current(slot, scopeText) {
-        need80(this.slots.get(slot.owner.operationId) === slot && !slot.retired && assertCurrentSymbolCopyWriterOwner(slot.owner, this.engine, scopeText) === slot.source && methods7(this.engine).every((method5, index) => method5 === slot.methods[index]) && slot.journal === slot.source.journal);
+        need80(this.slots.get(slot.owner.operationId) === slot && !slot.retired && assertCurrentSymbolCopyWriterOwner(slot.owner, this.engine, scopeText) === slot.source && methods7(this.engine).every((method6, index) => method6 === slot.methods[index]) && slot.journal === slot.source.journal);
         assertCurrentSymbolCopyPlanInventory(slot.source.original.baseline.preparation, slot.source.original.baseline.inventory);
       }
       async unchanged(slot, scopeText) {
@@ -135205,7 +135381,7 @@ var init_current_symbol_copy_writer_runtime = __esm({
         const frozen = canonicalJson(projection8());
         const current5 = () => {
           need80(
-            this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && slot.writeResult === writeResult && slot.source.original.baseline.preparation === copyPlan && methods7(this.engine).every((method5, index) => method5 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
+            this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && slot.writeResult === writeResult && slot.source.original.baseline.preparation === copyPlan && methods7(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "Current copy verification continuation changed or its writer did not retire successfully."
           );
           need80(assertOriginalCurrentSymbolCopyFinishSnapshot(snapshot8, this.engine).inventory === slot.snapshotInventory);
@@ -135764,7 +135940,7 @@ var init_current_symbol_copy_verification_runtime = __esm({
           const endpointText = canonicalJson(endpoint3["publicEndpoint"]), priorLaunchText = canonicalJson(previousLaunch), priorText = canonicalJson(prior);
           const infrastructure = (scopeText) => {
             assertWindowsRuntimeValidator(validator, runtime);
-            need83(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods8(this.engine, runtime).every((method5, index) => method5 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
+            need83(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods8(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need83(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
             const state2 = lifecycleReader.call(upstream2);
@@ -137398,7 +137574,7 @@ var init_current_disposable_open_runtime = __esm({
       copyOpeningCleanupCurrent(cleanup) {
         const slot = cleanup.opening;
         requireValue15(
-          this.copyOpeningCleanups.get(cleanup.operationId) === cleanup && cleanup.failed && !cleanup.retired && this.baselines.get(cleanup.operationId) === cleanup.stage && this.baselinePurposes.get(cleanup.operationId) === CURRENT_SYMBOL_COPY_OPERATION_PURPOSE && baselineRuntimeReservations.has(slot.runtime) && this.baselineJobs.has(slot.launch.jobId) && canonicalJson(slot.journal) === cleanup.openingText && this.copyOpeningCleanupMethods(slot).every((method5, index) => method5 === cleanup.methods[index]),
+          this.copyOpeningCleanups.get(cleanup.operationId) === cleanup && cleanup.failed && !cleanup.retired && this.baselines.get(cleanup.operationId) === cleanup.stage && this.baselinePurposes.get(cleanup.operationId) === CURRENT_SYMBOL_COPY_OPERATION_PURPOSE && baselineRuntimeReservations.has(slot.runtime) && this.baselineJobs.has(slot.launch.jobId) && canonicalJson(slot.journal) === cleanup.openingText && this.copyOpeningCleanupMethods(slot).every((method6, index) => method6 === cleanup.methods[index]),
           "Copy opening cleanup lost its original consumed reservation, methods or journal."
         );
         requireValue15(slot.runtime.normalClose === slot.nativeCleanup.normalClose && slot.runtime.observeApplicationWindow === slot.nativeCleanup.observeApplicationWindow && slot.runtime.status === slot.nativeCleanup.status, "Copy opening cleanup native methods differ from the original opener.");
@@ -138583,6 +138759,132 @@ var init_current_pcb_geometry_runtime = __esm({
   }
 });
 
+// server/src/current-project-pcb-metadata-program.ts
+function buildCurrentProjectPcbMetadataProgram(input) {
+  const request9 = parseCurrentProjectPcbMetadataRequest(input);
+  return `let timer,clear;
+try{
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request9.target)};let expired=false;
+const bad=()=>{throw new Error('CURRENT_PROJECT_PCB_METADATA_READ_FAILED');};
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const plain=value=>{if(value===null||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const text=(value,max)=>{if(typeof value!=='string'||value.length>max)bad();return value;};
+const integer=(value,max=Number.MAX_SAFE_INTEGER)=>{if(typeof value!=='number'||!Number.isSafeInteger(value)||value<0||value>max||Object.is(value,-0))bad();return value;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+${buildCurrentProjectOnlySymbolGuard()}
+const host=projectOnly.host,bus=own(host,'messageBus'),rpc=method(bus,'rpcCall'),edaOwner=eda;
+const same=()=>{projectOnly.check();methodCheck(rpc);if(expired||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40'||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();};
+const call=async(topic,args)=>{same();const raw=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(raw),'message'));};
+const projectMetadata=async()=>{
+ const value=await call('/PrjDB/project/getData',[target.projectUuid]);same();
+ if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false||own(value,'archive')!==false||own(value,'store')!==false||own(value,'cbb_project')!==false)bad();
+ const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;
+};
+const sample=async()=>{
+ const ownerUuid=await projectMetadata();same();const value=await call('/PrjDB/pcb/getData',[target.pcbUuid,target.projectUuid]);same();
+ if(own(value,'uuid')!==target.pcbUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'docType')!==3)bad();
+ const parentUuid=text(own(value,'parent_uuid'),32);if(parentUuid!==''&&!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(parentUuid))bad();
+ const result={uuid:target.pcbUuid,projectUuid:target.projectUuid,ownerUuid,title:text(own(value,'title'),512),displayTitle:text(own(value,'display_title'),512),
+  parentUuid,source:text(own(value,'source'),4096),version:text(own(value,'version'),128),boardUuid:text(own(value,'board'),128),
+  ticket:integer(own(value,'ticket')),updateTime:integer(own(value,'updateTime'),8640000000000000),docType:3};
+ if(await projectMetadata()!==ownerUuid)bad();same();return result;
+};
+const run=async()=>{
+ const first=await sample(),seal=JSON.stringify(first);const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
+ const result={ok:true,kind:'current-project-pcb-metadata-observation',method:${JSON.stringify(request9.method)},target,value:first,samples:2,currentTabId:projectOnly.currentTabId,
+  implementationKind:'native-task-equivalent',noEditorTabsObserved:true,hiddenEditorsAbsentObserved:true,dirtyTabsAbsentObserved:true,cachedProjectReadOnlyAbsentObserved:true,concurrentStrictModeAbsentObserved:true,
+  workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false,permissionVerified:false,mutationDispatched:false,explicitSaveDispatched:false};
+ const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+ if(utf8Bytes>${CURRENT_PROJECT_PCB_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PROJECT_PCB_METADATA_MAX_BYTES})bad();return envelope;
+};
+same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PROJECT_PCB_METADATA_READ_FAILED'));},${CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS}]);});
+return await Promise.race([run(),timeout]);
+}catch{throw new Error('CURRENT_PROJECT_PCB_METADATA_READ_FAILED');}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_PROJECT_PCB_METADATA_READ_FAILED');}}}`;
+}
+var init_current_project_pcb_metadata_program = __esm({
+  "server/src/current-project-pcb-metadata-program.ts"() {
+    init_current_project_pcb_metadata();
+    init_current_project_only_symbol_guard();
+    init_exact_readers();
+  }
+});
+
+// server/src/current-project-pcb-metadata-runtime.ts
+async function readCurrentProjectPcbMetadata(engine2, input, expectedFingerprint) {
+  const request9 = parseCurrentProjectPcbMetadataRequest(input);
+  const code = buildCurrentProjectPcbMetadataProgram(request9), expected3 = structuredClone(expectedFingerprint);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
+  if (scopeReader === void 0) {
+    throw new Error("Project PCB metadata requires an authenticated scope.");
+  }
+  const scope6 = scopeReader.call(engine2.upstream);
+  if (scope6 === void 0) {
+    throw new Error("Project PCB metadata requires an authenticated scope.");
+  }
+  const scopeText = canonicalJson(scope6);
+  const current5 = () => {
+    if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
+      throw new Error("Project PCB metadata authenticated scope changed.");
+    }
+  };
+  await engine2.assertBridgeDispatchAllowed();
+  current5();
+  const initialStatus = await engine2.status();
+  current5();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertExpectedFingerprint(initial);
+  assertSubset(initial, expected3, "Project PCB metadata expected runtime");
+  await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
+  current5();
+  await engine2.assertBridgeDispatchAllowed();
+  current5();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code,
+    timeoutMs: CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 5e3,
+    confirmWrite: true
+  }, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 15e3);
+  current5();
+  const result = validateCurrentProjectPcbMetadataResult(request9, decodeCurrentProjectPcbMetadataReply(raw, request9));
+  await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
+  current5();
+  await engine2.assertBridgeDispatchAllowed();
+  current5();
+  const finalStatus = await engine2.status();
+  current5();
+  validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
+  if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
+    throw new Error("Project PCB metadata runtime changed around the observation.");
+  }
+  const response3 = { ...result, observationSha256: sha256Json(result), runtimeAdmission: {
+    profile: "easyeda-pro-control.current-project-pcb-metadata-runtime.v1",
+    fingerprintSha256: sha256Json(initial),
+    beforeAndAfterChecked: true,
+    scope: "loaded-project-with-no-editor-tabs-pcb-metadata-only",
+    workerIdentityVerified: false,
+    designExecutionAuthorized: false,
+    persistenceVerified: false,
+    liveValidation: "not-recorded"
+  } };
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES) {
+    throw new Error("Project PCB metadata exceeds its result byte bound.");
+  }
+  return response3;
+}
+var init_current_project_pcb_metadata_runtime = __esm({
+  "server/src/current-project-pcb-metadata-runtime.ts"() {
+    init_core3();
+    init_current_disposable_open_profile();
+    init_current_project_pcb_metadata();
+    init_current_project_pcb_metadata_program();
+    init_sdk_local_runtime();
+  }
+});
+
 // server/src/current-symbol-metadata-runtime.ts
 async function readCurrentSymbolMetadata(engine2, requestInput2, expectedFingerprint) {
   const request9 = parseCurrentSymbolMetadataRequest(requestInput2);
@@ -138788,7 +139090,7 @@ function ownValue(value2, key) {
   }
   return descriptor10.value;
 }
-function method2(value2, key) {
+function method3(value2, key) {
   let owner = value2;
   for (let depth = 0; owner !== null && depth < 8; depth += 1) {
     const descriptor10 = Object.getOwnPropertyDescriptor(owner, key);
@@ -138813,8 +139115,8 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
   if (ownValue(engine2, "upstream") !== upstream2 || ownValue(engine2, "controlFingerprintPromise") !== facadePromise) {
     throw new Error("Expected fingerprint engine ownership changed.");
   }
-  method2(upstream2, "launcherFingerprint");
-  method2(upstream2, "installedEasyedaBundles");
+  method3(upstream2, "launcherFingerprint");
+  method3(upstream2, "installedEasyedaBundles");
   const bundleReader = upstream2.installedEasyedaBundles, launcherReader = upstream2.launcherFingerprint;
   if (launcherReader === void 0 || bundleReader === void 0) {
     throw new Error("Expected fingerprint local readers are unavailable.");
@@ -138824,7 +139126,7 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
   const manifestDataSeal = dataText(manifest), manifestSeal = dataText(manifestFingerprint);
   const retained2 = [];
   function current5() {
-    if (ownValue(engine2, "upstream") !== upstream2 || ownValue(engine2, "controlFingerprintPromise") !== facadePromise || method2(upstream2, "launcherFingerprint") !== launcherReader || method2(upstream2, "installedEasyedaBundles") !== bundleReader) {
+    if (ownValue(engine2, "upstream") !== upstream2 || ownValue(engine2, "controlFingerprintPromise") !== facadePromise || method3(upstream2, "launcherFingerprint") !== launcherReader || method3(upstream2, "installedEasyedaBundles") !== bundleReader) {
       throw new Error("Expected fingerprint local owner or reader changed.");
     }
     if (dataText(reviewedCompatibilityManifestFingerprint()) !== manifestSeal || dataText(loadReviewedCompatibilityManifest()) !== manifestDataSeal) {
@@ -138911,7 +139213,7 @@ function need85(value2, message) {
     throw new Error(message);
   }
 }
-function method3(owner, key) {
+function method4(owner, key) {
   let current5 = owner;
   for (let depth = 0; current5 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current5, key);
@@ -139010,16 +139312,16 @@ var init_closed_symbol_disposable_entry = __esm({
       }
       ownerMethods() {
         return [
-          method3(this.gate, "run"),
-          method3(this.engine, "assertBridgeDispatchAllowed"),
-          method3(this.engine, "assertNativeUiEditingAllowed"),
-          method3(this.upstream, "currentAuthenticatedBridgeDispatchBinding"),
-          method3(this.upstream, "bridgeSessionLifecycle"),
-          method3(this.upstream, "launcherFingerprint"),
-          method3(this.upstream, "installedEasyedaBundles"),
-          method3(this.upstream, "connect"),
-          method3(this.upstream, "withAuthenticatedBridgeDispatchScope"),
-          method3(this.nativeUi, "run"),
+          method4(this.gate, "run"),
+          method4(this.engine, "assertBridgeDispatchAllowed"),
+          method4(this.engine, "assertNativeUiEditingAllowed"),
+          method4(this.upstream, "currentAuthenticatedBridgeDispatchBinding"),
+          method4(this.upstream, "bridgeSessionLifecycle"),
+          method4(this.upstream, "launcherFingerprint"),
+          method4(this.upstream, "installedEasyedaBundles"),
+          method4(this.upstream, "connect"),
+          method4(this.upstream, "withAuthenticatedBridgeDispatchScope"),
+          method4(this.nativeUi, "run"),
           ...[
             "status",
             "launch",
@@ -139030,7 +139332,7 @@ var init_closed_symbol_disposable_entry = __esm({
             "requestClosedSessionNormalClose",
             "probeClosedSessionTermination",
             "clockObservationForLaunch"
-          ].map((key) => method3(this.runtime, key))
+          ].map((key) => method4(this.runtime, key))
         ];
       }
       owner() {
@@ -139412,7 +139714,7 @@ function need86(value2, message) {
     throw new Error(message);
   }
 }
-function method4(owner, key) {
+function method5(owner, key) {
   let current5 = owner;
   for (let depth = 0; current5 !== null && depth < 8; depth += 1) {
     const item2 = Object.getOwnPropertyDescriptor(current5, key);
@@ -139498,16 +139800,16 @@ var init_closed_symbol_operation_entry = __esm({
       }
       ownerMethods() {
         return [
-          method4(this.gate, "run"),
-          method4(this.engine, "assertBridgeDispatchAllowed"),
-          method4(this.engine, "assertNativeUiEditingAllowed"),
-          method4(this.upstream, "currentAuthenticatedBridgeDispatchBinding"),
-          method4(this.upstream, "bridgeSessionLifecycle"),
-          method4(this.upstream, "launcherFingerprint"),
-          method4(this.upstream, "installedEasyedaBundles"),
-          method4(this.upstream, "connect"),
-          method4(this.upstream, "withAuthenticatedBridgeDispatchScope"),
-          method4(this.nativeUi, "run"),
+          method5(this.gate, "run"),
+          method5(this.engine, "assertBridgeDispatchAllowed"),
+          method5(this.engine, "assertNativeUiEditingAllowed"),
+          method5(this.upstream, "currentAuthenticatedBridgeDispatchBinding"),
+          method5(this.upstream, "bridgeSessionLifecycle"),
+          method5(this.upstream, "launcherFingerprint"),
+          method5(this.upstream, "installedEasyedaBundles"),
+          method5(this.upstream, "connect"),
+          method5(this.upstream, "withAuthenticatedBridgeDispatchScope"),
+          method5(this.nativeUi, "run"),
           ...[
             "status",
             "launch",
@@ -139518,7 +139820,7 @@ var init_closed_symbol_operation_entry = __esm({
             "requestClosedSessionNormalClose",
             "probeClosedSessionTermination",
             "clockObservationForLaunch"
-          ].map((key) => method4(this.runtime, key))
+          ].map((key) => method5(this.runtime, key))
         ];
       }
       owner() {
@@ -139890,7 +140192,7 @@ async function runClosedSymbolTool(input, mode) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
       const methods9 = disposableIndexMethods();
-      if (methods9.length !== reservation.methods.length || methods9.some((method5, index) => method5 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
+      if (methods9.length !== reservation.methods.length || methods9.some((method6, index) => method6 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
         throw new Error("Disposable index runtime or method ownership changed.");
       }
       if (reservation.facade !== void 0 && disposableOwnData(reservation.facade, "sha256") !== reservation.facadeSha256) {
@@ -139901,7 +140203,7 @@ async function runClosedSymbolTool(input, mode) {
       }
       if (reservation.runtime !== void 0 && reservation.nativeUi !== void 0) {
         const constructed = disposableConstructedMethods(reservation.runtime, reservation.nativeUi);
-        if (reservation.constructedMethods === void 0 || constructed.length !== reservation.constructedMethods.length || constructed.some((method5, index) => method5 !== reservation.constructedMethods?.[index])) {
+        if (reservation.constructedMethods === void 0 || constructed.length !== reservation.constructedMethods.length || constructed.some((method6, index) => method6 !== reservation.constructedMethods?.[index])) {
           throw new Error("Disposable index constructed owner methods changed.");
         }
       }
@@ -140551,8 +140853,8 @@ function assertExactObjectKeys(value2, expectedKeys, label) {
     throw new Error(`${label} has unexpected or missing fields.`);
   }
 }
-function assertFiniteCaptureFields(value2, fields12, label) {
-  for (const field4 of fields12) {
+function assertFiniteCaptureFields(value2, fields13, label) {
+  for (const field4 of fields13) {
     if (typeof value2[field4] !== "number" || !Number.isFinite(value2[field4])) {
       throw new TypeError(`${label}.${field4} must be a finite number.`);
     }
@@ -140751,6 +141053,8 @@ var init_src = __esm({
     init_current_pcb_geometry();
     init_current_pcb_geometry_runtime();
     init_current_symbol_metadata();
+    init_current_project_pcb_metadata();
+    init_current_project_pcb_metadata_runtime();
     init_current_symbol_operation();
     init_current_symbol_copy_operation();
     init_current_symbol_metadata_runtime();
@@ -141203,6 +141507,7 @@ var init_src = __esm({
       easyeda_control_pcb_identities: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_pcb_geometry: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_project_symbol: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_project_pcb: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
       easyeda_control_disposable_symbol_copy: currentSymbolOperationToolOutputSchema,
       easyeda_control_history: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -141235,7 +141540,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Ordinary drawn-symbol connected validation is unclaimed. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -141260,7 +141565,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Ordinary drawn-symbol connected validation is unclaimed. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
+            capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -141276,6 +141581,16 @@ var init_src = __esm({
             pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
             pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
             projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
+            projectPcb: {
+              tool: "easyeda_control_project_pcb",
+              runtimeAdmissionRequired: true,
+              explicitTargetRequired: true,
+              nativeEquivalent: true,
+              noEditorTabsRequired: true,
+              savedMembershipVerified: false,
+              cadAuthority: false,
+              connectedValidation: false
+            },
             projectSymbolMetadata: {
               tool: "easyeda_control_project_symbol_metadata",
               scope: "unreferenced-project-local-meta-only-or-bounded-canvas-segments-name-description-forward-only",
@@ -141284,6 +141599,7 @@ var init_src = __esm({
               connectedValidation: false,
               originalOwnerRequired: true,
               historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
+              historicalCanvasConnectedValidation: "installed080000-ordinary-unused-canvas-segments-forward-only",
               sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
               phaseEffectAcknowledgementsRequired: true,
               inverseSupported: false,
@@ -141910,6 +142226,16 @@ var init_src = __esm({
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
       serializedLiveGuarded(async (input) => ({ result: "method" in input.request ? await readCurrentSymbolMetadata(engine, input.request, input.expectedFingerprint) : await readCurrentProjectOnlySymbolPreflight(engine, input.request, input.expectedFingerprint) }))
+    );
+    registerFacadeTool(
+      "easyeda_control_project_pcb",
+      {
+        title: "Read project-local PCB metadata without opening an editor",
+        description: "Read one exact PCB's native metadata in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch/PCB identities. Two matching bounded observations preserve native title/display title, parent, board, source/version, ticket and update time, bracketed by project-owner checks. Native equivalent of dmt_Pcb.getPcbInfo, not public-wrapper parity or complete stored metadata; native fallback fields cannot distinguish absent/falsy storage. No canvas/source loading, navigation, cloud lookup, mutation, Save or callback registration. Does not lease the worker, prove saved membership, startup completion or authorize renaming. Query offline project-pcb/project-pcb-validate first. Connected validation remains unclaimed.",
+        inputSchema: { request: external_exports.unknown().pipe(currentProjectPcbMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      },
+      serializedLiveGuarded(async (input) => ({ result: await readCurrentProjectPcbMetadata(engine, input.request, input.expectedFingerprint) }))
     );
     registerFacadeTool(
       "easyeda_control_pcb_geometry",
@@ -142965,7 +143291,7 @@ var init_src = __esm({
         "easyeda_control_project_symbol_metadata",
         {
           title: "Change one unused project symbol's metadata",
-          description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. Complete raw history, including tombstones, must be META-only or satisfy the bounded canvas-segments profile: stable atom types, lossless bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 chunks including the reserved write; stricter reader limits still apply. Saved canvas lines remain byte-exact with a valid native replay-order witness. Ordinary purpose reserves exactly one write, never an inverse. Canvas histories also require a document window strictly newer than every target header and within the fixed ceiling. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No tags/source/classification/otherProperty or geometry changes, explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared META-only lifecycle passed an installed101500 disposable round trip. Installed123000 passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. Historical evidence grants no current-invocation authority. Ordinary drawn-symbol connected validation is unclaimed.",
+          description: "Change only name and/or non-null description of one unreferenced project-local symbol through an original-owner forward-only lifecycle. Query offline project-symbol-operation/project-symbol-operation-validate first. Complete raw history, including tombstones, must be META-only or satisfy the bounded canvas-segments profile: stable atom types, lossless bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 chunks including the reserved write; stricter reader limits still apply. Saved canvas lines remain byte-exact with a valid native replay-order witness. Ordinary purpose reserves exactly one write, never an inverse. Canvas histories also require a document window strictly newer than every target header and within the fixed ceiling. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member default-branch PCB. Supported schematic startup is sealed before navigation and rechecked before writing; linked-sheet propagation is unsupported. Use the returned preparationCheckpoint for baseline-begin. Ordinary opening may migrate storage, replay caches, restore tabs or automatically Save; scratch processes, opening, normal closure and the write require their exact acknowledgements. Retain the original owners through clocks, one metadata write, full closed SQL comparison, cache-excluded project reopening, saved-content verification and final closed SQL equality. Pre-dispatch budgets bound supported proof sizes, not physical allocation, heap or deadlines. metadata-advance accepts only the exact next phase, never replacement target, patch, clock, runtime, code or verifier. Completion requires requestedMetadataVerified and nextPhase completed, leaving requested metadata with no inverse. Inspect a lost response; never replay writes or navigation. Failed operations allow only offered original-owner cleanup. Saved JSON cannot restore continuation. No tags/source/classification/otherProperty or geometry changes, explicit Save, Save/Discard choice, forced exit, restoration or generic writer enablement. The shared META-only lifecycle passed an installed101500 disposable round trip. Installed123000 passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. Historical evidence grants no current-invocation authority. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture.",
           inputSchema,
           outputSchema: currentSymbolOperationToolOutputSchema,
           annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }

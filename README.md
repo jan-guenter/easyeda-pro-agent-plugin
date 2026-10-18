@@ -8,9 +8,20 @@ forward and inverse edits, complete closed SQL comparisons and reopened-content
 checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
-Update `0.3.0+codex.20261018080000` extends that ordinary route to unused drawn
+Update `0.3.0+codex.20261018094000` adds a no-editor PCB metadata reader.
+It returns one loaded project's PCB title, relationships and native metadata
+without opening its canvas or requesting Save. Its source review and focused
+offline tests do not yet constitute connected validation. See the
+[reader contract](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-readers.md#project-local-pcb-metadata-without-an-editor).
+PCB rename remains disabled: source now models its project-structure delta and
+checks AST/batch state, but private queue completion, full SQL effects and the
+complete saved/reopen lifecycle are still missing.
+
+Earlier update `0.3.0+codex.20261018080000` extends the ordinary route to unused drawn
 symbols whose complete history satisfies the bounded canvas-segments profile.
-The separate ordinary drawn-symbol entrypoint's connected validation is unclaimed.
+Installed080000 has now passed that separate ordinary drawn-symbol entrypoint
+on the disposable fixture, including exact closed SQL, saved/reopened content
+and final closure. This does not validate other histories or a later runtime.
 Older implemented adapters and their historical proofs do not enable them on
 this newer runtime. See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
@@ -43,7 +54,8 @@ budget; the ordinary route exposes no inverse. Installed210000 passed the
 disposable drawn-symbol round trip: both closed SQL effects, exact reopened
 content, original metadata restoration and final closure. All 18 peer documents
 and all 18 target drawing records stayed unchanged. That evidence does not
-validate the earlier stopped copy lifecycle or ordinary drawn-symbol entrypoint.
+validate the earlier stopped copy lifecycle. Installed080000 separately passed
+the ordinary one-write entrypoint with all 18 peers and drawing records unchanged.
 
 Earlier update `0.3.0+codex.20261017210000` fixes the symbol-copy verifier's history-identity
 handoff. Installed193000 created one disposable drawn symbol and passed exact
@@ -483,7 +495,7 @@ paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
 Current source classifications are 212 public subsets, 31 native equivalents,
 no lifecycle-only methods, 81 implemented-but-blocked methods and 450
-omissions. Their execution routes comprise 337 available with runtime guards,
+omissions. Their execution routes comprise 338 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

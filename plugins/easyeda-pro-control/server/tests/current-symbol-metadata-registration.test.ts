@@ -10,7 +10,7 @@ import { currentProjectOnlySymbolPreflightRequestSchema } from "../src/current-p
 void test("project symbol metadata callback preserves strict inputs and the live guard", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_symbol",');
-  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_pcb_geometry",', start);
+  const end = source.indexOf("\nregisterFacadeTool(", start + 1);
   assert.ok(start > 0 && end > start);
   type Callback = (input: { request: unknown; expectedFingerprint: unknown }) => Promise<unknown>;
   let invoke: Callback | undefined, requestSchema: z.ZodType | undefined;

@@ -126,15 +126,18 @@ void test("restricted status separates historical metadata and canvas validation
   assert.match(facade["capabilityScope"], /historical validation grants no current-invocation authority/u);
   assert.match(facade["capabilityScope"], /Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history/u);
   assert.match(facade["capabilityScope"], /exactly one write and no inverse/u);
-  assert.match(facade["capabilityScope"], /Ordinary drawn-symbol connected validation is unclaimed/u);
+  assert.match(facade["capabilityScope"], /Installed080000 passed the ordinary unused drawn-symbol forward lifecycle/u);
   assert.match(facade["capabilityScope"], /Installed210000 passed the disposable canvas-segments forward\/inverse round trip with complete closed SQL, reopened content and final closure/u);
   assert.match(facade["capabilityScope"], /Generic design writers remain disabled/u);
   const capabilities = upstream["capabilities"];
   assert.equal(JSON.stringify(capabilities["designAccess"]), JSON.stringify({ enabled: false, scope: "generic-design-routes" }));
+  assert.equal(JSON.stringify(capabilities["projectPcb"]), JSON.stringify({ tool: "easyeda_control_project_pcb", runtimeAdmissionRequired: true,
+    explicitTargetRequired: true, nativeEquivalent: true, noEditorTabsRequired: true, savedMembershipVerified: false, cadAuthority: false, connectedValidation: false }));
   assert.equal(JSON.stringify(capabilities["projectSymbolMetadata"]), JSON.stringify({ tool: "easyeda_control_project_symbol_metadata",
     scope: "unreferenced-project-local-meta-only-or-bounded-canvas-segments-name-description-forward-only", runtimeAdmissionRequired: true,
     designMutation: true, connectedValidation: false, originalOwnerRequired: true,
     historicalConnectedValidation: "installed123000-ordinary-unused-meta-only-forward-only",
+    historicalCanvasConnectedValidation: "installed080000-ordinary-unused-canvas-segments-forward-only",
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",
     phaseEffectAcknowledgementsRequired: true, inverseSupported: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableSymbolCopy"]), JSON.stringify({ tool: "easyeda_control_disposable_symbol_copy",

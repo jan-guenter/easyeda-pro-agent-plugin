@@ -474,8 +474,11 @@ including overwritten records and tombstones, must be META-only or satisfy the
 bounded canvas-segments rules above. A currently empty canvas is insufficient.
 The ordinary canvas route reserves exactly one write, requires its timestamp
 window to be newer than every prior target header, and preserves every drawing
-line through exact reopened-content verification. It has no connected ordinary
-drawn-symbol result yet. Only `patch:{name?,description?}` is supported,
+line through exact reopened-content verification. Installed080000 passed one
+ordinary unused drawn-symbol case on the disposable fixture: complete closed SQL,
+5046 exact saved bytes, all 18 peers/drawing records unchanged, final SQL equality
+and retained process termination. That evidence does not validate other histories
+or later runtimes. Only `patch:{name?,description?}` is supported,
 with at least one field and no null description. Tags, source and peer content
 are preserved. Classification, geometry, cloud libraries and referenced symbols
 are outside this route.

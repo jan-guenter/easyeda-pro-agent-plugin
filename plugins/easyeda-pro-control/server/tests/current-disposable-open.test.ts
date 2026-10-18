@@ -219,7 +219,7 @@ void test("disposable schemas and result checks reject injected arguments and fa
   assert.equal(catalog["canvasSegmentsValidation"], "installed210000-disposable-canvas-segments-roundtrip");
   assert.match(JSON.stringify(catalog), /installed123000 separately passed the ordinary META-only forward lifecycle/u);
   assert.match(JSON.stringify(catalog), /Installed210000 passed the disposable canvas-segments forward\/inverse round trip with complete closed SQL, reopened content and final closure/u);
-  assert.match(JSON.stringify(catalog), /Ordinary drawn-symbol connected validation remains unclaimed/u);
+  assert.match(JSON.stringify(catalog), /Installed080000 passed the ordinary unused drawn-symbol forward lifecycle/u);
   assert.match(JSON.stringify(catalog), /inputSchema/u);
   const preparationCheckpoint = catalog["preparationCheckpoint"]; assert.ok(preparationCheckpoint !== null && typeof preparationCheckpoint === "object");
   assert.equal(Reflect.get(preparationCheckpoint, "resultField"), "preparationCheckpoint");

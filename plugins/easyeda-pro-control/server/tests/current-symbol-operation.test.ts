@@ -135,6 +135,7 @@ void test("ordinary discovery and validation advertise registration without gran
       assert.equal(value[key], false);
     }
     assert.equal(value["forwardOnly"], true);
+    assert.equal(value["historicalCanvasConnectedValidation"], "installed080000-ordinary-unused-canvas-segments-forward-only");
   }
   assert.equal(discovery["inputSchema"], undefined); assert.equal(discovery["stepSchema"], undefined);
   assert.equal(typeof detailed["inputSchema"], "object"); assert.equal(typeof detailed["stepSchema"], "object");
@@ -144,7 +145,8 @@ void test("ordinary discovery and validation advertise registration without gran
     "saved-content verification", "final closed SQL equality", "without retaining an inverse", "ambiguous failure consumes its stage", "61000 ms",
     "request-normal-close", "Quarantine remains", "ambiguity consumes the close attempt", "META-only or satisfy the bounded canvas-segments profile",
     "every tombstoned occurrence", "reserve exactly one ordinary write", "strictly newer than every target header",
-    "No inverse budget", "connected lifecycle is unclaimed"]) {
+    "No inverse budget", "Installed080000 passed one ordinary unused canvas-segments forward lifecycle on a disposable fixture",
+    "later generations and other histories remain unvalidated"]) {
     assert.ok(text.includes(required));
   }
   assert.throws(() => queryCurrentSymbolOperation({ includeSchemas: true, enable: true }));

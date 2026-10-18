@@ -55,8 +55,9 @@ target header and byte-exact saved canvas verification.
 Discovery returns `registrationEnabled:true`, but never execution authority.
 The shared writer passed installed101500 disposable forward/inverse validation;
 the ordinary entrypoint separately passed installed123000's unused META-only
-forward lifecycle on a disposable fixture. Neither result grants current-call
-authority or validates the ordinary drawn-symbol extension. Generic
+forward lifecycle on a disposable fixture. Installed080000 separately passed one
+ordinary unused drawn-symbol case, including exact saved content and final SQL.
+None of these historical cases grants current-call authority. Generic
 `library.symbol.modify` and the older `symbol_metadata` tool stay blocked.
 
 ### Symbol observation with no editor tabs
