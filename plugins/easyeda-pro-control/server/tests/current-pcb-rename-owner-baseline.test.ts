@@ -3,7 +3,8 @@
  */
 /* oxlint-disable import/max-dependencies -- Exercise maintained storage and closure together; only original opener/capture issuer seams use a private test realm. */
 import assert from "node:assert/strict";
-import { lstat, mkdir, readFile } from "node:fs/promises";
+import type { BigIntStats, Stats } from "node:fs";
+import { lstat, mkdir, open, readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -17,7 +18,7 @@ import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts"
 import { parseCurrentPcbRenameOwnerRequest } from "../src/current-pcb-rename-owner.ts";
 import type { CurrentPcbRenameBaseline, CurrentPcbRenameBaselineEvidence, CurrentPcbRenameBaselineInput,
   assertOriginalCurrentPcbRenameBaseline, captureCurrentPcbRenameBaseline, currentPcbRenameBaselineClockBinding, currentPcbRenameBaselineOrigin,
-  revalidateCurrentPcbRenameBaseline } from "../src/current-pcb-rename-owner-baseline.ts";
+  revalidateCurrentPcbRenameBaseline, revalidateCurrentPcbRenameClosedClockEvidence } from "../src/current-pcb-rename-owner-baseline.ts";
 import { currentPcbStoredHeaderSchema } from "../src/current-pcb-stored-header.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "../src/engine.ts";
 import { decodeNativeHistoryChunk, isNativeDocumentDeleted } from "../src/native-history.ts";
@@ -38,12 +39,14 @@ interface Api {
   original: typeof assertOriginalCurrentPcbRenameBaseline;
   origin: typeof currentPcbRenameBaselineOrigin;
   revalidate: typeof revalidateCurrentPcbRenameBaseline;
+  clockEvidence: typeof revalidateCurrentPcbRenameClosedClockEvidence;
 }
 function literal(value: string): string { return `'${value.replaceAll("'", "''")}'`; }
-async function fixture(): Promise<{
+async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scope"): Promise<{
   source: string; engine: EasyedaControlEngine; input: CurrentPcbRenameBaselineInput; api: Api;
   events: CurrentPcbRenameBaselineEvidence[];
-  state: { current: boolean; completed: boolean; scoped: boolean; captureValid: boolean; cloneReader: boolean };
+  state: { current: boolean; completed: boolean; scoped: boolean; captureValid: boolean; cloneReader: boolean;
+    fullOpeningChecks: number; targetedOpeningChecks: number };
   run: (hook?: (event: CurrentPcbRenameBaselineEvidence) => void) => Promise<CurrentPcbRenameBaseline>;
   replaceLaunch: () => void;
 }> {
@@ -75,7 +78,8 @@ async function fixture(): Promise<{
   const intent = await runtime.supervisor.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
   const closeReceipt = await runtime.supervisor.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
   const proof = await runtime.supervisor.proveClosedSession({ ...binding, intent, closeReceipt });
-  const state = { current: true, completed: true, scoped: false, captureValid: true, cloneReader: false };
+  const state = { current: true, completed: true, scoped: false, captureValid: true, cloneReader: false,
+    fullOpeningChecks: 0, targetedOpeningChecks: 0 };
   const clock = Object.freeze({ syntheticOriginalCaptureClock: true });
   const syntheticEngine = {
     upstream: { currentAuthenticatedBridgeDispatchBinding: (): unknown => state.scoped ? { synthetic: "scope" } : undefined },
@@ -93,22 +97,43 @@ async function fixture(): Promise<{
     assert.equal(value, owner, "Synthetic original PCB owner required"); assert.equal(candidate, engine);
     assert.equal(state.current, true, "Synthetic owner changed"); assert.equal(state.completed, true, "Synthetic transfer cleanup-only"); return retained;
   };
+  let sidecarReads = 0;
+  const observeStat = async (path: string, options?: { bigint: true }): Promise<Stats | BigIntStats> => {
+    try { return options === undefined ? await lstat(path) : await lstat(path, options); }
+    finally {
+      if (/-wal$|-shm$|-journal$/u.test(path)) {
+        sidecarReads += 1;
+        if (sidecarReads === 18) {
+          if (sidecarMutation === "clock-reader") {
+            syntheticEngine.clockObservationForClosedCapture = (): Promise<typeof clock> => Promise.resolve(clock);
+          } else if (sidecarMutation === "scope-reader") {
+            syntheticEngine.upstream.currentAuthenticatedBridgeDispatchBinding = (): unknown => undefined;
+          } else if (sidecarMutation === "scope") { state.scoped = true; }
+        }
+      }
+    }
+  };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-pcb-rename-owner-baseline.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
-  const context = createContext({ z, Object, String, Number, Buffer, structuredClone, lstat, join, controlDataDirectory, controlRootCapability,
+  const context = createContext({ z, Object, String, Number, Buffer, Error, structuredClone, lstat: observeStat, join, controlDataDirectory, controlRootCapability,
     operationPath, readArtifact, verifyExactManagedArtifact, createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes,
     readClosedCopySqlInventory: async (input: Parameters<typeof readClosedCopySqlInventory>[0]): ReturnType<typeof readClosedCopySqlInventory> => {
       const result = await readClosedCopySqlInventory(input); return state.cloneReader ? structuredClone(result) : result;
     },
     canonicalJson, isRecord, sha256Json, normalizeEasyedaProjectPath: (value: string): string => { assert.equal(value, RAW); return source; },
     assertCompletedCurrentPcbRenameOpeningTransfer: assertOwner,
-    revalidateCurrentPcbRenameOpeningOwner: (value: unknown, candidate: unknown): Promise<typeof retained> => Promise.resolve(assertOwner(value, candidate)),
+    revalidateCurrentPcbRenameOpeningOwner: (value: unknown, candidate: unknown): Promise<typeof retained> => {
+      state.fullOpeningChecks += 1; return Promise.resolve(assertOwner(value, candidate));
+    },
+    revalidateCurrentPcbRenameOpeningEvidence: (value: unknown, candidate: unknown): Promise<typeof retained> => {
+      state.targetedOpeningChecks += 1; return Promise.resolve(assertOwner(value, candidate));
+    },
     currentPcbStoredHeaderSchema, isNativeDocumentDeleted, freezeDeep, readerCompletion, decodeCurrentSymbolPreEditHistory,
     assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority,
     assertIssuedWindowsClockObservation: (value: unknown): Promise<typeof clock> => { assert.equal(value, clock); return Promise.resolve(clock); },
   });
-  const exported: unknown = runInContext(`${program}\n({capture:captureCurrentPcbRenameBaseline,clockBinding:currentPcbRenameBaselineClockBinding,original:assertOriginalCurrentPcbRenameBaseline,origin:currentPcbRenameBaselineOrigin,revalidate:revalidateCurrentPcbRenameBaseline});`, context);
-  assert.ok(isRecord(exported) && ["capture", "clockBinding", "original", "origin", "revalidate"].every(key => typeof exported[key] === "function"));
+  const exported: unknown = runInContext(`${program}\n({capture:captureCurrentPcbRenameBaseline,clockBinding:currentPcbRenameBaselineClockBinding,original:assertOriginalCurrentPcbRenameBaseline,origin:currentPcbRenameBaselineOrigin,revalidate:revalidateCurrentPcbRenameBaseline,clockEvidence:revalidateCurrentPcbRenameClosedClockEvidence});`, context);
+  assert.ok(isRecord(exported) && ["capture", "clockBinding", "original", "origin", "revalidate", "clockEvidence"].every(key => typeof exported[key] === "function"));
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained source exports above are checked functions in a private test realm.
   const api = exported as unknown as Api;
   const events: CurrentPcbRenameBaselineEvidence[] = [], input = { owner, capture, intent, closeReceipt, proof, runtime: await syntheticSqlRuntime() };
@@ -206,3 +231,37 @@ void test("PCB baseline source revalidation detects later durable changes before
   mutate(value.source, "UPDATE resources SET dataStr='later unauthorized bytes' WHERE hash='synthetic-resource'");
   await assert.rejects(value.api.revalidate(result, value.engine), /source\/checkpoint|changed/u);
 });
+
+void test("PCB closed-clock reader preserves full targeted checks without recursively invoking admission", async () => {
+  const value = await fixture();
+  const result = await value.run();
+  const fullBefore = value.state.fullOpeningChecks;
+  await value.api.clockEvidence(result, value.engine);
+  assert.equal(value.state.fullOpeningChecks, fullBefore); assert.equal(value.state.targetedOpeningChecks, 7);
+  await value.api.revalidate(result, value.engine);
+  assert.equal(value.state.fullOpeningChecks, fullBefore + 7, "Other callers retain the full original revalidator");
+  value.state.captureValid = false;
+  await assert.rejects(value.api.clockEvidence(result, value.engine), /capture released/u);
+});
+
+void test("PCB closed-clock reader refuses target bytes or SQLite sidecars before scratch acceptance", async () => {
+  const changed = await fixture(), changedResult = await changed.run();
+  mutate(changed.source, "UPDATE resources SET dataStr='later unauthorized bytes' WHERE hash='synthetic-resource'");
+  await assert.rejects(changed.api.clockEvidence(changedResult, changed.engine), /source\/checkpoint|changed/u);
+  for (const kind of ["source", "checkpoint", "copy"] as const) {
+    const value = await fixture();
+    const result = await value.run();
+    const path = kind === "copy" ? result.copy.artifact : result.checkpoint[kind];
+    const handle = await open(`${path}-wal`, "wx", 0o600); await handle.close();
+    await assert.rejects(value.api.clockEvidence(result, value.engine), /SQLite sidecar/u);
+  }
+});
+
+for (const mutation of ["clock-reader", "scope-reader", "scope"] as const) {
+  void test(`PCB closed-clock reader detects ${mutation} drift during its final sidecar await`, async () => {
+    const value = await fixture(mutation);
+    const result = await value.run();
+    await assert.rejects(value.api.clockEvidence(result, value.engine), /capture reader or no-dispatch scope changed/u);
+    assert.equal(value.state.targetedOpeningChecks, 7, "The drift occurs after all targeted file proof completed");
+  });
+}

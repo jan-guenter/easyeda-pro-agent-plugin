@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "db2f88df0deb32c4c5b26029f43280ec4de10bdc372b15bcbc4e06c428f4a0bb",
-      "fileCount": 454,
+      "sha256": "90a764e86cc97fad4e0ab91be82d88c0a5f3637ec4d2c300dfae9d16319a23f1",
+      "fileCount": 455,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -513,8 +513,8 @@
         },
         {
           "relativePath": "current-disposable-open-runtime.ts",
-          "bytes": 106698,
-          "sha256": "0f8d31ae4b60a51fba050d8299dc535bf0722e54d4c3ecf38cfab71b2fa04eb0"
+          "bytes": 107850,
+          "sha256": "010febc1dfae5b6aa38ee4d724499b4cf8e151b7d487c5fdc0da4b8194402076"
         },
         {
           "relativePath": "current-disposable-open.ts",
@@ -533,8 +533,8 @@
         },
         {
           "relativePath": "current-pcb-aged-sql-reference.ts",
-          "bytes": 13285,
-          "sha256": "8ab252976d059994df1940e1641bc18ac717232ad14f93eba477345e90ee3c53"
+          "bytes": 15309,
+          "sha256": "cc9ba34e0120498d4205a5275ce10ac3b735fcb456ea187ab225ffa4c6ae60c7"
         },
         {
           "relativePath": "current-pcb-geometry-program.ts",
@@ -618,8 +618,8 @@
         },
         {
           "relativePath": "current-pcb-rename-owner-baseline.ts",
-          "bytes": 22007,
-          "sha256": "80ccf289a531d630ad25a2c7a8ae941ec108ffd34009d865f67a2ca803f4bdfc"
+          "bytes": 24447,
+          "sha256": "15435703fa4bd4ed08a5d12764014bb57773ccc8dfe0db1e45eabc61c1082bd7"
         },
         {
           "relativePath": "current-pcb-rename-owner.ts",
@@ -725,6 +725,11 @@
           "relativePath": "current-pcb-stored-header.ts",
           "bytes": 1362,
           "sha256": "9be753a4f8dacac9b00a1c98699f0aa5618bd619bef147248130729ad60176a1"
+        },
+        {
+          "relativePath": "current-pcb-string-source.ts",
+          "bytes": 15064,
+          "sha256": "a1f25e7c1d63fb6e576e735af8112675e7e80e9a97900e5d2fa6fe025511c0fd"
         },
         {
           "relativePath": "current-project-only-open.ts",
@@ -2281,7 +2286,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "e707c47a6673f6c32dde012f9e1c191a229911e0ec6caa40a506836af9fa6f53",
+      "sha256": "a10bf36c362b8c2855dcf3c010f1d3551e36eda77b881d422bf99f94bef86054",
       "fileCount": 3,
       "files": [
         {
@@ -2291,19 +2296,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 8307123,
-          "sha256": "00a26850f3b3f0dc1cb73abd0d13fc5217b57be7b9bc85a430e9c42563b18e3a"
+          "bytes": 8310359,
+          "sha256": "bb7df06a6490e74aaeb3d5577b6534a2e6b9d281f9be7fa294be8560ada64dbe"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "baba349d63701efeb3f3180b5ec534d5fd8725d58905d9ec6802b565b7f3ad35"
+          "sha256": "543c3cc42a495cdfc0f3c72213eaa31e50c32edd0a3c7be016f0acd92e2303c8"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-18T15:28:10.878Z",
+  "reviewedAt": "2026-10-18T16:34:21.807Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

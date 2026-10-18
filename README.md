@@ -9,7 +9,14 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261018152547` reduces repeated historical validation work,
+Update `0.3.0+codex.20261018163148` removes nested full-history scans from the
+closed PCB clock-preparation phase while preserving fresh admission at its four
+effect/result boundaries and exact targeted evidence checks. It also adds an
+offline STRING source model and documents the current native partial-update
+hazard. No String writer or new live route is enabled. See the
+[clock and String implementation record](docs/pcb-clock-and-string-source-2026-10-18.md).
+
+The preceding `0.3.0+codex.20261018152547` reduces repeated historical validation work,
 fixes a stale-result fallback, and keeps PCB-operation inspection responsive
 while a phase is running. All evidence bytes and identities are still checked;
 no live authority is cached. Synthetic measurements and remaining limits are in

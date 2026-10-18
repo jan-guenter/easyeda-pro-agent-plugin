@@ -4,6 +4,92 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate163148, 2026-10-18: clock patch237dcdb0 and offline String modelb83f093
+are integrated in `feature/pcb-closed-clock-boundaries-20261018`. Source455/90a764e8,
+runtime3/a10bf36c and manifestbda3bcd1 are sealed; only facade projections and
+review time changed. External pins/bridge identity are unchanged. Root and
+independent source/payload reviews passed. Focused tests, types, strict lint,
+dependency install/tree/signatures/audit, build/compatibility, repository checks
+and all seven official skill checks passed. Full verify passed11,166facade tests
+withfourplatformskips and424bridge tests, then stopped on a skill link escaping
+its package boundary. That docs-only link was corrected; the full failed run is
+retained at `/tmp/easyeda-clock-string-release-p3WQmV/verify.log`, not relabeled.
+Focused final skill/plugin/repository checks and all seven official skill checks
+passed afterward; source/bundles/pins are unchanged. Exact-payload
+CI/publication/install remain pending. See
+docs/pcb-clock-and-string-source-2026-10-18.md.
+
+Actual152547 facade2562889/start31479644 was independently admitted. New disposable
+`pcb-rename-152547-20261018-case` completed opening, original baseline capture,
+normal closure and ordinary launch termination. Original baseline clock phase
+was dispatched ONCE; its MCP response timed out at600seconds, but inspection
+still reports busytrue/failedPhasenull. Do not repeat it, advance, install or
+restart the facade while it runs. No rename/explicit Save/inverse has been sent.
+Original launch root40972/Jobd455735a795a41298255adcee95d5209 is terminated;
+capture and case remain owned by the original facade. The raw prelaunch fixture
+was41ac6062/598016, managed checkpoint6a9c4d9e/577536. No production access.
+Prior main CI39142726119 and Windows39142726155 both passed; earlier pending
+wording below is historical. The next live action is read-only case inspection,
+then only the returned next phase after busy becomes false.
+
+152547 delivered, 2026-10-18: PR66 merged as main
+`aad10a8cc1de9720d8fcf96a8cee1416acb13b7a`, reviewed final payload
+`a3c2555424cd3f8dea805e0421399020be080345`. Their complete Git trees both equal
+`d7e81d565947bba3ee0aeb5cfa27b5a2d19cd06d`. Final PR CI39141741771 and
+Windows39141741789 passed, including all eight facade shards, required aggregate,
+strict types/lint, bridge checks, reproducible builds and release validators.
+The earlier CI39141173670 was superseded/cancelled; the failed local run below
+is retained. Its test-only seam correction passed 70 focused tests and independent
+review, without changing source, bundles or compatibility pins. No human review
+is claimed. Main Windows39142726155 passed; main CI39142726119 is running at
+handoff. Check its result in the next session; it is not yet claimed successful.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261018152547` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. Cached marketplace
+HEAD equals merged main. All 1,415 files / 28,896,151 bytes / 42 directories /
+seven skills match committed bytes and modes, with no extras, symlinks or
+hardlinks. Plugin tree `f553b434a8989e3cb3114e94a66f8e5bbe225980`; inventory
+SHA `a433fc112fbc0295f8e7e5b77c0a89242295e9dfc3baa59da059b5dc06329b98`.
+Source454/db2f88df, runtime3/e707c47a and manifest24fb5ded remain exact. No
+redundant plugin-add, installed-cache edit, owner termination or bridge import.
+
+The one-shot configured offline probe passed ambient Node26.11.1 to pinned
+Node24.18.0, 20 restricted tools / seven skills, strict discovery/parser checks,
+unchanged synthetic profile and no upstream/socket/journal. Original synthetic
+child2559438 exited0 on stdin EOF without signals or adoption. Consumed proof:
+`/tmp/easyeda-152547-release-NxP1jE/proof.json`, 6,892 bytes, SHA
+`af31a0a9257854e04966961099794a95085331f11a2f136f92a3adb6abf982a7`.
+Never replay it or earlier probes. Offline success is not live-runtime admission
+or PCB rename validation. The existing chat loaded facade2462762/140500; no live
+calls followed installation. A fresh Codex session and actual-process admission
+are required; never terminate/rebind the host-owned facade to load the update.
+
+The unedited140500 case is terminal/retired as recorded below. EasyEDA was
+normally closed; final disposable raw41ac6062/598016 and full SQL baseline are
+unchanged, with no sidecars. No pending rename, Save, relaunch or cleanup. Never
+resume that retired case. Production designs and their records remain excluded.
+
+Next: admit the actual152547 process, then use a NEW disposable PCB rename case
+for the complete writer, closed SQL, saved-metadata and final-closure lifecycle.
+Start EasyEDA through the ordinary original-owner launcher as needed. Then
+prepare a nonempty String fixture with current native source/queue/full-SQL proof
+and validate all three String readers; do not repeat empty reads or revive the
+legacy decoder writer. The next bounded implementation candidates are standalone
+PCB String x/y/text edits, then a closed ordinary schematic-container title change
+with a separate schematic owner/producer/clock and SCH-specific stored-effect model.
+Broader schematic/PCB/library, footprint/device/3D, routing/copper/stack/rules,
+ECO/dialog/export adapters, upstream bootstrap and additional platform admission
+remain backlog. Large-history raw scans still need profiling; no connected speedup
+or total phase deadline is proved. See the dated release document for details.
+
+Primary worktree is on `feature/pcb-rename-live-152547-20261018` from merged main.
+The prior handoff remains on `feature/pcb-rename-live-140500-20261018` atc0d324b;
+the release worktree `/tmp/easyeda-v2-cache-d2NmBJ` and all private evidence remain.
+Preserve stash `ebe1b55d7a430ae2e3168e373e155957b582eff9`. This delivery note is
+local handoff state; published and installed package bytes are unchanged.
+Entries below describe earlier checkpoints, not outstanding replay instructions.
+
 152547 candidate, 2026-10-18: isolated worktree
 `/tmp/easyeda-v2-cache-d2NmBJ`, branch
 `feature/aged-terminal-semantic-cache-20261018`. Accepted commits6731918d and
