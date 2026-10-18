@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "891da52d07b7120b4f375c40873ac99bd53b6b7b3f254d5294a6d442319fdd80";
+const __easyedaBundlePairId = "ade2973d0fc8f797f2304a66519b4e3cfc93158a71a606b7b455d892b57cf932";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -142726,18 +142726,23 @@ var init_current_pcb_rename_panel_guard = __esm({
 });
 
 // server/src/current-pcb-rename-startup-guard.ts
-function buildCurrentPcbRenameStartupGuard() {
+function buildCurrentPcbRenameStartupGuard(diagnosticStages2 = false) {
+  const at2 = (stage) => diagnosticStages2 ? `startupStage='${stage}';` : "";
   return String.raw`
 const pcbRenameStartup=(()=>{
+ ${at2("pcb-context")}
  projectOnly.check();
  if(typeof target.projectUuid!=='string'||!/^[a-f0-9]{64}$/.test(target.projectUuid))bad();
+ ${at2("pcb-holder")}
  const sch=own(root,'SCH'),vars=own(sch,'gVars'),project=own(vars,'projectMgr'),debug=own(sch,'D'),tree=own(debug,'leftTree');
  const managerRead=own(tree,'manager'),astRead=own(tree,'ast'),tempRead=own(tree,'tempAst');
  const SetOwner=own(root,'Set'),setPrototype=own(SetOwner,'prototype'),sizeDescriptor=Object.getOwnPropertyDescriptor(setPrototype,'size');
  if(typeof managerRead!=='function'||typeof astRead!=='function'||typeof tempRead!=='function'||!sizeDescriptor||typeof sizeDescriptor.get!=='function'||sizeDescriptor.set!==undefined)bad();
  const setSize=sizeDescriptor.get;
  const base=()=>{
+  ${at2("pcb-context")}
   projectOnly.check();
+  ${at2("pcb-holder")}
   if(own(root,'SCH')!==sch||own(sch,'gVars')!==vars||own(vars,'projectMgr')!==project||own(project,'uuid')!==target.projectUuid||own(sch,'D')!==debug||own(debug,'leftTree')!==tree)bad();
   if(own(tree,'manager')!==managerRead||own(tree,'ast')!==astRead||own(tree,'tempAst')!==tempRead)bad();
   for(const fn of [managerRead,astRead,tempRead])if(Object.getPrototypeOf(fn)!==Function.prototype)bad();
@@ -142753,22 +142758,43 @@ const pcbRenameStartup=(()=>{
   return value;
  };
  const sample=()=>{
-  base();const manager=apply(managerRead,tree,[]),ast=plain(apply(astRead,tree,[])),temp=plain(apply(tempRead,tree,[]));base();
-  if(manager===null||typeof manager!=='object'||Array.isArray(manager)||ast===temp||own(manager,'prjUuid')!==target.projectUuid||!Object.is(own(manager,'batchDepth'),0)||own(manager,'_isClose')!==false||own(manager,'CBB')!==false)bad();
+  base();const manager=apply(managerRead,tree,[]);
+  ${at2("pcb-ast-state")}
+  const ast=plain(apply(astRead,tree,[])),temp=plain(apply(tempRead,tree,[]));base();
+  ${at2("pcb-manager")}
+  if(manager===null||typeof manager!=='object'||Array.isArray(manager)||own(manager,'prjUuid')!==target.projectUuid||!Object.is(own(manager,'batchDepth'),0)||own(manager,'_isClose')!==false)bad();
+  ${at2("pcb-cbb")}
+  const cbb=own(manager,'CBB');
+  if(cbb!==undefined&&cbb!==false&&cbb!==null&&cbb!==0)bad();
+  ${at2("pcb-ast-state")}
+  if(ast===temp)bad();
   if(own(ast,'isBuild')!==true||own(ast,'isPass')!==false||own(temp,'isBuild')!==false||own(temp,'isPass')!==false)bad();
+  ${at2("pcb-ast-version")}
   const version=own(ast,'transId'),tempVersion=own(temp,'transId'),modified=own(ast,'lastModify');
   if(!Number.isSafeInteger(version)||version<=0||!Object.is(version,tempVersion)||typeof modified!=='number'||!Number.isFinite(modified)||modified<0||Object.is(modified,-0))bad();
+  ${at2("pcb-pending")}
   const schematics=pending(manager,'pendSchematicId'),sheets=pending(manager,'pendSheetId');
   if((schematics===undefined)!==(sheets===undefined)||(schematics!==undefined&&schematics===sheets))bad();
-  base();return{owners:[manager,Object.getPrototypeOf(manager),ast,temp,schematics,sheets],version,modified};
+  base();return{owners:[manager,Object.getPrototypeOf(manager),ast,temp,schematics,sheets],version,modified,cbb};
  };
  const initial=sample();
- const check=()=>{const current=sample();if(!Object.is(current.version,initial.version)||!Object.is(current.modified,initial.modified)||current.owners.some((owner,index)=>owner!==initial.owners[index]))bad();};
+ const check=()=>{const current=sample();${at2("pcb-stability")}if(!Object.is(current.cbb,initial.cbb)||!Object.is(current.version,initial.version)||!Object.is(current.modified,initial.modified)||current.owners.some((owner,index)=>owner!==initial.owners[index]))bad();};
  return{check};
 })();`;
 }
+var CURRENT_PCB_RENAME_STARTUP_STAGES;
 var init_current_pcb_rename_startup_guard = __esm({
   "server/src/current-pcb-rename-startup-guard.ts"() {
+    CURRENT_PCB_RENAME_STARTUP_STAGES = Object.freeze([
+      "pcb-context",
+      "pcb-holder",
+      "pcb-manager",
+      "pcb-cbb",
+      "pcb-ast-state",
+      "pcb-ast-version",
+      "pcb-pending",
+      "pcb-stability"
+    ]);
   }
 });
 
@@ -142805,13 +142831,12 @@ const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if
 const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
 ${buildCurrentProjectOnlySymbolGuard()}
 ${buildCurrentSymbolStartupGuard(true)}
-startupStage='pcb-ast';
-${buildCurrentPcbRenameStartupGuard()}
+${buildCurrentPcbRenameStartupGuard(true)}
 startupStage='auxiliary-panel';
 ${buildCurrentPcbRenamePanelGuard()}
-startup.check();startupStage='pcb-ast';pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
+startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
 preflight=await(async()=>{${buildCurrentPcbRenamePreflightProgram(selected3)}})();
-startupStage='project-only-context';projectOnly.check();startup.check();startupStage='pcb-ast';pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
+startupStage='project-only-context';projectOnly.check();startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
 return{profile:'private.current-pcb-rename-startup-observation.v1',target,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,
 preflight,runtimeHoldersObserved:true,pcbAstSettledObserved:true,...${JSON.stringify(LIMITATIONS3)}};
 }catch{return{profile:'private.current-pcb-rename-startup-failure.v1',stage:startupStage,preflight,...${JSON.stringify(LIMITATIONS3)}};}})();
@@ -142826,7 +142851,9 @@ function decodeCurrentPcbRenameStartupObservation(raw, request11, expectation) {
   const observed2 = decodeExactReadEnvelope(envelope3);
   if (isRecord(observed2) && observed2["profile"] === "private.current-pcb-rename-startup-failure.v1") {
     const failure2 = exact6(observed2, ["profile", "stage", "preflight", ...Object.keys(LIMITATIONS3)]), stage = failure2["stage"];
-    need92(Object.entries(LIMITATIONS3).every(([key, value2]) => failure2[key] === value2) && [...CURRENT_SYMBOL_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some((allowed) => allowed === stage));
+    need92(Object.entries(LIMITATIONS3).every(([key, value2]) => failure2[key] === value2) && // Retain the old coarse label for historical failures, not new emission
+    // Or a retrospective diagnosis of which predicate failed.
+    [...CURRENT_SYMBOL_STARTUP_STAGES, ...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some((allowed) => allowed === stage));
     throw new Error(`Current PCB startup observation refused [startup:${String(stage)}].`);
   }
   const result = exact6(observed2, ["profile", "target", "sheetUuids", "templates", "preflight", "runtimeHoldersObserved", "pcbAstSettledObserved", ...Object.keys(LIMITATIONS3)]);

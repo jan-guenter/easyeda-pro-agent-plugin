@@ -9,7 +9,14 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261018163148` removes nested full-history scans from the
+Update `0.3.0+codex.20261018173500` corrects the disposable PCB startup guard's
+raw CBB-flag contract and reports fixed failure substages. Supported inactive
+values remain exact across checks; active reuse blocks, getters, state drift
+and unsettled ASTs still refuse. This fixes a source-proven inconsistency, not
+the still-pending live rename lifecycle. See the
+[startup correction](docs/current-pcb-startup-cbb-2026-10-18.md).
+
+The preceding `0.3.0+codex.20261018163148` removes nested full-history scans from the
 closed PCB clock-preparation phase while preserving fresh admission at its four
 effect/result boundaries and exact targeted evidence checks. It also adds an
 offline STRING source model and documents the current native partial-update
@@ -1122,6 +1129,17 @@ Repository validation runs from the marketplace root:
 ```bash
 npm --prefix plugins/easyeda-pro-control run repository:validate
 ```
+
+After an official marketplace upgrade, compare the installed package against
+the full commit checked out in this repository:
+
+```bash
+node plugins/easyeda-pro-control/scripts/verify-installed-payload.ts /absolute/installed/plugin FULL_COMMIT_SHA
+```
+
+This read-only check compares every committed file, mode and directory, rejects
+extra files and links, and returns a compact inventory digest. It does not
+start the plugin, repair the cache or establish live runtime admission.
 
 GitHub Actions installs binutils, rebuilds the sanitizer twice, and requires its
 exact committed identity before building the plugin. The sandbox regression

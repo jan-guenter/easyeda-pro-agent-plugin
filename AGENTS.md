@@ -4,6 +4,114 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate173500, 2026-10-18: branch `feature/pcb-startup-cbb-20261018` corrects
+the source-proven raw CBB contract mismatch and adds eight fixed PCB startup
+failure substages. Own-data property requirements, exact Object.is stability
+(including signed zero), settled AST/version/pending-set/owner checks remain.
+Old coarse `pcb-ast` failures remain decodable but cannot be retrospectively
+diagnosed. Root/independent review, focused guard/composed tests, strict types
+and targeted zero-warning lint pass. A maintained read-only installed-payload
+verifier replaces temporary inventory scripts; its six tests and types/lint
+pass. It compares committed bytes/modes/directories, rejects extra entries/links
+and never starts the plugin or grants runtime authority.
+
+Candidate `0.3.0+codex.20261018173500` is built, not yet published/installed.
+Source455/8b38ecab, runtime3/0069318d, manifest1e98fc74 are frozen. Only facade
+projections/review time changed; external pins and bridge identity are exact.
+Dependency install/tree/signatures/audit and build/compatibility pass. Full
+local release verification is running; exact-payload CI remains required.
+Evidence directory: `/tmp/easyeda-startup-cbb-release-AFV8Ws`.
+No live MCP, EasyEDA launch, CAD change, Save or production access this session.
+The previous main CI39147799193 has now passed. The host-owned loaded163148
+facade2662096 is left alone; no restart/rebind/cache patch is permitted.
+
+Next after publication/install: fresh-session actual-payload admission, then a
+NEW disposable PCB rename case. The retired152547 case must never be resumed.
+Remaining: full writer/closed SQL/saved metadata/final closure; safe current
+source preflight and nonempty String fixture/readers/writer; separate ordinary
+schematic-container title lifecycle; broader CAD/library/routing/rules/ECO/
+dialog/export/platform/bootstrap adapters. FileSource stays disabled for its
+proven shared-rule repair and incomplete export. Do not repeat old empty reads
+or revive legacy writers. Production designs and their records are excluded.
+Keep stash `ebe1b55d7a430ae2e3168e373e155957b582eff9`, all worktrees and evidence.
+
+The following checkpoints are historical; their pending/next instructions are
+not permission to replay completed work.
+
+163148 delivered, 2026-10-18: PR67 merged as main
+`7edf689dc35e6201f68c18e49222813f9302cccd`, reviewed payload
+`d9636bd7b7ee28743ea1a23ed01b088924960f57`. Both complete Git trees equal
+`8ac6f0d21702080bf5ae285316917449fd69453e`. Exact PR CI39146692127 (all eight
+facade shards, required aggregate, strict types/lint, bridge/build/validators)
+and Windows39146692030 passed. Main Windows39147799200 passed; main
+CI39147799193 is still running at this checkpoint. Do not claim its result yet.
+The full local run passed11,166facade tests/fourplatformskips and424bridge tests,
+then failed on an escaping skill link. The docs-only correction passed final
+skill/plugin/repository checks and all seven official skill validators; the
+failed original log is retained, not relabeled. Final-payload CI passed separately.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261018163148` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. Cached marketplace
+HEAD equals mergedmain. All1417files/28,945,824bytes/41subdirectories (42including
+root)/seven skills match committed bytes and modes, with no extras/symlinks/
+hardlinks. Plugin tree `b7cffc340518035447f47009a1b748658a6c14a8`; inventory SHA
+`7fc91a4677e41b3d85559a1965f0386e4e729e6a456eb1eeaf4e74da93431036`.
+Source455/90a764e8, runtime3/a10bf36c and manifestbda3bcd1 are exact; external
+pins and authenticated bridge identity are unchanged. No redundant plugin-add,
+manual cache edit, host termination, bridge import or production access.
+
+One-shot configured offline startup passed ambientNode26.11.1 to pinned24.18.0,
+20restrictedtools/seven skills, strict offline discovery/argument checks and
+unchanged synthetic profile with no upstream/socket/journal. Original child
+2658466/start31852324 exited0 on stdinEOF, no signals/adoption/retained lease.
+Independent retained-evidence audit accepted every response hash, exact reviewed
+scripts and original closure; it did not rerun/import the consumed scripts.
+Consumed proof `/tmp/easyeda-163148-release-prep-ES7DOG/proof.json`,3312bytes SHA
+`4b923f6c177b067b8dd6afd02905a851d254f242a6aa0fd8c2e7f64151610e1c`.
+Never rerun its inventory/probe or earlier consumed probes. This is offline
+installation proof, not actual163148 facade admission or new clock/writer validation.
+The current chat still owns facade2562889/152547. No live calls followed upgrade;
+load/admit163148 in a fresh Codex session, never kill/rebind or patch that owner.
+
+The152547 disposable case `pcb-rename-152547-20261018-case` is terminal/retired.
+Original clock exceeded the600second response limit but completed once without
+replay. Original relaunch, admission, inactive caches and project-only opening
+succeeded. `baseline-observe-clock` refused `startup:pcb-ast` before any writer.
+Offered cleanup155/157 normally closed root5584/Job8a31f9713c944d6280db651acf8c1fb6,
+proved original termination and released captures. Stateplan-invalidated/retiredtrue;
+no orphan, pending cleanup, rename, explicit Save or inverse. Never resume it.
+Independent descriptor-stable final disposable bytes equal prelaunch41ac6062/
+598016 exactly, with no SQLite sidecars. Production designs/records are excluded.
+
+Next source task: resolve a proven startup contract inconsistency. The PCB startup
+guard requires manager.CBB===false, but pinnedSCHd9d6a955 passes raw
+PROJECT.GET.cbb_project intoUG.CBB. Existing preflight/writer acceptundefined/
+false/null/0; synthetic startup fixtures onlyusefalse. This is a likely cause,
+not proof of the unseen live value. Use explicit supported values and exact-value
+stability plus fixed substage diagnostics. Preserve settled AST build/version/
+identity gates; no truthiness coercion, arbitrary diagnostics or blind retry.
+Then a NEW disposable case must complete the rename/full SQL/saved-metadata lifecycle.
+
+Backlog: safe current-source preflight and nonempty String fixture; all three
+String readers; standalone String x/y/text writer; separate ordinary schematic
+container title lifecycle; wider schematic/PCB/library/footprint/device/3D,
+routing/copper/stack/rules/ECO/dialog/export coverage; upstream bootstrap and
+additional platform admission. FileSource remains disabled: source audit proves
+reachable shared-rule repair/live compiler deletion, omissions and header changes.
+The offline String model and four-boundary clock optimization are implemented,
+not live writer or measured connected-speedup proof. See the dated implementation
+and FileSource research docs. Large-history costs outside the scratch stage remain.
+
+Primary worktree now follows mergedmain on
+`feature/pcb-rename-live-163148-20261018`. Complete previous live handoff is preserved
+on `feature/pcb-rename-live-152547-20261018` atd7327b0f844cb4cd88e7c3e3bfa580a6b73adf3f.
+Keep release worktrees and all private evidence, including the consumed152547 probe's
+imported worktree `/tmp/easyeda-v2-cache-d2NmBJ`. Preserve stash
+`ebe1b55d7a430ae2e3168e373e155957b582eff9`. Entries below are historical checkpoints,
+not instructions to replay finished work. This handoff note is local; installed
+and published package bytes remain exact.
+
 Candidate163148, 2026-10-18: clock patch237dcdb0 and offline String modelb83f093
 are integrated in `feature/pcb-closed-clock-boundaries-20261018`. Source455/90a764e8,
 runtime3/a10bf36c and manifestbda3bcd1 are sealed; only facade projections and
