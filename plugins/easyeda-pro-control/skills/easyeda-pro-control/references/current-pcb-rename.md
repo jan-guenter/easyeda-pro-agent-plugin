@@ -89,6 +89,12 @@ an observation only when it returned pending authentication or termination.
 An explicitly offered cleanup phase can instead continue from retained partial
 evidence. It skips consumed snapshot/comparison steps rather than replaying them.
 
+Inspection can return while the original phase is running. If `busy:true`,
+the detached snapshot is not a terminal result: wait and inspect again without
+advancing, replaying the phase or restarting the facade. A client response
+timeout does not establish cancellation. Historical records can make validation
+slow even when no native write is pending.
+
 `action:"cleanup", confirmAbort:true` permanently abandons further writing and
 selects an available original-owner cleanup phase. The returned phase may
 capture a retained failed opening solely for closure, request one normal close,

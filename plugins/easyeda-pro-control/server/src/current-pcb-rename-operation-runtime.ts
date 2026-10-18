@@ -64,10 +64,10 @@ export class CurrentPcbRenameOperationCoordinator {
   }
   public async run(input: unknown): Promise<Value> {
     const request = currentPcbRenameOperationRequestSchema.parse(structuredClone(input));
-    need(!this.busy, "PCB rename operation is already running.");
     if (request.action === "inspect") {
       return this.slots.has(request.operationId) ? this.inspect(request.operationId) : inspectCurrentPcbRenameHistory(request.operationId);
     }
+    need(!this.busy, "PCB rename operation is already running.");
     if (request.action === "baseline-begin") { return this.begin(request); }
     const slot = this.slots.get(request.operationId); need(slot !== undefined, "PCB rename cannot reconstruct ownership from a journal.");
     if (request.action === "cleanup") {

@@ -21,7 +21,7 @@ let adapter: { listQualifiedOperationStates: typeof listQualifiedOperationStates
 let unregister: () => void;
 before(async () => {
   const inspectorUrl = new URL("../src/closed-symbol-terminal-admission-cache.ts", import.meta.url);
-  const agedUrl = new URL("../src/closed-symbol-aged-terminal.ts", import.meta.url);
+  const agedUrl = new URL("../src/closed-symbol-aged-terminal-admission-cache.ts", import.meta.url);
   const abandonmentUrl = new URL("../src/closed-symbol-abandonment.ts", import.meta.url);
   const runtimeUrl = new URL("../src/machine-profile.ts", import.meta.url);
   const syntheticUrl = new URL("helpers/closed-symbol-terminal-admission-unit-fixture.ts", import.meta.url);
@@ -303,16 +303,19 @@ void test("routing hash mismatch refuses without invoking either inspector", asy
   assert.equal(unitState.inspected.includes(operationId), false); assert.equal(unitState.agedInspected.includes(operationId), false);
 });
 
-void test("locked dispatch forwards exact compact candidate and original current runtime, never an operation-only argument", async () => {
-  const operationId = await journal({}, true);
-  assert.equal(await selected(operationId), undefined);
-  const entry = unitState.lockedInputs.at(-1); assert.ok(entry);
-  const value = await loadOperation(operationId);
-  assert.deepEqual(entry.candidate, { operationId, state: "closed-session-completed", family: FAMILY,
-    storedJournalSha256: value["journalSha256"], entireStoredJournalSha256: sha256Json(value),
-    terminalArtifact: value["terminalArtifact"] });
-  assert.equal(entry.runtime, unitState.runtimes.at(-1));
-});
+for (const profile of ["easyeda-pro-control.closed-symbol-terminal.v1", "easyeda-pro-control.closed-symbol-terminal.v2"] as const) {
+  void test(`${profile} dispatch forwards exact compact candidate and original current runtime, never an operation-only argument`, async () => {
+    const operationId = await journal({}, true, profile);
+    assert.equal(await selected(operationId), undefined);
+    const entries = profile.endsWith(".v2") ? unitState.agedInputs : unitState.lockedInputs;
+    const entry = entries.at(-1); assert.ok(entry);
+    const value = await loadOperation(operationId);
+    assert.deepEqual(entry.candidate, { operationId, state: "closed-session-completed", family: FAMILY,
+      storedJournalSha256: value["journalSha256"], entireStoredJournalSha256: sha256Json(value),
+      terminalArtifact: value["terminalArtifact"] });
+    assert.equal(entry.runtime, unitState.runtimes.at(-1));
+  });
+}
 class ForgedClosureError extends Error { public override name = "ForgedClosureError"; }
 for (const [label, error, expected] of [
   ["genuine changed", new ClosureEvidenceChangedError("SECRET changed"), "terminal-evidence-invalid"],

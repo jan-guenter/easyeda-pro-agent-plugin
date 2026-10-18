@@ -15,5 +15,8 @@ export function installAdmissionDependencyObserver(): void {
   } });
 }
 export function assertActualLockedCacheGraphAbsent(): void {
-  assert.equal(installed, true); assert.equal(loaded.size, 0);
+  assert.equal(installed, true);
+  // The bounded byte observer is shared by v1/v2.
+  // The locked semantic cache must stay absent for the aged-only profile.
+  assert.equal(loaded.has(new URL("../../src/closed-symbol-terminal-admission-cache.ts", import.meta.url).href), false);
 }

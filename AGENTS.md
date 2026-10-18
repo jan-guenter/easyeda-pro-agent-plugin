@@ -4,6 +4,46 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+152547 candidate, 2026-10-18: isolated worktree
+`/tmp/easyeda-v2-cache-d2NmBJ`, branch
+`feature/aged-terminal-semantic-cache-20261018`. Accepted commits6731918d and
+65123c2c add bounded aged-v2 historical computation reuse, correct the v1/v2
+post-cold/pre-enrollment stale-result fallback, and let strict read-only PCB inspection
+return while a phase holds the mutation gate. No live ownership/admission is
+cached; every dependency byte/identity is freshly checked. All mutation actions
+remain serialized. Cache319focused tests and inspection12focused tests pass;
+types and strict type-aware lint are clean. Independent reviews accepted both.
+Only synthetic latency was measured; no connected speedup is claimed.
+Version`0.3.0+codex.20261018152547` is built and sealed, not yet published or
+installed. Source454/db2f88df, runtime3/e707c47a and manifest24fb5ded match;
+only facade projections/review time changed, all external pins unchanged.
+Pinned Node24.18.0/npm11.16.0/core0 dependency install, full dependency tree,
+registry signatures/attestations and audit passed. Build, compatibility,
+repository/privacy and all seven official skill checks passed. Full local verify
+finished with11,133facade passes/fourplatformskips/onefailure: the historical-v2
+routing unit test still intercepted the old module path. The failed run is
+retained at /tmp/easyeda-152547-release-NxP1jE/verify.log; later verify stages
+were not reached. The test-only seam correction passes all70routing tests;
+final-payload CI remains required. Source/bundles/pins remain frozen; do not relabel
+the failed local run or duplicate the full local campaign.
+See docs/historical-validation-and-inspection-2026-10-18.md.
+
+Original140500 case `pcb-rename-140500-20261018-case` is terminal and retired.
+Baseline closure/full SQL/native capture passed unchanged. The one clock phase
+and first queued inspection exceeded600second response deadlines; the original
+phase nevertheless completed. No repeat was dispatched. Root selected cleanup
+to ship these demonstrated fixes before further writer testing. Offered closed
+retirement completed once: plan-invalidated/retiredtrue, capture released,
+original termination proved, no failedPhase. Artifact12 SHA1a2cad3d. The final
+descriptor-stable read matches raw41ac6062/598016 exactly, with no sidecars.
+No relaunch, rename, explicit Save, inverse or production access. Never replay
+this case or consumed probes. No connected PCB writer validation is claimed.
+Actual facade2462762 still loads140500; do not terminate or rebind it. Install
+the final152547 through the official Git marketplace, then require a fresh
+Codex session and actual-process admission before the next live case.
+Production designs/records are excluded. Preserve stash
+ebe1b55d7a430ae2e3168e373e155957b582eff9.
+
 140500 candidate, 2026-10-18: actual facade2371047 (parent2369383,
 startTicks30405385) was independently admitted against the complete installed121700
 inventory below. Both preceding main CI39128803776 and Windows39128803768 passed.

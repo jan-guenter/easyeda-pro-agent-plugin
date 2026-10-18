@@ -3717,16 +3717,24 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_pcb_rename")) {
     description: "Disposable-only title rename through an original-owner forward lifecycle. Query offline disposable-pcb-rename/disposable-pcb-rename-validate first. baseline-begin requires this facade's existing retained easyeda_control_project_open disposable opening and a distinct operation ID; no new opener/runtime or ordinary-project ownership is created by this tool. Complete closed SQL, original metadata, fresh project-only startup, native name availability, both actors and original Windows/document clocks precede one title-only update. Titles are trimmed printable ASCII without capital I. Each advance requires its exact next phase and effect acknowledgements. Inspect lost replies; never replay writes, opening, closing or scratch processes. Completion requires renameVerified and nextPhase completed after acknowledged mutation, original process closure, exact whole-SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality. Reopened native verification is metadata-only, not a complete PCB canvas read. Cleanup uses only the retained original owner; saved journals cannot restore continuation after restart. Opening/normal closure can automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restoration, ordinary projects or generic dmt_Pcb.modifyPcbName enablement. The new writer has no connected validation claim; earlier read-only preflight validation does not validate renaming.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-  }, serializedGuarded(async ({ request }: z.output<typeof inputSchema>) => {
-    if (currentPcbRenameOperationCoordinator === undefined) {
-      if (request.action === "inspect") { return { result: await inspectCurrentPcbRenameHistory(request.operationId) }; }
-      if (request.action !== "baseline-begin" || currentDisposableOpenCoordinator === undefined) {
-        throw new Error("PCB rename requires this facade's existing retained disposable opening and operation coordinator; journals cannot reconstruct ownership.");
-      }
-      currentPcbRenameOperationCoordinator = new CurrentPcbRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
+  }, guarded(async ({ request }: z.output<typeof inputSchema>) => {
+    const validated = currentPcbRenameOperationRequestSchema.parse(request);
+    // Inspection reads only a retained snapshot or historical journal. It must
+    // Remain available while the original one-shot phase holds the bridge gate.
+    if (validated.action === "inspect") {
+      return { result: await (currentPcbRenameOperationCoordinator === undefined
+        ? inspectCurrentPcbRenameHistory(validated.operationId) : currentPcbRenameOperationCoordinator.run(validated)) };
     }
-    return { result: await currentPcbRenameOperationCoordinator.run(request) };
-  }, { allowDuringOrphanRisk: true }));
+    return bridgeGate.run(async () => {
+      if (currentPcbRenameOperationCoordinator === undefined) {
+        if (validated.action !== "baseline-begin" || currentDisposableOpenCoordinator === undefined) {
+          throw new Error("PCB rename requires this facade's existing retained disposable opening and operation coordinator; journals cannot reconstruct ownership.");
+        }
+        currentPcbRenameOperationCoordinator = new CurrentPcbRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
+      }
+      return { result: await currentPcbRenameOperationCoordinator.run(validated) };
+    });
+  }));
 }
 
 const transport = new StdioServerTransport();

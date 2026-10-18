@@ -80,7 +80,7 @@ for (const stage of ["capture", "observe"] as const) {
   void test(`cold-only ${stage} ineligibility preserves genuine cold result but never enrolls`, async () => {
     const { run, f } = await setup(); state.before = (step): void => { if (step === stage) { throw new ClosureIneligibleError("unit-ineligible"); } };
     assert.deepEqual(await run(f.candidate, f.runtime), f.result); assert.deepEqual(await run(f.candidate, f.runtime), f.result);
-    assert.equal(count("cold"), 2); assert.equal(count("revalidate"), 0);
+    assert.equal(count("cold"), stage === "capture" ? 2 : 4); assert.equal(count("revalidate"), 0);
   });
   void test(`${stage} ineligibility plus cleanup aggregate refuses cold success`, async () => {
     const { run, f } = await setup(); const error = new AggregateError([new ClosureIneligibleError("unit"), new Error("cleanup")], "unit-ineligible-cleanup");
@@ -213,4 +213,26 @@ void test("initial caller accessors are not invoked by snapshot or key generatio
 void test("unknown family cannot use a correctly hashed resident", async () => {
   const { run, f } = await setup(); await run(f.candidate, f.runtime); f.candidate["family"] = `${String(f.candidate["family"])}.spoof`;
   await assert.rejects(run(f.candidate, f.runtime), /cache-candidate-profile/u); assert.equal(count("cold"), 1); assert.equal(count("revalidate"), 0);
+});
+void test("post-cold observer deadline cannot hide evidence changed after replay", async () => {
+  const { run, f } = await setup(); let evidenceChanged = false;
+  state.before = (step): void => {
+    if (step === "observe") { evidenceChanged = true; throw new ClosureIneligibleError("closure-elapsed-deadline"); }
+    if (step === "cold" && evidenceChanged) { throw new ClosureEvidenceChangedError("late-evidence-mutation"); }
+  };
+  await assert.rejects(run(f.candidate, f.runtime), /late-evidence-mutation/u);
+  assert.equal(count("cold"), 2); assert.equal(count("revalidate"), 0);
+  delete state.before; await run(f.candidate, f.runtime);
+  assert.equal(count("cold"), 3); assert.equal(count("revalidate"), 0);
+});
+void test("fresh replay after observer ineligibility is final and cannot enroll", async () => {
+  const { run, f } = await setup(); let finished = false;
+  state.before = (step): void => {
+    if (step === "observe") { throw new ClosureIneligibleError("closure-elapsed-deadline"); }
+    if (finished) { assert.fail(`Unexpected asynchronous work after final cold replay: ${step}`); }
+  };
+  state.after = (step): void => { if (step === "cold" && count("cold") === 2) { finished = true; } };
+  assert.deepEqual(await run(f.candidate, f.runtime), f.result);
+  delete state.before; delete state.after; await run(f.candidate, f.runtime);
+  assert.equal(count("cold"), 3); assert.equal(count("revalidate"), 0);
 });

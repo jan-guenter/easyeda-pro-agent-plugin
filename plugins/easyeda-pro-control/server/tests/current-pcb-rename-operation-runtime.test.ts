@@ -19,10 +19,12 @@ function object(value: unknown): Value { assert.ok(isRecord(value)); return valu
 async function fixture(): Promise<{
   calls: string[]; run: (request: unknown) => Promise<Value>; inspect: () => Value;
   state: { failure: string | undefined; returnedFailure: boolean; pendingAuthentication: boolean; pendingTermination: boolean;
-    invariant: boolean; metadata: boolean; cleanupGate: Promise<unknown> | undefined };
+    invariant: boolean; metadata: boolean; cleanupGate: Promise<unknown> | undefined;
+    scratchGate: Promise<unknown> | undefined; scratchStarted: (() => void) | undefined };
 }> {
   const calls: string[] = [], state = { failure: undefined as string | undefined, returnedFailure: false,
-    pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, cleanupGate: undefined as Promise<unknown> | undefined };
+    pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, cleanupGate: undefined as Promise<unknown> | undefined,
+    scratchGate: undefined as Promise<unknown> | undefined, scratchStarted: undefined as (() => void) | undefined };
   const clock = Object.freeze({ original: "clock" }), continuation = Object.freeze({ operationId: ID, original: "continuation" });
   const generation = Object.freeze({ operationId: ID }), owner = Object.freeze({ operationId: ID }), reference = Object.freeze({ original: "reference" });
   const baselineValue = Object.freeze({ original: "baseline" }), proof = Object.freeze({ original: "proof" }), startup = Object.freeze({ original: "startup" });
@@ -120,8 +122,9 @@ async function fixture(): Promise<{
     CurrentPcbRenameGenerationCoordinator: function CurrentPcbRenameGenerationCoordinator(): Controller { return new Controller("generation"); },
     CurrentPcbRenameWriterCoordinator: function CurrentPcbRenameWriterCoordinator(): Controller { return new Controller("writer"); },
     CurrentPcbRenameVerificationCoordinator: function CurrentPcbRenameVerificationCoordinator(): Controller { return new Controller("verification"); },
-    CurrentPcbAgedSqlReferenceStage: function CurrentPcbAgedSqlReferenceStage(): object { return { runOnce: (input: Value): Promise<object> => {
-      assert.equal(input["baseline"], baselineValue); assert.equal(input["proof"], proof); calls.push("scratch.once"); return Promise.resolve(reference);
+    CurrentPcbAgedSqlReferenceStage: function CurrentPcbAgedSqlReferenceStage(): object { return { runOnce: async (input: Value): Promise<object> => {
+      assert.equal(input["baseline"], baselineValue); assert.equal(input["proof"], proof); calls.push("scratch.once");
+      state.scratchStarted?.(); await state.scratchGate; return reference;
     } }; },
     currentPcbRenameBaselineClockBinding: (value: unknown): object => { assert.equal(value, baselineValue); return { proof }; },
     collectCurrentPcbRenameStartupObservation: (selected: unknown, value: unknown): Promise<object> => {
@@ -208,7 +211,12 @@ void test("PCB cleanup is serialized, irreversible and selects only original cap
   const value = await fixture(); await value.run(BEGIN);
   const gate = Promise.withResolvers<boolean>(); value.state.cleanupGate = gate.promise;
   const pending = value.run({ action: "cleanup", operationId: ID, confirmAbort: true });
+  const inspection = await value.run({ action: "inspect", operationId: ID });
+  assert.equal(inspection["busy"], true); assert.equal(inspection["cleanupRequested"], true);
+  assert.equal(inspection["nextPhase"], "stopped"); assert.equal(inspection["executionAuthorized"], false);
+  assert.equal(value.calls.includes("baseline.request-cleanup"), false);
   await assert.rejects(value.run({ action: "advance", operationId: ID, step: step("baseline-close") }), /already running/u);
+  await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }), /already running/u);
   await assert.rejects(value.run(BEGIN), /already running/u); gate.resolve(true); await pending;
   assert.equal(value.inspect()["nextPhase"], "cleanup-close");
   await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }));
@@ -225,6 +233,29 @@ void test("PCB cleanup is serialized, irreversible and selects only original cap
   await advance(opening); assert.equal(opening.inspect()["nextPhase"], "cleanup-close"); await advance(opening); await advance(opening);
   assert.equal(opening.inspect()["renameVerified"], false); assert.equal(opening.calls.filter(call => call === "opening.transfer").length, 1);
   assert.equal(opening.calls.includes("baseline.capture"), false); assert.equal(opening.calls.includes("baseline.cleanup-capture"), true);
+});
+
+void test("PCB inspect returns a detached busy snapshot while the original scratch phase remains pending", async () => {
+  const value = await fixture(); await value.run(BEGIN); await reach(value, "baseline-prepare-clock");
+  const gate = Promise.withResolvers<boolean>(), started = Promise.withResolvers<boolean>();
+  value.state.scratchGate = gate.promise; value.state.scratchStarted = (): void => { started.resolve(true); };
+  const pending = advance(value); await started.promise;
+  try {
+    const calls = [...value.calls], inspection = await value.run({ action: "inspect", operationId: ID });
+    assert.equal(inspection["busy"], true); assert.equal(inspection["nextPhase"], "stopped");
+    assert.equal(inspection["originalOwnerRetained"], true); assert.equal(inspection["renameVerified"], false);
+    assert.equal(inspection["executionAuthorized"], false); assert.equal(inspection["replayAllowed"], false);
+    assert.deepEqual(structuredClone(inspection["attemptedPhases"]), ["baseline-begin", "baseline-close", "baseline-observe-termination", "baseline-prepare-clock"]);
+    assert.ok(Array.isArray(inspection["attemptedPhases"])); inspection["attemptedPhases"].push("forged");
+    assert.notDeepEqual(value.inspect()["attemptedPhases"], inspection["attemptedPhases"]);
+    for (const request of [BEGIN, { action: "advance", operationId: ID, step: step("baseline-prepare-clock") },
+      { action: "cleanup", operationId: ID, confirmAbort: true }]) { await assert.rejects(value.run(request), /already running/u); }
+    await assert.rejects(value.run({ action: "inspect", operationId: ID, confirmWrite: true }));
+    assert.deepEqual(value.calls, calls);
+  } finally { gate.resolve(true); await pending; }
+  const completed = await value.run({ action: "inspect", operationId: ID });
+  assert.equal(completed["busy"], false); assert.equal(completed["nextPhase"], "baseline-relaunch");
+  assert.equal(value.calls.filter(call => call === "scratch.once").length, 1);
 });
 
 void test("PCB cleanup skips an uncommitted writer reservation and never offers a consumed release again", async () => {

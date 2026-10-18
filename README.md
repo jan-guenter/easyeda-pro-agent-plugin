@@ -8,7 +8,14 @@ forward and inverse edits, complete closed SQL comparisons and reopened-content
 checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
-Update `0.3.0+codex.20261018140500` adds a separate disposable PCB title-change workflow with
+
+Update `0.3.0+codex.20261018152547` reduces repeated historical validation work,
+fixes a stale-result fallback, and keeps PCB-operation inspection responsive
+while a phase is running. All evidence bytes and identities are still checked;
+no live authority is cached. Synthetic measurements and remaining limits are in
+the [validation and inspection record](docs/historical-validation-and-inspection-2026-10-18.md).
+
+The preceding `0.3.0+codex.20261018140500` adds a separate disposable PCB title-change workflow with
 original ownership, actor/dual-clock checks, one fixed rename, full closed SQL
 comparison and fresh saved metadata verification. It still needs its first live
 writer test. See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-rename.md)
