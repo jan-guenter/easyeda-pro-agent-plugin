@@ -46,6 +46,11 @@ feature/current-pcb-rename-structure is built but unpublished, candidate094000;
 the frozen full local verification is running. Repository checks and all seven
 installed skill-creator checks pass. External pins and authenticated bridge stay
 unchanged. New PCB metadata connected validation remains unclaimed.
+The first full local suite found a stale 18-tool expectation in bundled startup;
+only that test list was corrected to include the new nineteenth PCB reader.
+All five focused startup tests then passed. Runtime source/bundles/manifest were
+unchanged; the first suite and its failure remain retained. Final corrected
+payload requires green full GitHub CI before merge and installation.
 Purpose-bound baseline guidance now points to clock observation/lifecycle begin,
 not premature cleanup; sealed journals and authority checks remain unchanged.
 
