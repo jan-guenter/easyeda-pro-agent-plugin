@@ -38,8 +38,8 @@ function fields(input: unknown, names: readonly string[]): Record<string, unknow
   return result;
 }
 /** Validating supplied data grants no native name, membership, process, clock,
- * subscriber-completion, persistence or execution claim. No runtime envelope
- * decoder or writer consumes this contract yet.
+ * subscriber-completion, persistence or execution claim. The separate internal
+ * observer consumes this contract; no live tool or writer is registered.
  */
 export function parseCurrentSchematicRenamePreflightRequest(input: unknown): CurrentSchematicRenamePreflightRequest {
   const value = fields(input, ["target", "expectedBefore", "desiredTitle"]);

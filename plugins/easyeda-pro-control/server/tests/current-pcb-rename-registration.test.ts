@@ -112,6 +112,7 @@ void test("PCB registration rejects outer and nested injection before retaining 
 void test("offline PCB rename discovery and exact argument validation never grant runtime or connected-validation authority", () => {
   const discovery = queryCurrentPcbRenameOperation({ includeSchemas: true });
   assert.equal(discovery["connectedValidation"], false); assert.equal(discovery["ordinaryProjectsSupported"], false);
+  assert.equal(discovery["historicalConnectedValidation"], "installed195000-disposable-pcb-title-only-lifecycle");
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["invocationEnabledByDiscovery"], false);
   assert.equal(discovery["tool"], "easyeda_control_disposable_pcb_rename"); assert.notEqual(discovery["inputSchema"], undefined);
   assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "disposable-pcb-rename", query: { includeSchemas: true } })).result, discovery);

@@ -159,12 +159,14 @@ void test("PCB rename coverage exposes only its disposable native subset while p
   const route = row.routes.find(item => item.tool === "easyeda_control_disposable_pcb_rename"); assert.ok(route);
   assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.implementation, "native-task-equivalent");
   assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [3]);
-  for (const text of ["not generic public dmt_Pcb.modifyPcbName", "original retained disposable opening", "metadata-only", "No ordinary projects", "connected validation is unclaimed"]) {
+  for (const text of ["not generic public dmt_Pcb.modifyPcbName", "original retained disposable opening", "metadata-only", "No ordinary projects",
+    "Installed195000 passed one disposable title-only lifecycle", "Later generations and other project histories remain unvalidated"]) {
     assert.ok(route.scope.includes(text));
   }
   assert.equal(row.routes.find(item => item.tool === "easyeda_control_library")?.executionState, "blocked");
   assert.ok(route.inputDiscovery); const result = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
   assert.ok(isRecord(result)); assert.equal(result["connectedValidation"], false); assert.equal(result["executionAuthorized"], false);
+  assert.equal(result["historicalConnectedValidation"], "installed195000-disposable-pcb-title-only-lifecycle");
   assert.equal(result["ordinaryProjectsSupported"], false);
 });
 

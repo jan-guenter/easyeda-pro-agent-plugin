@@ -85,8 +85,10 @@ validation or admission for another runtime.
 
 The separate [disposable rename workflow](current-pcb-rename.md) connects the
 original PCB opening, full SQL baseline, actor/clock checks, fixed title writer,
-normal closure and saved reopening. It still needs connected writer validation.
-Preflight alone does not issue its ownership or authorize writing.
+normal closure and saved reopening. Installed195000 passed one complete disposable
+title-only lifecycle with exact closed SQL, fresh saved metadata and final closure.
+That historical result does not admit another invocation. Preflight alone does
+not issue its ownership or authorize writing.
 
 The private schematic rebuild queue exposes no operation-owned completion
 observer. Stable batch/pending-set samples and sleeps do not prove it drained.

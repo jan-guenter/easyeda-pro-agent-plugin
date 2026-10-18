@@ -9,11 +9,23 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261018173500` corrects the disposable PCB startup guard's
+Installed `0.3.0+codex.20261018195000` passed the disposable PCB title-change
+lifecycle: one acknowledged rename, exact complete closed SQL effect, matching
+PCB metadata and peers after fresh reopening, final SQL equality and original
+process closure. No explicit Save, inverse or production-design access ran.
+Ordinary-project rename and general PCB editing remain disabled.
+
+Update `0.3.0+codex.20261018211000` records that result, removes repeated
+serialization of certified immutable PCB baseline data, and adds unregistered
+schematic preflight/child-roster and PCB text-create groundwork. Dynamic ownership,
+file and runtime checks remain intact. The new schematic/text code is not enabled
+editing support. See the [result and remaining work](docs/current-pcb-rename-lifecycle-2026-10-18.md).
+
+Earlier update `0.3.0+codex.20261018173500` corrects the disposable PCB startup guard's
 raw CBB-flag contract and reports fixed failure substages. Supported inactive
 values remain exact across checks; active reuse blocks, getters, state drift
 and unsettled ASTs still refuse. This fixes a source-proven inconsistency, not
-the still-pending live rename lifecycle. See the
+the then-pending live rename lifecycle. See the
 [startup correction](docs/current-pcb-startup-cbb-2026-10-18.md).
 
 The preceding `0.3.0+codex.20261018163148` removes nested full-history scans from the
@@ -31,8 +43,8 @@ the [validation and inspection record](docs/historical-validation-and-inspection
 
 The preceding `0.3.0+codex.20261018140500` adds a separate disposable PCB title-change workflow with
 original ownership, actor/dual-clock checks, one fixed rename, full closed SQL
-comparison and fresh saved metadata verification. It still needs its first live
-writer test. See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-rename.md)
+comparison and fresh saved metadata verification. That candidate had no live
+writer result; the later195000 case above passed. See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-rename.md)
 and [implementation record](docs/current-pcb-rename-lifecycle-2026-10-18.md).
 
 Installed `0.3.0+codex.20261018121700` passed the separate read-only PCB rename
