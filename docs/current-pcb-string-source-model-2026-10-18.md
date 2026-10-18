@@ -105,4 +105,34 @@ Next work is a current exact-frame FileSource observation and separate disposabl
 String-create lifecycle with full SQL effects. The old decoder writer stays
 disabled. The current native String-modify handler assigns layer, reverse,
 mirror and lock without undefined guards, so a later narrow patch adapter must
-reconstruct complete arguments from its verified baseline, not send only x/y/text.
+reconstruct those four mandatory arguments from its verified baseline, not send
+only x/y/text. Unchanged optional geometry must remain absent: supplying rounded
+source values would alter higher-precision native values.
+
+## Supplied-data patch candidate
+
+`current-pcb-string-patch.ts` now provides that pure argument/effect candidate.
+It admits only unlocked parentless default-font text on silkscreen layers3/4,
+with printable ASCII and complete selected native scalars matching all19 encoded
+fields. It preserves raw peer records, headers, order and unknown fields in a
+comparison projection. It does not claim those headers are future upload tickets
+or that peer color/null values survive native decoder replay.
+
+The native handler at10395251 compares coordinates at1e-10 internal units.
+The view setter at7378095 then uses `S.equals1` at1064019 and `Dt.eq` at1024324
+with `Dt.eps=1e-8` at1024699. The model setter at3982263 cannot suppress differences
+above that threshold. The candidate models the effective1e-8 boundary, reports
+ignored no-op fields, and refuses changes invisible in the encoded source or
+lost through negative-zero serialization.
+
+The static `Qy.fontPath` literal at3628338..3635614 contains every printable
+ASCII glyph. `RGe` at4407316 can switch font/type for unsupported glyphs, so the
+initial candidate excludes Unicode and controls. Optional font size, width,
+rotation and expansion remain absent from native arguments, preserving their
+unrounded values.
+
+Seven focused synthetic tests, strict type-aware lint and typecheck pass. Root
+and independent source review accepted the native setter/encoder relation.
+This is source-only groundwork. It adds no MCP route, observer, token, writer,
+queue completion or saved/reopened verification. A safe original-frame observer,
+complete live/stored baselines and the full disposable lifecycle remain open.
