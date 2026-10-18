@@ -165,6 +165,10 @@ function compareRow(body: StringBody, row: JsonObject): void {
     ["reverse", "reverse"], ["mirror", "mirror"], ["locked", "primitiveLock"]] as const) { exactField(body, sourceField, row, readerField); }
   for (const [sourceField, readerField] of [["x", "x"], ["y", "y"], ["fontSize", "fontSize"], ["strokeWidth", "lineWidth"],
     ["angle", "rotation"], ["expansion", "expansion"]] as const) { roundedField(body, sourceField, row, readerField); }
+  // O3.getData@4418517 emits color only on silkscreen; yr.toJSON@7384285
+  // Normalizes an empty color serialization to null. Compare supplied serialized
+  // Values, never infer raw model color or decoder/reopen equivalence from them.
+  if (body.layerId === 3 || body.layerId === 4) { exactField(body, "specialColor", row, "silkColor"); }
   need(row["alignMode"] === alignments.indexOf(body.origin) + 1, "STRING alignment projection differs");
 }
 
@@ -200,7 +204,9 @@ export function correlateCurrentPcbStringSource(source: string, targetInput: unk
     evidenceSha256: sha256Json(input), sourceRecordCount: parsed.records.length, stringCount: parsed.strings.length,
     sourceStringOrder: parsed.strings.map(row => row.id), readerStringOrder: ids,
     selectedReaderCompared: evidence.selected !== undefined, encodedFieldRelation: "native-four-decimal-source-projection",
-    omittedReaderFields: ["partitionId", "groupId", "bold", "italic", "zIndex", "specialColor", "unknown-fields"],
+    omittedReaderFields: ["partitionId", "groupId", "bold", "italic", "zIndex", "unknown-fields"],
+    colorRelation: "silkscreen-serialized-color-exact;other-layers-encode-null", rawModelColorVerified: false,
+    readerOnlyFields: ["key", "showKey", "showValue", "positionIsNull"],
     unknownFieldsPreserved: true, completeSourceProvenanceVerified: false, liveReceiverVerified: false,
     parentOwnershipVerified: false, renderingVerified: false, persistenceVerified: false, writerSupported: false, executionAuthorized: false });
 }

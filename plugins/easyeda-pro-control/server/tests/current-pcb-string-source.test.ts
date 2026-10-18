@@ -11,7 +11,8 @@ const body = { partitionId: "", groupId: 0, layerId: 3, x: 12.3457, y: -23.4568,
   reverse: false, expansion: 0, mirror: false, locked: false, zIndex: -1, specialColor: "#000000" };
 const row = { primitiveId: firstId, primitiveType: "String", primitiveLock: false, layer: 3,
   x: 1.234567 * 10, y: -2.345678 * 10, text: body.text, fontFamily: "default", fontSize: 120,
-  lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0, mirror: false };
+  lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0, mirror: false,
+  key: "", showKey: false, showValue: true, positionIsNull: false, silkColor: "#000000" };
 function record(header: Record<string, unknown>, value: Record<string, unknown>): string {
   return `${JSON.stringify(header)}||${JSON.stringify(value)}|\n`;
 }
@@ -27,9 +28,9 @@ function geometry(rows: Record<string, unknown>[], selected = false): Record<str
     target, rows, samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false,
     persistenceVerified: false, sourceMembershipVerified: false, ...(selected ? { observedRowCount: 1 } : {}) };
 }
-function evidence(rows = [row]): { identities: Record<string, unknown>; all: Record<string, unknown>; selected: Record<string, unknown> } {
+function evidence(rows: Record<string, unknown>[] = [row]): { identities: Record<string, unknown>; all: Record<string, unknown>; selected: Record<string, unknown> } {
   return { identities: { ok: true, kind: "current-pcb-identity-observation", method: "eda.pcb_PrimitiveString.getAllPrimitiveId",
-    target, observations: [{ family: "String", ids: rows.map(value => value.primitiveId) }], samples: 2,
+    target, observations: [{ family: "String", ids: rows.map(value => value["primitiveId"]) }], samples: 2,
     implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false },
   all: geometry(rows), selected: { primitiveIds: [firstId], result: geometry([rows[0] ?? row], true) } };
 }
@@ -57,6 +58,8 @@ void test("current STRING relation correlates all three existing readers without
   for (const field of ["completeSourceProvenanceVerified", "liveReceiverVerified", "parentOwnershipVerified", "renderingVerified",
     "persistenceVerified", "writerSupported", "executionAuthorized"]) { assert.equal(result[field], false); }
   assert.equal(result["unknownFieldsPreserved"], true);
+  assert.equal(result["rawModelColorVerified"], false);
+  assert.deepEqual(result["readerOnlyFields"], ["key", "showKey", "showValue", "positionIsNull"]);
 });
 
 void test("current STRING relation preserves source order separately from native reader order", () => {
@@ -74,13 +77,18 @@ void test("current STRING relation supports the nine explicit alignment encoding
   }
 });
 
-void test("current STRING relation keeps null and black color distinct despite identical reader DTOs", () => {
+void test("current STRING relation compares serialized silkscreen color without collapsing null and black", () => {
   const black = parseCurrentPcbStringSource(source(), documentUuid); const absent = parseCurrentPcbStringSource(source({ specialColor: null }), documentUuid);
   assert.notEqual(black.sourceSha256, absent.sourceSha256);
   assert.equal(black.strings[0]?.body.specialColor, "#000000"); assert.equal(absent.strings[0]?.body.specialColor, null);
-  const first = correlateCurrentPcbStringSource(black.source, target, evidence()), second = correlateCurrentPcbStringSource(absent.source, target, evidence());
+  const first = correlateCurrentPcbStringSource(black.source, target, evidence());
+  const second = correlateCurrentPcbStringSource(absent.source, target, evidence([{ ...row, silkColor: null }]));
   assert.notEqual(first["sourceSha256"], second["sourceSha256"]);
   assert.deepEqual(first["omittedReaderFields"], second["omittedReaderFields"]);
+  assert.throws(() => correlateCurrentPcbStringSource(black.source, target, evidence([{ ...row, silkColor: null }])));
+  assert.throws(() => correlateCurrentPcbStringSource(absent.source, target, evidence()));
+  assert.equal(correlateCurrentPcbStringSource(source({ layerId: 1, specialColor: null }), target,
+    evidence([{ ...row, layer: 1 }]))["colorRelation"], "silkscreen-serialized-color-exact;other-layers-encode-null");
 });
 
 void test("current STRING source rejects missing fields, ambiguous ownership and unsupported encoding", () => {

@@ -29,9 +29,11 @@ const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, l
     { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2, holeAspect: null,
       defaultPadShapeAspect: ["OVAL", 30, 60], expansionType: 2, topSolderExpansion: 0, bottomSolderExpansion: 1.25, pasteExpansion: -0.75, padRule: { connectMode: 2 } }],
   String: [{ globalIndex: "string-b", locked: false, layerId: 3, position: { x: 1.234567, y: -2.345678 }, value: "Raw \"text\"\nΩ={Value}",
-    fontFamily: "default", fontSize: 12, strokeWidth: 0.8, origin: 3, rotation: Math.PI / 4, reverse: false, reverseExpansion: 0, mirror: false },
+    fontFamily: "default", fontSize: 12, strokeWidth: 0.8, origin: 3, rotation: Math.PI / 4, reverse: false, reverseExpansion: 0, mirror: false,
+    key: "", showKey: false, showValue: true, positionIsNull: false, silkColor: "#000000" },
   { globalIndex: "string-a", locked: true, layerId: 4, position: { x: 0, y: 2 }, value: "", fontFamily: "", fontSize: 0,
-    strokeWidth: 0, origin: 9, rotation: -Math.PI / 2, reverse: true, reverseExpansion: -0.125, mirror: true }] };
+    strokeWidth: 0, origin: 9, rotation: -Math.PI / 2, reverse: true, reverseExpansion: -0.125, mirror: true,
+    key: "Label", showKey: true, showValue: false, positionIsNull: true, silkColor: null }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; input?: CurrentPcbGeometryRequest; fastDeadline?: boolean; }
 function environment(options: Options = {}): { run: () => Promise<unknown>; evaluateChild: (source: string) => unknown } {
   const input = options.input ?? inputFor();
@@ -110,9 +112,11 @@ void test("current geometry copies ordered cross-realm native fields without pub
       defaultCopperShape: { shape: "OVAL", width: 30, height: 60 },
       maskExpansion: { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 }, thermal: { mode: 2 } }],
     [{ primitiveId: "string-b", primitiveType: "String", primitiveLock: false, layer: 3, x: 1.234567 * 10, y: -2.345678 * 10,
-      text: "Raw \"text\"\nΩ={Value}", fontFamily: "default", fontSize: 120, lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0, mirror: false },
+      text: "Raw \"text\"\nΩ={Value}", fontFamily: "default", fontSize: 120, lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0, mirror: false,
+      key: "", showKey: false, showValue: true, positionIsNull: false, silkColor: "#000000" },
     { primitiveId: "string-a", primitiveType: "String", primitiveLock: true, layer: 4, x: 0, y: 20, text: "", fontFamily: "",
-      fontSize: 0, lineWidth: 0, alignMode: 9, rotation: -90, reverse: true, expansion: -1.25, mirror: true }],
+      fontSize: 0, lineWidth: 0, alignMode: 9, rotation: -90, reverse: true, expansion: -1.25, mirror: true,
+      key: "Label", showKey: true, showValue: false, positionIsNull: true, silkColor: null }],
   ];
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
@@ -153,10 +157,11 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
 });
 
-void test("current String projection keeps all native alignments and ignores unprojected font and display state", async () => {
+void test("current String projection keeps alignments and serialized display state without reading omitted model state", async () => {
   const input = inputFor("eda.pcb_PrimitiveString.getAll");
   const fixture = environment({ input, beforeChild: `rows.String=Array.from({length:9},(_,i)=>({...rows.String[0],globalIndex:'string-'+i,origin:i+1}));
-for(const row of rows.String)for(const key of ['font','silkColor','formulaName','key','showKey','showValue','positionIsNull','net'])
+rows.String[0].silkColor='rgb(1.5,2.5,3.5)';rows.String[1].silkColor=null;
+for(const row of rows.String)for(const key of ['font','formulaName','zIndex','partition','groupId','modelType','parentId','net'])
 Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED_STATE');}});` });
   const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
   const value = result["value"]; assert.ok(Array.isArray(value));
@@ -164,8 +169,13 @@ Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED_
   const projectedRows: readonly unknown[] = value;
   for (const row of projectedRows) {
     assert.ok(row !== null && typeof row === "object");
-    for (const omitted of ["font", "silkColor", "key", "showKey", "showValue", "positionIsNull", "net"]) { assert.equal(Object.hasOwn(row, omitted), false); }
+    for (const omitted of ["font", "formulaName", "zIndex", "partition", "groupId", "modelType", "parentId", "net"]) { assert.equal(Object.hasOwn(row, omitted), false); }
+    for (const projected of ["silkColor", "key", "showKey", "showValue", "positionIsNull"]) { assert.equal(Object.hasOwn(row, projected), true); }
   }
+  const firstRow = projectedRows[0], secondRow = projectedRows[1];
+  assert.ok(firstRow !== null && typeof firstRow === "object" && "silkColor" in firstRow);
+  assert.ok(secondRow !== null && typeof secondRow === "object" && "silkColor" in secondRow);
+  assert.equal(firstRow.silkColor, "rgb(1.5,2.5,3.5)"); assert.equal(secondRow.silkColor, null);
   assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
   for (const filteredArguments of [{ layer: 3 }, { primitiveLock: false }]) {
     assert.equal(validateCurrentPcbGeometryArguments({ ...input, arguments: filteredArguments })["valid"], false);
@@ -182,6 +192,9 @@ void test("current String geometry refuses every malformed selected scalar befor
     "rows.String[1].layerId=-1;", "rows.String[1].position.x=-0;", "rows.String[1].position.y=1e12;",
     "rows.String[1].fontSize=NaN;", "rows.String[1].strokeWidth=Infinity;", "rows.String[1].rotation=1e12;",
     "rows.String[1].reverseExpansion=-0;", "rows.String[1].reverseExpansion=1e12;",
+    "rows.String[1].key=null;", "rows.String[1].key='x'.repeat(1025);", "rows.String[1].showKey=0;",
+    "rows.String[1].showValue=null;", "rows.String[1].positionIsNull=undefined;", "rows.String[1].silkColor='';",
+    "rows.String[1].silkColor=3;", "rows.String[1].silkColor='x'.repeat(129);", "delete rows.String[1].silkColor;",
     "Object.defineProperty(rows.String[1],'value',{get(){getterReads++;throw new Error('ACCESSOR');}});",
     "Object.setPrototypeOf(rows.String[1],{value:'inherited'});delete rows.String[1].value;",
     "rows.String[1].globalIndex=rows.String[0].globalIndex;", "delete rows.String[1];",
@@ -191,6 +204,14 @@ void test("current String geometry refuses every malformed selected scalar befor
     await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, beforeChild);
     assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
   }
+  for (const field of ["key", "showKey", "showValue", "positionIsNull", "silkColor"]) {
+    for (const beforeChild of [`delete rows.String[1].${field};`,
+      `Object.defineProperty(rows.String[1],'${field}',{get(){getterReads++;throw new Error('ACCESSOR');}});`]) {
+      const fixture = environment({ input, beforeChild });
+      await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, beforeChild);
+      assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
+    }
+  }
 });
 
 void test("current String selection retains complete-family scalar stability and response byte bounds", async () => {
@@ -198,6 +219,8 @@ void test("current String selection retains complete-family scalar stability and
   const changes = ["rows.String[1].value+='changed';", "rows.String[1].fontFamily='changed';", "rows.String[1].fontSize+=1;",
     "rows.String[1].strokeWidth+=1;", "rows.String[1].origin=1;", "rows.String[1].rotation+=1;",
     "rows.String[1].reverse=!rows.String[1].reverse;", "rows.String[1].reverseExpansion+=1;", "rows.String[1].mirror=!rows.String[1].mirror;",
+    "rows.String[1].key+='changed';", "rows.String[1].showKey=!rows.String[1].showKey;", "rows.String[1].showValue=!rows.String[1].showValue;",
+    "rows.String[1].positionIsNull=!rows.String[1].positionIsNull;", "rows.String[1].silkColor='#000000';",
     "rows.String[1].position.x+=1;", "rows.String[1].position.y+=1;", "rows.String[1].layerId=3;", "rows.String[1].locked=false;", "rows.String.reverse();"];
   for (const change of changes) {
     const fixture = environment({ input, afterCall: `if(topic==='pcb/extensionAPI/string-getAll'&&dataReads===2){${change}}` });

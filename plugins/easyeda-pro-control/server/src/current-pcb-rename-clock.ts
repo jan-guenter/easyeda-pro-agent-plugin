@@ -242,11 +242,24 @@ export async function verifyCurrentPcbRenameClockEffect(plan: CurrentPcbRenameCl
   const closedAt = exactUtcTicks(proof["closedAt"]);
   need(closedAt >= BigInt(exit.before.utcBeforeTicks) && closedAt <= BigInt(exit.after.utcAfterTicks));
   const effect = await verifyCurrentPcbRenameStoredEffect(prepared.preparation, after, post.result.after.updateTime);
-  need(effect.backendTime >= maximum(prepared.armed) && effect.backendTime <= minimum(post.clock), "Stored backend time is outside the actual original writer bracket.");
+  const rendererReturnInterval = Object.freeze({ minimumMs: maximum(prepared.armed), maximumMs: minimum(post.clock) });
+  const backendPersistenceInterval = Object.freeze({ minimumMs: maximum(prepared.armed), maximumMs: maximum(exit) });
+  // Worker b849bd12 updateData1906142 awaits uploadLocal2031184, which awaits
+  // Cache.put but only schedules bufferedUploadCloud before returning, through
+  // BufferedStream2029648. It does not await the backend persistence callback.
+  // Backend persistence may follow the renderer reply. Its upper bound is the
+  // Original termination probe's outer clock endpoint, not its pre-probe sample:
+  // Windows-authority.ps1 Handle-ClockedRequest reads before, calls Handle-Request
+  // Prove-terminated (retained handles/empty Job, then checkedAt), then reads after.
+  // The original SQL preparation still enforces the frozen 60-second window;
+  // No renderer/document bracket, consumed attempt or closed-owner check changes.
+  need(effect.backendTime >= backendPersistenceInterval.minimumMs && effect.backendTime <= backendPersistenceInterval.maximumMs,
+    "Stored backend time is outside the original armed-to-termination persistence interval.");
   need(await windowsClockObservationForResult(proof, "termination") === termination); assertCurrentIssuedWindowsClockObservation(termination);
   const comparison = Object.freeze({ profile: "private.current-pcb-rename-clock-effect.v1", operationId: plan.operationId,
     beforeSqlSha256: plan.beforeSqlSha256, afterSqlSha256: after.logicalSha256, preparationSha256: plan.preparationSha256, bindingSha256: plan.bindingSha256,
     ownerBindingSha256: plan.ownerBindingSha256, backendWindow: plan.backendWindow, documentWindow: plan.documentWindow,
+    rendererReturnInterval, backendPersistenceInterval,
     documentBeforeSha256: plan.documentBeforeSha256, nativeResultSha256: sha256Json(post.result), storedEffect: effect,
     windowsObservationSha256s: Object.freeze([prepared.launch, prepared.capture, prepared.before, prepared.armed, post.clock, exit].map(clock => sha256Json(clock.token))),
     transactionTimestampsWithinPlannedWindows: true, originalWindowsObservationsRetained: true, originalStartupBound: true, ...ASSUMPTIONS, ...LIMITS });

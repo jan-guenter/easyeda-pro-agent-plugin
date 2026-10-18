@@ -89,6 +89,14 @@ unchanged screenshot is not completion. Accept completion only when
 comparison artifacts as needed. Reopened native verification is metadata-only;
 saved drawing and peer invariance come from the complete closed SQL checks.
 
+Backend persistence can follow the native acknowledgment: the current worker
+buffers uploads for500ms. The immediate return clock bounds renderer samples;
+the original process's independently proved exit bounds the later backend
+timestamp, still within the fixed pre-dispatch window. Do not add sleep/retry,
+extend a consumed window or promote an earlier failed case. The installed184000
+case reached the writer but stopped at the old immediate-post backend bound;
+it was retired without reopened verification and is not a passed lifecycle.
+
 ## Failure and cleanup
 
 Inspect a lost response with `action:"inspect"`. Never repeat begin, launch,

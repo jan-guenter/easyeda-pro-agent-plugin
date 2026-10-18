@@ -169,7 +169,7 @@ resolved connectivity.
 | Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
 | Component | `layer` (1/2), `x`, `y`, `rotation`; optional raw `designator`, `name`, `manufacturer`, `manufacturerPart`, `supplier`, `supplierPart` |
 | Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole`, `defaultCopperShape`, `maskExpansion`, `thermal` |
-| String | `layer`, `x`, `y`, `text`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror` |
+| String | `layer`, `x`, `y`, `text`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `key`, `showKey`, `showValue`, `positionIsNull`, `silkColor` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad/String rotation use degrees. Arc modes
@@ -207,10 +207,17 @@ degrees, preserving the installed mapper's arithmetic order. `alignMode` is
 7 right-top,8 right-middle or9 right-bottom. `expansion` is the loaded reverse
 text expansion; it is not a validated fabrication clearance.
 
-Key/show flags, color, outlines, cached font data, positionIsNull and parent
+`key`, `showKey`, `showValue` and `positionIsNull` are loaded display fields,
+not rendered-text or parent-ownership proof. `silkColor` is a bounded raw string
+or null, not validated CSS. The native serializer uses `color.toString()||null`;
+null therefore does not prove an absent raw model color. Null and explicit black
+remain distinct. Both complete-family samples compare all these fields.
+
+Outlines, cached font data, zIndex, partition/group, model type and parent/source
 ownership are not returned or compared. The native serializer reads existing
 font caches; these calls request no font loading, geometry refresh or Save.
-String text is bounded to65,536UTF-16 units, fontFamily to1,024, and the whole
+String text is bounded to65,536UTF-16 units, fontFamily/key to1,024, serialized
+silkColor to128, and the whole
 family to256rows and384KiB including the escaped envelope. Explicit selection
 does not reduce native enumeration or full-family checks. Signed zero,
 non-finite numbers, invalid alignment, duplicate IDs and incomplete output refuse.

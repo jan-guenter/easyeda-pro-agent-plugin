@@ -20,7 +20,7 @@ import { validateClockSample } from "../src/windows-clock-transport.ts";
 import { PCB_PROGRAM_ACTOR, PCB_PROGRAM_TARGET, pcbProgramBaseline } from "./helpers/current-pcb-rename-program-fixture.ts";
 import { INPUT } from "./helpers/windows-closed-session-fixture.ts";
 import { qualifiedClockFixture } from "./helpers/windows-clock-fixture.ts";
-import { IDS, TIMES, applyEffect, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
+import { HISTORY_TABLE, IDS, TIMES, applyEffect, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const BASE = Date.parse("2026-10-12T12:34:55.000Z"), EPOCH = 621_355_968_000_000_000n;
 type Bag = Record<string, unknown>;
@@ -31,7 +31,7 @@ interface Harness {
   readonly post: (plan: unknown, result: unknown, afterClock: unknown, overrides?: Bag) => Promise<void>;
   readonly verify: (plan: unknown, proof: unknown, after: Inventory, overrides?: Bag) => Promise<Bag>;
   readonly completed: (plan: unknown, after: Inventory, owner?: unknown) => Bag;
-  readonly persist: (plan: unknown) => Promise<Inventory>;
+  readonly persist: (plan: unknown, backendTime?: number) => Promise<Inventory>;
 }
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function sample(milliseconds: number): Bag {
@@ -46,7 +46,7 @@ function document(first = 10, server = 20, last = 30): Bag {
     rendererTimezoneOffsetMinutes: -120, notifyTabId: "a".repeat(16) };
 }
 async function setup(context: TestContext): Promise<Readonly<{ input: Bag; source: object; make: () => Harness;
-  nextClock: () => Promise<unknown>; terminate: () => Promise<unknown> }>> {
+  nextClock: () => Promise<unknown>; terminate: (offsetMs?: number) => Promise<unknown> }>> {
   const native = await qualifiedClockFixture(context), original = await pcbProgramBaseline(); let time = BASE - 10_000;
   let closed = false;
   native.behavior.mutateResponse = (_request, response): void => {
@@ -72,8 +72,8 @@ async function setup(context: TestContext): Promise<Readonly<{ input: Bag; sourc
   const input = { engine, generation, startup, dispatchOwner: owner, beforeClock, armedClock, documentBefore: document() };
   const text = await readFile(new URL("../src/current-pcb-rename-clock.ts", import.meta.url), "utf8"); const start = text.indexOf("const COLLECTION_MS ="); assert.ok(start > 0);
   const program = stripTypeScriptTypes(text.slice(start)).replaceAll("export function", "function").replaceAll("export async function", "async function");
-  return { input, source, nextClock() { time = BASE + 3000; return observe(authority); }, async terminate() {
-    time = BASE + 180_000;
+  return { input, source, nextClock() { time = BASE + 3000; return observe(authority); }, async terminate(offsetMs = 180_000) {
+    time = BASE + offsetMs;
     const binding = { operationId: INPUT.operationId, phase: INPUT.orphanPhase, challengeAttempt: INPUT.challengeAttempt,
       bridgeSession: INPUT.bridgeSession, runtimeIdentity: INPUT.runtimeIdentity, launch, executionAuthority: authority };
     const intent = await native.supervisor.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
@@ -111,11 +111,22 @@ async function setup(context: TestContext): Promise<Readonly<{ input: Bag; sourc
     }, completed: (plan, after, selectedOwner = owner): Bag => {
       sandbox["selectedPlan"] = plan; sandbox["selectedAfter"] = after; sandbox["selectedOwner"] = selectedOwner;
       return bag(runInContext("completedCurrentPcbRenameClockSource(selectedPlan,input.engine,selectedOwner,selectedAfter)", sandbox));
-    }, persist: async (plan): Promise<Inventory> => {
+    }, persist: async (plan, backendTime = TIMES.edit): Promise<Inventory> => {
       sandbox["selectedPlan"] = plan; sandbox["savedTimes"] = { documentTime: TIMES.document, backendTime: TIMES.edit };
       const bound = bag(await runInContext("bindCurrentPcbRenameTimes(plans.get(selectedPlan).preparation,savedTimes)", sandbox));
       const raw = bag(bound["history"])["chunkText"], tree = bag(bound["structure"])["afterStructureText"];
-      assert.ok(typeof raw === "string" && typeof tree === "string"); applyEffect(original.path, raw);
+      assert.ok(typeof raw === "string" && typeof tree === "string");
+      const [edit, ...records] = raw.split("|\n"), prefix = `${JSON.stringify({ type: "EDIT_HEAD" })}||`;
+      assert.ok(edit !== undefined && edit.startsWith(prefix)); const body = bag(JSON.parse(edit.slice(prefix.length)));
+      assert.equal(body["updateTime"], TIMES.edit);
+      // Change only the synthetic persisted timestamp, not the frozen plan, so
+      // Invalid-window fixtures reach the actual stored-effect verifier.
+      applyEffect(original.path, [`${prefix}${JSON.stringify({ ...body, updateTime: backendTime })}`, ...records].join("|\n"));
+      const utc = new Date(backendTime).toISOString().slice(0, 19).replace("T", " ");
+      const local = new Date(backendTime + 120 * 60_000).toISOString().slice(0, 19).replace("T", " ");
+      mutate(original.path, [`UPDATE history_data SET created_at='${utc}',updated_at='${utc}' WHERE uuid='${IDS.newHead}'`,
+        `UPDATE "${HISTORY_TABLE}" SET created_at='${utc}',updated_at='${utc}' WHERE uuid='${IDS.newHead}'`,
+        `UPDATE projects SET updated_at='${local}'`].join(";"));
       mutate(original.path, `UPDATE project_structures SET structure='${tree.replaceAll("'", "''")}' WHERE branch_uuid='${IDS.branch}'`);
       return inventory(original.path);
     } };
@@ -196,13 +207,49 @@ void test("PCB post and closure bind the native result to original Windows clock
   assert.throws(() => env.completed(plan, after, {}), /Original successful/u); await assert.rejects(env.verify(plan, proof, after), /consumed/u);
 });
 
+for (const backendOffset of [3500, 5001]) {
+  void test(`PCB backend persistence at +${backendOffset}ms may follow the renderer return within the original exit and frozen SQL windows`, async context => {
+    const fixture = await setup(context); const env = fixture.make(), plan = await env.run();
+    const nativeResult = result(env.original(plan)); await env.post(plan, nativeResult, await fixture.nextClock());
+    // Handle-ClockedRequest brackets Handle-Request/prove-terminated with clock
+    // Reads. This synthetic checkedAt is +5001, between samples +5000 and +5002.
+    // The +5001 backend case must not assume exit preceded the pre-probe sample.
+    const proof = await fixture.terminate(5000); const backendTime = BASE + backendOffset;
+    const after = await env.persist(plan, backendTime), comparison = await env.verify(plan, proof, after);
+    assert.deepEqual(structuredClone(comparison["rendererReturnInterval"]), { minimumMs: BASE + 103, maximumMs: BASE + 3000 });
+    assert.deepEqual(structuredClone(comparison["backendPersistenceInterval"]), { minimumMs: BASE + 103, maximumMs: BASE + 5003 });
+    assert.deepEqual(structuredClone(comparison["backendWindow"]), { minimumMs: BASE, maximumMs: BASE + 60_000 });
+    assert.equal(bag(comparison["storedEffect"])["backendTime"], backendTime);
+    assert.equal(bag(comparison["storedEffect"])["documentTime"], TIMES.document);
+    assert.equal(bag(env.completed(plan, after)["storedEffect"])["wholeRenameSqlEffectVerified"], true);
+    assert.equal(comparison["entireJobExitedWithinOriginalWindow"], false); assert.equal(comparison["reopened"], false);
+    await assert.rejects(env.verify(plan, proof, after), /consumed/u);
+  });
+}
+
+for (const selected of [
+  { name: "before armed", backendOffset: 102, exitOffset: 5000, error: /armed-to-termination persistence interval/u },
+  { name: "after original exit", backendOffset: 5004, exitOffset: 5000, error: /armed-to-termination persistence interval/u },
+  { name: "outside the frozen window despite later exit", backendOffset: 60_001, exitOffset: 180_000, error: /separate supplied clock bounds/u },
+]) {
+  void test(`PCB backend persistence ${selected.name} consumes verification without completed authority`, async context => {
+    const fixture = await setup(context); const env = fixture.make(), plan = await env.run();
+    await env.post(plan, result(env.original(plan)), await fixture.nextClock());
+    const proof = await fixture.terminate(selected.exitOffset); const after = await env.persist(plan, BASE + selected.backendOffset);
+    await assert.rejects(env.verify(plan, proof, after), selected.error);
+    assert.throws(() => env.completed(plan, after), /Original successful/u);
+    await assert.rejects(env.verify(plan, proof, after), /consumed/u);
+  });
+}
+
 void test("PCB post consumes forged results, wrong owners and copied clocks without issuing saved authority", async context => {
   const fixture = await setup(context); const afterClock = await fixture.nextClock();
-  for (const mode of ["owner", "clock", "actor", "ticket", "window"] as const) {
+  for (const mode of ["owner", "clock", "actor", "ticket", "window", "return"] as const) {
     const env = fixture.make(), plan = await env.run(); const nativeResult = result(env.original(plan));
     if (mode === "actor") { nativeResult["actor"] = { ...PCB_PROGRAM_ACTOR, uuid: "f".repeat(32) }; }
     if (mode === "ticket") { nativeResult["after"] = { ...bag(nativeResult["after"]), ticket: 102 }; }
     if (mode === "window") { nativeResult["documentBefore"] = document(10, 20, 30); }
+    if (mode === "return") { nativeResult["documentAfter"] = document(3100, 3105, 3110); }
     await assert.rejects(env.post(plan, nativeResult, mode === "clock" ? structuredClone(afterClock) : afterClock, mode === "owner" ? { dispatchOwner: {} } : {}));
     const retryResult = result(env.original(plan)); await assert.rejects(env.post(plan, retryResult, afterClock), /consumed/u);
   }
