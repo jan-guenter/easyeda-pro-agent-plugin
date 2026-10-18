@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5815120f59fb54b04bec103bb8190ec4e24a41f89b5a12a73f8f82c024f71303",
-      "fileCount": 425,
+      "sha256": "4cd348dd205a8605f1c8ad0ae133d85905d8320e7b824a8c6782a9390ba549f7",
+      "fileCount": 430,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -562,9 +562,29 @@
           "sha256": "6a533bedd37421089b3ac0e5d17f02a217eb09712786518aa4231b5f68021f84"
         },
         {
+          "relativePath": "current-pcb-rename-preflight-program.ts",
+          "bytes": 8114,
+          "sha256": "6b751ece5543c3890690a1d0f19a313e5e56fa54ce5c203a8400c5c3c7b973d2"
+        },
+        {
+          "relativePath": "current-pcb-rename-preflight-runtime.ts",
+          "bytes": 4224,
+          "sha256": "229b816c9f5e19390f40cf4f9e228dcfae328079297e7eebc75243489e96145d"
+        },
+        {
+          "relativePath": "current-pcb-rename-preflight.ts",
+          "bytes": 10172,
+          "sha256": "96a68f4e2e5b6087859d999182092ce53eee730a068230f5374f17aee0f120c8"
+        },
+        {
+          "relativePath": "current-pcb-rename-preparation.ts",
+          "bytes": 17482,
+          "sha256": "9def080ab87875f544908ce29efa7a89966a3d91b49303b37cf628bddbd81550"
+        },
+        {
           "relativePath": "current-pcb-rename-sql.ts",
-          "bytes": 31151,
-          "sha256": "3ca0575f340dd47ee9f38a9fd2a8b5ab54ccb4723ef96e5aa568bda23203597f"
+          "bytes": 31117,
+          "sha256": "b7ac74a0da10d857dadbe3910e27f83eeef3683b11f01e0f4001f5f553746a20"
         },
         {
           "relativePath": "current-pcb-rename-startup-guard.ts",
@@ -580,6 +600,11 @@
           "relativePath": "current-pcb-rename-structure.ts",
           "bytes": 9576,
           "sha256": "6d5ad7379d440c39a517b28288a6ea68cfc066f0a2d654296c29914c0c42305c"
+        },
+        {
+          "relativePath": "current-pcb-stored-header.ts",
+          "bytes": 1362,
+          "sha256": "9be753a4f8dacac9b00a1c98699f0aa5618bd619bef147248130729ad60176a1"
         },
         {
           "relativePath": "current-project-only-open.ts",
@@ -1278,8 +1303,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 182406,
-          "sha256": "f76e46d72a7c32f39a6e80e5747c7f7525d1f207e5ce7945dab60e90cbe25bc4"
+          "bytes": 182865,
+          "sha256": "0226802aacfe022aaff859c78b458634426fd3e93f5563db2374711bfac66644"
         },
         {
           "relativePath": "lease.ts",
@@ -1448,8 +1473,8 @@
         },
         {
           "relativePath": "offline-api.ts",
-          "bytes": 19894,
-          "sha256": "435d161ee0118c522c27c5a99f8f66fe5315be26afccffe26a1d9258bd19e12c"
+          "bytes": 20654,
+          "sha256": "cecc34da168bcfbb2d862374ddbb2395de1a5d690c546597188cad24a474c0af"
         },
         {
           "relativePath": "offline-control.ts",
@@ -2136,7 +2161,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "e78525652a6567290bd0f446423a89afa66aaa0500f39cd70ea64c80831af559",
+      "sha256": "5e848f096599d5141f93b7ed03dcbdabc6d51a14ff7264be34d804dc608bad77",
       "fileCount": 3,
       "files": [
         {
@@ -2146,19 +2171,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 7802666,
-          "sha256": "e67f6a45ba367d3a04248b8dc696cc55d49bd5ba62825a446a86e033e7d65b92"
+          "bytes": 7825423,
+          "sha256": "2957484c53278c5d8915054832150a2a7527f083c6b1504b5b61f769f55e9483"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "0a392d8b821e4112b3fe9eec36188b9955c3db78bea01835203574deb2070023"
+          "sha256": "1db3930020f153cbfc466c2f5da56957c387c80f4457d8d4bbd614ba9d0c8d4b"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-18T11:22:41.454Z",
+  "reviewedAt": "2026-10-18T12:17:18.200Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

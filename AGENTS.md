@@ -4,6 +4,86 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+121700 candidate, 2026-10-18: actual111500 facade2272401 was independently
+admitted against its complete installed inventory, source, runtime and manifest.
+Both preceding main CI39124864554 and Windows39124864551 passed. The disposable
+reader lifecycle `pcb-reader-111500-20261018-baseline` completed in this
+original facade. Original ordinary launch termination was proved
+and recorded before replacement launch. Baseline captured raw41ac6062/fullSQL
+09a74ea1; replacement launch/admission/cache/project-only open passed. One PCB
+metadata read passed with two matching samples, observationbcac4b2d. Original
+normal closure/Job termination/final snapshot/retirement completed; offline
+analysis proves raw41ac6062, all35 SQL tables and all20 native documents unchanged.
+Terminal journal74b58c74; no remaining CAD operation. EasyEDA is normally closed.
+No PCB rename, symbol patch or explicit Save was dispatched. Production projects
+and records remain excluded. Never replay this lifecycle or the completed copy.
+
+Source now adds a read-only PCB rename preflight (complete peer maps, explicit
+target/native name lookup, client/ticket/UI actor/clock samples), immutable dormant
+rename preparation and exact historical stored-header user support. Native
+absence requires getIdByTitle's exact empty string; undefined remains refusal.
+Public modifyPcbName can rename related reuse-block documents and is not used.
+No writer is registered; original PCB owner/producer/actor/clock issuance and
+closure/full-SQL/fresh-saved-reopen coordination remain implementation work.
+Nonempty String fixture validation and broader design/library/export adapters
+remain backlog. Details: docs/current-pcb-rename-preflight-2026-10-18.md.
+
+Frozen candidate0.3.0+codex.20261018121700 has source430 SHA4cd348dd205a8605f1c8ad0ae133d85905d8320e7b824a8c6782a9390ba549f7,
+runtime3 SHA5e848f096599d5141f93b7ed03dcbdabc6d51a14ff7264be34d804dc608bad77,
+manifest4e0c4b7e0e789a9b437aa3db7b12253471956e8fa3e7ef6ae56a98200fd8d6ea.
+Independent final review accepted unchanged external pins and read-only routing.
+Focused tests/types/strict lint, dependency/signature/audit, build/compatibility,
+repository/privacy validation and all seven official skill checks pass. Full
+verify passed10,903facade tests/fourplatformskips/zerofailures and424bridge tests;
+initial repository-root invocation found no package.json and ran no tests,
+retained separately. Nothing published/installed yet. Preserve
+stash ebe1b55d7a430ae2e3168e373e155957b582eff9 and all consumed probe evidence.
+
+111500 delivered,2026-10-18: PR63 merged as main
+`48083ea00d21918397bb1000a827d408327b81c3`, reviewed final payload
+`c3f5b9288d1f3ea45bc0db3ddba804c131173eb0`; complete Git trees both
+`52da804a6e73260d239e8f6e07923ee56949e69e`. Final PR CI39123857876 and
+Windows39123857878 passed:10,873facade passes/fiveplatformskips/zerofailures,
+424bridge passes, strict types/lint, reproducible builds and all release gates.
+Root/independent source, test-correction and retained-copy reviews accepted.
+Copilot was unavailable due quota on the prior payload; no human review claimed.
+The earlier PR run39123190834 was superseded/cancelled, not final-payload proof.
+The local full-suite stale status expectation failure is retained below; its
+five focused corrected tests and targeted strict lint passed, runtime/pins exact.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261018111500` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. Cached marketplace
+HEAD equals mergedmain48083ea0. All1,355files/27,433,851bytes/42directories/
+sevenskills match committed bytes/modes, noextras/symlinks/hardlinks. Inventory
+SHA`4f10daf4d21dded8332b54da192e3fa57d19a63ccf90db7ccd7b2aca990a1a7d`;
+source425 SHA`5815120f59fb54b04bec103bb8190ec4e24a41f89b5a12a73f8f82c024f71303`;
+runtime3 SHA`e78525652a6567290bd0f446423a89afa66aaa0500f39cd70ea64c80831af559`;
+manifest SHA`f42d51ce5b9100cbb85b69f62f3cc43d73f0bc8fe50a20d975830fd0756740ed`.
+No redundant plugin-add, cache edit, permission change or owner termination.
+
+The fresh configured offline probe passed ambientNode26.11.1→pinnedNode24.18.0,
+19restrictedtools/sevenskills, strict offline PCB/copy/String discovery and
+argument checks, no upstream/socket/journal and unchanged synthetic profile.
+Original synthetic child exited normally after EOF with no signal or adoption.
+Consumed proof `/tmp/easyeda-pcb-111500-release-YYGsRn/proof.json`,5332bytes,
+SHA`9b4271a984783e78f876579e6d7eae45e3192e91e52123afbe3ab15264c3ea9c`.
+Never replay this probe or the prior failed094000 probe. Offline startup is not
+actual live admission. Facade2161886 still loads094000; fresh Codex session is
+required before more live calls. Do not kill/rebind it or reconstruct ownership.
+
+EasyEDA is normally closed; completed094000copy below has no pending CAD work.
+Do not repeat its write, navigation, closure or scratch stages. Production designs
+and their records were not accessed. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
+Main Windows39124864551 passed; main CI39124864554 is still running at handoff.
+Next: admit actual111500, run the corrected no-editor PCB reader on the disposable
+fixture, prepare a representative nonempty String case, then implement PCB rename
+preparation/original owner/producer-actor-clock issuance before connecting the
+completed six-table comparator to closure and fresh saved verification. Existing
+symbol owner tokens cannot be relabeled as PCB tokens. Broader design/library/
+export adapters remain backlog. This delivery note is a local handoff addition;
+the published payload and installed package remain unchanged.
+
 094000 continuation, 2026-10-18: actual facade2161886/parent2160211/
 startTicks29500648 independently admitted on pinned Node24.18.0/core0. Complete
 installed bytes/modes/source/runtime/manifest match mergedmain7f338678 and the

@@ -37,9 +37,10 @@ function oldRaw(before: Awaited<ReturnType<typeof inventory>>): Promise<string> 
   return decodeNativeHistoryChunk({ historyUuid: IDS.oldHead, keyHex: IDS.oldKey, dataBase64: Buffer.from(value.hex, "hex").toString("utf8") });
 }
 function setRaw(path: string, raw: string): void { mutate(path, `UPDATE history_data SET dataStr=${literal(encrypted(raw, IDS.oldHead, IDS.oldKey))} WHERE id=7`); }
-async function setup(): Promise<{ path: string; raw: string; request: Parameters<typeof prepareCurrentPcbRenameSql>[0] }> {
+async function setup(storedUser?: unknown): Promise<{ path: string; raw: string; request: Parameters<typeof prepareCurrentPcbRenameSql>[0] }> {
   const created = await fixture(), originalRaw = await oldRaw(created.before), records = originalRaw.split("|\n");
-  records[1] = `{"type":"DOCHEAD","ticket":1}||${JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: IDS.target, updateTime: 1, version: "1", editVersion: "3.0" })}`;
+  records[1] = `{"type":"DOCHEAD","ticket":1}||${JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: IDS.target, updateTime: 1, version: "1", editVersion: "3.0",
+    ...(storedUser === undefined ? {} : { user: storedUser }) })}`;
   records[2] = `{"type":"META","ticket":1,"id":"META"}||${BEFORE_META}`;
   const raw = records.join("|\n"); setRaw(created.path, raw);
   mutate(created.path, `UPDATE project_structures SET structure=${literal(structure())};
@@ -89,6 +90,30 @@ void test("combined PCB rename binds original inventories and projections withou
   apply(input); const after = await inventory(input.path);
   await assert.rejects(verifyCurrentPcbRenameSql(structuredClone(plan), after), /original prepared/u);
   await assert.rejects(verifyCurrentPcbRenameSql(plan, structuredClone(after)), /original/u);
+});
+
+void test("combined PCB rename preserves stored historical user bytes while the fresh header omits user", async () => {
+  const user = { uuid: IDS.peer, nickname: "Old nickname Ω", username: "old-account", avatar: "" };
+  const input = await setup(user), plan = await prepareCurrentPcbRenameSql(input.request); apply(input);
+  assert.equal(input.request.historyProjection.chunkText.includes('"user":'), false);
+  const proof = await verifyCurrentPcbRenameSql(plan, await inventory(input.path)); assert.equal(proof["exactLogicalSqlEffect"], true);
+  setRaw(input.path, input.raw.replace("old-account", "other-account"));
+  await assert.rejects(verifyCurrentPcbRenameSql(plan, await inventory(input.path)), /history_data/u);
+  setRaw(input.path, input.raw.replace(`,"user":${JSON.stringify(user)}`, ""));
+  await assert.rejects(verifyCurrentPcbRenameSql(plan, await inventory(input.path)), /history_data/u);
+  setRaw(input.path, input.raw);
+  replaceNewChunk(input.path, input.request.historyProjection.chunkText.replace('"editVersion":"3.2.206"', `"editVersion":"3.2.206","user":${JSON.stringify(user)}`));
+  await assert.rejects(verifyCurrentPcbRenameSql(plan, await inventory(input.path)), /capacity|chunk/u);
+});
+
+void test("combined PCB rename rejects unsupported stored user fields in earlier raw headers too", async () => {
+  const user = { uuid: IDS.peer, nickname: "Old", username: "old-account", avatar: "" };
+  const input = await setup(user), rows = input.raw.split("|\n");
+  rows[1] = rows[1]?.replace('"avatar":""', '"avatar":"","unreviewed":true') ?? "";
+  rows.splice(5, 0, `{"type":"DOCHEAD","ticket":91}||${JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: IDS.target,
+    updateTime: 1, version: "1", editVersion: "3.0", user })}`);
+  setRaw(input.path, rows.join("|\n"));
+  await assert.rejects(prepareCurrentPcbRenameSql({ ...input.request, before: await inventory(input.path) }), /Unrecognized/u);
 });
 
 void test("combined PCB rename binds complete tickets, target META and tree/header/title clocks", async () => {

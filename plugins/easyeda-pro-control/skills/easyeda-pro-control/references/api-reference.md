@@ -145,6 +145,12 @@ Read [the no-editor PCB contract](current-pcb-readers.md#project-local-pcb-metad
 before calling `easyeda_control_project_pcb`. This metadata observation neither
 opens the PCB nor qualifies a rename or saved-state claim.
 
+For a read-only comparison before a proposed rename, query
+`project-pcb-preflight` and validate with `project-pcb-preflight-validate`.
+Read [the preflight contract](current-pcb-readers.md#read-only-rename-preflight)
+for exact expected metadata, complete native peer observations and title
+availability. It uses the same live tool but supplies no writer authority.
+
 ## PCB identities on the current tuple
 
 Read [pcb identities on the current tuple](current-pcb-readers.md#pcb-identities-on-the-current-tuple)
