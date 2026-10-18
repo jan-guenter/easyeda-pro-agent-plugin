@@ -111,6 +111,33 @@ black despite correct stored null. A single-record constructor test misses this
 bug. Test mixed ordered records through both lifecycles, preserve the raw order,
 and never turn one observed conversion into global null/color equivalence.
 
+On current PCB bundle `217199c8`, native `string-modify` assigns layer, reverse,
+mirror and lock even when omitted. An x/y/text-only payload is unsafe: reconstruct
+the complete native request from an independently verified full STRING baseline,
+preserving every nonpatch field. The existing String readers omit color, zIndex,
+key/show state, positionIsNull and source ownership; their DTOs cannot supply that
+baseline. Do not revive the older decoder writer to fill this gap.
+
+The same current bundle's `FileSource({})` skips explicit compiler Save but can
+still mutate the design. Its preference getter can repair missing rule defaults
+and remove incomplete differential-pair selectors through the live compiler.
+Keep execution disabled until a fixed native preflight proves the required
+state and covers the interval through dispatch. The export also omits stored
+META, fonts/assets and some drawing sections, synthesizes fresh headers, and can
+return a prefix after an ignored compression rejection. It is not a complete
+durable-source snapshot. Neither a successful return nor raw double-sample
+equality is an adequate completeness or no-mutation check.
+
+The current format2.0 STRING encoder has 19 fields and rounds geometry to four
+decimal places. Its angle arithmetic differs from the SDK mapper, so rounding
+ties need explicit treatment, not a general epsilon comparison. Full source joins
+records with `|\n` and has no trailing separator. The packaged offline module
+`current-pcb-string-source.ts` preserves
+raw rows, order and unknown fields and compares the three reader projections.
+It is offline groundwork, not a FileSource transport, parent-ownership proof or
+writer. A current exact-frame source observer, queue/effect model and nonempty
+disposable saved/reopened fixture are still required.
+
 Test stored and exported representations independently. Native page exports omit
 the stored META record and can include an unstored origin CANVAS or initialized
 drawing-frame order. A synthetic fixture that copies saved records verbatim into

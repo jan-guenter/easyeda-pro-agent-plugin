@@ -4,6 +4,34 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate163148, 2026-10-18: clock patch237dcdb0 and offline String modelb83f093
+are integrated in `feature/pcb-closed-clock-boundaries-20261018`. Source455/90a764e8,
+runtime3/a10bf36c and manifestbda3bcd1 are sealed; only facade projections and
+review time changed. External pins/bridge identity are unchanged. Root and
+independent source/payload reviews passed. Focused tests, types, strict lint,
+dependency install/tree/signatures/audit, build/compatibility, repository checks
+and all seven official skill checks passed. Full verify passed11,166facade tests
+withfourplatformskips and424bridge tests, then stopped on a skill link escaping
+its package boundary. That docs-only link was corrected; the full failed run is
+retained at `/tmp/easyeda-clock-string-release-p3WQmV/verify.log`, not relabeled.
+Focused final skill/plugin/repository checks and all seven official skill checks
+passed afterward; source/bundles/pins are unchanged. Exact-payload
+CI/publication/install remain pending. See
+docs/pcb-clock-and-string-source-2026-10-18.md.
+
+Actual152547 facade2562889/start31479644 was independently admitted. New disposable
+`pcb-rename-152547-20261018-case` completed opening, original baseline capture,
+normal closure and ordinary launch termination. Original baseline clock phase
+was dispatched ONCE; its MCP response timed out at600seconds, but inspection
+still reports busytrue/failedPhasenull. Do not repeat it, advance, install or
+restart the facade while it runs. No rename/explicit Save/inverse has been sent.
+Original launch root40972/Jobd455735a795a41298255adcee95d5209 is terminated;
+capture and case remain owned by the original facade. The raw prelaunch fixture
+was41ac6062/598016, managed checkpoint6a9c4d9e/577536. No production access.
+Prior main CI39142726119 and Windows39142726155 both passed; earlier pending
+wording below is historical. The next live action is read-only case inspection,
+then only the returned next phase after busy becomes false.
+
 152547 delivered, 2026-10-18: PR66 merged as main
 `aad10a8cc1de9720d8fcf96a8cee1416acb13b7a`, reviewed final payload
 `a3c2555424cd3f8dea805e0421399020be080345`. Their complete Git trees both equal

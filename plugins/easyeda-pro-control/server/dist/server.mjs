@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "e125a691718234c6343f96a61b04a1fa643cdf78c3ecac9b49e13c13ae65e951";
+const __easyedaBundlePairId = "891da52d07b7120b4f375c40873ac99bd53b6b7b3f254d5294a6d442319fdd80";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -137650,6 +137650,18 @@ async function revalidateCurrentPcbRenameOpeningOwner(value2, engine2) {
   requireValue15(assertCurrentPcbRenameOpeningOwner(value2, engine2) === original2, "Current PCB opening owner changed during revalidation.");
   return original2;
 }
+async function revalidateCurrentPcbRenameOpeningEvidence(value2, engine2) {
+  const original2 = assertCompletedCurrentPcbRenameOpeningTransfer(value2, engine2);
+  requireValue15(value2 !== null && typeof value2 === "object", "Current PCB opening owner is missing.");
+  const issued22 = issuedPcbRenameOpeningOwners.get(value2);
+  requireValue15(issued22 !== void 0, "Current PCB opening owner was lost.");
+  await issued22.revalidateEvidence();
+  requireValue15(
+    assertCompletedCurrentPcbRenameOpeningTransfer(value2, engine2) === original2,
+    "Current PCB opening evidence changed during revalidation."
+  );
+  return original2;
+}
 function assertCompletedCurrentPcbRenameOpeningTransfer(value2, engine2) {
   const original2 = assertCurrentPcbRenameOpeningOwner(value2, engine2);
   requireValue15(
@@ -138334,20 +138346,25 @@ var init_current_disposable_open_runtime = __esm({
                 "Current PCB opening transfer lost its original owner, intention or historical opening."
               );
             };
-            const revalidate = async () => {
-              current6();
-              await engine2.assertBridgeAndRecoveryAdmission(owner.operationId);
+            const revalidateEvidence = async () => {
               current6();
               const persisted = await this.load(openingOperationId);
               current6();
               requireValue15(canonicalJson(persisted) === journalText, "Current PCB opening persisted journal changed.");
+            };
+            const revalidate = async () => {
+              current6();
+              await engine2.assertBridgeAndRecoveryAdmission(owner.operationId);
+              current6();
+              await revalidateEvidence();
+              current6();
             };
             this.currentUntransferred(slot);
             baselineRuntimeReservations.add(runtime);
             this.baselineJobs.add(slot.launch.jobId);
             this.generations.clear();
             this.pcbRenameOpeningOwners.set(request11.operationId, owner);
-            issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current6, revalidate, state: "retained" });
+            issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current6, revalidate, revalidateEvidence, state: "retained" });
             current6();
             return owner;
           });
@@ -140249,14 +140266,49 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
   return result;
 }
 async function revalidateCurrentPcbRenameBaseline(value2, engine2) {
+  await revalidateBaselineEvidence(value2, engine2, revalidateCurrentPcbRenameOpeningOwner);
+}
+async function revalidateCurrentPcbRenameClosedClockEvidence(value2, engine2) {
+  await assertClosedClockSidecarsAbsent(value2, engine2);
+  await revalidateBaselineEvidence(value2, engine2, revalidateCurrentPcbRenameOpeningEvidence);
+  await assertClosedClockSidecarsAbsent(value2, engine2);
+}
+function assertCurrentPcbRenameClosedClockBinding(value2, engine2) {
+  currentBaselineBinding(value2, engine2);
+}
+async function assertClosedClockSidecarsAbsent(value2, engine2) {
+  const original2 = currentBaselineBinding(value2, engine2);
+  const current6 = () => {
+    need85(currentBaselineBinding(value2, engine2) === original2, "closed-clock sidecar owner changed");
+  };
+  for (const path5 of [value2.checkpoint.source, value2.checkpoint.checkpoint, value2.copy.artifact]) {
+    for (const suffix of ["-wal", "-shm", "-journal"]) {
+      current6();
+      const absent3 = await lstat43(`${path5}${suffix}`).then(() => false, (error51) => {
+        if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
+          return true;
+        }
+        throw error51;
+      });
+      current6();
+      need85(absent3, "closed-clock source, checkpoint or raw copy has a SQLite sidecar");
+    }
+  }
+}
+function currentBaselineBinding(value2, engine2) {
   assertOriginalCurrentPcbRenameBaseline(value2, engine2);
   const original2 = baselines.get(value2);
   need85(original2 !== void 0, "baseline issuer was lost");
+  need85(assertCompletedCurrentPcbRenameOpeningTransfer(value2.owner, engine2) === original2.source && engine2.clockObservationForClosedCapture === original2.clockReader && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === original2.scopeReader && original2.scopeReader.call(engine2.upstream) === void 0, "original baseline owner, capture reader or no-dispatch scope changed");
+  closure2(original2.input, original2.source);
+  assertIssuedClosedFileCopy(value2.copy);
+  assertCurrentClosedSessionCopyAuthority(original2.input.proof);
+  return original2;
+}
+async function revalidateBaselineEvidence(value2, engine2, revalidateOpening) {
+  const original2 = currentBaselineBinding(value2, engine2);
   const unchanged4 = () => {
-    need85(assertOriginalCurrentPcbRenameBaseline(value2, engine2) === value2 && assertCompletedCurrentPcbRenameOpeningTransfer(value2.owner, engine2) === original2.source && engine2.clockObservationForClosedCapture === original2.clockReader && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === original2.scopeReader && original2.scopeReader.call(engine2.upstream) === void 0, "original baseline owner, capture reader or no-dispatch scope changed");
-    closure2(original2.input, original2.source);
-    assertIssuedClosedFileCopy(value2.copy);
-    assertCurrentClosedSessionCopyAuthority(original2.input.proof);
+    need85(currentBaselineBinding(value2, engine2) === original2, "original baseline binding changed");
   };
   const current6 = async () => {
     unchanged4();
@@ -140266,7 +140318,7 @@ async function revalidateCurrentPcbRenameBaseline(value2, engine2) {
     unchanged4();
     need85(await assertIssuedWindowsClockObservation(original2.clock) === original2.clock, "capture clock issuer changed");
     unchanged4();
-    need85(await revalidateCurrentPcbRenameOpeningOwner(value2.owner, engine2) === original2.source, "opening owner changed");
+    need85(await revalidateOpening(value2.owner, engine2) === original2.source, "opening owner changed");
     unchanged4();
   };
   await current6();
@@ -140338,6 +140390,7 @@ var init_current_pcb_aged_sql_reference = __esm({
     init_core3();
     init_current_aged_sql_clock_controls();
     init_current_aged_sql_head();
+    init_current_disposable_open_runtime();
     init_current_symbol_clock_evidence();
     init_current_pcb_rename_owner_baseline();
     init_closed_symbol_main_reference_program();
@@ -140369,30 +140422,41 @@ var init_current_pcb_aged_sql_reference = __esm({
         need86(closureBinding.proof === proof, "Current PCB scratch reference requires its original baseline proof.");
         const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
         need86(scopeReader !== void 0);
+        const admission = engine2.assertBridgeAndRecoveryAdmission;
         const unchanged4 = () => {
-          assertOriginalCurrentPcbRenameBaseline(baseline2, engine2);
+          assertCurrentPcbRenameClosedClockBinding(baseline2, engine2);
           const retained3 = currentPcbRenameBaselineClockBinding(baseline2, engine2);
           need86(retained3.proof === proof && canonicalJson(retained3) === canonicalJson(closureBinding));
           need86(
-            input.baseline === baseline2 && input.proof === proof && canonicalJson(proof) === proofText && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine2.upstream) === void 0,
+            input.baseline === baseline2 && input.proof === proof && canonicalJson(proof) === proofText && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine2.upstream) === void 0 && engine2.assertBridgeAndRecoveryAdmission === admission,
             "Current scratch reference requires its original closed baseline outside a bridge scope."
           );
           assertCurrentClosedSessionCopyAuthority(proof);
         };
         const current6 = async () => {
           unchanged4();
-          await revalidateCurrentPcbRenameBaseline(baseline2, engine2);
+          await revalidateCurrentPcbRenameClosedClockEvidence(baseline2, engine2);
           unchanged4();
         };
-        await current6();
-        await engine2.assertBridgeDispatchAllowed();
-        await current6();
-        await engine2.assertRecoveryOperationIsolated(journalOperationId);
-        await current6();
-        const journal = await loadOperation(journalOperationId);
+        let journalText;
+        const boundary = async () => {
+          await current6();
+          const selected3 = await loadOperation(journalOperationId);
+          unchanged4();
+          const text34 = canonicalJson(selected3);
+          need86(selected3.operationId === journalOperationId && selected3["orphanedCallPossible"] === false && (journalText === void 0 || text34 === journalText), "Current scratch selected journal changed at its admission boundary.");
+          journalText ??= text34;
+          await admission.call(engine2, journalOperationId);
+          unchanged4();
+          await revalidateCurrentPcbRenameOpeningEvidence(baseline2.owner, engine2);
+          unchanged4();
+          const finalSelected = await loadOperation(journalOperationId);
+          unchanged4();
+          need86(canonicalJson(finalSelected) === journalText, "Current scratch selected journal changed after full admission.");
+          return finalSelected;
+        };
+        const journal = await boundary();
         unchanged4();
-        const journalText = canonicalJson(journal);
-        need86(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
         const target7 = baseline2.intent.target;
         const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target7);
         await current6();
@@ -140452,11 +140516,14 @@ var init_current_pcb_aged_sql_reference = __esm({
         await current6();
         need86(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged4();
+        await boundary();
+        unchanged4();
         const returned = await invokeMainReferenceTransport(invocation);
         this.returns.set(operationId8, returned);
         const retained2 = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
         const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained2));
-        await current6();
+        await boundary();
+        unchanged4();
         need86(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
         const text33 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
         need86(text33.text === returned.stdout);
@@ -140477,6 +140544,8 @@ var init_current_pcb_aged_sql_reference = __esm({
         await readExactUtf8Artifact(resultArtifact);
         await current6();
         need86(canonicalJson(await loadOperation(journalOperationId)) === journalText);
+        unchanged4();
+        await boundary();
         unchanged4();
         assertCurrentIssuedWindowsClockObservation(clock7);
         const result = Object.freeze({
