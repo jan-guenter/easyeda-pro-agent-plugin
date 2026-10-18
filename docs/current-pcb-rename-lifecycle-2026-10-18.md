@@ -11,8 +11,37 @@ normal process closure and fresh saved-result verification.
 It is restricted to an explicitly disposable project opened by the same
 facade. It does not enable ordinary-project PCB rename, the general public
 rename wrapper, linked reuse-block propagation, drawing changes or an inverse.
-The new writer has not run live. Source tests, implementation and publication
-are separate from connected execution support.
+The initial140500 candidate had not run live. The later installed195000
+disposable case below passed. Source tests, implementation and publication
+remain separate from connected execution support for another payload.
+
+## Completed title-only case, installed195000
+
+The independently admitted installed `0.3.0+codex.20261018195000` completed one
+forward title change on the disposable fixture. It retained the original opening,
+closed baseline, fresh project-only generation, startup/actor/dual-clock evidence
+and one native update. Original process/Job termination preceded the complete
+closed SQL comparison. That comparison accepted exactly the intended title and
+native bookkeeping effect, preserving all20 documents' other saved content,
+54 pre-existing history rows and58 pre-existing chunks.
+
+Fresh verification excluded inactive upload caches, checked the post-edit raw
+file, opened only the project and matched target/all-PCB metadata. Final normal
+closure, original process/Job termination and complete SQL equality passed.
+The coordinator returned `nextPhase:completed`, `renameVerified:true` and
+`fullReopenReadbackInvariant:true`, then retired its captures. The logical SQL
+commitment after the edit and after verification was
+`2d7a11f2f9d24b2a10735a808850748d99559778f8663ecc8e5168ace7607df3`.
+The saved-read reply commitment was
+`e2213bb40b89f7784ab2f75faef5bf4de7f8abdf86ac8aacf5d0387343a46ff8`.
+
+No explicit Save, inverse, restore, forced exit or production access ran. The
+requested title remains in the disposable fixture. Never replay this terminal
+case. The earlier184000 case remains failed/retired; this new success does not
+change its record. Saved drawing preservation comes from complete SQL, not a
+complete reopened canvas read. No claim is made that every deferred subscriber
+completed before closure, or that this result admits later payloads or ordinary
+projects.
 
 ## Completed read-only case
 
@@ -84,12 +113,42 @@ binding, exact public phase order, cleanup and registration. These tests do not
 establish live rename behavior. Final full verification, CI, publication and
 installation will be recorded after completion.
 
+## New implementation, candidate211000
+
+PCB baseline data is now certified once as a deeply frozen plain JSON graph.
+Original object identity replaces repeated full-data serialization only. All
+dynamic owner, capture, helper, method, journal, checkpoint, file and runtime
+checks remain. Focused tests prove the serialization count is zero on repeated
+original-baseline access and reject mutable/executable graphs. This is not a
+measured connected speedup.
+
+The unregistered schematic preflight now has a fixed native metadata program,
+bounded own-data observations and original-SQL comparisons. A separate child
+roster models complete sheet membership, data tickets, unique order and supplied
+settled AST holders. It rejects unsupported inheritance, reuse, lazy-empty and
+child-clock cases. Supplied equality is not native receiver or callback evidence.
+
+PCB text groundwork includes exact fixed native-create arguments, predicted
+STRING source/model fields and a dormant one-attempt create/readback program.
+It retains a generated ID before post-call checks, but has no live issuer or
+registration. It cannot yet establish an empty complete canvas, queue effects,
+Save ownership or persistence. No schematic/text writer was enabled or run live.
+
 ## Open work
 
-- Install and admit the final candidate in a fresh Codex session, then run one
-  complete disposable PCB rename lifecycle. Preserve its requested title; no
-  inverse is offered.
-- Validate the current PCB String readers on a nonempty disposable text fixture.
+- Publish/install candidate211000 after final gates, then admit its new payload
+  in a fresh Codex session. Do not rerun the completed195000 rename.
+- Qualify a fresh empty PCB baseline and native command/queue effects, integrate
+  text creation with original ownership, complete SQL, one qualified Save and
+  fresh saved readback/visual verification. Then validate current String readers
+  on that nonempty disposable fixture and implement narrow text editing.
+- Connect the schematic child/startup observer to retained native receivers;
+  bind actor/clock/producer ownership and account for child initialization and
+  deferred rebuild effects. Finish the one-write lifecycle and complete SQL,
+  fresh saved metadata and final closure proof.
+- Extend the already validated disposable drawn-symbol copy subset where useful;
+  ordinary copying, wider histories/assets and referenced-symbol propagation
+  still need their own implementation and saved-effect proof.
 - Extend supported current-runtime design and library writers using complete
   stored-effect proofs. Schematic topology still has hidden annotation/Save All
   side effects; general PCB/schematic transaction support remains blocked.
@@ -97,5 +156,9 @@ installation will be recorded after completion.
   and export adapters. Each omitted SDK method retains its concrete coverage
   reason. A broad method inventory is not a live-support claim.
 - Bundle/bootstrap the upstream MCP and admit additional platform/runtime tuples.
+
+The broad `FileSource` route remains disabled because the pinned implementation
+can repair rules, delete incomplete differential selectors and omit stored
+sections. It needs a bounded replacement, not relaxed compatibility checks.
 
 Production designs remain excluded from these validations.

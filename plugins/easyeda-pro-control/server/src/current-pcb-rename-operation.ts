@@ -33,7 +33,7 @@ export function queryCurrentPcbRenameOperation(input: unknown = {}): Record<stri
   const query = currentPcbRenameOperationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_disposable_pcb_rename", purpose: CURRENT_PCB_RENAME_OPERATION_PURPOSE,
     registrationEnabled: true, invocationEnabledByDiscovery: false, executionAuthorized: false, connectedValidation: false,
-    historicalConnectedValidation: "installed121700-read-only-preflight-only", ordinaryProjectsSupported: false,
+    historicalConnectedValidation: "installed195000-disposable-pcb-title-only-lifecycle", ordinaryProjectsSupported: false,
     forwardOnly: true, inverseSupported: false, replayAllowed: false, explicitSaveDispatched: false,
     actions: ["baseline-begin", "advance", "cleanup", "inspect"],
     limitations: [
@@ -46,7 +46,8 @@ export function queryCurrentPcbRenameOperation(input: unknown = {}): Record<stri
       "Opening and normal closure may migrate or automatically persist files. The fixed write makes one title update and awaits its native response; that response alone is not saved completion. No explicit Save, Save/Discard choice, force exit, delete, inverse or restoration is dispatched.",
       "Completion requires the native acknowledgment, original process/Job closure, exact title-only full SQL effect, cache-excluded fresh reopening, matching PCB metadata and all PCB peers, final normal closure and complete SQL equality. Native reopened verification is metadata-only, not a complete PCB canvas read.",
       "Cleanup permanently abandons continuation and selects only a retained original-owner close/termination/closed-retirement phase. Uncertain ownership or consumed unacknowledged actions remain stopped; no recovery bypass is provided.",
-      "The installed121700 read-only preflight passed on one disposable project with unchanged raw bytes, all35 SQL tables and all20 native documents after normal closure. This does not validate the new rename writer or other project histories.",
+      "Installed195000 passed one disposable title-only lifecycle with the exact complete closed SQL effect, cache-excluded reopened PCB metadata and peers, final normal closure and unchanged final SQL. This is historical validation of that case, not admission of later generations, other histories, ordinary projects or complete PCB canvas reads.",
+      "The installed121700 read-only preflight separately passed on one disposable project with unchanged raw bytes, all35 SQL tables and all20 native documents after normal closure. That earlier observation alone did not validate renaming.",
     ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbRenameOperationRequestSchema),
       stepSchema: z.toJSONSchema(currentPcbRenameOperationStepSchema) } : {}) };
 }

@@ -4,6 +4,65 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate211000, 2026-10-18: live195000 PCB rename is COMPLETED, not pending.
+Original read98 verified saved target/all-PCB metadata, close103 acknowledged,
+finish104 proved original process/Job exit, exact final SQL2d7a11f2 and capture
+retirement. Result nextPhasecompleted/renameVerifiedtrue/fullReopenReadbackInvarianttrue;
+no Save/inverse/restore/production access. Never replay this case or its phases.
+Original104 response retained at `/tmp/easyeda-211000-release-AMu8D2/live195000-terminal-response.json`,
+SHA39a9792e798efa781384ca980897865a1cd47c8922649fce7635155226a9978a.
+Independent read-only validation passed all53 artifacts/137703bytes, journal
+raw82c5dbbd/self4cbd60f8, no hardStop/orphan. Artifact53 is pre-retirement intent;
+actual final result is104, not that artifact alone. Post/final raw e4434cc5.
+Source/runtime publication work now targets0.3.0+codex.20261018211000. SCH/text
+groundwork stays unregistered; performance fix caches no dynamic authority.
+Historical coverage/tool/skill wording updated, current-invocation flags unchanged.
+Build/pins frozen: source470/443a1e26, runtime3/f90be96f, manifestf0c868ab;
+external pins unchanged. Repository/privacy and seven official skill checks pass.
+Full verification runs in original shell19708, log
+`/tmp/easyeda-211000-release-AMu8D2/verify.log`; do not change frozen payloads
+or install before exact CI/merge. Loaded195000 remains untouched and all CAD
+handles are terminal. New offline probe17da38a6 is root/independent accepted,
+prepared only at `/tmp/easyeda-dormant-string-sch-release-probe-7qmdHA/probe.mjs`.
+It needs final reviewed pins and exact installed bytes before its sole run.
+
+Live195000, 2026-10-18: actual sole facade2978895/start32987972,
+parent2977134/start32981944, installed1434/source462/runtime3 and all external/
+18clock-runtime pins independently admitted against main418a62a. Initialstatus15
+completed with no incomplete operations. New ordinary launch16
+`pcb-rename-195000-20261018-launch` completed root49900/Jobe679d3ce78e6423baea89e7bb62290c8,
+launch4ee63b39. Authenticatedstatus17 passed195000/ded07x99dcxb504. Opening18
+`pcb-rename-195000-20261018-open` completed exact activePCB/nativeidentity,
+no orphan; checkpoint55ebf60b/581632. Prelaunch raw d82dd6ff/598016 was stable,
+with no sidecars. New rename `pcb-rename-195000-20261018-case`, desired title
+`PCB rename 195000`, began19 and retains original capture. Baseline-close20
+acknowledged once; termination/baseline21 completed, original root/Job exit proved,
+baseline08 SHA5af007b5/4035bytes retained. Clock preparation23 completed once;
+ordinary launch termination45 recorded original root/Job and matching4ee63b39.
+Baseline replacement relaunch46 completed, result10 SHAb54ff0e6/254bytes;
+prior capture released. Admission64 and inactive caches68 passed. Project-only
+opening72 and startup/aged-clock75 passed. Sole rename-write78 acknowledged
+`PCB rename 195000`, ticket779/time1792357094869. Normal close acknowledged once.
+Termination84 proved original exit and exact complete SQL title-only effect:
+4a302f94 -> 2d7a11f2, all20documents and54priorhistory/58chunks preserved.
+Verification-start87, admission90, inactive caches92 and project-only reopen95
+passed. Read98, close103 and final104 subsequently completed as recorded above.
+Never replay write/Save or any consumed phase.
+Keep this facade alive; never replay launch, close,
+opening or begin. Old184000 and earlier cases remain terminal. Main CI39162109301
+now passed. Source-only SCH observer/runtime and pure String-create groundwork
+are implemented, unregistered and not live validated. SCH observer18focused
+tests and String candidate6 pass; root read source/tests/native anchors and
+accepted the Node-side Proxy/descriptor hardening. Child-roster8focused tests
+pass; root/independent source+native review accepted all3files. Dormant String
+create/readback12focused tests pass, root/independent4file/native review accepted.
+Extension skill reference updated for child/init/Save scope and distinct
+generation-closure evidence. Narrow PCB immutable-data serialization optimization
+5d4ada68/test26b2f071 is root/independent accepted;14focused tests/types/strict
+lint pass. All actual installed owners/checks remain untouched. Dependency gates
+(npmci/tree/signatures/audit/sanitizer) passed in original shell58505; no process
+remains. No bundles/pins/version changed or full release suite run yet.
+
 195000 delivery, 2026-10-18: protected PR70 merged as main
 `418a62a690e6341fac842ce861547da3bfebdf7a`, reviewed candidate
 `643f81a249b25be237439c2c0e1f7f502ee528e2`; complete Git trees both equal

@@ -1140,3 +1140,53 @@ not startup qualification, current-state authority, metadata-writer validation o
 live validation of the later103000 reader. No metadata edit, explicit Save,
 Save/Discard choice, restoration, forced exit or production-design access ran.
 The retired operation must not be replayed.
+
+## Generation G20261018-195000: disposable PCB title-only lifecycle
+
+Installed `0.3.0+codex.20261018195000`, merged main
+`418a62a690e6341fac842ce861547da3bfebdf7a`, package tree
+`3c04b499bc30e8124ddee764d2b792a4c482e483`, passed one complete disposable
+PCB title-only rename. Exact installed admission covered1,434 files, committed
+modes, source462 SHA
+`99990f25f08a077f2dfcb87a6678f5245f38e554c550be84880b201442fbab0f`
+and runtime3 SHA
+`fef90a4732987791fc0e15800e118634d3b9c3ebaa07a26b5b5882257765d0a5`.
+Compatibility manifest SHA was
+`715be80424de5b095dc512c22f8cf86202187daac7a2a21fddf778882b970312`.
+The [frozen profile](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/418a62a690e6341fac842ce861547da3bfebdf7a/plugins/easyeda-pro-control/reviewed-compatibility.json)
+and its source profiles retain exact EasyEDA3.2.206/API0.3.50/UI3.2.196/
+PCB3.2.193, native manager/worker/schematic, bridge and dispatcher pins.
+
+The original-owner disposable route used the fixed project-qualified PCB
+`updateData` title-only equivalent, not the public linked-reuse wrapper.
+Closed baseline, fresh startup, actor/dual-clock checks, one native write,
+original process/Job termination and exact complete stored effect passed.
+All20 documents' non-target saved content,54 old history rows and58 old chunks
+were preserved. Fresh cache-excluded project-only reopening matched the target
+and all PCB metadata peers. Final normal closure, retained termination and
+complete SQL equality passed. The original final response returned completed,
+renameVerified and fullReopenReadbackInvariant, with no failed phase.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Initial complete SQL | `4a302f94cdea0322635eae225992a494304d81d62615c2fea1a247400389f322` |
+| Post-edit and final complete SQL | `2d7a11f2f9d24b2a10735a808850748d99559778f8663ecc8e5168ace7607df3` |
+| Post-edit and final raw file | `e4434cc5d6a5a2d19729093485406e486499790e5f32d994a1d35bb5709d5b4d` |
+| Reopened metadata reply | `e2213bb40b89f7784ab2f75faef5bf4de7f8abdf86ac8aacf5d0387343a46ff8` |
+| Terminal journal,18,669bytes | `82c5dbbd6f43341537e42291bd37f9abdd961be410f2c6c0d4c3635df43d7c8b` |
+| Journal self-hash | `4cbd60f8e96bc057925bde6aa266fc2e7ef662532b42006ba29419d3903872b8` |
+| Original final tool response retained by root | `39a9792e798efa781384ca980897865a1cd47c8922649fce7635155226a9978a` |
+
+Independent read-only review verified all53 phase-artifact hashes,137,703bytes,
+journal self/plan bindings and stable before/after journal identity. The installed
+coordinator performed full SQL comparisons; the independent pass checked those
+retained results and did not reread the raw database. Artifact53 records the
+pre-retirement intent and original exit proof, not final completed flags. The
+original final tool response supplies those flags. The terminal journal has no
+hard stop or orphan risk.
+
+No explicit Save, inverse, restoration, forced exit or production access ran.
+The title remains in the disposable fixture. No complete reopened canvas read,
+callback-completion-before-exit, ordinary-project support or later-generation
+admission is claimed. The earlier184000 failed case remains failed/retired;
+this later success does not revive it or authorize replay.

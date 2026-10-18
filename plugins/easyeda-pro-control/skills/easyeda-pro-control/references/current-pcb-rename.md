@@ -2,9 +2,12 @@
 
 This route changes one PCB title in an explicitly disposable local project.
 It is not ordinary-project support, a drawing edit or a general
-`eda.dmt_Pcb.modifyPcbName` implementation. The new writer still needs its
-first connected lifecycle test. The installed121700 read-only preflight passed
-separately, with unchanged complete saved data after normal closure.
+`eda.dmt_Pcb.modifyPcbName` implementation. Installed195000 passed one complete
+disposable title-only lifecycle: exact closed SQL effect, fresh matching saved
+PCB metadata and peers, final SQL equality and original process closure. No
+explicit Save or inverse ran. That historical result does not admit another
+payload, project history or invocation. The installed121700 read-only preflight
+passed separately, with unchanged complete saved data after normal closure.
 
 ## Prepare and begin
 

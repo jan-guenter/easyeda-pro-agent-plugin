@@ -131,6 +131,25 @@ preserve headers and unknown fields only for comparison; they are neither native
 uploads nor saved-source predictions. No observer, dispatch or provenance comes
 from matching caller-supplied data.
 
+For a new object, `current-pcb-string-create.ts` separately fixes all 13 native
+create arguments and predicts the exact ordered 19-field STRING body. Its subset
+uses 10-mil grid coordinates, default-font printable ASCII, fixed layer3/font120/
+width8 and zero expansion. Native create generates the ID; numeric model `type:0`
+is distinct from `modelType:"Text"`, and default silkscreen color is explicit
+black, not null. The candidate supplies no ID, header, ticket or dispatch token.
+It does not establish an empty root PCB, parent/partition/group state, queue
+isolation, original frame ownership or persistence. Keep those as prerequisites
+of a separate one-shot lifecycle, not facts inferred from its predicted body.
+Empty DTO families do not prove an empty canvas: several object families are not
+projected. Create can return an ID even when command filtering undoes the object;
+require exact native membership readback. The command also publishes extension
+events. Before enabling Save, account for `pcb/saveCompiler` saving every loaded
+custom footprint and any dynamic-copper worker, not just the requested String.
+The separate dormant create program fixes the exact frame/RPC and retains an
+acknowledged ID through readback failure. It is exercised only in synthetic VMs,
+has no runtime registration or durable replay protection, and must not be invoked
+on EasyEDA before the remaining owner, eligibility, Save and reopen checks exist.
+
 The same current bundle's `FileSource({})` skips explicit compiler Save but can
 still mutate the design. Its preference getter can repair missing rule defaults
 and remove incomplete differential-pair selectors through the live compiler.
@@ -222,16 +241,35 @@ bookkeeping, all selected structure rows and sequence allocation; every unrelate
 table/cell must remain exact. Only a locked or independently aged new-history-head
 branch and lower-ticket structure updates are modeled. Supplied actor/client/
 clock values remain comparison inputs, not live provenance. Native observation,
-SCH subscriber completion, retained lifecycle ownership and saved reopening are
-still separate prerequisites; no live SCH route consumes this model yet.
+retained lifecycle ownership, complete effect and saved reopening remain separate
+requirements; no live SCH writer consumes this model yet.
 
-The next native observation should use the SCH key-value roster, exact target
-and `getIdByName` routes and compare them with that original SQL projection.
-Do not substitute PCB tokens or counters. In SCH `d9d6a955`, the update handler
-at6204757 schedules `ZTe=Ta(w9,500)` without awaiting it. The callback at5766787
-can initialize missing child holders and then rebuild content. A fixed delay,
-early AST title change or settled PCB batch counter proves neither its completion
-nor unchanged children. The SCH writer must establish these separately.
+The unregistered SCH preflight now reads the strict key-value roster, exact target
+and `getIdByName` routes twice and compares them with the original completed SQL
+projection. It also observes client/ticket, UI actor and renderer/server clocks;
+these samples do not bind the backend producer or qualify startup. Do not
+substitute PCB tokens or counters. The array roster route catches errors as an
+empty list, so it cannot establish complete membership.
+
+In SCH `d9d6a955`, the update handler at6204757 schedules `ZTe=Ta(w9,500)`
+without awaiting it. The callback at5766787 can initialize missing child holders
+when the returned child count exceeds the AST sort length. Before any future
+dispatch, bind the complete child roster, parent membership and duplicate-free
+AST sheet/sort maps to original history. Keep no-editor and dormant-panel checks:
+opened sheets can receive drawing updates, and active standardization panels can
+fetch external data after an AST rebuild. Linked block/reuse propagation remains
+outside the initial scope.
+
+A fixed wait, early AST title change or settled PCB counter cannot prove callback
+completion. A separate original SCH lifecycle can instead prove that old-generation
+producers ended: observe retained root and non-breakaway Job termination, verify
+the exact complete closed SQL effect, exclude persistent upload replay caches,
+reopen in a fresh qualified generation, then close it and compare final SQL.
+Keep `schematicSubscriberCompletionVerified:false` unless completion itself was
+observed; generation closure is a different claim. SQL equality does not cover
+network requests, global preferences, previews or logs, and termination cannot
+undo an external request already sent. Exclude those rename-triggered branches
+before dispatch rather than claiming whole-profile invariance.
 
 Test adapters against the maintained producer, not only a hand-written fixture.
 PCB component inventory is identity-only; it has no per-component state map.

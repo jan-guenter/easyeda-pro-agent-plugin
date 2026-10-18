@@ -168,6 +168,7 @@ void test("PCB public schema requires exact phase acknowledgments and excludes a
   }
   const discovery = queryCurrentPcbRenameOperation({ includeSchemas: true });
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["connectedValidation"], false);
+  assert.equal(discovery["historicalConnectedValidation"], "installed195000-disposable-pcb-title-only-lifecycle");
   assert.ok(isRecord(discovery["inputSchema"]));
 });
 

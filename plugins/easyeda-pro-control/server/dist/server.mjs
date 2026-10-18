@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "417b37b8b1782fc049553dcb791f3af62a4d748c3858fc7b16dd8925786e8981";
+const __easyedaBundlePairId = "0f13e4b8760eb1abcc5ef0219b96dcd5a92ebfc9b2514a38979294bc07f0e9be";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -11001,10 +11001,10 @@ function _property(property, schema2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _mime(types3, params) {
+function _mime(types4, params) {
   return new $ZodCheckMimeType({
     check: "mime_type",
-    mime: types3,
+    mime: types4,
     ...normalizeParams(params)
   });
 }
@@ -14185,7 +14185,7 @@ var init_schemas2 = __esm({
       inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
       inst.min = (size3, params) => inst.check(_minSize(size3, params));
       inst.max = (size3, params) => inst.check(_maxSize(size3, params));
-      inst.mime = (types3, params) => inst.check(_mime(Array.isArray(types3) ? types3 : [types3], params));
+      inst.mime = (types4, params) => inst.check(_mime(Array.isArray(types4) ? types4 : [types4], params));
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18606,9 +18606,9 @@ var init_types = __esm({
         return this._def.options;
       }
     };
-    ZodUnion2.create = (types3, params) => {
+    ZodUnion2.create = (types4, params) => {
       return new ZodUnion2({
-        options: types3,
+        options: types4,
         typeName: ZodFirstPartyTypeKind2.ZodUnion,
         ...processCreateParams(params)
       });
@@ -22498,15 +22498,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
-    const types3 = options.reduce((types4, x) => {
+    const types4 = options.reduce((types5, x) => {
       const type2 = primitiveMappings[x._def.typeName];
-      return type2 && !types4.includes(type2) ? [...types4, type2] : types4;
+      return type2 && !types5.includes(type2) ? [...types5, type2] : types5;
     }, []);
     return {
-      type: types3.length > 1 ? types3 : types3[0]
+      type: types4.length > 1 ? types4 : types4[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types3 = options.reduce((acc, x) => {
+    const types4 = options.reduce((acc, x) => {
       const type2 = typeof x._def.value;
       switch (type2) {
         case "string":
@@ -22525,8 +22525,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types3.length === options.length) {
-      const uniqueTypes = types3.filter((x, i2, a) => a.indexOf(x) === i2);
+    if (types4.length === options.length) {
+      const uniqueTypes = types4.filter((x, i2, a) => a.indexOf(x) === i2);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -25689,37 +25689,37 @@ var require_dataType = __commonJS({
       DataType2[DataType2["Wrong"] = 1] = "Wrong";
     })(DataType || (exports2.DataType = DataType = {}));
     function getSchemaTypes(schema2) {
-      const types3 = getJSONTypes(schema2.type);
-      const hasNull = types3.includes("null");
+      const types4 = getJSONTypes(schema2.type);
+      const hasNull = types4.includes("null");
       if (hasNull) {
         if (schema2.nullable === false)
           throw new Error("type: null contradicts nullable: false");
       } else {
-        if (!types3.length && schema2.nullable !== void 0) {
+        if (!types4.length && schema2.nullable !== void 0) {
           throw new Error('"nullable" cannot be used without "type"');
         }
         if (schema2.nullable === true)
-          types3.push("null");
+          types4.push("null");
       }
-      return types3;
+      return types4;
     }
     exports2.getSchemaTypes = getSchemaTypes;
     function getJSONTypes(ts) {
-      const types3 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-      if (types3.every(rules_1.isJSONType))
-        return types3;
-      throw new Error("type must be JSONType or JSONType[]: " + types3.join(","));
+      const types4 = Array.isArray(ts) ? ts : ts ? [ts] : [];
+      if (types4.every(rules_1.isJSONType))
+        return types4;
+      throw new Error("type must be JSONType or JSONType[]: " + types4.join(","));
     }
     exports2.getJSONTypes = getJSONTypes;
-    function coerceAndCheckDataType(it, types3) {
+    function coerceAndCheckDataType(it, types4) {
       const { gen, data: data9, opts } = it;
-      const coerceTo = coerceToTypes(types3, opts.coerceTypes);
-      const checkTypes = types3.length > 0 && !(coerceTo.length === 0 && types3.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types3[0]));
+      const coerceTo = coerceToTypes(types4, opts.coerceTypes);
+      const checkTypes = types4.length > 0 && !(coerceTo.length === 0 && types4.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types4[0]));
       if (checkTypes) {
-        const wrongType = checkDataTypes(types3, data9, opts.strictNumbers, DataType.Wrong);
+        const wrongType = checkDataTypes(types4, data9, opts.strictNumbers, DataType.Wrong);
         gen.if(wrongType, () => {
           if (coerceTo.length)
-            coerceData(it, types3, coerceTo);
+            coerceData(it, types4, coerceTo);
           else
             reportTypeError(it);
         });
@@ -25728,15 +25728,15 @@ var require_dataType = __commonJS({
     }
     exports2.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
-    function coerceToTypes(types3, coerceTypes) {
-      return coerceTypes ? types3.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+    function coerceToTypes(types4, coerceTypes) {
+      return coerceTypes ? types4.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
     }
-    function coerceData(it, types3, coerceTo) {
+    function coerceData(it, types4, coerceTo) {
       const { gen, data: data9, opts } = it;
       const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data9}`);
       const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
       if (opts.coerceTypes === "array") {
-        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types3, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
+        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types4, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
       for (const t of coerceTo) {
@@ -25812,19 +25812,19 @@ var require_dataType = __commonJS({
         return checkDataType(dataTypes[0], data9, strictNums, correct);
       }
       let cond;
-      const types3 = (0, util_1.toHash)(dataTypes);
-      if (types3.array && types3.object) {
+      const types4 = (0, util_1.toHash)(dataTypes);
+      if (types4.array && types4.object) {
         const notObj = (0, codegen_1._)`typeof ${data9} != "object"`;
-        cond = types3.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
-        delete types3.null;
-        delete types3.array;
-        delete types3.object;
+        cond = types4.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
+        delete types4.null;
+        delete types4.array;
+        delete types4.object;
       } else {
         cond = codegen_1.nil;
       }
-      if (types3.number)
-        delete types3.integer;
-      for (const t in types3)
+      if (types4.number)
+        delete types4.integer;
+      for (const t in types4)
         cond = (0, codegen_1.and)(cond, checkDataType(t, data9, strictNums, correct));
       return cond;
     }
@@ -26629,9 +26629,9 @@ var require_validate = __commonJS({
     function typeAndKeywords(it, errsCount) {
       if (it.opts.jtd)
         return schemaKeywords(it, [], false, errsCount);
-      const types3 = (0, dataType_1.getSchemaTypes)(it.schema);
-      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types3);
-      schemaKeywords(it, types3, !checkedTypes, errsCount);
+      const types4 = (0, dataType_1.getSchemaTypes)(it.schema);
+      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types4);
+      schemaKeywords(it, types4, !checkedTypes, errsCount);
     }
     function checkRefsAndKeywords(it) {
       const { schema: schema2, errSchemaPath, opts, self } = it;
@@ -26681,7 +26681,7 @@ var require_validate = __commonJS({
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
-    function schemaKeywords(it, types3, typeErrors, errsCount) {
+    function schemaKeywords(it, types4, typeErrors, errsCount) {
       const { gen, schema: schema2, data: data9, allErrors, opts, self } = it;
       const { RULES } = self;
       if (schema2.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema2, RULES))) {
@@ -26689,7 +26689,7 @@ var require_validate = __commonJS({
         return;
       }
       if (!opts.jtd)
-        checkStrictTypes(it, types3);
+        checkStrictTypes(it, types4);
       gen.block(() => {
         for (const group of RULES.rules)
           groupKeywords(group);
@@ -26701,7 +26701,7 @@ var require_validate = __commonJS({
         if (group.type) {
           gen.if((0, dataType_2.checkDataType)(group.type, data9, opts.strictNumbers));
           iterateKeywords(it, group);
-          if (types3.length === 1 && types3[0] === group.type && typeErrors) {
+          if (types4.length === 1 && types4[0] === group.type && typeErrors) {
             gen.else();
             (0, dataType_2.reportTypeError)(it);
           }
@@ -26725,27 +26725,27 @@ var require_validate = __commonJS({
         }
       });
     }
-    function checkStrictTypes(it, types3) {
+    function checkStrictTypes(it, types4) {
       if (it.schemaEnv.meta || !it.opts.strictTypes)
         return;
-      checkContextTypes(it, types3);
+      checkContextTypes(it, types4);
       if (!it.opts.allowUnionTypes)
-        checkMultipleTypes(it, types3);
+        checkMultipleTypes(it, types4);
       checkKeywordTypes(it, it.dataTypes);
     }
-    function checkContextTypes(it, types3) {
-      if (!types3.length)
+    function checkContextTypes(it, types4) {
+      if (!types4.length)
         return;
       if (!it.dataTypes.length) {
-        it.dataTypes = types3;
+        it.dataTypes = types4;
         return;
       }
-      types3.forEach((t) => {
+      types4.forEach((t) => {
         if (!includesType(it.dataTypes, t)) {
           strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
-      narrowSchemaTypes(it, types3);
+      narrowSchemaTypes(it, types4);
     }
     function checkMultipleTypes(it, ts) {
       if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -40241,7 +40241,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_disposable_pcb_rename",
       selector: "advance;rename-write;disposable-project-local-pcb-title",
       implementation: "native-task-equivalent",
-      scope: "Separate disposable-only title update through the pinned project-qualified PCB updateData path, not generic public dmt_Pcb.modifyPcbName enablement. Requires the original retained disposable opening, complete closed SQL baseline, native title/data-ticket projection, complete PCB peers, original startup/actor/dual-clock checks and exact phase acknowledgements. Preserves all target drawing and peer SQL rows; records native acknowledgment before postwrite checks. Complete title-only closed SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality are mandatory. Reopened native verification is metadata-only, not a complete PCB canvas read or transient AST/source equality proof. Trimmed printable ASCII without capital I only; linked/reuse PCBs refuse. No ordinary projects, caller clock/runtime/code/verifier, explicit Save, inverse/delete or authority from discovery. Current writer connected validation is unclaimed; earlier read-only preflight validation is not rename validation. The legacy library rename route remains blocked.",
+      scope: "Separate disposable-only title update through the pinned project-qualified PCB updateData path, not generic public dmt_Pcb.modifyPcbName enablement. Requires the original retained disposable opening, complete closed SQL baseline, native title/data-ticket projection, complete PCB peers, original startup/actor/dual-clock checks and exact phase acknowledgements. Preserves all target drawing and peer SQL rows; records native acknowledgment before postwrite checks. Complete title-only closed SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality are mandatory. Reopened native verification is metadata-only, not a complete PCB canvas read or transient AST/source equality proof. Trimmed printable ASCII without capital I only; linked/reuse PCBs refuse. No ordinary projects, caller clock/runtime/code/verifier, explicit Save, inverse/delete or authority from discovery. Installed195000 passed one disposable title-only lifecycle with complete closed SQL, cache-excluded reopened PCB metadata and unchanged final SQL after normal closure. Later generations and other project histories remain unvalidated. The legacy library rename route remains blocked.",
       source: [
         "current-pcb-rename-operation.ts",
         "current-pcb-rename-operation-runtime.ts",
@@ -73174,9 +73174,9 @@ function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
   if (scope6 === void 0) {
     return;
   }
-  const { types: types3 } = scope6.headers;
-  need18(!types3.has(atom.id) || types3.get(atom.id) === atom.type, "canvas-segments atom type changed");
-  types3.set(atom.id, atom.type);
+  const { types: types4 } = scope6.headers;
+  need18(!types4.has(atom.id) || types4.get(atom.id) === atom.type, "canvas-segments atom type changed");
+  types4.set(atom.id, atom.type);
   if (!IGNORED.has(atom.type)) {
     need18(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
     let stream = scope6.streams.get(chunkIndex);
@@ -97888,7 +97888,7 @@ function queryCurrentPcbRenameOperation(input = {}) {
     invocationEnabledByDiscovery: false,
     executionAuthorized: false,
     connectedValidation: false,
-    historicalConnectedValidation: "installed121700-read-only-preflight-only",
+    historicalConnectedValidation: "installed195000-disposable-pcb-title-only-lifecycle",
     ordinaryProjectsSupported: false,
     forwardOnly: true,
     inverseSupported: false,
@@ -97905,7 +97905,8 @@ function queryCurrentPcbRenameOperation(input = {}) {
       "Opening and normal closure may migrate or automatically persist files. The fixed write makes one title update and awaits its native response; that response alone is not saved completion. No explicit Save, Save/Discard choice, force exit, delete, inverse or restoration is dispatched.",
       "Completion requires the native acknowledgment, original process/Job closure, exact title-only full SQL effect, cache-excluded fresh reopening, matching PCB metadata and all PCB peers, final normal closure and complete SQL equality. Native reopened verification is metadata-only, not a complete PCB canvas read.",
       "Cleanup permanently abandons continuation and selects only a retained original-owner close/termination/closed-retirement phase. Uncertain ownership or consumed unacknowledged actions remain stopped; no recovery bypass is provided.",
-      "The installed121700 read-only preflight passed on one disposable project with unchanged raw bytes, all35 SQL tables and all20 native documents after normal closure. This does not validate the new rename writer or other project histories."
+      "Installed195000 passed one disposable title-only lifecycle with the exact complete closed SQL effect, cache-excluded reopened PCB metadata and peers, final normal closure and unchanged final SQL. This is historical validation of that case, not admission of later generations, other histories, ordinary projects or complete PCB canvas reads.",
+      "The installed121700 read-only preflight separately passed on one disposable project with unchanged raw bytes, all35 SQL tables and all20 native documents after normal closure. That earlier observation alone did not validate renaming."
     ],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentPcbRenameOperationRequestSchema),
@@ -99119,7 +99120,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-pcb/project-pcb-validate for one loaded project's PCB metadata without editor tabs; no canvas or saved-state/rename authority. Query project-pcb-preflight/project-pcb-preflight-validate for complete native PCB peer/title availability and client/clock observations, without rename authority. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Query disposable-pcb-rename/disposable-pcb-rename-validate for the separate original-owner disposable PCB title-only lifecycle, with whole-SQL effect and reopened metadata verification; no complete canvas read or connected writer validation is claimed. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-pcb/project-pcb-validate for one loaded project's PCB metadata without editor tabs; no canvas or saved-state/rename authority. Query project-pcb-preflight/project-pcb-preflight-validate for complete native PCB peer/title availability and client/clock observations, without rename authority. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Query disposable-pcb-rename/disposable-pcb-rename-validate for the separate original-owner disposable PCB title-only lifecycle, with whole-SQL effect and reopened metadata verification; installed195000 passed one complete disposable title-only lifecycle. No complete canvas read, ordinary-project support or current-invocation admission follows from that historical result. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -140090,9 +140091,66 @@ var init_current_pcb_stored_header = __esm({
 // server/src/current-pcb-rename-owner-baseline.ts
 import { lstat as lstat43 } from "node:fs/promises";
 import { join as join67 } from "node:path";
+import { types as types3 } from "node:util";
 function need85(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB baseline: ${message}`);
+  }
+}
+function certifyFrozenBaselineData(input) {
+  const active2 = /* @__PURE__ */ new WeakSet(), completed4 = /* @__PURE__ */ new WeakSet(), stack = [];
+  const enter = (value2) => {
+    if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") {
+      return;
+    }
+    if (typeof value2 === "number") {
+      need85(Number.isFinite(value2), "frozen baseline data must be finite JSON");
+      return;
+    }
+    need85(typeof value2 === "object" && !types3.isProxy(value2), "frozen baseline data must be plain own data");
+    if (completed4.has(value2)) {
+      return;
+    }
+    need85(!active2.has(value2), "frozen baseline data must be acyclic");
+    const array4 = Array.isArray(value2), prototype = Object.getPrototypeOf(value2);
+    need85(
+      (array4 ? prototype === Array.prototype : prototype === Object.prototype || prototype === null) && Object.isFrozen(value2),
+      "frozen baseline data has a mutable or exotic object"
+    );
+    const descriptor10 = array4 ? Object.getOwnPropertyDescriptor(value2, "length") : void 0, keys2 = Reflect.ownKeys(value2);
+    const length = descriptor10?.value;
+    need85(!array4 || descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && typeof length === "number" && Number.isSafeInteger(length) && length >= 0 && keys2.length === length + 1, "frozen baseline data requires dense arrays");
+    active2.add(value2);
+    stack.push({ value: value2, keys: keys2, array: array4, length: typeof length === "number" ? length : 0, index: 0 });
+  };
+  enter(input);
+  while (stack.length > 0) {
+    const frame = stack.at(-1);
+    need85(frame !== void 0, "frozen baseline traversal lost its frame");
+    if (frame.index === frame.keys.length) {
+      active2.delete(frame.value);
+      completed4.add(frame.value);
+      stack.pop();
+    } else {
+      const key = frame.keys[frame.index];
+      frame.index += 1;
+      need85(typeof key === "string", "frozen baseline data refuses symbol keys");
+      const descriptor10 = Object.getOwnPropertyDescriptor(frame.value, key);
+      need85(
+        descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && descriptor10.configurable === false && descriptor10.writable === false,
+        "frozen baseline data refuses accessors or mutable properties"
+      );
+      if (frame.array && key === "length") {
+        need85(descriptor10.enumerable === false, "frozen array length differs");
+      } else {
+        need85(descriptor10.enumerable === true, "frozen baseline data refuses hidden properties");
+        need85(
+          !frame.array || String(Number(key)) === key && Number.isSafeInteger(Number(key)) && Number(key) >= 0 && Number(key) < frame.length,
+          "frozen baseline data refuses non-index array properties"
+        );
+        enter(descriptor10.value);
+      }
+    }
   }
 }
 function closure2(input, original2) {
@@ -140137,7 +140195,7 @@ async function verifyReceipt(checkpoint, current6) {
 function assertOriginalCurrentPcbRenameBaseline(value2, engine2) {
   need85(value2 !== null && typeof value2 === "object", "original baseline is missing");
   const original2 = baselines.get(value2);
-  need85(original2 !== void 0 && original2.engine === engine2 && canonicalJson(value2) === original2.resultText && original2.input.proof === original2.proof && original2.input.capture === original2.capture && original2.source.source.launchProjection === original2.launch && canonicalJson(original2.launch) === original2.launchText && canonicalJson(original2.input) === original2.inputText, "baseline was not issued unchanged by this engine");
+  need85(original2 !== void 0 && original2.result === value2 && original2.engine === engine2 && original2.input.proof === original2.proof && original2.input.capture === original2.capture && original2.source.source.launchProjection === original2.launch && canonicalJson(original2.launch) === original2.launchText && canonicalJson(original2.input) === original2.inputText, "baseline was not issued unchanged by this engine");
   return original2.result;
 }
 function currentPcbRenameBaselineClockBinding(value2, engine2) {
@@ -140257,6 +140315,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     writerAuthority: false,
     executionAuthorized: false
   });
+  certifyFrozenBaselineData(result);
   baselines.set(result, {
     result,
     engine: engine2,
@@ -140269,8 +140328,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     launchText: retainedLaunchText,
     clock: clock7,
     clockReader,
-    scopeReader,
-    resultText: canonicalJson(result)
+    scopeReader
   });
   return result;
 }
@@ -150529,6 +150587,7 @@ var init_src = __esm({
               designMutation: true,
               connectedValidation: false,
               originalOwnerRequired: true,
+              historicalConnectedValidation: "installed195000-disposable-pcb-title-only-lifecycle",
               phaseEffectAcknowledgementsRequired: true,
               inverseSupported: false,
               ordinaryProjectsSupported: false,
@@ -152268,7 +152327,7 @@ var init_src = __esm({
       const inputSchema3 = external_exports.object({ request: external_exports.unknown().pipe(currentPcbRenameOperationRequestSchema) }).strict();
       server.registerTool("easyeda_control_disposable_pcb_rename", {
         title: "Rename one PCB in an owned disposable project",
-        description: "Disposable-only title rename through an original-owner forward lifecycle. Query offline disposable-pcb-rename/disposable-pcb-rename-validate first. baseline-begin requires this facade's existing retained easyeda_control_project_open disposable opening and a distinct operation ID; no new opener/runtime or ordinary-project ownership is created by this tool. Complete closed SQL, original metadata, fresh project-only startup, native name availability, both actors and original Windows/document clocks precede one title-only update. Titles are trimmed printable ASCII without capital I. Each advance requires its exact next phase and effect acknowledgements. Inspect lost replies; never replay writes, opening, closing or scratch processes. Completion requires renameVerified and nextPhase completed after acknowledged mutation, original process closure, exact whole-SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality. Reopened native verification is metadata-only, not a complete PCB canvas read. Cleanup uses only the retained original owner; saved journals cannot restore continuation after restart. Opening/normal closure can automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restoration, ordinary projects or generic dmt_Pcb.modifyPcbName enablement. The new writer has no connected validation claim; earlier read-only preflight validation does not validate renaming.",
+        description: "Disposable-only title rename through an original-owner forward lifecycle. Query offline disposable-pcb-rename/disposable-pcb-rename-validate first. baseline-begin requires this facade's existing retained easyeda_control_project_open disposable opening and a distinct operation ID; no new opener/runtime or ordinary-project ownership is created by this tool. Complete closed SQL, original metadata, fresh project-only startup, native name availability, both actors and original Windows/document clocks precede one title-only update. Titles are trimmed printable ASCII without capital I. Each advance requires its exact next phase and effect acknowledgements. Inspect lost replies; never replay writes, opening, closing or scratch processes. Completion requires renameVerified and nextPhase completed after acknowledged mutation, original process closure, exact whole-SQL effect, cache-excluded reopening, matching target/all-PCB metadata and final closed SQL equality. Reopened native verification is metadata-only, not a complete PCB canvas read. Cleanup uses only the retained original owner; saved journals cannot restore continuation after restart. Opening/normal closure can automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restoration, ordinary projects or generic dmt_Pcb.modifyPcbName enablement. Installed195000 passed one disposable title-only lifecycle with complete closed SQL, cache-excluded reopened PCB metadata and unchanged final SQL after normal closure. Later generations and other project histories remain unvalidated.",
         inputSchema: inputSchema3,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }

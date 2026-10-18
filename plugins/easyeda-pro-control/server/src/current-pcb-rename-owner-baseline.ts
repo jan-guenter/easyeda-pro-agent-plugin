@@ -4,6 +4,7 @@
 /* oxlint-disable import/max-dependencies -- Compose maintained original-owner, capture, closed-file and full-history readers without caller-selected authority callbacks. */
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
+import { types } from "node:util";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, operationPath, readArtifact, verifyExactManagedArtifact } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
@@ -73,11 +74,56 @@ interface Original {
   readonly clock: IssuedWindowsClockObservation;
   readonly clockReader: EasyedaControlEngine["clockObservationForClosedCapture"];
   readonly scopeReader: NonNullable<EasyedaControlEngine["upstream"]["currentAuthenticatedBridgeDispatchBinding"]>;
-  readonly resultText: string;
 }
 const attempts = new WeakSet<CurrentPcbRenameOpeningOwner>(), baselines = new WeakMap<object, Original>();
 function need(condition: boolean, message: string): asserts condition {
   if (!condition) { throw new Error(`Current PCB baseline: ${message}`); }
+}
+
+/** Certify only the internally built, deeply frozen data graph, never an owner.
+ * The SQL reader already bounds encoded output to 16 MiB and the history
+ * decoder bounds plaintext to 8 MiB. Visit each object once with an explicit
+ * stack, without imposing a smaller object/depth limit on those admitted data.
+ * Mutable captures, proofs, engines and methods stay in Original and retain
+ * their existing checks; this certificate grants no file or live authority.
+ */
+function certifyFrozenBaselineData(input: unknown): void {
+  interface Frame { readonly value: object; readonly keys: readonly PropertyKey[]; readonly array: boolean; readonly length: number; index: number }
+  const active = new WeakSet<object>(), completed = new WeakSet<object>(), stack: Frame[] = [];
+  const enter = (value: unknown): void => {
+    if (value === null || typeof value === "string" || typeof value === "boolean") { return; }
+    if (typeof value === "number") { need(Number.isFinite(value), "frozen baseline data must be finite JSON"); return; }
+    need(typeof value === "object" && !types.isProxy(value), "frozen baseline data must be plain own data");
+    if (completed.has(value)) { return; }
+    need(!active.has(value), "frozen baseline data must be acyclic");
+    const array = Array.isArray(value), prototype: unknown = Object.getPrototypeOf(value);
+    need((array ? prototype === Array.prototype : prototype === Object.prototype || prototype === null) && Object.isFrozen(value),
+      "frozen baseline data has a mutable or exotic object");
+    const descriptor = array ? Object.getOwnPropertyDescriptor(value, "length") : undefined, keys = Reflect.ownKeys(value);
+    const length: unknown = descriptor?.value;
+    need(!array || descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof length === "number" &&
+      Number.isSafeInteger(length) && length >= 0 && keys.length === length + 1, "frozen baseline data requires dense arrays");
+    active.add(value); stack.push({ value, keys, array, length: typeof length === "number" ? length : 0, index: 0 });
+  };
+  enter(input);
+  while (stack.length > 0) {
+    const frame = stack.at(-1); need(frame !== undefined, "frozen baseline traversal lost its frame");
+    if (frame.index === frame.keys.length) { active.delete(frame.value); completed.add(frame.value); stack.pop(); }
+    else {
+      const key = frame.keys[frame.index]; frame.index += 1;
+      need(typeof key === "string", "frozen baseline data refuses symbol keys");
+      const descriptor = Object.getOwnPropertyDescriptor(frame.value, key);
+      need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && descriptor.configurable === false && descriptor.writable === false,
+        "frozen baseline data refuses accessors or mutable properties");
+      if (frame.array && key === "length") { need(descriptor.enumerable === false, "frozen array length differs"); }
+      else {
+        need(descriptor.enumerable === true, "frozen baseline data refuses hidden properties");
+        need(!frame.array || String(Number(key)) === key && Number.isSafeInteger(Number(key)) && Number(key) >= 0 && Number(key) < frame.length,
+          "frozen baseline data refuses non-index array properties");
+        enter(descriptor.value as unknown);
+      }
+    }
+  }
 }
 
 /** Projection equality supplements original capture/proof issuers below; it
@@ -133,7 +179,7 @@ async function verifyReceipt(checkpoint: CheckpointReceipt, current: () => Promi
 export function assertOriginalCurrentPcbRenameBaseline(value: unknown, engine: EasyedaControlEngine): CurrentPcbRenameBaseline {
   need(value !== null && typeof value === "object", "original baseline is missing");
   const original = baselines.get(value);
-  need(original !== undefined && original.engine === engine && canonicalJson(value) === original.resultText &&
+  need(original !== undefined && original.result === value && original.engine === engine &&
     original.input.proof === original.proof && original.input.capture === original.capture &&
     original.source.source.launchProjection === original.launch && canonicalJson(original.launch) === original.launchText &&
     canonicalJson(original.input) === original.inputText, "baseline was not issued unchanged by this engine");
@@ -236,9 +282,10 @@ export async function captureCurrentPcbRenameBaseline(engine: EasyedaControlEngi
     checkpoint, copy, inventory, history, targetMetadata, targetHeader, maximumTicket: decoded.maximumTicket, rawHistorySha256: sha256Json(decoded.links),
     originalOpeningBound: true, originalCaptureBound: true, originalTerminationBound: true, completeRawSqlCaptured: true,
     openingEffectsVerified: false, producerBindingVerified: false, startupQualified: false, writerAuthority: false, executionAuthorized: false });
+  certifyFrozenBaselineData(result);
   baselines.set(result, { result, engine, source: original, input, inputText, proof: retainedProof, capture: retainedCapture,
     launch: retainedLaunch, launchText: retainedLaunchText,
-    clock, clockReader, scopeReader, resultText: canonicalJson(result) }); return result;
+    clock, clockReader, scopeReader }); return result;
 }
 
 /** Last source/capture check before a new launch invalidates this old closure.

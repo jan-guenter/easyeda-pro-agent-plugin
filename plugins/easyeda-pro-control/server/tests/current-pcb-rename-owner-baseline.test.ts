@@ -8,6 +8,7 @@ import { lstat, mkdir, open, readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { join } from "node:path";
 import { test } from "node:test";
+import { types } from "node:util";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, operationPath, readArtifact, verifyExactManagedArtifact } from "../src/artifacts.ts";
@@ -34,6 +35,7 @@ const RAW = String.raw`C:\SyntheticOnly\PcbOwner.eprj2`;
 const TARGET = { projectUuid: sha256Text(RAW), branchUuid: IDS.branch, ownerUuid: IDS.actor, pcbUuid: IDS.target };
 const META = { title: "Original PCB", parent: "", source: "", board: "", zIndex: null };
 interface Api {
+  certify: (value: unknown) => void;
   capture: typeof captureCurrentPcbRenameBaseline;
   clockBinding: typeof currentPcbRenameBaselineClockBinding;
   original: typeof assertOriginalCurrentPcbRenameBaseline;
@@ -46,7 +48,7 @@ async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scop
   source: string; engine: EasyedaControlEngine; input: CurrentPcbRenameBaselineInput; api: Api;
   events: CurrentPcbRenameBaselineEvidence[];
   state: { current: boolean; completed: boolean; scoped: boolean; captureValid: boolean; cloneReader: boolean;
-    fullOpeningChecks: number; targetedOpeningChecks: number };
+    fullOpeningChecks: number; targetedOpeningChecks: number; baselineSerializations: number };
   run: (hook?: (event: CurrentPcbRenameBaselineEvidence) => void) => Promise<CurrentPcbRenameBaseline>;
   replaceLaunch: () => void;
 }> {
@@ -79,7 +81,7 @@ async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scop
   const closeReceipt = await runtime.supervisor.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
   const proof = await runtime.supervisor.proveClosedSession({ ...binding, intent, closeReceipt });
   const state = { current: true, completed: true, scoped: false, captureValid: true, cloneReader: false,
-    fullOpeningChecks: 0, targetedOpeningChecks: 0 };
+    fullOpeningChecks: 0, targetedOpeningChecks: 0, baselineSerializations: 0 };
   const clock = Object.freeze({ syntheticOriginalCaptureClock: true });
   const syntheticEngine = {
     upstream: { currentAuthenticatedBridgeDispatchBinding: (): unknown => state.scoped ? { synthetic: "scope" } : undefined },
@@ -115,12 +117,15 @@ async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scop
   };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-pcb-rename-owner-baseline.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
-  const context = createContext({ z, Object, String, Number, Buffer, Error, structuredClone, lstat: observeStat, join, controlDataDirectory, controlRootCapability,
+  const context = createContext({ z, Object, Array, String, Number, Buffer, Error, types, structuredClone, lstat: observeStat, join, controlDataDirectory, controlRootCapability,
     operationPath, readArtifact, verifyExactManagedArtifact, createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes,
     readClosedCopySqlInventory: async (input: Parameters<typeof readClosedCopySqlInventory>[0]): ReturnType<typeof readClosedCopySqlInventory> => {
       const result = await readClosedCopySqlInventory(input); return state.cloneReader ? structuredClone(result) : result;
     },
-    canonicalJson, isRecord, sha256Json, normalizeEasyedaProjectPath: (value: string): string => { assert.equal(value, RAW); return source; },
+    canonicalJson: (value: unknown): string => {
+      if (isRecord(value) && value["profile"] === "private.current-pcb-rename-baseline.v1") { state.baselineSerializations += 1; }
+      return canonicalJson(value);
+    }, isRecord, sha256Json, normalizeEasyedaProjectPath: (value: string): string => { assert.equal(value, RAW); return source; },
     assertCompletedCurrentPcbRenameOpeningTransfer: assertOwner,
     revalidateCurrentPcbRenameOpeningOwner: (value: unknown, candidate: unknown): Promise<typeof retained> => {
       state.fullOpeningChecks += 1; return Promise.resolve(assertOwner(value, candidate));
@@ -128,12 +133,16 @@ async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scop
     revalidateCurrentPcbRenameOpeningEvidence: (value: unknown, candidate: unknown): Promise<typeof retained> => {
       state.targetedOpeningChecks += 1; return Promise.resolve(assertOwner(value, candidate));
     },
-    currentPcbStoredHeaderSchema, isNativeDocumentDeleted, freezeDeep, readerCompletion, decodeCurrentSymbolPreEditHistory,
+    currentPcbStoredHeaderSchema, isNativeDocumentDeleted,
+    // Only the newly built root shell comes from the VM. Normalize that shell
+    // To the production realm; retain original SQL/owner child identities.
+    freezeDeep: (value: Record<string, unknown>): Readonly<Record<string, unknown>> => freezeDeep({ ...value }),
+    readerCompletion, decodeCurrentSymbolPreEditHistory,
     assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority,
     assertIssuedWindowsClockObservation: (value: unknown): Promise<typeof clock> => { assert.equal(value, clock); return Promise.resolve(clock); },
   });
-  const exported: unknown = runInContext(`${program}\n({capture:captureCurrentPcbRenameBaseline,clockBinding:currentPcbRenameBaselineClockBinding,original:assertOriginalCurrentPcbRenameBaseline,origin:currentPcbRenameBaselineOrigin,revalidate:revalidateCurrentPcbRenameBaseline,clockEvidence:revalidateCurrentPcbRenameClosedClockEvidence});`, context);
-  assert.ok(isRecord(exported) && ["capture", "clockBinding", "original", "origin", "revalidate", "clockEvidence"].every(key => typeof exported[key] === "function"));
+  const exported: unknown = runInContext(`${program}\n({certify:certifyFrozenBaselineData,capture:captureCurrentPcbRenameBaseline,clockBinding:currentPcbRenameBaselineClockBinding,original:assertOriginalCurrentPcbRenameBaseline,origin:currentPcbRenameBaselineOrigin,revalidate:revalidateCurrentPcbRenameBaseline,clockEvidence:revalidateCurrentPcbRenameClosedClockEvidence});`, context);
+  assert.ok(isRecord(exported) && ["certify", "capture", "clockBinding", "original", "origin", "revalidate", "clockEvidence"].every(key => typeof exported[key] === "function"));
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained source exports above are checked functions in a private test realm.
   const api = exported as unknown as Api;
   const events: CurrentPcbRenameBaselineEvidence[] = [], input = { owner, capture, intent, closeReceipt, proof, runtime: await syntheticSqlRuntime() };
@@ -240,8 +249,35 @@ void test("PCB closed-clock reader preserves full targeted checks without recurs
   assert.equal(value.state.fullOpeningChecks, fullBefore); assert.equal(value.state.targetedOpeningChecks, 7);
   await value.api.revalidate(result, value.engine);
   assert.equal(value.state.fullOpeningChecks, fullBefore + 7, "Other callers retain the full original revalidator");
+  for (let index = 0; index < 20; index += 1) {
+    assert.equal(value.api.original(result, value.engine), result); assert.equal(value.api.clockBinding(result, value.engine).proof, value.input.proof);
+  }
+  assert.equal(value.state.baselineSerializations, 0, "Frozen baseline data is certified once, never repeatedly serialized as a live check");
   value.state.captureValid = false;
   await assert.rejects(value.api.clockEvidence(result, value.engine), /capture released/u);
+});
+
+void test("PCB baseline certificate rejects mutable or executable graphs without getters, Proxy traps or toJSON", async () => {
+  const { api } = await fixture(); let calls = 0;
+  const trap = (): never => { calls += 1; throw new Error("getter, Proxy trap or toJSON invoked"); };
+  const proxy = new Proxy(Object.freeze({}), { get: trap, getPrototypeOf: trap, ownKeys: trap, getOwnPropertyDescriptor: trap, isExtensible: trap });
+  const accessor = Object.freeze(Object.defineProperty({}, "value", { get: trap, enumerable: true }));
+  const cyclic: Record<string, unknown> = {}; cyclic["self"] = cyclic; Object.freeze(cyclic);
+  const sparse: unknown[] = []; sparse.length = 1; Object.freeze(sparse);
+  const revoked = Proxy.revocable({}, {}); revoked.revoke();
+  const exotic: unknown = Object.create({ inherited: true }); Object.freeze(exotic);
+  for (const value of [proxy, revoked.proxy, accessor, Object.freeze({ nested: accessor }), Object.freeze({ toJSON: trap }),
+    Object.freeze({ nested: {} }), Object.freeze(new Map()), Object.freeze(new Set()), Object.freeze(new Date(0)),
+    exotic, Object.freeze({ [Symbol("hidden")]: true }),
+    Object.freeze(Object.defineProperty({}, "hidden", { value: true })), Object.freeze({ nested: undefined }),
+    Object.freeze({ nested: Symbol("value") }), Object.freeze({ nested: 1n }), Object.freeze({ nested: Infinity }),
+    Object.freeze({ nested: Number.NaN }), Object.freeze(Object.assign([], { extra: true })), sparse, cyclic]) {
+    assert.throws(() => { api.certify(value); }, /frozen baseline/u);
+  }
+  assert.equal(calls, 0);
+  const nullPrototype: unknown = Object.setPrototypeOf({ value: "safe" }, null); Object.freeze(nullPrototype);
+  const shared = Object.freeze({ value: 1 });
+  assert.doesNotThrow(() => { api.certify(Object.freeze({ first: shared, second: shared, list: Object.freeze([shared, nullPrototype, null, false]) })); });
 });
 
 void test("PCB closed-clock reader refuses target bytes or SQLite sidecars before scratch acceptance", async () => {
