@@ -12,6 +12,7 @@ export const unitState = {
   overrides: new Map<string, Record<string, unknown>>(), failures: new Map<string, unknown>(),
   before: new Map<string, () => Promise<void>>(),
   lockedInputs: [] as Readonly<{ candidate: unknown; runtime: unknown }>[],
+  agedInputs: [] as Readonly<{ candidate: unknown; runtime: unknown }>[],
   runtimes: [] as MachineProfile["runtime"][],
 };
 export function currentProcessSqlRuntime(): Promise<MachineProfile["runtime"]> {
@@ -34,8 +35,8 @@ async function inspect(operationId: string, runtime: MachineProfile["runtime"], 
     terminalArtifact: parseClosedSymbolTerminalArtifact(journal["terminalArtifact"], operationId), bodySha256: "b".repeat(64),
     storedJournalSha256: self, entireStoredJournalSha256: sha256Json(journal), ...unitState.overrides.get(operationId) };
 }
-export async function inspectLockedTerminalForAdmission(candidate: unknown, runtime: MachineProfile["runtime"]): Promise<Readonly<Record<string, unknown>>> {
-  unitState.lockedInputs.push({ candidate, runtime });
+async function inspectCandidate(candidate: unknown, runtime: MachineProfile["runtime"], aged: boolean): Promise<Readonly<Record<string, unknown>>> {
+  (aged ? unitState.agedInputs : unitState.lockedInputs).push({ candidate, runtime });
   if (typeof candidate !== "object" || candidate === null || !("operationId" in candidate) || typeof candidate.operationId !== "string") {
     throw new TypeError("Unit requires the complete compact candidate, not an operation identifier.");
   }
@@ -46,7 +47,13 @@ export async function inspectLockedTerminalForAdmission(candidate: unknown, runt
   if (canonicalJson(candidate) !== canonicalJson(expected) || runtime !== unitState.runtimes.at(-1)) {
     throw new TypeError("Unit compact candidate or exact current runtime differs.");
   }
-  return inspect(candidate.operationId, runtime, false);
+  return inspect(candidate.operationId, runtime, aged);
+}
+export function inspectLockedTerminalForAdmission(candidate: unknown, runtime: MachineProfile["runtime"]): Promise<Readonly<Record<string, unknown>>> {
+  return inspectCandidate(candidate, runtime, false);
+}
+export function inspectAgedTerminalForAdmission(candidate: unknown, runtime: MachineProfile["runtime"]): Promise<Readonly<Record<string, unknown>>> {
+  return inspectCandidate(candidate, runtime, true);
 }
 export function inspectClosedSymbolAgedTerminal(operationId: string, runtime: MachineProfile["runtime"]): Promise<Readonly<Record<string, unknown>>> {
   return inspect(operationId, runtime, true);
