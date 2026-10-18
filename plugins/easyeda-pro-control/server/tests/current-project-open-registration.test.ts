@@ -133,7 +133,7 @@ void test("disposable validation keeps mutation approval prompted and exact phas
   const permission = z.object({ mcpServers: serverPermission });
   assert.equal(permission.safeParse(manifest).success, true);
   const catalog = JSON.stringify(queryCurrentDisposableOpen({ includeSchemas: true }));
-  assert.ok(catalog.includes("validation-advance")); assert.ok(catalog.includes("generic design writers remain disabled"));
+  assert.ok(catalog.includes("validation-advance")); assert.ok(catalog.includes("Generic design writers remain disabled"));
 });
 
 void test("optional current clock stages accept only original operation identity and explicit scratch effects", () => {

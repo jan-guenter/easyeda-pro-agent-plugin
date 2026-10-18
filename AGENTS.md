@@ -43,14 +43,18 @@ no pending CAD operation. Dormant PCB rename structure/AST prerequisites and a
 separate no-editor PCB metadata reader are implemented in source with focused
 tests. They do not enable PCB writing or alter installed080000. Current branch
 feature/current-pcb-rename-structure is built but unpublished, candidate094000;
-the frozen full local verification is running. Repository checks and all seven
+the full local runtime suite finished. Repository184checks and all seven
 installed skill-creator checks pass. External pins and authenticated bridge stay
 unchanged. New PCB metadata connected validation remains unclaimed.
-The first full local suite found a stale 18-tool expectation in bundled startup;
-only that test list was corrected to include the new nineteenth PCB reader.
-All five focused startup tests then passed. Runtime source/bundles/manifest were
-unchanged; the first suite and its failure remain retained. Final corrected
-payload requires green full GitHub CI before merge and installation.
+The first full local suite reported10,839passes/fourplatformskips/threefailures:
+stale startup tool count, disclaimer capitalization and a now-historical ordinary
+canvas claim. Only those expectations were corrected, retaining exact current
+authority refusals. Runtime source/bundles/manifest were unchanged; the original
+failure log remains retained. Bridge424tests and internal package/skill validators
+passed separately. All17corrected-file tests, strict types/lint, reproducible build
+and unchanged compatibility projections passed. Final corrected payload requires green full GitHub CI before
+merge and installation. Earlier PR62runs39117268147/39117388709 were cancelled
+as superseded; their successful build/Windows checks are not final-payload CI.
 Purpose-bound baseline guidance now points to clock observation/lifecycle begin,
 not premature cleanup; sealed journals and authority checks remain unchanged.
 
