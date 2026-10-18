@@ -8,14 +8,24 @@ forward and inverse edits, complete closed SQL comparisons and reopened-content
 checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
-Update `0.3.0+codex.20261018094000` adds a no-editor PCB metadata reader.
+Update `0.3.0+codex.20261018111500` corrects the no-editor PCB metadata reader.
 It returns one loaded project's PCB title, relationships and native metadata
 without opening its canvas or requesting Save. Its source review and focused
 offline tests do not yet constitute connected validation. See the
 [reader contract](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-readers.md#project-local-pcb-metadata-without-an-editor).
-PCB rename remains disabled: source now models its project-structure delta and
-checks AST/batch state, but private queue completion, full SQL effects and the
-complete saved/reopen lifecycle are still missing.
+The correction admits the local project's omitted inactive `store`
+flag; the 094000 reader incorrectly requires it. Do not alter project settings to
+work around that refusal. See the [correction and verification record](docs/current-pcb-metadata-recovery-2026-10-18.md).
+PCB rename remains disabled. Source now models exact native history and the
+complete six-table SQL effect, including duplicate structure rows. Its original
+producer/clock binding and whole-process closure/saved-reopen coordinator still
+need implementation; pure comparisons do not authorize writing.
+
+Installed094000 also passed the separate disposable drawn-symbol copy lifecycle:
+one new symbol, unchanged source and all 18 other existing documents, exact saved
+reopening and final closed-database equality. This validates that narrow case,
+not ordinary-project copying, arbitrary source histories or later generations.
+The symbol remains in the disposable project; no inverse or explicit Save ran.
 
 Earlier update `0.3.0+codex.20261018080000` extends the ordinary route to unused drawn
 symbols whose complete history satisfies the bounded canvas-segments profile.

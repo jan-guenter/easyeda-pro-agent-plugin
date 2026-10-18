@@ -6,6 +6,8 @@ import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
  * project-qualified PCB getData request. WORKERb849bd12 Sg.get/getData at1901353/
  * 1902855 read existing metadata; getNeedData/canvas is never requested.
  * The API021d155b wrapper at476238 instead enumerates the mutable public tree.
+ * APP52f51ce4 G.show at2317299 omits store from local project metadata.
+ * Preserve the existing symbol route's exact optional inactive-flag forms.
  */
 export function buildCurrentProjectPcbMetadataProgram(input: unknown): string {
   const request = parseCurrentProjectPcbMetadataRequest(input);
@@ -26,7 +28,8 @@ const same=()=>{projectOnly.check();methodCheck(rpc);if(expired||own(host,'messa
 const call=async(topic,args)=>{same();const raw=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(raw),'message'));};
 const projectMetadata=async()=>{
  const value=await call('/PrjDB/project/getData',[target.projectUuid]);same();
- if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false||own(value,'archive')!==false||own(value,'store')!==false||own(value,'cbb_project')!==false)bad();
+ if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();
+ for(const key of ['archive','store','cbb_project']){const flag=own(value,key,true);if(flag!==undefined&&flag!==false&&flag!==null&&flag!==0)bad();}
  const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;
 };
 const sample=async()=>{

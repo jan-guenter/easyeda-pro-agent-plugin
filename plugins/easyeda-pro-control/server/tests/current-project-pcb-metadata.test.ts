@@ -29,7 +29,7 @@ globalThis.info={id:'editor-window-main',belong:'editor-window-main',tabs:[start
 class Tabs{static containerIds=['editor-window-main'];static containerTree={id:'editor-window-main'};static belongContainer='editor-window-main';static currentTabId='tab_page1';static isOpenProjectDoc=true;static isOpenOtherDoc=true;static getActiveTab(){return this.currentTabId;}static getContainerInfo(id){return id===info.id?info:undefined;}static hasTabUnSaved(){return info.tabs.some(tab=>tab.isUnSaved===true);}static isTabUnSaved(id){return info.tabs.some(tab=>tab.tabId===id&&tab.isUnSaved===true);}}
 const forbidden=name=>{denied.push(name);throw new Error('PRIVATE_FORBIDDEN');};
 globalThis.fetch=()=>forbidden('network');globalThis.metadata={uuid:target.pcbUuid,project_uuid:target.projectUuid,title:'board Ω',display_title:'Board Ω',docType:3,parent_uuid:'',source:'template',version:'12345',board:'e'.repeat(16),ticket:12345,updateTime:1000};
-globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:'d'.repeat(32)},archive:false,store:false,cbb_project:false};
+globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:'d'.repeat(32)},archive:false,cbb_project:false};
 class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))return forbidden('receiver');calls.push([topic,[...args]]);
 if(topic==='/PrjDB/pcb/getData'){if(args.length!==2||args[0]!==target.pcbUuid||args[1]!==target.projectUuid)return forbidden('pcb-args');}
 else if(topic==='/PrjDB/project/getData'){if(args.length!==1||args[0]!==target.projectUuid)return forbidden('project-args');}else return forbidden(topic);
@@ -76,6 +76,39 @@ void test("project-only PCB reader preserves native title/fallback metadata and 
   assert.equal(result.value.parentUuid, "f".repeat(32)); assert.equal(env.evaluate("getterReads"), 0);
   assert.equal(result.value.title, "board Ω"); assert.equal(result.value.displayTitle, "Board Ω");
   assert.equal(JSON.stringify(result).includes("credentials"), false); assert.equal(JSON.stringify(result).includes("creator"), false);
+});
+
+void test("project-only PCB reader accepts only the existing optional inactive project flag forms", async () => {
+  for (const key of ["archive", "store", "cbb_project"]) {
+    for (const change of [`delete projectDetail.${key};`, ...["undefined", "false", "null", "0"].map(value => `projectDetail.${key}=${value};`)]) {
+      const env = fixture({ before: change }), envelope = structuredClone(await env.run());
+      const result = decodeCurrentProjectPcbMetadataReply(reply(envelope), request);
+      assert.equal(result.samples, 2); assert.equal(result.value.title, "board Ω");
+      assert.equal(result.cadAuthority, false); assert.equal(result.persistenceVerified, false);
+      assert.equal(env.evaluate("calls.length"), 6); assert.equal(env.evaluate("getterReads"), 0);
+    }
+  }
+});
+
+void test("project-only PCB reader rejects inherited/accessor/unsupported project flags and later flag drift", async () => {
+  for (const key of ["archive", "store", "cbb_project"]) {
+    for (const before of [
+      ...["true", "1", "-1", "'false'", "''", "[]", "{}", "NaN", "0n"].map(value => `projectDetail.${key}=${value};`),
+      `Object.defineProperty(projectDetail,'${key}',{get(){getterReads++;return false;}});`,
+      `delete projectDetail.${key};Object.defineProperty(Object.prototype,'${key}',{value:false,configurable:true});`,
+      `delete projectDetail.${key};Object.defineProperty(Object.prototype,'${key}',{get(){getterReads++;return false;},configurable:true});`,
+    ]) {
+      const env = fixture({ before });
+      await assert.rejects(env.run(), /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u);
+      assert.equal(env.evaluate("calls.length"), 1); assert.equal(env.evaluate("getterReads"), 0);
+      assert.deepEqual(structuredClone(env.evaluate("denied")), []);
+    }
+    for (const count of [3, 4, 6]) {
+      const env = fixture({ afterRpc: `if(calls.length===${count})projectDetail.${key}=true;` });
+      await assert.rejects(env.run(), /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u);
+      assert.equal(env.evaluate("calls.length"), count);
+    }
+  }
 });
 
 void test("project-only PCB reader refuses editor/hidden/dirty/read-only/restoration state before native reads", async () => {

@@ -47,6 +47,7 @@ export function queryCurrentSymbolCopyOperation(input: unknown = {}): Record<str
   const query = currentSymbolCopyOperationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_disposable_symbol_copy", purpose: CURRENT_SYMBOL_COPY_OPERATION_PURPOSE,
     registrationEnabled: true, invocationEnabledByDiscovery: false, executionAuthorized: false, connectedValidation: false,
+    historicalConnectedValidation: "installed094000-disposable-supported-drawn-symbol-copy",
     forwardOnly: true, inverseSupported: false, replayAllowed: false, ordinaryProjectsSupported: false,
     actions: ["baseline-begin", "baseline-observe-termination", "baseline-prepare-clock", "baseline-relaunch", "baseline-admit",
       "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock", "baseline-finish-close", "baseline-observe-finish",
@@ -61,7 +62,7 @@ export function queryCurrentSymbolCopyOperation(input: unknown = {}): Record<str
       "copy-begin retains the original ready generation. copy-advance requires the exact next phase. Lost responses never permit write, navigation or closure replay; only explicitly pending observations may repeat. Native return identity is retained before post-read checks, never rediscovered by title.",
       "Before copy-write, copy-cleanup permanently abandons the ready copy and selects cleanup-close without dispatching it. The next explicit cleanup-close/cleanup-observe-termination steps close the original baseline; the copy cannot then resume.",
       "Completion requires one acknowledged copy, retained normal process closure, complete closed SQL comparison, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, final closure and complete SQL equality. Conservative baseline structure-byte preservation may reject legitimate changes from stale native structure; native tree projection is not claimed.",
-      "Failures expose only retained original-owner cleanup and inspection. Saved journal JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, delete, inverse, restoration or generic lib_Symbol.copy enablement is provided. Current live validation is unclaimed.",
+      "Failures expose only retained original-owner cleanup and inspection. Saved journal JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, delete, inverse, restoration or generic lib_Symbol.copy enablement is provided. Installed094000 passed one disposable supported drawn-symbol copy with complete closed SQL, exact reopened content and final closure. Later generations and other source histories remain unvalidated.",
     ],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentSymbolCopyOperationRequestSchema),
       stepSchema: z.toJSONSchema(currentSymbolCopyOperationStepSchema) } : {}) };

@@ -144,6 +144,15 @@ async function closeServer(server: WebSocketServer): Promise<void> {
   await closed;
 }
 
+async function terminateTestPeer(socket: WebSocketClient | undefined): Promise<void> {
+  if (socket === undefined || socket.readyState === WebSocketClient.CLOSED) {
+    return;
+  }
+  const closed = once(socket, "close");
+  socket.terminate();
+  await closed;
+}
+
 async function openClient(
   port: number,
   headers: Record<string, string | string[]> = {},
@@ -969,14 +978,22 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
     ];
     try {
       for (const [index, invalidHello] of invalidHellos.entries()) {
-        const backendConnection = nextConnection(backend);
-        const client = await openClient(gateway.lifecycle().publicEndpoint.port);
+        const cancellation = new AbortController();
+        const backendConnection = nextConnection(backend, cancellation.signal);
+        let client: WebSocketClient | undefined;
+        let privateSocket: WebSocketClient | undefined;
+        let phase = "open-client";
+        let failure: Error | undefined;
         try {
+          client = await openClient(gateway.lifecycle().publicEndpoint.port);
+          phase = "authenticate";
           await authenticate(
             client,
             Buffer.alloc(32, 50 + index).toString("base64url"),
           );
-          const privateSocket = await backendConnection;
+          phase = "backend-connection";
+          privateSocket = await backendConnection;
+          phase = "private-handshake";
           const privateHandshake = nextJson(privateSocket);
           client.send(
             JSON.stringify({
@@ -989,15 +1006,42 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
             }),
           );
           await privateHandshake;
+          phase = "incompatible-hello-rejection";
           const closeCode = nextCloseCode(client);
           privateSocket.send(JSON.stringify(invalidHello));
           assert.equal(await closeCode, 4007);
           assert.equal(gateway.lifecycle().activeSession, null);
           assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "backend-protocol-failed");
           assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-upstream-hello");
-          privateSocket.terminate();
-        } finally {
-          client.terminate();
+        } catch (error) {
+          failure = new Error(
+            `Incompatible backend hello case ${String(index + 1)} failed during ${phase}; ` +
+            `gateway diagnostics: ${JSON.stringify(gateway.connectionDiagnostics())}`,
+            { cause: error },
+          );
+        }
+        // Drain setup even if authentication failed before returning its socket.
+        // Both peer closures must settle before the next case opens a connection.
+        cancellation.abort();
+        const [connection] = await Promise.allSettled([backendConnection]);
+        if (connection?.status === "fulfilled") {
+          privateSocket = connection.value;
+        }
+        const cleanup = await Promise.allSettled([
+          terminateTestPeer(client),
+          terminateTestPeer(privateSocket),
+        ]);
+        const cleanupFailures = cleanup.filter((outcome) => outcome.status === "rejected");
+        if (cleanupFailures.length > 0) {
+          const reasons: unknown[] = cleanupFailures.map((outcome): unknown => outcome.reason);
+          throw new AggregateError(
+            failure === undefined ? reasons : [failure, ...reasons],
+            `Incompatible backend hello case ${String(index + 1)} cleanup failed.`,
+            { cause: failure },
+          );
+        }
+        if (failure !== undefined) {
+          throw failure;
         }
       }
     } finally {
