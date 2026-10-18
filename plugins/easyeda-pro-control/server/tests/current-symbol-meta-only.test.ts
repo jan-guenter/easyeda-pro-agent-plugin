@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { controlDataDirectory, controlRootCapability } from "../src/artifacts.ts";
 import { createCheckpoint } from "../src/checkpoint.ts";
-import { assertCurrentDisposableSymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "../src/current-symbol-meta-only.ts";
+import { isRecord } from "../src/core.ts";
+import { assertCurrentDisposableSymbolBaseline, assertCurrentOrdinarySymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "../src/current-symbol-meta-only.ts";
 import { readNativeHistoryCheckpoint } from "../src/native-history.ts";
 import { decodeCurrentSymbolPreEditHistory } from "../src/symbol-sql-comparator.ts";
 import { IDS, TIMES, applyEffect, encrypted, expectedRaw, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
@@ -37,8 +38,8 @@ void test("META-only eligibility binds the complete original inventory and prese
   assert.equal(result["beforeSqlSha256"], input.before.logicalSha256);
   assert.equal(result["executionAuthorized"], false); assert.equal(result["cacheBranchObserved"], false);
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(structuredClone(input.before), binding(input), target, decoded.history, DESIRED, STARTUP), /original inventory/u);
-  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), { ...target, ownerUuid: IDS.peer }, decoded.history, DESIRED, STARTUP), /META-only baseline/u);
-  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), target, { ...decoded.history, semanticSha256: "0".repeat(64) }, DESIRED, STARTUP), /META-only baseline/u);
+  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), { ...target, ownerUuid: IDS.peer }, decoded.history, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
+  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), target, { ...decoded.history, semanticSha256: "0".repeat(64) }, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), { ...target, symbolUuid: "f".repeat(16) }, decoded.history, DESIRED, STARTUP), /target|header/u);
 });
 
@@ -50,7 +51,7 @@ void test("a tombstoned canvas refuses despite a META-only materialized document
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /canvas/u);
 });
 
-void test("only the disposable entrypoint admits one historical canvas segment and requalifies the inverse baseline", async () => {
+void test("the disposable entrypoint admits one historical canvas segment and requalifies the inverse baseline", async () => {
   const input = await fixture();
   const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
   const forward = await assertCurrentDisposableSymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP, DESIRED);
@@ -65,10 +66,10 @@ void test("only the disposable entrypoint admits one historical canvas segment a
   const inverse = await assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, inverseHistory.history, DESIRED, STARTUP);
   assert.deepEqual(inverse.canvasClock, { maximumTargetHeaderTime: TIMES.document, remainingWrites: 1 });
   const changed = { ...inverseHistory.history, plaintextBytes: inverseHistory.history.plaintextBytes + 1 };
-  await assert.rejects(assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, changed, DESIRED, STARTUP), /META-only baseline/u);
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(inverseInput.before, binding(inverseInput), TARGET, changed, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
 });
 
-void test("complete multi-segment canvas histories select only the disposable profile and reserve both writes", async () => {
+void test("complete multi-segment canvas histories retain the disposable profile and reserve both writes", async () => {
   const initial = await fixture();
   applyEffect(initial.path, `${expectedRaw()}|\n{"type":"LINE","ticket":101,"id":"second-shape"}||{ "x":2 }`);
   const input = { path: initial.path, before: await inventory(initial.path) };
@@ -84,7 +85,31 @@ void test("complete multi-segment canvas histories select only the disposable pr
   await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /historical target canvas/u);
   await assert.rejects(assertCurrentDisposableSymbolBaseline(structuredClone(input.before), binding(input), TARGET, decoded.history, DESIRED, STARTUP), /original inventory/u);
   const mismatched = { ...binding(input), checkpoint: { ...binding(input).checkpoint, sourceSha256: "0".repeat(64) } };
-  await assert.rejects(assertCurrentDisposableSymbolBaseline(input.before, mismatched, TARGET, decoded.history, DESIRED, STARTUP), /META-only baseline/u);
+  await assert.rejects(assertCurrentDisposableSymbolBaseline(input.before, mismatched, TARGET, decoded.history, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
+});
+
+void test("the fixed ordinary entrypoint admits bounded canvas history with exactly one forward write", async () => {
+  for (const multi of [false, true]) {
+    const initial = await fixture();
+    if (multi) { applyEffect(initial.path, `${expectedRaw()}|\n{"type":"LINE","ticket":101,"id":"second-shape"}||{ "x":2 }`); }
+    const input = { path: initial.path, before: await inventory(initial.path) };
+    const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
+    const result = await assertCurrentOrdinarySymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP);
+    assert.equal(result.evidence["profile"], "private.current-ordinary-canvas-segments-baseline.v1");
+    assert.equal(result.evidence["permittedPurpose"], "ordinary-symbol-metadata");
+    assert.equal(result.evidence["canvasRecords"], multi ? 2 : 1);
+    assert.equal(result.evidence["executionAuthorized"], false); assert.equal(result.evidence["cacheBranchObserved"], false);
+    assert.deepEqual(result.canvasClock, { maximumTargetHeaderTime: multi ? TIMES.document : 1, remainingWrites: 1 });
+    const budget = result.evidence["writeBudget"]; assert.ok(isRecord(budget));
+    assert.equal(budget["reservedWrites"], 1); assert.equal(budget["afterHistoryRows"], decoded.history.historyRowCount + 1);
+    assert.equal(budget["afterChunks"], decoded.history.chunkCount + 1);
+    await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /canvas/u);
+    await assert.rejects(assertCurrentOrdinarySymbolBaseline(structuredClone(input.before), binding(input), TARGET, decoded.history, DESIRED, STARTUP), /original inventory/u);
+    const changed = { ...decoded.history, plaintextBytes: decoded.history.plaintextBytes + 1 };
+    await assert.rejects(assertCurrentOrdinarySymbolBaseline(input.before, binding(input), TARGET, changed, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
+    await assert.rejects(assertCurrentOrdinarySymbolBaseline(input.before, binding(input), TARGET, decoded.history,
+      { ...DESIRED, description: "\0".repeat(12_000) }, STARTUP), /saved content.*byte limit/u);
+  }
 });
 
 void test("disposable eligibility never falls back around ambiguous history and retains the META-only path", async () => {
@@ -94,6 +119,21 @@ void test("disposable eligibility never falls back around ambiguous history and 
   const empty = await prepared();
   const emptyDecoded = await decodeCurrentSymbolPreEditHistory(empty.before, IDENTITY);
   const result = await assertCurrentDisposableSymbolBaseline(empty.before, binding(empty), TARGET, emptyDecoded.history, DESIRED, STARTUP);
+  assert.equal(result.canvasClock, undefined); assert.equal(result.evidence["profile"], "private.current-symbol-meta-only-baseline.v1");
+});
+
+void test("ordinary eligibility rejects ambiguous or lossy canvas history and retains the META-only path", async () => {
+  for (const shape of [
+    '{"type":"LINE","ticket":3,"id":"shape"}||{"x":1}|\n{"type":"META_PLACEHOLDER","ticket":4,"id":"shape"}||',
+    '{"type":"LINE","ticket":3,"id":"shape"}|| {"x":1}',
+  ]) {
+    const input = await prepared(shape);
+    const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
+    await assert.rejects(assertCurrentOrdinarySymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP), /type changed|discarded/u);
+  }
+  const input = await prepared();
+  const decoded = await decodeCurrentSymbolPreEditHistory(input.before, IDENTITY);
+  const result = await assertCurrentOrdinarySymbolBaseline(input.before, binding(input), TARGET, decoded.history, DESIRED, STARTUP);
   assert.equal(result.canvasClock, undefined); assert.equal(result.evidence["profile"], "private.current-symbol-meta-only-baseline.v1");
 });
 
@@ -172,12 +212,12 @@ void test("raw-copy and normalized-checkpoint provenance bind separately without
     { copy: { ...selected.copy, sha256: checkpoint.checkpointSha256 },
       checkpoint: { ...checkpoint, sourceSha256: checkpoint.checkpointSha256, checkpointSha256: checkpoint.sourceSha256 } },
   ]) {
-    await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, swapped, TARGET, history, DESIRED, STARTUP), /META-only baseline/u);
+    await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, swapped, TARGET, history, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
   }
-  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, selected, TARGET, decoded.history, DESIRED, STARTUP), /META-only baseline/u);
+  await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, selected, TARGET, decoded.history, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
   for (const changed of [{ ...history, semanticSha256: "0".repeat(64) }, { ...history, headHistoryUuid: IDS.newHead },
     { ...history, historyRowCount: history.historyRowCount + 1 }, { ...history, chunkCount: history.chunkCount + 1 },
     { ...history, plaintextBytes: history.plaintextBytes + 1 }]) {
-    await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, selected, TARGET, changed, DESIRED, STARTUP), /META-only baseline/u);
+    await assert.rejects(assertCurrentSymbolMetaOnlyBaseline(input.before, selected, TARGET, changed, DESIRED, STARTUP), /complete original symbol metadata baseline/u);
   }
 });

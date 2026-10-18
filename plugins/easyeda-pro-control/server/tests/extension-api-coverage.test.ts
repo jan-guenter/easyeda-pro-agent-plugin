@@ -49,16 +49,18 @@ void test("all eight legacy project-structure writer routes remain blocked witho
 });
 
 
-void test("ordinary symbol coverage exposes only its forward-only META history route without promoting legacy writes or live evidence", () => {
+void test("ordinary symbol coverage exposes its bounded forward-only history profiles without promoting legacy writes or live evidence", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.modify"); assert.ok(row);
   assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
   const route = row.routes.find((entry) => entry.tool === "easyeda_control_project_symbol_metadata"); assert.ok(route);
-  assert.equal(route.selector, "metadata-advance;forward-only-unused-meta-only-symbol"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.selector, "metadata-advance;forward-only-unused-meta-or-canvas-segments-symbol"); assert.equal(route.executionState, "available-with-runtime-guards");
   assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
   assert.deepEqual(route.documentTypes, [2]);
   for (const required of ["every tombstoned occurrence", "unused project-local symbol", "sealed pre-navigation startup", "reserve one write",
-    "final closed SQL equality", "No inverse", "installed101500", "installed123000", "Historical results grant no current-invocation authority"]) {
+    "final closed SQL equality", "No inverse", "installed101500", "installed123000", "Historical results grant no current-invocation authority",
+    "META-only or satisfy the bounded canvas-segments profile", "at most 101 complete chunks", "strictly newer than every target header",
+    "ordinary drawn-symbol connected validation remains unclaimed", "classification, otherProperty and geometry changes are unsupported"]) {
     assert.ok(route.scope.includes(required));
   }
   assert.equal(row.routes.find((entry) => entry.selector === "library.symbol.modify")?.executionState, "blocked");

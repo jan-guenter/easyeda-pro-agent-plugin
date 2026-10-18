@@ -100,7 +100,8 @@ void test("ordinary targets and metadata retain canonical identity, distinct IDs
     assert.equal(currentSymbolOperationRequestSchema.safeParse(invalid).success, false);
   }
   for (const patch of [{}, { name: " " }, { name: "a".repeat(513) }, { description: null }, { description: "a".repeat(65_537) },
-    { name: "Allowed", tags: [] }, { name: "Allowed", source: "other" }]) {
+    { name: "Allowed", tags: [] }, { name: "Allowed", source: "other" }, { name: "Allowed", classification: [] },
+    { name: "Allowed", otherProperty: {} }]) {
     assert.equal(currentSymbolOperationRequestSchema.safeParse({ ...baseline, preparation: { ...preparation, patch } }).success, false);
   }
   for (const patch of [{ name: "a".repeat(512) }, { description: "" }, { description: "a".repeat(65_536) }]) {
@@ -141,7 +142,9 @@ void test("ordinary discovery and validation advertise registration without gran
   const text = JSON.stringify(discovery["limitations"]);
   for (const required of ["Before the first ordinary navigation", "complete closed baseline", "live startup qualification", "original retained owner",
     "saved-content verification", "final closed SQL equality", "without retaining an inverse", "ambiguous failure consumes its stage", "61000 ms",
-    "request-normal-close", "Quarantine remains", "ambiguity consumes the close attempt"]) {
+    "request-normal-close", "Quarantine remains", "ambiguity consumes the close attempt", "META-only or satisfy the bounded canvas-segments profile",
+    "every tombstoned occurrence", "reserve exactly one ordinary write", "strictly newer than every target header",
+    "No inverse budget", "connected lifecycle is unclaimed"]) {
     assert.ok(text.includes(required));
   }
   assert.throws(() => queryCurrentSymbolOperation({ includeSchemas: true, enable: true }));

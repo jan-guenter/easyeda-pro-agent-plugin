@@ -331,9 +331,11 @@ export class CurrentSymbolWriterCoordinator {
       // Bound to the original startup, never a request flag. Every new header
       // Must supersede all prior target headers, including the inverse's input.
       const { maximumTargetHeaderTime, remainingWrites } = startup.canvasClock;
-      need(original.source.purpose === "disposable-validation" && slot.clockPlan.documentWindow.minimumMs > maximumTargetHeaderTime &&
+      need((original.source.purpose === "disposable-validation" ||
+        (original.source.purpose === "ordinary-symbol-metadata" && remainingWrites === 1)) &&
+        slot.clockPlan.documentWindow.minimumMs > maximumTargetHeaderTime &&
         slot.clockPlan.documentWindow.maximumMs <= CURRENT_SYMBOL_WRITE_TIME_CEILING - (remainingWrites === 2 ? CURRENT_SYMBOL_WRITE_WINDOW_MS + 1 : 0),
-      "Disposable canvas metadata requires a strictly newer document window and reserved inverse window headroom.");
+      "Canvas metadata requires its original purpose-bound write count, a strictly newer document window and reserved inverse window headroom.");
     }
     slot.writeInput = { ...request, startup: startup.expectation,
       desired: { name: baseline.preparation.metadata.after.name, description: baseline.preparation.metadata.after.description },

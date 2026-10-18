@@ -74,7 +74,7 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
     assert.equal(desired, baseline.preparation.metadata.after); assert.deepEqual(startup, expectation);
     assert.equal(restoration, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined);
     calls.push("metadata-scope");
-    if (metadataRefusal || (canvas && purpose === "ordinary-symbol-metadata")) { return Promise.reject(new Error("Synthetic unsupported complete metadata history")); }
+    if (metadataRefusal) { return Promise.reject(new Error("Synthetic unsupported complete metadata history")); }
     return Promise.resolve({ profile: "private.current-symbol-meta-only-baseline.v1", executionAuthorized: false });
   };
   const context = createContext({ Object, WeakMap, WeakSet, Promise, Error, AggregateError, canonicalJson, sha256Json, sha256Text,
@@ -89,8 +89,9 @@ async function fixture(symbolUuid: string, purpose: "disposable-validation" | "o
         projectUuid: PROJECT, libraryAtomHeaders: "preserve" }); calls.push("closed-history");
       return Promise.resolve(historyMismatch ? { ...retainedHistory, semanticSha256: "0".repeat(64) } : retainedHistory);
     },
-    assertCurrentSymbolMetaOnlyBaseline: (...args: Parameters<typeof metadataScope>): Promise<Bag> => {
-      assert.equal(purpose, "ordinary-symbol-metadata"); return metadataScope(...args);
+    assertCurrentOrdinarySymbolBaseline: async (...args: Parameters<typeof metadataScope>): Promise<Bag> => {
+      assert.equal(purpose, "ordinary-symbol-metadata"); assert.equal(args.length, 6);
+      return { evidence: await metadataScope(...args), ...(canvas ? { canvasClock: Object.freeze({ maximumTargetHeaderTime: 1000, remainingWrites: 1 }) } : {}) };
     },
     assertCurrentDisposableSymbolBaseline: async (...args: Parameters<typeof metadataScope>): Promise<Bag> => {
       assert.equal(purpose, "disposable-validation");
@@ -134,18 +135,17 @@ void test("startup qualification rejects a referenced target before native obser
   }
 });
 
-void test("canvas eligibility is selected only by original disposable purpose and retains its exact clock prerequisite", async () => {
-  for (const remainingWrites of [1, 2] as const) {
-    const selected = await fixture(UNUSED, "disposable-validation", false, false, remainingWrites, true);
+void test("canvas eligibility keeps the original purpose and its exact one-write or disposable inverse budget", async () => {
+  for (const [purpose, remainingWrites] of [["disposable-validation", 1], ["disposable-validation", 2], ["ordinary-symbol-metadata", 1]] as const) {
+    const selected = await fixture(UNUSED, purpose, false, false, remainingWrites, true);
     const token = await selected.run();
     const clock = selected.canvasClock(token);
     assert.deepEqual(clock, { maximumTargetHeaderTime: 1000, remainingWrites });
     assert.equal(token["canvasClockPrerequisite"], clock); assert.equal(Object.isFrozen(clock), true);
     assert.equal(selected.canvasClock(structuredClone(token)), undefined);
   }
-  const ordinary = await fixture(UNUSED, "ordinary-symbol-metadata", false, false, 1, true);
-  await assert.rejects(ordinary.run(), /unsupported complete metadata history/u);
-  assert.deepEqual(ordinary.calls, ["owner-revalidation", "closed-history", "metadata-scope"]);
+  const ordinary = await fixture(UNUSED, "ordinary-symbol-metadata", false, false, 2, true);
+  await assert.rejects(ordinary.run(), /qualification refused/u); assert.deepEqual(ordinary.calls, []);
 });
 
 void test("unused targets retain the complete original startup qualification and non-authorizing token", async () => {

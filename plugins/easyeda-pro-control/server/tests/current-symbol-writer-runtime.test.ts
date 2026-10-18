@@ -219,18 +219,21 @@ async function fixture(failure: Failure = "none", canvas?: CanvasFixture): Promi
 }
 const ID = "synthetic-current-writer";
 
-void test("canvas writers require original disposable purpose and a strictly newer clock before mutation", async () => {
-  for (const remainingWrites of [1, 2] as const) {
-    const accepted = await fixture("none", { maximumTargetHeaderTime: 1001, remainingWrites });
+void test("canvas writers require the original purpose-bound write count and a strictly newer clock before mutation", async () => {
+  for (const [purpose, remainingWrites] of [["disposable-validation", 1], ["disposable-validation", 2], ["ordinary-symbol-metadata", 1]] as const) {
+    const accepted = await fixture("none", { maximumTargetHeaderTime: 1001, remainingWrites, purpose });
     await accepted.start(); assert.equal(accepted.state.mutations, 1);
-    for (const canvas of [{ maximumTargetHeaderTime: 1002, remainingWrites }, { maximumTargetHeaderTime: 1003, remainingWrites },
-      { maximumTargetHeaderTime: 1001, remainingWrites, purpose: "ordinary-symbol-metadata" as const }]) {
+    for (const canvas of [{ maximumTargetHeaderTime: 1002, remainingWrites, purpose }, { maximumTargetHeaderTime: 1003, remainingWrites, purpose }]) {
       const refused = await fixture("none", canvas);
       await assert.rejects(refused.start(), /strictly newer document window/u);
       assert.deepEqual(refused.state.calls, ["preflight", "clock"]); assert.equal(refused.state.mutations, 0);
       assert.equal(refused.state.writes.includes("writer-dispatch-intent"), false);
     }
   }
+  const ordinaryInverse = await fixture("none", { maximumTargetHeaderTime: 1001, remainingWrites: 2, purpose: "ordinary-symbol-metadata" });
+  await assert.rejects(ordinaryInverse.start(), /purpose-bound write count/u);
+  assert.deepEqual(ordinaryInverse.state.calls, ["preflight", "clock"]); assert.equal(ordinaryInverse.state.mutations, 0);
+  assert.equal(ordinaryInverse.state.writes.includes("writer-dispatch-intent"), false);
 });
 
 void test("canvas forward reserves a complete strictly later inverse window, not merely one millisecond", async () => {
@@ -243,6 +246,11 @@ void test("canvas forward reserves a complete strictly later inverse window, not
   }
   const inverse = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 1, maximumMs: CURRENT_SYMBOL_WRITE_TIME_CEILING });
   await inverse.start(); assert.equal(inverse.state.mutations, 1);
+  const ordinary = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 1, maximumMs: CURRENT_SYMBOL_WRITE_TIME_CEILING, purpose: "ordinary-symbol-metadata" });
+  await ordinary.start(); assert.equal(ordinary.state.mutations, 1);
+  const exceeded = await fixture("none", { maximumTargetHeaderTime: 1, remainingWrites: 1, maximumMs: CURRENT_SYMBOL_WRITE_TIME_CEILING + 1, purpose: "ordinary-symbol-metadata" });
+  await assert.rejects(exceeded.start(), /headroom/u); assert.equal(exceeded.state.mutations, 0);
+  assert.equal(exceeded.state.writes.includes("writer-dispatch-intent"), false);
 });
 
 void test("private writer owns exactly one dispatch, original clock capture, normal closure and full comparison", async () => {

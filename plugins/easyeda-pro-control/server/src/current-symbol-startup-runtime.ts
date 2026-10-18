@@ -14,7 +14,7 @@ import { CURRENT_SYMBOL_STARTUP_STAGES, buildCurrentSymbolStartupGuard } from ".
 import type { EasyedaControlEngine } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
-import { assertCurrentDisposableSymbolBaseline, assertCurrentSymbolMetaOnlyBaseline } from "./current-symbol-meta-only.ts";
+import { assertCurrentDisposableSymbolBaseline, assertCurrentOrdinarySymbolBaseline } from "./current-symbol-meta-only.ts";
 import type { CurrentSymbolCanvasClockPrerequisite } from "./current-symbol-meta-only.ts";
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { exact } from "./symbol-clock-controls.ts";
@@ -161,10 +161,10 @@ export async function qualifyCurrentSymbolWriterStartup(engine: EasyedaControlEn
   const eligibility = purpose === "disposable-validation"
     ? await assertCurrentDisposableSymbolBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
       baseline.preparation.metadata.after, expectation, remainingWrites === 2 ? baseline.preparation.metadata.before : undefined)
-    : { evidence: await assertCurrentSymbolMetaOnlyBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
-      baseline.preparation.metadata.after, expectation), canvasClock: undefined };
+    : await assertCurrentOrdinarySymbolBaseline(baseline.inventory, baseline, baseline.preparation.target, history,
+      baseline.preparation.metadata.after, expectation);
   check(); const { evidence: metadataScope, canvasClock } = eligibility;
-  need(canvasClock === undefined || (purpose === "disposable-validation" && canvasClock.remainingWrites === remainingWrites));
+  need(canvasClock === undefined || canvasClock.remainingWrites === remainingWrites);
   const fingerprint = source.source.expectedFingerprint;
   assertExpectedFingerprint(fingerprint); validateSdkLocalRuntimeFingerprint(fingerprint);
   const assetsRoot = fingerprint.installedBundles.assetsRoot;

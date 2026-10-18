@@ -78,38 +78,37 @@ async function fixture(purpose: "disposable-validation" | "ordinary-symbol-metad
   };
 }
 
-void test("original disposable saved-source verifies exact canvas output without exposing that alternative to ordinary owners", async () => {
-  const f = await fixture("disposable-validation", true);
-  await assert.rejects(f.prepare(true), /original continuation/u);
-  const source = await f.prepare(); assert.equal(source["purpose"], "disposable-validation");
-  assert.equal(source["cacheProjectionProfile"], "private.current-canvas-segments-saved-symbol-getstr-projection.v1");
-  const content = f.content(), relation = f.verify(source, content);
-  assert.equal(relation["matchedProjection"], "current-canvas-segments-cache");
-  assert.equal(relation["exactContent"], true); assert.equal(relation["cacheBranchObserved"], false);
-  assert.throws(() => f.verify(source, content.replace('{ "x":1 }', '{"x":1}')), /differs/u);
-  assert.throws(() => f.verify(structuredClone(source), content), /original complete post-edit/u);
-  f.state.live = false; assert.throws(() => f.verify(source, content));
-  const ordinary = await fixture("ordinary-symbol-metadata", true);
-  await assert.rejects(ordinary.prepare(), /original complete post-edit/u);
-  assert.equal(ordinary.state.cachePreparations, 0); assert.equal(ordinary.state.checkpointReads, 0);
+void test("both original writer purposes verify exact canvas output without copied owner or descriptor authority", async () => {
+  for (const purpose of ["disposable-validation", "ordinary-symbol-metadata"] as const) {
+    const f = await fixture(purpose, true);
+    await assert.rejects(f.prepare(true), /original continuation/u);
+    const source = await f.prepare(); assert.equal(source["purpose"], purpose);
+    assert.equal(source["cacheProjectionProfile"], "private.current-canvas-segments-saved-symbol-getstr-projection.v1");
+    const content = f.content(), relation = f.verify(source, content);
+    assert.equal(relation["matchedProjection"], "current-canvas-segments-cache");
+    assert.equal(relation["exactContent"], true); assert.equal(relation["cacheBranchObserved"], false);
+    assert.throws(() => f.verify(source, content.replace('{ "x":1 }', '{"x":1}')), /differs/u);
+    assert.throws(() => f.verify(structuredClone(source), content), /original complete post-edit/u);
+    f.state.live = false; assert.throws(() => f.verify(source, content));
+  }
 });
 
-void test("original disposable saved-source admits exact multi-segment order variants without ordinary-owner fallback", async () => {
-  const f = await fixture("disposable-validation", "multi"), source = await f.prepare();
-  assert.equal(source["cacheProjectionProfile"], "private.current-canvas-segments-saved-symbol-getstr-projection.v1");
-  const records = f.content().split("|\n");
-  assert.equal(records.length, 5);
-  const reordered = [...records.slice(0, 3), ...records.slice(3).toReversed()].join("|\n");
-  assert.notEqual(reordered, f.content());
-  const result = f.verify(source, reordered);
-  assert.equal(result["exactContent"], true);
-  assert.equal(result["cacheBranchObserved"], false);
-  assert.equal(result["matchedProjection"], "current-canvas-segments-cache");
-  assert.throws(() => f.verify(source, reordered.replace('{ "x":1 }', '{"x":1}')), /differs|exact/u);
-  assert.throws(() => f.verify(structuredClone(source), reordered), /original complete post-edit/u);
-  const ordinary = await fixture("ordinary-symbol-metadata", "multi");
-  await assert.rejects(ordinary.prepare(), /original complete post-edit/u);
-  assert.equal(ordinary.state.cachePreparations, 0); assert.equal(ordinary.state.checkpointReads, 0);
+void test("both original writer purposes admit exact multi-segment order variants without accepting altered membership", async () => {
+  for (const purpose of ["disposable-validation", "ordinary-symbol-metadata"] as const) {
+    const f = await fixture(purpose, "multi"), source = await f.prepare();
+    assert.equal(source["cacheProjectionProfile"], "private.current-canvas-segments-saved-symbol-getstr-projection.v1");
+    const records = f.content().split("|\n");
+    assert.equal(records.length, 5);
+    const reordered = [...records.slice(0, 3), ...records.slice(3).toReversed()].join("|\n");
+    assert.notEqual(reordered, f.content());
+    const result = f.verify(source, reordered);
+    assert.equal(result["exactContent"], true);
+    assert.equal(result["cacheBranchObserved"], false);
+    assert.equal(result["matchedProjection"], "current-canvas-segments-cache");
+    assert.throws(() => f.verify(source, reordered.replace('{ "x":1 }', '{"x":1}')), /differs|exact/u);
+    assert.throws(() => f.verify(source, [...records.slice(0, 3), records[3], records[3]].join("|\n")), /stream witness/u);
+    assert.throws(() => f.verify(structuredClone(source), reordered), /original complete post-edit/u);
+  }
 });
 
 void test("both purposes retain the original exact META-only saved-source selector", async () => {
