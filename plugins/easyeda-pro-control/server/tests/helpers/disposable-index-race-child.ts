@@ -12,6 +12,8 @@ import { mock } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 // eslint-disable-next-line import/max-dependencies -- Fixed child isolation, evidence, source delay and passive input observation require these builtin APIs.
 import { fileURLToPath } from "node:url";
+import { assertTestIsolation } from "../../../scripts/test-isolation.ts";
+import { assertParentTestRoot } from "./parent-test-root.ts";
 
 const plugin = resolve(import.meta.dirname, "../../..");
 const sourcePath = join(plugin, "server/src/core.ts");
@@ -19,13 +21,12 @@ const expectedSourceHash = "edf3e02692bd93507440e5c6373afc233e90b28cc98a7b9049da
 const scenario = process.argv[2];
 assert.ok(["ordinary-first", "reservation-first", "concurrent", "configuration", "shutdown"].includes(scenario ?? ""));
 assert.equal(process.argv.length, 3); assert.equal(process.versions.node, "24.18.0");
-const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-assert.ok(root !== undefined && dirname(root) === "/tmp" && basename(root).startsWith(`easyeda-test-control-${String(process.pid)}-`));
+const { directory: root } = await assertTestIsolation();
 assert.equal(process.env["EASYEDA_BRIDGE_TOKEN_FILE"], join(root, "bridge-token"));
 assert.equal(process.env["EASYEDA_UPSTREAM_DATA_DIR"], join(root, "upstream"));
 const reports = process.env["EASYEDA_INDEX_TEST_REPORT_DIRECTORY"];
-assert.ok(reports !== undefined && dirname(dirname(reports)) === "/tmp" &&
-  basename(dirname(reports)).startsWith("easyeda-test-control-") && basename(reports).startsWith("index-race-"));
+const parentRoot = await assertParentTestRoot(process.env["EASYEDA_INDEX_TEST_PARENT_ROOT"]);
+assert.ok(reports !== undefined && dirname(reports) === parentRoot && basename(reports).startsWith("index-race-"));
 const reportDirectory = reports;
 const reportInfo = await fsPromises.lstat(reportDirectory);
 assert.ok(reportInfo.isDirectory() && !reportInfo.isSymbolicLink());

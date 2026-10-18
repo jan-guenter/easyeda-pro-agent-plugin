@@ -4,12 +4,13 @@ import { once } from "node:events";
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { assertParentTestRoot } from "./parent-test-root.ts";
 
 async function run(): Promise<void> {
   const path = process.argv[2];
   const mode = process.argv[3];
-  const root = process.env["EASYEDA_FIFO_TEST_ROOT"];
-  assert.ok(root !== undefined && /^\/tmp\/easyeda-test-control-[0-9]+-[a-zA-Z0-9]+$/u.test(root));
+  assert.equal(process.argv.length, 5);
+  const root = await assertParentTestRoot(process.argv[4]);
   assert.ok(path !== undefined && resolve(path) === path && dirname(dirname(path)) === root);
   assert.ok(mode === "old" || mode === "fixed");
   const before = await lstat(path); assert.equal(before.isFile(), true);

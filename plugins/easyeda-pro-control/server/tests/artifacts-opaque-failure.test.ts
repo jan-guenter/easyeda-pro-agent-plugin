@@ -20,6 +20,7 @@ import {
   reserveEvidencePaths,
 } from "../src/artifacts.ts";
 import { isErrnoException } from "../src/core.ts";
+import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 
 type Kind = "reservation" | "attachment";
 interface Files {
@@ -34,11 +35,8 @@ interface Outcome {
   readonly error?: unknown;
 }
 
-const configuredRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-assert.equal(typeof configuredRoot, "string");
-assert.ok(typeof configuredRoot === "string");
-const root: string = configuredRoot;
-assert.match(root, new RegExp(`^/tmp/easyeda-test-control-${String(process.pid)}-[A-Za-z0-9]+$`, "u"));
+// oxlint-disable-next-line node/no-top-level-await -- Reprove the original preloaded identity, not an arbitrary environment path.
+const { directory: root } = await assertTestIsolation();
 // oxlint-disable-next-line node/no-top-level-await -- Verify the preload root before registering filesystem cases.
 const rootInfo = await lstat(root);
 assert.ok(rootInfo.isDirectory() && !rootInfo.isSymbolicLink());

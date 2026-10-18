@@ -17,7 +17,9 @@ const request = inputFor();
 const defaults = { selected: ["selected-second", "selected-first"], Line: [{ globalIndex: "line-b" }, { globalIndex: "line-a" }],
   Arc: [{ globalIndex: "arc-a" }], Via: [{ globalIndex: "via-a" }],
   Component: [{ globalIndex: "component-b" }, { globalIndex: "component-a" }], Pad: [{ globalIndex: "pad-b" }, { globalIndex: "pad-a" }],
-  String: [{ globalIndex: "string-b" }, { globalIndex: "string-a" }] };
+  String: [{ globalIndex: "string-b" }, { globalIndex: "string-a" }],
+  Dimension: [{ globalIndex: "dimension-length" }, { globalIndex: "dimension-radius" }, { globalIndex: "dimension-angle" }],
+  Image: [{ globalIndex: "vector-image" }, { globalIndex: "picture" }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; fastDeadline?: boolean; input?: CurrentPcbIdentitiesRequest; }
 function environment(options: Options = {}): {
   run: () => Promise<unknown>; evaluateChild: (source: string) => unknown;
@@ -28,13 +30,14 @@ function environment(options: Options = {}): {
     if (topic === "getTabIdAndDocType" || topic === "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds") { assert.equal(arg, undefined); }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" ||
+        topic === "pcb/extensionAPI/dimension-getAll" || topic === "pcb/extensionAPI/image-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String'};
+globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/dimension-getAll':'Dimension','pcb/extensionAPI/image-getAll':'Image'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -78,7 +81,9 @@ void test("current PCB identities retain cross-realm receiver, full ordered IDs 
   for (const [method, expected] of [[selectedMethod, defaults.selected], ["eda.pcb_PrimitiveLine.getAllPrimitiveId", ["line-b", "line-a"]],
     ["eda.pcb_PrimitiveArc.getAllPrimitiveId", ["arc-a"]], ["eda.pcb_PrimitiveVia.getAllPrimitiveId", ["via-a"]],
     ["eda.pcb_PrimitiveComponent.getAllPrimitiveId", ["component-b", "component-a"]], ["eda.pcb_PrimitivePad.getAllPrimitiveId", ["pad-b", "pad-a"]],
-    ["eda.pcb_PrimitiveString.getAllPrimitiveId", ["string-b", "string-a"]]] as const) {
+    ["eda.pcb_PrimitiveString.getAllPrimitiveId", ["string-b", "string-a"]],
+    ["eda.pcb_PrimitiveDimension.getAllPrimitiveId", ["dimension-length", "dimension-radius", "dimension-angle"]],
+    ["eda.pcb_PrimitiveImage.getAllPrimitiveId", ["vector-image", "picture"]]] as const) {
     const input = inputFor(method);
     const fixture = environment({ input, beforeChild: "for(const row of rows.Line)Object.defineProperty(row,'geometry',{get(){getterReads++;throw new Error('PRIVATE_GEOMETRY');}});" });
     const result = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await fixture.run()));
@@ -108,7 +113,7 @@ void test("current PCB identity schemas and discovery reject filters, unknown me
     assert.throws(() => buildCurrentPcbIdentitiesProgram(invalid)); assert.equal(validateCurrentPcbIdentitiesArguments(invalid)["valid"], false);
   }
   const catalog = queryCurrentPcbIdentities({ includeSchemas: true });
-  assert.equal(catalog["total"], 8); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
+  assert.equal(catalog["total"], 10); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
   assert.equal(queryCurrentPcbIdentities({ method: selectedMethod })["total"], 1);
   const otherTarget = { ...target, projectUuid: "d".repeat(32), documentUuid: "e".repeat(32), tabId: `${"e".repeat(32)}@${"d".repeat(32)}` };
   const input = parseCurrentPcbIdentitiesRequest({ ...request, target: otherTarget });
@@ -142,9 +147,10 @@ void test("current String identities use the complete ordered native family with
 
 void test("current PCB identities distinguish empty arrays from missing or unsupported type results and reject forged results", async () => {
   for (const method of [selectedMethod, "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
-    "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId"]) {
+    "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId",
+    "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId"]) {
     const input = inputFor(method);
-    const fixture = environment({ input, beforeChild: "rows={selected:[],Line:[],Arc:[],Via:[],Component:[],Pad:[],String:[]};" });
+    const fixture = environment({ input, beforeChild: "for(const family of Object.keys(rows))rows[family]=[];" });
     const raw: unknown = decodeExactReadEnvelope(await fixture.run());
     assert.deepEqual(validateCurrentPcbIdentitiesResult(input, raw)["value"], []);
   }
@@ -161,6 +167,34 @@ void test("current PCB identities distinguish empty arrays from missing or unsup
     { ...payload, observations: [{ family: "Component", ids: ["line-a"] }, { family: "Arc", ids: [] }, { family: "Via", ids: [] }] },
     { ...payload, observations: [{ family: "Via", ids: ["line-a"] }, { family: "Arc", ids: [] }, { family: "Line", ids: [] }] }]) {
     assert.throws(() => validateCurrentPcbIdentitiesResult(validInput, invalid));
+  }
+});
+
+void test("Dimension and Image identity projections preserve native membership and refuse malformed or changing families", async () => {
+  for (const family of ["Dimension", "Image"] as const) {
+    const input = inputFor(`eda.pcb_Primitive${family}.getAllPrimitiveId`), topic = `pcb/extensionAPI/${family.toLowerCase()}-getAll`;
+    const fixture = environment({ input, beforeChild: `for(const row of rows.${family})for(const key of ['pathString','template','hashId','coordinateSet','content','unit'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED');}});` });
+    const result = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await fixture.run()));
+    assert.deepEqual(result["value"], defaults[family].map(row => row.globalIndex));
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("calls"), 6);
+    for (const beforeChild of [`rows.${family}=undefined;`, `delete rows.${family}[1];`,
+      `rows.${family}[1].globalIndex=rows.${family}[0].globalIndex;`,
+      `Object.defineProperty(rows.${family}[0],'globalIndex',{get(){getterReads++;throw new Error('PRIVATE');}});`,
+      `rows.${family}=Array(20001).fill({globalIndex:'oversized'});`]) {
+      const invalid = environment({ input, beforeChild });
+      await assert.rejects(invalid.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+      assert.equal(invalid.evaluateChild("getterReads"), 0); assert.equal(invalid.evaluateChild("dataReads"), 1);
+    }
+    const drift = environment({ input, afterCall: `if(topic===${JSON.stringify(topic)}&&dataReads===2)rows.${family}.reverse();` });
+    await assert.rejects(drift.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+    assert.equal(drift.evaluateChild("dataReads"), 2);
+    for (const argumentsValue of [{ layer: 3 }, { primitiveLock: false }, { primitiveIds: ["one"] }]) {
+      assert.equal(validateCurrentPcbIdentitiesArguments({ ...input, arguments: argumentsValue })["valid"], false);
+    }
+    const first = defaults[family][0]; assert.ok(first !== undefined);
+    const classify = inputFor(CURRENT_PCB_IDENTITY_TYPE_METHOD, { id: first.globalIndex });
+    const raw: unknown = decodeExactReadEnvelope(await environment({ input: classify }).run());
+    assert.throws(() => validateCurrentPcbIdentitiesResult(classify, raw), /not in an observed supported family/u);
   }
 });
 

@@ -15,6 +15,14 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019013000` adds current-version Dimension/Image loaded-view identity
+reads, an unregistered schematic child observer, and PCB text Save prerequisite
+checks. It also fixes test isolation under alternate temporary directories.
+These changes do not enable schematic or PCB text writers. Read the
+[new reader scope and concrete omissions](docs/current-pcb-dimension-image-identities-2026-10-19.md),
+[schematic observer](docs/current-schematic-child-observer-2026-10-19.md) and
+[Save prerequisite findings](docs/current-pcb-string-save-prerequisites-2026-10-19.md).
+
 Update `0.3.0+codex.20261018211000` records that result, removes repeated
 serialization of certified immutable PCB baseline data, and adds unregistered
 schematic preflight/child-roster and PCB text-create groundwork. Dynamic ownership,

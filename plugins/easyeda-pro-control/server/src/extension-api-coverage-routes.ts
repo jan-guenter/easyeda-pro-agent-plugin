@@ -84,6 +84,20 @@ for (const [namespace, method] of [["pcb_SelectControl", "getAllSelectedPrimitiv
   } });
 }
 
+for (const family of ["Dimension", "Image"] as const) {
+  const method = `eda.pcb_Primitive${family}.getAllPrimitiveId`;
+  groups.push({ namespace: `pcb_Primitive${family}`, methods: ["getAllPrimitiveId"], route: {
+    tool: "easyeda_control_pcb_identities", selector: method, implementation: "native-task-equivalent",
+    scope: `Separately pinned current API/UI/PCB loaded-view identity read. Empty arguments and explicit ordinary active type-3 project/branch/document/tab only. Captured native frame/receiver, surrounding native identity checks and two matching ordered samples. ${family === "Dimension"
+      ? "Concatenates length, radius and angle dimension manager views; annotation text and coordinates remain unprojected."
+      : "Concatenates vector Image then Picture manager views; native path conversion allocates temporary geometry. Existing templates/hash metadata are serialized without image-asset loading; neither paths nor picture content leave the adapter."} Neither collection filters parents or includes models without a loaded stateWatcher. Returns only globalIndex identities, not geometry, complete source inventory, root ownership, renderability or saved membership. At most20000 IDs/256characters each/393216bytes evidence; native enumeration and full serialization precede output bounds and are not cancelled by timeout. Positive type lookup remains Line/Arc/Via only. No filters, selection, navigation, writer or Save. No current connected validation. Fill/Polyline/Region are not enabled on this current adapter because their polygon serializer can rebuild native children. Legacy separately pinned routes remain unchanged.`,
+    source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: ["current-pcb-identities.test.ts", "extension-api-coverage.test.ts"], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method, includeSchemas: true } } } },
+  } });
+}
+
 for (const family of ["Line", "Arc", "Via", "Component", "Pad"] as const) {
   const namespace = `pcb_Primitive${family}`;
   for (const method of ["getAll", "get"] as const) {

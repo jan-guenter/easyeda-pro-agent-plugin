@@ -2,18 +2,19 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, rename } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { testIsolation } from "../../../scripts/test-isolation.ts";
 import { controlDataDirectory, createOperation, operationPath } from "../../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, newOperationId } from "../../src/core.ts";
 
 interface Retired { readonly path: string; readonly sha256: string; readonly inode: bigint; readonly device: bigint }
 const retired = new Map<string, Retired>();
-// Static imports run after the isolation preload and before fixture TMPDIR changes.
-const initialTemporaryDirectory = tmpdir();
+// The preload retains the canonical path even if a fixture later changes TMPDIR.
+const initialTemporaryDirectory = testIsolation.temporaryDirectory;
 const initialTestRoot = controlDataDirectory();
 function testRoot(): string {
   const root = controlDataDirectory();
+  assert.equal(root, testIsolation.directory, "Synthetic retirement requires the preload-issued root");
   assert.equal(root, initialTestRoot, "Synthetic retirement requires the original test worker root");
   assert.equal(dirname(root), initialTemporaryDirectory, "Synthetic retirement requires the test worker root");
   assert.ok(basename(root).startsWith(`easyeda-test-control-${String(process.pid)}-`));

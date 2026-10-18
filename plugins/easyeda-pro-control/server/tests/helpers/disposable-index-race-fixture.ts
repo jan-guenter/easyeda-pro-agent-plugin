@@ -3,7 +3,7 @@ import childProcess from "node:child_process";
 import type { ChildProcess, SpawnOptions } from "node:child_process";
 import { lstat, mkdtemp, readFile, readdir, readlink, rename, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import type { TestContext } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -13,6 +13,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { isRecord, sha256Text } from "../../src/core.ts";
 import { closedSymbolDisposableOutputSchema } from "../../src/closed-symbol-disposable-tool.ts";
 import { requestData } from "./disposable-tool-data.ts";
+import { assertTestIsolation } from "../../../scripts/test-isolation.ts";
 
 export type Scenario = "ordinary-first" | "reservation-first" | "concurrent" | "configuration" | "shutdown";
 type Response = Awaited<ReturnType<Client["callTool"]>>;
@@ -91,8 +92,7 @@ export function shutdownOutcome(outcome: SettledCall, kind: "ordinary" | "valida
 }
 export async function raceFixture(context: TestContext, scenario: Scenario): Promise<RaceFixture> {
   assert.equal(process.versions.node, "24.18.0");
-  const parentRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(parentRoot !== undefined && basename(parentRoot).startsWith(`easyeda-test-control-${String(process.pid)}-`));
+  const parentIdentity = await assertTestIsolation(), parentRoot = parentIdentity.directory;
   const reports = await mkdtemp(join(parentRoot, "index-race-"));
   const childPath = join(import.meta.dirname, "disposable-index-race-child.ts"), preload = join(plugin, "scripts/test-isolation.ts");
   const args = ["--import", preload, childPath, scenario];
@@ -118,7 +118,8 @@ export async function raceFixture(context: TestContext, scenario: Scenario): Pro
   });
   syncBuiltinESMExports();
   const transport = new StdioClientTransport({ command: process.execPath, args, cwd: plugin,
-    env: { NODE_NO_WARNINGS: "1", EASYEDA_INDEX_TEST_REPORT_DIRECTORY: reports }, stderr: "pipe", maxBufferSize: 1_048_576 });
+    env: { NODE_NO_WARNINGS: "1", TMPDIR: parentIdentity.temporaryDirectory,
+      EASYEDA_INDEX_TEST_PARENT_ROOT: JSON.stringify(parentIdentity), EASYEDA_INDEX_TEST_REPORT_DIRECTORY: reports }, stderr: "pipe", maxBufferSize: 1_048_576 });
   transport.stderr?.on("data", (chunk: Buffer) => {
     if (Buffer.byteLength(stderr) + chunk.length > 32_768) { stderrOverflow = true; } else { stderr += chunk.toString("utf8"); }
   });
@@ -171,16 +172,19 @@ export async function raceFixture(context: TestContext, scenario: Scenario): Pro
     try { await bounded(client.close(), 6000); } catch (error) { cleanupErrors.push(error); }
     try { await bounded(transport.close(), 6000); } catch (error) { cleanupErrors.push(error); }
     const outcome = await bounded(closed, 10_000);
-    const exit = await readReport("child-exit.json");
+    let exit: Record<string, unknown> | undefined;
+    try { exit = await readReport("child-exit.json"); } catch (error) { cleanupErrors.push(error); }
     const diagnostic = { scenario, outcome, processCalls, stdoutBytes, stdoutOverflow, stderrOverflow,
       errorOverflow, errors: errors.map(error => ({ name: error.name, message: error.message.slice(0, 2048),
         truncated: error.message.length > 2048, code: error instanceof McpError ? error.code : null })),
-      cleanupFailures: cleanupErrors.length, released, shutdownSent, exit };
+      cleanupFailures: cleanupErrors.length, released, shutdownSent, exit,
+      stderr: stderr.slice(0, 4096), stderrTruncated: stderrOverflow || stderr.length > 4096 };
     const text = JSON.stringify(diagnostic); assert.ok(Buffer.byteLength(text) <= 32_768);
     await writeFile(join(reports, "parent-diagnostic.json"), text, { flag: "wx", mode: 0o600 });
     assert.equal(outcome.code, 0); assert.equal(outcome.signal, null); assert.equal(processCalls, 1);
     assert.equal(stderrOverflow, false); assert.equal(stderr, ""); assert.equal(stdoutOverflow, false); assert.equal(errorOverflow, false);
     assert.ok(child !== undefined && child.exitCode === 0);
+    assert.ok(exit !== undefined);
     for (const name of ["processAttempts", "networkAttempts", "windowsReadAttempts"] as const) { assert.equal(exit[name], 0); }
     for (const name of ["lifetimeExpired", "barrierExpired"] as const) { assert.equal(exit[name], false); }
     assert.equal(exit["fingerprintReads"], 1); assert.equal(exit["returnedOriginalBuffer"], true);

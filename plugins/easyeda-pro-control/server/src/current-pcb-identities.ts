@@ -12,11 +12,12 @@ export const CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH = 256;
 export const CURRENT_PCB_IDENTITY_TYPE_METHOD = "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId";
 const collectionMethods = ["eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
   "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
-  "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId"] as const;
+  "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId",
+  "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId"] as const;
 const methods = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const idSchema = z.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
-const families = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String"] as const;
+const families = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String", "Dimension", "Image"] as const;
 export type CurrentPcbIdentityFamily = typeof families[number];
 export const currentPcbIdentitiesRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.enum(collectionMethods), arguments: z.object({}).strict(), target: targetSchema }).strict(),
@@ -35,6 +36,8 @@ const limitations = [
   "Exact active ordinary project-owned type-3 PCB only. The retained frame and local native receiver are rechecked around every await; native tab/type identity brackets each sample. This is not an atomic lock or proof against switching away and back between observations.",
   "Selected IDs preserve the native selection array. Line, Arc, Via, Component and Pad IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made. Pad IDs do not distinguish free pads from component pads or prove parent associations.",
   "String identifies PCB text and preserves the native string-getAll order, excluding views with a native parent. Component attributes and inherited text are outside that family. This filter does not establish complete source ownership or saved membership. The native serializer reads existing font caches, but this adapter copies only globalIndex and never returns text, font, color or geometry.",
+  "Dimension IDs preserve native length, radius and angle manager order, without a parent filter. Dimension annotation text and coordinates are serialized internally but not projected. This does not establish rendered measurements, root ownership, complete canvas inventory or saved membership; Dimension is not admitted to positive type lookup.",
+  "Image IDs include native vector Image views followed by Picture views, without a parent filter. Native path conversion allocates temporary geometry before output bounds. The reviewed serializer reads existing template/hash metadata without loading image assets; only globalIndex is projected. No picture content, renderability, source ownership or saved membership is established. Image is not admitted to positive type lookup.",
   "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
   "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
   "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
@@ -50,6 +53,8 @@ export function currentPcbIdentityFamilies(request: CurrentPcbIdentitiesRequest)
     case "eda.pcb_PrimitiveComponent.getAllPrimitiveId": { return ["Component"]; }
     case "eda.pcb_PrimitivePad.getAllPrimitiveId": { return ["Pad"]; }
     case "eda.pcb_PrimitiveString.getAllPrimitiveId": { return ["String"]; }
+    case "eda.pcb_PrimitiveDimension.getAllPrimitiveId": { return ["Dimension"]; }
+    case "eda.pcb_PrimitiveImage.getAllPrimitiveId": { return ["Image"]; }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: { return ["Line", "Arc", "Via"]; }
     default: { throw new Error("Unsupported current PCB identity method."); }
   }

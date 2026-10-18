@@ -89,3 +89,7 @@ export function parseCurrentSchematicChildObservation(raw: unknown): CurrentSche
   const result = observationSchema.parse(copy(raw, { nodes: 0, bytes: 0 }));
   need(Buffer.byteLength(JSON.stringify(result)) <= MAX_BYTES, "encoded bound exceeded"); return freezeDeep(result);
 }
+/** Defensive transport copy only, not acceptance of a child observation. */
+export function copyCurrentSchematicChildTransport(raw: unknown): unknown {
+  return copy(raw, { nodes: 0, bytes: 0 });
+}

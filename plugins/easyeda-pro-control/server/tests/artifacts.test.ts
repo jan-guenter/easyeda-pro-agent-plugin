@@ -147,7 +147,7 @@ function fixturePlan(name = "Artifact test plan"): UnknownRecord {
 }
 
 before(async () => {
-  dataDir = await mkdtemp(join("/tmp", "easyeda-control-artifacts-"));
+  dataDir = await mkdtemp(join(tmpdir(), "easyeda-control-artifacts-"));
   configureTestControlRoot(dataDir);
   const loaded: unknown = await import(
     `../src/artifacts.ts?test-dir=${encodeURIComponent(dataDir)}`
@@ -1251,7 +1251,7 @@ void describe("bounded artifact reads", () => {
 void describe("control-root lifetime binding", { concurrency: false }, () => {
   void test("rejects a post-validation control-root replacement without publishing into either directory", async () => {
     const parent = await mkdtemp(
-      join("/tmp", "easyeda-control-artifact-root-swap-"),
+      join(tmpdir(), "easyeda-control-artifact-root-swap-"),
     );
     const root = join(parent, "control");
     const movedRoot = join(parent, "control-moved");

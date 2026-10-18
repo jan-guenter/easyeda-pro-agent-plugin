@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { copyFile, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, test } from "node:test";
 import type { TestContext } from "node:test";
 import { promisify } from "node:util";
@@ -47,8 +48,8 @@ async function assertNoModuleAncestor(path: string): Promise<void> {
 }
 
 async function fixture(context: TestContext, calculationOnly = false): Promise<BundledFixture> {
-  // Use a filesystem outside the checkout, independent of an ambient TMPDIR.
-  const root = await mkdtemp("/tmp/easyeda-bundled-startup-");
+  // Honor the selected filesystem; assertNoModuleAncestor still proves isolation.
+  const root = await mkdtemp(join(tmpdir(), "easyeda-bundled-startup-"));
   context.after(async () => { await rm(root, { recursive: true, force: true }); });
   const pluginRoot = join(root, "plugin");
   const distRoot = join(pluginRoot, "server", "dist");
