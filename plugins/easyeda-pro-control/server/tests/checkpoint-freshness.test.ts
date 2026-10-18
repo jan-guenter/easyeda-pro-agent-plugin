@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { mkdtemp, open, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 import { createCheckpoint, verifyCheckpoint } from "../src/checkpoint.ts";
 
 function registerSourceCommitCase(mode: "DELETE" | "WAL", phase: "creation" | "verification"): void {
   void test(`checkpoint ${phase} rejects a ${mode} commit after its snapshot`, async () => {
-    const directory = await mkdtemp("/tmp/easyeda-checkpoint-freshness-");
+    const directory = await mkdtemp(join(tmpdir(), "easyeda-checkpoint-freshness-"));
     const source = join(directory, "source.eprj2");
     const outputDir = join(directory, "checkpoints");
     const database = new DatabaseSync(source);
@@ -44,7 +45,7 @@ for (const mode of ["DELETE", "WAL"] as const) {
 }
 
 void test("checkpoint verification rejects a checkpoint modified after hashing", async () => {
-  const directory = await mkdtemp("/tmp/easyeda-checkpoint-artifact-freshness-");
+  const directory = await mkdtemp(join(tmpdir(), "easyeda-checkpoint-artifact-freshness-"));
   const source = join(directory, "source.eprj2");
   const outputDir = join(directory, "checkpoints");
   const database = new DatabaseSync(source);
@@ -65,7 +66,7 @@ void test("checkpoint verification rejects a checkpoint modified after hashing",
 });
 
 void test("checkpoint verification rejects source replacement after its snapshot", async () => {
-  const directory = await mkdtemp("/tmp/easyeda-checkpoint-path-freshness-");
+  const directory = await mkdtemp(join(tmpdir(), "easyeda-checkpoint-path-freshness-"));
   const source = join(directory, "source.eprj2");
   const outputDir = join(directory, "checkpoints");
   const database = new DatabaseSync(source);
@@ -87,7 +88,7 @@ void test("checkpoint verification rejects source replacement after its snapshot
 });
 
 void test("checkpoint receipt reads reject oversized sparse files before allocation", async () => {
-  const directory = await mkdtemp("/tmp/easyeda-checkpoint-receipt-limit-");
+  const directory = await mkdtemp(join(tmpdir(), "easyeda-checkpoint-receipt-limit-"));
   const path = join(directory, "oversized.checkpoint.json");
   const handle = await open(path, "wx", 0o600);
   try {

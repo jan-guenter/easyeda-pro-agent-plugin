@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
+import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 
 const preload = fileURLToPath(new URL("../../scripts/test-isolation.ts", import.meta.url));
 const artifacts = new URL("../src/artifacts.ts", import.meta.url).href;
@@ -138,3 +139,40 @@ void test("preload gives every test worker a distinct root instead of inheriting
   assert.notEqual(first.pid, result.pid); assert.notEqual(second.pid, result.pid);
   await assertAmbientUnchanged(options);
 });
+
+void test("preload canonicalizes an alternate TMPDIR and fixed children retain original root identities", async (context) => {
+  const options = await fixture(context), parent = await assertTestIsolation();
+  const alias = join(options.root, "temporary-alias");
+  await symlink(options.temporaryDirectory, alias);
+  const child = fileURLToPath(new URL("helpers/test-isolation-child.ts", import.meta.url));
+  // oxlint-disable-next-line node/no-sync -- This fixed builtin-only child exits normally before inspecting its evidence.
+  const result = spawnSync(process.execPath, ["--import", preload, child, JSON.stringify(parent)], {
+    env: { TMPDIR: alias, NODE_NO_WARNINGS: "1" }, encoding: "utf8", timeout: 10_000, maxBuffer: 32_768,
+  });
+  assert.equal(result.error, undefined); assert.equal(result.signal, null); assert.equal(result.status, 0, result.stderr);
+  const value: unknown = JSON.parse(result.stdout);
+  assert.ok(value !== null && typeof value === "object");
+  assert.equal(Reflect.get(value, "temporaryDirectory"), options.temporaryDirectory);
+  assert.equal(Reflect.get(value, "parent"), parent.directory);
+  const root: unknown = Reflect.get(value, "directory");
+  assert.ok(typeof root === "string"); assert.equal(dirname(root), options.temporaryDirectory);
+  assert.equal(Reflect.get(value, "pid"), result.pid);
+  const roots = await readdir(options.temporaryDirectory);
+  assert.equal(roots.length, 1, "Repeated imports must not allocate a replacement root");
+  await assertAmbientUnchanged(options);
+});
+
+for (const field of ["pid", "ino", "dev", "mode", "directory", "temporaryDirectory"] as const) {
+  void test(`fixed synthetic child rejects a substituted parent ${field}`, async (context) => {
+    const options = await fixture(context), parent = await assertTestIsolation();
+    const changed = { ...parent, [field]: typeof parent[field] === "number" ? parent[field] + 1 : options.ambientRoot };
+    const child = fileURLToPath(new URL("helpers/test-isolation-child.ts", import.meta.url));
+    // oxlint-disable-next-line node/no-sync -- Retain the fixed child's actual refusal and normal exit before continuing.
+    const result = spawnSync(process.execPath, ["--import", preload, child, JSON.stringify(changed)], {
+      env: { TMPDIR: options.temporaryDirectory, NODE_NO_WARNINGS: "1" }, encoding: "utf8", timeout: 10_000, maxBuffer: 32_768,
+    });
+    assert.equal(result.error, undefined); assert.equal(result.signal, null); assert.equal(result.status, 1);
+    assert.equal(result.stdout, ""); assert.match(result.stderr, /AssertionError/u);
+    await assertAmbientUnchanged(options);
+  });
+}

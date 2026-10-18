@@ -9,17 +9,19 @@ import net from "node:net";
 import { basename, dirname, join, resolve } from "node:path";
 import { mock } from "node:test";
 import { fileURLToPath } from "node:url";
+import { assertTestIsolation } from "../../../scripts/test-isolation.ts";
+// oxlint-disable-next-line import/max-dependencies -- The fixed child's original-root and parent-root checks must precede its real SDK boundary imports.
+import { assertParentTestRoot } from "./parent-test-root.ts";
 
 const scenario = process.argv[2];
 assert.ok(scenario === "seeded" || scenario === "missing-assets" || scenario === "invalid-assets" || scenario === "ordinary-history" || scenario === "copy-history");
 assert.equal(process.argv.length, 3); assert.equal(process.versions.node, "24.18.0");
-const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-assert.ok(root !== undefined && dirname(root) === "/tmp" && basename(root).startsWith(`easyeda-test-control-${String(process.pid)}-`));
+const { directory: root } = await assertTestIsolation();
 assert.equal(process.env["EASYEDA_BRIDGE_TOKEN_FILE"], join(root, "bridge-token"));
 assert.equal(process.env["EASYEDA_UPSTREAM_DATA_DIR"], join(root, "upstream"));
 const reportDirectory = process.env["EASYEDA_INDEX_TEST_REPORT_DIRECTORY"];
-assert.ok(reportDirectory !== undefined && dirname(dirname(reportDirectory)) === "/tmp" &&
-  basename(dirname(reportDirectory)).startsWith("easyeda-test-control-") && basename(reportDirectory).startsWith("index-case-"));
+const parentRoot = await assertParentTestRoot(process.env["EASYEDA_INDEX_TEST_PARENT_ROOT"]);
+assert.ok(reportDirectory !== undefined && dirname(reportDirectory) === parentRoot && basename(reportDirectory).startsWith("index-case-"));
 const reportInfo = await fsPromises.lstat(reportDirectory);
 assert.ok(reportInfo.isDirectory() && !reportInfo.isSymbolicLink());
 // eslint-disable-next-line no-bitwise -- POSIX mode permission bits are the native filesystem contract.

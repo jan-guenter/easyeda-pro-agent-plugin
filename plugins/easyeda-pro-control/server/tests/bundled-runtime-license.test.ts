@@ -13,6 +13,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, test } from "node:test";
 
@@ -25,7 +26,7 @@ import { buildServer } from "../../scripts/build-server.ts";
 const temporaryRoots: string[] = [];
 
 async function fixtureRoot(): Promise<string> {
-  const root = await mkdtemp(join("/tmp", "bundled-runtime-license-"));
+  const root = await mkdtemp(join(tmpdir(), "bundled-runtime-license-"));
   temporaryRoots.push(root);
   await Promise.all([
     mkdir(join(root, "node_modules"), { recursive: true }),

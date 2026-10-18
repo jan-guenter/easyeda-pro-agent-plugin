@@ -16,6 +16,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { afterEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
@@ -37,6 +38,7 @@ import {
   sealedVendoredMemoryPlugin,
   stageReviewedVendoredSource,
   stageSealedReviewedVendoredSource,
+// oxlint-disable-next-line import/max-dependencies -- This integration test retains filesystem, child, bridge build and source-capture checks while honoring os.tmpdir.
 } from "../../scripts/reviewed-bridge-source.ts";
 
 const pluginRoot = resolve(import.meta.dirname, "../..");
@@ -47,7 +49,7 @@ const temporaryDirectories: string[] = [];
 const execFileAsync = promisify(execFile);
 
 async function temporaryDirectory(): Promise<string> {
-  const path = await mkdtemp("/tmp/easyeda-bridge-auth-test-");
+  const path = await mkdtemp(join(tmpdir(), "easyeda-bridge-auth-test-"));
   temporaryDirectories.push(path);
   return path;
 }

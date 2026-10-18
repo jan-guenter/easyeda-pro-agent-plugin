@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { copyFile, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, test } from "node:test";
 import type { TestContext } from "node:test";
 import { promisify } from "node:util";
@@ -47,8 +48,8 @@ async function assertNoModuleAncestor(path: string): Promise<void> {
 }
 
 async function fixture(context: TestContext, calculationOnly = false): Promise<BundledFixture> {
-  // Use a filesystem outside the checkout, independent of an ambient TMPDIR.
-  const root = await mkdtemp("/tmp/easyeda-bundled-startup-");
+  // Honor the selected filesystem; assertNoModuleAncestor still proves isolation.
+  const root = await mkdtemp(join(tmpdir(), "easyeda-bundled-startup-"));
   context.after(async () => { await rm(root, { recursive: true, force: true }); });
   const pluginRoot = join(root, "plugin");
   const distRoot = join(pluginRoot, "server", "dist");
@@ -173,7 +174,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(layerRequest["valid"], true); assert.equal(layerRequest["executionAuthorized"], false);
     const identities = await api(client, { action: "pcb-identities", query: { includeSchemas: true } });
-    assert.equal(identities["total"], 8); assert.equal(identities["invocationEnabledByDiscovery"], false);
+    assert.equal(identities["total"], 10); assert.equal(identities["invocationEnabledByDiscovery"], false);
     const identityRequest = await api(client, { action: "pcb-identities-validate", query: { request: {
       method: "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId", arguments: {}, target: {
         projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,

@@ -41,6 +41,13 @@ const originals = new WeakMap<CurrentSchematicChildRoster, Readonly<{ before: In
 function need(condition: boolean, message: string): asserts condition {
   if (!condition) { throw new Error(`Current schematic child roster: ${message}`); }
 }
+/** Exact original historical identities only. This grants no live authority. */
+export function assertOriginalCurrentSchematicChildRoster(prepared: CurrentSchematicChildRoster, before: Inventory, metadata: CurrentSchematicNativeMetadata): void {
+  const original = originals.get(prepared);
+  need(original !== undefined && original.before === before && original.metadata === metadata && readerCompletion(before) === original.completion,
+    "original prepared roster/reader/metadata required");
+  assertOriginalCurrentSchematicNativeMetadata(metadata, before);
+}
 function meta(document: NativeDocumentSnapshot): Readonly<Record<string, unknown>> {
   const entries = document.records.filter(entry => entry.id === "META" || entry.type === "META"), entry = entries[0];
   need(entries.length === 1 && entry?.id === "META" && entry.type === "META", "unique ordinary metadata required"); return entry.body;

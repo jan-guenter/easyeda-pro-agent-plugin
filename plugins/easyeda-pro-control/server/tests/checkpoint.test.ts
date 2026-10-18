@@ -90,7 +90,7 @@ void describe("SQLite checkpoint creation and verification", () => {
     const source = join(testDir, "temporary-cleanup-source.eprj2");
     const outputDir = join(testDir, "temporary-cleanup-checkpoints");
     const temporaryParent = await mkdtemp(
-      join("/tmp", "easyeda-checkpoint-temporary-swap-"),
+      join(tmpdir(), "easyeda-checkpoint-temporary-swap-"),
     );
     const temporaryRoot = join(temporaryParent, "temporary");
     const displacedRoot = join(temporaryParent, "temporary-displaced");
@@ -498,7 +498,7 @@ void describe("adversarial checkpoint path and identity handling", () => {
 
   void test("binds managed checkpoint creation and verification to the retained control-root inode", async () => {
     const parent = await mkdtemp(
-      join("/tmp", "easyeda-checkpoint-root-capability-"),
+      join(tmpdir(), "easyeda-checkpoint-root-capability-"),
     );
     const source = join(parent, "source.eprj2");
     const root = join(parent, "control");
@@ -549,7 +549,7 @@ void describe("adversarial checkpoint path and identity handling", () => {
 
   void test("rejects an intermediate checkpoint-parent symlink installed before final path proof", async () => {
     const parent = await mkdtemp(
-      join("/tmp", "easyeda-checkpoint-parent-swap-"),
+      join(tmpdir(), "easyeda-checkpoint-parent-swap-"),
     );
     const source = join(parent, "source.eprj2");
     const root = join(parent, "control");
@@ -590,7 +590,7 @@ void describe("adversarial checkpoint path and identity handling", () => {
 
   void test("rejects hard-linked managed checkpoint and receipt files", async () => {
     const parent = await mkdtemp(
-      join("/tmp", "easyeda-checkpoint-hard-link-"),
+      join(tmpdir(), "easyeda-checkpoint-hard-link-"),
     );
     const source = join(parent, "source.eprj2");
     const root = join(parent, "control");

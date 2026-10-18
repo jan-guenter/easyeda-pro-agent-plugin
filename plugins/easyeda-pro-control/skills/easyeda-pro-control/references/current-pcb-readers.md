@@ -111,7 +111,8 @@ The context observer accepts local 64-hex project IDs; branches stay32.
 Supported methods are `eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId`
 and `eda.pcb_PrimitiveLine.getAllPrimitiveId`, `eda.pcb_PrimitiveArc.getAllPrimitiveId`,
 `eda.pcb_PrimitiveVia.getAllPrimitiveId`, `eda.pcb_PrimitiveComponent.getAllPrimitiveId`,
-`eda.pcb_PrimitivePad.getAllPrimitiveId` and `eda.pcb_PrimitiveString.getAllPrimitiveId`,
+`eda.pcb_PrimitivePad.getAllPrimitiveId`, `eda.pcb_PrimitiveString.getAllPrimitiveId`,
+`eda.pcb_PrimitiveDimension.getAllPrimitiveId` and `eda.pcb_PrimitiveImage.getAllPrimitiveId`,
 each with empty `arguments`.
 `eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId` takes `arguments:{"id":"..."}`
 and classifies only a positive unique membership in Line, Arc or Via.
@@ -131,6 +132,20 @@ views with a parent, including component attributes and inherited text. This
 filter does not prove complete source ownership. ID reads still invoke the
 native serializer and read existing font caches, but return only identities.
 String is not added to the positive type-lookup subset.
+
+`Dimension` concatenates length, radius and angle dimension views. `Image`
+concatenates vector images and pictures; it does not load picture assets or
+return their content. Neither family filters parents or includes models without
+a loaded view. Native serialization still reads geometry and annotation fields;
+image paths allocate temporary transformed geometry before the adapter copies
+only IDs. These methods establish neither rendering nor a complete empty-board
+condition, and do not extend positive type lookup. Source review and offline
+tests exist; connected validation is pending.
+
+Do not substitute current Fill/Polyline/Region getters for a read-only inventory:
+their polygon serializer can rebuild child models and controllers. Those methods
+are not admitted by this current adapter. Discovery of a separately pinned
+legacy SDK route does not qualify it for the current runtime.
 
 Limits: 20,000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes
 combined evidence. No truncation or coercion. Native serializers allocate DTOs

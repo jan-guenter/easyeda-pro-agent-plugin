@@ -3,7 +3,7 @@ import childProcess from "node:child_process";
 import type { ChildProcess, SpawnOptions } from "node:child_process";
 import { lstat, mkdtemp, readFile, readdir, readlink, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -13,6 +13,7 @@ import { closedSymbolDisposableOutputSchema } from "../src/closed-symbol-disposa
 // eslint-disable-next-line import/max-dependencies -- Reuse the exact ordinary result parser in the existing SDK boundary test.
 import { closedSymbolOperationOutputSchema } from "../src/closed-symbol-operation-tool.ts";
 import { requestData } from "./helpers/disposable-tool-data.ts";
+import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 
 const tool = "easyeda_control_validate_closed_symbol";
 interface ClientErrorObservation {
@@ -42,8 +43,7 @@ async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T>
 async function fixture(context: TestContext, scenario: "seeded" | "missing-assets" | "invalid-assets" | "ordinary-history" | "copy-history",
   catalogOverflowControl = false): Promise<OfflineFixture> {
   assert.equal(process.versions.node, "24.18.0");
-  const parentRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(parentRoot !== undefined && basename(parentRoot).startsWith(`easyeda-test-control-${String(process.pid)}-`));
+  const parentIdentity = await assertTestIsolation(), parentRoot = parentIdentity.directory;
   const reports = await mkdtemp(join(parentRoot, "index-case-"));
   const pluginRoot = resolve(import.meta.dirname, "../.."), preload = join(pluginRoot, "scripts/test-isolation.ts");
   const entry = join(pluginRoot, "server/tests/helpers/disposable-index-child.ts");
@@ -77,7 +77,8 @@ async function fixture(context: TestContext, scenario: "seeded" | "missing-asset
   });
   syncBuiltinESMExports();
   const transport = new StdioClientTransport({ command: process.execPath, args: expectedArgs, cwd: pluginRoot,
-    env: { NODE_NO_WARNINGS: "1", EASYEDA_INDEX_TEST_REPORT_DIRECTORY: reports }, stderr: "pipe", maxBufferSize: catalogCapBytes });
+    env: { NODE_NO_WARNINGS: "1", TMPDIR: parentIdentity.temporaryDirectory,
+      EASYEDA_INDEX_TEST_PARENT_ROOT: JSON.stringify(parentIdentity), EASYEDA_INDEX_TEST_REPORT_DIRECTORY: reports }, stderr: "pipe", maxBufferSize: catalogCapBytes });
   transport.stderr?.on("data", (value: Buffer) => {
     if (Buffer.byteLength(stderr) + value.length > 32_768) { stderrOverflow = true; }
     else { stderr += value.toString("utf8"); }
@@ -106,7 +107,8 @@ async function fixture(context: TestContext, scenario: "seeded" | "missing-asset
     const diagnostic = { scenario, catalogOverflowControl, catalogCapBytes, activePhase, clientErrors, firstErrorPhase,
       firstErrorMessage: firstClientError instanceof Error ? firstClientError.message.slice(0, 2048) : null,
       errorListOverflow, errors: errorRecords.map(item => item.observation),
-      completeLines, largestLineBytes, pendingLineBytes, stdoutBytes, outcome, cleanupFailures: cleanupErrors.length };
+      completeLines, largestLineBytes, pendingLineBytes, stdoutBytes, outcome, cleanupFailures: cleanupErrors.length,
+      stderr: stderr.slice(0, 4096), stderrTruncated: stderrOverflow || stderr.length > 4096 };
     const diagnosticText = JSON.stringify(diagnostic);
     assert.ok(Buffer.byteLength(diagnosticText) <= 32_768);
     await writeFile(join(reports, "client-diagnostic.json"), diagnosticText, { flag: "wx", mode: 0o600 });

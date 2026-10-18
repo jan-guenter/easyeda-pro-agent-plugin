@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "0f13e4b8760eb1abcc5ef0219b96dcd5a92ebfc9b2514a38979294bc07f0e9be";
+const __easyedaBundlePairId = "cb1ea6afb364927bd8887a28fa57898330f128a31b3d6e8da02390705009d3c8";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39755,6 +39755,21 @@ var init_extension_api_coverage_routes = __esm({
         validation: "offline-regression;current-live-unclaimed",
         executionState: "available-with-runtime-guards",
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method6}`, includeSchemas: true } } } }
+      } });
+    }
+    for (const family2 of ["Dimension", "Image"]) {
+      const method6 = `eda.pcb_Primitive${family2}.getAllPrimitiveId`;
+      groups.push({ namespace: `pcb_Primitive${family2}`, methods: ["getAllPrimitiveId"], route: {
+        tool: "easyeda_control_pcb_identities",
+        selector: method6,
+        implementation: "native-task-equivalent",
+        scope: `Separately pinned current API/UI/PCB loaded-view identity read. Empty arguments and explicit ordinary active type-3 project/branch/document/tab only. Captured native frame/receiver, surrounding native identity checks and two matching ordered samples. ${family2 === "Dimension" ? "Concatenates length, radius and angle dimension manager views; annotation text and coordinates remain unprojected." : "Concatenates vector Image then Picture manager views; native path conversion allocates temporary geometry. Existing templates/hash metadata are serialized without image-asset loading; neither paths nor picture content leave the adapter."} Neither collection filters parents or includes models without a loaded stateWatcher. Returns only globalIndex identities, not geometry, complete source inventory, root ownership, renderability or saved membership. At most20000 IDs/256characters each/393216bytes evidence; native enumeration and full serialization precede output bounds and are not cancelled by timeout. Positive type lookup remains Line/Arc/Via only. No filters, selection, navigation, writer or Save. No current connected validation. Fill/Polyline/Region are not enabled on this current adapter because their polygon serializer can rebuild native children. Legacy separately pinned routes remain unchanged.`,
+        source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+        tests: ["current-pcb-identities.test.ts", "extension-api-coverage.test.ts"],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: method6, includeSchemas: true } } } }
       } });
     }
     for (const family2 of ["Line", "Arc", "Via", "Component", "Pad"]) {
@@ -96761,6 +96776,12 @@ function currentPcbIdentityFamilies(request11) {
     case "eda.pcb_PrimitiveString.getAllPrimitiveId": {
       return ["String"];
     }
+    case "eda.pcb_PrimitiveDimension.getAllPrimitiveId": {
+      return ["Dimension"];
+    }
+    case "eda.pcb_PrimitiveImage.getAllPrimitiveId": {
+      return ["Image"];
+    }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: {
       return ["Line", "Arc", "Via"];
     }
@@ -96875,12 +96896,14 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_PrimitiveVia.getAllPrimitiveId",
       "eda.pcb_PrimitiveComponent.getAllPrimitiveId",
       "eda.pcb_PrimitivePad.getAllPrimitiveId",
-      "eda.pcb_PrimitiveString.getAllPrimitiveId"
+      "eda.pcb_PrimitiveString.getAllPrimitiveId",
+      "eda.pcb_PrimitiveDimension.getAllPrimitiveId",
+      "eda.pcb_PrimitiveImage.getAllPrimitiveId"
     ];
     methods2 = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD];
     targetSchema7 = currentPcbLayersRequestSchema.shape.target;
     idSchema2 = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
-    families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String"];
+    families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String", "Dimension", "Image"];
     currentPcbIdentitiesRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.enum(collectionMethods), arguments: external_exports.object({}).strict(), target: targetSchema7 }).strict(),
       external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema2 }).strict(), target: targetSchema7 }).strict()
@@ -96903,6 +96926,8 @@ var init_current_pcb_identities = __esm({
       "Exact active ordinary project-owned type-3 PCB only. The retained frame and local native receiver are rechecked around every await; native tab/type identity brackets each sample. This is not an atomic lock or proof against switching away and back between observations.",
       "Selected IDs preserve the native selection array. Line, Arc, Via, Component and Pad IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made. Pad IDs do not distinguish free pads from component pads or prove parent associations.",
       "String identifies PCB text and preserves the native string-getAll order, excluding views with a native parent. Component attributes and inherited text are outside that family. This filter does not establish complete source ownership or saved membership. The native serializer reads existing font caches, but this adapter copies only globalIndex and never returns text, font, color or geometry.",
+      "Dimension IDs preserve native length, radius and angle manager order, without a parent filter. Dimension annotation text and coordinates are serialized internally but not projected. This does not establish rendered measurements, root ownership, complete canvas inventory or saved membership; Dimension is not admitted to positive type lookup.",
+      "Image IDs include native vector Image views followed by Picture views, without a parent filter. Native path conversion allocates temporary geometry before output bounds. The reviewed serializer reads existing template/hash metadata without loading image assets; only globalIndex is projected. No picture content, renderability, source ownership or saved membership is established. Image is not admitted to positive type lookup.",
       "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
       "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
       "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
@@ -139395,7 +139420,9 @@ function buildCurrentPcbIdentitiesProgram(input) {
     Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll",
     Pad: "pcb/extensionAPI/pad-getAll",
-    String: "pcb/extensionAPI/string-getAll"
+    String: "pcb/extensionAPI/string-getAll",
+    Dimension: "pcb/extensionAPI/dimension-getAll",
+    Image: "pcb/extensionAPI/image-getAll"
   };
   const reads = currentPcbIdentityFamilies(request11).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
   return `let timer,clear;
@@ -151189,7 +151216,7 @@ var init_src = __esm({
       "easyeda_control_pcb_identities",
       {
         title: "Read selected and loaded PCB primitive identities",
-        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad/String IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
+        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad/String/Dimension/Image IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. Dimension combines length/radius/angle views; Image includes vector images and pictures without loading their assets. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. Fill/Polyline/Region remain excluded because their serializer can rebuild children. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbIdentitiesRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },

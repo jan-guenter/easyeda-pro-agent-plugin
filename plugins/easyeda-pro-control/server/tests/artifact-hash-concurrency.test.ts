@@ -4,6 +4,7 @@ import fileSystem, { link, lstat, mkdtemp, readFile, readlink, rename, rm, utime
 import type { FileHandle } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { after, afterEach, before, test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as nextTurn } from "node:timers/promises";
@@ -14,7 +15,7 @@ let previousRoot: string | undefined, root = "", sequence = 0;
 let artifacts: { controlRootCapability: typeof controlRootCapability; createOperation: typeof createOperation;
   createOperationScanner: typeof createOperationScanner; loadOperation: typeof loadOperation; writePhaseArtifact: typeof writePhaseArtifact };
 before(async () => {
-  root = await mkdtemp("/tmp/easyeda-artifact-hash-concurrency-");
+  root = await mkdtemp(join(tmpdir(), "easyeda-artifact-hash-concurrency-"));
   previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
   configureTestControlRoot(root);
   artifacts = await import("../src/artifacts.ts");

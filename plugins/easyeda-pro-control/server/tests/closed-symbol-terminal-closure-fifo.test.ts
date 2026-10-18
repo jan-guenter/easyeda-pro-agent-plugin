@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 
 // oxlint-disable-next-line typescript/strict-void-return -- Node promisify intentionally ignores execFile's immediate ChildProcess return and retains actual callback completion.
 const execFileAsync = promisify(execFile);
@@ -12,11 +13,11 @@ async function makeFifo(path: string): Promise<void> {
   await execFileAsync("/usr/bin/mkfifo", ["-m", "600", path], { env: {}, timeout: 1000 });
 }
 async function attempt(mode: "old" | "fixed"): Promise<{ timedOut: boolean; code: number | null; signal: string | null; output: string }> {
-  const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(root !== undefined && /^\/tmp\/easyeda-test-control-[0-9]+-[a-zA-Z0-9]+$/u.test(root));
+  const identity = await assertTestIsolation(), root = identity.directory;
   const directory = await mkdtemp(join(root, "fifo-race-")), path = join(directory, "journal.json");
   await writeFile(path, "{\"synthetic\":true}\n", { flag: "wx", mode: 0o600 });
-  const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/closed-symbol-terminal-closure-fifo-child.ts", import.meta.url)), path, mode], { env: { EASYEDA_FIFO_TEST_ROOT: root }, stdio: ["pipe", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/closed-symbol-terminal-closure-fifo-child.ts", import.meta.url)), path, mode,
+    JSON.stringify(identity)], { env: {}, stdio: ["pipe", "pipe", "pipe"] });
   let output = "";
   let stderr = "";
   let timedOut = false;

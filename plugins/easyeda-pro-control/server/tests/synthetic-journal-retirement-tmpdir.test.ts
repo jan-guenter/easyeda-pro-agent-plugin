@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { lstat, readFile } from "node:fs/promises";
+import { lstat, readFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { test } from "node:test";
@@ -16,7 +16,7 @@ void test("retirement retains preload root identity when a fixture changes TMPDI
   const peer = await createSyntheticCompletedPeer();
   const before = await readFile(peer.journalPath);
   const identity = await lstat(peer.journalPath, { bigint: true });
-  assert.equal(dirname(root), tmpdir());
+  assert.equal(dirname(root), await realpath(tmpdir()));
   const temporaryDirectory = process.env["TMPDIR"];
   process.env["TMPDIR"] = root;
   try {

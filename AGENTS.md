@@ -4,6 +4,136 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate013000, 2026-10-19: work is on
+`feature/pcb-text-sch-backlog-20261019`. No CAD action, launch, Save or restore
+is pending; production designs remain out of scope. The prior211000 post-merge
+Linux CI39167881329 has now completed successfully. Never replay the completed
+195000 rename or any retired case.
+
+Implemented current pinned Dimension/Image loaded-view identity reads; generic
+type lookup still only Line/Arc/Via. Fill/Polyline/Region remain excluded from
+this adapter because native polygon serialization can rebuild child models.
+Added an unregistered original-SQL-bound SCH child observer and a supplied-data
+PCB text Save-prerequisite model. Neither grants startup, producer, completion,
+writer or persistence authority. Concrete remaining work is in the three new
+2026-10-19 docs. Root and independent implementation/source reviews passed.
+
+Test isolation now honors canonical TMPDIR while preserving original parent,
+root, inode, owner and mode checks. All163 previously affected tests and19 new/
+related isolation checks passed under larger TMPDIR. Fresh identity/coverage
+suite48 passed after regenerating the inventory; its preceding stale-inventory
+assertion failure is retained in tool output, not a product/runtime failure.
+Types/targeted type-aware lint zero;151 dependency signatures/40 attestations
+verified, no moderate-or-higher vulnerabilities. Seven official skill checks
+passed. Initial repository scan caught a private design name in the local-only
+prior handoff; replace it with generic wording before publication, never relax
+the privacy scanner.
+
+Candidate package version `0.3.0+codex.20261019013000` is built, not yet
+published/installed. Frozen source475/669afde9, runtime3/27c2e255 and manifest
+969fd42b; external runtime/bridge identities unchanged. Full verification is
+running in original shell87926 with TMPDIR=/root/.cache; log
+`/root/.cache/easyeda-013000-release-1YYXbP/verify.log`. Do not change payload
+source/bundles/pins while that suite runs. Preserve failed logs and temporary
+evidence. Official Git publication/install and a new isolated offline catalog
+probe remain pending. No current live admission or new connected validation.
+Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9 and all worktrees.
+Everything below this checkpoint is historical.
+
+211000 delivery, 2026-10-18: protected PR71 merged as main
+`eee95208b0af7585a07f8e3def0d4b4b30f18fb9`, reviewed candidate
+`e687787ba7b28ca745f56a582401c1baf710bb1e`. Complete Git trees both equal
+`0c420f9139f3e6551f1cdfc8a885577a0f079d41`. Exact-head Linux CI39166908540
+passed build/all eight facade shards/aggregate; Windows39166908567 passed.
+Main Windows39167881332 passed. Duplicate main Linux39167881329 currently
+has build/seven shards passed and one shard running; check its eventual result
+without repeating the already passed exact-tree PR suite. Copilot review hit
+quota; do not claim it reviewed the change. Root and independent reviews passed.
+
+Official Git marketplace upgrade installed/enabled `0.3.0+codex.20261018211000`
+from https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain.
+Cached marketplace HEAD equals merged main. Root and independent maintained
+comparison prove exact 1,450 files/29,324,052 bytes/42 directories INCLUDING root,
+committed bytes/modes and no extra package entries. Plugin subtree
+`7facdfac9b3a20401ab8b8a228d3aba7fd99fd38`; inventory
+`3f60a1ed0bfc681435081980704dbb38fd300e990aee0d09d0587a5d9ce50d90`.
+Source470/443a1e26, runtime3/f90be96f and manifestf0c868ab match independently;
+external runtime/bridge pins and bridge identity are unchanged. No cache edits.
+
+NEW root/independently reviewed offline probe17da38a6 completed ONCE in original
+shell65408, approved pinsf24c8d45. Configured ambientNode26.11.1 hands off to
+pinned24.18.0;20restricted tools and six offline queries pass. Original child
+3155150/start33454574/parent3152923 exited0 on stdinEOF and is absent, without
+signals/adoption; no held handles remain. Synthetic profile unchanged, no
+upstream execution marker/journal, facade lease removed after EOF. Two socket-
+absence samples are not continuous network/descendant-isolation evidence.
+Installed inventory is exact before/after. Proof3,222bytes SHA
+`4f53f39f82faeb94df0a07957a7148172161792ae397545faf9d0a5a984c48aa`
+at `/root/.cache/easyeda-dormant-string-sch-release-probe-7qmdHA/proof.json`.
+This directory moved intact from its former /tmp path before execution; the
+old prepared path below is historical. NEVER rerun/import this consumed probe
+or earlier probes. No live call occurred after installation.
+
+Verification evidence is deliberately mixed, not one clean local full run.
+First verify19708 exited7 when the48GB /tmp filesystem filled; retain log
+`/tmp/easyeda-211000-release-AMu8D2/verify.log`, SHA651ba1b9. Second verify4955
+used larger TMPDIR and completed exit1:11,143pass/113fail/four skips, no cancelled
+tests. Its log is `/root/.cache/easyeda-211000-release-iawvHx/verify.log`,
+SHA464e8e9b. Independent complete-footer audit found97 explicit ENOSPC/SQLite
+disk-full failures,14 literal-/tmp assumption/early child-closure failures,
+and two bridge shell failures with insufficient redirected diagnostics.
+All113 were confined to11files. After recoverable space relocation, exactly
+those11files were rerun sequentially with TMPDIR=/tmp in original72578:
+163tests passed/zero failures, exit0. No source or assertion changed. Log
+`focused-environment-recheck.log` in that evidence directory, SHA8933d097.
+The two ambiguous shell failures also pass this rerun; their old exact cause
+remains unproved. Do not describe the failed complete runs as clean passes.
+
+Original46224 separately passed remaining gates:424bridge tests/28files,
+seven skills, all81package checks. Log `non-facade-gates-string-next.log` in the
+same evidence directory, SHA4d87f332. Strict types/type-aware lint had zero
+warnings; build/coverage774/compatibility/dependencies/signatures/audit/sanitizer,
+repository and seven official skill checks passed. Both committed bundles remain
+exact. All local verification/probe sessions are terminal, no child/test pending.
+
+No evidence was deleted to recover space. Six inert synthetic test roots moved
+intact from /tmp to /root/.cache under unchanged names:
+`easyeda-test-control-3059671-ApgQwZ`, `easyeda-test-control-2940010-Iuz19z`,
+`easyeda-test-control-2823570-s0hJFn`, `easyeda-test-control-2720200-ZiwAau`,
+`easyeda-test-control-2623381-3XxWzs`, `easyeda-test-control-2526811-8heHvj`.
+Each was private/root-owned,198regular files/364dirs/452,888,465bytes, with no
+links/special files and no passive process references. Before/after hashes and
+type/mode/owner/path inventories match, retained beside the verification logs.
+Relocation changes filesystem identities; these archives are not replayable
+authority. /tmp has about2.5GBfree, still95%used. Future test maintenance should
+honor the preload-issued temporary root consistently, replace literal-/tmp
+assumptions without weakening ownership/path checks, preserve failed-child stderr,
+and plan recoverable fixture retention. Do not broadly delete temporary roots.
+
+Delivered: completed195000 disposable PCB title-only lifecycle evidence;
+immutable-baseline serialization optimization; unregistered schematic metadata
+observer/runtime and child-roster model; pure PCB String candidate and dormant
+one-attempt create/readback program. No schematic/text writer was enabled or
+run live. No connected performance claim. Current invocation/admission flags
+remain conservative; historical success grants no later-payload admission.
+
+Loaded facade2978895 remains195000 and is left alone. All CAD/native cleanup
+is terminal; no design/Save/restore/launch action is pending. Fresh Codex session
+must load/admit211000 before new connected work. NEVER replay the completed
+195000rename or any retired184000/earlier case. Production designs untouched.
+Next backlog: retained SCH child/startup/actor/clock/producer/rebuild integration
+and saved lifecycle; complete empty PCB/queue qualification, text writer/oneSave/
+fullSQL/fresh saved visual and nonempty String reader validation, then narrow text
+modify; wider/ordinary copy and referenced propagation (narrow disposable copy
+already passed094000); general geometry/libraries/routing/copper/stack/rules/ECO/
+dialogs/exports; upstream bootstrap and additional platform tuples. FileSource
+stays disabled for documented rule-repair/deletion/incomplete-output effects.
+
+Primary branch `feature/211000-delivery-20261018` follows mergedmain; prior feature
+branch retains candidatee687787. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9,
+all worktrees and evidence. This delivery handoff is local; published/installed
+package bytes stay exact. Everything below is historical, not a replay order.
+
 Candidate211000, 2026-10-18: live195000 PCB rename is COMPLETED, not pending.
 Original read98 verified saved target/all-PCB metadata, close103 acknowledged,
 finish104 proved original process/Job exit, exact final SQL2d7a11f2 and capture
