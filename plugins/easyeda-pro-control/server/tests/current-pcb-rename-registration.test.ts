@@ -5,6 +5,7 @@ import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
 import { currentPcbRenameOperationRequestSchema, queryCurrentPcbRenameOperation, validateCurrentPcbRenameOperationArguments } from "../src/current-pcb-rename-operation.ts";
+import { SerializedGate } from "../src/engine.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 
 const openingOperationId = "pcb-rename-opening", operationId = "pcb-rename-registration";
@@ -14,11 +15,13 @@ const begin = { action: "baseline-begin", operationId, openingOperationId, targe
 type Handler = (input: { request: unknown }) => Promise<unknown>;
 async function registration(retainedOpener: boolean): Promise<{
   invoke: (input: unknown) => Promise<unknown>; allocations: unknown[][]; history: string[]; calls: unknown[]; failNext: () => void;
+  gate: SerializedGate; invokeRaw: Handler;
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_pcb_rename")) {');
   const end = source.indexOf("\nconst transport =", start); assert.ok(start > 0 && end > start);
   const allocations: unknown[][] = [], calls: unknown[] = [], engine = {}, history: string[] = [], opener = {};
+  const gate = new SerializedGate();
   let fail = false, handler: Handler | undefined, inputSchema: z.ZodType | undefined;
   const scope = vm.createContext({ z, currentPcbRenameOperationRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     currentPcbRenameOperationCoordinator: undefined, currentDisposableOpenCoordinator: retainedOpener ? opener : undefined,
@@ -38,9 +41,7 @@ async function registration(retainedOpener: boolean): Promise<{
     inspectCurrentPcbRenameHistory: (selected: string): Promise<unknown> => {
       history.push(selected); return Promise.resolve({ historicalOnly: true, originalOwnerRetained: false, executionAuthorized: false });
     },
-    serializedGuarded: (callback: Handler, options: { allowDuringOrphanRisk: boolean }): Handler => {
-      assert.deepEqual(Object.keys(options), ["allowDuringOrphanRisk"]); assert.equal(options.allowDuringOrphanRisk, true); return callback;
-    },
+    guarded: (task: Handler): Handler => task, bridgeGate: gate,
     server: { registerTool: (name: string, config: { inputSchema: z.ZodType; annotations: Record<string, boolean> }, registered: Handler): void => {
       assert.equal(name, "easyeda_control_disposable_pcb_rename");
       assert.deepEqual(structuredClone(config.annotations), { readOnlyHint: false, destructiveHint: true, idempotentHint: false });
@@ -50,7 +51,7 @@ async function registration(retainedOpener: boolean): Promise<{
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.ok(handler !== undefined && inputSchema !== undefined);
   const selectedHandler = handler, selectedSchema = inputSchema;
-  return { allocations, calls, history, failNext: (): void => { fail = true; },
+  return { allocations, calls, gate, history, invokeRaw: selectedHandler, failNext: (): void => { fail = true; },
     invoke: async input => {
       const parsed = selectedSchema.parse(input); assert.ok(parsed !== null && typeof parsed === "object" && "request" in parsed);
       const response = await selectedHandler({ request: parsed.request }); assert.notEqual(response, undefined); return response;
@@ -69,6 +70,24 @@ void test("PCB registration inspects history without allocating an opener, opera
     if (!retained) { await assert.rejects(route.invoke({ request: begin }), /existing retained disposable opening/u); }
     assert.deepEqual(route.allocations, []);
   }
+});
+
+void test("PCB registration lets only validated inspection bypass the held mutation gate", async () => {
+  const route = await registration(true);
+  const entered = Promise.withResolvers<boolean>(), release = Promise.withResolvers<boolean>();
+  const held = route.gate.run(async () => { entered.resolve(true); await release.promise; }); await entered.promise;
+  const requests = [begin, { action: "advance", operationId, step: { expectedPhase: "baseline-admit" } },
+    { action: "cleanup", operationId, confirmAbort: true }];
+  const pending = requests.map(request => route.invoke({ request }));
+  try {
+    const inspection = await route.invoke({ request: { action: "inspect", operationId } });
+    assert.deepEqual(structuredClone(inspection), { result: { historicalOnly: true, originalOwnerRetained: false, executionAuthorized: false } });
+    assert.deepEqual(route.allocations, []); assert.deepEqual(route.calls, []); assert.deepEqual(route.history, [operationId]);
+    await assert.rejects(route.invokeRaw({ request: { action: "inspect", operationId, step: { expectedPhase: "rename-write" } } }));
+    await assert.rejects(route.invokeRaw({ request: { action: "inspect", operationId: "invalid identifier" } }));
+    assert.deepEqual(route.history, [operationId]); assert.deepEqual(route.calls, []);
+  } finally { release.resolve(true); await held; await Promise.all(pending); }
+  assert.deepEqual(structuredClone(route.calls), requests); assert.equal(route.allocations.length, 1);
 });
 
 void test("PCB registration retains exactly one operation coordinator from the existing original opener, including after failures", async () => {
