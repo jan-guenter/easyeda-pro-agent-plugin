@@ -21,7 +21,7 @@ import type { CurrentPcbNativeMetadata } from "./current-pcb-native-metadata.ts"
 import { assertCurrentProjectOnlyPcbRenameGeneration, assertOriginalCurrentPcbRenameGenerationEvidence,
   revalidateCurrentProjectOnlyPcbRenameGeneration } from "./current-pcb-rename-generation-runtime.ts";
 import type { CurrentProjectOnlyPcbRenameGeneration, CurrentProjectOnlyPcbRenameGenerationSource } from "./current-pcb-rename-generation-runtime.ts";
-import { buildCurrentPcbRenamePanelGuard } from "./current-pcb-rename-panel-guard.ts";
+import { CURRENT_PCB_RENAME_PANEL_STAGES, buildCurrentPcbRenamePanelGuard } from "./current-pcb-rename-panel-guard.ts";
 import { decodeCurrentPcbRenamePreflightReply, parseCurrentPcbRenamePreflightRequest } from "./current-pcb-rename-preflight.ts";
 import type { CurrentPcbRenamePreflightRequest, CurrentPcbRenamePreflightResult } from "./current-pcb-rename-preflight.ts";
 import { buildCurrentPcbRenamePreflightProgram } from "./current-pcb-rename-preflight-program.ts";
@@ -87,7 +87,7 @@ ${buildCurrentProjectOnlySymbolGuard()}
 ${buildCurrentSymbolStartupGuard(true)}
 ${buildCurrentPcbRenameStartupGuard(true)}
 startupStage='auxiliary-panel';
-${buildCurrentPcbRenamePanelGuard()}
+${buildCurrentPcbRenamePanelGuard(true)}
 startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
 preflight=await(async()=>{${buildCurrentPcbRenamePreflightProgram(selected)}})();
 startupStage='project-only-context';projectOnly.check();startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
@@ -111,7 +111,8 @@ export function decodeCurrentPcbRenameStartupObservation(raw: unknown, request: 
     need(Object.entries(LIMITATIONS).every(([key, value]) => failure[key] === value) &&
       // Retain the old coarse label for historical failures, not new emission
       // Or a retrospective diagnosis of which predicate failed.
-      [...CURRENT_SYMBOL_STARTUP_STAGES, ...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some(allowed => allowed === stage));
+      [...CURRENT_SYMBOL_STARTUP_STAGES, ...CURRENT_PCB_RENAME_STARTUP_STAGES, ...CURRENT_PCB_RENAME_PANEL_STAGES,
+        "pcb-ast", "auxiliary-panel", "preflight"].some(allowed => allowed === stage));
     throw new Error(`Current PCB startup observation refused [startup:${String(stage)}].`);
   }
   const result = exact(observed, ["profile", "target", "sheetUuids", "templates", "preflight", "runtimeHoldersObserved", "pcbAstSettledObserved", ...Object.keys(LIMITATIONS)]);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
+import { CURRENT_PCB_RENAME_PANEL_STAGES } from "../src/current-pcb-rename-panel-guard.ts";
 import { CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS } from "../src/current-pcb-rename-preflight.ts";
 import { CURRENT_PCB_RENAME_STARTUP_STAGES } from "../src/current-pcb-rename-startup-guard.ts";
 import { buildCurrentPcbRenameStartupObservation, decodeCurrentPcbRenameStartupObservation } from "../src/current-pcb-rename-startup-runtime.ts";
@@ -52,8 +53,20 @@ globalThis.astManager=new AstManager(projectDetail.cbb_project);globalThis.ast={
 globalThis.tree={manager(){return astManager;},ast(){return ast;},tempAst(){return temp;}};SCH.D={leftTree:tree};
 globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[]};
 domRoot.children=['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page'].map(id=>({id,tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,getAttribute(){return null;}}));
-globalThis.extraMarkers=[];globalThis.extraIframes=[];globalThis.standardPanels=[];globalThis.standardMarkers=[];
-document.querySelectorAll=function(selector){if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return extraIframes;if(selector==='.blankIframeDiv')return[];if(selector.startsWith('.editframe,'))return extraMarkers;if(selector==='div[data-activekey="device-standardization"]')return standardPanels;if(selector==='[id="device-standardization"]')return standardMarkers;return forbidden('selector');};
+globalThis.extraMarkers=[];globalThis.extraIframes=[];globalThis.standardPanels=[];
+class FixtureNode{constructor(state){this.fixtureState=state;}get ownerDocument(){return this.fixtureState.ownerDocument;}get isConnected(){return this.fixtureState.isConnected;}get parentElement(){return this.fixtureState.parentElement;}get childNodes(){return this.fixtureState.childNodes;}}
+class FixtureElement extends FixtureNode{get tagName(){return this.fixtureState.tagName;}get id(){return this.fixtureState.attributes.id??'';}get childElementCount(){return this.fixtureState.childElementCount;}getAttribute(name){return this.fixtureState.attributes[name.toLowerCase()]??null;}}
+class FixtureHTMLElement extends FixtureElement{get style(){return this.fixtureState.style;}}
+class FixtureHTMLDivElement extends FixtureHTMLElement{}
+const panelState=(attributes,parentElement=null)=>({tagName:'DIV',ownerDocument:document,isConnected:true,parentElement,attributes,style:{display:'none'},childElementCount:0,childNodes:[{nodeType:3},{nodeType:8}]});
+globalThis.standardBox=new FixtureHTMLDivElement(panelState({id:'bottomBarBox'}));
+globalThis.standardParent=new FixtureHTMLDivElement(panelState({},standardBox));
+globalThis.standardMarkerState=panelState({id:'device-standardization',class:'log-container',style:'display: none;'},standardParent);
+globalThis.standardMarker=new FixtureHTMLDivElement(standardMarkerState);
+standardMarker.__reactContainer$fixture={};standardMarker._reactListeningfixture=true;
+globalThis.standardMarkers=[standardMarker];
+class FixtureDocument{querySelectorAll(selector){if(this!==document)return forbidden('selector-receiver');if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return extraIframes;if(selector==='.blankIframeDiv')return[];if(selector.startsWith('.editframe,'))return extraMarkers;if(selector==='div[data-activekey="device-standardization"]')return standardPanels;if(selector==='[id="device-standardization"]')return standardMarkers;return forbidden('selector');}}
+class FixtureHTMLDocument extends FixtureDocument{}Object.setPrototypeOf(document,FixtureHTMLDocument.prototype);
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return { run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentPcbRenameStartupObservation(request, startup)}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
@@ -81,6 +94,64 @@ void test("PCB startup refuses pending holders, dirty ASTs and getters before th
     const env = fixture({ before }), raw = structuredClone(await env.run());
     assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup), /startup:/u);
     assert.equal(env.evaluate("calls.length"), 0); assert.equal(env.evaluate("getterReads"), 0);
+  }
+});
+
+void test("PCB startup admits the native dormant container with inherited DOM methods and normal React expandos", async () => {
+  const env = fixture({ before: "standardParent.style.visibility='hidden';standardBox.style.backgroundColor='#f0f0f0';standardMarkerState.attributes.style='display:none';" });
+  const raw = structuredClone(await env.run());
+  assert.equal(decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup).clientTicketObservation.client, "f".repeat(16));
+  assert.equal(env.evaluate("Object.hasOwn(document,'querySelectorAll')"), false);
+  assert.equal(env.evaluate("Object.hasOwn(standardMarker,'getAttribute')"), false);
+  assert.equal(env.evaluate("Object.hasOwn(standardMarker,'ownerDocument')"), false);
+  assert.equal(env.evaluate("standardMarker.childElementCount"), 0); assert.equal(env.evaluate("standardMarker.childNodes.length"), 2);
+  assert.equal(env.evaluate("standardMarker._reactListeningfixture"), true); assert.equal(env.evaluate("denied.length"), 0);
+});
+
+void test("PCB startup refuses active, missing, initialized or malformed standardization containers before native reads", async () => {
+  for (const [before, stage] of [
+    ["standardPanels.push(standardMarker);", "auxiliary-active"],
+    ["standardMarkers=[];", "auxiliary-count"],
+    ["standardMarkers.push(standardMarker);", "auxiliary-count"],
+    ["standardMarkers=[null];", "auxiliary-identity"],
+    ["standardMarkerState.tagName='SPAN';", "auxiliary-identity"],
+    ["standardMarkerState.ownerDocument={};", "auxiliary-identity"],
+    ["standardMarkerState.isConnected=false;", "auxiliary-identity"],
+    ["standardMarkerState.parentElement=null;", "auxiliary-identity"],
+    ["standardBox.fixtureState.attributes.id='different';", "auxiliary-identity"],
+    ["standardMarkerState.style.display='block';", "auxiliary-state"],
+    ["standardMarkerState.attributes.devicestandardizationuuid='';", "auxiliary-state"],
+    ["standardMarkerState.attributes.devicestandardizationuuid='other';", "auxiliary-state"],
+    ["standardMarkerState.childElementCount=1;", "auxiliary-state"],
+    ["standardMarkerState.attributes.id='different';", "auxiliary-state"],
+    ["Object.defineProperty(standardMarker,'getAttribute',{get(){getterReads++;throw new Error('PRIVATE_GETTER');}});", "auxiliary-method"],
+  ] as const) {
+    const env = fixture({ before }), raw = structuredClone(await env.run());
+    assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup),
+      { message: `Current PCB startup observation refused [startup:${stage}].` });
+    assert.equal(env.evaluate("calls.length"), 0); assert.equal(env.evaluate("getterReads"), 0); assert.equal(env.evaluate("denied.length"), 0);
+  }
+});
+
+void test("PCB startup rechecks the same dormant container, style, parent and inherited method after its await", async () => {
+  for (const [change, stage] of [
+    ["standardPanels.push(standardMarker);", "auxiliary-active"],
+    ["standardMarkerState.style.display='';", "auxiliary-state"],
+    ["standardMarkerState.attributes.devicestandardizationuuid='';", "auxiliary-state"],
+    ["standardMarkerState.childElementCount=1;", "auxiliary-state"],
+    ["standardMarkerState.isConnected=false;", "auxiliary-identity"],
+    ["standardMarkerState.parentElement=new FixtureHTMLDivElement(panelState({},standardBox));", "auxiliary-identity"],
+    ["standardMarkers=[new FixtureHTMLDivElement({...standardMarkerState})];", "auxiliary-stability"],
+    ["standardMarkerState.style={display:'none'};", "auxiliary-stability"],
+    ["FixtureElement.prototype.getAttribute=function(name){return this.fixtureState.attributes[name.toLowerCase()]??null;};", "auxiliary-method"],
+    ["Object.defineProperty(standardMarker,'getAttribute',{get(){getterReads++;throw new Error('PRIVATE_GETTER');}});", "auxiliary-method"],
+  ] as const) {
+    const env = fixture({ afterRpc: `if(calls.length===18){${change}}` }), raw = structuredClone(await env.run());
+    assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup),
+      { message: `Current PCB startup observation refused [startup:${stage}].` });
+    const wrapper = decodeExactReadEnvelope(raw); assert.ok(wrapper !== null && typeof wrapper === "object");
+    assert.notEqual(Reflect.get(wrapper, "preflight"), null); assert.equal(env.evaluate("calls.length"), 18);
+    assert.equal(env.evaluate("getterReads"), 0); assert.equal(env.evaluate("denied.length"), 0);
   }
 });
 
@@ -112,11 +183,11 @@ void test("PCB startup preserves raw CBB identity across the awaited preflight a
 void test("PCB startup decoder accepts only its fixed diagnostic inventory", async () => {
   const raw = structuredClone(await fixture({ before: "astManager.CBB=true;" }).run());
   const wrapper = decodeExactReadEnvelope(raw); assert.ok(wrapper !== null && typeof wrapper === "object");
-  for (const stage of [...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast"]) {
+  for (const stage of [...CURRENT_PCB_RENAME_STARTUP_STAGES, ...CURRENT_PCB_RENAME_PANEL_STAGES, "pcb-ast", "auxiliary-panel"]) {
     assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(encodeExactReadEnvelope({ ...wrapper, stage })), request, startup),
       { message: `Current PCB startup observation refused [startup:${stage}].` });
   }
-  for (const stage of ["pcb-cbb:private-detail", "unknown", "", null, ["pcb-cbb"]]) {
+  for (const stage of ["pcb-cbb:private-detail", "auxiliary-state:private-detail", "unknown", "", null, ["pcb-cbb"]]) {
     assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(encodeExactReadEnvelope({ ...wrapper, stage })), request, startup),
       { message: "Current PCB startup observation refused." });
   }

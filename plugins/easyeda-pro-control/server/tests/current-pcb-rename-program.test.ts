@@ -49,8 +49,20 @@ class ClockBus{async rpcCall(...args){if(this!==gVars.concurrentBus||args.length
 gVars.concurrentBus=new ClockBus();globalThis['/'+_TAB_ID_+'/notify']=gVars.concurrentBus;
 globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[]};
 domRoot.children=['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page'].map(id=>({id,tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,getAttribute(){return null;}}));
-globalThis.extraIframes=[];globalThis.extraMarkers=[];globalThis.standardPanels=[];globalThis.standardMarkers=[];
-document.querySelectorAll=function(selector){if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return extraIframes;if(selector==='.blankIframeDiv')return[];if(selector.startsWith('.editframe,'))return extraMarkers;if(selector==='div[data-activekey="device-standardization"]')return standardPanels;if(selector==='[id="device-standardization"]')return standardMarkers;return denied('selector');};
+globalThis.extraIframes=[];globalThis.extraMarkers=[];globalThis.standardPanels=[];
+class FixtureNode{constructor(state){this.fixtureState=state;}get ownerDocument(){return this.fixtureState.ownerDocument;}get isConnected(){return this.fixtureState.isConnected;}get parentElement(){return this.fixtureState.parentElement;}get childNodes(){return this.fixtureState.childNodes;}}
+class FixtureElement extends FixtureNode{get tagName(){return this.fixtureState.tagName;}get id(){return this.fixtureState.attributes.id??'';}get childElementCount(){return this.fixtureState.childElementCount;}getAttribute(name){return this.fixtureState.attributes[name.toLowerCase()]??null;}}
+class FixtureHTMLElement extends FixtureElement{get style(){return this.fixtureState.style;}}
+class FixtureHTMLDivElement extends FixtureHTMLElement{}
+const panelState=(attributes,parentElement=null)=>({tagName:'DIV',ownerDocument:document,isConnected:true,parentElement,attributes,style:{display:'none'},childElementCount:0,childNodes:[{nodeType:3},{nodeType:8}]});
+globalThis.standardBox=new FixtureHTMLDivElement(panelState({id:'bottomBarBox'}));
+globalThis.standardParent=new FixtureHTMLDivElement(panelState({},standardBox));
+globalThis.standardMarkerState=panelState({id:'device-standardization',class:'log-container',style:'display: none;'},standardParent);
+globalThis.standardMarker=new FixtureHTMLDivElement(standardMarkerState);
+standardMarker.__reactContainer$fixture={};standardMarker._reactListeningfixture=true;
+globalThis.standardMarkers=[standardMarker];
+class FixtureDocument{querySelectorAll(selector){if(this!==document)return denied('selector-receiver');if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return extraIframes;if(selector==='.blankIframeDiv')return[];if(selector.startsWith('.editframe,'))return extraMarkers;if(selector==='div[data-activekey="device-standardization"]')return standardPanels;if(selector==='[id="device-standardization"]')return standardMarkers;return denied('selector');}}
+class FixtureHTMLDocument extends FixtureDocument{}Object.setPrototypeOf(document,FixtureHTMLDocument.prototype);
 ${options.setup ?? ""}`, context, { timeout: 1000 });
   return { run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentPcbRenameProgram(prepared.preparation, prepared.binding, prepared.input)}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
@@ -104,13 +116,17 @@ void test("PCB compiler checks SCH and PCB AST startup, native name policy, meta
   const prepared = await pcbProgramPreparation();
   for (const setup of ["metadata.display_title='drift';", "metadata.ticket++;", "peer.source='changed';", "delete roster[peer.uuid];", "roster.extra={};",
     "nameLookup=()=>undefined;", "nameLookup=()=>null;", "nameLookup=()=>peer.uuid;", "workerClient='f'.repeat(16);", "workerMaxTicket++;",
-    "extraIframes.push({});", "standardPanels.push({});", "standardMarkers.push({});", "projectMgr.componentCache.symbolTemplate.extra={};", "astManager.batchDepth=1;", "ast.transId++;", "temp.isPass=true;",
+    "extraIframes.push({});", "standardPanels.push({});", "standardMarkers.push({});", "standardMarkers=[];", "standardMarkerState.style.display='block';",
+    "standardMarkerState.attributes.devicestandardizationuuid='';", "standardMarkerState.childElementCount=1;",
+    "projectMgr.componentCache.symbolTemplate.extra={};", "astManager.batchDepth=1;", "ast.transId++;", "temp.isPass=true;",
     "gVars.loginedUserInfo.uuid='f'.repeat(32);", "tick=1060001;", "Date.prototype.getTimezoneOffset=()=>60;", "globalThis['/'+_TAB_ID_+'/notify']={};",
     "Object.defineProperty(peer,'ticket',{get(){getterReads++;throw new Error('PRIVATE_GETTER');}});"]) {
     const env = fixture(prepared, { setup }); await assert.rejects(env.run(), /CURRENT_PCB_RENAME_REFUSED/u); assert.equal(env.evaluate("writes"), 0); assert.equal(env.evaluate("getterReads"), 0);
   }
   for (const change of ["gVars.messageBus=new Bus();", "gVars.concurrentBus=new ClockBus();", "gVars.currentProject={...gVars.currentProject};",
-    "info.tabs=[...info.tabs];", "Date.now=()=>tick++;", "metadata.display_title='changed';", "peer.ticket++;", "ast.lastModify++;", "standardPanels.push({});", "standardMarkers.push({});"]) {
+    "info.tabs=[...info.tabs];", "Date.now=()=>tick++;", "metadata.display_title='changed';", "peer.ticket++;", "ast.lastModify++;", "standardPanels.push({});", "standardMarkers.push({});",
+    "standardMarkerState.style={display:'none'};", "standardMarkers=[new FixtureHTMLDivElement({...standardMarkerState})];",
+    "standardMarkerState.attributes.devicestandardizationuuid='';", "standardMarkerState.childElementCount=1;"]) {
     const env = fixture(prepared, { afterRpc: `if(calls.length===1){${change}}` }); await assert.rejects(env.run(), /CURRENT_PCB_RENAME_REFUSED/u); assert.equal(env.evaluate("writes"), 0);
   }
 });

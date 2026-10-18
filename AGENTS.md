@@ -4,6 +4,58 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate184000, 2026-10-18: dormant-panel correction, seven fixed startup
+substages and native-shaped fixtures are source-reviewed by root and an
+independent agent.21focusedtests/types/strictlint pass; no warnings. Frozen
+source459/d4d25ce3, runtime3/c809feb3, manifest3274cbfa. External runtime/bridge
+pins are unchanged. Dependency install/tree/signatures/audit, repository and
+seven official skill validators pass. Full local `npm run verify` is running
+in original shell57173; log `/tmp/easyeda-184000-release-LVqK0D/verify.log`.
+Do not change frozen package files during this run. Not yet published/installed.
+Fresh offline probe `/tmp/easyeda-panel-release-probe-S54Hqa/probe.mjs`29751d38
+is prepared and root/independently reviewed as inert text, NEVER run/imported;
+pins remain unapproved until merged release/install inventory is known. Do not
+reuse any consumed prior probe. Installed/loaded173500 remains untouched.
+
+Live173500, 2026-10-18: actual facade2757974/start32132952, parent2756222,
+was independently admitted against the installed173500 package. Complete1420-file
+inventory,455source/3runtimefiles, configured profile/environment, ordinary/open/
+persistence external pins and all18clock-runtime files match. Initial status16
+completed with no incomplete operations and the current bundle fingerprint;
+gateway started with no authenticated connection before application launch.
+NEW ordinary launch `pcb-rename-173500-20261018-launch` completed20:
+root29924/Jobfb4c692c0de14b789aec13ffeac821e4, launch5537fd80. Authenticated
+status23 passes current173500/ded07x99dcxb504 with no incomplete operations.
+Opening `pcb-rename-173500-20261018-open` completed25 with exact active PCB/
+native identity and no orphan. Rename `pcb-rename-173500-20261018-case` began30,
+retaining original capture. Baseline close34 and termination/capture39 completed;
+original29924/Job exit is proved. Baseline08 is3d4cb15c/4144bytes, rawcopy41ac6062,
+managedcheckpoint6a9c4d9e, completeSQL09a74ea1, originalmetadataPCB1/maximumticket777.
+`baseline-prepare-clock`46 completed once; original ordinary launch52 is recorded
+terminated with matching5537fd80 digest. Baseline relaunch54 completed with new
+root44168/Job92da9215f4cd4d7686dadf9395ec5ba4/helper099ef0415cf1420a81d18411f947ed78.
+Admission62, inactive-cache observation64 and project-only open66 passed.
+Startup68 stopped at `startup:auxiliary-panel` before any writer. Original-owner
+cleanup-close71 and cleanup-observe-termination completed: root44168/Job exit is
+proved, capture released, generation retired/plan-invalidated, case terminal.
+Retirement22 isee6a547e/1835bytes. Never resume this case or replay its operations.
+Fresh post-closure disposable raw file is41ac6062/598016, descriptor-stable/no
+sidecars, exactly equal to prelaunch. No rename, explicit Save, inverse or
+production access. MainCI39151346191 passed.
+Independent pinned-source audits prove UI3823ed6e statically creates the hidden
+device-standardization DIV; current IDabsence wrongly rejects that dormant
+placeholder. SCH6187767 separately returns when the active DIV selector is empty.
+This is a proven source mismatch, not retrospective diagnosis of unseen live DOM
+values. Precise retained dormant-container correction/fixed diagnostics and
+native-shaped fixtures are in progress; installed173500 remains untouched.
+Source-only String patch planner/root+independent review/sevenfocusedtests/types/
+strictlint passed. Three separate pure SCH models/root+independent review/
+21focusedtests/types/strictlint passed. Final sourceString7dffe830 and
+SCHheadera97a3323/history3552c26b/structure2277b77e. Root combined28tests passed.
+Narrow extension-reference corrections/officialskillvalidator pass. These source/
+tests/docs are committed as97964dc, not published; installedfiles/pins/bundles
+remain untouched. No live String/SCH writer is registered by this groundwork.
+
 173500 delivered, 2026-10-18: protected PR68 merged as main
 `60103dcf0aef94b7a178088c4deff429e6b65534`, reviewed candidate
 `bfdeb4decf88cbbced7e07ba3eb6a94885fbecbc`. Both complete Git trees equal

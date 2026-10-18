@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "ade2973d0fc8f797f2304a66519b4e3cfc93158a71a606b7b455d892b57cf932";
+const __easyedaBundlePairId = "07dbcf95b02d379022c959346b404da0d9940837c0fdfb94e9bd20ec05126849";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -142707,21 +142707,66 @@ var init_current_pcb_native_metadata = __esm({
 });
 
 // server/src/current-pcb-rename-panel-guard.ts
-function buildCurrentPcbRenamePanelGuard() {
+function buildCurrentPcbRenamePanelGuard(diagnosticStages2 = false) {
+  const at2 = (stage) => diagnosticStages2 ? `startupStage='${stage}';` : "";
   return String.raw`
 const pcbRenamePanels=(()=>{
- projectOnly.check();const document=root.document,select=method(document,'querySelectorAll');
- const check=()=>{projectOnly.check();if(root.document!==document)bad();methodCheck(select);
-  for(const selector of ['div[data-activekey="device-standardization"]','[id="device-standardization"]']){
-   const matches=apply(select.fn,document,[selector]);if(matches===null||typeof matches!=='object'||matches.length!==0)bad();
-   if(root.document!==document)bad();methodCheck(select);projectOnly.check();
-  }
+ ${at2("auxiliary-context")}
+ projectOnly.check();const document=root.document;
+ ${at2("auxiliary-method")}
+ const select=method(document,'querySelectorAll');
+ const base=()=>{
+  ${at2("auxiliary-context")}
+  projectOnly.check();if(root.document!==document)bad();
+  ${at2("auxiliary-method")}
+  methodCheck(select);
+ };
+ const sample=()=>{
+  base();${at2("auxiliary-active")}
+  const active=apply(select.fn,document,['div[data-activekey="device-standardization"]']);
+  if(active===null||typeof active!=='object'||active.length!==0)bad();
+  base();${at2("auxiliary-count")}
+  const matches=apply(select.fn,document,['[id="device-standardization"]']);
+  if(matches===null||typeof matches!=='object'||matches.length!==1)bad();
+  return matches[0];
+ };
+ const marker=sample();${at2("auxiliary-identity")}
+ if(marker===null||typeof marker!=='object')bad();
+ const parent=marker.parentElement,box=parent?.parentElement,style=marker.style;
+ const identity=()=>{
+  ${at2("auxiliary-identity")}
+  for(const node of [marker,parent,box])if(node===null||typeof node!=='object'||node.tagName!=='DIV'||node.ownerDocument!==document||node.isConnected!==true)bad();
+  if(marker.parentElement!==parent||parent.parentElement!==box||box.id!=='bottomBarBox')bad();
+ };
+ identity();${at2("auxiliary-method")}
+ const attribute=method(marker,'getAttribute');
+ const check=()=>{
+  const current=sample();${at2("auxiliary-stability")}
+  if(current!==marker||marker.style!==style)bad();
+  identity();${at2("auxiliary-method")}
+  methodCheck(attribute);
+  ${at2("auxiliary-state")}
+  if(style===null||typeof style!=='object'||style.display!=='none'||marker.childElementCount!==0||
+   apply(attribute.fn,marker,['id'])!=='device-standardization'||apply(attribute.fn,marker,['deviceStandardizationUuid'])!==null)bad();
+  base();${at2("auxiliary-method")}
+  methodCheck(attribute);identity();${at2("auxiliary-stability")}
+  if(marker.style!==style)bad();
  };
  check();return{check};
 })();`;
 }
+var CURRENT_PCB_RENAME_PANEL_STAGES;
 var init_current_pcb_rename_panel_guard = __esm({
   "server/src/current-pcb-rename-panel-guard.ts"() {
+    CURRENT_PCB_RENAME_PANEL_STAGES = Object.freeze([
+      "auxiliary-context",
+      "auxiliary-method",
+      "auxiliary-active",
+      "auxiliary-count",
+      "auxiliary-identity",
+      "auxiliary-state",
+      "auxiliary-stability"
+    ]);
   }
 });
 
@@ -142833,7 +142878,7 @@ ${buildCurrentProjectOnlySymbolGuard()}
 ${buildCurrentSymbolStartupGuard(true)}
 ${buildCurrentPcbRenameStartupGuard(true)}
 startupStage='auxiliary-panel';
-${buildCurrentPcbRenamePanelGuard()}
+${buildCurrentPcbRenamePanelGuard(true)}
 startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
 preflight=await(async()=>{${buildCurrentPcbRenamePreflightProgram(selected3)}})();
 startupStage='project-only-context';projectOnly.check();startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
@@ -142853,7 +142898,14 @@ function decodeCurrentPcbRenameStartupObservation(raw, request11, expectation) {
     const failure2 = exact6(observed2, ["profile", "stage", "preflight", ...Object.keys(LIMITATIONS3)]), stage = failure2["stage"];
     need92(Object.entries(LIMITATIONS3).every(([key, value2]) => failure2[key] === value2) && // Retain the old coarse label for historical failures, not new emission
     // Or a retrospective diagnosis of which predicate failed.
-    [...CURRENT_SYMBOL_STARTUP_STAGES, ...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some((allowed) => allowed === stage));
+    [
+      ...CURRENT_SYMBOL_STARTUP_STAGES,
+      ...CURRENT_PCB_RENAME_STARTUP_STAGES,
+      ...CURRENT_PCB_RENAME_PANEL_STAGES,
+      "pcb-ast",
+      "auxiliary-panel",
+      "preflight"
+    ].some((allowed) => allowed === stage));
     throw new Error(`Current PCB startup observation refused [startup:${String(stage)}].`);
   }
   const result = exact6(observed2, ["profile", "target", "sheetUuids", "templates", "preflight", "runtimeHoldersObserved", "pcbAstSettledObserved", ...Object.keys(LIMITATIONS3)]);
