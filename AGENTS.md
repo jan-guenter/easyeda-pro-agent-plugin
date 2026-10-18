@@ -49,8 +49,12 @@ optional inactive-flag correction is independently accepted in source with
 10focused tests/types/targeted lint passing, built but not yet installed. New dormant
 PCB history, isolated structure-SQL and complete six-table SQL comparisons each
 passed10focused tests and independent review; no rename writer is enabled.
-Candidate111500 is built with matching compatibility projections; the frozen
-full local suite is running. It is not yet published or installed. Dependency
+Candidate111500 is built with matching compatibility projections. The full local
+suite finished10873passes/fourplatformskips/onefailure: the exact restricted
+status expectation lacked the new historical094000copy label. Only that expected
+field is corrected; runtime/bundles/pins are unchanged. Original failed log is
+retained; focused verification and final-payload CI must establish the correction.
+It is not yet published or installed. Dependency
 signature/audit, sanitizer and all seven official skill checks passed. Independent
 final copy audit verified all54artifacts,19unchanged documents,18drawing records,
 saved5045bytes and exact final35-table/148-row SQL. Raw postedit/final copies are
