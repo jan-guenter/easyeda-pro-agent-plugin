@@ -28,8 +28,8 @@ native bookkeeping effect, preserving all20 documents' other saved content,
 Fresh verification excluded inactive upload caches, checked the post-edit raw
 file, opened only the project and matched target/all-PCB metadata. Final normal
 closure, original process/Job termination and complete SQL equality passed.
-The coordinator returned `nextPhase:completed`, `renameVerified:true` and
-`fullReopenReadbackInvariant:true`, then retired its captures. The logical SQL
+The coordinator retired its captures and returned `nextPhase:completed`,
+`renameVerified:true` and `fullReopenReadbackInvariant:true`. The logical SQL
 commitment after the edit and after verification was
 `2d7a11f2f9d24b2a10735a808850748d99559778f8663ecc8e5168ace7607df3`.
 The saved-read reply commitment was
