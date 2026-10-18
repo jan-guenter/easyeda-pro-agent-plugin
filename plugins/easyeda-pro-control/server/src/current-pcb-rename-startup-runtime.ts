@@ -25,7 +25,7 @@ import { buildCurrentPcbRenamePanelGuard } from "./current-pcb-rename-panel-guar
 import { decodeCurrentPcbRenamePreflightReply, parseCurrentPcbRenamePreflightRequest } from "./current-pcb-rename-preflight.ts";
 import type { CurrentPcbRenamePreflightRequest, CurrentPcbRenamePreflightResult } from "./current-pcb-rename-preflight.ts";
 import { buildCurrentPcbRenamePreflightProgram } from "./current-pcb-rename-preflight-program.ts";
-import { buildCurrentPcbRenameStartupGuard } from "./current-pcb-rename-startup-guard.ts";
+import { CURRENT_PCB_RENAME_STARTUP_STAGES, buildCurrentPcbRenameStartupGuard } from "./current-pcb-rename-startup-guard.ts";
 import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbol-guard.ts";
 import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
@@ -85,13 +85,12 @@ const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if
 const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
 ${buildCurrentProjectOnlySymbolGuard()}
 ${buildCurrentSymbolStartupGuard(true)}
-startupStage='pcb-ast';
-${buildCurrentPcbRenameStartupGuard()}
+${buildCurrentPcbRenameStartupGuard(true)}
 startupStage='auxiliary-panel';
 ${buildCurrentPcbRenamePanelGuard()}
-startup.check();startupStage='pcb-ast';pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
+startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();startupStage='preflight';
 preflight=await(async()=>{${buildCurrentPcbRenamePreflightProgram(selected)}})();
-startupStage='project-only-context';projectOnly.check();startup.check();startupStage='pcb-ast';pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
+startupStage='project-only-context';projectOnly.check();startup.check();pcbRenameStartup.check();startupStage='auxiliary-panel';pcbRenamePanels.check();
 return{profile:'private.current-pcb-rename-startup-observation.v1',target,sheetUuids:startupExpected.sheetUuids,templates:startupExpected.templates,
 preflight,runtimeHoldersObserved:true,pcbAstSettledObserved:true,...${JSON.stringify(LIMITATIONS)}};
 }catch{return{profile:'private.current-pcb-rename-startup-failure.v1',stage:startupStage,preflight,...${JSON.stringify(LIMITATIONS)}};}})();
@@ -110,7 +109,9 @@ export function decodeCurrentPcbRenameStartupObservation(raw: unknown, request: 
   if (isRecord(observed) && observed["profile"] === "private.current-pcb-rename-startup-failure.v1") {
     const failure = exact(observed, ["profile", "stage", "preflight", ...Object.keys(LIMITATIONS)]), stage = failure["stage"];
     need(Object.entries(LIMITATIONS).every(([key, value]) => failure[key] === value) &&
-      [...CURRENT_SYMBOL_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some(allowed => allowed === stage));
+      // Retain the old coarse label for historical failures, not new emission
+      // Or a retrospective diagnosis of which predicate failed.
+      [...CURRENT_SYMBOL_STARTUP_STAGES, ...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast", "auxiliary-panel", "preflight"].some(allowed => allowed === stage));
     throw new Error(`Current PCB startup observation refused [startup:${String(stage)}].`);
   }
   const result = exact(observed, ["profile", "target", "sheetUuids", "templates", "preflight", "runtimeHoldersObserved", "pcbAstSettledObserved", ...Object.keys(LIMITATIONS)]);

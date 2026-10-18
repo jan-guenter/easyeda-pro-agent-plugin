@@ -4,6 +4,40 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate173500, 2026-10-18: branch `feature/pcb-startup-cbb-20261018` corrects
+the source-proven raw CBB contract mismatch and adds eight fixed PCB startup
+failure substages. Own-data property requirements, exact Object.is stability
+(including signed zero), settled AST/version/pending-set/owner checks remain.
+Old coarse `pcb-ast` failures remain decodable but cannot be retrospectively
+diagnosed. Root/independent review, focused guard/composed tests, strict types
+and targeted zero-warning lint pass. A maintained read-only installed-payload
+verifier replaces temporary inventory scripts; its six tests and types/lint
+pass. It compares committed bytes/modes/directories, rejects extra entries/links
+and never starts the plugin or grants runtime authority.
+
+Candidate `0.3.0+codex.20261018173500` is built, not yet published/installed.
+Source455/8b38ecab, runtime3/0069318d, manifest1e98fc74 are frozen. Only facade
+projections/review time changed; external pins and bridge identity are exact.
+Dependency install/tree/signatures/audit and build/compatibility pass. Full
+local release verification is running; exact-payload CI remains required.
+Evidence directory: `/tmp/easyeda-startup-cbb-release-AFV8Ws`.
+No live MCP, EasyEDA launch, CAD change, Save or production access this session.
+The previous main CI39147799193 has now passed. The host-owned loaded163148
+facade2662096 is left alone; no restart/rebind/cache patch is permitted.
+
+Next after publication/install: fresh-session actual-payload admission, then a
+NEW disposable PCB rename case. The retired152547 case must never be resumed.
+Remaining: full writer/closed SQL/saved metadata/final closure; safe current
+source preflight and nonempty String fixture/readers/writer; separate ordinary
+schematic-container title lifecycle; broader CAD/library/routing/rules/ECO/
+dialog/export/platform/bootstrap adapters. FileSource stays disabled for its
+proven shared-rule repair and incomplete export. Do not repeat old empty reads
+or revive legacy writers. Production designs and their records are excluded.
+Keep stash `ebe1b55d7a430ae2e3168e373e155957b582eff9`, all worktrees and evidence.
+
+The following checkpoints are historical; their pending/next instructions are
+not permission to replay completed work.
+
 163148 delivered, 2026-10-18: PR67 merged as main
 `7edf689dc35e6201f68c18e49222813f9302cccd`, reviewed payload
 `d9636bd7b7ee28743ea1a23ed01b088924960f57`. Both complete Git trees equal

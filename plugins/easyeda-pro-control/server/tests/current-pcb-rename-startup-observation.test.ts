@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS } from "../src/current-pcb-rename-preflight.ts";
+import { CURRENT_PCB_RENAME_STARTUP_STAGES } from "../src/current-pcb-rename-startup-guard.ts";
 import { buildCurrentPcbRenameStartupObservation, decodeCurrentPcbRenameStartupObservation } from "../src/current-pcb-rename-startup-runtime.ts";
 import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
@@ -11,7 +12,7 @@ const expectedBefore = { title: "original pcb", displayTitle: "Original PCB", pa
 const request = { target, expectedBefore, desiredTitle: "Renamed PCB" }, startup = { sheetUuids: ["2".repeat(16)], templates: [] };
 const actor = { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" };
 function reply(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: value } }; }
-interface Options { readonly before?: string; readonly afterRpc?: string; readonly pendingAt?: number }
+interface Options { readonly before?: string; readonly afterRpc?: string; readonly pendingAt?: number; readonly nativeCbb?: string }
 function fixture(options: Options = {}): { run: () => Promise<unknown>; evaluate: (source: string) => unknown; expire: () => void } {
   let timeout: (() => void) | undefined;
   const context = createContext({ TextEncoder,
@@ -29,7 +30,7 @@ class Tabs{static containerIds=['editor-window-main'];static containerTree={id:'
 const forbidden=name=>{denied.push(name);throw new Error('PRIVATE_FORBIDDEN');};globalThis.fetch=()=>forbidden('network');
 globalThis.metadata={uuid:target.pcbUuid,project_uuid:target.projectUuid,docType:3,title:beforeValue.title,display_title:beforeValue.displayTitle,parent_uuid:'',source:'',version:beforeValue.version,board:'',ticket:beforeValue.ticket,updateTime:beforeValue.updateTime};
 globalThis.peer={...metadata,uuid:'e'.repeat(16),title:'peer pcb',display_title:'Peer PCB'};globalThis.peerMap={[metadata.uuid]:metadata,[peer.uuid]:peer};
-globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:target.ownerUuid},archive:false,cbb_project:false};
+globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:target.ownerUuid},archive:false,cbb_project:${options.nativeCbb ?? "false"}};
 globalThis.workerClient='f'.repeat(16);globalThis.workerMaxTicket=12345;
 class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))return forbidden('receiver');calls.push([topic,[...args]]);
 if(topic==='/PrjDB/pcb/getData'){if(args.length!==2||args[0]!==target.pcbUuid||args[1]!==target.projectUuid)return forbidden('pcb-args');}
@@ -46,8 +47,8 @@ gVars.concurrentBus=new ClockBus();globalThis['/'+_TAB_ID_+'/notify']=gVars.conc
 globalThis.projectMgr={uuid:target.projectUuid};projectMgr.componentCache={projectMgr,symbolTemplate:{}};
 globalThis.actionRunner={_currentAction:null};actionRunner.realTimeSyncActionManager={transactionRunner:actionRunner,_isRunning:false,_runnerSet:{_idMap:new Map()},_runTimer:{_mark:-1},_localActionOnceDidRunSubscription:null};
 globalThis.docMemory={docMap:new Map(),_docFetchPromiseMap:new Map()};globalThis.SCH={gVars:{projectMgr,actionRunner},get docMemoryManager(){return docMemory;}};
-class AstManager{constructor(){this.prjUuid=target.projectUuid;this.batchDepth=0;this._isClose=false;this.CBB=false;}startBatch(){return forbidden('startBatch');}endBatch(){return forbidden('endBatch');}}
-globalThis.astManager=new AstManager();globalThis.ast={isBuild:true,isPass:false,transId:1,lastModify:123};globalThis.temp={isBuild:false,isPass:false,transId:1,lastModify:100};
+class AstManager{constructor(cbb){this.prjUuid=target.projectUuid;this.batchDepth=0;this._isClose=false;this.CBB=cbb;}startBatch(){return forbidden('startBatch');}endBatch(){return forbidden('endBatch');}}
+globalThis.astManager=new AstManager(projectDetail.cbb_project);globalThis.ast={isBuild:true,isPass:false,transId:1,lastModify:123};globalThis.temp={isBuild:false,isPass:false,transId:1,lastModify:100};
 globalThis.tree={manager(){return astManager;},ast(){return ast;},tempAst(){return temp;}};SCH.D={leftTree:tree};
 globalThis.domRoot={tagName:'DIV',ownerDocument:document,isConnected:true,children:[]};
 domRoot.children=['commandWin','exitSmartSizeTool','exitPadShapeTool','project-blank-page','assembly-variant-page'].map(id=>({id,tagName:'DIV',ownerDocument:document,isConnected:true,parentElement:domRoot,getAttribute(){return null;}}));
@@ -80,6 +81,44 @@ void test("PCB startup refuses pending holders, dirty ASTs and getters before th
     const env = fixture({ before }), raw = structuredClone(await env.run());
     assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup), /startup:/u);
     assert.equal(env.evaluate("calls.length"), 0); assert.equal(env.evaluate("getterReads"), 0);
+  }
+});
+
+void test("PCB startup accepts native raw CBB representations through the composed preflight", async () => {
+  for (const value of ["false", "0", "-0", "null", "undefined"]) {
+    const env = fixture({ nativeCbb: value });
+    const raw = structuredClone(await env.run());
+    assert.equal(decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup).clientTicketObservation.client, "f".repeat(16));
+    assert.equal(env.evaluate("calls.length"), 18); assert.equal(env.evaluate("denied.length"), 0);
+    assert.equal(env.evaluate(`Object.is(astManager.CBB,${value})`), true);
+  }
+});
+
+void test("PCB startup preserves raw CBB identity across the awaited preflight and reports exact fixed failures", async () => {
+  for (const [before, afterRpc, stage, reads] of [
+    ["astManager.CBB='private-detail';", "", "pcb-cbb", 0],
+    ["astManager.batchDepth=1;", "", "pcb-manager", 0],
+    ["ast.transId=2;", "", "pcb-ast-version", 0],
+    ["", "if(calls.length===18)astManager.CBB=0;", "pcb-stability", 18],
+  ] as const) {
+    const env = fixture({ before, afterRpc }), raw = structuredClone(await env.run());
+    assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(raw), request, startup),
+      { message: `Current PCB startup observation refused [startup:${stage}].` });
+    assert.equal(env.evaluate("calls.length"), reads); assert.equal(env.evaluate("getterReads"), 0);
+    assert.equal(env.evaluate("denied.length"), 0);
+  }
+});
+
+void test("PCB startup decoder accepts only its fixed diagnostic inventory", async () => {
+  const raw = structuredClone(await fixture({ before: "astManager.CBB=true;" }).run());
+  const wrapper = decodeExactReadEnvelope(raw); assert.ok(wrapper !== null && typeof wrapper === "object");
+  for (const stage of [...CURRENT_PCB_RENAME_STARTUP_STAGES, "pcb-ast"]) {
+    assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(encodeExactReadEnvelope({ ...wrapper, stage })), request, startup),
+      { message: `Current PCB startup observation refused [startup:${stage}].` });
+  }
+  for (const stage of ["pcb-cbb:private-detail", "unknown", "", null, ["pcb-cbb"]]) {
+    assert.throws(() => decodeCurrentPcbRenameStartupObservation(reply(encodeExactReadEnvelope({ ...wrapper, stage })), request, startup),
+      { message: "Current PCB startup observation refused." });
   }
 });
 
