@@ -143,7 +143,15 @@ export async function inspectLockedTerminalForAdmission(candidateInput: unknown,
   if (input === undefined) { scope(); return result; }
   let observation: ClosureObservation;
   try { observation = await finalChecked(() => observeClosedSymbolTerminalClosure(input)); }
-  catch (error) { if (!(error instanceof ClosureIneligibleError)) { throw error; } scope(); return result; }
+  catch (error) {
+    if (!(error instanceof ClosureIneligibleError)) { throw error; }
+    // Observation may await filesystem work before finding an eligibility limit.
+    // The earlier cold result is stale if evidence changed meanwhile.
+    // Finish with a fresh fixed replay and synchronous checks only; never enroll.
+    scope();
+    const fresh = await finalChecked(() => inspector.inspectClosedSymbolTerminal(candidate.operationId, runtime));
+    return historicalData(fresh, candidate, envelope.bodySha256);
+  }
   // A completed observer is still not an issuer; only this fixed sequence may
   // Retain its historical result. No awaited work follows this insertion check.
   scope();

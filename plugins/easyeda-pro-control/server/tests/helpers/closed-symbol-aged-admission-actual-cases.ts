@@ -31,7 +31,7 @@ async function snapshot(root: string): Promise<readonly Readonly<{ path: string;
   return records;
 }
 
-void test("combined actual aged admission stays cold twice and corrupted reference blocks without loading locked cache", async (context) => {
+void test("combined actual aged admission reuses only pure computation and corrupted reference blocks without loading locked cache", async (context) => {
   const f = await agedCoordinatorFixture(context), full = await f.stage.recordAgedFullEvidence(f.plan);
   const original = assertOriginalAgedClosedSymbolFullEvidence(full, f.engine, full.operationId);
   const stage = new ClosedSymbolAgedTerminalStage(f.engine, f.machine);
@@ -57,12 +57,12 @@ void test("combined actual aged admission stays cold twice and corrupted referen
       const initialSql = sqlCalls(), started = performance.now();
       const admission = await f.engine.observeStatusAdmission();
       assert.deepEqual(admission.incompleteOperations, []);
-      assert.equal(sqlCalls() - initialSql, 18);
+      assert.equal(sqlCalls() - initialSql, ordinal === 1 ? 18 : 0);
       assertActualLockedCacheGraphAbsent();
       assert.deepEqual(await snapshot(root), absent);
       assert.deepEqual(f.events, beforeEvents);
       assert.equal(f.transport.calls, referenceCalls); assert.equal(f.transport.rendererCalls, rendererCalls);
-      context.diagnostic(JSON.stringify({ stage: "combined-engine-v2-cold", ordinal, elapsedMs: performance.now() - started, sqlChildren: sqlCalls() - initialSql }));
+      context.diagnostic(JSON.stringify({ stage: "combined-engine-v2-admission", ordinal, elapsedMs: performance.now() - started, sqlChildren: sqlCalls() - initialSql }));
     }
 
     const reference = original.mainReference.resultArtifact.path;

@@ -15,7 +15,8 @@ export function registerLoadingCase(version: 1 | 2): void {
     const source = new URL("../../src/", import.meta.url);
     const graphNames = ["closed-symbol-terminal.ts", "closed-symbol-aged-terminal.ts", "closed-symbol-coordinator.ts", "closed-symbol-witness.ts"];
     const graphUrls = new Map([...graphNames.map((name) => [new URL(name, source).href, name] as const),
-      [new URL("../../src/closed-symbol-terminal-admission-cache.ts", import.meta.url).href, "locked-admission-cache"]]);
+      [new URL("../../src/closed-symbol-terminal-admission-cache.ts", import.meta.url).href, "locked-admission-cache"],
+      [new URL("../../src/closed-symbol-aged-terminal-admission-cache.ts", import.meta.url).href, "aged-admission-cache"]]);
     for (const name of ["closure-journal", "closure-observer", "closure-plan"]) {
       graphUrls.set(new URL(`../../src/closed-symbol-terminal-${name}.ts`, import.meta.url).href, name);
     }
@@ -61,11 +62,12 @@ export function registerLoadingCase(version: 1 | 2): void {
       assert.equal(result.find((value) => value.summary.operationId === operationId)?.qualification, "terminal-evidence-invalid");
       const own = version === 1 ? "closed-symbol-terminal.ts" : "closed-symbol-aged-terminal.ts";
       const other = version === 1 ? "closed-symbol-aged-terminal.ts" : "closed-symbol-terminal.ts";
-      assert.equal(observed.includes(own), version === 2); assert.equal(observed.includes(other), false);
-      for (const name of ["locked-admission-cache", "closure-journal", "closure-observer", "closure-plan"]) {
-        assert.equal(observed.includes(name), version === 1);
-      }
-      assert.equal(observed.includes("closed-symbol-coordinator.ts"), version === 2); assert.equal(children, 0);
+      // Malformed envelopes are rejected by either cache before its cold graph.
+      assert.equal(observed.includes(own), false); assert.equal(observed.includes(other), false);
+      assert.equal(observed.includes("locked-admission-cache"), version === 1);
+      assert.equal(observed.includes("aged-admission-cache"), version === 2);
+      for (const name of ["closure-journal", "closure-observer", "closure-plan"]) { assert.equal(observed.includes(name), true); }
+      assert.equal(observed.includes("closed-symbol-coordinator.ts"), false); assert.equal(children, 0);
     } finally { hook.deregister(); }
   });
 }

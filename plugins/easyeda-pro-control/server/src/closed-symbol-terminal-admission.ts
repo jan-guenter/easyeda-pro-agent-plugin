@@ -173,8 +173,8 @@ async function qualifyTerminal(candidate: ScanCandidate, runtime: Awaited<Return
       const { inspectLockedTerminalForAdmission } = await import("./closed-symbol-terminal-admission-cache.ts");
       inspected = await inspectLockedTerminalForAdmission(expected, runtime);
     } else {
-      const { inspectClosedSymbolAgedTerminal } = await import("./closed-symbol-aged-terminal.ts");
-      inspected = await inspectClosedSymbolAgedTerminal(expected.operationId, runtime);
+      const { inspectAgedTerminalForAdmission } = await import("./closed-symbol-aged-terminal-admission-cache.ts");
+      inspected = await inspectAgedTerminalForAdmission(expected, runtime);
     }
     const matches = matchesHistoricalAdmission(inspected, expected, routing);
     // No unrelated await follows the inspector's final journal-bound result.

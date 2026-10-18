@@ -13,6 +13,25 @@ const SCRIPT_PINS = Object.freeze({
   "owner-command-v3.ps1": "67474d9304c7e1a99264a7f55a1690c154ceef5e3c31e92c9a6191637c0c5655",
   "stdin-decoder-v3.ps1": "83265055d35605f93cf70c8ccb0d8e8c340818d1cd45c3ef25885fe2a6cc23e7",
 });
+/** Fixed package inputs read by this compiler. This is a data-only dependency
+ * list, not a choice of paths, permission to execute, or a cached byte check.
+ */
+export function mainReferenceV3AssetDescriptors(): readonly Readonly<{
+  name: string; path: string; bytes: number | null; maximumBytes: number; sha256: string;
+}>[] {
+  const identity = MAIN_REFERENCE_HELPER_IDENTITY;
+  need(identity !== null && identity.profile === "private.main-reference-helper.v1" &&
+    Number.isSafeInteger(identity.bytes) && identity.bytes > 0 && identity.bytes <= 262_144);
+  hash(identity.sha256); hash(identity.sourcesSha256);
+  const helperPath = fileURLToPath(new URL("../bin/Easyeda.MainReference.dll", import.meta.url));
+  return Object.freeze([
+    ...Object.entries(SCRIPT_PINS).map(([name, sha256]) => Object.freeze({ name,
+      path: fileURLToPath(new URL(`../../scripts/main-reference/${name}`, import.meta.url)),
+      bytes: null, maximumBytes: 32_768, sha256 })),
+    Object.freeze({ name: "Easyeda.MainReference.dll", path: helperPath,
+      bytes: identity.bytes, maximumBytes: 262_144, sha256: identity.sha256 }),
+  ]);
+}
 function need(value: boolean): asserts value { if (!value) { throw new Error("Main reference v3 metadata refused."); } }
 function hash(value: string): void { need(/^[a-f0-9]{64}$/u.test(value)); }
 async function pinnedBytes(url: URL, expectedHash: string, maximum: number, exactBytes?: number): Promise<Buffer> {

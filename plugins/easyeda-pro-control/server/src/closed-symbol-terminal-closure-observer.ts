@@ -11,12 +11,13 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import { currentProcessSqlRuntime, openVerifiedMachineNode } from "./machine-profile.ts";
 import { CLOSURE_LIMITS, ClosureEvidenceChangedError, ClosureIneligibleError, deriveClosedSymbolTerminalClosure, ownBoundedData, requireEvidence } from "./closed-symbol-terminal-closure-plan.ts";
 import type { ClosurePlan, ClosureRole } from "./closed-symbol-terminal-closure-plan.ts";
+import type { AgedClosurePlan } from "./closed-symbol-aged-terminal-closure-plan.ts";
 
 type Identity = Readonly<Record<string, string>>;
 interface RetainedDirectory { readonly path: string; readonly handle: FileHandle; readonly identity: Identity; readonly managed: boolean }
 interface RetainedFile { readonly handle: FileHandle; readonly role: ClosureRole; readonly bound: string; readonly identity: Identity }
 export interface ClosureObservation {
-  readonly profile: "private.closed-terminal-closure-observation.v1"; readonly plan: ClosurePlan;
+  readonly profile: "private.closed-terminal-closure-observation.v1"; readonly plan: ClosurePlan | AgedClosurePlan;
   readonly root: Identity; readonly directories: readonly Readonly<{ path: string; identity: Identity }>[];
   readonly files: readonly Readonly<{ path: string; identity: Identity; sha256: string; roles: readonly string[] }>[];
   readonly absentSidecars: readonly Readonly<{ role: string; path: string }>[]; readonly observedBytes: number;
@@ -85,9 +86,15 @@ async function manifestDirectory(parent: string): Promise<RetainedDirectory> {
   catch (error) { await handle.close(); throw error; }
 }
 
-async function observe(input: unknown): Promise<ClosureObservation> {
+async function observe(input: unknown, profile: "locked" | "aged" = "locked"): Promise<ClosureObservation> {
   const started = performance.now();
-  const plan = deriveClosedSymbolTerminalClosure(input);
+  let plan: ClosurePlan | AgedClosurePlan;
+  if (profile === "aged") {
+    // Keep aged compiler/shape imports out of locked and ordinary admission.
+    // Only the fixed internal entry below selects this derivation.
+    const { deriveClosedSymbolAgedTerminalClosure } = await import("./closed-symbol-aged-terminal-closure-plan.ts");
+    plan = deriveClosedSymbolAgedTerminalClosure(input);
+  } else { plan = deriveClosedSymbolTerminalClosure(input); }
   const deadline = (): void => { if (performance.now() - started > CLOSURE_LIMITS.deadlineMs) { throw new ClosureIneligibleError("closure-elapsed-deadline"); } };
   deadline();
   const runtime = await currentProcessSqlRuntime(); deadline(); same(runtime, plan.runtime, "current-runtime");
@@ -203,5 +210,11 @@ export function observeClosedSymbolTerminalClosure(input: unknown): Promise<Clos
 export async function revalidateClosedSymbolTerminalClosure(input: unknown, previous: unknown): Promise<ClosureObservation> {
   const retained = ownBoundedData(previous);
   const current = await observe(input);
+  same(current, retained, "previous-observation"); return current;
+}
+export function observeClosedSymbolAgedTerminalClosure(input: unknown): Promise<ClosureObservation> { return observe(input, "aged"); }
+export async function revalidateClosedSymbolAgedTerminalClosure(input: unknown, previous: unknown): Promise<ClosureObservation> {
+  const retained = ownBoundedData(previous);
+  const current = await observe(input, "aged");
   same(current, retained, "previous-observation"); return current;
 }
