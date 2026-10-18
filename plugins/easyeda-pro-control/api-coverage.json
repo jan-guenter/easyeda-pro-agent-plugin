@@ -13,7 +13,7 @@
       "omitted": 450
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 337,
+      "available-with-runtime-guards": 338,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -2236,6 +2236,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_project_pcb",
+          "selector": "eda.dmt_Pcb.getPcbInfo;loaded-local-project-no-editors",
+          "implementation": "native-task-equivalent",
+          "scope": "One explicit project/branch/PCB identity in an already loaded local path-hash project with no editor tabs or hidden frames. Fixed project-qualified native metadata getter, captured RPC receivers and two matching bounded observations bracketed by project-owner checks. Preserves native title/display title, parent, board, source/version, ticket and updateTime. Source/version/board fallbacks are observed getter semantics, not lossless storage. No public-wrapper parity, worker lease, saved membership, startup completion or writer authority. No canvas load, navigation, cloud lookup, mutation or Save. Other PCB metadata, full inventory and renaming remain separate.",
+          "source": [
+            "current-project-pcb-metadata.ts",
+            "current-project-pcb-metadata-program.ts",
+            "current-project-pcb-metadata-runtime.ts",
+            "current-project-only-symbol-guard.ts",
+            "current-disposable-open-profile.ts"
+          ],
+          "tests": [
+            "current-project-pcb-metadata.test.ts",
+            "current-project-pcb-metadata-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "project-pcb",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.dmt_Pcb.getPcbInfo",
@@ -6740,7 +6774,7 @@
           "tool": "easyeda_control_project_symbol_metadata",
           "selector": "metadata-advance;forward-only-unused-meta-or-canvas-segments-symbol",
           "implementation": "native-task-equivalent",
-          "scope": "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas requires stable atom types, lossless raw bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 complete chunks including the reserved write; stricter reader limits still apply. Saved canvas lines stay byte-exact with a native replay-order witness. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write only; canvas document windows must be strictly newer than every target header and within the fixed time ceiling. Physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Tags, source, classification, otherProperty and geometry changes are unsupported. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority; ordinary drawn-symbol connected validation remains unclaimed.",
+          "scope": "Separate current-version forward-only name/non-null-description operation for one unused project-local symbol, absent from all editor tabs. Complete original target history must be META-only or satisfy the bounded canvas-segments profile, including every tombstoned occurrence. Canvas requires stable atom types, lossless raw bodies, unambiguous cache actors, a unique latest/max-ticket header and at most 101 complete chunks including the reserved write; stricter reader limits still apply. Saved canvas lines stay byte-exact with a native replay-order witness. Original ordinary launch, sealed pre-navigation startup, complete closed baseline, exact runtime admission and immutable clock windows are required. Predispatch raw-history, saved-content and complete SQL proof budgets reserve one write only; canvas document windows must be strictly newer than every target header and within the fixed time ceiling. Physical allocation, heap and deadlines remain runtime limits. Complete closed SQL effect, reopened exact saved content and final closed SQL equality are mandatory. No inverse, explicit Save, generic library.symbol.modify admission or authority from discovery. Tags, source, classification, otherProperty and geometry changes are unsupported. Historical installed123000 validation passed this ordinary unused META-only forward-only entrypoint with exact closed SQL, reopened saved content, final SQL equality and retained process closure. The shared installed101500 META-only disposable forward/inverse lifecycle also passed. Historical results grant no current-invocation authority. Installed080000 passed the ordinary unused canvas-segments forward lifecycle on a disposable fixture with complete SQL, exact reopened content and final closure.",
           "source": [
             "current-symbol-operation.ts",
             "current-disposable-open-runtime.ts",

@@ -60,7 +60,7 @@ void test("ordinary symbol coverage exposes its bounded forward-only history pro
   for (const required of ["every tombstoned occurrence", "unused project-local symbol", "sealed pre-navigation startup", "reserve one write",
     "final closed SQL equality", "No inverse", "installed101500", "installed123000", "Historical results grant no current-invocation authority",
     "META-only or satisfy the bounded canvas-segments profile", "at most 101 complete chunks", "strictly newer than every target header",
-    "ordinary drawn-symbol connected validation remains unclaimed", "classification, otherProperty and geometry changes are unsupported"]) {
+    "Installed080000 passed the ordinary unused canvas-segments forward lifecycle", "classification, otherProperty and geometry changes are unsupported"]) {
     assert.ok(route.scope.includes(required));
   }
   assert.equal(row.routes.find((entry) => entry.selector === "library.symbol.modify")?.executionState, "blocked");
@@ -69,6 +69,7 @@ void test("ordinary symbol coverage exposes its bounded forward-only history pro
   assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
   assert.equal(result["registrationEnabled"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["connectedValidation"], false);
   assert.equal(result["historicalConnectedValidation"], "installed123000-ordinary-unused-meta-only-forward-only");
+  assert.equal(result["historicalCanvasConnectedValidation"], "installed080000-ordinary-unused-canvas-segments-forward-only");
 });
 
 void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {

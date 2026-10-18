@@ -321,13 +321,14 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 43);
+      assert.equal(tools.tools.length, 44);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_validate_closed_symbol"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_symbol_metadata"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_symbol_metadata"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_pcb"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_symbol_copy"));
       for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806]] as const) {
         const sdk = await api(client, { action: "sdk", query: { reference, namespace: "sys_WebSocket", limit: 1, detail: true } });

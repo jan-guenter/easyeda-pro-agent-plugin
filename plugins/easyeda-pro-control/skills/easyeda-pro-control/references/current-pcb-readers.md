@@ -4,6 +4,55 @@ Read [offline discovery](api-reference.md) first for schema lookup and coverage.
 This reference defines the task-specific contract; it does not grant execution
 or replace the current tool's runtime checks.
 
+## Project-local PCB metadata without an editor
+
+For a loaded local project with no editor tabs, query `project-pcb` with
+`includeSchemas:true`, then validate through `project-pcb-validate` and
+`query:{"request":...}`. Call `easyeda_control_project_pcb` with that request
+and the authenticated `expectedFingerprint`:
+
+```json
+{"method":"eda.dmt_Pcb.getPcbInfo","target":{"projectUuid":"<64-hex>","branchUuid":"<32-hex>","pcbUuid":"<16-or-32-hex>"}}
+```
+
+There is no `arguments` object or tab ID. The Start Page and optional hidden
+blank placeholder are allowed; any editor tab, hidden/export editor, pending
+restoration or document URL command refuses. Do not open a PCB canvas to make
+this reader work. Historical, archived, store, CBB and V2 projects are excluded.
+
+The result is a native metadata equivalent, not an `IDMT_PcbItem`. It returns
+`uuid`, `projectUuid`, project `ownerUuid`, `title`, `displayTitle`, `parentUuid`,
+`source`, `version`, `boardUuid`, `ticket`, `updateTime` and `docType:3`.
+Native title and display title can differ; neither is normalized by the adapter.
+The native getter has already replaced falsy source/version/board values with
+empty strings, so their original absence cannot be recovered. Parent and board
+references do not prove membership. Creator, modifier, creation time and the
+native fixed empty description are omitted.
+
+Two matching PCB samples are bracketed by four project/branch/owner checks.
+The retained no-editor context and RPC receivers are checked around awaits;
+these are observations, not a worker lock. The fixed program calls only native
+project and PCB metadata getters. It requests no canvas, library, clock/client,
+navigation, mutation, storage-completion operation or Save.
+
+The ten-second deadline stops later reads, not an already dispatched request.
+The complete escaped envelope is bounded to64KiB; missing, accessor-backed,
+non-finite and oversized values refuse without coercion or truncation. Source
+review and isolated tests are recorded; connected validation is not yet recorded.
+A successful read is not saved-state, write-permission, startup qualification or
+PCB rename authority. Use the active-view routes below for geometry.
+
+### PCB rename remains unsupported
+
+Source now includes a bounded pure project-structure title/version/time projection
+and an AST/batch-state guard. Neither is connected to a writer. The private
+schematic rebuild queue still needs operation-owned completion evidence; its
+publicly observable state is not proof that the queue is empty. A rename also
+needs a dedicated complete SQL model for every affected structure row, native
+producer/clock binding, and saved-reopen verification. The symbol comparator
+preserves structure bytes and cannot be reused unchanged. Public reuse-block
+renaming propagates into other document families and remains outside this scope.
+
 ## PCB identities on the current tuple
 
 Query `pcb-identities` with `includeSchemas:true`, validate with

@@ -1,5 +1,38 @@
 # Current symbol validation and ordinary metadata editing
 
+## Completed 080000 ordinary drawn-symbol update
+
+On 2026-10-18, installed080000 completed the separate ordinary forward-only
+entrypoint on one unused drawn symbol in the disposable fixture. It changed only
+the requested name/description, closed through the original owner, verified the
+complete SQL effect, reopened with inactive caches excluded, compared exact saved
+content, and normally closed the verifier with unchanged final SQL.
+`nextPhase:completed` and `requestedMetadataVerified:true` were returned. The
+verifier's retained process/Job termination was proved; no inverse was retained.
+
+All 35 SQL tables were checked; exactly six modeled tables changed. All 51 previous
+history rows and 55 chunks were preserved, with one metadata upload at ticket 775.
+All 18 peer documents and all 18 target drawing records stayed unchanged. SQL
+changed from `37204cae8b349436e64f1bcde90bcf2d98b09f72679ffc1e6f7d9913d09457fe`
+to `97389834d625ca112e75388d50acea5ba36281382459475b19baa569782ab20a`, which
+remained exact after reopening and final closure.
+
+The 5,046-byte reopened content has SHA-256
+`dc62d28e0fb1b09f2e0de8b740d78388fe617de2a8a0fe0f6268a65a9e3a3c19`.
+It matches the exact canvas-segments candidate with a first-arrival order witness;
+which native cache branch ran was not observed. The requested metadata remains.
+No explicit Save, replay, inverse, restoration or production-project access
+occurred. This validates that case, not referenced symbols, other histories,
+ordinary copying or later runtime generations.
+
+An independent retained-artifact audit verified all 54 artifacts, reconstructed
+the saved content from all 52 history rows and 56 chunks, and compared all 35
+tables after reopening. Both closed raw copies match SHA-256
+`557e92681328d37ece9acccc621bd17f212885c11c1565c2c0cffa6fa6220d64`
+at 598,016 bytes. The verifier's five retained processes exited without a
+Save/Discard choice. The final artifact records retirement intent; the completed
+tool return separately establishes retirement.
+
 ## Completed 210000 drawn-symbol round trip
 
 On2026-10-18, installed210000 completed both halves of disposable
@@ -34,8 +67,7 @@ Update `0.3.0+codex.20261018080000` extends the separate ordinary route to this
 bounded history profile with exactly one write and no inverse. It retains the
 same complete-history, strictly newer clock-window, full SQL and byte-exact
 saved-content checks. Its fixed purpose cannot select the disposable inverse or
-replace the original target/patch. Ordinary drawn-symbol connected validation
-is not claimed; that entrypoint still needs its own installed-session run.
+replace the original target/patch. Its installed-session result is recorded above.
 
 ## Current 123000 ordinary-route result
 
@@ -420,18 +452,18 @@ JSON cannot construct this private issuer or grant execution authority.
 Source review, focused regressions, final lint/types/build, CI and installation
 results are recorded in AGENTS.md as they complete. The101500 META-only and210000
 drawn-symbol disposable round trips, plus the123000 ordinary unused META-only
-lifecycle, are accepted. None admits a later installed runtime. No production
+and080000 ordinary unused drawn-symbol lifecycles, are accepted. None admits a
+later installed runtime. No production
 validation is planned.
 
 The inverse adoption correction passes 21 focused tests. Its real-storage
 regression reproduced the original error before the fix; changed disk or memory
 state still refuses before adoption intent or ownership transfer.
 
-1. Publish/install the ordinary drawn-symbol extension, then validate that
-   separate one-write entrypoint on the existing unused disposable symbol after
-   fresh installed-runtime admission. The shared bounded canvas-segments
-   forward/inverse lifecycle passed210000; do not replay it or older attempts.
-   No broader live campaign is required for this update.
+1. Publish/install the no-editor PCB metadata reader and purpose-bound next-step
+   guidance, then admit the fresh plugin before validating that reader. The
+   ordinary080000 and disposable210000 metadata cases are complete; never replay
+   them or older attempts. One representative nonempty PCB text case remains.
 2. Complete copy saved-reopen validation in a separate future disposable case.
    The193000 copy's exact closed SQL effect passed but its verifier launch failed;
    that terminal attempt cannot be replayed or retrospectively completed using

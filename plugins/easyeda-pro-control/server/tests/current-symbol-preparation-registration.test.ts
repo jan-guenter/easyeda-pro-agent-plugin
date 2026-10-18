@@ -30,7 +30,7 @@ void test("project-only preflight is discoverable and validates without granting
 void test("project-symbol tool routes both strict read shapes through the authenticated wrapper", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_symbol",');
-  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_pcb_geometry",', start);
+  const end = source.indexOf("\nregisterFacadeTool(", start + 1);
   assert.ok(start > 0 && end > start);
   type Callback = (value: { request: unknown; expectedFingerprint: Record<string, unknown> }) => Promise<unknown>;
   let invoke: Callback | undefined, schema: z.ZodType | undefined, wrappers = 0;

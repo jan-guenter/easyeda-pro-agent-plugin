@@ -871,10 +871,14 @@ void test("copy baseline cannot consume metadata scratch-clock issuers", async c
 
 void test("current copy optional clocks use their distinct issuers without admitting metadata generations", async context => {
   const f = await projectReadyBaseline(context, true, true, true), id = f.copyOwner.operationId;
-  await f.coordinator.openCopyProject(id);
+  const opened = await f.coordinator.openCopyProject(id);
+  assert.match(String(opened["nextSafeAction"]), /easyeda_control_disposable_symbol_copy action baseline-observe-clock once/u);
   await assert.rejects(f.coordinator.observeAgedClock(id), /original accepted reference/u);
   const observed = await f.coordinator.observeCopyAgedClock(id);
   assert.equal(observed["agedClockAccepted"], true); assert.equal(f.state.referenceAttempts, 1); assert.equal(f.state.clockObservations, 1);
+  assert.match(String(observed["nextSafeAction"]), /easyeda_control_disposable_symbol_copy action copy-begin/u);
+  assert.match(String(observed["nextSafeAction"]), /later copy-write phase separately qualifies/u);
+  assert.doesNotMatch(String(observed["nextSafeAction"]), /action metadata-begin|action validation-begin/u);
   const clock = f.coordinator.getCopyAgedClock(id); assert.equal(clock.operationId, id);
   assert.throws(() => f.coordinator.getAgedClock(id), /original settled opening/u);
   await assert.rejects(f.coordinator.observeCopyAgedClock(id), /unused observation attempt/u);
@@ -1031,11 +1035,16 @@ void test("current optional clock stages keep the original baseline phases and c
   const f = await projectReadyBaseline(context, true, true);
   assert.equal(f.state.referenceAttempts, 1);
   await assert.rejects(f.coordinator.prepareClockReference(f.owner.operationId), /unused pre-launch attempt/u);
-  await f.coordinator.openProject(f.owner.operationId);
+  const opened = await f.coordinator.openProject(f.owner.operationId);
+  assert.match(String(opened["nextSafeAction"]), /easyeda_control_project_open action baseline-observe-clock once/u);
   const before = await readFile(operationPath(f.owner.operationId));
   const result = await f.coordinator.observeAgedClock(f.owner.operationId);
   assert.equal(result["clockReferenceAccepted"], true); assert.equal(result["agedClockAccepted"], true);
   assert.equal(result["startupQualified"], false); assert.equal(result["writerReady"], false); assert.equal(result["executionAuthorized"], false);
+  assert.match(String(result["nextSafeAction"]), /easyeda_control_project_open action validation-begin/u);
+  assert.doesNotMatch(String(result["nextSafeAction"]), /action metadata-begin|action copy-begin/u);
+  const inspected = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(inspected["nextSafeAction"], result["nextSafeAction"]);
   assert.equal(f.state.clockObservations, 1); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), before);
   await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), /unused observation attempt/u);
   await assert.rejects(f.restart().observeAgedClock(f.owner.operationId), /original accepted reference/u);
@@ -1079,6 +1088,8 @@ void test("current optional clock observation requires reference and accepts no 
       if (reference) { f.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic clock scope settlement failed")); }
       await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), reference ? /scope settlement failed/u : /original accepted reference/u);
       const result = await f.coordinator.inspect(f.owner.operationId); assert.equal(result["agedClockAccepted"], false);
+      assert.doesNotMatch(String(result["nextSafeAction"]), /action validation-begin|action metadata-begin|action copy-begin/u);
+      if (reference) { assert.match(String(result["nextSafeAction"]), /Clock observation attempt consumed/u); }
       assert.equal(f.state.clockObservations, reference ? 1 : 0);
       if (reference) {
         await assert.rejects(f.coordinator.observeAgedClock(f.owner.operationId), /unused observation attempt/u);
@@ -1302,7 +1313,7 @@ void test("current project-only opening refuses an unsupported historical subset
 void test("ordinary project-only startup binds its closed expectation and purpose before navigation", async (context) => {
   const ordinary = { ordinary: true, activeSchematicPages: 1, blockers: ["active-schematic-pages"] } as const;
   await context.test("supported ordinary startup refuses disposable acceptance without consuming its own opening", async (childContext) => {
-    const f = await projectReadyBaseline(childContext, ordinary);
+    const f = await projectReadyBaseline(childContext, ordinary, true);
     await assert.rejects(f.coordinator.openProject(f.owner.operationId, true), /another purpose/u);
     assert.equal(f.state.opens, 0); assert.equal(f.state.startupReads, 0);
     const initial = await f.coordinator.inspect(f.owner.operationId); assert.equal(initial["projectOpenAttempted"], false);
@@ -1310,12 +1321,31 @@ void test("ordinary project-only startup binds its closed expectation and purpos
     assert.equal(result["purpose"], "ordinary-symbol-metadata"); assert.equal(result["projectOpeningMode"], "supported-symbol-startup");
     assert.equal(result["unqualifiedSchematicStartupEffectsAccepted"], false); assert.equal(result["startupQualified"], false);
     assert.equal(result["writerReady"], false); assert.equal(result["executionAuthorized"], false);
+    assert.match(String(result["nextSafeAction"]), /easyeda_control_project_symbol_metadata action baseline-observe-clock once/u);
     assert.equal(f.state.startupReads, 1); assert.equal(f.state.opens, 1);
     assert.ok(f.state.events.indexOf("startup-checkpoint") < f.state.events.indexOf("project-only-open"));
     const generation = f.coordinator.getProjectOnlyGeneration(f.owner.operationId);
     assert.equal(f.assertGeneration(generation, f.engine).source.purpose, "ordinary-symbol-metadata");
+    const beforeClock = await readFile(operationPath(f.owner.operationId));
+    const observed = await f.coordinator.observeAgedClock(f.owner.operationId);
+    assert.match(String(observed["nextSafeAction"]), /easyeda_control_project_symbol_metadata action metadata-begin/u);
+    assert.match(String(observed["nextSafeAction"]), /If the lifecycle has not already begun/u);
+    assert.match(String(observed["nextSafeAction"]), /After beginning, follow the returned lifecycle phase; do not repeat begin/u);
+    assert.match(String(observed["nextSafeAction"]), /later forward-write phase separately qualifies/u);
+    assert.doesNotMatch(String(observed["nextSafeAction"]), /action validation-begin|action copy-begin/u);
+    assert.equal(observed["writerReady"], false); assert.equal(observed["executionAuthorized"], false);
+    assert.deepEqual(await readFile(operationPath(f.owner.operationId)), beforeClock);
+    const inspected = await f.coordinator.inspect(f.owner.operationId);
+    assert.equal(inspected["nextSafeAction"], observed["nextSafeAction"]);
+    const historical = await f.restart().inspect(f.owner.operationId);
+    assert.equal(historical["originalOwnerRetained"], false);
+    assert.doesNotMatch(String(historical["nextSafeAction"]), /action baseline-observe-clock|action metadata-begin/u);
     await assert.rejects(f.coordinator.openOrdinaryProject(f.owner.operationId), /original closed baseline/u);
     assert.equal(f.state.opens, 1);
+    const changed = await loadOperation(f.owner.operationId); changed["nextSafeAction"] = "Synthetic competing history; no continuation.";
+    await updateOperation(changed);
+    const competing = await f.coordinator.inspect(f.owner.operationId);
+    assert.equal(competing["nextSafeAction"], changed["nextSafeAction"]);
   });
   await context.test("changed closed startup expectation refuses dispatch and permits only original cleanup", async (childContext) => {
     const f = await projectReadyBaseline(childContext, { ...ordinary, startupMismatch: true });

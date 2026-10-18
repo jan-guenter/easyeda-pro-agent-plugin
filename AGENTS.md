@@ -4,19 +4,93 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate080000: `0.3.0+codex.20261018080000` extends the separate ordinary
+080000 continuation,2026-10-18: actual facade2050317/parent2048631/
+startTicks28904581 independently admitted, pinnedNode24.18.0/core0 and exact
+installed bytes/modes/source/runtime/manifest. Old1950463/probe2046229 absent.
+Both main CI39110593352 and Windows39110593366 passed. Complete18-file
+scratch runtime/helper and39-source transformed closure independently matched;
+no probe replay or rebuild. Original ordinary launch
+`ordinary-drawn-080000-20261018-launch` completed once, root36620/Job
+9a5f830b943f4655bb96268667b83b33, launchedSHA
+28896e9617b0813db2d5f94b99b8fa4cbebe0e9a75cf97ca183efe1f5a4627a8.
+Authenticated status and StartPage/undefinedproject/emptybranch context passed.
+`ordinary-drawn-080000-20261018-open` completed once on the exact disposable
+PCB; no hard stop/orphan. Its checkpointd3f70316 matches the prior closed result.
+Offline preparationb69f93ec covers19documents/51rows/55chunks and unused drawn
+symbol3ebb13f574636857. Requested metadata is EASYEDA_ORDINARY_DRAWN_080000 and
+the dated ordinary-validation description; tags/source stay exact.
+`ordinary-drawn-080000-20261018-baseline` closed capture, original-launch
+termination recording, fixed-clock preparation, replacement launch/admission and
+cache observation completed. Baseline raw67c8659d/checkpointd3f70316/fullSQL37204cae
+remain exact. Project-only opening/clock and metadata-begin completed. The sole
+forward write returned, normal closure/termination and full closed SQL passed:
+37204cae→97389834, ticket775, exact intended name/description effect. No replay,
+explicit Save or inverse. Fresh verifier launch/admission/cache observation passed;
+forward-verification-open/read/close/finish completed. nextPhasecompleted and
+requestedMetadataVerified/forwardVerified true. Verifier retired with retained
+termination/capture closure proved; final SQL97389834 unchanged. Saved5046bytes
+SHAdc62d28e0fb1b09f2e0de8b740d78388fe617de2a8a0fe0f6268a65a9e3a3c19 matches
+the byte-exact canvas-segments candidate/first-arrival witness; actual cache
+branch unobserved. Independent forward audit checked35tables/6changed,
+all51priorhistoryrows/55chunks and19documents:18peers/18drawingrecords exact.
+Independent final audit verified all54artifacts, exact52historyrows/56chunks,
+the saved-content projection and all35tables/145rows unchanged after reopening.
+Retained postedit/final raw copies match557e92681328d37ece9acccc621bd17f212885c11c1565c2c0cffa6fa6220d64,
+598016bytes. Verifier48896 and its five-process capture closed without Save/Discard.
+Artifact54 is retirement intent; the completed root tool return proves retirement.
+Never replay this completed ordinary lifecycle. EasyEDA is normally closed;
+no pending CAD operation. Dormant PCB rename structure/AST prerequisites and a
+separate no-editor PCB metadata reader are implemented in source with focused
+tests. They do not enable PCB writing or alter installed080000. Current branch
+feature/current-pcb-rename-structure is built but unpublished, candidate094000;
+the frozen full local verification is running. Repository checks and all seven
+installed skill-creator checks pass. External pins and authenticated bridge stay
+unchanged. New PCB metadata connected validation remains unclaimed.
+Purpose-bound baseline guidance now points to clock observation/lifecycle begin,
+not premature cleanup; sealed journals and authority checks remain unchanged.
+
+Delivered080000: `0.3.0+codex.20261018080000` extends the separate ordinary
 name/description route to eligible unused drawn symbols. Fixed ordinary purpose,
 exactly one write, no inverse; complete-history, fresh clock-window, full SQL,
 byte-exact reopened-content and original-owner checks remain. Independent source
 review accepted the scoped implementation after the disposable lifecycle below.
-Ordinary drawn-symbol entrypoint connected validation remains unclaimed.
-Build/coverage/pins and independent review passed; frozen full verification is
-running. Repository184checks and all seven installed skill validators pass.
+Ordinary drawn-symbol entrypoint validation was unclaimed at delivery and has
+since passed the separate installed080000 case recorded above.
+Published through PR61/main72f51c1ecb4ff0b5f19a58f811c8310061291a34,
+reviewed payloadfd7e4b43b51c07a46583e4aac2a1df5752d12acd. Required PR
+CI39109755258 and Windows39109755291 passed. Copilot39109765373 reported no
+concrete issues and recommended human review; no human review is claimed.
+Frozen local verification passed10,808facade/fourplatformskips/zerofailures,
+424bridge, strict type-aware lint/types, dependency signatures/audit, reproducible
+build and all internal release validators. Repository184checks and all seven
+installed skill-creator checks pass; no official external plugin validator exists
+in the inspected installed skill roots. Main Windows39110593366 and
+main CI39110593352 subsequently passed.
 An earlier repository scan refused a private project name in these notes; it
 was removed without relaxing the scanner. A read-only expected-payload derivation
 refused ambientNode26 before any output file, then passed on pinnedNode24/core0.
-Protected publication and official installation remain. Installed210000 and
-facade1950463 remain untouched.
+
+Official Git marketplace upgrade installed/enabled080000 from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git; cached marketplace
+HEAD equals mergedmain72f51c1e. All1339files/27,200,202bytes/42directories/
+sevenskills match committed bytes/modes, noextras/symlinks/hardlinks, inventory
+8a793801ed55f0c7ad5943538ac0885167a1fae384a5a60c4dce4c051c14d7fb.
+Source417071cfb54b69000286d6b91b46c73ba9eb9a76620e3a018220abdff3a6bd1a05e;
+runtime3e222bff938a0746d9cab9393ebf50ade894db7fe1d506e05f46bbe6f8b7297b2;
+manifesta817f06200d56c274bdccb497e842de9ed263c3e41ad31983012dcea842e3509.
+All external pins and bridge unchanged. Configured offline startup passes
+ambientNode26 to pinnedNode24,18restrictedtools, no upstream/socket; synthetic
+profile unchanged and ownchild2046229 observed exiting after EOF without signals.
+Consumed proof /tmp/easyeda-drawn-release-CAmPws/proof.json,4485bytes/SHA
+c21506249e75199b127aee62c1cf630af9e2342efbd581ac092901de8f74c7ad.
+Never rerun that one-shot probe. It does not admit a live runtime.
+At installation facade1950463 still loaded210000; it has since exited.
+At that installation handoff, no later live calls, cache patch, host termination
+or owner reconstruction had occurred. Fresh080000 admission and the completed
+ordinary one-write case are recorded above. Never replay that completed case.
+Do not repeat the completed210000 round trip or stopped193000 copy. EasyEDA is
+normally closed, with no pending CAD operation. Production designs/records are
+excluded. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
 
 Completed210000 drawn-symbol validation on2026-10-18: actual facade1950463/
 parent1948772/startTicks28177829 independently admitted, pinnedNode24/core0,
@@ -192,8 +266,8 @@ completed without open issues after instruction compaction; no human-review clai
   Native control supplements genuine API gaps/dialogs, not available editing APIs.
 - Current 3.2.206 ordinary writing is limited to forward name/description edits of
   unused project-local symbols with complete META-only or bounded canvas-segments
-  history. Ordinary drawn-symbol connected validation is still unclaimed; the
-  installed210000 disposable drawing round trip passed. Historical cases grant no
+  history. Installed080000 ordinary drawing validation and the installed210000
+  disposable drawing round trip passed on the disposable fixture. Historical cases grant no
   later-tuple admission. Disposable drawing metadata/copy have separate gates. Copy excludes
   chosen names, classification, assets, delete/inverse, Save and geometry.
 - Legacy design type-1/2/3/eight library metadata writers await structure/full SQL

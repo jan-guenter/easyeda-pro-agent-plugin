@@ -22,14 +22,15 @@ void test("portable MCP launch requires the exact bundled launcher tuple without
   }
 });
 
-void test("all 43 facade tools include scoped disposable copy, ordinary metadata, launch, scoped utilities and legacy refusals", () => {
-  assert.equal(FACADE_TOOL_NAMES.length, 43);
-  assert.equal(new Set(FACADE_TOOL_NAMES).size, 43);
+void test("all 44 facade tools include scoped PCB reads, disposable copy, ordinary metadata, launch and legacy refusals", () => {
+  assert.equal(FACADE_TOOL_NAMES.length, 44);
+  assert.equal(new Set(FACADE_TOOL_NAMES).size, 44);
   for (const name of ["easyeda_control_api", "easyeda_control_sdk_read", "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui",
     "easyeda_control_execute", "easyeda_control_apply", "easyeda_control_check", "easyeda_control_validate_closed_symbol", "easyeda_control_symbol_metadata", "easyeda_control_system", "easyeda_control_extensions", "easyeda_control_shortcuts", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_pcb_identities", "easyeda_control_history", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata"]) {
     assert.ok(FACADE_TOOL_NAMES.some((entry) => entry === name));
   }
   assert.ok(FACADE_TOOL_NAMES.includes("easyeda_control_disposable_symbol_copy"));
+  assert.ok(FACADE_TOOL_NAMES.includes("easyeda_control_project_pcb"));
 });
 
 void test("repository metadata parsing retains the portable launch fields for validation", async () => {
@@ -44,6 +45,7 @@ void test("repository metadata parsing retains the portable launch fields for va
   }
   assert.deepEqual(Object.keys(parsed.mcpServers.easyeda_pro_control.tools).toSorted(), [...FACADE_TOOL_NAMES].toSorted());
   assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_disposable_symbol_copy"]?.approval_mode, "prompt");
+  assert.equal(parsed.mcpServers.easyeda_pro_control.tools["easyeda_control_project_pcb"]?.approval_mode, "prompt");
   for (const tool of ["easyeda_control_sdk_read", "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui", "easyeda_control_check", "easyeda_control_validate_closed_symbol", "easyeda_control_symbol_metadata", "easyeda_control_extensions", "easyeda_control_editor_context", "easyeda_control_shortcuts", "easyeda_control_pcb_identities", "easyeda_control_history", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata"]) {
     assert.equal(parsed.mcpServers.easyeda_pro_control.tools[tool]?.approval_mode, "prompt");
   }
