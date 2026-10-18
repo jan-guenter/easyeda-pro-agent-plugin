@@ -8,11 +8,13 @@ import { canonicalJson, isRecord, sha256Text } from "./core.ts";
 import { verifyCurrentPcbRenameHistory } from "./current-pcb-rename-history.ts";
 import type { CurrentPcbRenameHistoryProjection } from "./current-pcb-rename-history.ts";
 import { prepareCurrentPcbRenameStructureSql } from "./current-pcb-rename-structure-sql.ts";
+import { currentPcbStoredHeaderSchema as headerSchema } from "./current-pcb-stored-header.ts";
 import { decodeNativeHistoryChunk, isNativeDocumentDeleted, parseNativeRecords } from "./native-history.ts";
 import { nativeProjectSymbolSqlSchema } from "./native-project-sql-schema.ts";
 import { MAX_ENCODED_BYTES } from "./sqlite-inventory-core.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { SqlCell, SqlRow, SqlTable, readExactSqlInventory } from "./sqlite-inventory.ts";
+// oxlint-disable-next-line import/max-dependencies -- Share stored-header admission and the maintained complete-history decoder rather than duplicate either rule.
 import { decodeCurrentSymbolPreEditHistory } from "./symbol-sql-comparator.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
@@ -30,9 +32,6 @@ const witnessSchema = z.object({ projectUuid: z.string().regex(/^(?:[a-f0-9]{32}
 }).strict().refine((value) => value.documentClockMaxMs >= value.documentClockMinMs && value.documentClockMaxMs - value.documentClockMinMs <= 60_000 &&
   value.backendClockMaxMs >= value.backendClockMinMs && value.backendClockMaxMs - value.backendClockMinMs <= 60_000);
 export type CurrentPcbRenameSqlWitness = z.infer<typeof witnessSchema>;
-const headerSchema = z.object({ docType: z.literal("PCB"), client: z.string().regex(/^[a-f0-9]{16}$/u),
-  uuid: z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u), updateTime: timeSchema, version: z.string().min(1).max(128),
-  editVersion: z.string().min(1).max(128).optional() }).strict();
 const LIMITATIONS = Object.freeze({ executionAuthorized: false, producerBindingVerified: false, actorProvenanceVerified: false,
   clockProvenanceVerified: false, queueCompletionVerified: false, generationClosureVerified: false,
   persistentUploadReplayExcluded: false, reopened: false } as const);

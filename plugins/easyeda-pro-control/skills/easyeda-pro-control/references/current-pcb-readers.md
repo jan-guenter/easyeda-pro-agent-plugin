@@ -38,9 +38,44 @@ navigation, mutation, storage-completion operation or Save.
 The ten-second deadline stops later reads, not an already dispatched request.
 The complete escaped envelope is bounded to64KiB; missing, accessor-backed,
 non-finite and oversized values refuse without coercion or truncation. Source
-review and isolated tests are recorded; connected validation is not yet recorded.
+review and isolated tests are recorded. Installed111500 passed one disposable
+project-only read with two matching samples, followed by retained normal closure
+and unchanged complete SQL/native history. That historical case grants no later
+runtime admission and does not validate the separate rename preflight below.
 A successful read is not saved-state, write-permission, startup qualification or
 PCB rename authority. Use the active-view routes below for geometry.
+
+### Read-only rename preflight
+
+Query `project-pcb-preflight` with `includeSchemas:true`, validate the complete
+request with `project-pcb-preflight-validate`, then use the same
+`easyeda_control_project_pcb` tool and authenticated fingerprint. This route
+does not rename the PCB. It requires the same project-only state, an ordinary
+target with empty parent/source, and these exact fields:
+
+- `target:{projectUuid,branchUuid,pcbUuid,ownerUuid}`.
+- `expectedBefore:{title,displayTitle,parentUuid,source,version,boardUuid,ticket,updateTime,docType}`.
+- `desiredTitle`, a different, nonblank title without surrounding whitespace
+  or control characters, at most 512 characters.
+
+Keep native `title` and `displayTitle` distinct. The tool compares the supplied
+metadata against two complete native PCB maps and explicit target reads. It
+uses the worker's own read-only title lookup for collision detection. Any match,
+including the same PCB under a case-insensitive title, refuses. It does not
+choose a suffix or run the public rename wrapper, which can rename related
+reuse-block documents.
+
+Four agreeing client/max-ticket observations and four UI actor/renderer-notify
+clock samples accompany the metadata. They do not prove the original worker's
+constructor, captured producer identity, backend actor/clock, startup completion
+or permission. Supplied expectations are not saved-history provenance. Native
+name availability is a sampled observation, not a lock or future writer grant.
+
+Bounds are 4,096 PCB entries, 512 KiB including the escaped response and ten seconds
+inside the application. Bounds do not cancel an already dispatched native read.
+Missing, changed, malformed or oversized evidence refuses without truncation.
+No editor opens, geometry loads, mutation or explicit Save are requested.
+This new preflight has no connected-validation claim.
 
 ### PCB rename remains unsupported
 

@@ -130,6 +130,8 @@ import { readCurrentPcbGeometry } from "./current-pcb-geometry-runtime.ts";
 import { currentSymbolMetadataRequestSchema } from "./current-symbol-metadata.ts";
 import { currentProjectPcbMetadataRequestSchema } from "./current-project-pcb-metadata.ts";
 import { readCurrentProjectPcbMetadata } from "./current-project-pcb-metadata-runtime.ts";
+import { currentPcbRenamePreflightRequestSchema } from "./current-pcb-rename-preflight.ts";
+import { readCurrentPcbRenamePreflight } from "./current-pcb-rename-preflight-runtime.ts";
 import { currentSymbolOperationRequestSchema } from "./current-symbol-operation.ts";
 import { currentSymbolCopyOperationRequestSchema } from "./current-symbol-copy-operation.ts";
 import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
@@ -2488,11 +2490,13 @@ registerFacadeTool(
   "easyeda_control_project_pcb",
   {
     title: "Read project-local PCB metadata without opening an editor",
-    description: "Read one exact PCB's native metadata in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch/PCB identities. Two matching bounded observations preserve native title/display title, parent, board, source/version, ticket and update time, bracketed by project-owner checks. Native equivalent of dmt_Pcb.getPcbInfo, not public-wrapper parity or complete stored metadata; native fallback fields cannot distinguish absent/falsy storage. No canvas/source loading, navigation, cloud lookup, mutation, Save or callback registration. Does not lease the worker, prove saved membership, startup completion or authorize renaming. Query offline project-pcb/project-pcb-validate first. Connected validation remains unclaimed.",
-    inputSchema: { request: z.unknown().pipe(currentProjectPcbMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    description: "Read one exact PCB's native metadata in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch/PCB identities. Metadata mode preserves native title/display title, parent, board, source/version, ticket and update time in two matching observations. Preflight mode also compares supplied expected metadata, complete bounded native PCB peers, native desired-title availability, client/maxTicket and UI actor/clock samples. Supplied expectations are not saved-source provenance; observations do not lease the worker, qualify its constructor/backend clock, prove startup or authorize renaming. No canvas/source loading, navigation, cloud lookup, mutation or Save. Query offline project-pcb/project-pcb-validate or project-pcb-preflight/project-pcb-preflight-validate first. Connected validation is generation-specific.",
+    inputSchema: { request: z.unknown().pipe(z.union([currentProjectPcbMetadataRequestSchema, currentPcbRenamePreflightRequestSchema])), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
-  serializedLiveGuarded(async (input) => ({ result: await readCurrentProjectPcbMetadata(engine, input.request, input.expectedFingerprint) })),
+  serializedLiveGuarded(async (input) => ({ result: "method" in input.request
+    ? await readCurrentProjectPcbMetadata(engine, input.request, input.expectedFingerprint)
+    : await readCurrentPcbRenamePreflight(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(
