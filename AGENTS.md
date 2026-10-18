@@ -19,9 +19,13 @@ installed. Source454/db2f88df, runtime3/e707c47a and manifest24fb5ded match;
 only facade projections/review time changed, all external pins unchanged.
 Pinned Node24.18.0/npm11.16.0/core0 dependency install, full dependency tree,
 registry signatures/attestations and audit passed. Build, compatibility,
-repository/privacy and all seven official skill checks passed. Full verify is
-running in session24369, log /tmp/easyeda-152547-release-NxP1jE/verify.log.
-Freeze source/bundles/pins until it finishes; no duplicate campaign.
+repository/privacy and all seven official skill checks passed. Full local verify
+finished with11,133facade passes/fourplatformskips/onefailure: the historical-v2
+routing unit test still intercepted the old module path. The failed run is
+retained at /tmp/easyeda-152547-release-NxP1jE/verify.log; later verify stages
+were not reached. The test-only seam correction passes all70routing tests;
+final-payload CI remains required. Source/bundles/pins remain frozen; do not relabel
+the failed local run or duplicate the full local campaign.
 See docs/historical-validation-and-inspection-2026-10-18.md.
 
 Original140500 case `pcb-rename-140500-20261018-case` is terminal and retired.

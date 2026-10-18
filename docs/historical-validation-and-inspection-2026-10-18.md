@@ -55,6 +55,16 @@ cleanup remain serialized. Twelve focused behavior tests, strict types and
 type-aware lint passed, including the actual registration callback with a held
 serialization gate. Independent review accepted both fixes.
 
+The first full local run passed 11,133 facade tests with four platform skips,
+but failed one routing unit test: its import hook still replaced the old raw
+aged-terminal inspector, not the new admission wrapper. The incomplete mock
+envelope therefore reached the real validator and was correctly refused.
+The correction is limited to the test boundary and its exact candidate/runtime
+contract; all 70 tests in that file pass after correction. Source, bundles and
+compatibility pins remain unchanged. That failed
+run is retained, not reported as a successful full release check; final-payload
+CI remains required.
+
 ## Remaining work
 
 - Run one new disposable PCB rename case after the updated plugin is installed,
