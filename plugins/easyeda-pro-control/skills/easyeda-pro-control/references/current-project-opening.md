@@ -315,7 +315,7 @@ Do not unlink components, delete sheets or weaken cache checks to pass. Choose
 an existing unused disposable symbol and prepare it from the current checkpoint.
 
 Complete raw target history must satisfy either the META-only profile or the
-disposable-only canvas-segments profile. The latter admits drawing occurrences
+bounded canvas-segments profile. The latter admits drawing occurrences
 across several chunks, including updates and tombstones, within the pinned
 loader's first batch of at most 101 complete history chunks. The budget reserves
 space in that batch for both writes. Atom types must stay stable, bodies must be
@@ -324,14 +324,18 @@ Lone-DOCHEAD cache fragments, imported atom headers, unsupported normalized keys
 and ambiguous cache actors refuse. In each chunk containing the target, its
 header must precede other SYMBOL headers so the cache actor is unambiguous.
 A currently empty symbol is not sufficient. Do not delete geometry, compact
-history or unlink components to make a target eligible. This broader profile
-has offline tests only, not a connected drawn-symbol result.
+history or unlink components to make a target eligible. Installed210000 passed
+this disposable profile's complete forward/inverse round trip with exact closed
+SQL, reopened content, original metadata restoration and final process closure.
+That historical result does not admit this invocation or validate the ordinary
+drawn-symbol entrypoint.
 
 Its original startup owner retains the maximum target-header time. Each actual
 write window must be strictly newer, and the forward write reserves a complete
 later inverse window. The inverse rechecks the full post-edit history. These
 are derived prerequisites, not caller-selectable exceptions or clock overrides.
-The ordinary public route below remains META-only.
+The ordinary public route below uses the same canvas rules with exactly one
+reserved write and no inverse.
 
 The same pre-dispatch check reserves the complete proof budget. Disposable
 forward validation reserves both the requested change and the owner-derived
@@ -465,9 +469,13 @@ startup shapes, or later runtime generations.
 
 The project must be an already registered local file on the pinned current
 runtime, with a checkpoint-member PCB in its default branch. The target symbol
-must be closed, unused by active schematic pages and META-only throughout its
-complete raw history, including overwritten records and tombstones. A currently
-empty canvas is insufficient. Only `patch:{name?,description?}` is supported,
+must be closed and unused by active schematic pages. Its complete raw history,
+including overwritten records and tombstones, must be META-only or satisfy the
+bounded canvas-segments rules above. A currently empty canvas is insufficient.
+The ordinary canvas route reserves exactly one write, requires its timestamp
+window to be newer than every prior target header, and preserves every drawing
+line through exact reopened-content verification. It has no connected ordinary
+drawn-symbol result yet. Only `patch:{name?,description?}` is supported,
 with at least one field and no null description. Tags, source and peer content
 are preserved. Classification, geometry, cloud libraries and referenced symbols
 are outside this route.

@@ -4,7 +4,79 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Current193000 continuation: actual facade1848656/parent1846988/startTicks24334779
+Candidate080000: `0.3.0+codex.20261018080000` extends the separate ordinary
+name/description route to eligible unused drawn symbols. Fixed ordinary purpose,
+exactly one write, no inverse; complete-history, fresh clock-window, full SQL,
+byte-exact reopened-content and original-owner checks remain. Independent source
+review accepted the scoped implementation after the disposable lifecycle below.
+Ordinary drawn-symbol entrypoint connected validation remains unclaimed.
+Build/coverage/pins and independent review passed; frozen full verification is
+running. Repository184checks and all seven installed skill validators pass.
+An earlier repository scan refused a private project name in these notes; it
+was removed without relaxing the scanner. A read-only expected-payload derivation
+refused ambientNode26 before any output file, then passed on pinnedNode24/core0.
+Protected publication and official installation remain. Installed210000 and
+facade1950463 remain untouched.
+
+Completed210000 drawn-symbol validation on2026-10-18: actual facade1950463/
+parent1948772/startTicks28177829 independently admitted, pinnedNode24/core0,
+exact1339files/modes/source/runtime/manifest. Old1848656/probe1932418 absent.
+Original `drawn-meta-210000-20261018-baseline` completed both forward and derived
+inverse: forwardVerified/inverseVerified/metadataRestorationVerified true.
+No replay, explicit Save, manual inverse or production access. The verifier is
+retired with original process/Job termination proved; no live operation is pending.
+
+Both writes passed complete35-table SQL effects, exactly six modeled tables
+changing. All19documents checked:18peers and target18drawingrecords unchanged.
+Forward SQLf75b5922→4882baa0, ticket773; inverse SQL4882baa0→37204cae, ticket774.
+All prior history rows/chunks preserved in each direction; final51rows/55chunks.
+Both fresh reopen reads passed5030bytes against the exact canvas-segments
+candidate with first-arrival witnesses, not observed cache-branch provenance.
+Forward contentSHA67c7382dcea9efa4f0ee2d73a3edd53c6c0c1ccaf523290adc9a042060a343bf;
+inverse contentSHAfb9b155e538677ec8a8b1a8b07f2027e1f58673824fb0d548c2d70471d70143b.
+Final SQL37204cae8b349436e64f1bcde90bcf2d98b09f72679ffc1e6f7d9913d09457fe
+is unchanged after reopening/closure. Final raw598016bytes/SHA
+67c8659d5965c83b2573392918c84468e1d414e3e4a1b78144c6bdefd8e57c7a;
+separate checkpoint577536bytes/SHAd3f70316ecc71befe5ba359e2c2f882c5d56522541599f3109506ddde0cd0f3f.
+Independent review rehashed all50inverse artifacts and checked actual SQL,
+history/drawing lines, saved reply and root47188/Job9b01f759 termination links.
+Inverse journal plan-invalidated/hardStopfalse/orphanfalse. Original metadata
+restored, not historical database bytes/timestamps/tickets. Existing unused
+symbol3ebb13f574636857 remains; stopped193000 copy lifecycle stays incomplete.
+Complete18-file scratch/helper/transformed source closure independently matched.
+Detailed evidence/limits: [drawn-symbol result](docs/current-symbol-clock-lifetime-2026-10-17.md).
+
+Delivered210000: `0.3.0+codex.20261017210000` published through PR60/main
+`322c60a8979a63a81d0e919309f1b4613645fd3f`, reviewed payload
+`6b38d1bdc956d5a654d345ef9c69632f8c2c0934`. PR CI39068488968 and Windows39068488940
+passed. Clean local verify:10,806 facade passes/four platform skips/zero failures;
+424 bridge passes, strict type-aware lint/types, signatures/audit, reproducible
+build and internal release validators pass. All seven installed skill-creator
+checks pass; no official external plugin validator was available. PR Copilot
+review completed with no open issues; this is not a human review. Main Windows
+39069431300 passed; main CI39069431337 subsequently passed.
+
+Official Git marketplace upgrade installed/enabled210000 and cached marketplace
+HEAD equals merged main. All1,339files/27,185,267bytes/42directories/sevenskills
+match committed bytes/modes, inventory
+`951ee40a2c7197d018a6118a39c3a424fb7a3157b8532030b5a9567d22ebf61e`.
+Source417 `3f332bfecee431d3953929bfc4846344cda8d60981e2a865f38b25e852c01dd0`,
+runtime3 `70e2913299f0203cbb982d01362eb51097d9995493c5de255feba4c99fa272df`,
+manifest `667ea1e4eec5760916b49f2b91dc8b8870e0f4984827e60b7608d85736e4c5e1`.
+Configured offline startup passes ambientNode26 to pinnedNode24,18restrictedtools,
+no upstream/socket and ownchild1932418 observed exiting after EOF. Consumed proof
+`/tmp/easyeda-handoff-release-04c7Sh/proof.json`,4231bytes/SHA
+`5ba9b1fd9168fd7e2b6bd9109060d7d074d0633ce15c6e62e12cf7f9725da289`.
+Never rerun that one-shot helper. Offline proof is not live-runtime admission.
+At installation facade1848656 still loaded193000; it has since exited. No live
+calls after that installation, host termination or cache patch were performed.
+The current fresh-session admission is recorded above.
+That fresh-session validation is now complete above. Do not replay the stopped
+copy or create another copy to stand in for its missing reopen proof.
+Production designs and records remain untouched. Preserve stash
+`ebe1b55d7a430ae2e3168e373e155957b582eff9`.
+
+Completed193000 continuation: actual facade1848656/parent1846988/startTicks24334779
 independently admitted, exact installed files/modes and pinnedNode24/core0 pass.
 Both main CI39063751459 and Windows39063751415 are now SUCCESS. Old1757354 and
 consumed probe1844673 are absent. Initial disposable source wasb99dbffb; post-copy
@@ -35,11 +107,9 @@ No live call/process cleanup is pending. Do not resume/replay this operation,
 copy, navigation or Save. New unused symbol remains; full copy lifecycle unproved.
 Complete18-file scratch-clock profile/helper hashes independently match.
 
-Candidate210000: explicit project/branch projection fixes that handoff while
-preserving the shared decoder. Three focused tests/types/strict lint pass;
-reproducible build, dependency signatures/audit, repository/privacy and seven
-skill validators pass. Full release suite runs once on frozen source; pending.
-Source changes are local, not installed. External pins/bridge are unchanged.
+Delivered210000 fixes that handoff through an explicit project/branch projection,
+preserving the shared decoder. Three focused regressions and the frozen full
+release suite passed. External pins/bridge are unchanged.
 Next fresh installed session: independently admit runtime, prepare the existing
 new unused symbol for disposable drawn-symbol metadata forward/inverse validation.
 Old copy success cannot be reconstructed; do not create another copy to stand in
@@ -52,14 +122,14 @@ priorchunks preserved except the exact modeled six-table append/bookkeeping.
 New target passes pure disposable canvas eligibility and two-write budget
 (51rows/55chunks,29742bytes maxcontent); not live metadata authority or validation.
 
-Delivered193000 (local post-merge handoff): `0.3.0+codex.20261017193000`
+Historical193000 delivery: `0.3.0+codex.20261017193000`
 published via PR59/main `6f550dc32dfc20df3ee52ad4b5d60b3d7728dead`, reviewed payload
 `bdc992b41dc627508083055247c9057560d99746`. Required PR CI39062770200 and
 Windows39062770210 passed: 10,804 facade passes/five platform skips/zero failures;
 424 bridge passes. Clean local verify: 10,805 passes/four skips/zero failures,
 strict lint/types, dependency signatures/audit and all release validators pass.
-Main Windows39063751415 passed; main CI39063751459 was still running at handoff.
-Check its result next session; do not confuse prior-main Copilot39060515189 failure.
+Main Windows39063751415 and main CI39063751459 passed. Do not confuse prior-main
+Copilot39060515189 failure.
 
 Official Git marketplace upgrade installed/enabled193000. Cached marketplace HEAD
 equals merged main; all 1,339 files/27,183,722 bytes/42 directories/seven skills
@@ -72,13 +142,14 @@ One-shot configured offline probe passed ambient26 to pinned24, 18 restricted
 tools/seven skills, no upstream/socket and successful EOF exit1844673. Consumed
 proof `/tmp/easyeda-copy-release-LpDopd/proof.json`, SHA
 `eae23e43b39ea8b4a19fa7e2695c48923a92e8491cf26e399c4b29ec2de7ca80`.
-Never rerun that probe. Actual host1757354 still loads181500; no host termination,
-cache patch or live call after install. Fresh Codex session is required.
+Never rerun that probe. The then-current host1757354 loaded181500; it has since
+exited. The193000 runtime was admitted in the completed continuation above.
 
 ASCII copy-title folding/native counters are fixed; independent source/native
 review and complete retained-fixture pure planner pass. See the published
 [compatibility findings](docs/current-symbol-copy-compatibility-2026-10-17.md).
-Connected copying remains unvalidated; external pins/bridge are unchanged.
+The193000 copy's exact closed effect passed; its full reopen lifecycle remains
+unvalidated. External pins/bridge are unchanged.
 
 Actual181500 facade1757354/parent1755364 was independently admitted. Its sole
 launch/open copy-181500-20261017-launch/open completed on the disposable PCB.
@@ -103,9 +174,9 @@ External pins are unchanged; no import needed. Admit the actual facade before li
 calls. Last closed-app observation is historical. Production designs/records remain
 excluded. Preserve stash `ebe1b55d7a430ae2e3168e373e155957b582eff9`.
 
-Next after installing193000 and fresh-session admission: disposable copy,
-nonempty PCB String/drawn-symbol metadata validation, then scoped
-ordinary enablement. Backlog: referenced-symbol propagation, schematic/PCB structure,
+Remaining backlog after the080000 candidate: ordinary drawn-symbol entrypoint
+connected validation, representative nonempty PCB String validation,
+full copy reopen validation, referenced-symbol propagation, schematic/PCB structure,
 geometry, broader libraries/manufacturing. Computer Use's sandboxCwd failure is not
 RDP focus. Prior-main Copilot39060515189 hit a prompt limit. PR59's Copilot review
 completed without open issues after instruction compaction; no human-review claim.
@@ -120,8 +191,10 @@ completed without open issues after instruction compaction; no human-review clai
   workstation paths. Implement missing writers and proofs, not removed refusals.
   Native control supplements genuine API gaps/dialogs, not available editing APIs.
 - Current 3.2.206 ordinary writing is limited to forward name/description edits of
-  unused metadata-only project-local symbols. 101500/123000 cases grant no later-tuple
-  admission. Disposable drawing metadata/copy have separate gates. Copy excludes
+  unused project-local symbols with complete META-only or bounded canvas-segments
+  history. Ordinary drawn-symbol connected validation is still unclaimed; the
+  installed210000 disposable drawing round trip passed. Historical cases grant no
+  later-tuple admission. Disposable drawing metadata/copy have separate gates. Copy excludes
   chosen names, classification, assets, delete/inverse, Save and geometry.
 - Legacy design type-1/2/3/eight library metadata writers await structure/full SQL
   proof; footprint/other library routes retain their gates. Compiled topology is

@@ -1,5 +1,42 @@
 # Current symbol validation and ordinary metadata editing
 
+## Completed 210000 drawn-symbol round trip
+
+On2026-10-18, installed210000 completed both halves of disposable
+drawn-symbol metadata validation on the unused symbol retained from the193000
+copy. It changed only name/description, passed the complete closed SQL effect,
+and reopened5030bytes of saved content matching the bounded canvas-segments
+projection. Every drawing line stayed exact, with a valid first-arrival order
+witness. Final normal closure preserved logical SQL
+`4882baa0e6cce86f593cda1d30af16f00689b09c335668714f948307a57cd3c1`.
+The internally derived inverse restored the exact original metadata. Both
+writes passed all 35 SQL tables, with exactly the six modeled tables changing.
+All 18 peer documents and the target's 18 drawing records stayed unchanged.
+The forward preserved all 49 prior history rows/53 chunks; the inverse preserved
+all 50 prior rows/54 chunks and appended only its modeled metadata upload.
+
+The inverse reopened 5030 bytes with SHA-256
+`fb9b155e538677ec8a8b1a8b07f2027e1f58673824fb0d548c2d70471d70143b`.
+It also matched the byte-exact canvas-segments candidate with a valid order
+witness. Neither match proves which native cache branch ran. Final normal
+closure and retained process termination passed, with logical SQL unchanged at
+`37204cae8b349436e64f1bcde90bcf2d98b09f72679ffc1e6f7d9913d09457fe`.
+The final raw file is 598016 bytes, SHA-256
+`67c8659d5965c83b2573392918c84468e1d414e3e4a1b78144c6bdefd8e57c7a`;
+its separate normalized checkpoint is 577536 bytes, SHA-256
+`d3f70316ecc71befe5ba359e2c2f882c5d56522541599f3109506ddde0cd0f3f`.
+Metadata restoration does not restore historical database bytes, tickets or
+timestamps. No copy, edit, navigation or explicit Save was repeated, and
+production projects were not accessed. The stopped193000 copy remains an
+incomplete copy lifecycle; this result does not retroactively validate it.
+
+Update `0.3.0+codex.20261018080000` extends the separate ordinary route to this
+bounded history profile with exactly one write and no inverse. It retains the
+same complete-history, strictly newer clock-window, full SQL and byte-exact
+saved-content checks. Its fixed purpose cannot select the disposable inverse or
+replace the original target/patch. Ordinary drawn-symbol connected validation
+is not claimed; that entrypoint still needs its own installed-session run.
+
 ## Current 123000 ordinary-route result
 
 Installed123000 completed the separate ordinary public route on the disposable
@@ -381,26 +418,24 @@ JSON cannot construct this private issuer or grant execution authority.
 ## Verification and remaining work
 
 Source review, focused regressions, final lint/types/build, CI and installation
-results are recorded in AGENTS.md as they complete. The101500 disposable round
-trip and123000 ordinary unused META-only lifecycle are accepted. Neither covers
-the new drawn-symbol profile or admits a later installed runtime. No production
+results are recorded in AGENTS.md as they complete. The101500 META-only and210000
+drawn-symbol disposable round trips, plus the123000 ordinary unused META-only
+lifecycle, are accepted. None admits a later installed runtime. No production
 validation is planned.
 
 The inverse adoption correction passes 21 focused tests. Its real-storage
 regression reproduced the original error before the fix; changed disk or memory
 state still refuses before adoption intent or ownership transfer.
 
-1. Validate the new bounded canvas-segments profile on an eligible disposable
-   symbol after fresh installed-runtime admission, preserving the drawing through
-   forward and inverse metadata edits. Do not replay101500 or123000, or revive
-   older terminal attempts. No broader live campaign is required for this update.
-   The final123000 managed snapshot has no eligible target: its unused ordinary
-   symbol is META-only; its drawn ordinary symbol is referenced and multi-segment;
-   the other symbols are used special types. Create a new unused ordinary symbol
-   through a supported fixture-setup workflow; do not unlink existing components,
-   rewrite raw history or treat this audit as creation authority.
-2. Extend ordinary drawn-symbol support only after that result is reviewed.
-   Multi-segment support is currently disposable-only and offline-tested.
+1. Publish/install the ordinary drawn-symbol extension, then validate that
+   separate one-write entrypoint on the existing unused disposable symbol after
+   fresh installed-runtime admission. The shared bounded canvas-segments
+   forward/inverse lifecycle passed210000; do not replay it or older attempts.
+   No broader live campaign is required for this update.
+2. Complete copy saved-reopen validation in a separate future disposable case.
+   The193000 copy's exact closed SQL effect passed but its verifier launch failed;
+   that terminal attempt cannot be replayed or retrospectively completed using
+   the210000 metadata evidence. Ordinary copying remains unsupported.
    Imported records, more than 101 complete chunks and other rejected histories
    still need separate cache-order/serialization models. Deleting geometry is
    not an admission workaround.

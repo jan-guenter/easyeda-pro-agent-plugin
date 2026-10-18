@@ -174,7 +174,8 @@ export function prepareCurrentSingleCanvasSegmentWriteBudget(decoded: DecodedSym
   return prepareWriteBudget(decoded, targetUuid, desiredInput, before, startupInput, restorationInput, "single-canvas-segment");
 }
 
-/** Disposable-only stream-order profile. Each appended stage must still fit
+/** Stream-order budget for one ordinary write or a disposable forward/inverse
+ * reservation. Each appended stage must still fit
  * the pinned loader's first concurrent batch and prove a canvas-free winning
  * header, keeping both exact header alternatives independent of canvas order.
  */

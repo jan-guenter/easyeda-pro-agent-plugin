@@ -46,14 +46,17 @@ optional `expectedFingerprint`; only `open` may supply the fingerprint.
 
 This is a narrow native equivalent of `lib_Symbol.modify`, not execution of its
 public wrapper. It changes only name and/or non-null description on one unused,
-closed, META-only project-local symbol. Complete raw history, startup effects,
+closed project-local symbol with META-only or supported bounded canvas-segments
+history. Complete raw history, startup effects,
 original owners, clocks, SQL effects and reopened content are checked. The
-forward-only route cannot consume disposable ownership or supply an inverse.
+forward-only route reserves one write and cannot consume disposable ownership
+or supply an inverse. Canvas metadata requires a write window newer than every
+target header and byte-exact saved canvas verification.
 Discovery returns `registrationEnabled:true`, but never execution authority.
 The shared writer passed installed101500 disposable forward/inverse validation;
 the ordinary entrypoint separately passed installed123000's unused META-only
 forward lifecycle on a disposable fixture. Neither result grants current-call
-authority or covers ordinary drawn-symbol editing. Generic
+authority or validates the ordinary drawn-symbol extension. Generic
 `library.symbol.modify` and the older `symbol_metadata` tool stay blocked.
 
 ### Symbol observation with no editor tabs

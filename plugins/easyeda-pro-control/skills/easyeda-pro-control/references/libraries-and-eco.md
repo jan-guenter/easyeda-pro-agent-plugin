@@ -31,9 +31,11 @@ Use `easyeda_control_project_symbol_metadata` for a name and/or non-null
 description change to one closed, unused project-local symbol. Discover
 `project-symbol-operation` and validate with `project-symbol-operation-validate`
 first. Read [the retained-owner workflow](current-project-opening.md#ordinary-forward-only-symbol-metadata).
-It requires complete META-only raw history, including overwritten and deleted
-records, exact project/branch/owner/symbol and companion-PCB identities, and a
-supported startup expectation. Tags, source and peers stay unchanged. It has no
+It requires complete META-only or supported bounded canvas-segments raw history,
+including overwritten and deleted records, exact project/branch/owner/symbol and
+companion-PCB identities, and a supported startup expectation. Exactly one write
+is reserved; ordinary drawn-symbol execution has no connected result yet.
+Tags, source and peers stay unchanged. It has no
 inverse, general recovery, explicit Save or replacement-owner continuation.
 The older `easyeda_control_symbol_metadata` and `library.symbol.modify` remain
 blocked; they are not aliases for this route.
@@ -43,8 +45,11 @@ schematic pages. Its current META-only saved-content check models both raw-histo
 and document-cache serialization from the pinned producer. It compares the entire
 string exactly; the cache form is not permission to omit or normalize user fields.
 A matched form does not prove which cache branch ran. SQL actor identity remains
-independently checked. The separate bounded canvas-segments profile is available
-only for disposable validation and has no connected result; read its exact
+independently checked. The bounded canvas-segments profile supports the separate
+disposable forward/inverse validation and ordinary one-write route. Installed210000
+passed the disposable drawn-symbol round trip, including original metadata
+restoration and unchanged peers/drawing records; the ordinary drawn-symbol
+entrypoint has no connected result yet. Read its exact
 [history limits](current-project-opening.md#disposable-forwardinverse-validation).
 A stopped
 verification is still a failed lifecycle even if closed SQL proves the intended

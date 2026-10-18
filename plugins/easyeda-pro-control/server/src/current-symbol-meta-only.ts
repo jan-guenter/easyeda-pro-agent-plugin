@@ -22,12 +22,12 @@ export interface CurrentSymbolCanvasClockPrerequisite {
   readonly maximumTargetHeaderTime: number;
   readonly remainingWrites: 1 | 2;
 }
-export interface CurrentDisposableSymbolBaselineEligibility {
+export interface CurrentSymbolBaselineEligibility {
   readonly evidence: Readonly<Record<string, unknown>>;
   readonly canvasClock?: CurrentSymbolCanvasClockPrerequisite;
 }
 function need(condition: boolean): asserts condition {
-  if (!condition) { throw new Error("Current symbol metadata requires its complete original META-only baseline."); }
+  if (!condition) { throw new Error("Current symbol metadata requires its complete original symbol metadata baseline."); }
 }
 const METADATA_ATOMS = new Set(["META", "META_PLACEHOLDER", "DELETE_DOC", "META_CREATE", "META_MODIFY"]);
 
@@ -58,23 +58,30 @@ async function hasCanvasOccurrences(chunks: readonly string[], targetUuid: strin
 export async function assertCurrentSymbolMetaOnlyBaseline(inventory: Inventory, binding: BaselineBinding, target: Target,
   expected: NativeHistorySnapshot, desired: Parameters<typeof prepareCurrentSymbolWriteBudget>[2],
   startup: CurrentSymbolStartupExpectation, restoration?: Parameters<typeof prepareCurrentSymbolWriteBudget>[2]): Promise<Readonly<Record<string, unknown>>> {
-  const result = await assertBaseline(inventory, binding, target, expected, desired, startup, restoration, false);
+  const result = await assertBaseline(inventory, binding, target, expected, desired, startup, restoration, "meta-only");
   return result.evidence;
 }
 
-/** Data only. Only the original disposable generation may select this entrypoint.
- * Ordinary startup keeps the fixed META-only entrypoint above, without fallback.
- */
+/** Data only. Only the original disposable generation may reserve an inverse. */
 export function assertCurrentDisposableSymbolBaseline(inventory: Inventory, binding: BaselineBinding, target: Target,
   expected: NativeHistorySnapshot, desired: Parameters<typeof prepareCurrentSymbolWriteBudget>[2],
-  startup: CurrentSymbolStartupExpectation, restoration?: Parameters<typeof prepareCurrentSymbolWriteBudget>[2]): Promise<CurrentDisposableSymbolBaselineEligibility> {
-  return assertBaseline(inventory, binding, target, expected, desired, startup, restoration, true);
+  startup: CurrentSymbolStartupExpectation, restoration?: Parameters<typeof prepareCurrentSymbolWriteBudget>[2]): Promise<CurrentSymbolBaselineEligibility> {
+  return assertBaseline(inventory, binding, target, expected, desired, startup, restoration, "disposable-validation");
+}
+
+/** Separate fixed ordinary contract. It reserves one forward metadata write;
+ * no supplied restoration or purpose can select the disposable inverse budget.
+ */
+export function assertCurrentOrdinarySymbolBaseline(inventory: Inventory, binding: BaselineBinding, target: Target,
+  expected: NativeHistorySnapshot, desired: Parameters<typeof prepareCurrentSymbolWriteBudget>[2],
+  startup: CurrentSymbolStartupExpectation): Promise<CurrentSymbolBaselineEligibility> {
+  return assertBaseline(inventory, binding, target, expected, desired, startup, undefined, "ordinary-symbol-metadata");
 }
 
 async function assertBaseline(inventory: Inventory, binding: BaselineBinding, target: Target,
   expected: NativeHistorySnapshot, desired: Parameters<typeof prepareCurrentSymbolWriteBudget>[2],
   startup: CurrentSymbolStartupExpectation, restoration: Parameters<typeof prepareCurrentSymbolWriteBudget>[2] | undefined,
-  disposableCanvas: boolean): Promise<CurrentDisposableSymbolBaselineEligibility> {
+  canvasPurpose: "meta-only" | "disposable-validation" | "ordinary-symbol-metadata"): Promise<CurrentSymbolBaselineEligibility> {
   const bindingText = canonicalJson({ copy: binding.copy, checkpoint: binding.checkpoint });
   const completion = readerCompletion(inventory), expectedText = canonicalJson(expected), selected = Object.freeze({ ...target });
   const checkpointSha256 = binding.checkpoint.checkpointSha256, rawCopySha256 = binding.copy.sha256;
@@ -95,7 +102,7 @@ async function assertBaseline(inventory: Inventory, binding: BaselineBinding, ta
     history.headHistoryUuid === expected.headHistoryUuid && history.historyRowCount === expected.historyRowCount &&
     history.chunkCount === expected.chunkCount && history.plaintextBytes === expected.plaintextBytes);
   const hasCanvas = await hasCanvasOccurrences(decoded.chunks, selected.symbolUuid);
-  if (hasCanvas && !disposableCanvas) {
+  if (hasCanvas && canvasPurpose === "meta-only") {
     throw new Error("Current symbol metadata refuses every historical target canvas atom, including tombstones.");
   }
   const input = { chunks: decoded.chunks, targetUuid: selected.symbolUuid, maximumTicket: decoded.maximumTicket, currentEditVersion: "3.2.206" };
@@ -108,10 +115,14 @@ async function assertBaseline(inventory: Inventory, binding: BaselineBinding, ta
   const canvasClock = projection.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1"
     ? Object.freeze({ maximumTargetHeaderTime: projection.maximumTargetHeaderTime, remainingWrites: restoration === undefined ? 1 as const : 2 as const }) : undefined;
   need(hasCanvas ? canvasClock !== undefined && projection.canvasRecords > 0 : projection.canvasRecords === 0);
-  const evidence = Object.freeze({ profile: hasCanvas ? "private.current-disposable-canvas-segments-baseline.v1" : "private.current-symbol-meta-only-baseline.v1", targetUuid: selected.symbolUuid,
+  let profile = "private.current-symbol-meta-only-baseline.v1";
+  if (hasCanvas) {
+    profile = canvasPurpose === "ordinary-symbol-metadata" ? "private.current-ordinary-canvas-segments-baseline.v1" : "private.current-disposable-canvas-segments-baseline.v1";
+  }
+  const evidence = Object.freeze({ profile, targetUuid: selected.symbolUuid,
     beforeSqlSha256: inventory.logicalSha256, rawCopySha256, checkpointSha256, historySemanticSha256: history.semanticSha256,
     rawHistorySha256: projection.rawHistorySha256, rawHistoryBytes: projection.rawHistoryBytes,
     canvasRecords: projection.canvasRecords, metadataBookkeepingOnly: !hasCanvas, writeBudget, cacheBranchObserved: false, executionAuthorized: false,
-    ...(canvasClock === undefined ? {} : { permittedPurpose: "disposable-validation", canvasClock }) });
+    ...(canvasClock === undefined ? {} : { permittedPurpose: canvasPurpose, canvasClock }) });
   return Object.freeze({ evidence, ...(canvasClock === undefined ? {} : { canvasClock }) });
 }

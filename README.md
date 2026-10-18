@@ -3,11 +3,14 @@
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
 On the current EasyEDA Pro 3.2.206 runtime, general schematic/PCB and library
-writers remain disabled. Disposable symbol-metadata validation has passed both
+writers remain disabled. Disposable META-only and bounded drawn-symbol metadata validation have passed both
 forward and inverse edits, complete closed SQL comparisons and reopened-content
 checks. The separate current-version tool now supports forward-only name and/or
-description edits for unused, metadata-only project-local symbols. This is a
+description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
+Update `0.3.0+codex.20261018080000` extends that ordinary route to unused drawn
+symbols whose complete history satisfies the bounded canvas-segments profile.
+The separate ordinary drawn-symbol entrypoint's connected validation is unclaimed.
 Older implemented adapters and their historical proofs do not enable them on
 this newer runtime. See the [current result and remaining work](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
@@ -28,7 +31,21 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261017210000` fixes the symbol-copy verifier's history-identity
+The ordinary drawn-symbol route changes only name and/or non-null description
+and reserves exactly one write. It preserves tags, source, classifications and
+every drawing record; `otherProperty` and geometry edits remain unsupported.
+Complete history, including tombstones, must satisfy the existing lossless-body,
+stable-type, unique-header and replay-order checks. Canvas writes require a fresh
+document window after every target header. Original-owner closure, complete SQL
+comparison, cache-excluded reopening, exact saved content and final SQL equality
+remain mandatory. The separate disposable workflow retains its forward/inverse
+budget; the ordinary route exposes no inverse. Installed210000 passed the
+disposable drawn-symbol round trip: both closed SQL effects, exact reopened
+content, original metadata restoration and final closure. All 18 peer documents
+and all 18 target drawing records stayed unchanged. That evidence does not
+validate the earlier stopped copy lifecycle or ordinary drawn-symbol entrypoint.
+
+Earlier update `0.3.0+codex.20261017210000` fixes the symbol-copy verifier's history-identity
 handoff. Installed193000 created one disposable drawn symbol and passed exact
 closed SQL/source/peer checks, then stopped before verifier launch because a
 three-field symbol identity reached a strict two-field project/branch decoder.
@@ -68,15 +85,15 @@ Earlier update `0.3.0+codex.20261017160000` extends disposable symbol-metadata v
 to bounded multi-segment drawing histories. It checks byte-exact records and
 possible concurrent replay order, with capacity reserved for both metadata
 writes. Imported records, ambiguous cache actors and histories beyond the
-101-chunk batch remain unsupported. This is offline-tested support, not a live
-drawn-symbol result; ordinary editing remains META-only. See the
+101-chunk batch remain unsupported. That update supplied offline-tested support,
+not a live drawn-symbol result; ordinary editing remained META-only at that stage. See the
 [current scope and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
 
 Earlier update `0.3.0+codex.20261017143000` adds a disposable-only single-canvas-segment
 symbol-metadata validation profile and bounded historical JSON-digest reuse.
 Every cached digest still requires fresh byte, identity and runtime checks;
-connected latency improvement is not claimed. The new drawn-symbol profile is
-offline-tested and leaves ordinary editing META-only. Installed123000 has now
+connected latency improvement is not claimed. That drawn-symbol profile was
+offline-tested and left ordinary editing META-only. Installed123000 has now
 passed the ordinary public route end to end on a disposable fixture, with exact
 SQL/reopened content and all 17 peer documents preserved. See the
 [current scope and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).
@@ -85,8 +102,8 @@ Earlier update `0.3.0+codex.20261017123000` registers
 `easyeda_control_project_symbol_metadata` with strict offline schemas and
 purpose-bound ownership. It retains the shared writer validated by the 101500
 disposable round trip; its later installed-session ordinary run also passed.
-Referenced symbols and ordinary editing of historical drawing content remain
-unsupported. That update also corrects current-runtime doctor expectations and
+Referenced symbols and ordinary editing of historical drawing content were
+unsupported in that update. It also corrects current-runtime doctor expectations and
 removes a redundant full-history scan used only to check an operation ID.
 See the [workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md#ordinary-forward-only-symbol-metadata)
 and [evidence and backlog](docs/current-symbol-clock-lifetime-2026-10-17.md).

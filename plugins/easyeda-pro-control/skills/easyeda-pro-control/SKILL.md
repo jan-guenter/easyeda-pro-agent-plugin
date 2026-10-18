@@ -28,13 +28,14 @@ before editing, creating or renaming those assets; a document-only checkpoint pr
 does not cover EasyEDA's delayed structure-table writes.
 
 The separate current-version `easyeda_control_project_symbol_metadata` route
-supports only a closed, unused project-local symbol with metadata-only raw
-history. It changes name and/or non-null description through a retained-owner,
+supports a closed, unused project-local symbol with metadata-only raw history
+or the bounded canvas-segments history described in its workflow. It changes
+name and/or non-null description through a retained-owner,
 forward-only lifecycle. Read [the ordinary metadata workflow](references/current-project-opening.md#ordinary-forward-only-symbol-metadata)
 before use. Installed101500 passed the disposable META-only round trip;
 installed123000 passed the ordinary forward-only route on a disposable fixture.
-The bounded canvas-segments profile is disposable-validation-only and has no
-connected result yet. Historical evidence does not admit a later runtime.
+The ordinary canvas route reserves exactly one write and has no connected
+ordinary result yet. Historical evidence does not admit a later runtime.
 
 ## Connect and choose a path
 
@@ -54,7 +55,7 @@ connected result yet. Historical evidence does not admit a later runtime.
 - For a failed disposable opening, keep the original facade alive and use its supported `request-normal-close`, then `retire-after-termination`. Read [the interrupted-call contract](references/current-project-opening.md#interrupted-calls) first. This original-owner cleanup leaves quarantine set until termination proof; it cannot adopt a process or answer Save/Discard.
 - For disposable startup qualification, use that tool's `baseline-*` actions only after reading [the retained baseline workflow](references/current-project-opening.md#retained-baseline-validation). Keep the same facade alive through close, copy, relaunch and project-only reopening. These actions do not write symbol metadata or enable a writer. Finish with the baseline's own normal-close and termination actions, not the older launch receipt.
 - For the current writer's exact history-date controls, read [optional clock preparation](references/current-project-opening.md#optional-current-clock-preparation). `baseline-prepare-clock` belongs before replacement relaunch; `baseline-observe-clock` belongs after project-only opening. Both consume one original attempt and leave writer authority false.
-- For explicitly authorized disposable symbol-metadata validation, read [forward/inverse validation](references/current-project-opening.md#disposable-forwardinverse-validation). The separate `validation-*` actions consume that same prepared baseline and can change its sealed symbol name/description, verify persistence, and derive an inverse. The target must be unreferenced by active schematic pages and have complete META-only history or satisfy the bounded canvas-segments profile. The latter is offline-tested only; linked-sheet propagation and other drawing histories remain unsupported. These actions are not a general writer or a substitute for missing live validation. Follow the returned exact phase; do not replay a lost response or restart midway.
+- For explicitly authorized disposable symbol-metadata validation, read [forward/inverse validation](references/current-project-opening.md#disposable-forwardinverse-validation). The separate `validation-*` actions consume that same prepared baseline and can change its sealed symbol name/description, verify persistence, and derive an inverse. The target must be unreferenced by active schematic pages and have complete META-only history or satisfy the bounded canvas-segments profile. Installed210000 passed the latter's disposable round trip with exact SQL, reopened content and metadata restoration; linked-sheet propagation and other drawing histories remain unsupported. This historical result grants no current-operation authority or ordinary drawn-symbol entrypoint validation. Follow the returned exact phase; do not replay a lost response or restart midway.
 - After successful retirement with both snapshots captured, use offline `baseline-analysis`, `baseline-analysis-validate`, then `baseline-analyze` to compare retained files. Read [the analysis limits](references/current-project-opening.md#compare-retained-snapshots). Historical equality and retained clock observations do not establish backend identity, startup completion or writer authority.
 - For configured shortcut listings, query `shortcuts`, validate with `shortcuts-validate`, then use `easyeda_control_shortcuts`. Read the API reference for the optional system filter, raw key strings and shortcut-specific scope enums. The result neither presses keys nor proves that a shortcut can execute in the current focus.
 - For extension startup investigation, query `extensions`, validate with `extensions-validate`, then use `easyeda_control_extensions`. It observes selected metadata from the initialized user-extension index only. Read the API reference before interpreting it; it cannot establish the database's current account, loaded code, builtin inventory or permission to launch.

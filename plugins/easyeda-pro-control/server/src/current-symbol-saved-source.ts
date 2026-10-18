@@ -88,7 +88,9 @@ export async function prepareCurrentSavedSymbolSource(continuation: CurrentSymbo
     pin.bytes === producer.bytes && pin.sha256 === producer.sha256));
   const projection = await prepareSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
     maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion }); current();
-  need(projection.canvasRecords === 0 || purpose === "disposable-validation");
+  // The original successful writer already qualified this purpose's complete
+  // Baseline and clock budget. Both supported purposes use the same exact
+  // Canvas relation; no caller flag or generic metadata route selects it.
   const documentCacheProjection = projection.canvasRecords === 0
     ? await prepareCurrentDocumentCacheSavedSymbolProjection({ chunks: decoded.decoded.chunks, targetUuid: metadataPlan.targetUuid,
       maximumTicket: expectedTicket, currentEditVersion: expectedDocumentEditVersion })
@@ -118,7 +120,6 @@ export function verifyCurrentSavedSymbolContent(value: CurrentSavedSymbolSource,
   continuation: CurrentSymbolWriterContinuation, observation: unknown): Readonly<Record<string, unknown>> {
   const original = assertCurrentSavedSymbolSource(value, engine, continuation);
   const cache = original.documentCacheProjection;
-  need(cache.profile !== "private.current-canvas-segments-saved-symbol-getstr-projection.v1" || original.source.original.source.purpose === "disposable-validation");
   const relation = cache.profile === "private.current-canvas-segments-saved-symbol-getstr-projection.v1"
     ? verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(original.projection, cache, observation)
     : verifyCurrentSavedSymbolProjectionAlternatives(original.projection, cache, observation);
