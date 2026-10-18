@@ -4,6 +4,55 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+184000 delivery, 2026-10-18: protected PR69 merged as main
+`34886eb776ff23fa8fb84b15e42c8f29fef7d8dd`, reviewed candidate
+`044bfc23214f15978f21b5eabb650a3eba2ff735`; both complete Git trees equal
+`22ff815871caa25838b994c5d7c5eaf880705c5b`. Exact PR CI39155615437 passed
+build/all8shards/aggregate; Windows39155615483 passed. Full local verification
+passed11,209facade tests/fourplatformskips/zerofailures and424bridge tests,
+strict types/zero-warning lint, reproducible bundles and package validators.
+Dependencies/signatures/audit, repository and seven official skill checks pass.
+Full verification log6427229b retained in `/tmp/easyeda-184000-release-LVqK0D`.
+
+Official Git marketplace upgrade installed/enabled `0.3.0+codex.20261018184000`
+from https://github.com/jan-guenter/easyeda-pro-agent-plugin.git at refmain.
+Root and independent maintained payload comparison pass exact1428files/
+29,044,956bytes/42directoriesINCLUDINGroot against cached mergedmain. Plugin
+subtree88e535a051e7d4ed082016ec5968e2752d95feee; inventory
+`ab933a01943129543fb11e000751dd5a94eb3aab42950c7e0d84b6d08865928b`.
+Source459/d4d25ce3, runtime3/c809feb3, manifest3274cbfa. External runtime pins
+and bridge identity are unchanged. The NEW root/independently reviewed offline
+probe29751d38 completed ONCE in original shell67921: configured ambientNode26.11.1
+hands off to pinned24.18.0,20restrictedtools/sixofflinequeries pass. Original
+child2857530/start32528326/parent2855240 exited0 on stdinEOF and is absent; no
+signals/adoption. Syntheticprofile unchanged/no upstreammarker/journal/lease;
+two socketabsence samples are not network-isolation evidence. Full installed
+inventory is unchanged before/after. Proof2994bytes SHA
+`075fb433280b658e2b3f8238c905b83273eebb781c2d3a99a4654e55fbb0fb53`
+at `/tmp/easyeda-panel-release-probe-S54Hqa/proof.json`. NEVER rerun/import
+the consumed probe or prior probes. No tool, child or CAD action remains pending.
+Main Windows39156601897 passed; duplicate main CI39156601909 is still running;
+check its outcome next session, without repeating the passed exact-tree PR suite.
+
+Live173500 case below is terminal retired, no writer/explicitSave and unchanged
+disposable raw41ac6062/598016. No further live MCP call after installation.
+Host2757974 remains loaded173500 and is left alone. A fresh Codex session must
+load/admit184000 before a NEW disposable PCB rename case. Never resume173500
+or older cases. Main/independent reviewed dormant-placeholder guard and seven
+fixed startup substages are delivered; no connected writer validation is claimed.
+Pure String patch and separate SCH header/history/structure models are delivered
+offline only; no live String/SCH writer is registered by this groundwork.
+Next: complete disposable PCB rename/writer/closedSQL/saved metadata/finalclose;
+safe source ownership and representative nonempty String fixture/readers/writer;
+separate schematic title deferred-subscriber/actor/clock/SQL/lifecycle integration;
+broader CAD/library/routing/rules/ECO/dialog/export/platform/bootstrap adapters.
+FileSource stays disabled. Production projects and records remain excluded.
+Keep stash ebe1b55d7a430ae2e3168e373e155957b582eff9, all worktrees and evidence.
+Primary branch `feature/pcb-rename-live-184000-20261018` follows mergedmain;
+previous feature branch retains candidate044bfc2. Delivery handoff is local;
+published/installed package bytes stay exact. The following checkpoints are
+historical, not permission to replay their completed operations.
+
 Candidate184000, 2026-10-18: dormant-panel correction, seven fixed startup
 substages and native-shaped fixtures are source-reviewed by root and an
 independent agent.21focusedtests/types/strictlint pass; no warnings. Frozen
