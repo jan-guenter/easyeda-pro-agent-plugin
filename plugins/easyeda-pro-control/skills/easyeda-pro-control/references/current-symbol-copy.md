@@ -2,8 +2,10 @@
 
 Use this route only to create a drawn-symbol fixture in an explicitly selected
 disposable project. It is a narrow native equivalent of `lib_Symbol.copy`, not
-the public wrapper or ordinary library copying. Source review and offline tests
-do not establish connected validation.
+the public wrapper or ordinary library copying. Installed094000 passed one
+disposable supported drawn-symbol copy: complete closed SQL, exact saved reopening,
+unchanged source/peers and final closure. This historical case does not validate
+later generations or other source histories; fresh admission remains mandatory.
 
 Discover `disposable-symbol-copy` with `includeSchemas:true` through
 `easyeda_control_api`. Validate each assembled inner request with

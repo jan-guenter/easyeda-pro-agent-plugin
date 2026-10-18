@@ -50,10 +50,11 @@ void test("copy parsing refuses normal opening, metadata patches, replay inputs 
   assert.equal(currentSymbolOperationRequestSchema.safeParse({ action: "metadata-advance", operationId, step: write }).success, false);
 });
 
-void test("offline copy discovery advertises only scoped implementation, never validated execution", () => {
+void test("offline copy discovery separates historical validation from current execution authority", () => {
   const discovery = queryCurrentSymbolCopyOperation({ includeSchemas: true });
   assert.equal(discovery["tool"], "easyeda_control_disposable_symbol_copy");
   assert.equal(discovery["connectedValidation"], false); assert.equal(discovery["ordinaryProjectsSupported"], false);
+  assert.equal(discovery["historicalConnectedValidation"], "installed094000-disposable-supported-drawn-symbol-copy");
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["invocationEnabledByDiscovery"], false);
   assert.notEqual(discovery["inputSchema"], undefined); assert.notEqual(discovery["stepSchema"], undefined);
   assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "disposable-symbol-copy", query: { includeSchemas: true } })).result, discovery);

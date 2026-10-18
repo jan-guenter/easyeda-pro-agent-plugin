@@ -4,6 +4,111 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+094000 continuation, 2026-10-18: actual facade2161886/parent2160211/
+startTicks29500648 independently admitted on pinned Node24.18.0/core0. Complete
+installed bytes/modes/source/runtime/manifest match mergedmain7f338678 and the
+inventory below; old2050317 is absent. Fresh offline PCB discovery and strict
+request validation passed, including extra-field refusals. This does not relabel
+the consumed failed synthetic probe as successful. Current authenticated status
+has no incomplete operations. Sole launch `copy-pcb-094000-20261018-launch`
+completed: root29840/Job0b8da8bd50a34821b247b641b031cb67, launchedSHA
+95c5010c9568854ed5c16c519ad5b1e199d9f575f63aea7ee627af8ac189c2b5.
+Start Page observation passed. Disposable open `copy-pcb-094000-20261018-open`
+completed once on the exact PCB with no hard stop/orphan; checkpointb0b3460d.
+Copy baseline `copy-pcb-094000-20261018-baseline` captured after original-owner
+normal closure and proved termination; original launch termination is recorded.
+Closed raw557e9268/checkpointb0b3460d/fullSQL97389834 remain exact. Two active
+schematic pages were the sole startup-observation blocker. Project-only opening
+completed with the explicit disposable startup-effect acknowledgement, without
+weakening the writer guard. Fixed scratch reference, relaunch/admission, cache
+observation and original renderer clock observation passed; all18runtime files,
+helper and39transformed sources independently match. Copy-begin completed and
+copy-write completed once, creating2a4fce0dbdb8f7ff. Original normal closure and
+complete SQL effect passed97389834→09a74ea1, two creation tickets776/777.
+Fresh verifier launch/admission/cache-excluded opening/read/normal closure and
+finish completed: copyVerifiedtrue/nextPhasecompleted, retiredtrue, retained
+termination/capture closure proved, finalSQL09a74ea1 unchanged. Saved5045bytes
+SHA0ac3f2e215f409f8f54932dd593acb9ac7cbd44aee556d8890f3337db51d2359
+matches the cache projection, not observed cache-branch provenance. All19prior
+documents and18source drawing records are unchanged. Never replay this copy,
+write/open/close/transfer/scratch or the older stopped copy. No explicit Save,
+inverse, production access or pending CAD operation. EasyEDA is normally closed.
+Its sole PCB contains no STRING/TEXT
+objects, so representative nonempty String validation needs fixture setup;
+do not repeat an empty read and claim that gap closed.
+
+MainCI39118667146 failed one existing gateway setup test before its hostile hello
+was sent; final PR passed the identical Git tree. Cause is not established.
+Test-only case/phase diagnostics and bounded peer cleanup are now in the worktree;
+one focused run and targeted type-aware lint pass. New PCB rename prerequisites
+are source-only; they enable no writer. Keep this facade alive
+through any started disposable lifecycle. Production designs remain excluded.
+Source review found094000 PCB reader requires an absent native local-project
+store field; do not dispatch that reader in this installed generation. Narrow
+optional inactive-flag correction is independently accepted in source with
+10focused tests/types/targeted lint passing, built but not yet installed. New dormant
+PCB history, isolated structure-SQL and complete six-table SQL comparisons each
+passed10focused tests and independent review; no rename writer is enabled.
+Candidate111500 is built with matching compatibility projections; the frozen
+full local suite is running. It is not yet published or installed. Dependency
+signature/audit, sanitizer and all seven official skill checks passed. Independent
+final copy audit verified all54artifacts,19unchanged documents,18drawing records,
+saved5045bytes and exact final35-table/148-row SQL. Raw postedit/final copies are
+598016bytes/SHA41ac606247582f9c4be17eda1492d76c0f33f70efa4d36a2ac8bf6ef780e5c12.
+Only facade source/bundle projections and review time changed; no external pins.
+
+094000 delivery, 2026-10-18: published through PR62, merged main
+`7f3386786c220bf545c328191db2683bae5c5a04`, reviewed payload
+`14d6b8e71634f96cf58aa88431a9445f5a5bb478`. Their complete Git trees match.
+Final PR CI39117739659 and Windows39117739612 passed: 10,841 facade tests,
+five platform skips, zero failures; 424 bridge tests. Independent source and
+test-correction reviews accepted the scope. Copilot review was unavailable due
+quota; no human review is claimed. Main Windows39118667147 passed; main
+CI39118667146 later failed as recorded above, with its verify-build job passed.
+
+The official Git marketplace upgrade succeeded and its cached HEAD equals main.
+The subsequent official `plugin add` returned a cache-backup permission error;
+do not describe that command as successful or retry it blindly. The official
+catalog nevertheless reports094000 installed/enabled, and independent read-only
+comparison proves all1,349files/27,335,517bytes/42directories/sevenskills exactly
+match committed bytes/modes, with no extras/symlinks/hardlinks. Inventory SHA
+`bff50e924161ddc19c548e73cb8843ebf00ce30a47d4fcf4e3efd4a55f76a836`.
+Source422 SHA`5b5d651d4eb91eddf7f8f73454a2560d8e4d3f9b50366fe526dfc3d718a9708a`;
+runtime3 SHA`742f150c05abdbea4cef89993da3cea58f9aaf7bf4b79af9f1e24df1af6dc017`;
+manifest SHA`10bd569e57e156d154d6d4f2e7b159899eb5d1c898d99ba3a4cf549e9645ece3`.
+At delivery, host2050317 remained alive with its cwd at the now-empty080000 directory;
+this is consistent with a cache-lock problem, not proof of its exact cause.
+No cache edits, permission changes, installer replay or host termination occurred.
+
+The one-shot configured offline probe in `/tmp/easyeda-pcb-release-ZBk3NG`
+started the exact installed bundle through ambientNode26 to pinnedNode24,
+listed19restrictedtools and passed initial no-upstream/socket observations and
+ordinary historical discovery. It then FAILED at probe.mjs:201: the private
+checker wrongly expected outer MCP inputSchema.additionalProperties=false;
+that field is absent. The actual PCB request/result entry schemas passed their
+strictness assertions first. Remaining PCB argument/copy/String probes were not
+reached, and no full proof.json was published. Retain this failure; never rerun
+or edit this consumed probe. Its finally block completed original-transport EOF
+closure without an aggregate cleanup error; the private control root now contains
+only the profile and no094000child is present. This is not a successful
+complete smoke or live admission. New reader connected validation remains unclaimed.
+
+The required fresh-session admission has since completed as recorded above.
+Independent review
+confirms SDK raw-shape registration strips unknown outer keys and input-schema
+conversion omits additionalProperties; nested request/target validation and exact
+pre-dispatch parsing remain strict. A future fresh checker should assert outer
+object type, absent additionalProperties and exact expectedFingerprint/request
+properties, retaining strict offline request/result schemas and malformed-request
+checks. Do not edit/replay the consumed checker; no full smoke success is claimed.
+Next prioritize the corrected no-editor PCB metadata/nonempty String read case
+and the documented PCB rename coordinator/queue/producer/reopen implementation
+gaps. The fresh disposable copy and combined rename SQL comparator are complete
+as recorded above. Broader design/library/export
+adapters remain backlog. The completed080000 ordinary case below must not replay.
+EasyEDA is normally closed, no CAD operation is pending, and production designs
+and their records remain untouched. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
+
 080000 continuation,2026-10-18: actual facade2050317/parent2048631/
 startTicks28904581 independently admitted, pinnedNode24.18.0/core0 and exact
 installed bytes/modes/source/runtime/manifest. Old1950463/probe2046229 absent.
@@ -41,8 +146,8 @@ Artifact54 is retirement intent; the completed root tool return proves retiremen
 Never replay this completed ordinary lifecycle. EasyEDA is normally closed;
 no pending CAD operation. Dormant PCB rename structure/AST prerequisites and a
 separate no-editor PCB metadata reader are implemented in source with focused
-tests. They do not enable PCB writing or alter installed080000. Current branch
-feature/current-pcb-rename-structure is built but unpublished, candidate094000;
+tests. They do not enable PCB writing. At the pre-release checkpoint, branch
+feature/current-pcb-rename-structure was built but unpublished, candidate094000;
 the full local runtime suite finished. Repository184checks and all seven
 installed skill-creator checks pass. External pins and authenticated bridge stay
 unchanged. New PCB metadata connected validation remains unclaimed.
@@ -52,8 +157,8 @@ canvas claim. Only those expectations were corrected, retaining exact current
 authority refusals. Runtime source/bundles/manifest were unchanged; the original
 failure log remains retained. Bridge424tests and internal package/skill validators
 passed separately. All17corrected-file tests, strict types/lint, reproducible build
-and unchanged compatibility projections passed. Final corrected payload requires green full GitHub CI before
-merge and installation. Earlier PR62runs39117268147/39117388709 were cancelled
+and unchanged compatibility projections passed. Final corrected payload passed
+full GitHub CI and was delivered as recorded above. Earlier PR62runs39117268147/39117388709 were cancelled
 as superseded; their successful build/Windows checks are not final-payload CI.
 Purpose-bound baseline guidance now points to clock observation/lifecycle begin,
 not premature cleanup; sealed journals and authority checks remain unchanged.

@@ -15,7 +15,7 @@ Read [`AGENTS.md`](AGENTS.md) first. This project controls an EDA application, s
 
 Use Linux x86_64, Node exactly 24.18.0, npm exactly 11.16.0, an inherited soft
 `RLIMIT_CORE` of zero, Linux 5.9 or newer, and the exact non-setuid Bubblewrap
-0.11.2 runtime recorded in `reviewed-compatibility.json`. The filesystem holding
+0.13.1 runtime recorded in `reviewed-compatibility.json`. The filesystem holding
 Bubblewrap must support an unprivileged `security.capability` query. A different
 Node, descriptor-sanitizer, or Bubblewrap binary is a reviewed compatibility
 change, not a reason to relax or skip sandbox tests.

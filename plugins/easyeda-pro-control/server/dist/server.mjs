@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "8f2c8fdbf815d90d11ae1d50493d9a7126eaf1b36d290e8436472475d6282abd";
+const __easyedaBundlePairId = "1e90cf5797e9bb1c0e2f6d3a56ad07deed254621490b094f763735eb732239b6";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -40160,7 +40160,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_disposable_symbol_copy",
       selector: "copy-advance;disposable-project-local-supported-symbol",
       implementation: "native-task-equivalent",
-      scope: "Separate disposable-only native symbol clone with renameKey true and keepSource false; no generic public lib_Symbol.copy contract. Requires the original retained disposable opening, exact checkpoint source and complete closed SQL baseline, fixed supported self-contained drawing types, original startup/actor/dual-clock proof and pre-dispatch saved-content budgets. Retains the native returned UUID before postread; never rediscovers by title or repeats an ambiguous copy. One write, normal closure, complete closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Conservative structure-byte preservation, not full native tree projection. No ordinary projects, caller destination/name, explicit Save, inverse/delete or discovery authority. Offline regression only; current connected validation unclaimed.",
+      scope: "Separate disposable-only native symbol clone with renameKey true and keepSource false; no generic public lib_Symbol.copy contract. Requires the original retained disposable opening, exact checkpoint source and complete closed SQL baseline, fixed supported self-contained drawing types, original startup/actor/dual-clock proof and pre-dispatch saved-content budgets. Retains the native returned UUID before postread; never rediscovers by title or repeats an ambiguous copy. One write, normal closure, complete closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Conservative structure-byte preservation, not full native tree projection. No ordinary projects, caller destination/name, explicit Save, inverse/delete or discovery authority. Installed094000 passed one disposable supported drawn-symbol copy with complete closed SQL, exact reopened content and final closure. Later generations and other source histories remain unvalidated.",
       source: [
         "current-symbol-copy-operation.ts",
         "current-symbol-copy-operation-runtime.ts",
@@ -96959,6 +96959,7 @@ function queryCurrentSymbolCopyOperation(input = {}) {
     invocationEnabledByDiscovery: false,
     executionAuthorized: false,
     connectedValidation: false,
+    historicalConnectedValidation: "installed094000-disposable-supported-drawn-symbol-copy",
     forwardOnly: true,
     inverseSupported: false,
     replayAllowed: false,
@@ -96990,7 +96991,7 @@ function queryCurrentSymbolCopyOperation(input = {}) {
       "copy-begin retains the original ready generation. copy-advance requires the exact next phase. Lost responses never permit write, navigation or closure replay; only explicitly pending observations may repeat. Native return identity is retained before post-read checks, never rediscovered by title.",
       "Before copy-write, copy-cleanup permanently abandons the ready copy and selects cleanup-close without dispatching it. The next explicit cleanup-close/cleanup-observe-termination steps close the original baseline; the copy cannot then resume.",
       "Completion requires one acknowledged copy, retained normal process closure, complete closed SQL comparison, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, final closure and complete SQL equality. Conservative baseline structure-byte preservation may reject legitimate changes from stale native structure; native tree projection is not claimed.",
-      "Failures expose only retained original-owner cleanup and inspection. Saved journal JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, delete, inverse, restoration or generic lib_Symbol.copy enablement is provided. Current live validation is unclaimed."
+      "Failures expose only retained original-owner cleanup and inspection. Saved journal JSON cannot restore continuation. No explicit Save, Save/Discard choice, forced exit, delete, inverse, restoration or generic lib_Symbol.copy enablement is provided. Installed094000 passed one disposable supported drawn-symbol copy with complete closed SQL, exact reopened content and final closure. Later generations and other source histories remain unvalidated."
     ],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentSymbolCopyOperationRequestSchema),
@@ -138779,7 +138780,8 @@ const same=()=>{projectOnly.check();methodCheck(rpc);if(expired||own(host,'messa
 const call=async(topic,args)=>{same();const raw=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(raw),'message'));};
 const projectMetadata=async()=>{
  const value=await call('/PrjDB/project/getData',[target.projectUuid]);same();
- if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false||own(value,'archive')!==false||own(value,'store')!==false||own(value,'cbb_project')!==false)bad();
+ if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();
+ for(const key of ['archive','store','cbb_project']){const flag=own(value,key,true);if(flag!==undefined&&flag!==false&&flag!==null&&flag!==0)bad();}
  const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;
 };
 const sample=async()=>{
@@ -141612,6 +141614,7 @@ var init_src = __esm({
               designMutation: true,
               connectedValidation: false,
               originalOwnerRequired: true,
+              historicalConnectedValidation: "installed094000-disposable-supported-drawn-symbol-copy",
               phaseEffectAcknowledgementsRequired: true,
               inverseSupported: false,
               ordinaryProjectsSupported: false,
@@ -143321,7 +143324,7 @@ var init_src = __esm({
       const inputSchema = external_exports.object({ request: external_exports.unknown().pipe(currentSymbolCopyOperationRequestSchema) }).strict();
       server.registerTool("easyeda_control_disposable_symbol_copy", {
         title: "Copy one supported symbol in an owned disposable project",
-        description: "Separate disposable-only symbol copy lifecycle. Query offline disposable-symbol-copy/disposable-symbol-copy-validate first; workflow reference: easyeda-pro-control/references/current-symbol-copy.md. Begin from an original retained easyeda_control_project_open disposable opening; no ordinary opening, replacement fingerprint, destination UUID, title or patch is accepted. Seal the source against the managed checkpoint and complete closed SQL baseline. The fixed native clone keeps supported self-contained canvas bytes, chooses a new UUID/title and clears source linkage. Original startup, actors, dual clocks and proof budgets precede one copy attempt. Every copy-advance acknowledges its exact next phase; inspect lost replies, never replay. Completion requires copyVerified with nextPhase completed after closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Only offered original-owner cleanup is available after failure. Opening and normal closure can automatically persist changes. No explicit Save, forced exit, delete, inverse, restoration, ordinary-project support or generic lib_Symbol.copy enablement. Connected validation is unclaimed.",
+        description: "Separate disposable-only symbol copy lifecycle. Query offline disposable-symbol-copy/disposable-symbol-copy-validate first; workflow reference: easyeda-pro-control/references/current-symbol-copy.md. Begin from an original retained easyeda_control_project_open disposable opening; no ordinary opening, replacement fingerprint, destination UUID, title or patch is accepted. Seal the source against the managed checkpoint and complete closed SQL baseline. The fixed native clone keeps supported self-contained canvas bytes, chooses a new UUID/title and clears source linkage. Original startup, actors, dual clocks and proof budgets precede one copy attempt. Every copy-advance acknowledges its exact next phase; inspect lost replies, never replay. Completion requires copyVerified with nextPhase completed after closed SQL effect, cache-excluded reopening, exact reopened destination content and unchanged source/peer SQL, and final closed SQL equality. Only offered original-owner cleanup is available after failure. Opening and normal closure can automatically persist changes. No explicit Save, forced exit, delete, inverse, restoration, ordinary-project support or generic lib_Symbol.copy enablement. Installed094000 passed one disposable supported drawn-symbol copy with complete closed SQL, exact reopened content and final closure. Later generations and other source histories remain unvalidated.",
         inputSchema,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }

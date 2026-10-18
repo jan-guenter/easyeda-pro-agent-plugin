@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5b5d651d4eb91eddf7f8f73454a2560d8e4d3f9b50366fe526dfc3d718a9708a",
-      "fileCount": 422,
+      "sha256": "5815120f59fb54b04bec103bb8190ec4e24a41f89b5a12a73f8f82c024f71303",
+      "fileCount": 425,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -557,9 +557,24 @@
           "sha256": "7d9ab9f9d8b107fa9275494ff2e32df75f25873fb9721ef29a6b62abf583bc1e"
         },
         {
+          "relativePath": "current-pcb-rename-history.ts",
+          "bytes": 8458,
+          "sha256": "6a533bedd37421089b3ac0e5d17f02a217eb09712786518aa4231b5f68021f84"
+        },
+        {
+          "relativePath": "current-pcb-rename-sql.ts",
+          "bytes": 31151,
+          "sha256": "3ca0575f340dd47ee9f38a9fd2a8b5ab54ccb4723ef96e5aa568bda23203597f"
+        },
+        {
           "relativePath": "current-pcb-rename-startup-guard.ts",
           "bytes": 4318,
           "sha256": "71cee8e61355f0a42885a421939698a39ab706835547dc85e972cb1a654e1eac"
+        },
+        {
+          "relativePath": "current-pcb-rename-structure-sql.ts",
+          "bytes": 14348,
+          "sha256": "e539f5b952e1a3f75b56344457299405044224e293ed527545c5633a28adf5c5"
         },
         {
           "relativePath": "current-pcb-rename-structure.ts",
@@ -588,8 +603,8 @@
         },
         {
           "relativePath": "current-project-pcb-metadata-program.ts",
-          "bytes": 5959,
-          "sha256": "80a7012677d99aa5875115f9de60e69b7d881673bd7c27cf77c3ce66b8b496a2"
+          "bytes": 6165,
+          "sha256": "c3b1cc80983d3b754a7c990b89d9eb5d2c43b5411194eaa87ac9e0b157300398"
         },
         {
           "relativePath": "current-project-pcb-metadata-runtime.ts",
@@ -698,8 +713,8 @@
         },
         {
           "relativePath": "current-symbol-copy-operation.ts",
-          "bytes": 8769,
-          "sha256": "abe05bcbc51fbbb3d09d3e7fa0020129c0f5c5fa6dae5f2f33d97f6e965c140a"
+          "bytes": 9023,
+          "sha256": "928cd30701a794487918e31b76f6a3e6e40d498bf998386b2a40260c78d63ddd"
         },
         {
           "relativePath": "current-symbol-copy-plan.ts",
@@ -1138,8 +1153,8 @@
         },
         {
           "relativePath": "extension-api-coverage-routes.ts",
-          "bytes": 64225,
-          "sha256": "5710274b32c07a76777736c91ed04b73ac66c8375ae950589432bb0b417987de"
+          "bytes": 64359,
+          "sha256": "739e9fcf29cf4fad8db7260e90a61af3aa244256ea0ea9c50ff87d1710748b27"
         },
         {
           "relativePath": "extension-api-coverage.ts",
@@ -1263,8 +1278,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 182143,
-          "sha256": "bbef290221b98a838b06d8da461b6d2fd45874ef9090378cb087d0b645a9552e"
+          "bytes": 182406,
+          "sha256": "f76e46d72a7c32f39a6e80e5747c7f7525d1f207e5ce7945dab60e90cbe25bc4"
         },
         {
           "relativePath": "lease.ts",
@@ -2121,7 +2136,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "742f150c05abdbea4cef89993da3cea58f9aaf7bf4b79af9f1e24df1af6dc017",
+      "sha256": "e78525652a6567290bd0f446423a89afa66aaa0500f39cd70ea64c80831af559",
       "fileCount": 3,
       "files": [
         {
@@ -2131,19 +2146,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 7801954,
-          "sha256": "80a8812680d336f13a55e32567ca34a85dd02640519479a17216915944447cf0"
+          "bytes": 7802666,
+          "sha256": "e67f6a45ba367d3a04248b8dc696cc55d49bd5ba62825a446a86e033e7d65b92"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "5b2d65c5e3277b423bebff4573a592dd99dea2a36d757828cf9f24ff2f06cfb0"
+          "sha256": "0a392d8b821e4112b3fe9eec36188b9955c3db78bea01835203574deb2070023"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-18T09:50:52.544Z",
+  "reviewedAt": "2026-10-18T11:22:41.454Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

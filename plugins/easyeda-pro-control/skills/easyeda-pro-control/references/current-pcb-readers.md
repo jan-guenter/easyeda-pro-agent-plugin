@@ -44,14 +44,21 @@ PCB rename authority. Use the active-view routes below for geometry.
 
 ### PCB rename remains unsupported
 
-Source now includes a bounded pure project-structure title/version/time projection
-and an AST/batch-state guard. Neither is connected to a writer. The private
-schematic rebuild queue still needs operation-owned completion evidence; its
-publicly observable state is not proof that the queue is empty. A rename also
-needs a dedicated complete SQL model for every affected structure row, native
-producer/clock binding, and saved-reopen verification. The symbol comparator
-preserves structure bytes and cannot be reused unchanged. Public reuse-block
-renaming propagates into other document families and remains outside this scope.
+Source includes pure structure and native-history projections, an AST/batch-state
+guard, and a dedicated complete SQL comparator covering the history append,
+bookkeeping and every duplicate structure row. These are not connected to a
+writer. Supplied actor/timestamp comparisons do not establish native provenance
+or authorize dispatch.
+
+The private schematic rebuild queue exposes no operation-owned completion
+observer. Stable batch/pending-set samples and sleeps do not prove it drained.
+The remaining coordinator must retain the whole process generation through
+normal termination, verify the complete closed SQL effect, then perform
+cache-excluded saved reopening under a fresh owner. Native producer/clock
+binding and pre-dispatch capacity checks are also required. Do not substitute
+the symbol comparator, which preserves structure bytes unchanged. Public
+reuse-block renaming propagates into other document families and remains outside
+this scope.
 
 ## PCB identities on the current tuple
 

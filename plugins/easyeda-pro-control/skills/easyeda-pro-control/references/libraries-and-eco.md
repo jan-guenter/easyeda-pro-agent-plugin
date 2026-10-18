@@ -65,8 +65,9 @@ For a drawn-symbol fixture, the separate
 [disposable symbol-copy workflow](current-symbol-copy.md) copies one supported
 single-part project symbol without modifying its source. It has distinct
 original ownership, two-ticket creation/SQL effects and saved-reopen checks,
-not a metadata inverse. Source review and offline tests are complete; connected
-copy validation is not claimed. This does not enable generic `lib_Symbol.copy`,
+not a metadata inverse. Installed094000 passed one disposable supported drawn-symbol
+copy with exact closed SQL, saved reopening, unchanged source/peers and final closure.
+Later generations and other source histories remain unvalidated. This does not enable generic `lib_Symbol.copy`,
 ordinary-project copying or any of the eight blocked operations below.
 
 ## Structure-write completion restriction
