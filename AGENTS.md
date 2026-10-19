@@ -4,6 +4,51 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+111307 delivered, 2026-10-19; fresh actual-host admission required next.
+Protected PR77 merged as main `b186d349b93b53a88aa8b8b82c6e152155efe388`.
+Reviewed payload `15296b9c8fe8ba7249d23bff2304e1b064087437` has the same complete
+tree `415303d683551803f1736a0b22bf3d8e8a5d9790`. Original frozen local93654
+passed11,500facade/4platform skips/0failures/0cancellations,424bridge tests,
+types/strict lint/build/compatibility/skills/package checks. Repository and
+official seven-skill validators passed. Exact-head Linux39243893262 passed
+build/all8shards/aggregate:11,499passes/5platform skips/0failures. Windows
+39243893251 passed. Independent source/privacy review accepted; Copilot reported
+quota exhaustion, not approval. Duplicate main Windows39245648840 passed;
+main Linux39245648988 is running. Do not repeat the passed exact-tree suite.
+
+Official Git marketplace upgrade46328 installed/enabled
+`0.3.0+codex.20261019111307` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain; cached HEAD
+equals mergedmain. Maintained comparison88255 passed1515files/30,972,703bytes/
+42directories, exact bytes/modes/no extras, from private exact-main Linux
+worktree `/root/.cache/easyeda-111307-merged-main-ZO77xv0q/worktree`.
+Plugin tree d3d3bcc52d5f9c051c8446fabd724b69e257b9e7; inventory
+`c6a75bda6cbc9eca64cb001bfe49afad3eb8755a0db1d5bad38cbaa80892a31b`.
+Source497/bf33e143, runtime3/69d0abe8, manifest911c785f; external pins unchanged.
+Release evidence: `/root/.cache/easyeda-111307-release-GWYnuTn2`.
+
+NEW offline probe cdf6152f completed ONCE in original shell37764, exit0; pins
+e7252bf9. AmbientNode26.11.1 hands off to pinned24.18.0;21restricted tools/eight
+offline SCH queries pass. Originalchild3926601/start38507313/parent3923255
+closed/exited0 via stdinEOF, is absent and has no retained handles. No signals,
+adoption, upstream marker or journal; synthetic profile unchanged and lease
+removed. Two no-socket/descendant samples are not continuous isolation. Complete
+installed inventory remains unchanged. Root/independent source and final-pin
+reviews accepted. Proof SHA
+`d820378d8451e22cb456e0e24171f8e9d3ea08e302dbb10bdf042c8fe981757c`
+in `/root/.cache/easyeda-111307-offline-probe-0ATGnOvP`.
+Never rerun/import this consumed probe or earlier probes.
+Loaded100838 facade3818690 is retained and must not be used after marketplace
+pruning. No live application/process action is pending. Fresh Codex session
+and actual111307 admission are required before new-ID disposable SCH validation.
+The completed failed100838 opening below must never be replayed. Production
+remains excluded. Keep the next PCB-text implementation as a complete lifecycle
+batch; observer eligibility and Save/worker completion are still concrete blockers.
+Detailed release/backlog: `docs/checkpoint-validation-batch-2026-10-19.md`.
+Preserve all branches/worktrees/stash and consumed cases/probes.
+
+The entries below are historical.
+
 111307 source batch prepared, 2026-10-19; not published or installed yet.
 User requested more changes per restart. Candidate combines artifact-local
 checkpoint scratch/final receipt reproof, private pre-navigation failure messages,
