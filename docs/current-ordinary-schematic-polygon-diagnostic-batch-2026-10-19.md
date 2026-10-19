@@ -1,9 +1,10 @@
 # Ordinary-purpose schematic, polygon-pad and diagnostic-owner batch
 
-Candidate `0.3.0+codex.20261019203733` combines three implementations before
-another marketplace update. It is not yet published or installed. The active
-installed payload remains
-`0.3.0+codex.20261019163322`; its disposable batching case has completed.
+Published and installed `0.3.0+codex.20261019203733` combines three implementations
+in one marketplace update. PR81 merged as
+`a9c0a83dd4f57d0e49c1f2a913340717de757015` after exact-payload Linux and Windows
+CI passed. A fresh Codex session is required to load and admit the new live
+facade. The previous installed163322 disposable batching case is complete.
 No production project or production record is in scope.
 
 ## Implementations
@@ -33,10 +34,9 @@ caller JavaScript, production schematic-title enablement or PCB writer here.
 
 ## Remaining work
 
-1. Finish the required verification of this frozen combined payload, then publish
-   through protected
-   GitHub CI and install from the named Git marketplace. Admit its actual loaded
-   process in a fresh session; do not patch or replace the running facade.
+1. Check the post-merge Linux CI39326797242 result. Its exact-payload PR gate and
+   post-merge Windows CI have passed. Admit the actual203733 loaded process in a
+   fresh session; do not patch or replace the running facade.
 2. Run the new ordinary-purpose entrypoint on a disposable fixture. Only after
    that lifecycle passes may a later deliberate change remove its temporary
    disposable scope gate; retain the permanent startup/owner/persistence guards.
@@ -71,5 +71,33 @@ project access ran. This does not prove complete canvas/connectivity, delayed
 subscriber completion, the new ordinary-purpose entrypoint or a speedup.
 
 The completed case is retired and must never be replayed. Private evidence and
-exact hashes are recorded in the engineering checkpoint. Verification and
-publication of candidate `203733` remain separate from this installed `163322` result.
+exact hashes are recorded in the engineering checkpoint. Release checks for
+`203733` remain separate from this installed `163322` live result.
+
+## Release and installation evidence
+
+- Full local verification passed 11,646 facade tests, with four platform skips
+  and no failures, plus all 424 bridge tests. Strict type-aware lint/types,
+  all seven skill validators, repository/privacy checks and reproducible
+  bundle/manifest checks passed. The earlier six test-fixture/coverage failures
+  remain retained; their corrections changed no runtime source or pins.
+- Exact-head Linux CI39324862810 passed all eight shards, build and final gate:
+  11,645 facade passes, five platform skips and no failures. Windows CI39324862952
+  passed recovery and native compilation/empty-Job/anonymous-pipe construction.
+  This did not launch or validate EasyEDA's diagnostic process integration.
+- The official upgrade used only the named `easyeda-pro-agent` Git marketplace.
+  Its checkout equals merged main. A maintained comparison proved all 1545
+  installed files, 42 directories, 31,607,372 bytes and modes match the committed
+  package. Source and runtime projections remain exact.
+- The sole installed offline probe passed 26 discovery/argument checks and
+  exposed 24 restricted tools from the 49-tool configured catalog. Actual
+  configured startup handed ambient Node26 to pinned Node24 without installed
+  source dependencies. The original child exited cleanly through stdin EOF;
+  all three complete package comparisons matched. Two samples showed no child
+  or non-stdio socket; the upstream-execution sentinel stayed absent. This is
+  sampled offline evidence, not continuous isolation or connected validation.
+- Post-merge Windows CI39326797192 passed. Linux CI39326797242 was still running
+  at this handoff. No old-host live calls or cache edits followed installation.
+
+The skill updates keep discovery, implementation and live qualification distinct,
+route agents through exact-target operations, and state what remains blocked.

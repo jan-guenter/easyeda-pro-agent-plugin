@@ -4,6 +4,59 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261019203733` on 2026-10-19 as one combined batch.
+PR81 payload `346d88e17b162edb4df7932a56450c4f8a491fdc` merged normally as
+main `a9c0a83dd4f57d0e49c1f2a913340717de757015`; complete trees match.
+Exact-head Linux CI39324862810 passed all eight shards/build/final gate:
+11,645 facade passes, five platform skips, zero failures, and 424 bridge passes.
+Windows CI39324862952 passed recovery and native diagnostic compile/empty-Job/
+pipe checks without launching an application. Local full verify96843 passed
+11,646 facade tests/four skips/zero failures and all 424 bridge tests. Strict
+type-aware lint/types, repository/privacy, all seven skills and frozen-input
+checks passed. Final log SHA `ce5a1c5cc68c8a7f8a02b3c9618816bf4178025c4adb0400ed6154fcdb45775e`.
+The first failed suite remains retained; only its two test fixtures changed.
+Source510/9860210a, runtime3/02f4a502, manifestb19afd52; external pins unchanged.
+
+Official named Git marketplace upgrade27890 installed/enabled203733 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+equals merged main. Exact installed comparison16323 passed 1545 files,
+42 directories, 31,607,372 bytes and modes; inventory07dbd750, plugin tree68f86d67.
+Exact-main worktree: `/root/.cache/easyeda-203733-merged-main-kvNxBs1l/worktree`.
+Release evidence: `/root/.cache/easyeda-ordinary-sch-polygon-diagnostic-release-cScBpStm`.
+
+Root and independent whole-script review accepted offline probe97f1592e and
+its candidate pins; root then approved final pins67719575. Sole execution61197
+passed: configured ambient Node26 handed
+to pinned Node24; 24 restricted/49 configured tools and 26 offline queries passed.
+Original child359973/start42028617 exited/closed0 after EOF, no retained handles
+or stderr; all three inventories stayed exact. Two sampled checkpoints had no
+children/non-stdio sockets and the upstream sentinel stayed absent. This is not
+continuous isolation or live CAD validation. Evidence:
+`/root/.cache/easyeda-ordinary-polygon-offline-probe-nyMyMdMk`, proof837e17f3,
+responses85aee949. CONSUMED: never rerun, import or syntax-check this probe.
+
+Post-merge Windows CI39326797192 passed; Linux CI39326797242 is still running.
+Check its final result next. The live chat still holds old163322 facade142445;
+no further old-host live calls, cache patches, hot reload or host termination.
+A fresh Codex session must admit the actual203733 process before live work.
+EasyEDA is CLOSED. The completed163322 case below is retired; never replay it
+or issue extra Save. No production project or production record was accessed.
+
+Next batch: disposable validation of the new ordinary-purpose SCH route, then
+deliberate production-scope enablement only after its own lifecycle passes;
+native PCB installation/owner admission, journaled diagnostic launch and fixed
+frame/script/context/worker integration before writer work. Also pending:
+populated Image/Dimension/polygon reads; broader geometry/structure, schematic
+content/connectivity, library/3D, placement/routing/copper, rules/stackup,
+ECO/ERC/DRC/manufacturing/export, portable upstream bootstrap and other platform
+tuples. Keep batching useful changes. The new native owner is private and
+unregistered; the new schematic route remains disposable-validation-only.
+Details: `docs/current-ordinary-schematic-polygon-diagnostic-batch-2026-10-19.md`.
+Only post-delivery root documentation differs from main on
+`feature/203733-live-continuation`; the packaged payload remains byte-exact.
+
+### Completed163322 continuation and203733 release preparation (historical)
+
 163322 continuation, 2026-10-19. Actual facade142445/start41574386,
 parent140831/start41571749 independently and root admitted; all506source/3runtime/
 manifest and1536file/42dir/31,401,025byte inventory/modes match delivered163322.
