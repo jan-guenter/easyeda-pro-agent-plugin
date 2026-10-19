@@ -1,6 +1,7 @@
-/** Dormant fixed SCH compiler. No runtime coordinator or public route consumes
- * it. Original data identity is not a dispatch grant. Future original ownership,
- * actor/clock qualification and durable one-attempt intent are prerequisites. */
+/** Fixed SCH compiler consumed by the original one-attempt writer lifecycle.
+ * Original data identity alone grants no dispatch. The coordinator supplies
+ * retained ownership, clock evidence and durable intent; connected validation
+ * remains separate from synthetic compiler and lifecycle tests. */
 /* oxlint-disable import/max-dependencies -- Compose original SCH data, retained native holders and document-neutral project/panel guards without PCB authority. */
 import { z } from "zod";
 import { assertUpstreamReplySettled, canonicalJson, extractToolPayload } from "./core.ts";

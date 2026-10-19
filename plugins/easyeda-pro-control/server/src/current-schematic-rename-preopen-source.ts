@@ -11,6 +11,8 @@ import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import { assertOriginalCurrentSchematicRenameBaseline } from "./current-schematic-rename-owner-baseline.ts";
 import type { CurrentSchematicRenameBaseline } from "./current-schematic-rename-owner-baseline.ts";
+import { assertOriginalCurrentSchematicRenameSnapshot } from "./current-schematic-rename-snapshot.ts";
+import type { CurrentSchematicRenameSnapshot } from "./current-schematic-rename-snapshot.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 
 const CHUNK_BYTES = 1_048_576, MAX_BYTES = 268_435_456n;
@@ -114,6 +116,20 @@ export async function verifyCurrentSchematicRenamePreopenSource(engine: EasyedaC
   const current = (): void => { assertOriginalCurrentSchematicRenameBaseline(copy, engine); };
   const observed = await verifySource(copy, current); current();
   return Object.freeze({ ...observed, profile: "private.current-schematic-rename-preopen-source.v1", sourceMatchesClosedBaseline: true });
+}
+/** The saved verification generation binds the actual post-edit source, never
+ * the older baseline or a caller-selected file/hash. No old live proof revives.
+ */
+export async function verifyCurrentSchematicRenamePosteditPreopenSource(engine: EasyedaControlEngine,
+  snapshot: CurrentSchematicRenameSnapshot): Promise<Readonly<SourceObservation & {
+    profile: "private.current-schematic-rename-postedit-preopen-source.v1"; sourceMatchesClosedPostedit: true;
+  }>> {
+  const current = (): void => {
+    assertOriginalCurrentSchematicRenameSnapshot(snapshot, engine);
+    need(snapshot.phase === "closed-edit", "Current SCH saved opening requires its original post-edit snapshot.");
+  };
+  const observed = await verifySource(snapshot, current); current();
+  return Object.freeze({ ...observed, profile: "private.current-schematic-rename-postedit-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
 async function verifySource(copy: SourceBinding, current: () => void): Promise<Readonly<SourceObservation>> {
   current();

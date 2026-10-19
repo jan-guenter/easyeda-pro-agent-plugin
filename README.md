@@ -15,11 +15,21 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019100838` adds a separate disposable schematic-container title
+workflow. It binds one forward rename to original process ownership, complete
+closed SQL checks, fresh saved metadata and child-roster verification, and final
+closure. Connected validation remains pending; sheet renaming, circuit edits,
+ordinary-project renaming and inverse are not enabled. Completed legacy journals
+also use smaller cached projections while retaining fresh byte/path checks on
+every scan. Synthetic tests show fewer repeated parses, not a measured live
+speedup. See the [SCH lifecycle](docs/current-schematic-rename-lifecycle-2026-10-19.md)
+and [admission measurements](docs/admission-compact-projections-2026-10-19.md).
+
 Update `0.3.0+codex.20261019070000` adds Dimension geometry reads with exact
 mil coordinates and a separately named current-canvas unit. The native getter
 does not preserve each annotation's stored unit, so no rendered-measurement
 claim is made. The schematic rename implementation now has private clock and
-full stored-SQL comparison modules; its writer remains unavailable. Polygon
+full stored-SQL comparison modules; that release's writer remained unavailable. Polygon
 identity omissions now document the inaccessible-manager and serialization
 effects. Historical test cases are separated from the skill's current capability
 matrix to reduce routine reading. See the [Dimension contract](docs/current-pcb-dimension-geometry-research-2026-10-19.md),
@@ -33,7 +43,7 @@ in reversed caller order, with matching complete samples, retained normal
 closure and unchanged closed fixture bytes. Name formulas and nondefault styles
 were not represented. This is not validation of later runtimes. Schematic rename
 now has private initial-closure/full-SQL baseline and fresh-generation/startup
-plumbing, but its writer and saved/reopened lifecycle remain unregistered.
+plumbing, but that release's writer and saved/reopened lifecycle remained unregistered.
 Status now reports journal-scan and historical-qualification timing without
 skipping checks or caching authority. See the [Attribute projection](docs/current-pcb-attribute-geometry-research-2026-10-19.md),
 [schematic generation](docs/current-schematic-rename-generation-2026-10-19.md)
@@ -42,7 +52,7 @@ and [status diagnostics](docs/status-admission-diagnostics-2026-10-19.md).
 Update `0.3.0+codex.20261019023200` adds current-version component-attribute ID
 reads with ordered parent-group evidence and strict drift/bounds checks. It also
 adds a separate schematic opening-owner transfer and dormant rename compiler;
-schematic renaming is still unavailable until the remaining lifecycle is built.
+schematic renaming was still unavailable in that release.
 The PCB text investigation documents why the existing public/native reads cannot
 observe all Save participants. See the [Attribute reader contract](docs/current-pcb-attribute-identities-2026-10-19.md),
 [schematic implementation and remaining work](docs/current-schematic-rename-owner-2026-10-19.md),
@@ -591,9 +601,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 212 public subsets, 32 native equivalents,
-no lifecycle-only methods, 80 implemented-but-blocked methods and 450
-omissions. Their execution routes comprise 344 available with runtime guards,
+Current source classifications are 212 public subsets, 33 native equivalents,
+no lifecycle-only methods, 79 implemented-but-blocked methods and 450
+omissions. Their execution routes comprise 347 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
@@ -693,10 +703,13 @@ Latest declarations are not runtime admission. Exact operation schemas cover
 108 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
-remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation,
-and PCB/schematic-container creation/rename currently refuse execution pending
-operation-owned structure-job completion and exact SQL-effect proof. Their
-schemas and document-effect implementations remain available for offline review.
+remaining work. Legacy generic routes for closed symbol/page metadata, empty-page
+and empty-symbol creation, and PCB/schematic-container creation/rename currently
+refuse execution pending operation-owned structure-job completion and exact
+SQL-effect proof. Their schemas and document-effect implementations remain
+available for offline review. Separate guarded disposable PCB and SCH rename
+routes retain their own complete-SQL lifecycles; the SCH route has no recorded
+connected validation.
 Schematic-page, symbol and PCB geometry Save can schedule that same structure
 job, so those design transaction routes are blocked too. Historical tests retain
 their document and checkpoint scope, not proof of native job completion.

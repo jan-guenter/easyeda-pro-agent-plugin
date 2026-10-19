@@ -4,6 +4,28 @@ import { z } from "zod";
 import { portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 const stringSchema = z.string();
+const DEFAULT_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
+const FACADE_BUNDLE_PATH = "plugins/easyeda-pro-control/server/dist/server.mjs";
+const FACADE_BUNDLE_BYTES = 12 * 1024 * 1024;
+const reviewedBundleFileSchema = z.object({ relativePath: z.string(), bytes: z.int().nonnegative(), sha256: z.string().regex(/^[a-f0-9]{64}$/u) });
+const reviewedBundleFilesSchema = z.array(reviewedBundleFileSchema);
+
+/** Only the reproducible facade has a larger scan budget. Installed payload
+ * verification independently caps every file at 16 MiB; ordinary files retain
+ * 8 MiB. This is never an exemption from complete secret/privacy scanning.
+ */
+export function repositoryFileByteLimit(relativePath: string): number {
+  return relativePath === FACADE_BUNDLE_PATH ? FACADE_BUNDLE_BYTES : DEFAULT_REPOSITORY_FILE_BYTES;
+}
+export function hasReviewedRepositoryFileSize(relativePath: string, bytes: number, sha256: string, reviewedFiles: unknown): boolean {
+  if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > repositoryFileByteLimit(relativePath)) { return false; }
+  if (bytes <= DEFAULT_REPOSITORY_FILE_BYTES) { return true; }
+  if (relativePath !== FACADE_BUNDLE_PATH) { return false; }
+  const parsed = reviewedBundleFilesSchema.safeParse(reviewedFiles);
+  if (!parsed.success) { return false; }
+  const matches = parsed.data.filter(file => file.relativePath === "server.mjs");
+  return matches.length === 1 && matches[0]?.bytes === bytes && matches[0].sha256 === sha256;
+}
 const stringRecordSchema = z.record(stringSchema, stringSchema);
 const menuSchema = z.object({ id: stringSchema, title: stringSchema });
 const stringArraySchema = z.array(stringSchema);
@@ -92,7 +114,7 @@ export const bundledRuntimeInventorySchema = z.object({
 
 export const reviewedCompatibilitySchema = z.object({
   facadeImplementation: z.object({
-    bundle: z.object({ version: stringSchema }),
+    bundle: z.object({ version: stringSchema, files: reviewedBundleFilesSchema }),
     "source-tree": z.object({ version: stringSchema }),
   }),
   connectedRuntime: z.object({

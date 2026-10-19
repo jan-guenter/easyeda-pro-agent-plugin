@@ -4,6 +4,51 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+SCH rename candidate100838, 2026-10-19, branch
+`feature/schematic-dispatch-admission-cache`, based on handoff772eea8 and merged
+main7d0a4162. Current source adds a separate original-owner disposable SCH
+title-only lifecycle, aged SQL reference/clock qualification, one write, closed
+SQL effect, fresh saved metadata/child-roster read and final closure. No connected
+SCH rename result exists. Root/independent review corrected the N0/write
+capture-epoch and authenticated-scope composition issues before release.
+Do not treat isolated mocked tests as proof of those composed paths.
+
+Compact completed/nonblocking legacy projections preserve fresh journal/phase
+byte/path checks and all existing cache bounds. Synthetic390-journal runs
+reduce warm reparses156 to0; elapsed times vary, so no live speedup is claimed.
+Public catalog is46 full/21 restricted tools. Generated inventory774methods:
+212public-subset/33native-equivalent/79blocked/450omitted;347guarded/94blocked/
+2partial routes. These are implementation counts, not connected coverage.
+
+Actual installed070000 admission is complete: facade3623789/start37814763,
+Codex parent3621256/start37785902, pinnedNode24.18.0. Original installed485source/
+76c9fafb,3runtime/2ac69694,manifest1aa82663 and full1482-file inventoryd2e3f4e1
+match mergedmain. Evidence `/root/.cache/easyeda-070000-actual-facade-GVRAJKtZ`;
+process-source7e4f01ba,installed-payload17feceff. The maintained verifier emitted
+complete successful JSON and exited, but its original shell exit code was not
+retained. Both prior main CI platforms now passed, including Linux39203647033.
+No live EasyEDA call, launch, design read/edit, Save or restoration occurred in
+this implementation session. Production remains excluded. Preserve all consumed
+probes and completed cases below; do not rerun them.
+
+Next: run frozen candidate mandatory release gates and protected CI, publish/install and verify the
+new package. Then a fresh Codex session must load/admit it before a disposable
+SCH lifecycle. Broader backlog: populated Dimension/Image, PCB text writer,
+polygon identities, libraries/3D, layout/routing/ECO/export, bootstrap/platform
+adapters and connected admission timing. Release details:
+`docs/current-schematic-rename-lifecycle-2026-10-19.md`.
+Version is0.3.0+codex.20261019100838. Source review and focused checks passed.
+Final frozen source496/ac897953, runtime3/9a380da1, manifest30e0bedd; external
+pins unchanged. Corrected lint/types/build/compatibility and repository44958
+passed. Full verify80715 is running in
+`/root/.cache/easyeda-schematic-rename-release-A9qW1juF`.
+Retain initial lint/8MiB package-limit failures; the exact reviewed facade now
+has a12MiB limit and still receives the full privacy scan. All65changed files
+passed independent full-content privacy review. Publication/installation and
+connected SCH validation remain pending. Preserve the070000
+loaded host and all earlier branches/worktrees/stash. The checkpoints below
+are historical, including their now-satisfied fresh070000-admission requirement.
+
 070000 delivered, 2026-10-19: protected PR75 merged as main
 `7d0a4162c2e664f8ecd51ccb392ec8ccc2d431fe`. Reviewed candidate
 `bffd16e2dd19f7630b6531e7a8802004df82de99` has the same complete tree

@@ -32,7 +32,8 @@ interface TerminalCandidate {
   readonly entireStoredJournalSha256: string;
   readonly terminalArtifact: TerminalDescriptor;
 }
-interface ScanCandidate {
+interface DetailedScanCandidate {
+  readonly compact: false;
   readonly bridgeBlocking: boolean;
   readonly unfinished: boolean;
   readonly summary: OperationSummary;
@@ -40,6 +41,13 @@ interface ScanCandidate {
   readonly terminal: TerminalCandidate | null;
   readonly incomplete: IncompleteCandidate | null;
 }
+interface CompletedLegacyCandidate {
+  readonly compact: true;
+  readonly classification: "legacy";
+  readonly operationId: unknown;
+  readonly state: unknown;
+}
+type ScanCandidate = DetailedScanCandidate | CompletedLegacyCandidate;
 export interface QualifiedAdmissionOperation {
   readonly bridgeBlocking: boolean;
   readonly unfinished: boolean;
@@ -66,6 +74,9 @@ interface QualifiedScan {
   readonly operations: QualifiedAdmissionOperation[];
   readonly diagnostics: AdmissionScanDiagnostics;
 }
+interface QualifiedStateScan extends QualifiedScan {
+  readonly states: UnknownRecord[];
+}
 function diagnosticInteger(value: number): number {
   return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.round(value)));
 }
@@ -74,17 +85,24 @@ function project(operation: UnknownRecord): ScanCandidate {
   const plan = operation["plan"];
   const family = isRecord(plan) ? plan["profile"] : undefined;
   const state = operation["state"];
+  const bridgeBlocking = state === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
+  const unfinished = !isTerminalOperation(operation);
+  const reserved = family === FAMILY || typeof family === "string" && family.startsWith("easyeda-pro-control.project-symbol-closed-session.") ||
+    typeof state === "string" && state.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
+  // These legacy entries are omitted by both rich-summary consumers. Only the
+  // State list exposes them, so retain precisely its two input fields. Every
+  // Other class keeps its full summary, including terminal journals with risk.
+  if (family !== "easyeda-pro-control.current-symbol-closed-baseline.v1" && !reserved && !bridgeBlocking && !unfinished) {
+    return { compact: true, classification: "legacy", operationId: operation["operationId"], state };
+  }
   const summary = operationSummary(asOperationJournal(operation));
-  const base = { bridgeBlocking: state === "journal-unreadable" || operationHasOrphanedCallRisk(operation),
-    unfinished: !isTerminalOperation(operation), summary };
+  const base = { compact: false as const, bridgeBlocking, unfinished, summary };
   if (family === "easyeda-pro-control.current-symbol-closed-baseline.v1") {
     const operationId = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     const incomplete = typeof operationId === "string" && typeof storedJournalSha256 === "string" && HASH.test(storedJournalSha256)
       ? { operationId, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
     return { ...base, classification: "current-baseline", terminal: null, incomplete };
   }
-  const reserved = family === FAMILY || typeof family === "string" && family.startsWith("easyeda-pro-control.project-symbol-closed-session.") ||
-    typeof state === "string" && state.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
   if (!reserved) { return { ...base, classification: "legacy", terminal: null, incomplete: null }; }
   if (family === FAMILY && (state === "closed-session-recording" || state === "closed-session-evidence-recorded") &&
       !Object.hasOwn(operation, "terminalArtifact")) {
@@ -109,7 +127,7 @@ function project(operation: UnknownRecord): ScanCandidate {
 // Bytes are rechecked by the unchanged scanner on every call; success is not cached.
 const rawCandidates = createOperationScanner(project);
 
-function observation(candidate: ScanCandidate, qualification: QualifiedAdmissionOperation["qualification"]): QualifiedAdmissionOperation {
+function observation(candidate: DetailedScanCandidate, qualification: QualifiedAdmissionOperation["qualification"]): QualifiedAdmissionOperation {
   const failed = qualification === "terminal-evidence-invalid" || qualification === "terminal-evidence-unavailable" ||
     qualification === "abandonment-evidence-invalid" || qualification === "abandonment-evidence-unavailable";
   const summary = failed ? { ...candidate.summary, state: qualification, hardStop: true,
@@ -134,7 +152,7 @@ function failureClass(error: unknown): TerminalFailure {
   return error instanceof ZodError || error instanceof SyntaxError || error instanceof Error && error.constructor === Error
     ? "terminal-evidence-invalid" : "terminal-evidence-unavailable";
 }
-async function qualifyAbandonment(candidate: ScanCandidate): Promise<QualifiedAdmissionOperation> {
+async function qualifyAbandonment(candidate: DetailedScanCandidate): Promise<QualifiedAdmissionOperation> {
   const expected = candidate.incomplete;
   if (expected === null) { return observation(candidate, "incomplete"); }
   try {
@@ -161,7 +179,7 @@ async function qualifyAbandonment(candidate: ScanCandidate): Promise<QualifiedAd
       ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
-async function qualifyCurrentBaselineAbandonment(candidate: ScanCandidate): Promise<QualifiedAdmissionOperation> {
+async function qualifyCurrentBaselineAbandonment(candidate: DetailedScanCandidate): Promise<QualifiedAdmissionOperation> {
   const expected = candidate.incomplete;
   if (expected === null) { return observation(candidate, "abandonment-evidence-invalid"); }
   try {
@@ -181,7 +199,7 @@ async function qualifyCurrentBaselineAbandonment(candidate: ScanCandidate): Prom
     return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
-async function qualifyTerminal(candidate: ScanCandidate, runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>>): Promise<QualifiedAdmissionOperation | undefined> {
+async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>>): Promise<QualifiedAdmissionOperation | undefined> {
   const expected = candidate.terminal;
   if (expected === null) { return observation(candidate, "terminal-evidence-invalid"); }
   try {
@@ -201,7 +219,11 @@ async function qualifyTerminal(candidate: ScanCandidate, runtime: Awaited<Return
     return matches ? undefined : observation(candidate, "terminal-evidence-invalid");
   } catch (error) { return observation(candidate, failureClass(error)); }
 }
-async function qualifiedCandidates(): Promise<QualifiedScan> {
+async function runtimeForScan(): Promise<Awaited<ReturnType<typeof currentProcessSqlRuntime>> | undefined> {
+  try { return await currentProcessSqlRuntime(); }
+  catch { return undefined; }
+}
+async function qualifiedCandidates(): Promise<QualifiedStateScan> {
   const started = performance.now();
   const candidates = await rawCandidates();
   const journalScanEnded = performance.now();
@@ -209,32 +231,41 @@ async function qualifiedCandidates(): Promise<QualifiedScan> {
     legacy: 0, incomplete: 0, invalid: 0, terminal: 0, "current-baseline": 0,
   };
   const results: QualifiedAdmissionOperation[] = [];
+  const states: UnknownRecord[] = [];
   let runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>> | undefined;
   let runtimeUnavailable = false;
   for (const candidate of candidates) {
     candidateCounts[candidate.classification] += 1;
-    if (candidate.classification === "legacy") {
-      results.push(observation(candidate, "legacy"));
-    } else if (candidate.classification === "current-baseline") {
-      results.push(await qualifyCurrentBaselineAbandonment(candidate));
-    } else if (candidate.classification === "incomplete") {
-      results.push(await qualifyAbandonment(candidate));
-    } else if (candidate.classification === "invalid" || candidate.terminal === null) {
-      results.push(observation(candidate, "terminal-evidence-invalid"));
+    if (candidate.compact) {
+      states.push({ operationId: candidate.operationId, state: candidate.state, recordedState: candidate.state, qualification: "legacy" });
     } else {
-      if (runtime === undefined && !runtimeUnavailable) {
-        try { runtime = await currentProcessSqlRuntime(); }
-        catch { runtimeUnavailable = true; }
+      let result: QualifiedAdmissionOperation | undefined;
+      if (candidate.classification === "legacy") {
+        result = observation(candidate, "legacy");
+      } else if (candidate.classification === "current-baseline") {
+        result = await qualifyCurrentBaselineAbandonment(candidate);
+      } else if (candidate.classification === "incomplete") {
+        result = await qualifyAbandonment(candidate);
+      } else if (candidate.classification === "invalid" || candidate.terminal === null) {
+        result = observation(candidate, "terminal-evidence-invalid");
+      } else {
+        if (runtime === undefined && !runtimeUnavailable) {
+          runtime = await runtimeForScan();
+          runtimeUnavailable = runtime === undefined;
+        }
+        result = runtime === undefined ? observation(candidate, "terminal-evidence-unavailable") : await qualifyTerminal(candidate, runtime);
       }
-      if (runtime === undefined) { results.push(observation(candidate, "terminal-evidence-unavailable")); }
-      else {
-        const result = await qualifyTerminal(candidate, runtime);
-        if (result !== undefined) { results.push(result); }
+      if (result !== undefined) {
+        results.push(result);
+        if (result.qualification !== "historical-abandonment-verified") {
+          states.push({ operationId: result.summary.operationId, state: result.summary.state,
+            recordedState: result.recordedState, qualification: result.qualification });
+        }
       }
     }
   }
   const ended = performance.now();
-  return { operations: results, diagnostics: Object.freeze({
+  return { operations: results, states, diagnostics: Object.freeze({
     schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: candidates.length,
     candidateCounts: Object.freeze(candidateCounts), journalScanMs: diagnosticInteger(journalScanEnded - started),
     historicalQualificationMs: diagnosticInteger(ended - journalScanEnded), totalMs: diagnosticInteger(ended - started),
@@ -258,7 +289,6 @@ export async function observeQualifiedAdmissionOperations(): Promise<QualifiedSc
 /** Direct guards omit proven historical completion or abandonment without rewriting state. */
 export async function listQualifiedOperationStates(): Promise<UnknownRecord[]> {
   const scanned = await qualifiedCandidates();
-  return scanned.operations.filter((entry) => entry.qualification !== "historical-abandonment-verified").map((entry) => ({ operationId: entry.summary.operationId, state: entry.summary.state,
-    recordedState: entry.recordedState, qualification: entry.qualification }));
+  return scanned.states;
 }
 
