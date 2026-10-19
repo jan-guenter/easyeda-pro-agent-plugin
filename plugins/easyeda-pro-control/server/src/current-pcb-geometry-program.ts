@@ -14,7 +14,7 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const componentPrimitiveId = "primitiveId" in request.arguments ? request.arguments.primitiveId : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll",
-    Attribute: "pcb/extensionAPI/attribute-getAll" } as const;
+    Attribute: "pcb/extensionAPI/attribute-getAll", Dimension: "pcb/extensionAPI/dimension-getAll" } as const;
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
@@ -120,6 +120,16 @@ const copyRows=value=>{
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
   const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
+  // PCB217199c8@10344964 scales tuples/width once and overwrites model unit with canvas unit.
+  // Never call generic dimension-getByIds, rescale these mil values or infer annotation units.
+  if(family==='Dimension'){
+   const dimensionType=text(own(row,'dimensionType'),32);if(!['Length Dimension','Radius Dimension','Protractor Dimension'].includes(dimensionType))bad();
+   const nativeCoordinates=own(row,'coordinateSet'),count=arrayLength(nativeCoordinates);if(count!==(dimensionType==='Length Dimension'?8:6))bad();
+   const coordinateSet=[];for(let j=0;j<count;j++)coordinateSet.push(num(own(nativeCoordinates,String(j))));
+   const canvasUnit=text(own(row,'unit'),4),lineWidth=num(own(row,'width')),precision=integer(own(row,'precision'));
+   if(!['mm','cm','inch','mil'].includes(canvasUnit)||lineWidth<0||precision<0||precision>4)bad();
+   rows.push({...identity,layer:layer(own(row,'layerId')),dimensionType,coordinateSet,canvasUnit,lineWidth,precision});continue;
+  }
   if(family==='Component'){
    const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
    rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation')),...componentMetadata(row)});continue;

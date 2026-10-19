@@ -154,6 +154,19 @@ for (const method of ["getAll", "get"] as const) {
   } });
 }
 
+for (const method of ["getAll", "get"] as const) {
+  groups.push({ namespace: "pcb_PrimitiveDimension", methods: [method], route: {
+    tool: "easyeda_control_pcb_geometry", selector: `eda.pcb_PrimitiveDimension.${method}`, implementation: "native-task-equivalent",
+    scope: `Separately pinned current API/UI/PCB Dimension loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native dimension-getAll samples. Retains Length then Radius then Angle manager order without a parent filter; only existing stateWatcher views participate. DTOs copy bounded own identity/lock, layer, exact dimensionType, coordinateSet, lineWidth, precision0..4 and canvasUnit. Length tuples have8numbers; Radius/Protractor tuples have6. Coordinates and nonnegative lineWidth are already mil and are not scaled again. canvasUnit preserves only current-document mm/cm/inch/mil: native getAll overwrites model units, so this is not the coordinate unit or verified annotation unit. No bare unit, rendered measurement, inferred length/radius/angle, annotation text/font/color/textFollow, reciprocal parent, partition/group, full source, connectivity, ownership, persistence, write or Save claim. Radius tuple includes a text anchor, not glyph bounds. Complete ordered projected rows must match before selection; duplicate identities and malformed tuples refuse. Bounds256rows/256characters per ID/scalar magnitude1e12/393216bytes apply before selection, while native enumeration/serialization precedes these bounds. No filters, public wrapper, SDK constructor, native generic getByIds or positive type lookup. ${method === "get" ? "Only1..256 distinct primitiveIds in an array; exact caller order and all IDs required, no scalar get or missing-ID skipping." : "Empty arguments only; complete observed family order is preserved."}`,
+    source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: ["current-pcb-geometry.test.ts", "current-pcb-geometry-registration.test.ts"], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
+      action: "pcb-geometry", query: { method: `eda.pcb_PrimitiveDimension.${method}`, includeSchemas: true },
+    } } },
+  } });
+}
+
 groups.push({ namespace: "lib_Symbol", methods: ["get"], route: {
   tool: "easyeda_control_project_symbol", selector: "eda.lib_Symbol.get", implementation: "native-task-equivalent",
   scope: "Separately pinned current project-local symbol metadata subset. One exact symbolUuid and explicit active ordinary PCB project/branch/document/tab target. Two matching bounded metadata observations correlate the loaded project owner and require the symbol to remain absent from the complete registered editor tree. Hidden or unregistered editors are not independently excluded. Raw tagsJson is retained without normalization. Retained manager/RPC references do not directly lease the module-private worker; workerIdentityVerified remains false. Not a cloud-library lookup, complete library inventory, symbol geometry, lossless stored META or persistence proof, and not authority to rename or edit. No geometry load, navigation, write or Save; legacy library writers and their existing restrictions are unchanged. The same tool separately accepts project-symbol-preflight: exact caller-supplied metadata comparison in a loaded project with no editor tabs. Discover that distinct request through project-symbol-preflight/project-symbol-preflight-validate; it is not this lib_Symbol.get request and grants no source provenance, backend actor/clock qualification, permission, startup, persistence or writer authority.",

@@ -4,6 +4,64 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+060000 resumed, 2026-10-19: actual configured facade3499503/start35965124,
+current Codex parent3497877/start35959264, pinned Node24.18.0 and installed
+060000 source482/0a18145e/runtime3/2ce9b592/manifestf705bc01 independently
+verified. Full maintained comparison85412 passes1475files/29822922bytes/
+42directories, exact bytes/modes/no extras, inventoryc1a71916 against merged
+main559c4e14. Evidence `/root/.cache/easyeda-060000-actual-facade-ZcsooQf7`;
+process/source prooff4aede52, installed proofa369686c. This is host/file
+admission only. Prior main Linux39199358744 now SUCCESS, all eight shards and
+aggregate passed. Both main platforms are green; no repeated suite needed.
+
+Current live060000: new launch/open IDs
+`pcb-attribute-geometry-060000-20261019-launch` and
+`pcb-attribute-geometry-060000-20261019-open` each completed once. Original
+root33380/Job817041505a51424585febb38a4642764, launch digestb91d0704 and
+window14750884 retained by facade3499503. Attribute getAll passed6rows/2groups,
+observatione638d1af; explicit get passed two Designators in reversed caller
+order, observationc370d677. Both return two complete matching samples under
+fingerprint3a84a260. Exact projected values/groups agree between calls. One
+normal-close call80 completed acknowledged; retained observe-termination88 proves
+original root/Job exit. Final closed comparison e4434cc5/598016 is byte-identical
+to retained195000copy, no sidecars and stable descriptor/path identity. Case is
+COMPLETED/NONREPLAYABLE. No live operation remains pending.
+No edit, explicit Save, restore or production access. Private reply evidence
+is `/root/.cache/easyeda-attribute-geometry-060000-live-VnKc1V4j`.
+
+Source candidate070000 on `feature/070000-dimension-schematic-clock` is built,
+NOT published/installed. Dimension get/getAll and private SCH clock/stored-effect
+modules passed root/independent review.77Dimension and10SCH focused tests,
+types/targeted strict lint pass. Historical skill-case body moved byte-exact
+to optional reference; all81links resolve, doc review accepted. Source485/
+76c9fafb, runtime3/2ac69694, manifest1aa82663; external pins unchanged.
+Dependency/signatures/audit/build/compatibility checks pass. Frozen full verify
+is running in shell25144 with logs under
+`/root/.cache/easyeda-070000-release-kd1Yf76m`; do not change code/bundles/pins.
+Original repository check refused a production name in the new SCH doc;
+replaced it with 'production design', final repository9552 exits0. All seven
+official skill validators pass. No source guard was changed for these checks.
+
+Polygon source research found no
+safe complete identity route through the admitted extension boundary; see
+`docs/current-pcb-polygon-identities-research-2026-10-19.md`. Fill/Polyline/
+Region serialization can rebuild children; the tree-event alternative has
+different parent membership and no correlated response. No bypass added.
+
+Next after070000 delivery: fresh actual host admission; populated Dimension/Image
+cases; complete SCH one-attempt dispatch, post-clock, closed SQL/reopened child
+roster and final closure; PCB text Save-participant/queue/worker observations and
+writer lifecycle; safe polygon alternatives; broader library/3D, layout/routing,
+ECO/export/account/bootstrap/platform adapters. Admission performance candidate:
+compact cached completed/nonblocking legacy journal summaries while freshly
+checking every byte/path/artifact. Cache pressure is a hypothesis, not measured
+or implemented; never cache authority. Current774distinct methods retain450omitted/
+80blocked.346guarded/94blocked/2partial routes are multi-tuple counts, not current
+live-callable methods.
+
+The following delivery checkpoint is historical; its fresh-session requirement
+has been met, including the exact connected Attribute case above.
+
 060000 delivery, 2026-10-19: protected PR74 merged as main
 `559c4e140c5724bde593c43f6d5b3f4e1bbe90fd`. Final reviewed candidate
 `8479376798bb0260991d01226f491021e9453c2a` has the same complete tree

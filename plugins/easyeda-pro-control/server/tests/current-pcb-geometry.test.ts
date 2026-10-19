@@ -16,7 +16,14 @@ function inputFor(method: CurrentPcbGeometryRequest["method"] = methods[0], prim
 }
 const track = { globalIndex: "line-b", net: "MixedCase", locked: false, layerId: 1,
   startX: 1.1234567, startY: -2, endX: 3, endY: 4, width: 10 };
-const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, locked: true }],
+const defaults = { Dimension: [
+  { globalIndex: "dimension-length", dimensionType: "Length Dimension", layerId: 13, locked: false,
+    coordinateSet: [10.1234567, -20, 10, -30, 100, -30, 100, -20], width: 6.1234567, precision: 4, unit: "mm" },
+  { globalIndex: "dimension-radius", dimensionType: "Radius Dimension", layerId: 3, locked: true,
+    coordinateSet: [200, 300, 150, 350, 140, 360], width: 0, precision: 0, unit: "mm" },
+  { globalIndex: "dimension-angle", dimensionType: "Protractor Dimension", layerId: 71, locked: false,
+    coordinateSet: [1, 0, 0, 0, 0, 1], width: 8, precision: 2, unit: "mm" },
+], Line: [track, { ...track, globalIndex: "line-a", net: null, locked: true }],
   Arc: [{ ...track, globalIndex: "arc-a", arcAngle: 45.1234567, arcType: 1 }],
   Via: [{ globalIndex: "via-a", net: "", locked: true, center: { x: 1.234567, y: -2 }, holeRadius: 5.123456,
     radius: 10.123456, type: 0, name: null, startLayer: 1, endLayer: 2, expansion: 1, topExpansion: 0.15, bottomExpansion: -0.25 }],
@@ -45,13 +52,13 @@ function environment(options: Options = {}): { run: () => Promise<unknown>; eval
     }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" || topic === "pcb/extensionAPI/attribute-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" || topic === "pcb/extensionAPI/attribute-getAll" || topic === "pcb/extensionAPI/dimension-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};rows.Attribute=[{parentPrimitiveId:'component-b',attrs:[{...rows.String[0],globalIndex:'attribute-b',key:'Name',value:'ABC-1',formulaName:'={Manufacturer Part}'}]},{parentPrimitiveId:'empty-parent',attrs:[]},{parentPrimitiveId:'component-a',attrs:[{...rows.String[1],globalIndex:'attribute-a'}]}];globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/attribute-getAll':'Attribute'};
+globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/attribute-getAll':'Attribute','pcb/extensionAPI/dimension-getAll':'Dimension'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -137,7 +144,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 15);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 17);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -155,6 +162,101 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.ok(arcRaw !== null && typeof arcRaw === "object" && "rows" in arcRaw && Array.isArray(arcRaw.rows));
   const arcRow: unknown = arcRaw.rows[0]; assert.ok(arcRow !== null && typeof arcRow === "object");
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
+});
+
+void test("current Dimension projection keeps all three tuple types in native mil and separates canvasUnit", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.getAll");
+  for (const canvasUnit of ["mm", "cm", "inch", "mil"]) {
+    const fixture = environment({ input, beforeChild: `for(const row of rows.Dimension){row.unit=${JSON.stringify(canvasUnit)};
+for(const key of ['content','height','fontsize','textPosition','valueTextPosition','silkColor','textFollow','partition','groupId','net'])
+Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED_DIMENSION_FIELD');}});}` });
+    const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
+    assert.deepEqual(result["value"], defaults.Dimension.map(row => ({ primitiveId: row.globalIndex, primitiveType: "Dimension",
+      primitiveLock: row.locked, layer: row.layerId, dimensionType: row.dimensionType, coordinateSet: row.coordinateSet,
+      lineWidth: row.width, precision: row.precision, canvasUnit })));
+    assert.deepEqual(result["units"], { linear: "mil", arcAngle: "degrees", rotation: "degrees" });
+    assert.equal(result["observedRowCount"], 3); assert.equal(fixture.evaluateChild("getterReads"), 0);
+    assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
+    assert.match(JSON.stringify(result["limitations"]), /neither the coordinate unit nor verified annotation unit/u);
+  }
+  const empty = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await environment({ input, beforeChild: "rows.Dimension=[];" }).run()));
+  assert.deepEqual(empty["value"], []); assert.equal(empty["observedRowCount"], 0);
+});
+
+void test("current Dimension get uses complete enumeration and requires every ID in caller order", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.get", ["dimension-angle", "dimension-length"]);
+  const fixture = environment({ input });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
+  assert.ok(Array.isArray(result["value"]));
+  assert.deepEqual(result["value"].map((row: Record<string, unknown>) => row["primitiveId"]), ["dimension-angle", "dimension-length"]);
+  assert.equal(result["observedRowCount"], 3); assert.equal(result["returnedRowCount"], 2);
+  assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const ids of [["absent"], ["dimension-length", "absent"], ["line-b"]]) {
+    await assert.rejects(environment({ input: inputFor("eda.pcb_PrimitiveDimension.get", ids) }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  for (const argumentsValue of [{ primitiveIds: "dimension-length" }, { primitiveIds: [] },
+    { primitiveIds: ["dimension-length", "dimension-length"] }, { primitiveIds: ["dimension-length"], layer: 13 }]) {
+    assert.equal(validateCurrentPcbGeometryArguments({ ...input, arguments: argumentsValue })["valid"], false);
+  }
+});
+
+void test("current Dimension refuses type-sized malformed or accessor coordinate tuples without invoking getters", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.getAll");
+  for (const beforeChild of ["rows.Dimension[0].coordinateSet.length=6;", "rows.Dimension[1].coordinateSet.push(0,0);",
+    "rows.Dimension[2].coordinateSet=[];", "delete rows.Dimension[0].coordinateSet[2];",
+    "rows.Dimension[0].coordinateSet.extra=1;", "rows.Dimension[0].coordinateSet=Object.assign({},rows.Dimension[0].coordinateSet);",
+    "rows.Dimension[0].coordinateSet[2]=Infinity;", "rows.Dimension[0].coordinateSet[2]=NaN;",
+    "rows.Dimension[0].coordinateSet[2]=-0;", "rows.Dimension[0].coordinateSet[2]=1e12+1;",
+    "rows.Dimension[0].coordinateSet[2]='1';", "rows.Dimension[0].coordinateSet[2]=null;",
+    "Object.defineProperty(rows.Dimension[0].coordinateSet,'2',{get(){getterReads++;throw new Error('PRIVATE_COORDINATE');}});",
+    "Object.defineProperty(rows.Dimension[0],'coordinateSet',{get(){getterReads++;throw new Error('PRIVATE_TUPLE');}});"]) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+});
+
+void test("current Dimension rejects missing, duplicate, malformed and out-of-scope scalar observations", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.getAll");
+  for (const patch of ["dimensionType='Unknown'", "unit='in'", "unit=''", "unit=null", "width=-1", "width=NaN",
+    "width=-0", "precision=5", "precision=-1", "precision=1.5", "precision=-0", "layerId=-1", "layerId=65536", "locked=0"]) {
+    await assert.rejects(environment({ input, beforeChild: `rows.Dimension[0].${patch};` }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  for (const field of ["globalIndex", "locked", "layerId", "dimensionType", "coordinateSet", "unit", "width", "precision"]) {
+    for (const beforeChild of [`delete rows.Dimension[0][${JSON.stringify(field)}];`,
+      `Object.defineProperty(rows.Dimension[0],${JSON.stringify(field)},{get(){getterReads++;throw new Error('PRIVATE_SCALAR');}});`]) {
+      const fixture = environment({ input, beforeChild });
+      await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(fixture.evaluateChild("getterReads"), 0);
+    }
+  }
+  await assert.rejects(environment({ input, beforeChild: "rows.Dimension[1].globalIndex=rows.Dimension[0].globalIndex;" }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+});
+
+void test("current Dimension applies complete-family bounds and drift checks before explicit-ID selection", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.get", ["dimension-length"]);
+  for (const beforeChild of ["rows.Dimension[2].width=-1;", "rows.Dimension=Array.from({length:257},(_,i)=>({...rows.Dimension[0],globalIndex:String(i)}));"] ) {
+    await assert.rejects(environment({ input, beforeChild }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  for (const afterCall of ["if(dataReads===2)rows.Dimension[2].coordinateSet[0]++;", "if(dataReads===2)rows.Dimension[2].unit='inch';",
+    "if(dataReads===2)rows.Dimension.reverse();", "if(dataReads===2)rows.Dimension.pop();", "if(dataReads===1)parent.activeTab='other';",
+    "if(dataReads===1)Bus.prototype.rpcCall=async()=>({message:[]});"]) {
+    await assert.rejects(environment({ input, afterCall }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  const request = inputFor("eda.pcb_PrimitiveDimension.getAll");
+  const full = validateCurrentPcbGeometryResult(request, decodeExactReadEnvelope(await environment({ input: request,
+    beforeChild: "rows.Dimension=Array.from({length:256},(_,i)=>({...rows.Dimension[0],globalIndex:String(i)}));" }).run()));
+  assert.equal(full["observedRowCount"], 256);
+});
+
+void test("current Dimension result schema independently refuses contradictory tuple sizes and fabricated fields", async () => {
+  const input = inputFor("eda.pcb_PrimitiveDimension.getAll"), raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+  for (const patch of [{ coordinateSet: [1, 2, 3, 4, 5, 6] }, { dimensionType: "Radius Dimension" }, { canvasUnit: "in" },
+    { unit: "mm" }, { precision: -0 }, { precision: 5 }, { lineWidth: -1 }, { lineWidth: -0 }, { renderedValue: "10 mm" },
+    { coordinateSet: [1, 2, 3, 4, 5, 6, 7, Infinity] }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...row, ...patch }] }));
+  }
 });
 
 void test("current Attribute projection retains native text/style and complete ordered parent groups", async () => {

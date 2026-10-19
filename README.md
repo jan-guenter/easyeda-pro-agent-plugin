@@ -15,10 +15,23 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019070000` adds Dimension geometry reads with exact
+mil coordinates and a separately named current-canvas unit. The native getter
+does not preserve each annotation's stored unit, so no rendered-measurement
+claim is made. The schematic rename implementation now has private clock and
+full stored-SQL comparison modules; its writer remains unavailable. Polygon
+identity omissions now document the inaccessible-manager and serialization
+effects. Historical test cases are separated from the skill's current capability
+matrix to reduce routine reading. See the [Dimension contract](docs/current-pcb-dimension-geometry-research-2026-10-19.md),
+[SCH clock and remaining lifecycle](docs/current-schematic-rename-clock-and-stored-effect-2026-10-19.md),
+and [polygon investigation](docs/current-pcb-polygon-identities-research-2026-10-19.md).
+
 Update `0.3.0+codex.20261019060000` adds current-version Attribute value/placement
 reads with complete parent-group comparisons and caller-order ID selection.
-The separate installed023200 ID reader passed a populated disposable case;
-the new value/placement fields still need installed validation. Schematic rename
+Installed060000 passed six attributes in two parent groups and a two-ID query
+in reversed caller order, with matching complete samples, retained normal
+closure and unchanged closed fixture bytes. Name formulas and nondefault styles
+were not represented. This is not validation of later runtimes. Schematic rename
 now has private initial-closure/full-SQL baseline and fresh-generation/startup
 plumbing, but its writer and saved/reopened lifecycle remain unregistered.
 Status now reports journal-scan and historical-qualification timing without
