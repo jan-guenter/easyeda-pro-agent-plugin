@@ -21,6 +21,7 @@ import { validateCiWorkflow } from "./ci-contract.ts";
 import {
   bridgeExtensionManifestSchema,
   bundledRuntimeInventorySchema,
+  hasReviewedRepositoryFileSize,
   hasSafeNpmInstallConfiguration,
   hasStrictBridgeCompilerOptions,
   lintConfigurationSchema,
@@ -31,6 +32,7 @@ import {
   parseRepositoryJson,
   pluginManifestSchema,
   readRepositoryJson,
+  repositoryFileByteLimit,
   reviewedCompatibilitySchema,
   safeRepositoryPath,
   typescriptConfigurationSchema,
@@ -57,7 +59,6 @@ const mainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/
 const currentMainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
-const MAX_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
 const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_NAMES].toSorted();
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_api",
@@ -1212,11 +1213,16 @@ for (const relativePath of repositoryPaths) {
   if (!info.isFile()) {
     continue;
   }
-  if (info.size > MAX_REPOSITORY_FILE_BYTES) {
+  if (info.size > repositoryFileByteLimit(relativePath)) {
     oversizedPaths.push(relativePath);
     continue;
   }
   const bytes = await readFile(absolutePath);
+  if (!hasReviewedRepositoryFileSize(relativePath, bytes.length, createHash("sha256").update(bytes).digest("hex"),
+    reviewedCompatibilityManifest.facadeImplementation.bundle.files)) {
+    oversizedPaths.push(relativePath);
+    continue;
+  }
   const byteText = bytes.toString("latin1");
   for (const [label, pattern] of secretPatterns) {
     if (pattern.test(byteText)) {

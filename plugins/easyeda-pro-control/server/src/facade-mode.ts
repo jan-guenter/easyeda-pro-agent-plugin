@@ -19,6 +19,7 @@ export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_project_symbol_metadata",
   "easyeda_control_disposable_symbol_copy",
   "easyeda_control_disposable_pcb_rename",
+  "easyeda_control_disposable_schematic_rename",
 ]);
 
 export function configuredFacadeMode(environment: Readonly<Record<string, string | undefined>>): FacadeMode {

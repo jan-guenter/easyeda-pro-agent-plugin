@@ -242,7 +242,11 @@ table/cell must remain exact. Only a locked or independently aged new-history-he
 branch and lower-ticket structure updates are modeled. Supplied actor/client/
 clock values remain comparison inputs, not live provenance. Native observation,
 retained lifecycle ownership, complete effect and saved reopening remain separate
-requirements; no live SCH writer consumes this model yet.
+requirements. The separate disposable SCH coordinator now consumes this model
+through original SCH owners, one tracked pre-clock/write scope, complete closed
+SQL, saved metadata/child-roster verification and final closure. It is implemented
+but not connected-validated; it does not enable the generic wrapper. The public
+route currently selects the aged unlocked-head branch, not every modeled branch.
 
 The unregistered SCH preflight now reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

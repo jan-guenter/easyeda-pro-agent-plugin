@@ -385,6 +385,18 @@ groups.push({ namespace: "dmt_Pcb", methods: ["modifyPcbName"], route: {
     "current-pcb-rename-writer-runtime.test.ts", "current-pcb-rename-stored-effect.test.ts", "current-pcb-rename-verification-runtime.test.ts"],
   documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "disposable-pcb-rename", query: { includeSchemas: true } } } },
+} }, { namespace: "dmt_Schematic", methods: ["modifySchematicName"], route: {
+  tool: "easyeda_control_disposable_schematic_rename", selector: "advance;rename-write;disposable-project-local-schematic-title", implementation: "native-task-equivalent",
+  scope: "Separate original-owner disposable schematic-container title lifecycle, not generic SDK writer support. Requires the retained disposable opener, exact closed SQL baseline, original SCH metadata and child roster, fresh project-only generation, startup/actor/clock checks and one durable mutation attempt. Preserves every child sheet, peer and unrelated SQL cell. Completion requires original root/Job closure, complete intended SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and complete child roster/both ASTs, final closure and SQL equality. Prospective backend actor, delayed subscriber completion, complete canvas and connectivity are not attested. Printable ASCII without capital I, unique old normalized name, ordinary stable child lineage and no reuse/block-symbol branch only. No explicit Save, inverse, deletion, ordinary-project scope or caller-supplied authority. No connected schematic rename validation is recorded; legacy library route stays blocked.",
+  source: ["current-schematic-rename-operation.ts", "current-schematic-rename-operation-runtime.ts", "current-schematic-rename-owner-baseline.ts",
+    "current-schematic-rename-generation-runtime.ts", "current-schematic-rename-startup-runtime.ts", "current-schematic-rename-program.ts",
+    "current-schematic-rename-clock.ts", "current-schematic-rename-writer-runtime.ts", "current-schematic-rename-snapshot.ts",
+    "current-schematic-rename-stored-effect.ts", "current-schematic-rename-saved-source.ts", "current-schematic-rename-verification-runtime.ts"],
+  tests: ["current-schematic-rename-registration.test.ts", "current-schematic-rename-operation-runtime.test.ts", "current-schematic-rename-program.test.ts",
+    "current-schematic-rename-clock.test.ts", "current-schematic-rename-writer-runtime.test.ts", "current-schematic-rename-snapshot.test.ts",
+    "current-schematic-rename-stored-effect.test.ts", "current-schematic-rename-saved-source.test.ts", "current-schematic-rename-verification-runtime.test.ts"],
+  documentTypes: [], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "disposable-schematic-rename", query: { includeSchemas: true } } } },
 } });
 add("dmt_Schematic", ["createSchematicPage"], "easyeda_control_library", "document.page.create", "native-task-equivalent",
   "Parent-only creation of one closed empty page in an existing ordinary local schematic, with one clean owned PCB or sibling page active and a writable exact branch. Pinned native name/order defaults, original returned ID and full unchanged peer/hierarchy proof; public template/drawing-frame initialization and editor opening are not invoked. No Save or automatic inverse. Changed recovery requires the original native return and immutable preparation, never infers identity from an observed addition or repeats creation. Current-generation live validation is unclaimed.",

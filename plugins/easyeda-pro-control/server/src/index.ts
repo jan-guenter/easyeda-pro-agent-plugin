@@ -136,6 +136,8 @@ import { currentSymbolOperationRequestSchema } from "./current-symbol-operation.
 import { currentSymbolCopyOperationRequestSchema } from "./current-symbol-copy-operation.ts";
 import { currentPcbRenameOperationRequestSchema } from "./current-pcb-rename-operation.ts";
 import { CurrentPcbRenameOperationCoordinator, inspectCurrentPcbRenameHistory } from "./current-pcb-rename-operation-runtime.ts";
+import { currentSchematicRenameOperationRequestSchema } from "./current-schematic-rename-operation.ts";
+import { CurrentSchematicRenameOperationCoordinator, inspectCurrentSchematicRenameHistory } from "./current-schematic-rename-operation-runtime.ts";
 import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
 import { readCurrentProjectOnlySymbolPreflight } from "./current-project-only-symbol-runtime.ts";
@@ -177,6 +179,7 @@ let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
+let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
 let scheduledShutdown: Promise<void> | undefined;
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
@@ -1890,6 +1893,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_symbol_copy: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_pcb_rename: currentSymbolOperationToolOutputSchema,
+  easyeda_control_disposable_schematic_rename: currentSymbolOperationToolOutputSchema,
   easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1997,6 +2001,10 @@ registerFacadeTool(
           historicalConnectedValidation: "installed195000-disposable-pcb-title-only-lifecycle",
           phaseEffectAcknowledgementsRequired: true, inverseSupported: false, ordinaryProjectsSupported: false,
           savedMetadataOnly: true, completeCanvasRead: false, genericWritersEnabled: false },
+        disposableSchematicRename: { tool: "easyeda_control_disposable_schematic_rename", scope: "original-disposable-project-local-schematic-title-forward-only",
+          runtimeAdmissionRequired: true, designMutation: true, connectedValidation: false, originalOwnerRequired: true,
+          historicalConnectedValidation: "not-recorded", phaseEffectAcknowledgementsRequired: true, inverseSupported: false,
+          ordinaryProjectsSupported: false, savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, genericWritersEnabled: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false, scope: "generic-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
@@ -3750,6 +3758,33 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_pcb_rename")) {
         currentPcbRenameOperationCoordinator = new CurrentPcbRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
       }
       return { result: await currentPcbRenameOperationCoordinator.run(validated) };
+    });
+  }));
+}
+
+if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_schematic_rename")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(currentSchematicRenameOperationRequestSchema) }).strict();
+  server.registerTool("easyeda_control_disposable_schematic_rename", {
+    title: "Rename one schematic container in an owned disposable project",
+    description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies; never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. No connected schematic rename validation is recorded.",
+    inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  }, guarded(async ({ request }: z.output<typeof inputSchema>) => {
+    const validated = currentSchematicRenameOperationRequestSchema.parse(request);
+    // Read-only inspection must remain available while an original phase owns
+    // The bridge gate. It cannot recreate continuation from a journal.
+    if (validated.action === "inspect") {
+      return { result: await (currentSchematicRenameOperationCoordinator === undefined
+        ? inspectCurrentSchematicRenameHistory(validated.operationId) : currentSchematicRenameOperationCoordinator.run(validated)) };
+    }
+    return bridgeGate.run(async () => {
+      if (currentSchematicRenameOperationCoordinator === undefined) {
+        if (validated.action !== "baseline-begin" || currentDisposableOpenCoordinator === undefined) {
+          throw new Error("Schematic rename requires this facade's existing retained disposable opening and operation coordinator; journals cannot reconstruct ownership.");
+        }
+        currentSchematicRenameOperationCoordinator = new CurrentSchematicRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
+      }
+      return { result: await currentSchematicRenameOperationCoordinator.run(validated) };
     });
   }));
 }

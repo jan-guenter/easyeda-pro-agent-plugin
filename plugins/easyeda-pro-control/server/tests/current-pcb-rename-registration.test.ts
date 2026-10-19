@@ -19,7 +19,8 @@ async function registration(retainedOpener: boolean): Promise<{
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_pcb_rename")) {');
-  const end = source.indexOf("\nconst transport =", start); assert.ok(start > 0 && end > start);
+  const next = source.indexOf("\nif (facadeToolRegistered", start + 1);
+  const end = next === -1 ? source.indexOf("\nconst transport =", start) : next; assert.ok(start > 0 && end > start);
   const allocations: unknown[][] = [], calls: unknown[] = [], engine = {}, history: string[] = [], opener = {};
   const gate = new SerializedGate();
   let fail = false, handler: Handler | undefined, inputSchema: z.ZodType | undefined;

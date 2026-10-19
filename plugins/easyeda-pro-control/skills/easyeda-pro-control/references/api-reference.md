@@ -38,6 +38,7 @@ After offline discovery, read only the reference for the operation you will use:
 - [Current utility readers](current-utility-readers.md): geometry calculations, units, shortcuts and extension metadata.
 - [Legacy SDK readers](legacy-sdk-readers.md): older-tuple schematic, PCB and library read contracts.
 - [Current project opening](current-project-opening.md): retained startup, metadata writing and closure workflows.
+- [Disposable schematic rename](current-schematic-rename.md): separate SCH container title lifecycle and exact phase acknowledgments; connected validation pending.
 
 The legacy links below retain their anchors and route to these contracts. Do not
 read an unrelated runtime's contract as permission to use its adapters.

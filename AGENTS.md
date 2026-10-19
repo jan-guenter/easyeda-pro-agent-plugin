@@ -4,6 +4,115 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+SCH rename candidate100838, 2026-10-19, branch
+`feature/schematic-dispatch-admission-cache`, based on handoff772eea8 and merged
+main7d0a4162. Current source adds a separate original-owner disposable SCH
+title-only lifecycle, aged SQL reference/clock qualification, one write, closed
+SQL effect, fresh saved metadata/child-roster read and final closure. No connected
+SCH rename result exists. Root/independent review corrected the N0/write
+capture-epoch and authenticated-scope composition issues before release.
+Do not treat isolated mocked tests as proof of those composed paths.
+
+Compact completed/nonblocking legacy projections preserve fresh journal/phase
+byte/path checks and all existing cache bounds. Synthetic390-journal runs
+reduce warm reparses156 to0; elapsed times vary, so no live speedup is claimed.
+Public catalog is46 full/21 restricted tools. Generated inventory774methods:
+212public-subset/33native-equivalent/79blocked/450omitted;347guarded/94blocked/
+2partial routes. These are implementation counts, not connected coverage.
+
+Actual installed070000 admission is complete: facade3623789/start37814763,
+Codex parent3621256/start37785902, pinnedNode24.18.0. Original installed485source/
+76c9fafb,3runtime/2ac69694,manifest1aa82663 and full1482-file inventoryd2e3f4e1
+match mergedmain. Evidence `/root/.cache/easyeda-070000-actual-facade-GVRAJKtZ`;
+process-source7e4f01ba,installed-payload17feceff. The maintained verifier emitted
+complete successful JSON and exited, but its original shell exit code was not
+retained. Both prior main CI platforms now passed, including Linux39203647033.
+No live EasyEDA call, launch, design read/edit, Save or restoration occurred in
+this implementation session. Production remains excluded. Preserve all consumed
+probes and completed cases below; do not rerun them.
+
+Next: run frozen candidate mandatory release gates and protected CI, publish/install and verify the
+new package. Then a fresh Codex session must load/admit it before a disposable
+SCH lifecycle. Broader backlog: populated Dimension/Image, PCB text writer,
+polygon identities, libraries/3D, layout/routing/ECO/export, bootstrap/platform
+adapters and connected admission timing. Release details:
+`docs/current-schematic-rename-lifecycle-2026-10-19.md`.
+Version is0.3.0+codex.20261019100838. Source review and focused checks passed.
+Final frozen source496/ac897953, runtime3/9a380da1, manifest30e0bedd; external
+pins unchanged. Corrected lint/types/build/compatibility and repository44958
+passed. Full verify80715 is running in
+`/root/.cache/easyeda-schematic-rename-release-A9qW1juF`.
+Retain initial lint/8MiB package-limit failures; the exact reviewed facade now
+has a12MiB limit and still receives the full privacy scan. All65changed files
+passed independent full-content privacy review. Publication/installation and
+connected SCH validation remain pending. Preserve the070000
+loaded host and all earlier branches/worktrees/stash. The checkpoints below
+are historical, including their now-satisfied fresh070000-admission requirement.
+
+070000 delivered, 2026-10-19: protected PR75 merged as main
+`7d0a4162c2e664f8ecd51ccb392ec8ccc2d431fe`. Reviewed candidate
+`bffd16e2dd19f7630b6531e7a8802004df82de99` has the same complete tree
+`d3d3dba46f5d5172448e37e56eaf72fcae4b7a1b`. Exact-head CI39202481583 passed
+build, all8shards and aggregate:11,389facade passes/5platform skips/0failures;
+Windows39202481968 passed. Local verify25144 passed11,390/4skips/0failures,
+424bridge tests, types/strict lint, all package/skill/repository gates. Bundles
+reproduce exactly; external runtime/bridge pins unchanged. Copilot hit quota;
+root and independent source reviews passed, not a human-review claim.
+Duplicate main Windows39203646960 passed; main Linux39203647033 is running.
+Check its eventual status without repeating the passed exact-tree PR suite.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261019070000` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached
+marketplace HEAD equals merged main. Maintained comparison45589 passes exact
+1482files/29914117bytes/42directories, bytes/modes/no extras. Plugin tree
+`93d7d4a7178b327d6f8df00a2d95b8cbc061bdd3`; inventory
+`d2e3f4e150753c93ce3cfc420df3cfd759c6dacd270a6de4dee9e362a1d20714`.
+Source485/76c9fafb, runtime3/2ac69694, manifest1aa82663. Evidence directory
+`/root/.cache/easyeda-070000-release-kd1Yf76m`; local verify78cf3165,
+independent terminal CI3a3e8698, installed payload2355e95c.
+
+NEW reviewed offline probef98a1a15 completed ONCE in original shell89177,
+pinsb917665f. Configured ambientNode26.11.1 hands off to pinned24.18.0;
+20restricted tools, catalog17 and5Dimension offline acceptance/refusal queries
+passed. Original child3611674/start36243994/parent3608574 exited0 via stdinEOF,
+is absent and has no retained handles. No signals/adoption, upstream marker or
+journal; synthetic profile unchanged and lease removed. Two no-socket/descendant
+samples are not continuous isolation. Complete installed inventory is unchanged.
+Root and independent retained-proof/inventory/response reviews passed.
+Proof SHA `5cb409c3e3ab7f89285a844adab117f80afde2dea0d2ef1a35bdf48fef5f2c2b`
+at `/root/.cache/easyeda-dimension-070000-offline-probe-T0yuTY/proof.json`.
+NEVER import/rerun this consumed probe or earlier probes. Fresh actual070000
+host admission remains required. Former configured facade3499503 loaded060000
+and was left untouched; do not use it after marketplace pruning. No CAD or
+owned tool process is pending. Extension-development release rules require a
+fresh Codex session to load/admit070000 before live calls.
+
+Delivered: Dimension get/getAll native geometry (not populated-live-validated),
+private unregistered SCH clock/stored-effect modules, concrete polygon omission
+research and shorter current skill routing. Installed060000 Attribute geometry
+case completed:6rows/2groups and reversed-ID selection, original root/Job exit,
+closed disposable598016bytes/e4434cc5 unchanged/no sidecars. Completed case proof
+c22f8675 in `/root/.cache/easyeda-attribute-geometry-060000-live-VnKc1V4j`;
+NEVER replay launch/open/reads/close. No edit, explicit Save, restore or production
+design access. SCH and PCB text writers remain unavailable.
+
+Next: fresh actual070000 admission; prioritize completing SCH original dispatch/
+reply/backend actor/producer qualification, one-attempt writer and full closed SQL/
+saved metadata+child-roster/final closure. Investigate compact completed-legacy
+journal projections to reduce repeated admission cost; cache pressure remains an
+unmeasured hypothesis and authority must never be cached. Populated Dimension/
+Image cases, PCB text Save/queue/worker proof and writer lifecycle, polygon
+observers, broader libraries/3D/layout/routing/ECO/export/account/bootstrap/platform
+work remain. Current774distinct methods retain450omitted/80blocked;346guarded/
+94blocked/2partial routes are not a current-live-callable count. Four cosmetic
+blank-at-EOF findings in new SCH source/tests were retained to preserve the frozen
+reviewed payload; strict lint is clean. Remove them with the next planned source
+change, not by editing installed files. Details: dated070000 release report.
+Local handoff branch `feature/070000-delivery-20261019` starts at merged main;
+preserve all previous branches/worktrees and stash ebe1b55d7a430ae2e3168e373e155957b582eff9.
+Everything below is historical.
+
 060000 resumed, 2026-10-19: actual configured facade3499503/start35965124,
 current Codex parent3497877/start35959264, pinned Node24.18.0 and installed
 060000 source482/0a18145e/runtime3/2ce9b592/manifestf705bc01 independently

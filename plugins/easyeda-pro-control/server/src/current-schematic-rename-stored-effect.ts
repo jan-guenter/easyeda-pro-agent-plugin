@@ -102,4 +102,3 @@ export function completedCurrentSchematicRenameStoredSource(effect: CurrentSchem
   originalCurrentSchematicRenameSqlPreparation(preparation, original.before, original.metadata);
   return Object.freeze({ history: original.decoded.history, maximumTicket: original.decoded.maximumTicket, comparison: effect });
 }
-

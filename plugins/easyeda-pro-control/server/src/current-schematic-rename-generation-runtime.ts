@@ -1,4 +1,4 @@
-/** Original SCH generation stage. No public rename operation is registered.
+/** Original SCH generation stage for the separate disposable rename lifecycle.
  * Only the initial SCH closure can transfer ownership into this continuation.
  */
 /* oxlint-disable import/max-dependencies -- Compose original SCH/Windows ownership and fixed document-neutral observation leaves, never symbol owner conversions or caller callbacks. */

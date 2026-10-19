@@ -1,9 +1,12 @@
 # Dimension readers and schematic clock release checkpoint
 
-Date: 2026-10-19. Candidate `0.3.0+codex.20261019070000` is built. Its full
-verification is still running; publication and marketplace installation are
-pending. This checkpoint records implemented scope and completed evidence,
-not a released or live-admitted 070000 runtime.
+Date: 2026-10-19. `0.3.0+codex.20261019070000` was published through
+[PR75](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/75) as main
+`7d0a4162c2e664f8ecd51ccb392ec8ccc2d431fe` and installed/enabled through the
+official Git marketplace. Its full tree matches reviewed candidate
+`bffd16e2dd19f7630b6531e7a8802004df82de99`. Installed bytes and offline startup
+passed verification. A fresh Codex session must still load and admit the actual
+070000 facade before live calls.
 
 ## Dimension geometry
 
@@ -95,8 +98,13 @@ Root and independent source reviews accepted Dimension and the private SCH
 modules. The 77 focused Dimension/registration/coverage tests and 10 focused SCH
 tests passed. Strict types and targeted type-aware lint passed with zero
 warnings. Dependency/signature/security, build, compatibility, repository and
-seven official skill-validation checks passed. The frozen full verification
-run remains pending and has no passing final result at this checkpoint.
+seven official skill-validation checks passed. The frozen local suite passed
+11,390 facade tests with four platform skips and no failures; 424 bridge tests
+passed. Exact-head GitHub CI39202481583 passed all eight shards and the build
+aggregate: 11,389 passes, five platform skips and no failures. Windows39202481968
+also passed. Both strict lint summaries report zero warnings/errors. Copilot
+could not review due to quota; no human review is claimed. Duplicate main CI is
+separate and need not repeat the passed exact-tree PR evidence.
 
 Historical live-case detail moved into an optional skill reference without
 changing its content. All 81 skill links resolve. Current capabilities and
@@ -111,22 +119,25 @@ current-runtime limits remain in the main skill guidance.
 External EasyEDA, upstream, bridge and dispatcher pins are unchanged. Updating
 the facade's own hashes does not broaden external compatibility.
 
-A new one-shot installed-payload probe is prepared but not run. After official
-installation and approval, it is intended to check configured ambient-Node to
-pinned-Node startup, 20 restricted tools, the 17-method geometry catalog,
-Dimension argument acceptance and scalar/filter refusals using a synthetic
-offline profile. Discovery must keep execution authorization false. Its
-original child must exit through stdin EOF, and the complete installed
-inventory must remain unchanged. This is planned offline evidence, not a live
-Dimension result or a continuous network-isolation claim.
+The maintained installed comparison passed all 1,482 files, 42 directories and
+29,914,117 bytes, including exact modes and no extras. Inventory SHA-256:
+`d2e3f4e150753c93ce3cfc420df3cfd759c6dacd270a6de4dee9e362a1d20714`.
+The new one-shot probe completed once: configured ambient Node26.11.1 handed
+off to pinned24.18.0; 20 restricted tools, catalog17 and five Dimension offline
+acceptance/refusal queries passed. All execution-authorization claims remained
+false. The original child exited0 through stdin EOF, with no signals, adoption
+or retained handles. Its synthetic profile and the complete installed inventory
+were unchanged. No upstream marker or journal was created. Two socket/descendant
+samples are not continuous network isolation. Probe proof SHA-256:
+`5cb409c3e3ab7f89285a844adab117f80afde2dea0d2ef1a35bdf48fef5f2c2b`.
+This is offline packaging evidence, not live Dimension validation. The consumed
+probe must never be rerun or imported.
 
 ## Remaining priorities
 
-1. Finish the frozen local verification and exact-payload GitHub CI. Publish
-   only after required checks pass, install through the official Git marketplace
-   and verify all installed bytes and modes. Review and run the new one-shot
-   offline probe, then load and admit the actual installed facade in a fresh
-   Codex session. No cache hotpatching or host-owned gateway termination.
+1. Load and admit the actual installed facade in a fresh Codex session. Release,
+   installation and offline checks are complete. No cache hotpatching or
+   host-owned gateway termination; no replay of completed cases or probes.
 2. Validate nonempty Dimension geometry and Dimension/Image identity cases on
    disposable data after fresh admission. Preserve complete samples, normal
    closure and unchanged closed-file evidence. Empty-family observations do

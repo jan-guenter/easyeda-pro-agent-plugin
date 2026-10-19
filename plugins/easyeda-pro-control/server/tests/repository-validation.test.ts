@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import {
   bridgeExtensionManifestSchema,
   bundledRuntimeInventorySchema,
+  hasReviewedRepositoryFileSize,
   hasSafeNpmInstallConfiguration,
   hasStrictBridgeCompilerOptions,
   lintConfigurationSchema,
@@ -18,6 +19,7 @@ import {
   parseRepositoryJson,
   pluginManifestSchema,
   readRepositoryJson,
+  repositoryFileByteLimit,
   reviewedCompatibilitySchema,
   safeRepositoryPath,
   typescriptConfigurationSchema,
@@ -29,6 +31,26 @@ const pluginRoot = resolve(import.meta.dirname, "../..");
 const execFileAsync = promisify(execFile);
 
 void describe("repository release validation", () => {
+  void it("admits a larger facade only at its exact path and reviewed bytes/hash, retaining other file bounds", () => {
+    const digest = "a".repeat(64), path = "plugins/easyeda-pro-control/server/dist/server.mjs";
+    const bundleLimit = 12 * 1024 * 1024, regularLimit = 8 * 1024 * 1024;
+    assert.equal(repositoryFileByteLimit(path), bundleLimit);
+    for (const alias of ["server.mjs", `${path}.bak`, path.toUpperCase(), `./${path}`, "plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs"]) {
+      assert.equal(repositoryFileByteLimit(alias), regularLimit);
+      assert.equal(hasReviewedRepositoryFileSize(alias, regularLimit + 1, digest, [{ relativePath: "server.mjs", bytes: regularLimit + 1, sha256: digest }]), false);
+    }
+    assert.equal(hasReviewedRepositoryFileSize("README.md", regularLimit, "", null), true);
+    for (const bytes of [regularLimit + 1, bundleLimit]) {
+      const entry = { relativePath: "server.mjs", bytes, sha256: digest };
+      assert.equal(hasReviewedRepositoryFileSize(path, bytes, digest, [entry]), true);
+      for (const files of [undefined, [], [entry, entry], [{ ...entry, bytes: bytes - 1 }], [{ ...entry, sha256: "b".repeat(64) }], [{ ...entry, relativePath: path }]]) {
+        assert.equal(hasReviewedRepositoryFileSize(path, bytes, digest, files), false);
+      }
+    }
+    for (const bytes of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, bundleLimit + 1]) {
+      assert.equal(hasReviewedRepositoryFileSize(path, bytes, digest, [{ relativePath: "server.mjs", bytes, sha256: digest }]), false);
+    }
+  });
   void it("accepts portable normalized repository paths", () => {
     for (const path of ["README.md", ".agents/plugins/marketplace.json", "a b/é.txt"]) {
       assert.equal(safeRepositoryPath(path), true, path);
