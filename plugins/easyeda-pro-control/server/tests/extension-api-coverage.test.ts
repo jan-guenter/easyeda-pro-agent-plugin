@@ -704,11 +704,11 @@ void test("shortcut coverage keeps legacy and current-version routes distinct wi
   assert.match(JSON.stringify(result), /inputSchema/u);
 });
 
-void test("current Dimension/Image identities are discoverable without promoting geometry or effectful polygon serializers", () => {
+void test("current Dimension/Image/Attribute identities are discoverable without promoting geometry or effectful polygon serializers", () => {
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
   const rows = inventoryExtensionApiCoverage();
-  for (const family of ["Dimension", "Image"]) {
+  for (const family of ["Dimension", "Image", "Attribute"]) {
     const method = `eda.pcb_Primitive${family}.getAllPrimitiveId`, row = rows.find(entry => entry.path === method); assert.ok(row);
     assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
     const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb_identities"); assert.ok(route);

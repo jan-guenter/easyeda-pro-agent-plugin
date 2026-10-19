@@ -4,6 +4,119 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate023200, 2026-10-19: work is on
+`feature/attribute-sch-owner-20261019`. Added the current exact-target Attribute
+identity reader with parent groups, and dormant original-owner SCH rename
+reservation/compiler. The latter has no registered writer or callable cleanup/
+baseline lifecycle. PCB text observer research found no reviewed complete queue/
+worker inventory; its writer stays blocked. See the three new dated docs.
+All source changes passed root and independent review. Attribute focused tests12,
+identity/coverage52, and SCH owner/compiler plus existing PCB-owner21 pass;
+types/type-aware lint have zero warnings. Previous main Linux39177886616 and
+Windows39177886660 are both successful.
+
+Current installed013000 actual facade3273248/start34418591 was admitted exactly.
+NEW disposable launch `pcb-readers-013000-20261019-launch` and opening
+`pcb-readers-013000-20261019-open` completed. Dimension and Image identity reads
+each returned two matching empty arrays with stable admitted fingerprints.
+This is empty-family connected evidence only, not nonempty/rendering/full-canvas
+or writer validation. One normal-close request completed; retained root21968/
+Jobe9940e55 termination was separately proved. Closed disposable file598016bytes
+remains exact e4434cc5, no sidecars, byte-identical to its prior closed copy.
+No explicit Save, design edit, restore or production-design access occurred.
+Private proof fcf0b49a is retained in
+`/root/.cache/easyeda-023200-release-INEX4p0m/live-empty-readers-proof.json`.
+NEVER replay these launch/open/read/close cases. No live operation is pending.
+
+Candidate `0.3.0+codex.20261019023200` is built, not published or installed.
+Frozen source477/8dde97ca, runtime3/21f7a47b, manifest49ca1621; external
+runtime/bridge pins remain unchanged. Final full verification runs in original
+shell70346 with TMPDIR=/root/.cache; retain its log in
+`/root/.cache/easyeda-023200-release-INEX4p0m/verify.log`. Do not change runtime
+source/bundles/pins during this suite. Publication, official Git marketplace
+installation, exact installed inventory and ONE NEW isolated offline probe remain.
+The new prepared probe is not consumed; prior consumed probes must not be reused.
+Attribute connected validation needs a fresh chat after installation. Broader
+remaining families are recorded in generated api-coverage.json and the backlog
+below. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9, branches,
+worktrees, journals and logs. Everything below is historical.
+
+013000 delivery, 2026-10-19: protected PR72 merged as main
+`d2500c4a20cb5f0a8c660dd351ef8fdc80b1fbf7`. Reviewed final candidate
+`053c55ee80d1a35a1129fd9cb786f570abce7eee` and main have identical complete
+tree `c489879142fbb281bdae55aa2beadff48ce38709`. Required final-head Linux
+CI39176914112 passed build/all eight shards/aggregate:11,300 facade passes,
+five platform skips, zero failures. Windows39176914123 passed. Duplicate main
+Windows39177886660 passed; main Linux39177886616 is still running, build passed.
+Check its eventual result without repeating the passed exact-tree PR suite.
+Copilot review was unavailable due quota; root and independent reviews passed.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261019013000` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached
+marketplace HEAD equals merged main. Root and independent maintained comparison
+prove exact1,460files/29,417,708bytes/42directories INCLUDING root, all committed
+bytes/modes and no extra package entries. Plugin subtree
+`862f7ed17cc3a18267c4c4ef7fabed33f802946d`; inventory
+`2fb0deac06bd306ec5f519404129a2d8c4350ccaed9d467742e5867dca872edc`.
+Source475/669afde9, runtime3/27c2e255 and manifest969fd42b match; external
+runtime/bridge pins and bridge identity are unchanged. No manual cache edits.
+
+NEW root/independently reviewed offline probe2dc9e3cf was dispatched ONCE in
+original shell84719 with approved pinsbd74c017 and completed exit0. Configured
+ambientNode26.11.1 handed off to pinned24.18.0;20restricted tools and14fixed
+offline queries passed, including new Dimension/Image discovery and argument
+validation. Original child3267791/start34261242/parent3265902 exited0 through
+stdinEOF and is absent, without signals/adoption; no held handles remain.
+Synthetic profile unchanged, no upstream execution marker/journal, facade lease
+removed after EOF. Two no-socket samples are not continuous network/descendant
+isolation. Installed inventory is exact before/after. Proof SHA
+`b54ea92ef924db8efa68bd31efe15786d15cce0a4e1a82fd6a585de6b5fb7ebb`
+is retained at
+`/root/.cache/easyeda-child-dimension-image-release-probe-gUxsOL/proof.json`.
+NEVER rerun/import this consumed probe or earlier probes. All local verification
+sessions are terminal. No live CAD call, application launch, Save, restore or
+production design access occurred. No actual connected013000 runtime admission
+is claimed. A fresh Codex session must load the installed snapshot before live
+continuation; no host gateway was killed, rebound or hotpatched.
+
+Local verification is mixed evidence, not a clean full rerun. Original87926
+finished exit1:11,300pass/onefail/fourskips, zero cancelled. The sole failure was
+bundled startup expecting8 identities instead of10. Exact one-line correction
+053c55ee passed allfive startup tests/types/strict lint in an isolated worktree;
+source/bundles/pins stayed exact. Full log3d0e4c90 and final CI log083884df are
+retained in `/root/.cache/easyeda-013000-release-1YYXbP`. Separate71979 passed
+424bridge tests/seven skill checks, then package validation refused three helper
+modes materialized by a private worktree's077umask. Root restored only those
+worktree helpers to committed755/644;90810 package/repository recheck passed,
+log944b22cf. Original failed logcc4897b8 remains intact. Independent audit agrees.
+Types/type-aware lint had zero warnings; dependency signatures/audit, build,
+coverage, compatibility, privacy and all seven official skill validators passed.
+
+Delivered: Dimension/Image identity readers with empty-argument/exact-target
+guards; the current identity catalog now has ten methods. Added an unregistered
+original-SQL-bound schematic child observer and pure PCB text Save-prerequisite
+model. Neither grants writer/startup/producer/completion/persistence authority.
+Test isolation now honors canonical TMPDIR while preserving original parent/root
+identity. New reader tests are synthetic, not connected native validation.
+Fill/Polyline/Region remain excluded because their native serialization can
+rebuild child models.
+
+Remaining: fresh-session actual013000 admission and disposable reader validation;
+PCB text native complete-baseline/queue/worker observation, one Save/full closed
+SQL/reopen/visual lifecycle; SCH startup/subscriber effects, original actor/clock/
+producer integration and one-write rename lifecycle; safe polygon identities;
+broader symbol copy/referenced propagation, footprint/device/3D, schematic/PCB
+geometry/routing/copper/stack/rules, ECO/dialog/export/account adapters; upstream
+packaging/bootstrap and wider runtime/platform admission. The774-method inventory
+still has450 omissions and80 implemented-but-blocked entries; route counts are
+not universal current-runtime support. Concrete next steps/omissions are in the
+three new2026-10-19 docs and api-coverage.json. Never replay retired cases.
+
+Worktree `feature/013000-delivery-20261019` starts from mergedmain. Preserve prior
+branches, stash ebe1b55d7a430ae2e3168e373e155957b582eff9, all worktrees and logs.
+Production records/designs were untouched. Everything below is historical.
+
 Candidate013000, 2026-10-19: work is on
 `feature/pcb-text-sch-backlog-20261019`. No CAD action, launch, Save or restore
 is pending; production designs remain out of scope. The prior211000 post-merge
@@ -1282,6 +1395,8 @@ completed without open issues after instruction compaction; no human-review clai
   Never test on live control data, alter real journals or broadly delete failure roots.
 - Keep strict TypeScript and pedantic type-aware Oxlint at zero warnings. Explain
   narrow inline exceptions; globally relax a rule only when genuinely necessary.
+- Materialize package-check worktrees with umask022 inside a private parent;
+  evidence remains077. Git executable bits alone do not prove exact755/644 modes.
 - Synchronize source/bundles; never hand-edit `server/dist/server.mjs`. Keep sanitizer
   assembly/linker/binary and `server/src/descriptor-sanitizer-identity.ts` synchronized.
 

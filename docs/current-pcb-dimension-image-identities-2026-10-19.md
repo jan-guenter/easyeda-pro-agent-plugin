@@ -19,7 +19,8 @@ Root and independent review used the inert installed
 `pro-pcb/3.2.193.682ed44e/js/pcb.js`, 10,976,299 bytes, SHA-256
 `217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33`.
 All offsets below are zero-based JavaScript UTF-16 positions. No vendor code
-was executed to perform the review, and no live read is claimed.
+was executed to perform the review. A later, limited connected check is recorded
+below; it does not expand the source review into nonempty-family validation.
 
 The existing current runtime gate continues to require the separately pinned
 API/UI/PCB implementation and authenticated bridge fingerprint. No external
@@ -99,3 +100,28 @@ or saved-result validation.
 PCB text creation still needs complete baseline/queue observation and an
 original-owner single-Save/full-SQL/reopen lifecycle. See the separate
 [Save prerequisite findings](current-pcb-string-save-prerequisites-2026-10-19.md).
+
+## Connected empty-family check, 2026-10-19
+
+The installed `0.3.0+codex.20261019013000` snapshot was admitted against its
+actual configured facade and authenticated pinned EasyEDA runtime. A fresh
+ordinary retained launch opened only the registered disposable validation
+project. Each new method returned two matching empty ID arrays on its exact
+PCB/project/branch/tab target. Both observations preserved the admitted runtime
+fingerprint before and after the call. Dimension observation `5c35f533` and
+Image observation `ac3957c7` are historical evidence, not reusable authority.
+
+One normal-close request was acknowledged; a separate observation proved the
+original root/Job terminated. The closed disposable file remained exactly
+598,016 bytes with SHA-256
+`e4434cc5d6a5a2d19729093485406e486499790e5f32d994a1d35bb5709d5b4d`,
+byte-identical to its pre-case closed copy, with no WAL/SHM/journal sidecars.
+No explicit Save, design edit, restore, or production-design access occurred.
+Ordinary startup/closure still permits shared profile/cache effects.
+
+This verifies only connected empty-family reads. Nonempty Dimension/Image DTOs,
+rendering, complete canvas membership and writing are not live-validated here.
+The adapter's general `liveValidation: not-recorded` provenance remains
+conservative; it must not imply that every family/input case was tested.
+Private proof SHA-256:
+`fcf0b49a75995afe2d4dd9d083dfa96e830f97303d97882978d03e29da9498cd`.

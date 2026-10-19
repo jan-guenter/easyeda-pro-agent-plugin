@@ -12,7 +12,8 @@ export function buildCurrentPcbIdentitiesProgram(input: unknown): string {
   const nativeTopics = { selected: "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds", Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll",
-    Dimension: "pcb/extensionAPI/dimension-getAll", Image: "pcb/extensionAPI/image-getAll" } as const;
+    Dimension: "pcb/extensionAPI/dimension-getAll", Image: "pcb/extensionAPI/image-getAll",
+    Attribute: "pcb/extensionAPI/attribute-getAll" } as const;
   const reads = currentPcbIdentityFamilies(request).map((family) => ({ family, topic: nativeTopics[family] }));
   return `let timer,clear;
 try{
@@ -60,19 +61,42 @@ const check=()=>{
 const plain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return value;};
 const exact=(value,keys)=>{plain(value);const actual=Reflect.ownKeys(value);if(actual.length!==keys.length||!actual.every(key=>keys.includes(key)))bad();};
 const text=value=>{if(typeof value!=='string'||value.length===0||value.length>${CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH})bad();return value;};
-const copyIds=(value,selected)=>{
+const listLength=(value,max)=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
- const n=own(value,'length'),max=selected?${CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS}:${CURRENT_PCB_IDENTITIES_MAX_IDS};
+ const n=own(value,'length');
  if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();
+ return n;
+};
+const copyIds=(value,selected)=>{
+ const n=listLength(value,selected?${CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS}:${CURRENT_PCB_IDENTITIES_MAX_IDS});
  const ids=[],seen=new Set();
  for(let i=0;i<n;i++){const entry=own(value,String(i)),id=text(selected?entry:own(plain(entry),'globalIndex'));if(seen.has(id))bad();seen.add(id);ids.push(id);}
  return ids;
+};
+const copyAttributeGroups=value=>{
+ const n=listLength(value,${CURRENT_PCB_IDENTITIES_MAX_IDS}),groups=[],parents=new Set();let total=0;
+ for(let i=0;i<n;i++){
+  const row=own(value,String(i));exact(row,['attrs','parentPrimitiveId']);
+  const parentPrimitiveId=text(own(row,'parentPrimitiveId')),attrs=own(row,'attrs'),length=listLength(attrs,${CURRENT_PCB_IDENTITIES_MAX_IDS});
+  if(parents.has(parentPrimitiveId)||total+length>${CURRENT_PCB_IDENTITIES_MAX_IDS})bad();
+  parents.add(parentPrimitiveId);total+=length;groups.push({parentPrimitiveId,attrs,length});
+ }
+ const ids=[],parentGroups=[],seen=new Set();
+ for(const group of groups){
+  const groupIds=[];
+  for(let i=0;i<group.length;i++){
+   const id=text(own(plain(own(group.attrs,String(i))),'globalIndex'));
+   if(seen.has(id)||parents.has(id))bad();seen.add(id);ids.push(id);groupIds.push(id);
+  }
+  parentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids:groupIds});
+ }
+ return {family:'Attribute',ids,parentGroups};
 };
 const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const read=async()=>{
  await identity();check();const observations=[],seen=new Set();
- for(const entry of reads){const selected=entry.family==='selected',raw=await call(entry.topic,selected?undefined:{});check();const ids=copyIds(raw,selected);check();for(const id of ids){if(seen.has(id))bad();seen.add(id);}observations.push({family:entry.family,ids});}
+ for(const entry of reads){const selected=entry.family==='selected',raw=await call(entry.topic,selected?undefined:{});check();const observation=entry.family==='Attribute'?copyAttributeGroups(raw):{family:entry.family,ids:copyIds(raw,selected)};check();for(const id of observation.ids){if(seen.has(id))bad();seen.add(id);}observations.push(observation);}
  await identity();check();return observations;
 };
 const run=async()=>{

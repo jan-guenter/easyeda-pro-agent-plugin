@@ -37,6 +37,8 @@ import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { parseCurrentPcbRenameOwnerRequest } from "./current-pcb-rename-owner.ts";
 import type { CurrentPcbRenameOwnerIntent } from "./current-pcb-rename-owner.ts";
+import { parseCurrentSchematicRenameOwnerRequest } from "./current-schematic-rename-owner.ts";
+import type { CurrentSchematicRenameOwnerIntent } from "./current-schematic-rename-owner.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
@@ -184,6 +186,60 @@ export function assertCompletedCurrentPcbRenameOpeningTransfer(value: unknown, e
   const original = assertCurrentPcbRenameOpeningOwner(value, engine);
   requireValue(value !== null && typeof value === "object" && issuedPcbRenameOpeningOwners.get(value)?.state === "completed",
     "Current PCB opening transfer did not complete; its retained owner is cleanup-only.");
+  return original;
+}
+export interface CurrentSchematicRenameOpeningOwner {
+  readonly profile: "private.current-schematic-rename-opening-owner.v1";
+  readonly operationId: string;
+  readonly openingOperationId: string;
+}
+export interface CurrentSchematicRenameOpeningOwnerSource {
+  readonly source: CurrentDisposableOpenGenerationSource;
+  readonly intent: CurrentSchematicRenameOwnerIntent;
+}
+const issuedSchematicRenameOpeningOwners = new WeakMap<object, {
+  readonly value: CurrentSchematicRenameOpeningOwnerSource; readonly current: () => void; readonly revalidate: () => Promise<void>;
+  readonly revalidateEvidence: () => Promise<void>;
+  state: "retained" | "completed" | "failed";
+}>();
+/** Original neutral opening transfer, never a converted symbol owner. This
+ * retains the historical opening after closure without reviving its session.
+ */
+export function assertCurrentSchematicRenameOpeningOwner(value: unknown, engine: EasyedaControlEngine): CurrentSchematicRenameOpeningOwnerSource {
+  requireValue(value !== null && typeof value === "object", "Current SCH opening owner is missing.");
+  const issued = issuedSchematicRenameOpeningOwners.get(value);
+  requireValue(issued !== undefined && issued.value.source.engine === engine, "Current SCH opening owner was not issued by this engine.");
+  issued.current(); return issued.value;
+}
+export async function revalidateCurrentSchematicRenameOpeningOwner(value: unknown, engine: EasyedaControlEngine): Promise<CurrentSchematicRenameOpeningOwnerSource> {
+  const original = assertCurrentSchematicRenameOpeningOwner(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current SCH opening owner is missing.");
+  const issued = issuedSchematicRenameOpeningOwners.get(value); requireValue(issued !== undefined, "Current SCH opening owner was lost.");
+  await issued.revalidate();
+  requireValue(assertCurrentSchematicRenameOpeningOwner(value, engine) === original, "Current SCH opening owner changed during revalidation.");
+  return original;
+}
+/** Targeted original opening evidence only, not quarantine/isolation admission.
+ * A future SCH lifecycle must supply fresh full admission at each effect/result
+ * boundary. No caller-selected guard, cached approval or replacement owner.
+ */
+export async function revalidateCurrentSchematicRenameOpeningEvidence(value: unknown, engine: EasyedaControlEngine): Promise<CurrentSchematicRenameOpeningOwnerSource> {
+  const original = assertCompletedCurrentSchematicRenameOpeningTransfer(value, engine);
+  requireValue(value !== null && typeof value === "object", "Current SCH opening owner is missing.");
+  const issued = issuedSchematicRenameOpeningOwners.get(value);
+  requireValue(issued !== undefined, "Current SCH opening owner was lost.");
+  await issued.revalidateEvidence();
+  requireValue(assertCompletedCurrentSchematicRenameOpeningTransfer(value, engine) === original,
+    "Current SCH opening evidence changed during revalidation.");
+  return original;
+}
+/** Failed scope exit keeps its original object for cleanup only. A successful
+ * in-scope transfer alone does not admit subsequent baseline collection.
+ */
+export function assertCompletedCurrentSchematicRenameOpeningTransfer(value: unknown, engine: EasyedaControlEngine): CurrentSchematicRenameOpeningOwnerSource {
+  const original = assertCurrentSchematicRenameOpeningOwner(value, engine);
+  requireValue(value !== null && typeof value === "object" && issuedSchematicRenameOpeningOwners.get(value)?.state === "completed",
+    "Current SCH opening transfer did not complete; its retained owner is cleanup-only.");
   return original;
 }
 export interface CurrentSymbolBaselineOwner {
@@ -338,6 +394,7 @@ export class CurrentDisposableOpenCoordinator {
   private readonly copyOpeningCleanups = new Map<string, CopyOpeningCleanup>();
   private readonly normalCloseAttempts = new Set<string>();
   private readonly pcbRenameOpeningOwners = new Map<string, CurrentPcbRenameOpeningOwner>();
+  private readonly schematicRenameOpeningOwners = new Map<string, CurrentSchematicRenameOpeningOwner>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
@@ -698,6 +755,97 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(!this.busy && owner !== undefined && this.options.engine instanceof EasyedaControlEngine,
       "Current PCB transfer requires its original retained owner.");
     assertCurrentPcbRenameOpeningOwner(owner, this.options.engine); return owner;
+  }
+
+
+  public async prepareSchematicRenameOpeningOwner(openingOperationId: string, input: unknown): Promise<CurrentSchematicRenameOpeningOwner> {
+    const request = parseCurrentSchematicRenameOwnerRequest(input);
+    requireValue(!this.busy && request.operationId !== openingOperationId && !this.schematicRenameOpeningOwners.has(request.operationId),
+      "Current SCH opening transfer needs one distinct unused operation.");
+    requireValue(this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+      "Current SCH opening owner cannot issue from injected opening services or an unowned engine.");
+    const engine = this.options.engine; this.busy = true;
+    try {
+      const loaded = await this.load(openingOperationId), slot = this.retainedJournal(loaded);
+      this.currentUntransferred(slot);
+      requireValue(openingPurpose(slot.journal.plan.purpose) === "disposable-validation" && slot.runtime instanceof WindowsControlRuntime &&
+        !this.normalCloseAttempts.has(openingOperationId) && slot.journal.normalCloseAttempted !== true,
+      "Current SCH opening owner requires its live disposable original opening.");
+      // SCH is a project container, not the initial PCB document. Its UUID and
+      // Owner remain unqualified until the separate original closed-SQL baseline.
+      const runtime = slot.runtime, target = slot.journal.plan.intent.target;
+      requireValue(request.target.projectUuid === target.projectUuid && request.target.branchUuid === target.branchUuid, "Current SCH opening transfer cannot leave the opened project branch.");
+      await this.services.assertOperationIdUnused(request.operationId); this.currentUntransferred(slot);
+      await engine.assertBridgeAndRecoveryAdmission(openingOperationId); this.currentUntransferred(slot);
+      const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
+      requireValue(scope !== undefined, "Current SCH opening transfer needs an authenticated scope.");
+      const result: unknown = await scope.call(engine.upstream, async () => {
+        const generation = this.issueGeneration(slot, engine, runtime);
+        const source = await revalidateCurrentDisposableOpenGeneration(generation, engine); this.currentUntransferred(slot);
+        requireValue(source.purpose === "disposable-validation" && source.runtime === runtime &&
+          assertCurrentDisposableOpenGeneration(generation, engine) === source, "Current SCH opening generation changed.");
+        const owner = Object.freeze({ profile: "private.current-schematic-rename-opening-owner.v1" as const,
+          operationId: request.operationId, openingOperationId });
+        const intent = Object.freeze({ target: request.target, desiredTitle: request.desiredTitle });
+        const intentText = canonicalJson(intent), journalText = canonicalJson(slot.journal), sourceText = canonicalJson({ target: source.target,
+          expectedFingerprint: source.expectedFingerprint, checkpoint: source.preNavigationCheckpoint, launch: source.launchProjection, session: source.bridgeSession });
+        const upstream = engine.upstream, validator = engine.executionAuthorityValidator;
+        const dispatch = upstream.currentAuthenticatedBridgeDispatchBinding, lifecycle = upstream.bridgeSessionLifecycle;
+        // oxlint-disable-next-line typescript/unbound-method -- Retained for identity only; the later baseline calls each with its original receiver.
+        const capture = engine.captureClosedSessionAuthority, clock = engine.clockObservationForClosedCapture, release = engine.releaseClosedSessionAuthority;
+        // oxlint-disable-next-line typescript/unbound-method -- Identity check precedes the coordinator's retained receiver-bound status call.
+        const runtimeStatus = runtime.status;
+        const current = (): void => {
+          requireValue(runtime.status === runtimeStatus && engine.captureClosedSessionAuthority === capture &&
+            engine.clockObservationForClosedCapture === clock && engine.releaseClosedSessionAuthority === release,
+          "Current SCH opening capture producer or runtime status method changed.");
+          this.current(slot);
+          requireValue(this.schematicRenameOpeningOwners.get(request.operationId) === owner && baselineRuntimeReservations.has(runtime) &&
+            this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine && engine.upstream === upstream &&
+            engine.executionAuthorityValidator === validator && upstream.bridgeSessionLifecycle === lifecycle &&
+            upstream.currentAuthenticatedBridgeDispatchBinding === dispatch && canonicalJson(slot.journal) === journalText &&
+            canonicalJson(intent) === intentText && canonicalJson({ target: source.target, expectedFingerprint: source.expectedFingerprint,
+              checkpoint: source.preNavigationCheckpoint, launch: source.launchProjection, session: source.bridgeSession }) === sourceText,
+          "Current SCH opening transfer lost its original owner, intention or historical opening.");
+        };
+        const revalidateEvidence = async (): Promise<void> => {
+          current();
+          const persisted = await this.load(openingOperationId); current();
+          requireValue(canonicalJson(persisted) === journalText, "Current SCH opening persisted journal changed.");
+        };
+        const revalidate = async (): Promise<void> => {
+          current(); await engine.assertBridgeAndRecoveryAdmission(owner.operationId); current();
+          await revalidateEvidence(); current();
+        };
+        // Every preceding await was read-only. Reserve atomically before the
+        // Original owner leaves this scope; competing transfers cannot win.
+        this.currentUntransferred(slot); baselineRuntimeReservations.add(runtime); this.baselineJobs.add(slot.launch.jobId);
+        this.generations.clear(); this.schematicRenameOpeningOwners.set(request.operationId, owner);
+        issuedSchematicRenameOpeningOwners.set(owner, { value: Object.freeze({ source, intent }), current, revalidate, revalidateEvidence, state: "retained" }); current();
+        return owner;
+      });
+      assertCurrentSchematicRenameOpeningOwner(result, engine);
+      const retained = this.schematicRenameOpeningOwners.get(request.operationId);
+      requireValue(retained !== undefined && retained === result, "Current SCH opening scope lost its transferred owner.");
+      const issued = issuedSchematicRenameOpeningOwners.get(retained);
+      requireValue(issued !== undefined && issued.state === "retained", "Current SCH opening transfer outcome was already consumed.");
+      issued.state = "completed"; return retained;
+    } catch (error) {
+      const retained = this.schematicRenameOpeningOwners.get(request.operationId);
+      const issued = retained === undefined ? undefined : issuedSchematicRenameOpeningOwners.get(retained);
+      if (issued !== undefined) { issued.state = "failed"; }
+      throw error;
+    } finally { this.generations.delete(openingOperationId); this.busy = false; }
+  }
+
+  /** Keep a transferred owner reachable if the authenticated scope's exit
+   * failed. This is the same object, not a fresh attempt or recovered authority.
+   */
+  public getSchematicRenameOpeningOwner(operationId: string): CurrentSchematicRenameOpeningOwner {
+    const owner = this.schematicRenameOpeningOwners.get(operationId);
+    requireValue(!this.busy && owner !== undefined && this.options.engine instanceof EasyedaControlEngine,
+      "Current SCH transfer requires its original retained owner.");
+    assertCurrentSchematicRenameOpeningOwner(owner, this.options.engine); return owner;
   }
 
   /** Internal preparation only. The public opener request schema has no route

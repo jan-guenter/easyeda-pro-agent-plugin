@@ -112,7 +112,8 @@ Supported methods are `eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveI
 and `eda.pcb_PrimitiveLine.getAllPrimitiveId`, `eda.pcb_PrimitiveArc.getAllPrimitiveId`,
 `eda.pcb_PrimitiveVia.getAllPrimitiveId`, `eda.pcb_PrimitiveComponent.getAllPrimitiveId`,
 `eda.pcb_PrimitivePad.getAllPrimitiveId`, `eda.pcb_PrimitiveString.getAllPrimitiveId`,
-`eda.pcb_PrimitiveDimension.getAllPrimitiveId` and `eda.pcb_PrimitiveImage.getAllPrimitiveId`,
+`eda.pcb_PrimitiveDimension.getAllPrimitiveId`, `eda.pcb_PrimitiveImage.getAllPrimitiveId`
+and `eda.pcb_PrimitiveAttribute.getAllPrimitiveId`,
 each with empty `arguments`.
 `eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId` takes `arguments:{"id":"..."}`
 and classifies only a positive unique membership in Line, Arc or Via.
@@ -140,12 +141,28 @@ a loaded view. Native serialization still reads geometry and annotation fields;
 image paths allocate temporary transformed geometry before the adapter copies
 only IDs. These methods establish neither rendering nor a complete empty-board
 condition, and do not extend positive type lookup. Source review and offline
-tests exist; connected validation is pending.
+tests exist. Installed013000 passed two matching empty samples per family on
+one disposable board, followed by retained normal closure and exact unchanged
+closed-file bytes. Nonempty-family connected validation remains pending; this
+historical empty case grants no current-invocation authority.
 
 Do not substitute current Fill/Polyline/Region getters for a read-only inventory:
 their polygon serializer can rebuild child models and controllers. Those methods
 are not admitted by this current adapter. Discovery of a separately pinned
 legacy SDK route does not qualify it for the current runtime.
+
+`Attribute` returns component-attribute IDs in native component/group order.
+`attributeParentGroups` preserves each observed `parentPrimitiveId` and its
+ordered IDs, including empty groups. Both samples compare the complete grouping,
+so identical flat IDs with different parents refuse. Duplicate parents, duplicate
+attribute IDs and collisions between parent and attribute IDs also refuse.
+This is a native association, not reciprocal or complete stored ownership.
+Only loaded component views participate; no independent full component inventory
+is obtained. Values, formulas, fonts and geometry are omitted. Native component
+serialization still reads existing footprint/device/font caches and pad/via
+metadata before the adapter can bound its reply. There are no parent/layer/lock
+filters or Attribute type-lookup support. At most20,000 groups and20,000 total
+attribute IDs share the existing byte bound. Connected validation is pending.
 
 Limits: 20,000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes
 combined evidence. No truncation or coercion. Native serializers allocate DTOs

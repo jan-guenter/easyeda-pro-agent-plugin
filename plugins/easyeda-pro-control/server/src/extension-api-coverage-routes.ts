@@ -84,6 +84,15 @@ for (const [namespace, method] of [["pcb_SelectControl", "getAllSelectedPrimitiv
   } });
 }
 
+groups.push({ namespace: "pcb_PrimitiveAttribute", methods: ["getAllPrimitiveId"], route: {
+  tool: "easyeda_control_pcb_identities", selector: "eda.pcb_PrimitiveAttribute.getAllPrimitiveId", implementation: "native-task-equivalent",
+  scope: "Separately pinned current API/UI/PCB loaded-view Attribute identities. Empty arguments and explicit ordinary active type-3 project/branch/document/tab only. Captured native frame/receiver and surrounding native identity checks; two matching ordered samples retain component parent groups, including empty groups, before flattening attribute IDs. Returns only IDs and observed parentPrimitiveId associations, not reciprocal model ownership, complete stored ownership, attribute fields, geometry or saved membership. Only existing component stateWatcher views participate. Duplicate parents, duplicate or parent-colliding attribute IDs, malformed groups and association drift refuse. At most20000 groups/20000 total attribute IDs/256characters per ID/393216bytes evidence; aggregate lengths are checked before flattening. Native enumeration and full component/attribute serialization precede output bounds and are not cancelled by timeout. Existing footprint/device/font caches and pad/via data are read; an empty pad-length singleton may be allocated. No library fetch, filters, Attribute positive type lookup, selection, navigation, edit, source export or Save. No current connected validation; legacy separately pinned routes remain unchanged.",
+  source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+  tests: ["current-pcb-identities.test.ts", "extension-api-coverage.test.ts"], documentTypes: [3],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: "eda.pcb_PrimitiveAttribute.getAllPrimitiveId", includeSchemas: true } } } },
+} });
+
 for (const family of ["Dimension", "Image"] as const) {
   const method = `eda.pcb_Primitive${family}.getAllPrimitiveId`;
   groups.push({ namespace: `pcb_Primitive${family}`, methods: ["getAllPrimitiveId"], route: {

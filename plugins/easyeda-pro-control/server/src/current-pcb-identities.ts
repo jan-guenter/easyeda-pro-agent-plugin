@@ -13,12 +13,13 @@ export const CURRENT_PCB_IDENTITY_TYPE_METHOD = "eda.pcb_Primitive.getPrimitiveT
 const collectionMethods = ["eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
   "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
   "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId",
-  "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId"] as const;
+  "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId",
+  "eda.pcb_PrimitiveAttribute.getAllPrimitiveId"] as const;
 const methods = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const idSchema = z.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
 const families = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String", "Dimension", "Image"] as const;
-export type CurrentPcbIdentityFamily = typeof families[number];
+export type CurrentPcbIdentityFamily = typeof families[number] | "Attribute";
 export const currentPcbIdentitiesRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.enum(collectionMethods), arguments: z.object({}).strict(), target: targetSchema }).strict(),
   z.object({ method: z.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: z.object({ id: idSchema }).strict(), target: targetSchema }).strict(),
@@ -26,7 +27,13 @@ export const currentPcbIdentitiesRequestSchema = z.discriminatedUnion("method", 
 export type CurrentPcbIdentitiesRequest = z.infer<typeof currentPcbIdentitiesRequestSchema>;
 export function parseCurrentPcbIdentitiesRequest(input: unknown): CurrentPcbIdentitiesRequest { return currentPcbIdentitiesRequestSchema.parse(input); }
 export const currentPcbIdentitiesQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
-const observationSchema = z.object({ family: z.enum(families), ids: z.array(idSchema).max(CURRENT_PCB_IDENTITIES_MAX_IDS) }).strict();
+const idsSchema = z.array(idSchema).max(CURRENT_PCB_IDENTITIES_MAX_IDS);
+const attributeParentGroupSchema = z.object({ parentPrimitiveId: idSchema, ids: idsSchema }).strict();
+const observationSchema = z.discriminatedUnion("family", [
+  z.object({ family: z.enum(families), ids: idsSchema }).strict(),
+  z.object({ family: z.literal("Attribute"), ids: idsSchema,
+    parentGroups: z.array(attributeParentGroupSchema).max(CURRENT_PCB_IDENTITIES_MAX_IDS) }).strict(),
+]);
 export const currentPcbIdentitiesResultSchema = z.object({ ok: z.literal(true), kind: z.literal("current-pcb-identity-observation"),
   method: z.enum(methods), target: targetSchema, observations: z.array(observationSchema).min(1).max(3), samples: z.literal(2),
   implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false), persistenceVerified: z.literal(false),
@@ -38,6 +45,7 @@ const limitations = [
   "String identifies PCB text and preserves the native string-getAll order, excluding views with a native parent. Component attributes and inherited text are outside that family. This filter does not establish complete source ownership or saved membership. The native serializer reads existing font caches, but this adapter copies only globalIndex and never returns text, font, color or geometry.",
   "Dimension IDs preserve native length, radius and angle manager order, without a parent filter. Dimension annotation text and coordinates are serialized internally but not projected. This does not establish rendered measurements, root ownership, complete canvas inventory or saved membership; Dimension is not admitted to positive type lookup.",
   "Image IDs include native vector Image views followed by Picture views, without a parent filter. Native path conversion allocates temporary geometry before output bounds. The reviewed serializer reads existing template/hash metadata without loading image assets; only globalIndex is projected. No picture content, renderability, source ownership or saved membership is established. Image is not admitted to positive type lookup.",
+  "Attribute IDs flatten native component groups in observed order. attributeParentGroups retains each native parentPrimitiveId and its ordered IDs, including empty groups. Parent grouping is an observed native association, not reciprocal model ownership or complete stored ownership. Only loaded component stateWatcher views participate; there is no independent full component/source inventory. Attribute values, formulas, fonts and geometry are not returned. Component serialization still reads existing footprint/device/font caches and pad/via metadata before bounds. No filters or Attribute positive type lookup are supported.",
   "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
   "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
   "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
@@ -55,6 +63,7 @@ export function currentPcbIdentityFamilies(request: CurrentPcbIdentitiesRequest)
     case "eda.pcb_PrimitiveString.getAllPrimitiveId": { return ["String"]; }
     case "eda.pcb_PrimitiveDimension.getAllPrimitiveId": { return ["Dimension"]; }
     case "eda.pcb_PrimitiveImage.getAllPrimitiveId": { return ["Image"]; }
+    case "eda.pcb_PrimitiveAttribute.getAllPrimitiveId": { return ["Attribute"]; }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: { return ["Line", "Arc", "Via"]; }
     default: { throw new Error("Unsupported current PCB identity method."); }
   }
@@ -83,6 +92,21 @@ export function validateCurrentPcbIdentitiesArguments(input: unknown): Record<st
   };
 }
 
+function assertAttributeParentGroups(entry: Extract<z.infer<typeof observationSchema>, { family: "Attribute" }>, ids: ReadonlySet<string>): void {
+  const parents = new Set<string>();
+  let offset = 0;
+  for (const group of entry.parentGroups) {
+    if (parents.has(group.parentPrimitiveId) || ids.has(group.parentPrimitiveId)) { throw new Error("PCB attribute parent groups contain duplicate or colliding identities."); }
+    parents.add(group.parentPrimitiveId);
+    if (offset + group.ids.length > CURRENT_PCB_IDENTITIES_MAX_IDS) { throw new Error("PCB attribute parent groups exceed the total identity bound."); }
+    for (const id of group.ids) {
+      if (entry.ids[offset] !== id) { throw new Error("PCB attribute parent groups differ from the complete ordered identities."); }
+      offset += 1;
+    }
+  }
+  if (offset !== entry.ids.length) { throw new Error("PCB attribute parent groups omit observed identities."); }
+}
+
 export function validateCurrentPcbIdentitiesResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parseCurrentPcbIdentitiesRequest(input);
   const payload = currentPcbIdentitiesResultSchema.parse(raw);
@@ -91,15 +115,19 @@ export function validateCurrentPcbIdentitiesResult(input: unknown, raw: unknown)
   const { observations, ...metadata } = payload;
   if (canonicalJson(observations.map((entry) => entry.family)) !== canonicalJson(currentPcbIdentityFamilies(request))) { throw new Error("PCB identities result has unexpected family observations."); }
   const seen = new Set<string>();
+  const extra: Record<string, unknown> = {};
   for (const entry of observations) {
     if (entry.family === "selected" && entry.ids.length > CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS) { throw new Error("PCB selection exceeds its identity bound."); }
     for (const id of entry.ids) {
       if (seen.has(id)) { throw new Error("PCB identities contain duplicate or cross-family identities."); }
       seen.add(id);
     }
+    if (entry.family === "Attribute") {
+      assertAttributeParentGroups(entry, seen);
+      extra["attributeParentGroups"] = entry.parentGroups;
+    }
   }
   let value: string | string[];
-  const extra: Record<string, unknown> = {};
   if (request.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
     const match = observations.find((entry) => entry.ids.includes(request.arguments.id));
     if (match === undefined || !["Line", "Arc", "Via"].includes(match.family)) { throw new Error("PCB identity is not in an observed supported family."); }

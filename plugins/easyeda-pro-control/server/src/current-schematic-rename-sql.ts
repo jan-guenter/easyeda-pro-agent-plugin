@@ -90,6 +90,16 @@ interface Prepared {
 }
 const plans = new WeakMap<CurrentSchematicRenameSqlPlan, Prepared>();
 const intentions = new WeakMap<CurrentSchematicRenameSqlPreparation, Intent>();
+/** Original historical inputs only. This does not issue a producer, clock or
+ * dispatch owner, and copied preparations cannot reconstruct this binding. */
+export function originalCurrentSchematicRenameSqlPreparation(preparation: CurrentSchematicRenameSqlPreparation,
+  before: Inventory, metadata: CurrentSchematicNativeMetadata): Readonly<Pick<Intent, "witness" | "backendActor">> {
+  const intent = intentions.get(preparation);
+  need(intent !== undefined && intent.before === before && intent.metadata === metadata,
+    "original schematic SQL preparation and reader required");
+  assertOriginalCurrentSchematicNativeMetadata(metadata, before);
+  return Object.freeze({ witness: intent.witness, backendActor: intent.backendActor });
+}
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Current SCH rename SQL: ${message}`); } }
 function fields(value: unknown, names?: readonly string[]): Record<string, unknown> {
   need(isRecord(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null), "plain input required");
