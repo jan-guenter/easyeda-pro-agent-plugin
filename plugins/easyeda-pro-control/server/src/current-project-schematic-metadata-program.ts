@@ -4,12 +4,13 @@ import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbo
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 
 /** Metadata-only native equivalent. MGR005584e0 GET2058248/GET_ALL_KV2058801
- * and SHEET GET_ALL_KV2060322 delegate existing WORKERb849bd12 Dg1911033/
+ * and SHEET GET_ALL_KV2060322/GET2060425 delegate existing WORKERb849bd12 Dg1911033/
  * 1912957 and sheet1919022/1921285. Native array fallbacks are not used.
  * No SCH AST observation, name availability, clock, canvas or write preflight.
  */
 export function buildCurrentProjectSchematicMetadataProgram(input: unknown): string {
   const request = parseCurrentProjectSchematicMetadataRequest(input);
+  const pageResult = request.method === "eda.dmt_Schematic.getSchematicPageInfo" || request.method === "eda.dmt_Schematic.getAllSchematicPagesInfo";
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)};let expired=false;
@@ -45,13 +46,16 @@ const sample=async()=>{
  const sheets=inventory(await call('/PrjDB/sheet/getAllKVDatas',[undefined,target.projectUuid]),sheet);same();
  if(sheets.some(child=>schematics.some(parent=>parent.uuid===child.uuid)||!schematics.some(parent=>parent.uuid===child.schematicUuid)))bad();
  ${request.method === "eda.dmt_Schematic.getSchematicInfo" ? "const selected=schematics.find(value=>value.uuid===target.schematicUuid);if(!selected)bad();const exact=schematic(await call('/PrjDB/schematic/getData',[target.schematicUuid,target.projectUuid]),target.schematicUuid);same();if(JSON.stringify(exact)!==JSON.stringify(selected))bad();" : ""}
+ ${request.method === "eda.dmt_Schematic.getSchematicPageInfo" ? "const selected=sheets.find(value=>value.uuid===target.schematicPageUuid);if(!selected||selected.schematicUuid!==target.schematicUuid)bad();const exact=sheet(await call('/PrjDB/sheet/getData',[target.schematicPageUuid,target.projectUuid]),target.schematicPageUuid);same();if(JSON.stringify(exact)!==JSON.stringify(selected))bad();" : ""}
  if(await projectMetadata()!==ownerUuid)bad();same();const complete={ownerUuid,schematics:schematics.map(value=>({...value,children:sheets.filter(child=>child.schematicUuid===value.uuid)})),observedSchematicCount:schematics.length,observedSheetCount:sheets.length};
  if(new TextEncoder().encode(JSON.stringify(complete)).byteLength>${CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES})bad();return complete;
 };
 const run=async()=>{
  const first=await sample(),seal=JSON.stringify(first),second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:'current-project-schematic-metadata-observation',method:${JSON.stringify(request.method)},target,...first,
- schematics:${request.method === "eda.dmt_Schematic.getSchematicInfo" ? "first.schematics.filter(value=>value.uuid===target.schematicUuid)" : "first.schematics"},samples:2,currentTabId:projectOnly.currentTabId,
+ const result={ok:true,kind:'current-project-schematic-metadata-observation',method:${JSON.stringify(request.method)},target,
+ ownerUuid:first.ownerUuid,observedSchematicCount:first.observedSchematicCount,observedSheetCount:first.observedSheetCount,
+ ${pageResult ? `pages:first.schematics.flatMap(value=>value.children).filter(value=>${request.method === "eda.dmt_Schematic.getSchematicPageInfo" ? "value.uuid===target.schematicPageUuid" : "true"}).sort((left,right)=>left.uuid<right.uuid?-1:left.uuid>right.uuid?1:0)`
+    : `schematics:${request.method === "eda.dmt_Schematic.getSchematicInfo" ? "first.schematics.filter(value=>value.uuid===target.schematicUuid)" : "first.schematics"}`},samples:2,currentTabId:projectOnly.currentTabId,
  implementationKind:'native-task-equivalent',completeNativeSchematicMapObserved:true,completeNativeSheetMapObserved:true,parentMembershipObserved:true,
  noEditorTabsObserved:true,hiddenEditorsAbsentObserved:true,dirtyTabsAbsentObserved:true,cachedProjectReadOnlyAbsentObserved:true,concurrentStrictModeAbsentObserved:true,
  workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false,permissionVerified:false,startupCompletionVerified:false,mutationDispatched:false,explicitSaveDispatched:false};

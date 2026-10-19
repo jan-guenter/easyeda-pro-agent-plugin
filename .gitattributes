@@ -10,3 +10,5 @@ plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer binary
 plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll binary
 plugins/easyeda-pro-control/server/bin/Easyeda.CurrentMainReference.dll binary
 plugins/easyeda-pro-control/server/dist/*.mjs whitespace=-blank-at-eol
+# Preserve the former handoff block byte-for-byte, including its final separator.
+docs/history/engineering-record-2026-10-17-181500-through-2026-10-19-125900.md whitespace=-blank-at-eof

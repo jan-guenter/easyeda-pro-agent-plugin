@@ -104,12 +104,36 @@ against the actual saved header and modifier, not inferred from a UI sample
 or an extra account query. An unexpected actor or missing effect fails without
 another write or Save.
 
+Current UI names and historical project-user names are separate observations.
+The route retains the exact UI actor before writing and requires the same UI
+actor after reopening. Its UUID selects the backend names from the original
+project users table; a missing row produces native empty names. The closed SQL
+proof must match those frozen backend names exactly, even when they differ
+from the UI. Do not repair the project users table or change accounts to make
+the names agree. The installed125900 pre-write refusal on their equality is
+terminal for that attempt; the corrected source requires a fresh installed
+generation and a new disposable lifecycle, not a retry.
+
 ## Lost replies and cleanup
 
-Inspect an uncertain result with `action:"inspect"`. If `busy:true`, wait and
-inspect again. A client timeout is not cancellation. Do not repeat begin,
+Inspect an uncertain result with `action:"inspect"`. While `busy:true`,
+`nextPhase:"stopped"` reserves the consumed phase; it is not a terminal failure.
+Await the original tool call. Inspection may be repeated without replaying work.
+A client timeout is not cancellation. Do not repeat begin,
 launch, navigation, clock collection, rename or close. Normal observation polls
 repeat only when authentication or termination is explicitly pending.
+
+`phaseDiagnostics.current` identifies this operation's in-flight action and phase,
+its `performing` or `cleanup-selection` stage, and elapsed monotonic milliseconds.
+`last` retains only the previous consumed attempt's action, phase, duration and
+`succeeded`, `failed` or `observation-pending` outcome. A failed attempt stays
+current while its original asynchronous cleanup selection is pending, then
+finishes as failed even if cleanup selection succeeds. Durations include that
+cleanup work. A successful attempt is not a completed rename; completion still
+requires the verified result above. These bounded in-memory diagnostics disappear
+with their facade. They are not writer clocks, journal evidence, a timeout or
+permission to repeat an action. `busy` applies to the coordinator, so another
+operation can keep it true while this operation's `current` is null.
 
 `action:"cleanup", confirmAbort:true` permanently abandons further writing and
 selects only an available original-owner cleanup phase. Follow that phase;

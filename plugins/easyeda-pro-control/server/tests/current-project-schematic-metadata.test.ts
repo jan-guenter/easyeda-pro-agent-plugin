@@ -12,13 +12,15 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), schematicUuid: "c".repeat(16) };
 const request = { method: "eda.dmt_Schematic.getSchematicInfo", target };
 const allRequest = { method: "eda.dmt_Schematic.getAllSchematicsInfo", target: { projectUuid: target.projectUuid, branchUuid: target.branchUuid } };
+const pageRequest = { method: "eda.dmt_Schematic.getSchematicPageInfo", target: { ...target, schematicPageUuid: "d".repeat(16) } };
+const allPagesRequest = { method: "eda.dmt_Schematic.getAllSchematicPagesInfo", target: allRequest.target };
 void test("project schematic offline discovery and validation preserve strict targets without execution authority", () => {
   const discovery = queryOfflineApi(apiRequestSchema.parse({ action: "project-schematic", query: { includeSchemas: true } }));
   assert.equal(discovery.offline, true);
   assert.deepEqual(discovery.result, queryCurrentProjectSchematicMetadata({ includeSchemas: true }));
   const selectedDiscovery = queryOfflineApi(apiRequestSchema.parse({ action: "project-schematic", query: { method: request.method } }));
   assert.deepEqual(selectedDiscovery.result, queryCurrentProjectSchematicMetadata({ method: request.method }));
-  for (const input of [request, allRequest, { ...allRequest, target }]) {
+  for (const input of [request, allRequest, pageRequest, allPagesRequest, { ...allRequest, target }]) {
     const validated = queryOfflineApi(apiRequestSchema.parse({ action: "project-schematic-validate", query: { request: input } }));
     assert.deepEqual(validated.result, validateCurrentProjectSchematicMetadataArguments(input));
   }
@@ -50,11 +52,12 @@ globalThis.sheetMap={['e'.repeat(16)]:{...page,uuid:'e'.repeat(16),schematic_uui
 globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:'d'.repeat(32)},archive:false,cbb_project:false};
 class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))return forbidden('receiver');calls.push([topic,[...args]]);
 if(topic==='/PrjDB/schematic/getData'){if(args.length!==2||args[0]!==target.schematicUuid||args[1]!==target.projectUuid)return forbidden('get-args');}
+else if(topic==='/PrjDB/sheet/getData'){if(args.length!==2||args[0]!==page.uuid||args[1]!==target.projectUuid)return forbidden('page-get-args');}
 else if(topic==='/PrjDB/project/getData'||topic==='/PrjDB/schematic/getAllKVDatas'){if(args.length!==1||args[0]!==target.projectUuid)return forbidden('project-args');}
 else if(topic==='/PrjDB/sheet/getAllKVDatas'){if(args.length!==2||args[0]!==undefined||args[1]!==target.projectUuid)return forbidden('sheet-args');}
 else return forbidden(topic);
 if(calls.length===${options.pendingAt ?? 0})await new Promise(resolve=>{globalThis.release=resolve;});await Promise.resolve();${options.afterRpc ?? ""}
-return{message:topic==='/PrjDB/schematic/getData'?metadata:topic==='/PrjDB/schematic/getAllKVDatas'?schematicMap:topic==='/PrjDB/sheet/getAllKVDatas'?sheetMap:projectDetail};}}
+return{message:topic==='/PrjDB/schematic/getData'?metadata:topic==='/PrjDB/sheet/getData'?page:topic==='/PrjDB/schematic/getAllKVDatas'?schematicMap:topic==='/PrjDB/sheet/getAllKVDatas'?sheetMap:projectDetail};}}
 class Permission{constructor(){this._isConcurrentStrictMode=false;this.readOnly=false;}get isConcurrentStrictMode(){return this._isConcurrentStrictMode;}set isConcurrentStrictMode(value){this._isConcurrentStrictMode=value;}getIframeDisableStatusPanelPcb(id){if(this!==UI.concurrentDesign||id!==Tabs.currentTabId)return forbidden('permission-receiver');return{disable:this.readOnly};}}
 globalThis.gVars={currentProject:{projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false},isHistoryMode:false,messageBus:new Bus(),sessionStorageTabs:new Set(),urlCmd:null};
 globalThis.UI={gVars,tabBar:Tabs,concurrentDesign:new Permission()};globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40',dmt_Schematic:{getSchematicInfo:()=>forbidden('public-get'),modifySchematicName:()=>forbidden('modify')},dmt_Project:{openProject:()=>forbidden('open')},sys_FileSystem:{save:()=>forbidden('save')}};
@@ -75,6 +78,7 @@ void test("project schematic reader retains exact Unicode metadata and complete 
   for (const before of ["", "info.tabs.push(blank);info.activeTabId='0';Tabs.currentTabId='0';"]) {
     const env = fixture({ before }), envelope = structuredClone(await env.run());
     const result = decodeCurrentProjectSchematicMetadataReply(reply(envelope), request);
+    assert.equal(result.method, "eda.dmt_Schematic.getSchematicInfo");
     assert.deepEqual(result.target, target); assert.equal(result.schematics.length, 1);
     assert.equal(result.observedSchematicCount, 2); assert.equal(result.observedSheetCount, 2);
     const selected = result.schematics[0]; assert.ok(selected);
@@ -91,14 +95,98 @@ void test("project schematic reader retains exact Unicode metadata and complete 
 void test("project schematic inventory reads both complete maps, preserves UUID order and allows an actually empty project", async () => {
   const env = fixture(), envelope = structuredClone(await env.run(allRequest));
   const value = decodeCurrentProjectSchematicMetadataReply(reply(envelope), allRequest);
+  assert.equal(value.method, "eda.dmt_Schematic.getAllSchematicsInfo");
   assert.deepEqual(value.schematics.map(item => item.uuid), [target.schematicUuid, "f".repeat(16)]);
   assert.equal(value.schematics[1]?.children[0]?.schematicUuid, "f".repeat(16)); assert.equal(env.evaluate("calls.length"), 8);
   assert.equal(env.evaluate("calls.some(call=>call[0]==='/PrjDB/schematic/getData')"), false);
   const empty = fixture({ before: "schematicMap={};sheetMap={};" });
   const emptyEnvelope = structuredClone(await empty.run(allRequest));
   const noItems = decodeCurrentProjectSchematicMetadataReply(reply(emptyEnvelope), allRequest);
+  assert.equal(noItems.method, "eda.dmt_Schematic.getAllSchematicsInfo");
   assert.deepEqual(noItems.schematics, []); assert.equal(noItems.observedSchematicCount, 0); assert.equal(noItems.observedSheetCount, 0);
   await assert.rejects(fixture({ before: "schematicMap={};sheetMap={};" }).run(), /READ_FAILED/u);
+});
+
+void test("project page metadata selects an exact parent-bound page and observes the complete globally sorted collection", async () => {
+  for (const input of [pageRequest, allPagesRequest]) {
+    const env = fixture(), envelope = structuredClone(await env.run(input));
+    const result = decodeCurrentProjectSchematicMetadataReply(reply(envelope), input);
+    assert.ok(result.method === "eda.dmt_Schematic.getSchematicPageInfo" || result.method === "eda.dmt_Schematic.getAllSchematicPagesInfo");
+    assert.deepEqual(result.pages.map(value => value.uuid), input === pageRequest ? ["d".repeat(16)] : ["d".repeat(16), "e".repeat(16)]);
+    assert.deepEqual(result.pages[0], { uuid: "d".repeat(16), source: "", version: "5", ticket: 12_346, updateTime: 1001,
+      schematicUuid: target.schematicUuid, title: "lower Ω", displayTitle: "Display Ω", docType: 1, zIndex: -2.5 });
+    assert.equal(result.observedSchematicCount, 2); assert.equal(result.observedSheetCount, 2);
+    assert.ok(Object.isFrozen(result.pages)); assert.ok(Object.isFrozen(result.pages[0]));
+    assert.equal(Object.hasOwn(result, "schematics"), false); assert.equal(result.parentMembershipObserved, true);
+    assert.deepEqual(structuredClone(env.evaluate("denied")), []);
+    const topics = ["/PrjDB/project/getData", "/PrjDB/schematic/getAllKVDatas", "/PrjDB/sheet/getAllKVDatas",
+      ...(input === pageRequest ? ["/PrjDB/sheet/getData"] : []), "/PrjDB/project/getData"];
+    assert.equal(env.evaluate("JSON.stringify(calls.map(call=>call[0]))"), JSON.stringify([...topics, ...topics]));
+  }
+  const reordered = fixture({ before: "page.schematic_uuid='f'.repeat(16);sheetMap['e'.repeat(16)].schematic_uuid=target.schematicUuid;" });
+  const reorderedEnvelope = structuredClone(await reordered.run(allPagesRequest));
+  const result = decodeCurrentProjectSchematicMetadataReply(reply(reorderedEnvelope), allPagesRequest);
+  assert.equal(result.method, "eda.dmt_Schematic.getAllSchematicPagesInfo");
+  assert.deepEqual(result.pages.map(value => value.uuid), ["d".repeat(16), "e".repeat(16)]);
+  for (const before of ["sheetMap={};", "sheetMap={};schematicMap={};"]) {
+    const empty = fixture({ before });
+    const emptyEnvelope = structuredClone(await empty.run(allPagesRequest));
+    const value = decodeCurrentProjectSchematicMetadataReply(reply(emptyEnvelope), allPagesRequest);
+    assert.equal(value.method, "eda.dmt_Schematic.getAllSchematicPagesInfo"); assert.deepEqual(value.pages, []); assert.equal(value.observedSheetCount, 0);
+    await assert.rejects(fixture({ before }).run(pageRequest), /READ_FAILED/u);
+  }
+});
+
+void test("project page metadata refuses missing pages, wrong parents, incomplete peers and a contradictory direct getter", async () => {
+  for (const before of ["delete sheetMap[page.uuid];", "page.schematic_uuid='f'.repeat(16);", "sheetMap['e'.repeat(16)].schematic_uuid='1'.repeat(16);",
+    "schematicMap[target.schematicUuid].source=null;", "sheetMap['e'.repeat(16)].docType=3;",
+    "schematicMap[page.uuid]={...metadata,uuid:page.uuid};", "page={...page,title:'getter-only'};",
+    "Object.defineProperty(page,'title',{get(){getterReads++;return 'PRIVATE';}});"]) {
+    const env = fixture({ before }); await assert.rejects(env.run(pageRequest), /READ_FAILED/u);
+    assert.equal(env.evaluate("getterReads"), 0); assert.deepEqual(structuredClone(env.evaluate("denied")), []);
+  }
+  const tooLarge = fixture({ before: "for(let i=0;i<80;i++){const uuid=i.toString(16).padStart(16,'0'),child=(i+1000).toString(16).padStart(16,'0');schematicMap[uuid]={...metadata,uuid,source:'x'.repeat(4096)};sheetMap[child]={...page,uuid:child,schematic_uuid:uuid,source:'x'.repeat(4096)};}" });
+  await assert.rejects(tooLarge.run(pageRequest), /READ_FAILED/u); assert.equal(tooLarge.evaluate("calls.length"), 5);
+});
+
+void test("project page metadata rechecks every awaited read, rejects peer drift and consumes a timed-out direct read", async () => {
+  for (const count of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    const env = fixture({ afterRpc: `if(calls.length===${count})gVars.currentProject.branchUuid='e'.repeat(32);` });
+    await assert.rejects(env.run(pageRequest), /READ_FAILED/u); assert.equal(env.evaluate("calls.length"), count);
+  }
+  for (const afterRpc of ["if(calls.length===7)schematicMap['f'.repeat(16)].display_name='peer changed';",
+    "if(calls.length===8)sheetMap['e'.repeat(16)].display_title='peer changed';", "if(calls.length===9)page={...page,ticket:7};"]) {
+    await assert.rejects(fixture({ afterRpc }).run(pageRequest), /READ_FAILED/u);
+  }
+  const env = fixture({ pendingAt: 4 }), running = env.run(pageRequest); await flush(); assert.equal(env.evaluate("calls.length"), 4); env.expire();
+  await assert.rejects(running, /READ_FAILED/u); env.evaluate("release();"); await flush(); assert.equal(env.evaluate("calls.length"), 4); assert.equal(env.clears(), 1);
+});
+
+void test("project page request and result contracts reject cross-family output and incomplete or unbound membership", async () => {
+  for (const input of [pageRequest, allPagesRequest]) { assert.deepEqual(parseCurrentProjectSchematicMetadataRequest(input), input); }
+  for (const input of [{ ...pageRequest, target }, { ...pageRequest, target: { ...pageRequest.target, schematicPageUuid: "bad" } },
+    { ...allPagesRequest, target }, { ...allPagesRequest, arguments: {} }, { ...request, target: pageRequest.target },
+    { ...pageRequest, target: Object.defineProperty({ ...pageRequest.target }, "schematicPageUuid", { get(): never { throw new Error("getter"); } }) }]) {
+    assert.equal(validateCurrentProjectSchematicMetadataArguments(input)["valid"], false);
+  }
+  const env = fixture(), envelope = structuredClone(await env.run(pageRequest));
+  const value = decodeCurrentProjectSchematicMetadataReply(reply(envelope), pageRequest);
+  assert.equal(value.method, "eda.dmt_Schematic.getSchematicPageInfo"); const page = value.pages[0]; assert.ok(page);
+  for (const changed of [{ ...value, pages: [] }, { ...value, pages: [page, page] }, { ...value, schematics: [] },
+    { ...value, pages: [{ ...page, schematicUuid: "f".repeat(16) }] }, { ...value, pages: [{ ...page, uuid: "f".repeat(16) }] },
+    { ...value, observedSchematicCount: 0 }, { ...value, observedSheetCount: 0 }, { ...value, persistenceVerified: true },
+    { ...value, target: { ...pageRequest.target, schematicUuid: "f".repeat(16) } }]) {
+    assert.throws(() => decodeCurrentProjectSchematicMetadataReply(reply(encodeExactReadEnvelope(changed)), pageRequest));
+  }
+  const allEnv = fixture(), allEnvelope = structuredClone(await allEnv.run(allPagesRequest));
+  const all = decodeCurrentProjectSchematicMetadataReply(reply(allEnvelope), allPagesRequest);
+  assert.equal(all.method, "eda.dmt_Schematic.getAllSchematicPagesInfo");
+  const selfParentedPages = structuredClone(all.pages);
+  for (const item of selfParentedPages) { item.schematicUuid = item.uuid; }
+  for (const changed of [{ ...all, pages: all.pages.slice(0, 1) }, { ...all, pages: all.pages.toReversed() },
+    { ...all, pages: selfParentedPages }]) {
+    assert.throws(() => decodeCurrentProjectSchematicMetadataReply(reply(encodeExactReadEnvelope(changed)), allPagesRequest));
+  }
 });
 
 void test("project schematic metadata omits unselected private fields without invoking them", async () => {
@@ -171,7 +259,7 @@ void test("project schematic reader consumes one pending read on timeout and doe
 
 void test("project schematic request and discovery reject caller code, accessors, proxies and mismatched method targets", () => {
   assert.deepEqual(parseCurrentProjectSchematicMetadataRequest(request), request); assert.deepEqual(parseCurrentProjectSchematicMetadataRequest(allRequest), allRequest);
-  assert.equal(queryCurrentProjectSchematicMetadata({ includeSchemas: true })["total"], 2);
+  assert.equal(queryCurrentProjectSchematicMetadata({ includeSchemas: true })["total"], 4);
   const discovery = queryCurrentProjectSchematicMetadata({ method: request.method, includeSchemas: true });
   assert.equal(discovery["total"], 1); assert.equal(discovery["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(discovery), /inputSchema/u);
   for (const invalid of [{ ...request, code: "private()" }, { ...allRequest, target }, { ...request, target: allRequest.target }, { ...request, method: "eda.dmt_Schematic.modifySchematicName" },
@@ -185,6 +273,7 @@ void test("project schematic request and discovery reject caller code, accessors
 void test("project schematic result and envelope validation rejects authority promotion and malformed membership", async () => {
   const env = fixture(), envelope = structuredClone(await env.run());
   const value = decodeCurrentProjectSchematicMetadataReply(reply(envelope), request);
+  assert.equal(value.method, "eda.dmt_Schematic.getSchematicInfo");
   assert.equal(validateCurrentProjectSchematicMetadataResult(request, value)["liveValidation"], "not-recorded");
   for (const key of ["workerIdentityVerified", "cadAuthority", "persistenceVerified", "sourceMembershipVerified", "permissionVerified", "startupCompletionVerified", "mutationDispatched", "explicitSaveDispatched"]) {
     assert.throws(() => decodeCurrentProjectSchematicMetadataReply(reply(encodeExactReadEnvelope({ ...value, [key]: true })), request));

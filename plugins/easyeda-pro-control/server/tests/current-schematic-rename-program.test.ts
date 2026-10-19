@@ -4,19 +4,26 @@ import { createContext, runInContext } from "node:vm";
 import { CURRENT_SCHEMATIC_RENAME_PROGRAM_MAX_BYTES, CURRENT_SCHEMATIC_RENAME_TIMEOUT_MS, buildCurrentSchematicRenameProgram,
   decodeCurrentSchematicRenameReply, decodeCurrentSchematicRenameStoppedReply } from "../src/current-schematic-rename-program.ts";
 import { prepareCurrentSchematicChildRoster } from "../src/current-schematic-child-roster.ts";
+import { prepareCurrentSchematicNativeMetadata } from "../src/current-schematic-native-metadata.ts";
 import { prepareCurrentSchematicRenameSql } from "../src/current-schematic-rename-sql.ts";
 import { ACTOR as SCH_PROGRAM_ACTOR, TARGET as SCH_PROGRAM_TARGET, schematicBaseline } from "./helpers/current-schematic-rename-observer-fixture.ts";
+import { inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
-async function schematicProgramPreparation(): Promise<Awaited<ReturnType<typeof schematicBaseline>> & Readonly<{
+async function schematicProgramPreparation(sql?: string): Promise<Awaited<ReturnType<typeof schematicBaseline>> & Readonly<{
   preparation: Awaited<ReturnType<typeof prepareCurrentSchematicRenameSql>>;
   roster: Awaited<ReturnType<typeof prepareCurrentSchematicChildRoster>>;
   input: { expectedActor: typeof SCH_PROGRAM_ACTOR; rendererTimezoneOffsetMinutes: number };
 }>> {
-  const baseline = await schematicBaseline(), { before, metadata } = baseline, roster = await prepareCurrentSchematicChildRoster(metadata, before);
+  const baseline = await schematicBaseline();
+  if (sql !== undefined) { mutate(baseline.path, sql); }
+  const before = sql === undefined ? baseline.before : await inventory(baseline.path);
+  const metadata = sql === undefined ? baseline.metadata : await prepareCurrentSchematicNativeMetadata({ before,
+    target: SCH_PROGRAM_TARGET, desiredTitle: baseline.metadata.request.desiredTitle });
+  const roster = await prepareCurrentSchematicChildRoster(metadata, before);
   const preparation = await prepareCurrentSchematicRenameSql({ before, metadata, witness: { projectUuid: SCH_PROGRAM_TARGET.projectUuid,
     branchUuid: SCH_PROGRAM_TARGET.branchUuid, backendActorUuid: SCH_PROGRAM_ACTOR.uuid, client: "a".repeat(16),
     documentClockMinMs: 1_000_000, documentClockMaxMs: 1_060_000, backendClockMinMs: 1_000_000, backendClockMaxMs: 1_060_000, backendLocalOffsetMinutes: 0 } });
-  return { ...baseline, preparation, roster, input: { expectedActor: SCH_PROGRAM_ACTOR, rendererTimezoneOffsetMinutes: 0 } };
+  return { ...baseline, before, metadata, preparation, roster, input: { expectedActor: SCH_PROGRAM_ACTOR, rendererTimezoneOffsetMinutes: 0 } };
 }
 
 type Prepared = Awaited<ReturnType<typeof schematicProgramPreparation>>;
@@ -107,6 +114,19 @@ void test("SCH program refuses changed holders, child membership, actors and clo
   for (const change of ["gVars.messageBus=new Bus();", "astSch.sort=[...astSch.sort];", "tree.ast=()=>ast;", "SCH.gVars.currentProject={...SCH.gVars.currentProject};", "childMap['c'.repeat(16)].title='changed';"]) {
     const env = fixture(prepared, { afterRpc: `if(calls.length===1){${change}}` });
     await assert.rejects(env.run(), /CURRENT_SCHEMATIC_RENAME_REFUSED/u, change); assert.equal(env.evaluate("writes"), 0);
+  }
+});
+void test("SCH program preserves exact UI identity with distinct or absent historical user names", async () => {
+  for (const sql of ["UPDATE users SET username='historical-user',nickname='Historical'", "DELETE FROM users"]) {
+    const p = await schematicProgramPreparation(sql); const env = fixture(p);
+    const result = decode(structuredClone(await env.run()), p);
+    assert.deepEqual(result.actor, SCH_PROGRAM_ACTOR); assert.equal(env.evaluate("writes"), 1);
+    assert.throws(() => buildCurrentSchematicRenameProgram(p.preparation, p.before, p.metadata, p.roster,
+      { ...p.input, expectedActor: { ...SCH_PROGRAM_ACTOR, uuid: "f".repeat(32) } }), /ACTOR/u);
+    for (const field of ["username", "nickname"]) {
+      const changed = fixture(p, { afterRpc: `if(calls.length===1){gVars.loginedUserInfo.${field}='changed UI name';gVars.globalVariableCookieData.userInfo.${field}='changed UI name';}` });
+      await assert.rejects(changed.run(), /CURRENT_SCHEMATIC_RENAME_REFUSED/u); assert.equal(changed.evaluate("writes"), 0);
+    }
   }
 });
 void test("SCH program retains acknowledgment on failed post-effect checks without retry or Save", async () => {

@@ -9,13 +9,17 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 export const CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES = 512 * 1024;
 export const CURRENT_PROJECT_SCHEMATIC_METADATA_TIMEOUT_MS = 10_000;
 export const CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS = 128;
-const methods = ["eda.dmt_Schematic.getSchematicInfo", "eda.dmt_Schematic.getAllSchematicsInfo"] as const;
+const methods = ["eda.dmt_Schematic.getSchematicInfo", "eda.dmt_Schematic.getAllSchematicsInfo",
+  "eda.dmt_Schematic.getSchematicPageInfo", "eda.dmt_Schematic.getAllSchematicPagesInfo"] as const;
 const documentId = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const projectTargetSchema = z.object({ projectUuid: z.string().regex(/^[a-f0-9]{64}$/u), branchUuid: z.string().regex(/^[a-f0-9]{32}$/u) }).strict();
 const selectedTargetSchema = projectTargetSchema.extend({ schematicUuid: documentId }).strict();
+const selectedPageTargetSchema = selectedTargetSchema.extend({ schematicPageUuid: documentId }).strict();
 export const currentProjectSchematicMetadataRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal(methods[0]), target: selectedTargetSchema }).strict(),
   z.object({ method: z.literal(methods[1]), target: projectTargetSchema }).strict(),
+  z.object({ method: z.literal(methods[2]), target: selectedPageTargetSchema }).strict(),
+  z.object({ method: z.literal(methods[3]), target: projectTargetSchema }).strict(),
 ]);
 export const currentProjectSchematicMetadataQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
 export type CurrentProjectSchematicMetadataRequest = z.infer<typeof currentProjectSchematicMetadataRequestSchema>;
@@ -26,23 +30,30 @@ const childSchema = z.object({ ...metadata, schematicUuid: documentId, title: z.
   docType: z.literal(1), zIndex: z.number().refine(value => !Object.is(value, -0)) }).strict();
 const schematicSchema = z.object({ ...metadata, name: z.string().max(512), displayName: z.string().max(512), boardUuid: z.string().max(128),
   children: z.array(childSchema).max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS) }).strict();
-export const currentProjectSchematicMetadataResultSchema = z.object({ ok: z.literal(true), kind: z.literal("current-project-schematic-metadata-observation"),
-  method: z.enum(methods), target: z.union([selectedTargetSchema, projectTargetSchema]), ownerUuid: projectTargetSchema.shape.branchUuid,
-  schematics: z.array(schematicSchema).max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS),
+const commonResultFields = { ok: z.literal(true), kind: z.literal("current-project-schematic-metadata-observation"),
+  ownerUuid: projectTargetSchema.shape.branchUuid,
   observedSchematicCount: integer.max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS), observedSheetCount: integer.max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS),
   samples: z.literal(2), currentTabId: z.enum(["tab_page1", "0"]), implementationKind: z.literal("native-task-equivalent"),
   completeNativeSchematicMapObserved: z.literal(true), completeNativeSheetMapObserved: z.literal(true), parentMembershipObserved: z.literal(true),
   noEditorTabsObserved: z.literal(true), hiddenEditorsAbsentObserved: z.literal(true), dirtyTabsAbsentObserved: z.literal(true),
   cachedProjectReadOnlyAbsentObserved: z.literal(true), concurrentStrictModeAbsentObserved: z.literal(true),
   workerIdentityVerified: z.literal(false), cadAuthority: z.literal(false), persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false),
-  permissionVerified: z.literal(false), startupCompletionVerified: z.literal(false), mutationDispatched: z.literal(false), explicitSaveDispatched: z.literal(false) }).strict();
+  permissionVerified: z.literal(false), startupCompletionVerified: z.literal(false), mutationDispatched: z.literal(false), explicitSaveDispatched: z.literal(false) };
+const schematicResults = { ...commonResultFields, schematics: z.array(schematicSchema).max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS) };
+const pageResults = { ...commonResultFields, pages: z.array(childSchema).max(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_ITEMS) };
+export const currentProjectSchematicMetadataResultSchema = z.discriminatedUnion("method", [
+  z.object({ ...schematicResults, method: z.literal(methods[0]), target: selectedTargetSchema }).strict(),
+  z.object({ ...schematicResults, method: z.literal(methods[1]), target: projectTargetSchema }).strict(),
+  z.object({ ...pageResults, method: z.literal(methods[2]), target: selectedPageTargetSchema }).strict(),
+  z.object({ ...pageResults, method: z.literal(methods[3]), target: projectTargetSchema }).strict(),
+]);
 export type CurrentProjectSchematicMetadataResult = z.infer<typeof currentProjectSchematicMetadataResultSchema>;
 
 const limitations = [
   "Exact loaded local path-hash project/branch with Start Page and optional hidden blank placeholder only. Editor tabs, hidden/export frames, dirty tabs, restoration, document URL commands, read-only/concurrent/historical/archived/store/CBB/V2 state refuse.",
   "Two matching complete native schematic and sheet metadata maps are bracketed by project-owner checks. Every observed sheet must name an observed schematic. Selected lookup additionally matches exact getData. Sorted UUID order is comparison order, not visual sheet order; native zIndex is preserved.",
-  "Native-task-equivalent metadata, not public IDMT_SchematicItem parity. Name/displayName and child title/displayTitle remain independent native strings without locale normalization. Source/version/board already use native value || empty-string fallback. Creator/modifier/createTime, derived doc_id, public board names and title blocks are not returned.",
-  "Only project getData, schematic getAllKVDatas/getData and sheet getAllKVDatas RPCs with explicit project identity are allowed. No array getter with caught-error fallback, public tree traversal, canvas/getNeedData, clock/client, name availability, permission request, cloud lookup, mutation, Save or navigation.",
+  "Native-task-equivalent metadata, not public IDMT_SchematicItem or IDMT_SchematicPageItem parity. Name/displayName and page title/displayTitle remain independent native strings without locale normalization. Source/version/board already use native value || empty-string fallback. Creator/modifier/createTime, derived doc_id, public board names and title blocks are not returned.",
+  "Only project getData, schematic getAllKVDatas/getData and sheet getAllKVDatas/getData RPCs with explicit project identity are allowed. No array getter with caught-error fallback, public tree traversal, canvas/getNeedData, clock/client, name availability, permission request, cloud lookup, mutation, Save or navigation.",
   "At most 128 schematic containers and 128 sheets, 128 UI containers/255 tree nodes/256 tabs. The complete combined metadata sample is bounded to 524288 UTF-8 bytes before selected filtering, and the result envelope has the same separate bound. Bounds apply after native enumeration and do not cancel it. Ten-second timeout forbids later reads but cannot cancel an outstanding native call.",
   "Observed map completeness is not saved-source membership, a worker lease, continuous exclusion, startup/queue completion or writer authority. The route does not inspect schematic AST holders or establish title-block/circuit/connectivity data. Connected validation is not recorded.",
 ] as const;
@@ -62,14 +73,19 @@ function fields(input: unknown, names: readonly string[]): Record<string, unknow
 }
 export function parseCurrentProjectSchematicMetadataRequest(input: unknown): CurrentProjectSchematicMetadataRequest {
   const value = fields(input, ["method", "target"]);
-  const targetFields = value["method"] === methods[0] ? ["projectUuid", "branchUuid", "schematicUuid"] : ["projectUuid", "branchUuid"];
+  const targetFields = ["projectUuid", "branchUuid"];
+  if (value["method"] === methods[0] || value["method"] === methods[2]) { targetFields.push("schematicUuid"); }
+  if (value["method"] === methods[2]) { targetFields.push("schematicPageUuid"); }
   return currentProjectSchematicMetadataRequestSchema.parse({ method: value["method"], target: fields(value["target"], targetFields) });
 }
 export function queryCurrentProjectSchematicMetadata(input: unknown = {}): Record<string, unknown> {
   const query = currentProjectSchematicMetadataQuerySchema.parse(input), selected = methods.filter(method => query.method === undefined || method === query.method);
   const entries: Record<string, unknown>[] = [];
   for (const method of selected) {
-    entries.push({ path: method, method, parameters: method === methods[0] ? ["schematicUuid"] : [],
+    const parameters: string[] = [];
+    if (method === methods[0]) { parameters.push("schematicUuid"); }
+    if (method === methods[2]) { parameters.push("schematicPageUuid"); }
+    entries.push({ path: method, method, parameters,
       effect: "current-project-only-schematic-metadata-read", implementationKind: "native-task-equivalent", liveValidation: "not-recorded", limitations: [...limitations],
       provenance: { apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
         apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
@@ -89,6 +105,20 @@ export function validateCurrentProjectSchematicMetadataArguments(input: unknown)
 function resultFor(input: unknown, raw: unknown): CurrentProjectSchematicMetadataResult {
   const request = parseCurrentProjectSchematicMetadataRequest(input), result = currentProjectSchematicMetadataResultSchema.parse(raw);
   if (result.method !== request.method || canonicalJson(result.target) !== canonicalJson(request.target)) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_TARGET"); }
+  if (result.method === methods[2] || result.method === methods[3]) {
+    const ids = result.pages.map(value => value.uuid), parentIds = new Set(result.pages.map(value => value.schematicUuid));
+    if (new Set(ids).size !== ids.length || ids.some((uuid, index) => parentIds.has(uuid) || (index > 0 && uuid <= (ids[index - 1] ?? ""))) ||
+      result.observedSheetCount < ids.length || result.observedSchematicCount < parentIds.size) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_MEMBERSHIP"); }
+    if (result.method === methods[2]) {
+      if (ids.length !== 1 || ids[0] !== result.target.schematicPageUuid || result.pages[0]?.schematicUuid !== result.target.schematicUuid) {
+        throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_TARGET");
+      }
+    } else if (result.observedSheetCount !== ids.length) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_MEMBERSHIP"); }
+  } else { validateSchematicMembership(result); }
+  if (Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_BOUND"); }
+  return freezeDeep(result);
+}
+function validateSchematicMembership(result: Extract<CurrentProjectSchematicMetadataResult, { readonly schematics: unknown }>): void {
   const schematicIds = result.schematics.map(value => value.uuid), sheets = result.schematics.flatMap(value => value.children);
   const sheetIds = sheets.map(value => value.uuid);
   if (new Set([...schematicIds, ...sheetIds]).size !== schematicIds.length + sheetIds.length ||
@@ -96,11 +126,9 @@ function resultFor(input: unknown, raw: unknown): CurrentProjectSchematicMetadat
     result.schematics.some(value => value.children.some((child, index) => child.schematicUuid !== value.uuid ||
       (index > 0 && child.uuid <= (value.children[index - 1]?.uuid ?? "")))) ||
     result.observedSchematicCount < schematicIds.length || result.observedSheetCount < sheets.length) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_MEMBERSHIP"); }
-  if (request.method === methods[0]) {
-    if (schematicIds.length !== 1 || schematicIds[0] !== request.target.schematicUuid) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_TARGET"); }
+  if (result.method === methods[0]) {
+    if (schematicIds.length !== 1 || schematicIds[0] !== result.target.schematicUuid) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_TARGET"); }
   } else if (result.observedSchematicCount !== schematicIds.length || result.observedSheetCount !== sheets.length) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_MEMBERSHIP"); }
-  if (Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES) { throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_BOUND"); }
-  return freezeDeep(result);
 }
 export function validateCurrentProjectSchematicMetadataResult(input: unknown, raw: unknown): Record<string, unknown> {
   return { ...resultFor(input, raw), effect: "current-project-only-schematic-metadata-read", authority: "observed-project-metadata-only;not-write-or-persistence-authority",

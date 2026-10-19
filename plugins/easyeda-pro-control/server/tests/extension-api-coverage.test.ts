@@ -49,9 +49,27 @@ void test("all eight legacy project-structure writer routes remain blocked witho
 });
 
 
+void test("project board coverage exposes bounded observed metadata without public parity or writer authority", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const path of ["eda.dmt_Board.getBoardInfo", "eda.dmt_Board.getAllBoardsInfo"]) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_project_board"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.equal(route.documentTypes, undefined);
+    for (const required of ["complete bounded native board", "before selected filtering", "128 boards", "65536 UTF-8 bytes", "No public IDMT_BoardItem parity", "writer authority"]) {
+      assert.ok(route.scope.includes(required));
+    }
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "project-board", query: { includeSchemas: true } } } });
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
+    assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
+    assert.equal(result["total"], 2); assert.equal(result["invocationEnabledByDiscovery"], false);
+  }
+});
+
 void test("project schematic coverage exposes only complete observed metadata and child rosters", () => {
   const rows = inventoryExtensionApiCoverage();
-  for (const path of ["eda.dmt_Schematic.getSchematicInfo", "eda.dmt_Schematic.getAllSchematicsInfo"]) {
+  for (const path of ["eda.dmt_Schematic.getSchematicInfo", "eda.dmt_Schematic.getAllSchematicsInfo", "eda.dmt_Schematic.getSchematicPageInfo", "eda.dmt_Schematic.getAllSchematicPagesInfo"]) {
     const row = rows.find(entry => entry.path === path); assert.ok(row);
     assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
     const route = row.routes.find(entry => entry.tool === "easyeda_control_project_schematic"); assert.ok(route);
@@ -63,7 +81,7 @@ void test("project schematic coverage exposes only complete observed metadata an
     assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "project-schematic", query: { includeSchemas: true } } } });
     const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
     assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
-    assert.equal(result["total"], 2); assert.equal(result["invocationEnabledByDiscovery"], false);
+    assert.equal(result["total"], 4); assert.equal(result["invocationEnabledByDiscovery"], false);
   }
 });
 

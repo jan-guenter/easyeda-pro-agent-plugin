@@ -1,5 +1,6 @@
 /** Disposable SCHEMATIC rename composition. Only original issuers supply live owners. */
 /* oxlint-disable import/max-dependencies -- Compose fixed original baseline, clock, writer and verifier issuers instead of accepting caller-provided capabilities. */
+import { performance } from "node:perf_hooks";
 import { controlDataDirectory, loadOperation } from "./artifacts.ts";
 import { isRecord } from "./core.ts";
 import { assertCurrentSchematicRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
@@ -23,6 +24,17 @@ import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 
 type Value = Readonly<Record<string, unknown>>;
 type CleanupOwner = "opening" | "baseline" | "generation" | "writer" | "verification";
+type DiagnosticOutcome = "succeeded" | "failed" | "observation-pending";
+interface ActiveDiagnostic {
+  readonly action: "baseline-begin" | "advance" | "cleanup";
+  readonly phase: CurrentSchematicRenameOperationPhase | "baseline-begin" | "cleanup";
+  readonly startedAt: number;
+  stage: "performing" | "cleanup-selection";
+}
+interface FinishedDiagnostic {
+  readonly action: ActiveDiagnostic["action"]; readonly phase: ActiveDiagnostic["phase"];
+  readonly durationMs: number; readonly outcome: DiagnosticOutcome;
+}
 interface Slot {
   readonly operationId: string; readonly openingOperationId: string;
   next: CurrentSchematicRenameOperationPhase | "completed" | "stopped";
@@ -32,6 +44,26 @@ interface Slot {
   reference?: OriginalCurrentSchematicAgedSqlReference; currentGeneration?: CurrentProjectOnlySchematicRenameGeneration;
   startup?: CurrentSchematicRenameStartupObservation; agedClock?: OriginalCurrentSchematicAgedSqlClock;
   cleanup?: CleanupOwner; cleanupRequested: boolean; renameVerified: boolean;
+  diagnosticCurrent?: ActiveDiagnostic; diagnosticLast?: FinishedDiagnostic;
+}
+function diagnosticElapsed(startedAt: number): number {
+  const elapsed = Math.floor(performance.now() - startedAt);
+  return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, elapsed));
+}
+function finishDiagnostic(slot: Slot, outcome: DiagnosticOutcome): void {
+  const current = slot.diagnosticCurrent;
+  if (current !== undefined) {
+    const terminal = outcome === "succeeded" && current.action === "advance" && slot.next === current.phase ? "observation-pending" : outcome;
+    slot.diagnosticLast = Object.freeze({ action: current.action, phase: current.phase, durationMs: diagnosticElapsed(current.startedAt), outcome: terminal });
+    delete slot.diagnosticCurrent;
+  }
+}
+function inspectDiagnostic(slot: Slot): Value {
+  const current = slot.diagnosticCurrent;
+  return Object.freeze({ profile: "easyeda-pro-control.current-schematic-rename-phase-diagnostic.v1",
+    current: current === undefined ? null : Object.freeze({ action: current.action, phase: current.phase, stage: current.stage,
+      elapsedMs: diagnosticElapsed(current.startedAt) }), last: slot.diagnosticLast ?? null,
+    diagnosticOnly: true, monotonicElapsedOnly: true, clockAuthority: false, replayAllowed: false });
 }
 function need(condition: boolean, message = "SCHEMATIC rename requires its retained owner and exact next phase."): asserts condition {
   if (!condition) { throw new Error(message); }
@@ -73,22 +105,28 @@ export class CurrentSchematicRenameOperationCoordinator {
     if (request.action === "cleanup") {
       need(!slot.renameVerified && slot.next !== "completed" && !slot.cleanupRequested, "SCHEMATIC rename cleanup was already selected or operation completed.");
       this.busy = true; slot.cleanupRequested = true;
-      try { await this.chooseCleanup(slot); }
-      finally { this.busy = false; }
+      slot.diagnosticCurrent = { action: "cleanup", phase: "cleanup", stage: "cleanup-selection", startedAt: performance.now() };
+      let outcome: DiagnosticOutcome = "failed";
+      try { await this.chooseCleanup(slot); outcome = "succeeded"; }
+      finally { finishDiagnostic(slot, outcome); this.busy = false; }
       return this.inspect(slot.operationId);
     }
     const { expectedPhase: phase } = request.step;
     need(slot.next === phase); this.busy = true; slot.next = "stopped"; slot.attempted.push(phase);
+    slot.diagnosticCurrent = { action: "advance", phase, stage: "performing", startedAt: performance.now() };
+    let outcome: DiagnosticOutcome = "failed";
     try {
       const result = await this.perform(slot, request.step); slot.last = structuredClone(result);
       need(phase.startsWith("cleanup-") || result["failed"] !== true && result["state"] !== "stopped", "SCHEMATIC rename retained a stopped stage.");
       this.advanceNext(slot, phase, result);
+      outcome = "succeeded";
     } catch (error) {
       slot.failedPhase ??= phase;
+      slot.diagnosticCurrent.stage = "cleanup-selection";
       try { await this.chooseCleanup(slot); }
       catch (cleanupError) { throw new AggregateError([error, cleanupError], "SCHEMATIC rename failed; inspect the retained cleanup owner.", { cause: cleanupError }); }
       throw error;
-    } finally { this.busy = false; }
+    } finally { finishDiagnostic(slot, outcome); this.busy = false; }
     return this.inspect(slot.operationId);
   }
   public inspect(operationId: string): Value {
@@ -97,6 +135,7 @@ export class CurrentSchematicRenameOperationCoordinator {
       openingOperationId: slot.openingOperationId, nextPhase: slot.next, busy: this.busy, attemptedPhases: [...slot.attempted], failedPhase: slot.failedPhase ?? null,
       lastResult: slot.last === undefined ? null : structuredClone(slot.last), originalOwnerRetained: slot.owner !== undefined,
       cleanupOwner: slot.cleanup ?? null, cleanupRequested: slot.cleanupRequested, renameVerified: slot.renameVerified,
+      phaseDiagnostics: inspectDiagnostic(slot),
       savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: false, genericWritersEnabled: false,
       forwardOnly: true, inverseSupported: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
@@ -105,6 +144,8 @@ export class CurrentSchematicRenameOperationCoordinator {
     const slot: Slot = { operationId: request.operationId, openingOperationId: request.openingOperationId, next: "stopped",
       attempted: ["baseline-begin"], cleanupRequested: false, renameVerified: false };
     this.slots.set(request.operationId, slot);
+    slot.diagnosticCurrent = { action: "baseline-begin", phase: "baseline-begin", stage: "performing", startedAt: performance.now() };
+    let outcome: DiagnosticOutcome = "failed";
     let configured: Awaited<ReturnType<typeof loadRuntimeMachineProfile>> | undefined;
     try {
       configured = await loadRuntimeMachineProfile();
@@ -116,8 +157,10 @@ export class CurrentSchematicRenameOperationCoordinator {
       slot.baseline = new CurrentSchematicRenameBaselineCoordinator(this.engine, original.source.runtime, configured.profile.runtime);
       slot.generation = new CurrentSchematicRenameGenerationCoordinator(this.engine, original.source.runtime);
       slot.last = structuredClone(await slot.baseline.capture(slot.owner)); slot.next = "baseline-close";
+      outcome = "succeeded";
     } catch (error) {
       slot.failedPhase = "baseline-begin";
+      slot.diagnosticCurrent.stage = "cleanup-selection";
       try { slot.owner ??= this.opener.getSchematicRenameOpeningOwner(request.operationId); }
       catch {
         // A refused transfer supplies no authority.
@@ -131,7 +174,7 @@ export class CurrentSchematicRenameOperationCoordinator {
         await this.chooseCleanup(slot);
       } catch (cleanupError) { throw new AggregateError([error, cleanupError], "SCHEMATIC baseline failed; its original cleanup owner remains retained.", { cause: cleanupError }); }
       throw error;
-    } finally { this.busy = false; }
+    } finally { finishDiagnostic(slot, outcome); this.busy = false; }
     return this.inspect(slot.operationId);
   }
   private async perform(slot: Slot, step: CurrentSchematicRenameOperationStep): Promise<Value> {

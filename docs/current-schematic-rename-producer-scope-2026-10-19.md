@@ -2,7 +2,7 @@
 
 Research date: 2026-10-19. Installed vendor files were rehashed and read as
 inert UTF-8 text. No vendor code was evaluated, no application was launched,
-and no project, account database or cache was opened. Offsets below are
+and no project, account database or cache was opened during the source review. Offsets below are
 zero-based UTF-16 code units.
 
 ## Primary sources
@@ -54,16 +54,41 @@ facts do not expose or attest a live private worker field.
 APP adds the transaction actor independently. `createProjectHistory` at
 2604081 calls `L3` at 2602467, which selects `ctx.user.uuid`, reads that user's
 names from the target project's users table and prepends `EDIT_HEAD`. APP
+initializes both names to empty strings and retains them when no matching
+project-user row exists. A populated row supplies its stored names, not the
+current UI's names. APP
 `xB` at 2601108 writes the same request UUID into the project modifier field.
 The native SCH acknowledgment is not a backend actor receipt.
 
 The [actor policy](current-backend-actor-adapter-plan-2026-10-16.md) therefore
-applies without a new `/api/user` endpoint. Before dispatch, freeze the agreeing
-UI actor and require exactly matching original project-user strings. After
-the original root and Job have exited, compare the complete closed SQL effect
-against that frozen actor, client, ticket, target, title and time window.
+applies without a new `/api/user` endpoint, with this SCH-specific distinction.
+Before dispatch, freeze the agreeing dual UI actor and use its UUID to select
+the backend names from the original complete project users table. Freeze that
+separate backend actor, including the exact empty-name fallback when the row
+is absent. Require the UUIDs to agree; do not require UI names to equal
+historical SQL names. Both UI names remain exact through clock collection,
+the write and saved reopening. After the original root and Job have exited,
+compare the complete closed SQL effect against the frozen backend actor,
+client, ticket, target, title and time window.
 Do not select an actor from the changed database. A mismatch fails even when
 the requested title persisted. It cannot authorize a retry.
+
+The older actor-plan's first-profile restriction to matching populated user
+rows remains historical guidance for that profile, not a universal APP
+contract. This SCH profile deliberately models the native absent-row and
+historically different-name branches. This is not authentication relaxation:
+an unexpected UUID, UI change, saved header name or modified users table still
+fails. The program checks the original UI actor; the saved lifecycle passes
+that same original write-input actor to its reopened UI comparison. Neither
+path substitutes saved names for UI identity or UI names for `EDIT_HEAD`.
+
+The installed125900 disposable attempt stopped before mutation because its
+original UI UUID had no matching row in the retained baseline users table.
+The later read-only check verified that checkpoint's recorded hash and unchanged
+bytes without exposing actor values. Its unchanged closed SQL and retirement
+are failed-attempt recovery evidence, not a completed rename. The source fix
+and focused synthetic cases do not authorize replaying that consumed attempt
+or claim connected validation of the corrected implementation.
 
 The completed SCH clock comparison reports
 `transactionActorMatchesExpected:true`, `backendActorPreverified:false` and

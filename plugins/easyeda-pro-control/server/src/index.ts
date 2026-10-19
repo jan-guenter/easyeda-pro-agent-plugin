@@ -132,6 +132,8 @@ import { currentProjectPcbMetadataRequestSchema } from "./current-project-pcb-me
 import { readCurrentProjectPcbMetadata } from "./current-project-pcb-metadata-runtime.ts";
 import { currentProjectSchematicMetadataRequestSchema } from "./current-project-schematic-metadata.ts";
 import { readCurrentProjectSchematicMetadata } from "./current-project-schematic-metadata-runtime.ts";
+import { currentProjectBoardMetadataRequestSchema } from "./current-project-board-metadata.ts";
+import { readCurrentProjectBoardMetadata } from "./current-project-board-metadata-runtime.ts";
 import { currentPcbRenamePreflightRequestSchema } from "./current-pcb-rename-preflight.ts";
 import { readCurrentPcbRenamePreflight } from "./current-pcb-rename-preflight-runtime.ts";
 import { currentSymbolOperationRequestSchema } from "./current-symbol-operation.ts";
@@ -1893,6 +1895,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_project_symbol: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_pcb: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_schematic: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_project_board: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_symbol_metadata: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_symbol_copy: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_pcb_rename: currentSymbolOperationToolOutputSchema,
@@ -1990,6 +1993,8 @@ registerFacadeTool(
         projectPcb: { tool: "easyeda_control_project_pcb", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true,
           noEditorTabsRequired: true, savedMembershipVerified: false, cadAuthority: false, connectedValidation: false },
         projectSchematic: { tool: "easyeda_control_project_schematic", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true,
+          noEditorTabsRequired: true, savedMembershipVerified: false, cadAuthority: false, connectedValidation: false },
+        projectBoard: { tool: "easyeda_control_project_board", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true,
           noEditorTabsRequired: true, savedMembershipVerified: false, cadAuthority: false, connectedValidation: false },
         projectSymbolMetadata: { tool: "easyeda_control_project_symbol_metadata", scope: "unreferenced-project-local-meta-only-or-bounded-canvas-segments-name-description-forward-only",
           runtimeAdmissionRequired: true, designMutation: true, connectedValidation: false, originalOwnerRequired: true,
@@ -2540,12 +2545,23 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_project_schematic",
   {
-    title: "Read project-local schematic metadata and child rosters without opening editors",
-    description: "Read one exact schematic container or all containers in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch identity; selected lookup also requires the schematic UUID. Two complete bounded native schematic and sheet maps must match, with every child naming an observed container and project-owner checks surrounding each sample. Selected lookup additionally matches the exact native getter. Preserves independent native name/display name, child title/display title, source/version, board, ticket, update time and child zIndex. Sorted UUID order is comparison order, not visual order. Native-task-equivalent observations, not public object parity, saved-source membership, a worker lease, startup completion or writer authority. No canvas/source loading, AST-holder preflight, navigation, clock/client lookup, name availability, cloud lookup, mutation or Save. Query offline project-schematic/project-schematic-validate first. Connected validation is generation-specific and not recorded for this reader.",
+    title: "Read project-local schematic and sheet metadata without opening editors",
+    description: "Read one or all schematic containers or sheets in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch identity; selected sheet lookup also requires its page UUID and expected parent schematic UUID. Two complete bounded native schematic and sheet maps must match, with every child naming an observed container and project-owner checks surrounding each sample. Selected lookup additionally matches its exact native getter. Preserves independent native name/display name, sheet title/display title, source/version, board, ticket, update time and sheet zIndex. Sorted UUID order is comparison order, not visual order. Native-task-equivalent observations, not public object parity, saved-source membership, a worker lease, startup completion or writer authority. No canvas/source loading, AST-holder preflight, navigation, clock/client lookup, name availability, cloud lookup, mutation or Save. Query offline project-schematic/project-schematic-validate first. Connected validation is generation-specific and not recorded for these added page routes.",
     inputSchema: { request: z.unknown().pipe(currentProjectSchematicMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readCurrentProjectSchematicMetadata(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_project_board",
+  {
+    title: "Read project-local board metadata without opening editors",
+    description: "Read one exact board or the complete bounded board metadata inventory in an already loaded local project with no editor tabs or hidden editors. Requires an authenticated fingerprint and explicit project/branch identity; selected lookup also requires its board UUID. The public getBoardInfo boardName selector is not exposed: this native equivalent requires boardUuid and rejects boardName. Two complete native key/value maps must match, bracketed by project-owner checks; selected lookup also matches its exact native getter. Returns UUID, raw title, zIndex and ticket, sorted by UUID rather than visual order. At most 128 boards and 65536 UTF-8 bytes before selected filtering; genuine empty maps are preserved. Native-task-equivalent observations, not public IDMT_BoardItem parity, child document membership, saved-source membership, a worker lease, startup completion or writer authority. No canvas/source loading, navigation, clock/client lookup, name selection, cloud lookup, mutation or Save. Query offline project-board/project-board-validate first. Connected validation is not recorded.",
+    inputSchema: { request: z.unknown().pipe(currentProjectBoardMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readCurrentProjectBoardMetadata(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(
@@ -3782,7 +3798,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_schematic_renam
   const inputSchema = z.object({ request: z.unknown().pipe(currentSchematicRenameOperationRequestSchema) }).strict();
   server.registerTool("easyeda_control_disposable_schematic_rename", {
     title: "Rename one schematic container in an owned disposable project",
-    description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies; never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. No connected schematic rename validation is recorded.",
+    description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies for the current phase, elapsed time and last outcome. These passive diagnostics are not writer clocks or retry authority; busy plus stopped reserves ongoing work. Never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. No connected schematic rename validation is recorded.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   }, guarded(async ({ request }: z.output<typeof inputSchema>) => {

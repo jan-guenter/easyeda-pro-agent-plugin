@@ -35,16 +35,19 @@ void test("project schematic registration preserves strict selected/inventory me
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32) };
   const selected = { method: "eda.dmt_Schematic.getSchematicInfo", target: { ...target, schematicUuid: "c".repeat(16) } };
   const all = { method: "eda.dmt_Schematic.getAllSchematicsInfo", target };
+  const page = { method: "eda.dmt_Schematic.getSchematicPageInfo", target: { ...selected.target, schematicPageUuid: "d".repeat(16) } };
+  const allPages = { method: "eda.dmt_Schematic.getAllSchematicPagesInfo", target };
   for (const invalid of [{ ...selected, method: "eda.dmt_Schematic.modifySchematicName" }, { ...selected, arguments: {} }, { ...selected, code: "caller-code" },
     { ...selected, target: { ...selected.target, schematicUuid: "wrong" } }, { ...selected, target: { ...selected.target, tabId: "0" } },
-    { ...selected, desiredTitle: "Renamed" }, { ...selected, target }, { ...all, target: selected.target }, { ...all, expectedBefore: {} }]) {
+    { ...selected, desiredTitle: "Renamed" }, { ...selected, target }, { ...all, target: selected.target }, { ...all, expectedBefore: {} },
+    { ...page, target: selected.target }, { ...allPages, target: page.target }, { ...page, arguments: {} }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
-  for (const request of [selected, all]) {
+  for (const request of [selected, all, page, allPages]) {
     const parsed: unknown = requestSchema.parse(request), result: unknown = await invoke({ request: parsed, expectedFingerprint });
     assert.equal(calls.at(-1), parsed);
     assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
   }
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 4);
 });

@@ -99,5 +99,6 @@ export function verifyCurrentSchematicRenameSavedMetadataAndChildren(value: Curr
   children: unknown): Readonly<Record<string, unknown>> {
   const original = assertCurrentSchematicRenameSavedLifecycleSource(value, engine, continuation);
   const snapshot = assertOriginalCurrentSchematicRenameSnapshot(original.source.snapshot, engine);
-  return compareCurrentSchematicRenameSavedObservations(original.dataSource, snapshot.inventory, metadata, children);
+  return compareCurrentSchematicRenameSavedObservations(original.dataSource, snapshot.inventory, metadata, children,
+    original.source.writeInput.expectedActor);
 }

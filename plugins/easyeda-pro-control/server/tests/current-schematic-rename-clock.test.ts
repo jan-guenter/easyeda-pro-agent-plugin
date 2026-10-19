@@ -30,7 +30,7 @@ interface Harness {
   post: (plan: unknown, result: unknown, afterClock: unknown, overrides?: Bag) => Promise<void>;
   verify: (plan: unknown, proof: unknown, after: Inventory, overrides?: Bag) => Promise<Bag>;
   completed: (plan: unknown, after: Inventory, owner?: unknown) => Bag;
-  persist: (plan: unknown, backendTime?: number) => Promise<Inventory>;
+  persist: (plan: unknown, backendTime?: number, backendActor?: Readonly<{ uuid: string; username: string; nickname: string }>) => Promise<Inventory>;
 }
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function sample(milliseconds: number): Bag {
@@ -127,9 +127,9 @@ async function setup(context: TestContext, sql?: string): Promise<{
     }, completed: (plan, after, selectedOwner = owner): Bag => {
       sandbox["selectedPlan"] = plan; sandbox["selectedAfter"] = after; sandbox["selectedOwner"] = selectedOwner;
       return bag(runInContext("completedCurrentSchematicRenameClockSource(selectedPlan,input.engine,selectedOwner,selectedAfter)", sandbox));
-    }, persist: (_plan, backendTime = TIMES.edit): Promise<Inventory> => {
+    }, persist: (_plan, backendTime = TIMES.edit, backendActor = ACTOR): Promise<Inventory> => {
       const raw = [
-        [{ type: "EDIT_HEAD" }, { ...ACTOR, updateTime: backendTime }],
+        [{ type: "EDIT_HEAD" }, { ...backendActor, updateTime: backendTime }],
         [{ type: "DOCHEAD", ticket: 101 }, { docType: "SCH", client: "a".repeat(16), uuid: TARGET.schematicUuid,
           updateTime: TIMES.document, version: String(TIMES.document), editVersion: "3.2.206" }],
         [{ type: "META", ticket: 101, id: "META" }, { title: REQUEST.desiredTitle, source: "", board: "", zIndex: null }],
@@ -186,11 +186,9 @@ void test("SCH clock rejects malformed age data, input getters and Proxy traps",
   }
   await assert.rejects(fixture.make().run({ agedHead: { createdAtLiteral: "2000-01-01 00:00:00" } }), /fields/u); assert.equal(traps, 0);
 });
-void test("SCH clock refuses unlocked heads and historical actor strings differing from the observed UI actor", async context => {
+void test("SCH clock refuses unlocked heads without independent age evidence", async context => {
   const unlocked = await setup(context, `UPDATE "${HISTORY_TABLE}" SET is_lock=0`);
   await assert.rejects(unlocked.make().run(), /independently bound native head age/u);
-  const actor = await setup(context, "UPDATE users SET username='other-user'");
-  await assert.rejects(actor.make().run(), /Historical SQL actor strings/u);
 });
 
 function nativeResult(original: Bag): Bag {
@@ -205,6 +203,25 @@ function nativeResult(original: Bag): Bag {
     producerBindingVerified: false, schematicSubscriberCompletionVerified: false, crossInvocationReceiverContinuityVerified: false,
     atomicCompareAndSwap: false, persistenceVerified: false, reopened: false, executionAuthorized: false, explicitSaveDispatched: false };
 }
+void test("SCH clock freezes baseline user names separately from UI names, including native missing-row fallback", async context => {
+  for (const [sql, backendActor] of [
+    ["UPDATE users SET username='historical-user',nickname='Historical'", { ...ACTOR, username: "historical-user", nickname: "Historical" }],
+    ["DELETE FROM users", { ...ACTOR, username: "", nickname: "" }],
+  ] as const) {
+    const f = await setup(context, sql); const env = f.make(), plan = await env.run();
+    assert.deepEqual(env.original(plan)["expectedActor"], ACTOR);
+    await env.post(plan, nativeResult(env.original(plan)), await f.nextClock());
+    const proof = await f.terminate(); const after = await env.persist(plan, TIMES.edit, backendActor);
+    const comparison = await env.verify(plan, proof, after);
+    assert.equal(comparison["transactionActorMatchesExpected"], true);
+    assert.deepEqual(env.completed(plan, after)["expectedActor"], ACTOR);
+  }
+  const f = await setup(context, "DELETE FROM users"); const env = f.make(), plan = await env.run();
+  await env.post(plan, nativeResult(env.original(plan)), await f.nextClock());
+  const proof = await f.terminate(), wrongUiNames = await env.persist(plan);
+  await assert.rejects(env.verify(plan, proof, wrongUiNames));
+  assert.throws(() => env.completed(plan, wrongUiNames), /Original successful/u);
+});
 void test("SCH post and closure bind original clocks and every SQL row without invoking retired live owners", async context => {
   const f = await setup(context); const env = f.make(); const plan = await env.run(); const native = nativeResult(env.original(plan));
   await env.post(plan, native, await f.nextClock()); const proof = await f.terminate(); const after = await env.persist(plan);
@@ -223,9 +240,10 @@ void test("SCH post and closure bind original clocks and every SQL row without i
 });
 void test("SCH post consumes substituted owner/result/clocks and refuses a capture interposed between N0 and rename", async context => {
   const f = await setup(context); const afterClock = await f.nextClock();
-  for (const mode of ["owner", "clock", "actor", "ticket", "window"] as const) {
+  for (const mode of ["owner", "clock", "actor", "username", "nickname", "ticket", "window"] as const) {
     const env = f.make(); const plan = await env.run(); const native = nativeResult(env.original(plan));
     if (mode === "actor") { native["actor"] = { ...ACTOR, uuid: "f".repeat(32) }; }
+    if (mode === "username" || mode === "nickname") { native["actor"] = { ...ACTOR, [mode]: "changed UI name" }; }
     if (mode === "ticket") { native["after"] = { ...bag(native["after"]), ticket: 102 }; }
     if (mode === "window") { native["documentBefore"] = document(0, 1, 2); }
     await assert.rejects(env.post(plan, native, mode === "clock" ? structuredClone(afterClock) : afterClock, mode === "owner" ? { dispatchOwner: {} } : {}));

@@ -82,7 +82,9 @@ function request(preparation: CurrentSchematicRenameSqlPreparation, beforeSql: I
   const original = originalCurrentSchematicRenameSqlPreparation(preparation, beforeSql, metadata);
   assertOriginalCurrentSchematicChildRoster(roster, beforeSql, metadata);
   const extra = currentSchematicRenameProgramInputSchema.parse(plainData(input));
-  need(canonicalJson(extra.expectedActor) === canonicalJson(original.backendActor), "ACTOR");
+  // UI names remain exact across every native await. APP supplies separate
+  // Historical project-user names for EDIT_HEAD under this same request UUID.
+  need(extra.expectedActor.uuid === original.backendActor.uuid, "ACTOR");
   const before = metadata.peers.find(value => value.uuid === metadata.request.target.schematicUuid); need(before !== undefined, "BINDING");
   need(metadata.maximumTicket < Number.MAX_SAFE_INTEGER, "BINDING");
   const documentWindow = { minimumMs: original.witness.documentClockMinMs, maximumMs: original.witness.documentClockMaxMs };
