@@ -13,7 +13,7 @@ type Bag = Record<string, unknown>;
 type Failure = "publication" | "validation" | "authority-after-return" | "entry-blocker" | "pre-dispatch-blocker" |
   "post-return-blocker" | "exit-blocker" | "admission-method" | "targeted-before-dispatch" | "targeted-after-return" | "journal-exit-targeted" |
   "admission-before-dispatch-binding" | "admission-exit-binding" | "journal-final-admission" |
-  "opening-before-dispatch-admission" | "opening-final-admission";
+  "opening-before-dispatch-admission" | "opening-final-admission" | "binding-snapshot-before-dispatch" | "binding-snapshot-after-return";
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 async function fixture(failure?: Failure): Promise<{
   run: (options?: Readonly<{ copiedBaseline?: boolean; copiedProof?: boolean; sibling?: boolean }>) => Promise<unknown>;
@@ -101,6 +101,7 @@ async function fixture(failure?: Failure): Promise<{
       const parsed = bag(request); assert.equal(parsed["createdAtLiteral"], head.createdAtLiteral);
       if (failure === "pre-dispatch-blocker") { state.blocked = true; }
       if (failure === "targeted-before-dispatch") { state.targetedIntact = false; }
+      if (failure === "binding-snapshot-before-dispatch") { binding.phase = "synthetic-binding-drift"; }
       if (failure === "admission-method") { engine.assertBridgeAndRecoveryAdmission = (): never => { throw new Error("Replacement admission must not run"); }; }
       assert.equal(parsed["baselineCopyReceiptSha256"], baseline.copy.receiptSha256); return Promise.resolve(invocation);
     },
@@ -122,6 +123,7 @@ async function fixture(failure?: Failure): Promise<{
       if (failure === "authority-after-return") { state.closedAuthority = false; }
       if (failure === "post-return-blocker") { state.blocked = true; }
       if (failure === "targeted-after-return") { state.targetedIntact = false; }
+      if (failure === "binding-snapshot-after-return") { binding.phase = "synthetic-binding-drift"; }
       return Promise.resolve(raw);
     },
     retainMainReferenceTransportV2: (value: unknown, requestHash: unknown, intentHash: unknown): typeof retained => {
@@ -226,6 +228,18 @@ for (const failure of ["admission-method", "targeted-before-dispatch", "targeted
     assert.equal(f.state.calls, calls); assert.equal(f.retained(), calls === 1 ? f.raw : undefined);
     f.state.targetedIntact = true;
     await assert.rejects(f.run(), /already consumed/u); assert.equal(f.state.calls, calls);
+  });
+}
+
+for (const [failure, calls] of [["binding-snapshot-before-dispatch", 0], ["binding-snapshot-after-return", 1]] as const) {
+  void test(`SCH scratch compares ${failure} with its captured expected binding, not the same mutable object`, async () => {
+    const f = await fixture(failure);
+    await assert.rejects(f.run(), /Current aged SQL reference refused/u);
+    assert.equal(f.state.calls, calls); assert.equal(f.state.admissions, calls === 0 ? 1 : 2);
+    assert.equal(f.retained(), calls === 0 ? undefined : f.raw);
+    assert.deepEqual(f.state.writes, calls === 0 ? [] : ["current-aged-reference-intent", "current-aged-reference-result"]);
+    await assert.rejects(f.run(), /already consumed/u); await assert.rejects(f.run({ sibling: true }), /already consumed/u);
+    assert.equal(f.state.calls, calls);
   });
 }
 

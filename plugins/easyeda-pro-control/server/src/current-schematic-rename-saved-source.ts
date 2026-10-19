@@ -5,9 +5,10 @@ import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { assertOriginalCurrentSchematicChildRoster, compareCurrentSchematicChildRoster, prepareCurrentSchematicChildRoster } from "./current-schematic-child-roster.ts";
 import type { CurrentSchematicChildRoster } from "./current-schematic-child-roster.ts";
+import { copyCurrentSchematicChildTransport } from "./current-schematic-child-roster-contract.ts";
 import { assertOriginalCurrentSchematicNativeMetadata, prepareCurrentSchematicNativeMetadata } from "./current-schematic-native-metadata.ts";
 import type { CurrentSchematicNativeMetadata } from "./current-schematic-native-metadata.ts";
-import { compareCurrentSchematicRenameObservation, validateCurrentSchematicRenameObservation } from "./current-schematic-rename-observation.ts";
+import { compareCurrentSchematicRenameObservation, currentSchematicRenameObservationSchema, validateCurrentSchematicRenameObservation } from "./current-schematic-rename-observation.ts";
 import { originalCurrentSchematicRenameSqlPreparation } from "./current-schematic-rename-sql.ts";
 import type { CurrentSchematicRenameSqlPreparation } from "./current-schematic-rename-sql.ts";
 import { completedCurrentSchematicRenameStoredSource } from "./current-schematic-rename-stored-effect.ts";
@@ -114,11 +115,15 @@ export async function prepareCurrentSchematicRenameSavedSource(preparation: Curr
  * reopened generation must still be bound by a future lifecycle coordinator.
  */
 export function compareCurrentSchematicRenameSavedObservations(source: CurrentSchematicRenameSavedSource, after: Inventory,
-  rawMetadata: unknown, rawChildren: unknown): Readonly<Record<string, unknown>> {
+  rawMetadata: unknown, rawChildren: unknown, expectedUiActor: unknown): Readonly<Record<string, unknown>> {
   const original = originalCurrentSchematicRenameSavedSource(source, after);
   const observed = validateCurrentSchematicRenameObservation(original.metadata.request, rawMetadata);
   const intent = originalCurrentSchematicRenameSqlPreparation(original.preparation, original.before, original.beforeMetadata);
-  need(canonicalJson(observed.runtimeObservation.actor) === canonicalJson(intent.backendActor), "supplied saved actor differs from frozen intent");
+  const uiActor = currentSchematicRenameObservationSchema.shape.runtimeObservation.shape.actor.parse(copyCurrentSchematicChildTransport(expectedUiActor));
+  // The lifecycle supplies its original write-input UI actor. SQL history uses
+  // The same UUID with separately frozen project-user names, including absence.
+  need(uiActor.uuid === intent.backendActor.uuid && canonicalJson(observed.runtimeObservation.actor) === canonicalJson(uiActor),
+    "supplied saved actor differs from original UI actor or frozen SQL UUID");
   const metadata = compareCurrentSchematicRenameObservation(original.metadata, after, observed);
   const children = compareCurrentSchematicChildRoster(original.children, after, rawChildren); current(original);
   return Object.freeze({ profile: "private.current-schematic-rename-saved-observations.v1", sourceSha256: source.sourceSha256,

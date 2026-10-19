@@ -134,7 +134,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_disposable_pcb_rename", "easyeda_control_disposable_schematic_rename", "easyeda_control_disposable_symbol_copy", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_history", "easyeda_control_launch", "easyeda_control_pcb_geometry", "easyeda_control_pcb_identities", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_project_pcb", "easyeda_control_project_schematic", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_disposable_pcb_rename", "easyeda_control_disposable_schematic_rename", "easyeda_control_disposable_symbol_copy", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_history", "easyeda_control_launch", "easyeda_control_pcb_geometry", "easyeda_control_pcb_identities", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_project_board", "easyeda_control_project_pcb", "easyeda_control_project_schematic", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -350,6 +350,7 @@ void describe("self-contained packaged machine startup", () => {
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_symbol_metadata"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_pcb"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_schematic"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_board"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_symbol_copy"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_pcb_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_schematic_rename"));

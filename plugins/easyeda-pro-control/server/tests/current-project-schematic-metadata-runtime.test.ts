@@ -1,7 +1,7 @@
 /** Isolated synthetic runtime evidence only. No application or project reads. */
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
@@ -81,12 +81,13 @@ interface RuntimeOptions {
   readonly fingerprintDrift?: "initial-status" | "final-status";
   readonly changeFile?: string;
 }
-async function runtime(reply: unknown = encoded(payload), options: RuntimeOptions = {}): Promise<{
+async function runtime(context: TestContext, reply: unknown = encoded(payload), options: RuntimeOptions = {}, input: unknown = request): Promise<{
   engine: Parameters<typeof readCurrentProjectSchematicMetadata>[0]; calls: string[]; expected: ExpectedFingerprint;
 }> {
   const isolatedRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
   assert.ok(isolatedRoot !== undefined); assert.match(isolatedRoot, /easyeda-test-control-/u);
   const scratch = await mkdtemp(join(isolatedRoot, "project-schematic-metadata-runtime-"));
+  context.after(async () => { await rm(scratch, { recursive: true, force: true }); });
   const assetsRoot = join(scratch, "assets");
   await mkdir(assetsRoot, { mode: 0o700 });
   for (const file of syntheticFiles) {
@@ -101,7 +102,7 @@ async function runtime(reply: unknown = encoded(payload), options: RuntimeOption
     callTool: async (name: string, args?: Record<string, unknown>, timeoutMs?: number): Promise<unknown> => {
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.deepEqual(Object.keys(args).toSorted(), ["code", "confirmWrite", "timeoutMs"]);
-      assert.equal(args["code"], buildCurrentProjectSchematicMetadataProgram(request)); assert.equal(args["confirmWrite"], true);
+      assert.equal(args["code"], buildCurrentProjectSchematicMetadataProgram(input)); assert.equal(args["confirmWrite"], true);
       assert.equal(args["timeoutMs"], CURRENT_PROJECT_SCHEMATIC_METADATA_TIMEOUT_MS + 5000); assert.equal(timeoutMs, CURRENT_PROJECT_SCHEMATIC_METADATA_TIMEOUT_MS + 15_000);
       if (options.scopeDrift === "execute") { scope.sessionSequence += 1; }
       if (options.changeFile !== undefined) { await writeFile(resolve(assetsRoot, options.changeFile), "changed synthetic source"); }
@@ -126,7 +127,7 @@ async function runtime(reply: unknown = encoded(payload), options: RuntimeOption
 }
 
 void test("project SCHEMATIC metadata pins every source around one bounded observation without granting authority", async (context) => {
-  const fixture = await runtime(); mockSyntheticDigests(context, fixture.calls);
+  const fixture = await runtime(context); mockSyntheticDigests(context, fixture.calls);
   const hashes = syntheticFiles.map((file) => `hash:${file.relativePath}`);
   const result = await readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected);
   assert.deepEqual(fixture.calls, ["guard", "status", ...hashes, "guard", "easyeda_execute", ...hashes, "guard", "status"]);
@@ -144,8 +145,28 @@ void test("project SCHEMATIC metadata pins every source around one bounded obser
   assert.equal(JSON.stringify(result).includes(fixture.expected.installedBundles.assetsRoot), false);
 });
 
-void test("project SCHEMATIC runtime rejects malformed requests, accessors and unsupported fingerprints before dispatch", async () => {
-  const fixture = await runtime(); let invoked = false;
+void test("project PAGE metadata uses the same fixed original-owner runtime with exact page and collection requests", async (context) => {
+  mockSyntheticDigests(context, []);
+  const child = payload.schematics[0]?.children[0]; assert.ok(child);
+  const { schematics: _schematics, ...common } = payload;
+  for (const input of [
+    { method: "eda.dmt_Schematic.getSchematicPageInfo", target: { ...target, schematicPageUuid: child.uuid } },
+    { method: "eda.dmt_Schematic.getAllSchematicPagesInfo", target: { projectUuid: target.projectUuid, branchUuid: target.branchUuid } },
+  ]) {
+    const response = { ...common, ...input, pages: [child] };
+    const fixture = await runtime(context, encoded(response), {}, input);
+    const result = await readCurrentProjectSchematicMetadata(fixture.engine, input, fixture.expected);
+    assert.deepEqual(result["pages"], [child]); assert.deepEqual(result["target"], input.target); assert.equal(Object.hasOwn(result, "schematics"), false);
+    assert.equal(result["liveValidation"], "not-recorded"); assert.equal(result["persistenceVerified"], false);
+    assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute", "guard", "status"]);
+    const wrong = await runtime(context, encoded({ ...response, pages: [] }), {}, input);
+    await assert.rejects(readCurrentProjectSchematicMetadata(wrong.engine, input, wrong.expected));
+    assert.deepEqual(wrong.calls, ["guard", "status", "guard", "easyeda_execute"]);
+  }
+});
+
+void test("project SCHEMATIC runtime rejects malformed requests, accessors and unsupported fingerprints before dispatch", async (context) => {
+  const fixture = await runtime(context); let invoked = false;
   const accessor = Object.defineProperty({ ...request }, "method", { get(): string { invoked = true; return request.method; } });
   for (const invalid of [{ ...request, extra: true }, { ...request, target: { ...target, schematicUuid: "wrong" } }, accessor]) {
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, invalid, fixture.expected));
@@ -158,14 +179,14 @@ void test("project SCHEMATIC runtime rejects malformed requests, accessors and u
 void test("project SCHEMATIC runtime requires the original authenticated reader and binding at each async boundary", async (context) => {
   mockSyntheticDigests(context, []);
   for (const scopeMissing of ["reader", "binding"] as const) {
-    const fixture = await runtime(undefined, { scopeMissing });
+    const fixture = await runtime(context, undefined, { scopeMissing });
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /authenticated scope/u); assert.deepEqual(fixture.calls, []);
   }
-  const replaced = await runtime(undefined, { replaceScopeReader: true });
+  const replaced = await runtime(context, undefined, { replaceScopeReader: true });
   await assert.rejects(readCurrentProjectSchematicMetadata(replaced.engine, request, replaced.expected), /scope changed/u);
   assert.deepEqual(replaced.calls, ["guard", "status"]);
   for (const scopeDrift of ["initial-guard", "initial-status", "pre-execute-guard", "execute", "post-execute-guard", "final-status"] as const) {
-    const fixture = await runtime(undefined, { scopeDrift });
+    const fixture = await runtime(context, undefined, { scopeDrift });
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /scope changed/u);
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, ["execute", "post-execute-guard", "final-status"].includes(scopeDrift) ? 1 : 0);
   }
@@ -174,15 +195,15 @@ void test("project SCHEMATIC runtime requires the original authenticated reader 
 void test("project SCHEMATIC quarantine blocks dispatch or result publication without retry", async (context) => {
   mockSyntheticDigests(context, []);
   for (const quarantineAt of [1, 2, 3]) {
-    const fixture = await runtime(undefined, { quarantineAt });
+    const fixture = await runtime(context, undefined, { quarantineAt });
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /quarantined/u);
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, quarantineAt === 3 ? 1 : 0);
     assert.equal(fixture.calls.filter((call) => call === "guard").length, quarantineAt);
   }
 });
 
-void test("project SCHEMATIC runtime refuses unreviewed source before dispatch", async () => {
-  const fixture = await runtime();
+void test("project SCHEMATIC runtime refuses unreviewed source before dispatch", async (context) => {
+  const fixture = await runtime(context);
   await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /UI implementation differs/u);
   assert.deepEqual(fixture.calls, ["guard", "status"]);
 });
@@ -190,12 +211,12 @@ void test("project SCHEMATIC runtime refuses unreviewed source before dispatch",
 void test("project SCHEMATIC changed source or fingerprint refuses publication and never retries", async (context) => {
   mockSyntheticDigests(context, []);
   for (const file of syntheticFiles) {
-    const fixture = await runtime(undefined, { changeFile: file.relativePath });
+    const fixture = await runtime(context, undefined, { changeFile: file.relativePath });
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /implementation differs/u);
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
   }
   for (const fingerprintDrift of ["initial-status", "final-status"] as const) {
-    const fixture = await runtime(undefined, { fingerprintDrift });
+    const fixture = await runtime(context, undefined, { fingerprintDrift });
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected), /expected runtime|runtime changed/u);
     assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, fingerprintDrift === "initial-status" ? 0 : 1);
   }
@@ -205,7 +226,7 @@ void test("project SCHEMATIC malformed, mismatched, oversized and authority-inve
   mockSyntheticDigests(context, []);
   for (const value of [null, { ...payload, target: { ...target, branchUuid: "f".repeat(32) } }, { ...payload, schematics: [] },
     { ...payload, workerIdentityVerified: true }, { ...payload, noEditorTabsObserved: false }, { ...payload, unexpected: "x".repeat(CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES) }]) {
-    const fixture = await runtime(encoded(value));
+    const fixture = await runtime(context, encoded(value));
     await assert.rejects(readCurrentProjectSchematicMetadata(fixture.engine, request, fixture.expected));
     assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute"]);
   }

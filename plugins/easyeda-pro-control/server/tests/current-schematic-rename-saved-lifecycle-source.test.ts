@@ -67,8 +67,9 @@ async function fixture(failure: Failure = "none"): Promise<{
       state.history += 1; return Promise.resolve({ semanticSha256: failure === "changed-history" ? "f".repeat(64) : snapshot.native.historySemanticSha256,
         branchUuid: snapshot.native.branchUuid, projectOwnerUuid: snapshot.native.ownerUuid });
     },
-    compareCurrentSchematicRenameSavedObservations: (value: unknown, after: unknown, metadata: unknown, children: unknown): unknown => {
+    compareCurrentSchematicRenameSavedObservations: (value: unknown, after: unknown, metadata: unknown, children: unknown, expectedUiActor: unknown): unknown => {
       readSource(value, after); assert.deepEqual(metadata, { observed: "metadata" }); assert.deepEqual(children, { observed: "children" });
+      assert.equal(expectedUiActor, source.writeInput.expectedActor, "must forward the original continuation UI actor, never saved SQL or supplied metadata");
       state.comparisons += 1; return Object.freeze({ suppliedSavedMetadataMatched: true, suppliedSavedChildRosterMatched: true, executionAuthorized: false, reopened: false });
     },
   });

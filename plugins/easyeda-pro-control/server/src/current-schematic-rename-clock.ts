@@ -179,7 +179,9 @@ export async function prepareCurrentSchematicRenameClock(input: CurrentSchematic
       backendClockMinMs: backendWindow.minimumMs, backendClockMaxMs: backendWindow.maximumMs, backendLocalOffsetMinutes: before.before.localOffsetMinutes,
       ...(agedHead === undefined ? {} : { agedHead }) } }); check();
   const sql = originalCurrentSchematicRenameSqlPreparation(preparation, baseline.inventory, source.projection);
-  need(canonicalJson(sql.backendActor) === canonicalJson(expectedActor), "Historical SQL actor strings differ from the original UI observation.");
+  // APP L3 selects names from the project users table, or empty strings when
+  // Absent. Only its request UUID must match the independently frozen UI actor.
+  need(sql.backendActor.uuid === expectedActor.uuid, "Historical SQL actor UUID differs from the original UI observation.");
   await assertIssuedWindowsClockObservation(before.token); check(); await assertIssuedWindowsClockObservation(armed.token); check();
   for (const clock of [launch, capture, before, armed]) { assertCurrentIssuedWindowsClockObservation(clock.token); }
   need(capture.token.ownerBinding["operationId"] === generation.operationId, "Original Windows capture operation differs.");

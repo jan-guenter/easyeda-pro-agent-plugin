@@ -96,6 +96,9 @@ export class CurrentSchematicAgedSqlReferenceStage {
     const operationId = baseline.owner.operationId, proofText = canonicalJson(proof);
     const closureBinding = currentSchematicRenameBaselineClockBinding(baseline, engine), { journalOperationId } = closureBinding;
     need(closureBinding.proof === proof, "Current SCH scratch reference requires its original baseline proof.");
+    // Retain expected data only; every guard still obtains and checks the current
+    // Original binding, proof, authority and evidence after its awaits.
+    const closureBindingText = canonicalJson(closureBinding);
     const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
     need(scopeReader !== undefined);
     // oxlint-disable-next-line typescript/unbound-method -- Retain identity; all calls below use the original engine receiver.
@@ -103,7 +106,7 @@ export class CurrentSchematicAgedSqlReferenceStage {
     const unchanged = (): void => {
       assertCurrentSchematicRenameClosedClockBinding(baseline, engine);
       const retained = currentSchematicRenameBaselineClockBinding(baseline, engine);
-      need(retained.proof === proof && canonicalJson(retained) === canonicalJson(closureBinding));
+      need(retained.proof === proof && canonicalJson(retained) === closureBindingText);
       need(input.baseline === baseline && input.proof === proof && canonicalJson(proof) === proofText &&
         engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(engine.upstream) === undefined &&
         engine.assertBridgeAndRecoveryAdmission === admission,

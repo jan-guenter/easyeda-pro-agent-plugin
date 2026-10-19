@@ -15,7 +15,20 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
-Update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
+Update `0.3.0+codex.20261019143713` batches selected/all schematic-page metadata
+and board metadata readers, passive schematic phase diagnostics, immutable
+clock-reference binding and synthetic-fixture cleanup. It also separates current
+UI actor names from the backend's historical project-user names, retaining the
+same UUID and exact stored-effect checks. The page reader checks
+the expected parent and complete maps; the board native equivalent selects by
+UUID rather than the public method's name. Neither reads circuits or establishes
+saved-state authority. Installed125900 reached rename preparation, refused an
+actor-data mismatch before mutation and was normally closed and retired with
+complete unchanged-file/SQL proof. Connected schematic rename success remains
+pending. The [batch record](docs/current-page-board-batch-2026-10-19.md) separates
+implemented routes, connected evidence and the remaining backlog.
+
+Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are
 bounded native equivalents, not image-content, circuit or saved-state readers.
 See the

@@ -29,7 +29,7 @@ PCB3131156 stores a real `BroadcastChannelMessageBus` on
 transport object. It does not expose the compiler, its consistency manager or
 the project-worker object.
 
-The bus implementation's `post` method near PCB2742100 calls native
+The bus implementation's `post` method at PCB2743029 calls native
 `BroadcastChannel.postMessage` and then schedules its local `onMessage` call in
 a promise callback. `publishPendData` at PCB3145812 clears every published
 pending array immediately after publication. Thus an ordinary local subscriber
@@ -115,3 +115,60 @@ EDA v4.2 and does not describe an upload or SQL barrier.
 
 No vendor code was evaluated, live app operation performed or design opened by
 this audit. Existing writer refusals and compatibility pins remain unchanged.
+
+## Desktop diagnostic boundary checked after delivery125900
+
+The follow-up examined remaining renderer exports and the desktop shell before
+attempting another observer implementation. PCB bytes still match the table
+above. Two additional installed files were read and hashed, with paths relative
+to `resources/app/` rather than its assets directory:
+
+| Source | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `app.js` | 2,657,192 | `52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c` |
+| `assets/js/preload.js` | 716 | `bc4bb929fb4663915bbeb36bd916d09089381cb17d004d49518e392b967db344` |
+
+The remaining exports supply no complete model or queue reference:
+
+- `window.logMemoryInfo` at PCB1926817 is a function closing over GPU allocation
+  state. It prints aggregate memory counts, not PCB models or pending uploads.
+- The bundled Three.js hook at PCB2254549 publishes a registration event whose
+  detail contains only revision `172`. It does not export the PCB compiler.
+- `sYe` at PCB6299156 emits object-tree category descriptors. The `getAllItems`
+  subscriber at PCB10859050 follows it with a delayed tree result. These are
+  display data, not original native holders or a queue snapshot.
+
+Desktop factory `Ps` at APP1361332 defaults to disabled Node integration in
+the renderer, workers and subframes, enabled context isolation and sandboxing.
+Its caller-options spread can override defaults, so these source values are
+not a claim about every running window. The complete 716-byte preload exposes
+only `openWindow`, `openWindowSelf`, `focusWindow` and `getWinId`. Their handlers
+at APP1363217 onward open or focus windows, or return a window ID. None
+provides debugger commands or worker-global access.
+
+The menu and keyboard handlers at APP1342105 and APP1344611 open DevTools UI.
+They do not supply a plugin-owned diagnostic connection. Searches of this
+pinned main bundle found neither a `.debugger` binding nor a remote-debugging
+service. Electron documents `webContents.debugger` as a main-process API and
+`--remote-debugging-port` as enabling an HTTP debugging endpoint. Those are
+possible future integration mechanisms, not capabilities exposed by the
+reviewed extension or evidence of an existing endpoint.
+[Electron Debugger](https://www.electronjs.org/docs/latest/api/debugger),
+[Electron remote-debugging switch](https://www.electronjs.org/docs/latest/api/command-line-switches#--remote-debugging-portport).
+
+A future diagnostic adapter first needs a reviewed transport bound to the
+original retained process, exact PCB frame and original project worker. It must
+admit script bytes and execution contexts, expose only fixed reads, refuse
+unavailable or optimized-away bindings, and retain cleanup ownership through
+detach or failure. Any pause needs an owned resume path. Opening an unrestricted
+debug port or accepting caller expressions is not an implementation of those
+requirements. Even successful debugger reads would still need complete native
+membership, all Save participants, pending producer state and an interval proof
+covering eligibility through the one-shot create. The later original-generation
+closure and full-SQL proof remain separate.
+
+No supported complete observer was found among these reviewed paths. This does
+not establish that every integration is impossible. The batch adds these
+findings only: no debugger activation, transport expansion, inert observer
+module, writer registration or guard relaxation. No tests were needed for this
+documentation-only change.

@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
+import { performance } from "node:perf_hooks";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { isRecord } from "../src/core.ts";
@@ -20,10 +21,14 @@ async function fixture(): Promise<{
   calls: string[]; run: (request: unknown) => Promise<Value>; inspect: () => Value;
   state: { failure: string | undefined; returnedFailure: boolean; pendingAuthentication: boolean; pendingTermination: boolean;
     invariant: boolean; metadata: boolean; childRoster: boolean; cleanupGate: Promise<unknown> | undefined;
+    beginGate: Promise<unknown> | undefined;
+    cleanupStarted: (() => void) | undefined;
     scratchGate: Promise<unknown> | undefined; scratchStarted: (() => void) | undefined };
 }> {
   const calls: string[] = [], state = { failure: undefined as string | undefined, returnedFailure: false,
     pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, childRoster: true, cleanupGate: undefined as Promise<unknown> | undefined,
+    beginGate: undefined as Promise<unknown> | undefined,
+    cleanupStarted: undefined as (() => void) | undefined,
     scratchGate: undefined as Promise<unknown> | undefined, scratchStarted: undefined as (() => void) | undefined };
   const clock = Object.freeze({ original: "clock" }), continuation = Object.freeze({ operationId: ID, original: "continuation" });
   const generation = Object.freeze({ operationId: ID }), owner = Object.freeze({ operationId: ID }), reference = Object.freeze({ original: "reference" });
@@ -56,7 +61,7 @@ async function fixture(): Promise<{
     }
     public close(): Value { return this.finishNormalClose(); }
     public cleanupClose(): Value { return this.finishNormalClose(); }
-    public async requestCleanup(): Promise<Value> { await state.cleanupGate; this.status["cleanupOnly"] = true; return this.step("request-cleanup"); }
+    public async requestCleanup(): Promise<Value> { state.cleanupStarted?.(); await state.cleanupGate; this.status["cleanupOnly"] = true; return this.step("request-cleanup"); }
     public closedBaseline(): unknown { assert.equal(this.kind, "baseline"); return baselineValue; }
     public closedContinuation(): unknown { assert.equal(this.kind, "baseline"); return continuation; }
     public relaunch(value: unknown): Value {
@@ -113,9 +118,10 @@ async function fixture(): Promise<{
   }, getSchematicRenameOpeningOwner: (): object => owner };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-schematic-rename-operation-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
-  const context = createContext({ Object, Promise, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } }, structuredClone, isRecord,
+  const context = createContext({ Object, Promise, performance, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } }, structuredClone, isRecord,
     CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, controlDataDirectory: (): string => "/synthetic/control",
-    loadRuntimeMachineProfile: (): Promise<Value> => Promise.resolve({ profile: { controlDirectory: "/synthetic/control", easyeda: { assetsRoot: "/synthetic/assets" }, runtime: {} } }),
+    loadRuntimeMachineProfile: async (): Promise<Value> => { await state.beginGate;
+      return { profile: { controlDirectory: "/synthetic/control", easyeda: { assetsRoot: "/synthetic/assets" }, runtime: {} } }; },
     loadOperation: (): Promise<Value> => Promise.resolve({ operationId: ID, plan: { profile: "easyeda-pro-control.current-schematic-rename-writer.v1" }, artifacts: [] }),
     assertCurrentSchematicRenameOpeningOwner: (value: unknown, selected: unknown): Value => { assert.equal(value, owner); assert.equal(selected, engine); return { source: { runtime: {} } }; },
     CurrentSchematicRenameBaselineCoordinator: function CurrentSchematicRenameBaselineCoordinator(): Controller { return new Controller("baseline"); },
@@ -157,6 +163,17 @@ async function reach(value: Harness, phase: string): Promise<void> {
   for (let index = 0; index < 30 && value.inspect()["nextPhase"] !== phase; index += 1) { await advance(value); }
   assert.equal(value.inspect()["nextPhase"], phase);
 }
+function diagnostic(value: Harness): Value {
+  const result = object(value.inspect()["phaseDiagnostics"]);
+  assert.equal(result["diagnosticOnly"], true); assert.equal(result["monotonicElapsedOnly"], true);
+  assert.equal(result["clockAuthority"], false); assert.equal(result["replayAllowed"], false); assert.ok(Object.isFrozen(result));
+  assert.deepEqual(Object.keys(result).toSorted(), ["clockAuthority", "current", "diagnosticOnly", "last", "monotonicElapsedOnly", "profile", "replayAllowed"]);
+  return result;
+}
+function duration(value: Value, key: "elapsedMs" | "durationMs"): number {
+  const ms = value[key]; assert.ok(typeof ms === "number" && Number.isSafeInteger(ms) && ms >= 0);
+  assert.ok(Object.isFrozen(value)); return ms;
+}
 
 void test("SCHEMATIC public schema requires exact phase acknowledgments and excludes alternate source or writer inputs", () => {
   assert.equal(validateCurrentSchematicRenameOperationArguments(BEGIN)["valid"], true);
@@ -183,11 +200,53 @@ void test("SCHEMATIC public phases complete only the original forward lifecycle 
   await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }));
 });
 
+void test("SCHEMATIC begin exposes only bounded monotonic diagnostics while its original profile read is pending", async () => {
+  const value = await fixture();
+  const gate = Promise.withResolvers<boolean>(); value.state.beginGate = gate.promise;
+  const pending = value.run(BEGIN);
+  const current = object(diagnostic(value)["current"]);
+  assert.equal(current["action"], "baseline-begin"); assert.equal(current["phase"], "baseline-begin"); assert.equal(current["stage"], "performing");
+  const elapsed = duration(current, "elapsedMs"); assert.equal(diagnostic(value)["last"], null);
+  assert.equal(value.inspect()["nextPhase"], "stopped"); assert.equal(value.inspect()["busy"], true); assert.deepEqual(value.calls, []);
+  await assert.rejects(value.run(BEGIN), /already running/u);
+  gate.resolve(true); await pending;
+  assert.equal(diagnostic(value)["current"], null); const last = object(diagnostic(value)["last"]);
+  assert.equal(last["action"], "baseline-begin"); assert.equal(last["phase"], "baseline-begin"); assert.equal(last["outcome"], "succeeded");
+  assert.ok(duration(last, "durationMs") >= elapsed); assert.equal(value.inspect()["busy"], false);
+  await assert.rejects(value.run({ action: "advance", operationId: ID, step: step("rename-write") }));
+  assert.deepEqual(diagnostic(value)["last"], last); assert.equal(diagnostic(value)["current"], null);
+});
+
+void test("SCHEMATIC consumed failures retain active cleanup diagnostics until the original cleanup settles", async () => {
+  for (const action of ["baseline-begin", "advance", "cleanup"] as const) {
+    const value = await fixture();
+    if (action !== "baseline-begin") { await value.run(BEGIN); }
+    const gate = Promise.withResolvers<boolean>(), started = Promise.withResolvers<boolean>();
+    value.state.cleanupGate = gate.promise; value.state.cleanupStarted = (): void => { started.resolve(true); };
+    if (action !== "cleanup") { value.state.failure = action === "baseline-begin" ? "baseline.capture" : "baseline.close"; }
+    const request = action === "baseline-begin" ? BEGIN : { action, operationId: ID, confirmAbort: true };
+    const pending = action === "advance" ? advance(value) : value.run(request); await started.promise;
+    const current = object(diagnostic(value)["current"]), elapsed = duration(current, "elapsedMs");
+    assert.equal(current["action"], action); assert.equal(current["phase"], action === "advance" ? "baseline-close" : action);
+    assert.equal(current["stage"], "cleanup-selection"); assert.equal(value.inspect()["busy"], true);
+    await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }), /already running/u);
+    if (action === "cleanup" || action === "baseline-begin") { gate.reject(new Error("Synthetic cleanup refusal")); } else { gate.resolve(true); }
+    await assert.rejects(pending, /Synthetic|baseline failed/u);
+    assert.equal(diagnostic(value)["current"], null); const last = object(diagnostic(value)["last"]);
+    assert.equal(last["action"], action); assert.equal(last["outcome"], "failed"); assert.ok(duration(last, "durationMs") >= elapsed);
+    assert.equal(value.inspect()["busy"], false); assert.equal(value.inspect()["renameVerified"], false);
+    assert.equal(value.calls.includes("writer.execute"), false);
+  }
+});
+
 void test("SCHEMATIC public phases repeat only pending observations and never complete missing saved proof", async () => {
   const value = await fixture(); await value.run(BEGIN); await reach(value, "baseline-observe-termination");
   value.state.pendingTermination = true; await advance(value); assert.equal(value.inspect()["nextPhase"], "baseline-observe-termination");
+  assert.equal(object(diagnostic(value)["last"])["outcome"], "observation-pending");
   await advance(value); await reach(value, "baseline-admit"); value.state.pendingAuthentication = true;
-  await advance(value); assert.equal(value.inspect()["nextPhase"], "baseline-admit"); await advance(value);
+  await advance(value); assert.equal(value.inspect()["nextPhase"], "baseline-admit");
+  assert.equal(object(diagnostic(value)["last"])["outcome"], "observation-pending"); await advance(value);
+  assert.equal(object(diagnostic(value)["last"])["outcome"], "succeeded");
   await reach(value, "verification-finish"); value.state.metadata = false;
   await assert.rejects(advance(value)); assert.equal(value.inspect()["renameVerified"], false); assert.equal(value.inspect()["nextPhase"], "stopped");
   const incomplete = await fixture(); await incomplete.run(BEGIN); await reach(incomplete, "verification-finish"); incomplete.state.invariant = false;
@@ -219,11 +278,15 @@ void test("SCHEMATIC cleanup is serialized, irreversible and selects only origin
   const inspection = await value.run({ action: "inspect", operationId: ID });
   assert.equal(inspection["busy"], true); assert.equal(inspection["cleanupRequested"], true);
   assert.equal(inspection["nextPhase"], "stopped"); assert.equal(inspection["executionAuthorized"], false);
+  const current = object(diagnostic(value)["current"]);
+  assert.equal(current["action"], "cleanup"); assert.equal(current["phase"], "cleanup"); assert.equal(current["stage"], "cleanup-selection");
+  duration(current, "elapsedMs");
   assert.equal(value.calls.includes("baseline.request-cleanup"), false);
   await assert.rejects(value.run({ action: "advance", operationId: ID, step: step("baseline-close") }), /already running/u);
   await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }), /already running/u);
   await assert.rejects(value.run(BEGIN), /already running/u); gate.resolve(true); await pending;
   assert.equal(value.inspect()["nextPhase"], "cleanup-close");
+  assert.equal(diagnostic(value)["current"], null); assert.equal(object(diagnostic(value)["last"])["outcome"], "succeeded");
   await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }));
   await advance(value); await advance(value); assert.equal(value.inspect()["nextPhase"], "stopped"); assert.equal(value.inspect()["renameVerified"], false);
   assert.equal(value.calls.includes("writer.execute"), false);
@@ -250,6 +313,10 @@ void test("SCHEMATIC inspect returns a detached busy snapshot while the original
     assert.equal(inspection["busy"], true); assert.equal(inspection["nextPhase"], "stopped");
     assert.equal(inspection["originalOwnerRetained"], true); assert.equal(inspection["renameVerified"], false);
     assert.equal(inspection["executionAuthorized"], false); assert.equal(inspection["replayAllowed"], false);
+    const current = object(diagnostic(value)["current"]);
+    assert.equal(current["action"], "advance"); assert.equal(current["phase"], "baseline-prepare-clock"); assert.equal(current["stage"], "performing");
+    duration(current, "elapsedMs");
+    assert.equal(object(diagnostic(value)["last"])["phase"], "baseline-observe-termination");
     assert.deepEqual(structuredClone(inspection["attemptedPhases"]), ["baseline-begin", "baseline-close", "baseline-observe-termination", "baseline-prepare-clock"]);
     assert.ok(Array.isArray(inspection["attemptedPhases"])); inspection["attemptedPhases"].push("forged");
     assert.notDeepEqual(value.inspect()["attemptedPhases"], inspection["attemptedPhases"]);
@@ -260,6 +327,8 @@ void test("SCHEMATIC inspect returns a detached busy snapshot while the original
   } finally { gate.resolve(true); await pending; }
   const completed = await value.run({ action: "inspect", operationId: ID });
   assert.equal(completed["busy"], false); assert.equal(completed["nextPhase"], "baseline-relaunch");
+  assert.equal(diagnostic(value)["current"], null); const last = object(diagnostic(value)["last"]);
+  assert.equal(last["phase"], "baseline-prepare-clock"); assert.equal(last["outcome"], "succeeded"); duration(last, "durationMs");
   assert.equal(value.calls.filter(call => call === "scratch.once").length, 1);
 });
 

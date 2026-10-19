@@ -51,9 +51,18 @@ native reply. `documentSampleProvenanceVerified` remains false. The original
 Windows tokens and SCH lifecycle identities are real requirements, but they do
 not turn supplied renderer data into original dispatch evidence.
 
-The observed UI actor must match the full actor strings selected from the
-original SQL users table. That equality does not observe the worker's `Dg.user`
-or `Dg.client`, prove backend actor provenance, or bind all native producers.
+The observed UI actor and the frozen backend actor share their UUID, not
+necessarily their names. Pinned APP `L3` selects backend names from the original
+project users row for that UUID, with exact empty strings when the row is
+absent. The SQL preparation already freezes this native rule. The SCH clock
+and generated program now preserve that distinction instead of requiring
+historical names to equal the current UI. Both original UI objects must still
+agree exactly and remain unchanged. The saved lifecycle compares reopened UI
+fields against the original successful write input; complete closed SQL compares
+`EDIT_HEAD` and the project modifier against the separately frozen backend
+expectation. No names are learned from changed SQL or accepted from a saved reply.
+These comparisons do not observe the worker's `Dg.user` or `Dg.client`, prove
+backend actor provenance, or bind all native producers.
 All corresponding verification flags remain false. The plan retains explicit
 common-OS-clock/no-intervening-change assumptions and does not claim direct app
 clock observation, continuous clock stability or a verified future write time.
@@ -82,7 +91,9 @@ Cases cover normal N0 sampling; target/startup/actor substitution; getters and
 Proxy traps; changed receiver, clock, project, child AST and panel holders;
 timeout with no later work; copied/repeated Windows observations; each awaited
 clock stage and SQL preparation losing its original owner; expired plans;
-unlocked heads; historical/UI actor mismatch; altered title, actor or timestamp;
+unlocked heads; distinct populated historical names and missing-user empty-name
+fallback; wrong UUID or UI-name drift; rejection of UI names substituted into
+the backend header; altered title, actor or timestamp;
 wrong document type; additional history records; changed peer asset SQL; and
 copied preparation, reader and completed-effect objects.
 
@@ -90,7 +101,19 @@ The initial N0 test run found a synthetic fixture's wrong timeout constant name.
 That test fixture was corrected; no guard was removed. Final focused counts,
 strict types/lint and source hashes are recorded in the release checkpoint.
 
-## Remaining before a callable SCH rename
+The installed125900 disposable attempt stopped before mutation on the former
+full-string equality. Its baseline contains no row for the observed UI UUID,
+so APP's exact backend names would be empty. The source correction preserves
+that raw failure and one-attempt retirement. It is covered by synthetic clock,
+program, saved-source and original-continuation wiring tests, not a new live
+rename. The older actor-plan's populated-row first-profile choice is not
+expanded globally; this SCH-specific model follows the pinned APP branches.
+
+## Historical implementation checklist
+
+The following was the pre-registration checklist. The registered lifecycle is
+described in [the current workflow](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-schematic-rename.md);
+successful connected validation remains outstanding.
 
 Retain the actual N0 reply and independent Windows brackets under the original
 dispatch owner. Qualify the backend actor/client and complete producer state.

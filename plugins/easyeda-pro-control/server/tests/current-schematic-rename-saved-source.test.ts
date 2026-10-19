@@ -15,19 +15,27 @@ import { ACTOR, PAYLOAD, REQUEST, TARGET, schematicBaseline } from "./helpers/cu
 import { IDS, TIMES, applyEffect, encrypted, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 function record(identity: unknown, body: unknown): string { return `${JSON.stringify(identity)}||${JSON.stringify(body)}`; }
-async function setup(childTime = 1, libraryOrigin?: string, childTitle = "Child title"): Promise<Readonly<{
+async function setup(childTime = 1, libraryOrigin?: string, childTitle = "Child title", historicalUser?: "different" | "missing"): Promise<Readonly<{
   baseline: Awaited<ReturnType<typeof schematicBaseline>>;
   children: CurrentSchematicChildRoster;
   preparation: Awaited<ReturnType<typeof prepareCurrentSchematicRenameSql>>;
   effect: Awaited<ReturnType<typeof verifyCurrentSchematicRenameStoredEffect>>;
   after: Awaited<ReturnType<typeof inventory>>;
 }>> {
-  const baseline = await schematicBaseline(childTime, libraryOrigin, childTitle), children = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
+  let baseline = await schematicBaseline(childTime, libraryOrigin, childTitle);
+  const actors = { different: { ...ACTOR, username: "historical-user", nickname: "Historical" }, missing: { ...ACTOR, username: "", nickname: "" } };
+  const backendActor = historicalUser === undefined ? ACTOR : actors[historicalUser];
+  if (historicalUser !== undefined) {
+    mutate(baseline.path, historicalUser === "missing" ? "DELETE FROM users" : "UPDATE users SET username='historical-user',nickname='Historical'");
+    const before = await inventory(baseline.path), metadata = await prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: REQUEST.desiredTitle });
+    baseline = { ...baseline, before, metadata };
+  }
+  const children = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
   const preparation = await prepareCurrentSchematicRenameSql({ before: baseline.before, metadata: baseline.metadata,
     witness: { projectUuid: TARGET.projectUuid, branchUuid: TARGET.branchUuid, backendActorUuid: ACTOR.uuid, client: "a".repeat(16),
       documentClockMinMs: TIMES.document - 500, documentClockMaxMs: TIMES.document + 500,
       backendClockMinMs: TIMES.edit - 1100, backendClockMaxMs: TIMES.edit + 2900, backendLocalOffsetMinutes: 120 } });
-  const raw = [record({ type: "EDIT_HEAD" }, { ...ACTOR, updateTime: TIMES.edit }),
+  const raw = [record({ type: "EDIT_HEAD" }, { ...backendActor, updateTime: TIMES.edit }),
     record({ type: "DOCHEAD", ticket: 101 }, { docType: "SCH", client: "a".repeat(16), uuid: TARGET.schematicUuid,
       updateTime: TIMES.document, version: String(TIMES.document), editVersion: "3.2.206" }),
     record({ type: "META", ticket: 101, id: "META" }, { title: REQUEST.desiredTitle, source: "", board: "", zIndex: null })].join("|\n");
@@ -66,7 +74,7 @@ void test("SCH saved source preserves complete peers and children while projecti
   assert.ok(Object.isFrozen(source)); assert.ok(Object.isFrozen(original)); assert.ok(Object.isFrozen(original.metadata.request));
   const metadata = { ...structuredClone(PAYLOAD), ...original.metadata.request, peers: original.metadata.peers,
     clientTicketObservation: { client: "f".repeat(16), maxTicket: 101, samples: 4 } };
-  const result = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children));
+  const result = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children), ACTOR);
   assert.equal(result["suppliedSavedMetadataMatched"], true); assert.equal(result["suppliedSavedChildRosterMatched"], true); noAuthority(result);
 });
 void test("SCH child-derived baseline clocks survive full SQL rename and saved projection without changing children", async () => {
@@ -88,13 +96,13 @@ void test("SCH child-derived baseline clocks survive full SQL rename and saved p
   assert.deepEqual(original.metadata.peers.filter(peer => peer.uuid !== TARGET.schematicUuid), f.baseline.metadata.peers.filter(peer => peer.uuid !== TARGET.schematicUuid));
   const metadata = { ...structuredClone(PAYLOAD), ...original.metadata.request, peers: original.metadata.peers,
     clientTicketObservation: { client: "f".repeat(16), maxTicket: 101, samples: 4 } };
-  const observed = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children));
+  const observed = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children), ACTOR);
   assert.equal(observed["suppliedSavedMetadataMatched"], true); assert.equal(observed["suppliedSavedChildRosterMatched"], true);
   const dotless = childObservation(original.children);
   for (const sample of dotless.samples) {
     const child = sample.childKv["c".repeat(16)]; assert.ok(child !== undefined); child.title = "child ınput";
   }
-  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, dotless), /printable ASCII/u);
+  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, dotless, ACTOR), /printable ASCII/u);
   const later = await inventory(f.baseline.path), unchanged = await compareCurrentSchematicRenameLaterSql(source, f.after, later);
   assert.equal(unchanged["completeLaterSqlUnchanged"], true);
   await assert.rejects(prepareCurrentSchematicRenameSql({ before: f.baseline.before, metadata: f.baseline.metadata,
@@ -131,15 +139,41 @@ void test("SCH saved observations refuse old metadata, changed peers, actor and 
   const metadata = { ...structuredClone(PAYLOAD), ...original.metadata.request, peers: structuredClone(original.metadata.peers),
     clientTicketObservation: { client: "e".repeat(16), maxTicket: 101, samples: 4 } };
   const children = childObservation(original.children);
-  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, PAYLOAD, children));
-  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, { ...metadata, peers: metadata.peers.slice(0, 1) }, children), /metadata/u);
+  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, PAYLOAD, children, ACTOR));
+  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, { ...metadata, peers: metadata.peers.slice(0, 1) }, children, ACTOR), /metadata/u);
   assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after,
-    { ...metadata, runtimeObservation: { ...metadata.runtimeObservation, actor: { ...ACTOR, username: "other" } } }, children), /actor/u);
-  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(f.children)), /metadata/u);
+    { ...metadata, runtimeObservation: { ...metadata.runtimeObservation, actor: { ...ACTOR, username: "other" } } }, children, ACTOR), /actor/u);
+  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(f.children), ACTOR), /metadata/u);
   for (const kind of ["ast", "tempAst"] as const) {
     const changed = childObservation(original.children);
     for (const sample of changed.samples) { sample[kind].schematic.sort = []; }
-    assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, changed));
+    assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, changed, ACTOR));
+  }
+});
+void test("SCH saved UI actor must match the original UI input, not distinct or absent historical user names", async () => {
+  for (const historicalUser of ["different", "missing"] as const) {
+    const f = await setup(1, undefined, "Child title", historicalUser);
+    const source = await prepareCurrentSchematicRenameSavedSource(f.preparation, f.baseline.before, f.baseline.metadata, f.children, f.effect, f.after);
+    const original = originalCurrentSchematicRenameSavedSource(source, f.after);
+    const metadata = { ...structuredClone(PAYLOAD), ...original.metadata.request, peers: original.metadata.peers,
+      clientTicketObservation: { client: "f".repeat(16), maxTicket: 101, samples: 4 } };
+    const children = childObservation(original.children);
+    const result = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, children, ACTOR);
+    assert.equal(result["suppliedSavedMetadataMatched"], true); noAuthority(result);
+    for (const field of ["uuid", "username", "nickname"] as const) {
+      const changed = { ...ACTOR, [field]: field === "uuid" ? "f".repeat(32) : "changed UI name" };
+      assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after,
+        { ...metadata, runtimeObservation: { ...metadata.runtimeObservation, actor: changed } }, children, ACTOR), /actor/u);
+      assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, children, changed), /actor/u);
+    }
+    const wrongUuid = { ...ACTOR, uuid: "f".repeat(32) };
+    assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after,
+      { ...metadata, runtimeObservation: { ...metadata.runtimeObservation, actor: wrongUuid } }, children, wrongUuid), /SQL UUID/u);
+    let traps = 0; const trap = (): never => { traps += 1; throw new Error("unexpected actor trap"); };
+    for (const input of [new Proxy(ACTOR, { get: trap, ownKeys: trap }), Object.defineProperty({}, "uuid", { get: trap }), { ...ACTOR, extra: true }]) {
+      assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, children, input));
+    }
+    assert.equal(traps, 0);
   }
 });
 void test("SCH later SQL needs a distinct completed reader and every SQL cell unchanged, without claiming closure", async () => {
