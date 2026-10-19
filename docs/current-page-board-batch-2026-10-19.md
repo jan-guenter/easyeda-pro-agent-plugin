@@ -89,15 +89,20 @@ omitted classifications; the four added current routes supplement already
 covered methods. These are inventory counts, not connected-validation counts.
 
 Focused page/board, lifecycle diagnostics, immutable-reference and actor tests
-passed, with strict type-aware lint and types clean. Final frozen-payload suite,
-protected CI and official installation remain pending at this checkpoint.
+passed, with strict type-aware lint and types clean. The initial full local suite
+found two startup-test failures from stale catalog assertions. The test-only
+correction updates board-tool sorting, the 48-tool total and four schematic
+methods; all five startup tests and strict lint then pass. Runtime sources,
+bundles and compatibility pins are unchanged. The original failed run is retained;
+final exact-payload protected CI and official installation remain pending at this
+checkpoint. No failed run is presented as a clean full-suite result.
 
 ## Remaining work
 
-- Review the pre-write actor-model refusal and any narrow source correction;
+- Actor-model correction, reader review and focused checks are complete;
   connected rename success still needs a fresh admitted installed generation.
-- Board-reader review and focused checks are complete. Freeze the complete batch,
-  run required release checks and protected CI, publish once and install through
+- The complete runtime batch is frozen. Finish release checks and protected CI,
+  publish once and install through
   the existing Git marketplace. Verify exact installed bytes and modes.
 - Validate the new page/board routes on the next admitted installed generation.
   Populated Image/Dimension cases remain separate validation work.

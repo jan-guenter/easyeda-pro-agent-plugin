@@ -54,12 +54,16 @@ validator pass; root/independent review accepts, no live authority.
 Dependency prep41715 passed:151registry signatures/40attestations/0vulnerabilities,
 exact sanitizer. Candidateversion20261019143713 frozen; build49568 passed.
 Source504/8e5c7352, runtime3/f3c99535, manifest9f8d5e7b; externalpins unchanged
-a1faf216. Full verify/repository/all7skills running on that frozen payload.
+a1faf216. Independent package review and pre-push repository/privacy checks pass.
+PR79 opened on965aeee. Initial full suite20318 found two startup-test assertion
+failures: board-tool sort order,48tools and4SCHmethods. Test-only correction
+passed all5startup tests82134 and strict lint; source/bundles/pins unchanged.
+Original full run retained; final protected CI will test the corrected payload.
 Release evidence `/root/.cache/easyeda-page-board-release-v7H02UGJ`.
 NEW offline probe PREPARED ONLY, placeholders/dispatchApprovedfalse:
 `/root/.cache/easyeda-page-board-offline-probe-7e85NB2a/probe.mjs`.
 Do not run before final pins and complete root/independent review. Prior consumed
-probes remain consumed; never import or rerun. Publication/install pending.
+probes remain consumed; never import or rerun. Final CI/publication/install pending.
 Production excluded. Entries below are historical.
 
 Prior delivery and continuation records are preserved in
