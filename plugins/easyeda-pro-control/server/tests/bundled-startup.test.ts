@@ -174,7 +174,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(layerRequest["valid"], true); assert.equal(layerRequest["executionAuthorized"], false);
     const identities = await api(client, { action: "pcb-identities", query: { includeSchemas: true } });
-    assert.equal(identities["total"], 10); assert.equal(identities["invocationEnabledByDiscovery"], false);
+    assert.equal(identities["total"], 11); assert.equal(identities["invocationEnabledByDiscovery"], false);
     const identityRequest = await api(client, { action: "pcb-identities-validate", query: { request: {
       method: "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId", arguments: {}, target: {
         projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,

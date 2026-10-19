@@ -48,11 +48,9 @@ omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
-The current source inventory contains 774 distinct paths: 212 public subsets,
-32 native equivalents, no lifecycle-only methods, 80 implemented-but-blocked
-methods and 450 omissions. Its routes include 339 available with runtime guards,
-94 blocked and two partially blocked. These are implementation classifications,
-not connected validation counts; one method can have several routes.
+Use the coverage response's summary for current method and route counts.
+They are implementation classifications, not connected validation counts;
+one method can have several routes. Do not add route counts to method counts.
 
 For current-version disposable project/PCB opening, query `project-open` with
 `includeSchemas:true` and validate with `project-open-validate`. Read

@@ -15,6 +15,15 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019023200` adds current-version component-attribute ID
+reads with ordered parent-group evidence and strict drift/bounds checks. It also
+adds a separate schematic opening-owner transfer and dormant rename compiler;
+schematic renaming is still unavailable until the remaining lifecycle is built.
+The PCB text investigation documents why the existing public/native reads cannot
+observe all Save participants. See the [Attribute reader contract](docs/current-pcb-attribute-identities-2026-10-19.md),
+[schematic implementation and remaining work](docs/current-schematic-rename-owner-2026-10-19.md),
+and [PCB text observation gaps](docs/current-pcb-text-observer-research-2026-10-19.md).
+
 Update `0.3.0+codex.20261019013000` adds current-version Dimension/Image loaded-view identity
 reads, an unregistered schematic child observer, and PCB text Save prerequisite
 checks. It also fixes test isolation under alternate temporary directories.
@@ -558,9 +567,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 212 public subsets, 31 native equivalents,
-no lifecycle-only methods, 81 implemented-but-blocked methods and 450
-omissions. Their execution routes comprise 338 available with runtime guards,
+Current source classifications are 212 public subsets, 32 native equivalents,
+no lifecycle-only methods, 80 implemented-but-blocked methods and 450
+omissions. Their execution routes comprise 342 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

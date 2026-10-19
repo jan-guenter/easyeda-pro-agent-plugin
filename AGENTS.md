@@ -4,6 +4,43 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate023200, 2026-10-19: work is on
+`feature/attribute-sch-owner-20261019`. Added the current exact-target Attribute
+identity reader with parent groups, and dormant original-owner SCH rename
+reservation/compiler. The latter has no registered writer or callable cleanup/
+baseline lifecycle. PCB text observer research found no reviewed complete queue/
+worker inventory; its writer stays blocked. See the three new dated docs.
+All source changes passed root and independent review. Attribute focused tests12,
+identity/coverage52, and SCH owner/compiler plus existing PCB-owner21 pass;
+types/type-aware lint have zero warnings. Previous main Linux39177886616 and
+Windows39177886660 are both successful.
+
+Current installed013000 actual facade3273248/start34418591 was admitted exactly.
+NEW disposable launch `pcb-readers-013000-20261019-launch` and opening
+`pcb-readers-013000-20261019-open` completed. Dimension and Image identity reads
+each returned two matching empty arrays with stable admitted fingerprints.
+This is empty-family connected evidence only, not nonempty/rendering/full-canvas
+or writer validation. One normal-close request completed; retained root21968/
+Jobe9940e55 termination was separately proved. Closed disposable file598016bytes
+remains exact e4434cc5, no sidecars, byte-identical to its prior closed copy.
+No explicit Save, design edit, restore or production-design access occurred.
+Private proof fcf0b49a is retained in
+`/root/.cache/easyeda-023200-release-INEX4p0m/live-empty-readers-proof.json`.
+NEVER replay these launch/open/read/close cases. No live operation is pending.
+
+Candidate `0.3.0+codex.20261019023200` is built, not published or installed.
+Frozen source477/8dde97ca, runtime3/21f7a47b, manifest49ca1621; external
+runtime/bridge pins remain unchanged. Final full verification runs in original
+shell70346 with TMPDIR=/root/.cache; retain its log in
+`/root/.cache/easyeda-023200-release-INEX4p0m/verify.log`. Do not change runtime
+source/bundles/pins during this suite. Publication, official Git marketplace
+installation, exact installed inventory and ONE NEW isolated offline probe remain.
+The new prepared probe is not consumed; prior consumed probes must not be reused.
+Attribute connected validation needs a fresh chat after installation. Broader
+remaining families are recorded in generated api-coverage.json and the backlog
+below. Preserve stash ebe1b55d7a430ae2e3168e373e155957b582eff9, branches,
+worktrees, journals and logs. Everything below is historical.
+
 013000 delivery, 2026-10-19: protected PR72 merged as main
 `d2500c4a20cb5f0a8c660dd351ef8fdc80b1fbf7`. Reviewed final candidate
 `053c55ee80d1a35a1129fd9cb786f570abce7eee` and main have identical complete

@@ -10,6 +10,7 @@ import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
 const selectedMethod = "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId";
+const attributeMethod = "eda.pcb_PrimitiveAttribute.getAllPrimitiveId";
 function inputFor(method = selectedMethod, args: Record<string, unknown> = {}): CurrentPcbIdentitiesRequest {
   return parseCurrentPcbIdentitiesRequest({ method, arguments: args, target });
 }
@@ -19,7 +20,9 @@ const defaults = { selected: ["selected-second", "selected-first"], Line: [{ glo
   Component: [{ globalIndex: "component-b" }, { globalIndex: "component-a" }], Pad: [{ globalIndex: "pad-b" }, { globalIndex: "pad-a" }],
   String: [{ globalIndex: "string-b" }, { globalIndex: "string-a" }],
   Dimension: [{ globalIndex: "dimension-length" }, { globalIndex: "dimension-radius" }, { globalIndex: "dimension-angle" }],
-  Image: [{ globalIndex: "vector-image" }, { globalIndex: "picture" }] };
+  Image: [{ globalIndex: "vector-image" }, { globalIndex: "picture" }],
+  Attribute: [{ parentPrimitiveId: "component-b", attrs: [{ globalIndex: "attribute-b2" }, { globalIndex: "attribute-b1" }] },
+    { parentPrimitiveId: "component-empty", attrs: [] }, { parentPrimitiveId: "component-a", attrs: [{ globalIndex: "attribute-a" }] }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; fastDeadline?: boolean; input?: CurrentPcbIdentitiesRequest; }
 function environment(options: Options = {}): {
   run: () => Promise<unknown>; evaluateChild: (source: string) => unknown;
@@ -31,13 +34,13 @@ function environment(options: Options = {}): {
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
         topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" ||
-        topic === "pcb/extensionAPI/dimension-getAll" || topic === "pcb/extensionAPI/image-getAll");
+        topic === "pcb/extensionAPI/dimension-getAll" || topic === "pcb/extensionAPI/image-getAll" || topic === "pcb/extensionAPI/attribute-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/dimension-getAll':'Dimension','pcb/extensionAPI/image-getAll':'Image'};
+globalThis.topics={'pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds':'selected','pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/dimension-getAll':'Dimension','pcb/extensionAPI/image-getAll':'Image','pcb/extensionAPI/attribute-getAll':'Attribute'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -83,12 +86,14 @@ void test("current PCB identities retain cross-realm receiver, full ordered IDs 
     ["eda.pcb_PrimitiveComponent.getAllPrimitiveId", ["component-b", "component-a"]], ["eda.pcb_PrimitivePad.getAllPrimitiveId", ["pad-b", "pad-a"]],
     ["eda.pcb_PrimitiveString.getAllPrimitiveId", ["string-b", "string-a"]],
     ["eda.pcb_PrimitiveDimension.getAllPrimitiveId", ["dimension-length", "dimension-radius", "dimension-angle"]],
-    ["eda.pcb_PrimitiveImage.getAllPrimitiveId", ["vector-image", "picture"]]] as const) {
+    ["eda.pcb_PrimitiveImage.getAllPrimitiveId", ["vector-image", "picture"]],
+    [attributeMethod, ["attribute-b2", "attribute-b1", "attribute-a"]]] as const) {
     const input = inputFor(method);
     const fixture = environment({ input, beforeChild: "for(const row of rows.Line)Object.defineProperty(row,'geometry',{get(){getterReads++;throw new Error('PRIVATE_GEOMETRY');}});" });
     const result = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await fixture.run()));
     assert.deepEqual(result["value"], expected); assert.equal(result["observedIdentityCount"], expected.length);
     assert.equal(result["familyObservations"], undefined); assert.equal(fixture.evaluateChild("getterReads"), 0);
+    if (method !== attributeMethod) { assert.equal(result["attributeParentGroups"], undefined); }
     assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
     assert.equal(result["implementationKind"], "native-task-equivalent");
     for (const field of ["cadAuthority", "persistenceVerified", "sourceMembershipVerified"]) { assert.equal(result[field], false); }
@@ -113,7 +118,7 @@ void test("current PCB identity schemas and discovery reject filters, unknown me
     assert.throws(() => buildCurrentPcbIdentitiesProgram(invalid)); assert.equal(validateCurrentPcbIdentitiesArguments(invalid)["valid"], false);
   }
   const catalog = queryCurrentPcbIdentities({ includeSchemas: true });
-  assert.equal(catalog["total"], 10); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
+  assert.equal(catalog["total"], 11); assert.equal(catalog["invocationEnabledByDiscovery"], false); assert.match(JSON.stringify(catalog), /inputSchema/u);
   assert.equal(queryCurrentPcbIdentities({ method: selectedMethod })["total"], 1);
   const otherTarget = { ...target, projectUuid: "d".repeat(32), documentUuid: "e".repeat(32), tabId: `${"e".repeat(32)}@${"d".repeat(32)}` };
   const input = parseCurrentPcbIdentitiesRequest({ ...request, target: otherTarget });
@@ -148,7 +153,7 @@ void test("current String identities use the complete ordered native family with
 void test("current PCB identities distinguish empty arrays from missing or unsupported type results and reject forged results", async () => {
   for (const method of [selectedMethod, "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
     "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId", "eda.pcb_PrimitiveString.getAllPrimitiveId",
-    "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId"]) {
+    "eda.pcb_PrimitiveDimension.getAllPrimitiveId", "eda.pcb_PrimitiveImage.getAllPrimitiveId", attributeMethod]) {
     const input = inputFor(method);
     const fixture = environment({ input, beforeChild: "for(const family of Object.keys(rows))rows[family]=[];" });
     const raw: unknown = decodeExactReadEnvelope(await fixture.run());
@@ -168,6 +173,79 @@ void test("current PCB identities distinguish empty arrays from missing or unsup
     { ...payload, observations: [{ family: "Via", ids: ["line-a"] }, { family: "Arc", ids: [] }, { family: "Line", ids: [] }] }]) {
     assert.throws(() => validateCurrentPcbIdentitiesResult(validInput, invalid));
   }
+});
+
+void test("current Attribute identities retain complete ordered parent groups without reading unprojected attribute fields", async () => {
+  const input = inputFor(attributeMethod);
+  const fixture = environment({ input, beforeChild: "for(const group of rows.Attribute)for(const row of group.attrs)for(const key of ['value','formulaName','font','position','layerId','locked'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('UNPROJECTED');}});" });
+  const result = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await fixture.run()));
+  assert.deepEqual(result["value"], ["attribute-b2", "attribute-b1", "attribute-a"]);
+  assert.deepEqual(result["attributeParentGroups"], [{ parentPrimitiveId: "component-b", ids: ["attribute-b2", "attribute-b1"] },
+    { parentPrimitiveId: "component-empty", ids: [] }, { parentPrimitiveId: "component-a", ids: ["attribute-a"] }]);
+  assert.equal(result["observedIdentityCount"], 3); assert.equal(fixture.evaluateChild("getterReads"), 0);
+  assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const filteredArguments of [{ parentPrimitiveId: "component-b" }, { layer: 3 }, { primitiveLock: false }]) {
+    assert.equal(validateCurrentPcbIdentitiesArguments({ ...input, arguments: filteredArguments })["valid"], false);
+  }
+  const classify = inputFor(CURRENT_PCB_IDENTITY_TYPE_METHOD, { id: "attribute-a" });
+  const classifyRaw: unknown = decodeExactReadEnvelope(await environment({ input: classify }).run());
+  assert.throws(() => validateCurrentPcbIdentitiesResult(classify, classifyRaw), /not in an observed supported family/u);
+});
+
+void test("current Attribute identities reject malformed parents and children without invoking getters", async () => {
+  const input = inputFor(attributeMethod);
+  for (const beforeChild of ["rows.Attribute=undefined;", "delete rows.Attribute[1];", "rows.Attribute[0].extra=true;",
+    "rows.Attribute[0].parentPrimitiveId='';", "rows.Attribute[0].parentPrimitiveId='x'.repeat(257);",
+    "rows.Attribute[1].parentPrimitiveId='component-b';", "rows.Attribute[2].parentPrimitiveId='attribute-b2';",
+    "rows.Attribute[2].attrs[0].globalIndex='attribute-b2';", "rows.Attribute[0].attrs=undefined;",
+    "delete rows.Attribute[0].attrs[1];", "rows.Attribute[0].attrs[0].globalIndex='x'.repeat(257);",
+    "rows.Attribute[0].attrs[0]=Object.create({globalIndex:'inherited'});",
+    "Object.defineProperty(rows.Attribute[0],'parentPrimitiveId',{get(){getterReads++;throw new Error('PRIVATE');}});",
+    "Object.defineProperty(rows.Attribute[0],'attrs',{get(){getterReads++;throw new Error('PRIVATE');}});",
+    "Object.defineProperty(rows.Attribute[0].attrs,'0',{get(){getterReads++;throw new Error('PRIVATE');}});",
+    "Object.defineProperty(rows.Attribute[0].attrs[0],'globalIndex',{get(){getterReads++;throw new Error('PRIVATE');}});"]) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
+  }
+});
+
+void test("current Attribute identity length bounds precede flattening and parent association drift refuses", async () => {
+  const input = inputFor(attributeMethod);
+  const boundary = environment({ input, beforeChild: "rows.Attribute=[{parentPrimitiveId:'parent',attrs:Array.from({length:20000},(_,i)=>({globalIndex:String(i)}))}];" });
+  const boundaryResult = validateCurrentPcbIdentitiesResult(input, decodeExactReadEnvelope(await boundary.run()));
+  assert.equal(boundaryResult["observedIdentityCount"], 20_000);
+  for (const beforeChild of ["rows.Attribute=Array(20001).fill(rows.Attribute[0]);",
+    "rows.Attribute[0].attrs=Array(20001).fill({globalIndex:'large'});",
+    "rows.Attribute=[{parentPrimitiveId:'parent-a',attrs:Array(10001).fill({globalIndex:'large'})},{parentPrimitiveId:'parent-b',attrs:Array(10000).fill({globalIndex:'large'})}];Object.defineProperty(rows.Attribute[0].attrs,'0',{get(){getterReads++;throw new Error('FLATTENED_TOO_EARLY');}});"]) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
+  }
+  const oversized = environment({ input, beforeChild: "rows.Attribute=[{parentPrimitiveId:'parent',attrs:Array.from({length:1000},(_,i)=>({globalIndex:String(i)+'x'.repeat(240)}))}];" });
+  await assert.rejects(oversized.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+  assert.equal(oversized.evaluateChild("dataReads"), 1);
+  for (const change of ["rows.Attribute[0].parentPrimitiveId='different-parent';",
+    "rows.Attribute[1].attrs.push(rows.Attribute[0].attrs.pop());", "rows.Attribute[1].parentPrimitiveId='different-empty-parent';"]) {
+    const drift = environment({ input, afterCall: `if(topic==='pcb/extensionAPI/attribute-getAll'&&dataReads===2){${change}}` });
+    await assert.rejects(drift.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+    assert.equal(drift.evaluateChild("dataReads"), 2);
+  }
+});
+
+void test("current Attribute result validation rejects forged or incomplete association evidence", async () => {
+  const input = inputFor(attributeMethod), raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(raw !== null && typeof raw === "object");
+  for (const parentGroups of [[], [{ parentPrimitiveId: "parent", ids: ["attribute-b2", "attribute-a", "attribute-b1"] }],
+    [{ parentPrimitiveId: "parent", ids: ["attribute-b2", "attribute-b1"] }, { parentPrimitiveId: "parent", ids: ["attribute-a"] }],
+    [{ parentPrimitiveId: "attribute-a", ids: ["attribute-b2", "attribute-b1", "attribute-a"] }],
+    [{ parentPrimitiveId: "parent", ids: ["attribute-b2", "attribute-b1", "attribute-a"], owned: true }]]) {
+    assert.throws(() => validateCurrentPcbIdentitiesResult(input, { ...raw, observations: [{ family: "Attribute",
+      ids: ["attribute-b2", "attribute-b1", "attribute-a"], parentGroups }] }));
+  }
+  assert.throws(() => validateCurrentPcbIdentitiesResult(input, { ...raw, observations: [{ family: "Attribute", ids: [] }] }));
+  const otherRaw: unknown = decodeExactReadEnvelope(await environment().run()); assert.ok(otherRaw !== null && typeof otherRaw === "object");
+  assert.throws(() => validateCurrentPcbIdentitiesResult(request, { ...otherRaw, observations: [{ family: "selected", ids: [], parentGroups: [] }] }));
 });
 
 void test("Dimension and Image identity projections preserve native membership and refuse malformed or changing families", async () => {

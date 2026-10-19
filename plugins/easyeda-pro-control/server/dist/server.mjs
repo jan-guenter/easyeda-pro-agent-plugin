@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "cb1ea6afb364927bd8887a28fa57898330f128a31b3d6e8da02390705009d3c8";
+const __easyedaBundlePairId = "a9cbe890e12cce0ffb293de8141240df56d6b3b3ce92728937fdb3859226f24f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -54,9 +54,9 @@ var __commonJS = (cb, mod) => function __require2() {
     throw mod = 0, e;
   }
 };
-var __export = (target7, all) => {
+var __export = (target8, all) => {
   for (var name6 in all)
-    __defProp(target7, name6, { get: all[name6], enumerable: true });
+    __defProp(target8, name6, { get: all[name6], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -66,12 +66,12 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target7) => (target7 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod, isNodeMode, target8) => (target8 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target7, "default", { value: mod, enumerable: true }) : target7,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target8, "default", { value: mod, enumerable: true }) : target8,
   mod
 ));
 
@@ -303,8 +303,8 @@ function defineLazy(object4, key, getter) {
 function objectClone(obj) {
   return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
 }
-function assignProp(target7, prop, value2) {
-  Object.defineProperty(target7, prop, {
+function assignProp(target8, prop, value2) {
+  Object.defineProperty(target8, prop, {
     value: value2,
     writable: true,
     enumerable: true,
@@ -417,35 +417,35 @@ function normalizeParams(_params) {
   return params;
 }
 function createTransparentProxy(getter) {
-  let target7;
+  let target8;
   return new Proxy({}, {
     get(_, prop, receiver) {
-      target7 ?? (target7 = getter());
-      return Reflect.get(target7, prop, receiver);
+      target8 ?? (target8 = getter());
+      return Reflect.get(target8, prop, receiver);
     },
     set(_, prop, value2, receiver) {
-      target7 ?? (target7 = getter());
-      return Reflect.set(target7, prop, value2, receiver);
+      target8 ?? (target8 = getter());
+      return Reflect.set(target8, prop, value2, receiver);
     },
     has(_, prop) {
-      target7 ?? (target7 = getter());
-      return Reflect.has(target7, prop);
+      target8 ?? (target8 = getter());
+      return Reflect.has(target8, prop);
     },
     deleteProperty(_, prop) {
-      target7 ?? (target7 = getter());
-      return Reflect.deleteProperty(target7, prop);
+      target8 ?? (target8 = getter());
+      return Reflect.deleteProperty(target8, prop);
     },
     ownKeys(_) {
-      target7 ?? (target7 = getter());
-      return Reflect.ownKeys(target7);
+      target8 ?? (target8 = getter());
+      return Reflect.ownKeys(target8);
     },
     getOwnPropertyDescriptor(_, prop) {
-      target7 ?? (target7 = getter());
-      return Reflect.getOwnPropertyDescriptor(target7, prop);
+      target8 ?? (target8 = getter());
+      return Reflect.getOwnPropertyDescriptor(target8, prop);
     },
     defineProperty(_, prop, descriptor10) {
-      target7 ?? (target7 = getter());
-      return Reflect.defineProperty(target7, prop, descriptor10);
+      target8 ?? (target8 = getter());
+      return Reflect.defineProperty(target8, prop, descriptor10);
     }
   });
 }
@@ -11001,10 +11001,10 @@ function _property(property, schema2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _mime(types4, params) {
+function _mime(types5, params) {
   return new $ZodCheckMimeType({
     check: "mime_type",
-    mime: types4,
+    mime: types5,
     ...normalizeParams(params)
   });
 }
@@ -11405,15 +11405,15 @@ var init_api = __esm({
 
 // node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
-  let target7 = params?.target ?? "draft-2020-12";
-  if (target7 === "draft-4")
-    target7 = "draft-04";
-  if (target7 === "draft-7")
-    target7 = "draft-07";
+  let target8 = params?.target ?? "draft-2020-12";
+  if (target8 === "draft-4")
+    target8 = "draft-04";
+  if (target8 === "draft-7")
+    target8 = "draft-07";
   return {
     processors: params.processors ?? {},
     metadataRegistry: params?.metadata ?? globalRegistry,
-    target: target7,
+    target: target8,
     unrepresentable: params?.unrepresentable ?? "throw",
     override: params?.override ?? (() => {
     }),
@@ -11759,8 +11759,8 @@ var init_to_json_schema = __esm({
       return finalize(ctx, schema2);
     };
     createStandardJSONSchemaMethod = (schema2, io, processors = {}) => (params) => {
-      const { libraryOptions, target: target7 } = params ?? {};
-      const ctx = initializeContext({ ...libraryOptions ?? {}, target: target7, io, processors });
+      const { libraryOptions, target: target8 } = params ?? {};
+      const ctx = initializeContext({ ...libraryOptions ?? {}, target: target8, io, processors });
       process2(schema2, ctx);
       extractDefs(ctx, schema2);
       return finalize(ctx, schema2);
@@ -13649,8 +13649,8 @@ var init_schemas2 = __esm({
         catch(params) {
           return _catch2(this, params);
         },
-        pipe(target7) {
-          return pipe(this, target7);
+        pipe(target8) {
+          return pipe(this, target8);
         },
         readonly() {
           return readonly(this);
@@ -14185,7 +14185,7 @@ var init_schemas2 = __esm({
       inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
       inst.min = (size3, params) => inst.check(_minSize(size3, params));
       inst.max = (size3, params) => inst.check(_maxSize(size3, params));
-      inst.mime = (types4, params) => inst.check(_mime(Array.isArray(types4) ? types4 : [types4], params));
+      inst.mime = (types5, params) => inst.check(_mime(Array.isArray(types5) ? types5 : [types5], params));
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -16838,8 +16838,8 @@ var init_types = __esm({
           description: description2
         });
       }
-      pipe(target7) {
-        return ZodPipeline.create(this, target7);
+      pipe(target8) {
+        return ZodPipeline.create(this, target8);
       }
       readonly() {
         return ZodReadonly2.create(this);
@@ -18606,9 +18606,9 @@ var init_types = __esm({
         return this._def.options;
       }
     };
-    ZodUnion2.create = (types4, params) => {
+    ZodUnion2.create = (types5, params) => {
       return new ZodUnion2({
-        options: types4,
+        options: types5,
         typeName: ZodFirstPartyTypeKind2.ZodUnion,
         ...processCreateParams(params)
       });
@@ -22498,15 +22498,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
-    const types4 = options.reduce((types5, x) => {
+    const types5 = options.reduce((types6, x) => {
       const type2 = primitiveMappings[x._def.typeName];
-      return type2 && !types5.includes(type2) ? [...types5, type2] : types5;
+      return type2 && !types6.includes(type2) ? [...types6, type2] : types6;
     }, []);
     return {
-      type: types4.length > 1 ? types4 : types4[0]
+      type: types5.length > 1 ? types5 : types5[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types4 = options.reduce((acc, x) => {
+    const types5 = options.reduce((acc, x) => {
       const type2 = typeof x._def.value;
       switch (type2) {
         case "string":
@@ -22525,8 +22525,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types4.length === options.length) {
-      const uniqueTypes = types4.filter((x, i2, a) => a.indexOf(x) === i2);
+    if (types5.length === options.length) {
+      const uniqueTypes = types5.filter((x, i2, a) => a.indexOf(x) === i2);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -25689,37 +25689,37 @@ var require_dataType = __commonJS({
       DataType2[DataType2["Wrong"] = 1] = "Wrong";
     })(DataType || (exports2.DataType = DataType = {}));
     function getSchemaTypes(schema2) {
-      const types4 = getJSONTypes(schema2.type);
-      const hasNull = types4.includes("null");
+      const types5 = getJSONTypes(schema2.type);
+      const hasNull = types5.includes("null");
       if (hasNull) {
         if (schema2.nullable === false)
           throw new Error("type: null contradicts nullable: false");
       } else {
-        if (!types4.length && schema2.nullable !== void 0) {
+        if (!types5.length && schema2.nullable !== void 0) {
           throw new Error('"nullable" cannot be used without "type"');
         }
         if (schema2.nullable === true)
-          types4.push("null");
+          types5.push("null");
       }
-      return types4;
+      return types5;
     }
     exports2.getSchemaTypes = getSchemaTypes;
     function getJSONTypes(ts) {
-      const types4 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-      if (types4.every(rules_1.isJSONType))
-        return types4;
-      throw new Error("type must be JSONType or JSONType[]: " + types4.join(","));
+      const types5 = Array.isArray(ts) ? ts : ts ? [ts] : [];
+      if (types5.every(rules_1.isJSONType))
+        return types5;
+      throw new Error("type must be JSONType or JSONType[]: " + types5.join(","));
     }
     exports2.getJSONTypes = getJSONTypes;
-    function coerceAndCheckDataType(it, types4) {
+    function coerceAndCheckDataType(it, types5) {
       const { gen, data: data9, opts } = it;
-      const coerceTo = coerceToTypes(types4, opts.coerceTypes);
-      const checkTypes = types4.length > 0 && !(coerceTo.length === 0 && types4.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types4[0]));
+      const coerceTo = coerceToTypes(types5, opts.coerceTypes);
+      const checkTypes = types5.length > 0 && !(coerceTo.length === 0 && types5.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types5[0]));
       if (checkTypes) {
-        const wrongType = checkDataTypes(types4, data9, opts.strictNumbers, DataType.Wrong);
+        const wrongType = checkDataTypes(types5, data9, opts.strictNumbers, DataType.Wrong);
         gen.if(wrongType, () => {
           if (coerceTo.length)
-            coerceData(it, types4, coerceTo);
+            coerceData(it, types5, coerceTo);
           else
             reportTypeError(it);
         });
@@ -25728,15 +25728,15 @@ var require_dataType = __commonJS({
     }
     exports2.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
-    function coerceToTypes(types4, coerceTypes) {
-      return coerceTypes ? types4.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+    function coerceToTypes(types5, coerceTypes) {
+      return coerceTypes ? types5.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
     }
-    function coerceData(it, types4, coerceTo) {
+    function coerceData(it, types5, coerceTo) {
       const { gen, data: data9, opts } = it;
       const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data9}`);
       const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
       if (opts.coerceTypes === "array") {
-        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types4, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
+        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types5, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
       for (const t of coerceTo) {
@@ -25812,19 +25812,19 @@ var require_dataType = __commonJS({
         return checkDataType(dataTypes[0], data9, strictNums, correct);
       }
       let cond;
-      const types4 = (0, util_1.toHash)(dataTypes);
-      if (types4.array && types4.object) {
+      const types5 = (0, util_1.toHash)(dataTypes);
+      if (types5.array && types5.object) {
         const notObj = (0, codegen_1._)`typeof ${data9} != "object"`;
-        cond = types4.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
-        delete types4.null;
-        delete types4.array;
-        delete types4.object;
+        cond = types5.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
+        delete types5.null;
+        delete types5.array;
+        delete types5.object;
       } else {
         cond = codegen_1.nil;
       }
-      if (types4.number)
-        delete types4.integer;
-      for (const t in types4)
+      if (types5.number)
+        delete types5.integer;
+      for (const t in types5)
         cond = (0, codegen_1.and)(cond, checkDataType(t, data9, strictNums, correct));
       return cond;
     }
@@ -26629,9 +26629,9 @@ var require_validate = __commonJS({
     function typeAndKeywords(it, errsCount) {
       if (it.opts.jtd)
         return schemaKeywords(it, [], false, errsCount);
-      const types4 = (0, dataType_1.getSchemaTypes)(it.schema);
-      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types4);
-      schemaKeywords(it, types4, !checkedTypes, errsCount);
+      const types5 = (0, dataType_1.getSchemaTypes)(it.schema);
+      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types5);
+      schemaKeywords(it, types5, !checkedTypes, errsCount);
     }
     function checkRefsAndKeywords(it) {
       const { schema: schema2, errSchemaPath, opts, self } = it;
@@ -26681,7 +26681,7 @@ var require_validate = __commonJS({
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
-    function schemaKeywords(it, types4, typeErrors, errsCount) {
+    function schemaKeywords(it, types5, typeErrors, errsCount) {
       const { gen, schema: schema2, data: data9, allErrors, opts, self } = it;
       const { RULES } = self;
       if (schema2.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema2, RULES))) {
@@ -26689,7 +26689,7 @@ var require_validate = __commonJS({
         return;
       }
       if (!opts.jtd)
-        checkStrictTypes(it, types4);
+        checkStrictTypes(it, types5);
       gen.block(() => {
         for (const group of RULES.rules)
           groupKeywords(group);
@@ -26701,7 +26701,7 @@ var require_validate = __commonJS({
         if (group.type) {
           gen.if((0, dataType_2.checkDataType)(group.type, data9, opts.strictNumbers));
           iterateKeywords(it, group);
-          if (types4.length === 1 && types4[0] === group.type && typeErrors) {
+          if (types5.length === 1 && types5[0] === group.type && typeErrors) {
             gen.else();
             (0, dataType_2.reportTypeError)(it);
           }
@@ -26725,27 +26725,27 @@ var require_validate = __commonJS({
         }
       });
     }
-    function checkStrictTypes(it, types4) {
+    function checkStrictTypes(it, types5) {
       if (it.schemaEnv.meta || !it.opts.strictTypes)
         return;
-      checkContextTypes(it, types4);
+      checkContextTypes(it, types5);
       if (!it.opts.allowUnionTypes)
-        checkMultipleTypes(it, types4);
+        checkMultipleTypes(it, types5);
       checkKeywordTypes(it, it.dataTypes);
     }
-    function checkContextTypes(it, types4) {
-      if (!types4.length)
+    function checkContextTypes(it, types5) {
+      if (!types5.length)
         return;
       if (!it.dataTypes.length) {
-        it.dataTypes = types4;
+        it.dataTypes = types5;
         return;
       }
-      types4.forEach((t) => {
+      types5.forEach((t) => {
         if (!includesType(it.dataTypes, t)) {
           strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
-      narrowSchemaTypes(it, types4);
+      narrowSchemaTypes(it, types5);
     }
     function checkMultipleTypes(it, ts) {
       if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -28062,57 +28062,57 @@ var require_fast_uri = __commonJS({
       return serialize(resolved2, schemelessOptions);
     }
     function resolveComponent(base5, relative11, options, skipNormalization) {
-      const target7 = {};
+      const target8 = {};
       if (!skipNormalization) {
         base5 = parse6(serialize(base5, options), options);
         relative11 = parse6(serialize(relative11, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative11.scheme) {
-        target7.scheme = relative11.scheme;
-        target7.userinfo = relative11.userinfo;
-        target7.host = relative11.host;
-        target7.port = relative11.port;
-        target7.path = removeDotSegments(relative11.path || "");
-        target7.query = relative11.query;
+        target8.scheme = relative11.scheme;
+        target8.userinfo = relative11.userinfo;
+        target8.host = relative11.host;
+        target8.port = relative11.port;
+        target8.path = removeDotSegments(relative11.path || "");
+        target8.query = relative11.query;
       } else {
         if (relative11.userinfo !== void 0 || relative11.host !== void 0 || relative11.port !== void 0) {
-          target7.userinfo = relative11.userinfo;
-          target7.host = relative11.host;
-          target7.port = relative11.port;
-          target7.path = removeDotSegments(relative11.path || "");
-          target7.query = relative11.query;
+          target8.userinfo = relative11.userinfo;
+          target8.host = relative11.host;
+          target8.port = relative11.port;
+          target8.path = removeDotSegments(relative11.path || "");
+          target8.query = relative11.query;
         } else {
           if (!relative11.path) {
-            target7.path = base5.path;
+            target8.path = base5.path;
             if (relative11.query !== void 0) {
-              target7.query = relative11.query;
+              target8.query = relative11.query;
             } else {
-              target7.query = base5.query;
+              target8.query = base5.query;
             }
           } else {
             if (relative11.path[0] === "/") {
-              target7.path = removeDotSegments(relative11.path);
+              target8.path = removeDotSegments(relative11.path);
             } else {
               if ((base5.userinfo !== void 0 || base5.host !== void 0 || base5.port !== void 0) && !base5.path) {
-                target7.path = "/" + relative11.path;
+                target8.path = "/" + relative11.path;
               } else if (!base5.path) {
-                target7.path = relative11.path;
+                target8.path = relative11.path;
               } else {
-                target7.path = base5.path.slice(0, base5.path.lastIndexOf("/") + 1) + relative11.path;
+                target8.path = base5.path.slice(0, base5.path.lastIndexOf("/") + 1) + relative11.path;
               }
-              target7.path = removeDotSegments(target7.path);
+              target8.path = removeDotSegments(target8.path);
             }
-            target7.query = relative11.query;
+            target8.query = relative11.query;
           }
-          target7.userinfo = base5.userinfo;
-          target7.host = base5.host;
-          target7.port = base5.port;
+          target8.userinfo = base5.userinfo;
+          target8.host = base5.host;
+          target8.port = base5.port;
         }
-        target7.scheme = base5.scheme;
+        target8.scheme = base5.scheme;
       }
-      target7.fragment = relative11.fragment;
-      return target7;
+      target8.fragment = relative11.fragment;
+      return target8;
     }
     function equal6(uriA, uriB, options) {
       const normalizedA = normalizeComparableURI(uriA, options);
@@ -38395,14 +38395,14 @@ async function verifyExactManagedArtifact(descriptor10) {
   if (!isRecord(descriptor10)) {
     throw new Error(`${label} descriptor is missing.`);
   }
-  const own4 = (key) => {
+  const own5 = (key) => {
     const field8 = Object.getOwnPropertyDescriptor(descriptor10, key);
     if (field8 === void 0 || !Object.hasOwn(field8, "value")) {
       throw new Error(`${label} requires own data descriptor fields.`);
     }
     return field8.value;
   };
-  const expectedBytes = own4("bytes"), expectedSha256 = own4("sha256"), path5 = own4("path");
+  const expectedBytes = own5("bytes"), expectedSha256 = own5("sha256"), path5 = own5("path");
   if (typeof path5 !== "string" || typeof expectedBytes !== "number" || !Number.isSafeInteger(expectedBytes) || expectedBytes <= 0 || expectedBytes > 268435456 || typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
     throw new Error(`${label} descriptor or 256-MiB byte bound refused.`);
   }
@@ -38428,7 +38428,7 @@ async function verifyExactManagedArtifact(descriptor10) {
 }
 async function readExactUtf8Artifact(descriptor10) {
   const label = "Exact UTF-8 artifact";
-  const own4 = (key) => {
+  const own5 = (key) => {
     const field8 = Object.getOwnPropertyDescriptor(descriptor10, key);
     if (field8 === void 0 || !Object.hasOwn(field8, "value")) {
       throw new Error(`${label} requires own data descriptor fields.`);
@@ -38438,8 +38438,8 @@ async function readExactUtf8Artifact(descriptor10) {
   if (!isRecord(descriptor10)) {
     throw new Error(`${label} descriptor is missing.`);
   }
-  const path5 = own4("path");
-  const expectedBytes = own4("bytes"), expectedSha256 = own4("sha256");
+  const path5 = own5("path");
+  const expectedBytes = own5("bytes"), expectedSha256 = own5("sha256");
   if (typeof path5 !== "string" || typeof expectedBytes !== "number" || !Number.isSafeInteger(expectedBytes) || expectedBytes < 0 || expectedBytes > 256 * 1024 || typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
     throw new Error(`${label} descriptor or 256-KiB byte bound refused.`);
   }
@@ -39757,6 +39757,18 @@ var init_extension_api_coverage_routes = __esm({
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method6}`, includeSchemas: true } } } }
       } });
     }
+    groups.push({ namespace: "pcb_PrimitiveAttribute", methods: ["getAllPrimitiveId"], route: {
+      tool: "easyeda_control_pcb_identities",
+      selector: "eda.pcb_PrimitiveAttribute.getAllPrimitiveId",
+      implementation: "native-task-equivalent",
+      scope: "Separately pinned current API/UI/PCB loaded-view Attribute identities. Empty arguments and explicit ordinary active type-3 project/branch/document/tab only. Captured native frame/receiver and surrounding native identity checks; two matching ordered samples retain component parent groups, including empty groups, before flattening attribute IDs. Returns only IDs and observed parentPrimitiveId associations, not reciprocal model ownership, complete stored ownership, attribute fields, geometry or saved membership. Only existing component stateWatcher views participate. Duplicate parents, duplicate or parent-colliding attribute IDs, malformed groups and association drift refuse. At most20000 groups/20000 total attribute IDs/256characters per ID/393216bytes evidence; aggregate lengths are checked before flattening. Native enumeration and full component/attribute serialization precede output bounds and are not cancelled by timeout. Existing footprint/device/font caches and pad/via data are read; an empty pad-length singleton may be allocated. No library fetch, filters, Attribute positive type lookup, selection, navigation, edit, source export or Save. No current connected validation; legacy separately pinned routes remain unchanged.",
+      source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+      tests: ["current-pcb-identities.test.ts", "extension-api-coverage.test.ts"],
+      documentTypes: [3],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: "eda.pcb_PrimitiveAttribute.getAllPrimitiveId", includeSchemas: true } } } }
+    } });
     for (const family2 of ["Dimension", "Image"]) {
       const method6 = `eda.pcb_Primitive${family2}.getAllPrimitiveId`;
       groups.push({ namespace: `pcb_Primitive${family2}`, methods: ["getAllPrimitiveId"], route: {
@@ -40488,7 +40500,7 @@ function compilePrimitive(operation, family2) {
   if (method6 !== "create" && method6 !== "modify" && method6 !== "delete") {
     throw new Error("Unreviewed primitive operation.");
   }
-  const target7 = "target" in operation ? operation.target : null;
+  const target8 = "target" in operation ? operation.target : null;
   const properties = "properties" in operation ? operation.properties : {};
   const patch4 = "patch" in operation ? operation.patch : {};
   const fields19 = method6 === "create" ? Object.keys(properties) : Object.keys(patch4);
@@ -40498,25 +40510,25 @@ function compilePrimitive(operation, family2) {
     args = catalog2.fields.map((field8) => propertyArgument(field8, Reflect.get(properties, field8)));
     inverse = { kind: "delete-created", api: catalog2.api, resultOf: operation.id };
   } else {
-    if (target7 === null) {
+    if (target8 === null) {
       throw new Error("Missing primitive target.");
     }
-    args = [targetArgument(target7)];
+    args = [targetArgument(target8)];
     if (method6 === "modify") {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(patch4).map(([field8, value2]) => [field8, propertyArgument(field8, value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target7, fields: fields19 };
+      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target8, fields: fields19 };
     } else {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
   }
   const identities4 = { purpose: "family-identities", api: catalog2.api, method: "getAllPrimitiveId", args: [] };
   const beforeReads = [sourceRead, identities4];
-  if (target7 !== null) {
-    beforeReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target7)] });
+  if (target8 !== null) {
+    beforeReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target8)] });
   }
   const afterReads = [sourceRead, identities4];
   if (method6 !== "delete") {
-    afterReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target7 ?? { resultOf: operation.id })] });
+    afterReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target8 ?? { resultOf: operation.id })] });
   }
   const values2 = method6 === "create" ? properties : patch4;
   const expectedFields = Object.entries(values2).map(([field8, value2]) => expectedField(family2, field8, value2));
@@ -40542,7 +40554,7 @@ function compilePrimitive(operation, family2) {
     afterReads,
     expectedFields,
     inverse,
-    effect: { family: family2, target: target7, identity: method6 === "modify" ? "preserve" : method6, fields: fields19, collateral },
+    effect: { family: family2, target: target8, identity: method6 === "modify" ? "preserve" : method6, fields: fields19, collateral },
     limitations: ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged", ...family2 === "pad" ? ["standalone-pad-only-unless-parent-collateral-is-explicitly-proven", "specialPad-unimplemented-in-sdk"] : [], ...family2 === "region" ? ["public-reader-omits-NO_VIAS"] : [], ...family2 === "fill" ? ["public-reader-hardcodes-fillMode"] : [], ...family2 === "arc" || family2 === "via" ? ["public-reader-rounds-geometry"] : []]
   };
 }
@@ -40704,12 +40716,12 @@ function buildDesignOperationCallExpression(input, createdIds = {}) {
         return "undefined";
       }
       case "target": {
-        const target7 = argument.target;
+        const target8 = argument.target;
         let resolved2;
-        if ("primitiveId" in target7) {
-          resolved2 = target7.primitiveId;
-        } else if (Object.hasOwn(createdIds, target7.resultOf)) {
-          resolved2 = createdIds[target7.resultOf];
+        if ("primitiveId" in target8) {
+          resolved2 = target8.primitiveId;
+        } else if (Object.hasOwn(createdIds, target8.resultOf)) {
+          resolved2 = createdIds[target8.resultOf];
         }
         return JSON.stringify(primitiveId.parse(resolved2));
       }
@@ -40847,7 +40859,7 @@ var init_design_operations = __esm({
       }
     });
     literal2 = (value2) => ({ kind: "literal", value: value2 });
-    targetArgument = (target7) => ({ kind: "target", target: target7 });
+    targetArgument = (target8) => ({ kind: "target", target: target8 });
     primitiveCatalog = {
       line: { api: "pcb_PrimitiveLine", fields: ["net", "layer", "startX", "startY", "endX", "endY", "lineWidth", "primitiveLock"] },
       arc: { api: "pcb_PrimitiveArc", fields: ["net", "layer", "startX", "startY", "endX", "endY", "arcAngle", "lineWidth", "interactiveMode", "primitiveLock"] },
@@ -44886,7 +44898,7 @@ function compileSchematicOperation(input) {
   const definition = catalog[family2];
   const creating = operation.action.endsWith(".create");
   const deleting = operation.action.endsWith(".delete");
-  const target7 = "target" in operation ? operation.target : null;
+  const target8 = "target" in operation ? operation.target : null;
   let values2 = {};
   if ("properties" in operation) {
     values2 = operation.properties;
@@ -44923,27 +44935,27 @@ function compileSchematicOperation(input) {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
   } else {
-    if (target7 === null) {
+    if (target8 === null) {
       throw new Error("Schematic target is missing.");
     }
-    args = [{ kind: "target", target: target7 }];
+    args = [{ kind: "target", target: target8 }];
     if (deleting) {
       method6 = "delete";
       resultKind = "boolean";
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     } else {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(values2).map(([field8, value2]) => [field8, literal3(value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target7, fields: fields19 };
+      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target8, fields: fields19 };
     }
   }
   const familyIdentities = { purpose: "family-identities", api: definition.api, method: "getAllPrimitiveId", args: [] };
   const beforeReads = [sourceRead2, familyIdentities];
   const afterReads = [sourceRead2, familyIdentities];
-  if (target7 !== null) {
-    beforeReads.push({ purpose: "target", api: definition.api, method: "get", args: [{ kind: "target", target: target7 }] });
+  if (target8 !== null) {
+    beforeReads.push({ purpose: "target", api: definition.api, method: "get", args: [{ kind: "target", target: target8 }] });
   }
   if (!deleting) {
-    afterReads.push({ purpose: "target", api: definition.api, method: "get", args: [{ kind: "target", target: target7 ?? { resultOf: operation.id } }] });
+    afterReads.push({ purpose: "target", api: definition.api, method: "get", args: [{ kind: "target", target: target8 ?? { resultOf: operation.id } }] });
   }
   const requiredPreservation = operation.action === "sch.component.modify" ? { kind: "complete-schematic-properties", fields: ["otherProperty", "manufacturer", "manufacturerId", "supplier", "supplierId"] } : null;
   const collateral = ["component", "wire", "bus", "pin", "component-pin", "port", "net-flag", "net-label"].includes(family2) ? ["explicitly-planned-pin-net-and-junction-changes"] : [];
@@ -44970,7 +44982,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity32 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method6, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field8, value2]) => expected(family2, field8, value2)), inverse, effect: { family: family2, target: target7, identity: identity32, fields: fields19, collateral }, requiredPreservation, limitations: limitations17 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method6, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field8, value2]) => expected(family2, field8, value2)), inverse, effect: { family: family2, target: target8, identity: identity32, fields: fields19, collateral }, requiredPreservation, limitations: limitations17 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -45243,8 +45255,8 @@ function buildSchematicNativeComponentWriteExpression(input, beforeInput, target
   if ("primitiveId" in operation.target && operation.target.primitiveId !== targetId2) {
     throw new Error("Resolved component identity contradicts operation.");
   }
-  const target7 = before.components.find((entry) => entry.id === targetId2);
-  if (!target7 || target7.kind !== "part" || target7.locked) {
+  const target8 = before.components.find((entry) => entry.id === targetId2);
+  if (!target8 || target8.kind !== "part" || target8.locked) {
     throw new Error("Native component target must be an unlocked part.");
   }
   if (operation.patch.rotation !== void 0 && operation.patch.rotation % 90 !== 0) {
@@ -45677,15 +45689,15 @@ function checked(source5) {
   }
 }
 function targetId(operation, ids2) {
-  const target7 = operation.effect.target;
-  if (!target7) {
+  const target8 = operation.effect.target;
+  if (!target8) {
     return unsupported("operation has no target");
   }
-  if ("primitiveId" in target7) {
-    if (ids2.targetId !== void 0 && ids2.targetId !== target7.primitiveId) {
+  if ("primitiveId" in target8) {
+    if (ids2.targetId !== void 0 && ids2.targetId !== target8.primitiveId) {
       throw new Error("Resolved target contradicts operation.");
     }
-    return target7.primitiveId;
+    return target8.primitiveId;
   }
   if (ids2.targetId === void 0 || ids2.targetId.length === 0) {
     return unsupported("result reference has not been journal-resolved");
@@ -45724,14 +45736,14 @@ function correlateSchematicNativeSource(source5, input) {
   return native;
 }
 function actualTarget(source5, id11, type2) {
-  const target7 = source5.objects.find((entry) => entry.id === id11);
-  if (!target7 || target7.type !== type2) {
+  const target8 = source5.objects.find((entry) => entry.id === id11);
+  if (!target8 || target8.type !== type2) {
     return unsupported("native target family mismatch");
   }
-  if (target7.body["locked"] !== void 0 && target7.body["locked"] !== false) {
+  if (target8.body["locked"] !== void 0 && target8.body["locked"] !== false) {
     return unsupported("locked target");
   }
-  return target7;
+  return target8;
 }
 function expectedValues(compiled2) {
   const values2 = {};
@@ -45753,10 +45765,10 @@ function prepareSchematicSourceOperation(input, source5, nativeInput, ids2 = {})
   if (operation.action === "sch.component.modify") {
     const native = correlateSchematicNativeSource(source5, nativeInput);
     const resolved2 = targetId(compiled2, ids2);
-    const target7 = actualTarget(source5, resolved2, "COMPONENT");
+    const target8 = actualTarget(source5, resolved2, "COMPONENT");
     for (const [field8, sourceField] of [["rotation", "rotation"], ["mirror", "isMirror"]]) {
       const requested = Reflect.get(operation.patch, field8);
-      if (requested !== void 0 && !same4(requested, target7.body[sourceField])) {
+      if (requested !== void 0 && !same4(requested, target8.body[sourceField])) {
         return unsupported("rotation/mirror needs a complete inherited graphic-transform proof");
       }
     }
@@ -52645,8 +52657,8 @@ function assertCopperTarget(operation, before, action, ids2) {
   if (compiled2.action !== action || before.schema !== "easyeda-pro-control.document-source.v1" || new Set(before.objects.map((object4) => object4.id)).size !== before.objects.length || before.document["docType"] !== "PCB" || before.document["editVersion"] !== "3.2.149.88089769" || before.sha256 !== sha256Json({ schema: before.schema, document: before.document, objects: before.objects })) {
     throw new Error("Copper operation profile or baseline is invalid.");
   }
-  const target7 = compiled2.effect.target;
-  const id11 = target7 !== null && "primitiveId" in target7 ? target7.primitiveId : ids2.targetId;
+  const target8 = compiled2.effect.target;
+  const id11 = target8 !== null && "primitiveId" in target8 ? target8.primitiveId : ids2.targetId;
   if (ids2.targetId !== void 0 && id11 !== ids2.targetId) {
     throw new Error("Copper rebuild resolved target contradicts its operation.");
   }
@@ -52663,22 +52675,22 @@ function assertCopperRebuildProfile(operation, before, ids2 = {}) {
   return assertCopperTarget(operation, before, "pcb.pour.rebuild", ids2);
 }
 function assertCopperClearProfile(operation, before, ids2 = {}) {
-  const target7 = assertCopperTarget(operation, before, "pcb.pour.clear-derived", ids2);
-  const derived = before.objects.find((object4) => object4.id === JSON.stringify(["POURED", target7.id]));
+  const target8 = assertCopperTarget(operation, before, "pcb.pour.clear-derived", ids2);
+  const derived = before.objects.find((object4) => object4.id === JSON.stringify(["POURED", target8.id]));
   if (derived?.type !== "POURED" || !Array.isArray(derived.body["pourFill"]) || derived.body["pourFill"].length === 0) {
     throw new Error("Copper clear requires existing nonempty target-derived geometry.");
   }
-  return target7;
+  return target8;
 }
 function expectedCopperClearSource(operation, before, ids2 = {}) {
-  const target7 = assertCopperClearProfile(operation, before, ids2);
-  const objects = before.objects.filter((object4) => object4.id !== JSON.stringify(["POURED", target7.id]));
+  const target8 = assertCopperClearProfile(operation, before, ids2);
+  const objects = before.objects.filter((object4) => object4.id !== JSON.stringify(["POURED", target8.id]));
   const base5 = { schema: before.schema, document: before.document, objects };
   return { ...base5, sha256: sha256Json(base5) };
 }
 function expectedCopperRebuildSource(operation, before, ids2) {
-  const target7 = assertCopperRebuildProfile(operation, before, ids2);
-  if (!isRecord(ids2.derivedResult) || ids2.derivedResult["profile"] !== DESIGN_COPPER_ADAPTER_PROFILE || ids2.derivedResult["targetId"] !== target7.id || !Array.isArray(ids2.derivedResult["coppers"])) {
+  const target8 = assertCopperRebuildProfile(operation, before, ids2);
+  if (!isRecord(ids2.derivedResult) || ids2.derivedResult["profile"] !== DESIGN_COPPER_ADAPTER_PROFILE || ids2.derivedResult["targetId"] !== target8.id || !Array.isArray(ids2.derivedResult["coppers"])) {
     throw new Error("Copper proof requires its authenticated complete native worker result.");
   }
   const result = ids2.derivedResult["coppers"];
@@ -52699,17 +52711,17 @@ function expectedCopperRebuildSource(operation, before, ids2) {
     const group = grouped.get(parent.id) ?? [];
     group.push(geometry2);
     grouped.set(parent.id, group);
-    if (parent.id === target7.id) {
+    if (parent.id === target8.id) {
       wanted.push(geometry2);
     }
   }
-  for (const parent of before.objects.filter((object4) => object4.type === "POUR" && object4.id !== target7.id)) {
+  for (const parent of before.objects.filter((object4) => object4.type === "POUR" && object4.id !== target8.id)) {
     const oldDerived = before.objects.find((object4) => object4.type === "POURED" && object4.id === JSON.stringify(["POURED", parent.id]));
     if (canonicalJson(oldDerived?.body["pourFill"] ?? []) !== canonicalJson(grouped.get(parent.id) ?? [])) {
       throw new Error("Complete worker result changed or omitted another pour's derived copper.");
     }
   }
-  const id11 = JSON.stringify(["POURED", target7.id]);
+  const id11 = JSON.stringify(["POURED", target8.id]);
   const existing = before.objects.find((object4) => object4.id === id11);
   if (existing !== void 0 && existing.type !== "POURED") {
     throw new Error("Derived copper identity collides with another native record.");
@@ -52722,14 +52734,14 @@ function expectedCopperRebuildSource(operation, before, ids2) {
   const base5 = { schema: before.schema, document: before.document, objects };
   return { ...base5, sha256: sha256Json(base5) };
 }
-function copperBaselineGuard(before, target7) {
+function copperBaselineGuard(before, target8) {
   const baseline2 = canonicalJson({ document: before.document, objects: before.objects });
   if (baseline2.length > 16 * 1024 * 1024) {
     throw new Error("Copper baseline exceeds its generated-code bound.");
   }
   return `
 const COPPER_BASELINE = ${baseline2};
-const COPPER_TARGET = ${JSON.stringify(target7.id)};
+const COPPER_TARGET = ${JSON.stringify(target8.id)};
 const copperCanonical = value => {
   if (Array.isArray(value)) return '[' + value.map(copperCanonical).join(',') + ']';
   if (value !== null && typeof value === 'object') return '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + copperCanonical(value[key])).join(',') + '}';
@@ -52750,8 +52762,8 @@ if (new Set(copperObjects.map(object=>object.id)).size !== copperObjects.length 
 `;
 }
 function buildDesignCopperAdapter(operation, before, ids2 = {}) {
-  const target7 = assertCopperRebuildProfile(operation, before, ids2);
-  const code = `${copperBaselineGuard(before, target7)}
+  const target8 = assertCopperRebuildProfile(operation, before, ids2);
+  const code = `${copperBaselineGuard(before, target8)}
 const copperBus = globalThis.window?.top?._MSG_BUS2_EXTAPI_;
 if (typeof copperBus?.rpcCall !== 'function') throw new Error('Pinned native copper RPC unavailable');
 const nativeCoppers = await copperBus.rpcCall('extensionApi.PCB_PrimitivePour.rebuildCopperRegion',{ids:[COPPER_TARGET],isLast:false});
@@ -52764,16 +52776,16 @@ const coppers = nativeCoppers.map(value => {
 });
 return {profile:${JSON.stringify(DESIGN_COPPER_ADAPTER_PROFILE)},targetId:COPPER_TARGET,coppers};
 `;
-  return { profile: DESIGN_COPPER_ADAPTER_PROFILE, beforeSha256: before.sha256, targetId: target7.id, code };
+  return { profile: DESIGN_COPPER_ADAPTER_PROFILE, beforeSha256: before.sha256, targetId: target8.id, code };
 }
 function buildDesignCopperClearAdapter(operation, before, ids2 = {}) {
-  const target7 = assertCopperClearProfile(operation, before, ids2);
-  const code = `${copperBaselineGuard(before, target7)}
+  const target8 = assertCopperClearProfile(operation, before, ids2);
+  const code = `${copperBaselineGuard(before, target8)}
 const copperDeleteApi = eda.pcb_PrimitivePoured;
 if (typeof copperDeleteApi?.delete !== 'function') throw new Error('Pinned native copper delete unavailable');
 return await copperDeleteApi.delete(COPPER_TARGET);
 `;
-  return { profile: DESIGN_COPPER_CLEAR_PROFILE, beforeSha256: before.sha256, targetId: target7.id, code };
+  return { profile: DESIGN_COPPER_CLEAR_PROFILE, beforeSha256: before.sha256, targetId: target8.id, code };
 }
 var DESIGN_COPPER_ADAPTER_PROFILE, DESIGN_COPPER_CLEAR_PROFILE;
 var init_design_copper_adapter = __esm({
@@ -52891,9 +52903,9 @@ function expectedRegionRules(compiled2, before) {
     if (!isRecord(value2) || value2["type"] !== "region" || typeof value2["name"] !== "string") {
       throw new Error("Malformed region rule row.");
     }
-    const target7 = records2.get(value2["name"]);
-    const constraint = target7?.type === "REGION" && target7.body["regionType"] === "CONSTRAINT";
-    if (target7 === void 0 || !constraint && target7.type !== "POUR") {
+    const target8 = records2.get(value2["name"]);
+    const constraint = target8?.type === "REGION" && target8.body["regionType"] === "CONSTRAINT";
+    if (target8 === void 0 || !constraint && target8.type !== "POUR") {
       throw new Error("Region rule target must be an existing pour or constraint ID.");
     }
     const fields19 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
@@ -52901,7 +52913,7 @@ function expectedRegionRules(compiled2, before) {
     if (Object.keys(value2).some((key) => !allowed.has(key))) {
       throw new Error("Unreviewed region rule field.");
     }
-    const id11 = JSON.stringify(["RULE_SELECTOR", [constraint ? "REGION" : "POUR", target7.id]]);
+    const id11 = JSON.stringify(["RULE_SELECTOR", [constraint ? "REGION" : "POUR", target8.id]]);
     if (wanted.has(id11)) {
       throw new Error("Duplicate region rule row.");
     }
@@ -52916,10 +52928,10 @@ function expectedRegionRules(compiled2, before) {
     const copper = reference(before, value2["Copper Safe Spacing"], "SAFE"), plane = reference(before, value2["Plane Safe Spacing"], "SAFE");
     records2.set(id11, { id: id11, type: "RULE_SELECTOR", body: { ...records2.get(id11)?.body, ruleOrder: 2, ruleKeyValue, copperValue: copper === null ? {} : { COPPER: copper }, innerPlaneValue: plane === null ? {} : { PLANE: plane } } });
     if (constraint && Object.hasOwn(value2, "constraintName")) {
-      if (typeof value2["constraintName"] !== "string" || value2["constraintName"].length === 0 || target7.body["locked"] === true) {
+      if (typeof value2["constraintName"] !== "string" || value2["constraintName"].length === 0 || target8.body["locked"] === true) {
         throw new Error("Constraint name is empty or its primitive is locked.");
       }
-      records2.set(target7.id, { ...target7, body: { ...target7.body, name: value2["constraintName"] } });
+      records2.set(target8.id, { ...target8, body: { ...target8.body, name: value2["constraintName"] } });
     }
   }
   for (const object4 of before.objects) {
@@ -53178,15 +53190,15 @@ function checkedSnapshot(snapshot8) {
   }
 }
 function resolvedTarget(compiled2, ids2) {
-  const target7 = compiled2.effect.target;
-  if (target7 === null) {
+  const target8 = compiled2.effect.target;
+  if (target8 === null) {
     return unsupported2("operation has no primitive target");
   }
-  if ("primitiveId" in target7) {
-    if (ids2.targetId !== void 0 && ids2.targetId !== target7.primitiveId) {
+  if ("primitiveId" in target8) {
+    if (ids2.targetId !== void 0 && ids2.targetId !== target8.primitiveId) {
       throw new Error("Resolved primitive ID contradicts the compiled target.");
     }
-    return target7.primitiveId;
+    return target8.primitiveId;
   }
   if (typeof ids2.targetId !== "string" || ids2.targetId.length === 0) {
     return unsupported2("created-ID target has not been resolved by the journal");
@@ -53452,27 +53464,27 @@ function assertProfile(compiled2, before, ids2) {
     assertPrimitiveRepresentation(family2.type, patch4);
     return { family: family2, patch: patch4 };
   }
-  const target7 = exactObject(before, resolvedTarget(compiled2, ids2), family2.type);
+  const target8 = exactObject(before, resolvedTarget(compiled2, ids2), family2.type);
   if (compiled2.effect.family === "component") {
     if (compiled2.effect.identity !== "preserve") {
       return unsupported2("component deletion requires complete library/pad-net child removal proof");
     }
-    assertComponentPatch(target7, patch4);
-    expectedComponentChildren(before, target7, patch4);
+    assertComponentPatch(target8, patch4);
+    expectedComponentChildren(before, target8, patch4);
   }
-  if (target7.body["locked"] !== false && !(Object.keys(patch4).length === 1 && patch4["locked"] === false)) {
+  if (target8.body["locked"] !== false && !(Object.keys(patch4).length === 1 && patch4["locked"] === false)) {
     return unsupported2("locked target requires a separate exact unlock operation");
   }
   for (const name6 of Object.keys(patch4)) {
-    if (!Object.hasOwn(target7.body, name6)) {
+    if (!Object.hasOwn(target8.body, name6)) {
       return unsupported2(`native baseline has no ${name6} field`);
     }
   }
   if (family2.type === "POLY" && patch4["layerId"] !== void 0) {
     patch4["polyType"] = patch4["layerId"] === 11 ? "BOARD_OUTLINE" : "NORMAL";
   }
-  assertPrimitiveRepresentation(family2.type, { ...target7.body, ...patch4 });
-  return { family: family2, patch: patch4, target: target7 };
+  assertPrimitiveRepresentation(family2.type, { ...target8.body, ...patch4 });
+  return { family: family2, patch: patch4, target: target8 };
 }
 function assertPrimitiveRepresentation(type2, body4) {
   if (type2 === "VIA" && body4["viaType"] === "BLIND" && (typeof body4["ruleName"] !== "string" || body4["ruleName"].length === 0)) {
@@ -53789,19 +53801,19 @@ function assertColorTarget(object4) {
     throw new Error("Color target absent.");
   }
 }
-function expectedComponentChildren(before, target7, patch4) {
-  const oldX = exactNumber(target7.body["x"], "component x");
-  const oldY = exactNumber(target7.body["y"], "component y");
+function expectedComponentChildren(before, target8, patch4) {
+  const oldX = exactNumber(target8.body["x"], "component x");
+  const oldY = exactNumber(target8.body["y"], "component y");
   const dx = exactNumber(patch4["x"] ?? oldX, "component x") - oldX;
   const dy = exactNumber(patch4["y"] ?? oldY, "component y") - oldY;
-  const oldAngle = exactNumber(target7.body["angle"], "component angle");
-  const flipped = patch4["layerId"] !== void 0 && patch4["layerId"] !== target7.body["layerId"];
+  const oldAngle = exactNumber(target8.body["angle"], "component angle");
+  const flipped = patch4["layerId"] !== void 0 && patch4["layerId"] !== target8.body["layerId"];
   const intermediateAngle = flipped ? (180 - oldAngle) % 360 : oldAngle;
   const deltaAngle = exactNumber(patch4["angle"] ?? intermediateAngle, "component angle") - intermediateAngle;
   const radians = deltaAngle * Math.PI / 180;
   const cosine = Math.cos(radians), sine = Math.sin(radians);
   const expected3 = /* @__PURE__ */ new Map();
-  for (const child of before.objects.filter((candidate) => candidate.body["parentId"] === target7.id)) {
+  for (const child of before.objects.filter((candidate) => candidate.body["parentId"] === target8.id)) {
     if (child.type !== "ATTR") {
       return unsupported2("non-ATTR stored component child transform");
     }
@@ -53890,7 +53902,7 @@ function buildExpectedDesignSource(operation, before, ids2 = {}) {
   if (compiled2.effect.identity === "collection") {
     return buildGroupSource(compiled2, before);
   }
-  const { family: family2, patch: patch4, target: target7 } = assertProfile(compiled2, before, ids2);
+  const { family: family2, patch: patch4, target: target8 } = assertProfile(compiled2, before, ids2);
   let objects;
   if (compiled2.effect.identity === "create") {
     const id11 = ids2.createdId;
@@ -53900,14 +53912,14 @@ function buildExpectedDesignSource(operation, before, ids2 = {}) {
     const defaults2 = creationDefaults(family2.type);
     objects = [...before.objects, { id: id11, type: family2.type, body: { partitionId: "", groupId: 0, ...family2.type === "VIA" ? {} : { zIndex: -1 }, ...defaults2, ...patch4 } }];
   } else {
-    if (target7 === void 0) {
+    if (target8 === void 0) {
       throw new Error("Expected source target absent.");
     }
     if (compiled2.effect.identity === "delete") {
-      objects = before.objects.filter((object4) => object4.id !== target7.id);
+      objects = before.objects.filter((object4) => object4.id !== target8.id);
     } else {
-      const children2 = family2.type === "COMPONENT" ? expectedComponentChildren(before, target7, patch4) : /* @__PURE__ */ new Map();
-      children2.set(target7.id, { ...target7, body: { ...target7.body, ...patch4 } });
+      const children2 = family2.type === "COMPONENT" ? expectedComponentChildren(before, target8, patch4) : /* @__PURE__ */ new Map();
+      children2.set(target8.id, { ...target8, body: { ...target8.body, ...patch4 } });
       objects = before.objects.map((object4) => children2.get(object4.id) ?? object4);
     }
   }
@@ -53940,7 +53952,7 @@ function verifyDesignSourceEffect(compiled2, before, after, ids2 = {}) {
     }
     return compareDocumentSources(before, after);
   }
-  const { family: family2, patch: patch4, target: target7 } = assertProfile(compiled2, before, ids2);
+  const { family: family2, patch: patch4, target: target8 } = assertProfile(compiled2, before, ids2);
   checkedSnapshot(after);
   const delta = compareDocumentSources(before, after);
   if (delta.documentChanged) {
@@ -53953,11 +53965,11 @@ function verifyDesignSourceEffect(compiled2, before, after, ids2 = {}) {
     assertCreatedBody(delta.added[0], patch4);
     return delta;
   }
-  if (target7 === void 0) {
+  if (target8 === void 0) {
     throw new Error("Native operation target was not established.");
   }
   if (compiled2.effect.identity === "delete") {
-    if (delta.removed.length !== 1 || delta.removed[0]?.id !== target7.id || delta.added.length > 0 || delta.changed.length > 0) {
+    if (delta.removed.length !== 1 || delta.removed[0]?.id !== target8.id || delta.added.length > 0 || delta.changed.length > 0) {
       throw new Error("Native delete did not remove only the exact target record.");
     }
     return delta;
@@ -53965,9 +53977,9 @@ function verifyDesignSourceEffect(compiled2, before, after, ids2 = {}) {
   if (compiled2.effect.identity !== "preserve" || delta.added.length > 0 || delta.removed.length > 0) {
     throw new Error("Native modification added or removed identities.");
   }
-  const expected3 = compiled2.effect.family === "component" ? expectedComponentChildren(before, target7, patch4) : /* @__PURE__ */ new Map();
+  const expected3 = compiled2.effect.family === "component" ? expectedComponentChildren(before, target8, patch4) : /* @__PURE__ */ new Map();
   const baseline2 = new Map(before.objects.map((object4) => [object4.id, object4]));
-  expected3.set(target7.id, { ...target7, body: { ...target7.body, ...patch4 } });
+  expected3.set(target8.id, { ...target8, body: { ...target8.body, ...patch4 } });
   for (const object4 of after.objects) {
     const wanted = expected3.get(object4.id) ?? baseline2.get(object4.id);
     if (!equal(object4, wanted)) {
@@ -53991,7 +54003,7 @@ function buildInverseDesignOperation(operation, before, ids2 = {}) {
     buildGroupSource(compiled2, before);
     return void 0;
   }
-  const { family: family2, target: target7 } = assertProfile(compiled2, before, ids2);
+  const { family: family2, target: target8 } = assertProfile(compiled2, before, ids2);
   const inverseId = `inverse-${sha256Json(parsed2).slice(0, 32)}`;
   if (compiled2.effect.identity === "delete") {
     return void 0;
@@ -54002,11 +54014,11 @@ function buildInverseDesignOperation(operation, before, ids2 = {}) {
     }
     return designOperationSchema.parse({ id: inverseId, action: `pcb.${compiled2.effect.family}.delete`, target: { primitiveId: ids2.createdId } });
   }
-  if (target7 === void 0) {
+  if (target8 === void 0) {
     return unsupported2("inverse has no native baseline target");
   }
   const patch4 = {};
-  const targetBody = target7.body;
+  const targetBody = target8.body;
   function inverseField2(field8) {
     const raw = family2.fields[field8];
     if (raw === "$pourStyle") {
@@ -54127,9 +54139,9 @@ function buildInverseDesignOperation(operation, before, ids2 = {}) {
     inverseField2(field8);
   }
   if (family2.type === "COMPONENT" && Object.hasOwn(patch4, "layer") && !Object.hasOwn(patch4, "rotation")) {
-    patch4["rotation"] = target7.body["angle"];
+    patch4["rotation"] = target8.body["angle"];
   }
-  return designOperationSchema.parse({ id: inverseId, action: parsed2.action, target: { primitiveId: target7.id }, patch: patch4 });
+  return designOperationSchema.parse({ id: inverseId, action: parsed2.action, target: { primitiveId: target8.id }, patch: patch4 });
 }
 var LINE_FIELDS, FAMILIES2, DESIGN_SOURCE_PROOF_LIMITATIONS, MASK_FIELDS, REGION_TYPES, NET_RULE_FIELDS;
 var init_design_source_proof = __esm({
@@ -55531,15 +55543,15 @@ function assertSchematicElectricalSupported(input, source5, nativeInput, ids2 = 
     getPin(native, id11);
     return;
   }
-  const target7 = source5.objects.find((entry) => entry.id === id11);
-  if (target7 === void 0 || target7.body["locked"] === true) {
+  const target8 = source5.objects.find((entry) => entry.id === id11);
+  if (target8 === void 0 || target8.body["locked"] === true) {
     throw new Error("Electrical deletion target is absent or locked.");
   }
   if (operation.action === "sch.component.delete") {
-    if (target7.type !== "COMPONENT" || native.components.find((entry) => entry.id === id11)?.kind !== "part") {
+    if (target8.type !== "COMPONENT" || native.components.find((entry) => entry.id === id11)?.kind !== "part") {
       throw new Error("Component deletion requires an exact ordinary part.");
     }
-  } else if (target7.type !== "ATTR" || target7.body["key"] !== "_NETLABEL_" || target7.body["parentId"] !== "$$root") {
+  } else if (target8.type !== "ATTR" || target8.body["key"] !== "_NETLABEL_" || target8.body["parentId"] !== "$$root") {
     throw new Error("Net-label deletion requires an exact standalone native label.");
   }
 }
@@ -55913,28 +55925,28 @@ function verifySchematicComponentCreate(input, adapter, before, after, oldNative
   if (delta.documentChanged || delta.changed.length > 0 || delta.removed.length > 0) {
     throw new Error("Component creation altered preexisting source records.");
   }
-  const target7 = newNative.components.find((component3) => component3.id === adapter.createdId);
+  const target8 = newNative.components.find((component3) => component3.id === adapter.createdId);
   const existing = newNative.components.filter((component3) => component3.id !== adapter.createdId);
   let unchanged4 = same10(oldNative.components, existing);
   if (!unchanged4) {
     const preserved = alignSchematicLifecyclePair(oldNative, { ...newNative, source: oldNative.source, components: existing });
     unchanged4 = same10(preserved.reference.components, preserved.observed.components);
   }
-  if (target7?.kind !== "part" || target7.locked || !same10(oldNative.document, newNative.document) || !unchanged4) {
+  if (target8?.kind !== "part" || target8.locked || !same10(oldNative.document, newNative.document) || !unchanged4) {
     throw new Error("Component creation changed unrelated native components, pins or nets.");
   }
-  const values2 = Object.fromEntries(target7.attributes.map((attribute3) => [attribute3.key, attribute3.value]));
+  const values2 = Object.fromEntries(target8.attributes.map((attribute3) => [attribute3.key, attribute3.value]));
   for (const [key, value2] of Object.entries({ ...library2.attributes, Device: library2.device.uuid, Symbol: library2.symbol.uuid, Designator: adapter.designator, "Unique ID": adapter.uniqueId, "Add into BOM": operation.properties.addIntoBom ? "yes" : "no", "Convert to PCB": operation.properties.addIntoPcb ? "yes" : "no" })) {
     if (values2[key] !== value2) {
       throw new Error("Created component lost a device property or association.");
     }
   }
   const pins = symbolPins(library2);
-  if (pins.length === 0 || pins.length !== target7.pins.length) {
+  if (pins.length === 0 || pins.length !== target8.pins.length) {
     throw new Error("Created component pin inventory differs from its project symbol.");
   }
   for (const { pin: pin4, attributes: attributes2, number: number17 } of pins) {
-    const physical = target7.pins.filter((entry) => entry.attributes.some((attribute3) => attribute3.key === "Pin Number" && attribute3.value === number17));
+    const physical = target8.pins.filter((entry) => entry.attributes.some((attribute3) => attribute3.key === "Pin Number" && attribute3.value === number17));
     const actual = physical[0];
     if (physical.length !== 1 || actual === void 0 || actual.noConnect !== null || actual.id !== `${adapter.createdId}-${pin4.id.split("-").at(-1)}` || !Number.isSafeInteger(actual.body["zIndex"])) {
       throw new Error("Created component pin identity or geometry differs from its exact project symbol.");
@@ -56318,14 +56330,14 @@ function buildFootprintPublicLineExpression(input, before, scope6, ids2 = {}) {
   const call = { ...operation, action: operation.action.replace("footprint.", "pcb."), ...targetId2 === void 0 ? {} : { target: { primitiveId: targetId2 } } };
   let expression3 = `return await ${buildDesignOperationCallExpression(call)};`;
   if (operation.action === "footprint.line.modify") {
-    const target7 = before.objects.find((object4) => object4.id === targetId2);
-    if (target7 === void 0 || target7.type !== "LINE") {
+    const target8 = before.objects.find((object4) => object4.id === targetId2);
+    if (target8 === void 0 || target8.type !== "LINE") {
       throw new Error("Footprint public line target is absent.");
     }
-    if (operation.patch.layer !== void 0 && operation.patch.layer !== target7.body["layerId"]) {
+    if (operation.patch.layer !== void 0 && operation.patch.layer !== target8.body["layerId"]) {
       throw new Error("Public footprint line layer changes need a separate reviewed native history adapter.");
     }
-    const baseline2 = Object.fromEntries(Object.entries(sourceFields).map(([field8, key]) => [field8, target7.body[key]]));
+    const baseline2 = Object.fromEntries(Object.entries(sourceFields).map(([field8, key]) => [field8, target8.body[key]]));
     const patches = Object.entries(operation.patch).map(([field8, value2]) => {
       const name6 = fields[field8];
       if (name6 === void 0) {
@@ -56371,8 +56383,8 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   if ("target" in operation) {
     targetId2 = "primitiveId" in operation.target ? operation.target.primitiveId : ids2.targetId;
   }
-  const target7 = before.objects.find((object4) => object4.id === targetId2);
-  if (verb !== "create" && (target7 === void 0 || target7.type !== primitiveTypes2[family2])) {
+  const target8 = before.objects.find((object4) => object4.id === targetId2);
+  if (verb !== "create" && (target8 === void 0 || target8.type !== primitiveTypes2[family2])) {
     throw new Error("Footprint public geometry target is absent.");
   }
   let values2 = {};
@@ -56382,7 +56394,7 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   if ("patch" in operation) {
     values2 = operation.patch;
   }
-  if (verb === "modify" && values2["layer"] !== void 0 && values2["layer"] !== target7?.body["layerId"]) {
+  if (verb === "modify" && values2["layer"] !== void 0 && values2["layer"] !== target8?.body["layerId"]) {
     throw new Error("Footprint public geometry layer changes require a separate native model profile.");
   }
   if (family2 === "text" && values2["reverse"] === true) {
@@ -56391,38 +56403,38 @@ function buildFootprintPublicGeometryExpression(input, before, scope6, ids2 = {}
   if (family2 === "fill" && (values2["fillMode"] !== void 0 && values2["fillMode"] !== 0)) {
     throw new Error("Public footprint fill supports only solid mode.");
   }
-  if (family2 === "fill" && (values2["layer"] === 12 || target7?.body["layerId"] === 12)) {
+  if (family2 === "fill" && (values2["layer"] === 12 || target8?.body["layerId"] === 12)) {
     throw new Error("Slot regions require a separate profile, not an empty-net FILL.");
   }
   if (family2 === "arc" && verb !== "delete") {
-    const angle2 = values2["arcAngle"] ?? target7?.body["angle"];
-    const startX = values2["startX"] ?? target7?.body["startX"], startY = values2["startY"] ?? target7?.body["startY"];
-    const endX = values2["endX"] ?? target7?.body["endX"], endY = values2["endY"] ?? target7?.body["endY"];
+    const angle2 = values2["arcAngle"] ?? target8?.body["angle"];
+    const startX = values2["startX"] ?? target8?.body["startX"], startY = values2["startY"] ?? target8?.body["startY"];
+    const endX = values2["endX"] ?? target8?.body["endX"], endY = values2["endY"] ?? target8?.body["endY"];
     if (typeof angle2 !== "number" || !Number.isFinite(angle2) || angle2 === 0 || Math.abs(angle2) >= 360 || startX === endX && startY === endY) {
       throw new Error("Native arc requires distinct endpoints and an angle strictly between zero and a full revolution.");
     }
   }
   if (verb === "modify") {
-    if (family2 === "text" && values2["reverse"] !== void 0 && values2["reverse"] !== target7?.body["reverse"]) {
+    if (family2 === "text" && values2["reverse"] !== void 0 && values2["reverse"] !== target8?.body["reverse"]) {
       throw new Error("The native default-font modifier refuses every reverse-state change.");
     }
-    if (family2 === "polyline" && values2["polygon"] !== void 0 && canonicalJson(values2["polygon"]) !== canonicalJson(target7?.body["path"])) {
+    if (family2 === "polyline" && values2["polygon"] !== void 0 && canonicalJson(values2["polygon"]) !== canonicalJson(target8?.body["path"])) {
       throw new Error("Polyline shape replacement requires explicit delete/create with distinct identities.");
     }
     if (family2 === "fill" && values2["complexPolygon"] !== void 0) {
       throw new Error("Fill shape replacement requires explicit delete/create.");
     }
-    if (family2 === "arc" && ![1, 2].includes(Number(target7?.body["layerId"])) && (values2["arcAngle"] !== void 0 && values2["arcAngle"] !== target7?.body["angle"] || values2["interactiveMode"] !== void 0 && (values2["interactiveMode"] === 1 ? "DOT" : "CENT") !== target7?.body["arcType"])) {
+    if (family2 === "arc" && ![1, 2].includes(Number(target8?.body["layerId"])) && (values2["arcAngle"] !== void 0 && values2["arcAngle"] !== target8?.body["angle"] || values2["interactiveMode"] !== void 0 && (values2["interactiveMode"] === 1 ? "DOT" : "CENT") !== target8?.body["arcType"])) {
       throw new Error("The native graphic-arc modifier omits angle/mode changes; use explicit delete/create.");
     }
   }
   const baseline2 = {};
-  if (target7 !== void 0) {
+  if (target8 !== void 0) {
     for (const [key, sourceKey] of Object.entries(fields19)) {
-      if (!Object.hasOwn(target7.body, sourceKey)) {
+      if (!Object.hasOwn(target8.body, sourceKey)) {
         throw new Error("Incomplete footprint geometry source baseline.");
       }
-      baseline2[key] = target7.body[sourceKey];
+      baseline2[key] = target8.body[sourceKey];
     }
     if (family2 === "arc") {
       if (!["DOT", "CENT"].includes(String(baseline2["interactiveMode"]))) {
@@ -56556,12 +56568,12 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     throw new Error("Pad property steps require modify.");
   }
   const targetId2 = "primitiveId" in operation.target ? operation.target.primitiveId : ids2.targetId;
-  const target7 = before.objects.find((record7) => record7.id === targetId2);
+  const target8 = before.objects.find((record7) => record7.id === targetId2);
   const unlockOnly = Object.keys(operation.patch).length === 1 && operation.patch.primitiveLock === false;
-  if (targetId2 === void 0 || target7 === void 0 || target7.body["locked"] !== false && !(target7.body["locked"] === true && unlockOnly)) {
+  if (targetId2 === void 0 || target8 === void 0 || target8.body["locked"] !== false && !(target8.body["locked"] === true && unlockOnly)) {
     throw new Error("Native pad target is absent or locked; unlock it separately.");
   }
-  simplePad(target7);
+  simplePad(target8);
   const expected3 = buildExpectedDesignSource({ ...operation, action: "pcb.pad.modify", target: { primitiveId: targetId2 } }, before, { targetId: targetId2 });
   const desired = expected3.objects.find((record7) => record7.id === targetId2);
   if (desired === void 0) {
@@ -56588,7 +56600,7 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     steps.push({ route: "attribute", key, value: value2 });
   };
   const body4 = desired.body, patch4 = operation.patch;
-  if (patch4.layer !== void 0 && patch4.layer !== target7.body["layerId"] && [patch4.pad, patch4.hole, patch4.holeOffsetX, patch4.holeOffsetY, patch4.holeRotation, patch4.solderMaskAndPasteMaskExpansion].some((value2) => value2 === void 0)) {
+  if (patch4.layer !== void 0 && patch4.layer !== target8.body["layerId"] && [patch4.pad, patch4.hole, patch4.holeOffsetX, patch4.holeOffsetY, patch4.holeRotation, patch4.solderMaskAndPasteMaskExpansion].some((value2) => value2 === void 0)) {
     throw new Error("Pad layer conversion requires explicit land, hole, hole offsets/angle and all mask settings to restore native conversion defaults.");
   }
   if (patch4.layer !== void 0) {
@@ -56629,7 +56641,7 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     if (body4["padOffsetX"] !== 0 || body4["padOffsetY"] !== 0 || body4["relativeAngle"] !== null && body4["relativeAngle"] !== 0) {
       throw new Error("Surface pad hole offsets must be zero and its absent-hole angle must remain null or zero.");
     }
-    if (body4["relativeAngle"] !== target7.body["relativeAngle"]) {
+    if (body4["relativeAngle"] !== target8.body["relativeAngle"]) {
       throw new Error("An absent-hole angle cannot be changed through a hole property command.");
     }
   } else {
@@ -56693,11 +56705,11 @@ function buildFootprintPadHistoryExpression(input, before, scope6, ids2 = {}) {
       }
     } else {
       targetId2 = "primitiveId" in operation.target ? operation.target.primitiveId : ids2.targetId;
-      const target7 = before.objects.find((record7) => record7.id === targetId2);
-      if (target7 === void 0 || target7.body["locked"] !== false) {
+      const target8 = before.objects.find((record7) => record7.id === targetId2);
+      if (target8 === void 0 || target8.body["locked"] !== false) {
         throw new Error("Footprint pad delete target is absent or locked.");
       }
-      simplePad(target7);
+      simplePad(target8);
     }
     const call = { ...operation, action: operation.action.replace("footprint.", "pcb."), ...targetId2 === void 0 ? {} : { target: { primitiveId: targetId2 } } };
     return `(async()=>{${buildFootprintSourceGuard(before, scope6)}return await ${buildDesignOperationCallExpression(call)};})()`;
@@ -57056,13 +57068,13 @@ function verifyDesignBaseline(input) {
     }
   }
   const targetIds = /* @__PURE__ */ new Set();
-  for (const target7 of input.targets) {
-    const previous = durable.get(target7.id);
-    const live = source5.get(target7.id);
-    if (targetIds.has(target7.id) || previous === void 0 || live === void 0 || previous.type !== live.type || new Set(target7.fields).size !== target7.fields.length || target7.fields.some((field8) => typeof field8 !== "string" || field8.length === 0 || !sameField(projectOrder(previous, orderProjection).body, projectOrder(live, orderProjection).body, field8))) {
+  for (const target8 of input.targets) {
+    const previous = durable.get(target8.id);
+    const live = source5.get(target8.id);
+    if (targetIds.has(target8.id) || previous === void 0 || live === void 0 || previous.type !== live.type || new Set(target8.fields).size !== target8.fields.length || target8.fields.some((field8) => typeof field8 !== "string" || field8.length === 0 || !sameField(projectOrder(previous, orderProjection).body, projectOrder(live, orderProjection).body, field8))) {
       throw new Error("Intended target baseline is absent, ambiguous or differs from durable state.");
     }
-    targetIds.add(target7.id);
+    targetIds.add(target8.id);
   }
   return {
     ok: true,
@@ -57226,7 +57238,7 @@ function projectFootprintPadHistory(input) {
   if (input.source.document["docType"] !== "PCB" || input.source.document["editVersion"] !== "3.2.149.88089769" || document3?.docType !== "FOOTPRINT") {
     throw new Error("Pad history representation requires the reviewed footprint editor.");
   }
-  const targetIds = new Set(input.targets.map((target7) => target7.id));
+  const targetIds = new Set(input.targets.map((target8) => target8.id));
   if (targetIds.size !== input.targets.length) {
     throw new Error("Duplicate footprint baseline target.");
   }
@@ -58763,7 +58775,7 @@ function parsePhase(journal, name6, bytes2) {
   return record3(parsed2);
 }
 function preceding(pending, operations) {
-  const target7 = scope(pending);
+  const target8 = scope(pending);
   const created = time3(pending["createdAt"]);
   const found = [];
   for (const entry of operations) {
@@ -58772,7 +58784,7 @@ function preceding(pending, operations) {
     }
     if (entry["operationId"] !== pending.operationId) {
       const context3 = entry["context"];
-      if (isRecord(context3) && isRecord(context3["project"]) && (context3["project"]["uuid"] ?? context3["project"]["projectUuid"]) === target7.projectUuid) {
+      if (isRecord(context3) && isRecord(context3["project"]) && (context3["project"]["uuid"] ?? context3["project"]["projectUuid"]) === target8.projectUuid) {
         const started = time3(entry["createdAt"]);
         const ended = time3(entry["updatedAt"]);
         if (started > ended || ended >= created) {
@@ -58787,7 +58799,7 @@ function preceding(pending, operations) {
   if (prior === void 0 || found[1] !== void 0 && time3(found[1]["updatedAt"]) === time3(prior["updatedAt"])) {
     fail6();
   }
-  same13(scope(prior), target7);
+  same13(scope(prior), target8);
   same13(external(prior), external(pending));
   if (prior["state"] !== "completed" || prior["saved"] !== true || prior["reopened"] !== true || prior["hardStop"] !== false || prior["orphanedCallPossible"] !== false || record3(record3(prior["plan"])["operation"])["action"] !== "sch.layout.batch") {
     fail6();
@@ -58796,15 +58808,15 @@ function preceding(pending, operations) {
 }
 function verifySchematicLayoutConstructorLineage(input) {
   const { pending, predecessor, history } = input;
-  const target7 = scope(pending);
+  const target8 = scope(pending);
   const before = beforeState(pending);
   const selected3 = preceding(pending, input.operations);
   if (selected3["operationId"] !== predecessor.operationId) {
     fail6();
   }
   same13(lineageSummary(selected3), lineageSummary(predecessor));
-  same13(scope({ context: pending.plan["expectedContext"] }), target7);
-  same13(scope({ context: predecessor.plan["expectedContext"] }), target7);
+  same13(scope({ context: pending.plan["expectedContext"] }), target8);
+  same13(scope({ context: predecessor.plan["expectedContext"] }), target8);
   const after = parsePhase(predecessor, "05-after.json", input.afterText);
   const acknowledgment = parsePhase(predecessor, "06-save-reopen.json", input.lifecycleText);
   const terminal = parsePhase(predecessor, "08-reopened.json", input.terminalText);
@@ -58824,7 +58836,7 @@ function verifySchematicLayoutConstructorLineage(input) {
   const opened = record3(acknowledgment["openProof"]);
   const document3 = record3(acknowledgment["document"]);
   const barrier = record3(acknowledgment["projectUploadBarrier"]);
-  if (acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || document3["uuid"] !== target7.documentUuid || document3["tabId"] !== target7.tabId || document3["documentType"] !== 1 || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || opened["profile"] !== "easyeda-pro-control.native-document-open.v1" || opened["tabId"] !== target7.tabId || opened["newFrameReady"] !== true || opened["exactContext"] !== true || opened["readinessSamples"] !== 2 || typeof opened["activated"] !== "boolean" || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== target7.projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  if (acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || document3["uuid"] !== target8.documentUuid || document3["tabId"] !== target8.tabId || document3["documentType"] !== 1 || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || opened["profile"] !== "easyeda-pro-control.native-document-open.v1" || opened["tabId"] !== target8.tabId || opened["newFrameReady"] !== true || opened["exactContext"] !== true || opened["readinessSamples"] !== 2 || typeof opened["activated"] !== "boolean" || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== target8.projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     fail6();
   }
   same13(guard["labels"], ["schematic-source"]);
@@ -58842,7 +58854,7 @@ function verifySchematicLayoutConstructorLineage(input) {
   digest2(terminalConsistency["snapshotSha256"]);
   const checkpoint = record3(terminal["checkpoint"]), pendingCheckpoint = record3(pending["preCheckpoint"]), persistence = record3(terminal["persistence"]);
   const { receiptSha256, ...receiptCore } = checkpoint;
-  if (checkpoint["schema"] !== "easyeda-pro-control.checkpoint.v2" || sha256Json(receiptCore) !== receiptSha256 || checkpoint["checkpointSha256"] !== pendingCheckpoint["checkpointSha256"] || checkpoint["checkpointSha256"] !== history.checkpointSha256 || checkpoint["source"] !== target7.projectPath || pendingCheckpoint["source"] !== target7.projectPath || time3(checkpoint["createdAt"]) > time3(predecessor["updatedAt"]) || time3(pendingCheckpoint["createdAt"]) < time3(checkpoint["createdAt"]) || time3(pendingCheckpoint["createdAt"]) > time3(pending["createdAt"]) || persistence["ok"] !== true || record3(persistence["comparison"])["ok"] !== true || persistence["afterCheckpointSha256"] !== history.checkpointSha256 || persistence["rawExpectedAfterSourceSha256"] !== snapshot8.sha256 || persistence["rawAfterNativeSha256"] !== sha256Json(native) || persistence["documentCount"] !== history.documents.length || persistence["rawAfterSemanticSha256"] !== history.semanticSha256) {
+  if (checkpoint["schema"] !== "easyeda-pro-control.checkpoint.v2" || sha256Json(receiptCore) !== receiptSha256 || checkpoint["checkpointSha256"] !== pendingCheckpoint["checkpointSha256"] || checkpoint["checkpointSha256"] !== history.checkpointSha256 || checkpoint["source"] !== target8.projectPath || pendingCheckpoint["source"] !== target8.projectPath || time3(checkpoint["createdAt"]) > time3(predecessor["updatedAt"]) || time3(pendingCheckpoint["createdAt"]) < time3(checkpoint["createdAt"]) || time3(pendingCheckpoint["createdAt"]) > time3(pending["createdAt"]) || persistence["ok"] !== true || record3(persistence["comparison"])["ok"] !== true || persistence["afterCheckpointSha256"] !== history.checkpointSha256 || persistence["rawExpectedAfterSourceSha256"] !== snapshot8.sha256 || persistence["rawAfterNativeSha256"] !== sha256Json(native) || persistence["documentCount"] !== history.documents.length || persistence["rawAfterSemanticSha256"] !== history.semanticSha256) {
     fail6();
   }
   const witness = {
@@ -58850,8 +58862,8 @@ function verifySchematicLayoutConstructorLineage(input) {
     sourceSha256: snapshot8.sha256,
     nativeSha256: schematicNativeSnapshotHash(native),
     checkpointSha256: history.checkpointSha256,
-    projectUuid: target7.projectUuid,
-    documentUuid: target7.documentUuid,
+    projectUuid: target8.projectUuid,
+    documentUuid: target8.documentUuid,
     predecessorOperationId: predecessor.operationId,
     predecessorJournalSha256: digest2(predecessor["journalSha256"]),
     lifecycleArtifactSha256: phase(predecessor, "06-save-reopen.json").sha256,
@@ -61840,8 +61852,8 @@ function verifyDesignAction(compiled2, before, after, ids2 = {}) {
     return verifySchematicElectricalEffect(compiled2.operation, before.source, after.source, before.schematic, after.schematic, ids2);
   }
   if (compiled2.action === "sch.wire.modify") {
-    const target7 = compiled2.effect.target;
-    if (ids2.targetId !== void 0 && (target7 === null || !("primitiveId" in target7) || ids2.targetId !== target7.primitiveId)) {
+    const target8 = compiled2.effect.target;
+    if (ids2.targetId !== void 0 && (target8 === null || !("primitiveId" in target8) || ids2.targetId !== target8.primitiveId)) {
       throw new Error("Native wire resolved target contradicts operation.");
     }
     return verifySchematicNativeWireEffect(compiled2.operation, before.source, after.source, before.schematic, after.schematic);
@@ -62444,7 +62456,7 @@ var init_library_operations = __esm({
     });
     literal4 = (value2) => ({ kind: "literal", value: operationJson(value2) });
     optional2 = (value2) => value2 === void 0 ? { kind: "undefined" } : literal4(value2);
-    ref = (target7) => ({ kind: "identity", target: target7 });
+    ref = (target8) => ({ kind: "identity", target: target8 });
     source = { purpose: "complete-document-source", api: "sys_FileManager", method: "getDocumentSource", args: [] };
     tabs = { purpose: "editor-tabs", api: "dmt_EditorControl", method: "getSplitScreenTree", args: [] };
     project = { purpose: "project-inventory", api: "dmt_Project", method: "getCurrentProjectInfo", args: [] };
@@ -63540,14 +63552,14 @@ function prepareProjectSymbolMetadata(input, history) {
   if (!("uuid" in operation.target) || operation.libraryUuid !== history.projectUuid || history.projectOwnerUuid === void 0 || history.projectOwnerUuid.length === 0) {
     throw new Error("Symbol metadata editing requires an exact current-project symbol and owner.");
   }
-  const target7 = symbol3(history, operation.target.uuid);
-  const before = metadata(target7);
+  const target8 = symbol3(history, operation.target.uuid);
+  const before = metadata(target8);
   if (before["docType"] !== 2 || typeof before["title"] !== "string" || typeof before["description"] !== "string") {
     throw new Error("Symbol metadata editing requires ordinary META.docType 2 with stored title and description.");
   }
   const meta4 = symbolMetaSchema.parse(before);
-  const header = symbolHeaderSchema.parse(target7.metadata);
-  if (header.uuid !== target7.uuid) {
+  const header = symbolHeaderSchema.parse(target8.metadata);
+  if (header.uuid !== target8.uuid) {
     throw new Error("Symbol DOCHEAD identity differs from its checkpoint member.");
   }
   const desiredTitle = operation.patch.name ?? before["title"];
@@ -63556,7 +63568,7 @@ function prepareProjectSymbolMetadata(input, history) {
   }
   const peerTitles = [];
   for (const document3 of history.documents) {
-    if (document3.docType === "SYMBOL" && document3.uuid !== target7.uuid && !isNativeDocumentDeleted(document3)) {
+    if (document3.docType === "SYMBOL" && document3.uuid !== target8.uuid && !isNativeDocumentDeleted(document3)) {
       const title11 = metadata(document3)["title"];
       if (typeof title11 !== "string") {
         throw new TypeError("Peer symbol title is missing from duplicate-name proof.");
@@ -63572,7 +63584,7 @@ function prepareProjectSymbolMetadata(input, history) {
     projectUuid: history.projectUuid,
     branchUuid: history.branchUuid,
     ownerUuid: history.projectOwnerUuid,
-    targetUuid: target7.uuid,
+    targetUuid: target8.uuid,
     beforeProjectSha256: libraryProjectRecordsHash(history),
     beforeTitle: before["title"],
     beforeDescription: before["description"],
@@ -65261,18 +65273,18 @@ async function stableSourceSnapshot(sourceFile, sourceDatabase, targetDirectory)
   for (let attempt2 = 1; attempt2 <= MAX_STABLE_SNAPSHOT_ATTEMPTS; attempt2 += 1) {
     const versionBefore = dataVersion(sourceDatabase);
     await assertBoundPathIdentity(sourceFile, "Checkpoint source");
-    const target7 = await snapshotToNewFile(sourceDatabase, targetDirectory);
+    const target8 = await snapshotToNewFile(sourceDatabase, targetDirectory);
     try {
       const targetDatabase = openReadOnlyDatabase(
-        `/proc/self/fd/${target7.handle.fd}`
+        `/proc/self/fd/${target8.handle.fd}`
       );
       try {
-        quickCheck(targetDatabase, target7.absolute);
+        quickCheck(targetDatabase, target8.absolute);
       } finally {
         targetDatabase.close();
       }
       const [dumpSha256, sourceHash3] = await Promise.all([
-        dumpHash(target7.handle),
+        dumpHash(target8.handle),
         sha256Handle(sourceFile.handle, "Checkpoint source")
       ]);
       await assertBoundPathIdentity(sourceFile, "Checkpoint source");
@@ -65281,19 +65293,19 @@ async function stableSourceSnapshot(sourceFile, sourceDatabase, targetDirectory)
         return {
           dataVersion: versionAfter,
           dumpSha256,
-          file: target7,
+          file: target8,
           sha256: sourceHash3.sha256,
           stat: sourceHash3.info
         };
       }
-      await target7.handle.close();
-      await unlinkBoundFile(target7, "Drifted source snapshot");
+      await target8.handle.close();
+      await unlinkBoundFile(target8, "Drifted source snapshot");
     } catch (error51) {
       const cleanupErrors = [];
-      await target7.handle.close().catch((cleanupError) => {
+      await target8.handle.close().catch((cleanupError) => {
         cleanupErrors.push(cleanupError);
       });
-      await unlinkBoundFile(target7, "Failed source snapshot").catch(
+      await unlinkBoundFile(target8, "Failed source snapshot").catch(
         (cleanupError) => {
           cleanupErrors.push(cleanupError);
         }
@@ -66261,9 +66273,9 @@ function scope2(input) {
   return { projectUuid: projectUuid4, branchUuid: branchUuid2 };
 }
 function buildUploadQueueReadExpression(input) {
-  const target7 = scope2(input);
+  const target8 = scope2(input);
   return `(async()=>{
-const target=${JSON.stringify(target7)};
+const target=${JSON.stringify(target8)};
 let stage='HOST',expired=false,timer;
 const bad=()=>{throw new Error('UPLOAD_QUEUE_READ_REFUSED:'+stage);};
 const object=value=>value!==null&&(typeof value==='object'||typeof value==='function')&&!Array.isArray(value);
@@ -66351,9 +66363,9 @@ finally{if(timer!==undefined)apply(deadlineClear,root,[timer]);}
 })()`;
 }
 function validateUploadQueueReadResult(input, expected3) {
-  const target7 = scope2(expected3);
+  const target8 = scope2(expected3);
   const value2 = fields2(input, ["profile", "projectUuid", "branchUuid", "origin", "projectV6UploadAbsent", "localProjectV1UploadAbsent", "scope"]);
-  if (value2["profile"] !== UPLOAD_QUEUE_PROFILE || value2["projectUuid"] !== target7.projectUuid || value2["branchUuid"] !== target7.branchUuid || value2["origin"] !== "https://client" || value2["projectV6UploadAbsent"] !== true || value2["localProjectV1UploadAbsent"] !== true || value2["scope"] !== "point-in-time-inactive-target") {
+  if (value2["profile"] !== UPLOAD_QUEUE_PROFILE || value2["projectUuid"] !== target8.projectUuid || value2["branchUuid"] !== target8.branchUuid || value2["origin"] !== "https://client" || value2["projectV6UploadAbsent"] !== true || value2["localProjectV1UploadAbsent"] !== true || value2["scope"] !== "point-in-time-inactive-target") {
     throw new Error("UPLOAD_QUEUE_RESULT");
   }
   return Object.freeze(value2);
@@ -66740,15 +66752,15 @@ function documentUuid(input) {
 function parseClosedSymbolValidationRequest(input) {
   const value2 = exactData(input, ["action", "target", "metadata", "confirmDisposableMetadataEdit"]);
   requireValue6(value2["action"] === "run-disposable-once" && value2["confirmDisposableMetadataEdit"] === true, "Validation requires the fixed disposable metadata scope attestation.");
-  const target7 = exactData(value2["target"], ["projectPath", "projectUuid", "branchUuid", "ownerUuid", "symbolUuid", "companionPcbUuid"]);
-  const projectPath = boundedText2(target7["projectPath"], 2058, 1);
+  const target8 = exactData(value2["target"], ["projectPath", "projectUuid", "branchUuid", "ownerUuid", "symbolUuid", "companionPcbUuid"]);
+  const projectPath = boundedText2(target8["projectPath"], 2058, 1);
   requireValue6(/^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u.test(projectPath), "Validation requires a bounded absolute project path.");
-  const companionPcbUuid = documentUuid(target7["companionPcbUuid"]), symbolUuid = documentUuid(target7["symbolUuid"]);
+  const companionPcbUuid = documentUuid(target8["companionPcbUuid"]), symbolUuid = documentUuid(target8["symbolUuid"]);
   requireValue6(symbolUuid !== companionPcbUuid, "Validation symbol and companion PCB must differ.");
   const metadata9 = exactData(value2["metadata"], ["name", "description"]);
   const result = Object.freeze({
     action: "run-disposable-once",
-    target: Object.freeze({ projectPath, projectUuid: uuid8(target7["projectUuid"], true), branchUuid: uuid8(target7["branchUuid"]), ownerUuid: uuid8(target7["ownerUuid"]), symbolUuid, companionPcbUuid }),
+    target: Object.freeze({ projectPath, projectUuid: uuid8(target8["projectUuid"], true), branchUuid: uuid8(target8["branchUuid"]), ownerUuid: uuid8(target8["ownerUuid"]), symbolUuid, companionPcbUuid }),
     metadata: Object.freeze({ name: boundedText2(metadata9["name"], 512, 1), description: boundedText2(metadata9["description"], 65536) }),
     confirmDisposableMetadataEdit: true
   });
@@ -66771,7 +66783,7 @@ function inputs(rawRequest, rawPlan) {
   const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
   requireValue6(new Set(Object.values(nonces)).size === 3, "Validation marker nonces must differ.");
   const operation = exactData(source5["operation"], ["id", "action", "libraryUuid", "target", "patch"]);
-  const patch4 = exactData(operation["patch"], ["name", "description"]), target7 = exactData(operation["target"], ["uuid"]);
+  const patch4 = exactData(operation["patch"], ["name", "description"]), target8 = exactData(operation["target"], ["uuid"]);
   const plan2 = Object.freeze({
     profile: FAMILY2,
     projectUuid: request11.target.projectUuid,
@@ -66795,7 +66807,7 @@ function inputs(rawRequest, rawPlan) {
   for (const key of ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]) {
     requireValue6(source5[key] === plan2[key], "Validation internal plan does not exactly bind the request and fixed profile.");
   }
-  requireValue6(operation["id"] === VALIDATION_ACTION_ID && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request11.target.projectUuid && target7["uuid"] === request11.target.symbolUuid && patch4["name"] === request11.metadata.name && patch4["description"] === request11.metadata.description, "Validation operation does not match the fixed request.");
+  requireValue6(operation["id"] === VALIDATION_ACTION_ID && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request11.target.projectUuid && target8["uuid"] === request11.target.symbolUuid && patch4["name"] === request11.metadata.name && patch4["description"] === request11.metadata.description, "Validation operation does not match the fixed request.");
   return Object.freeze({ request: request11, plan: plan2 });
 }
 function sameFile2(left, right) {
@@ -67641,7 +67653,7 @@ async function prefix3(operationId8) {
     const raw = await readExactUtf8Artifact(artifact2);
     events.push({ artifact: artifact2, value: bag4(JSON.parse(raw.text)) });
   }
-  const first = events[0]?.value, preparation3 = sealed(first?.["preparation"], "preparationSha256"), target7 = bag4(journal.plan["target"]);
+  const first = events[0]?.value, preparation3 = sealed(first?.["preparation"], "preparationSha256"), target8 = bag4(journal.plan["target"]);
   need7(
     first?.["openingOperationId"] === journal.plan["openingOperationId"] && preparation3["openingOperationId"] === journal.plan["openingOperationId"] && preparation3["profile"] === "private.current-owned-symbol-metadata-preparation.v1" && preparation3["preparationSha256"] === journal.plan["preparationSha256"] && preparation3["postOpeningBaselineVerified"] === false && preparation3["writerReady"] === false && preparation3["executionAuthorized"] === false,
     "Pre-relaunch abandonment preparation differs."
@@ -67685,9 +67697,9 @@ async function prefix3(operationId8) {
   const checkpointReceipt2 = sealed(result["checkpoint"], "receiptSha256"), copy = sealed(result["copy"], "receiptSha256");
   const prepared = bag4(result["preparation"]);
   const preparedTarget = bag4(prepared["target"]), sql3 = bag4(result["sql"]), targetEvidence2 = bag4(result["targetEvidence"]);
-  const rawPath = external_exports.string().parse(target7["rawWindowsPath"]), source5 = normalizeEasyedaProjectPath(rawPath);
+  const rawPath = external_exports.string().parse(target8["rawWindowsPath"]), source5 = normalizeEasyedaProjectPath(rawPath);
   need7(
-    target7["projectUuid"] === sha256Text(rawPath) && checkpointReceipt2["source"] === source5 && copy["source"] === source5 && checkpointReceipt2["schema"] === "easyeda-pro-control.checkpoint.v2" && copy["schema"] === "easyeda-pro-control.closed-file-byte-copy.v1" && checkpointReceipt2["sourceSha256"] === copy["sha256"] && sql3["checkpointSha256"] === copy["sha256"] && copy["sourceEqualsArtifactBytes"] === true && copy["sourceProjectGenerationBindingVerified"] === false && copy["executionAuthorized"] === false && preparedTarget["projectUuid"] === target7["projectUuid"] && preparedTarget["branchUuid"] === target7["branchUuid"] && targetEvidence2["projectUuid"] === target7["projectUuid"] && targetEvidence2["branchUuid"] === target7["branchUuid"] && targetEvidence2["documentUuid"] === target7["documentUuid"] && targetEvidence2["docType"] === "PCB" && targetEvidence2["ownerUuid"] === preparedTarget["ownerUuid"],
+    target8["projectUuid"] === sha256Text(rawPath) && checkpointReceipt2["source"] === source5 && copy["source"] === source5 && checkpointReceipt2["schema"] === "easyeda-pro-control.checkpoint.v2" && copy["schema"] === "easyeda-pro-control.closed-file-byte-copy.v1" && checkpointReceipt2["sourceSha256"] === copy["sha256"] && sql3["checkpointSha256"] === copy["sha256"] && copy["sourceEqualsArtifactBytes"] === true && copy["sourceProjectGenerationBindingVerified"] === false && copy["executionAuthorized"] === false && preparedTarget["projectUuid"] === target8["projectUuid"] && preparedTarget["branchUuid"] === target8["branchUuid"] && targetEvidence2["projectUuid"] === target8["projectUuid"] && targetEvidence2["branchUuid"] === target8["branchUuid"] && targetEvidence2["documentUuid"] === target8["documentUuid"] && targetEvidence2["docType"] === "PCB" && targetEvidence2["ownerUuid"] === preparedTarget["ownerUuid"],
     "Pre-relaunch abandonment closed-copy lineage differs."
   );
   hash16.parse(sql3["schemaSha256"]);
@@ -71382,9 +71394,9 @@ function scope3(input) {
   return { projectUuid: projectUuid4, branchUuid: branchUuid2, ownerUuid, targetUuid, activeUuid, createdAtLiteral };
 }
 function buildSymbolWitnessReadExpression(input) {
-  const target7 = scope3(input);
+  const target8 = scope3(input);
   return `(async()=>{
-const target=${JSON.stringify(target7)};
+const target=${JSON.stringify(target8)};
 let stage='HOST',expired=false,timer;
 const bad=()=>{throw new Error('SYMBOL_WITNESS_READ_REFUSED:'+stage);};
 const object=value=>value!==null&&(typeof value==='object'||typeof value==='function')&&!Array.isArray(value);
@@ -71497,7 +71509,7 @@ finally{if(timer!==undefined)apply(deadlineClear,root,[timer]);}
 })()`;
 }
 function validateSymbolWitnessReadResult(input, expected3) {
-  const target7 = scope3(expected3);
+  const target8 = scope3(expected3);
   const value2 = fields6(input, [
     "profile",
     "projectUuid",
@@ -71524,7 +71536,7 @@ function validateSymbolWitnessReadResult(input, expected3) {
     "producerBindingVerified",
     "executionAuthorized"
   ]);
-  if (value2["profile"] !== SYMBOL_WITNESS_PROFILE || value2["scope"] !== "point-in-time-read-only-observation" || Object.entries(target7).some(([key, entry]) => value2[key] !== entry)) {
+  if (value2["profile"] !== SYMBOL_WITNESS_PROFILE || value2["scope"] !== "point-in-time-read-only-observation" || Object.entries(target8).some(([key, entry]) => value2[key] !== entry)) {
     throw new Error("SYMBOL_WITNESS_RESULT");
   }
   for (const field8 of ["workerClient", "cachedActorUuid"]) {
@@ -73109,11 +73121,11 @@ function nativeUser(header, edit) {
 function line5(type2, ticket2, id11, raw, firstTicket) {
   return `${JSON.stringify({ type: type2, ticket: ticket2, id: id11, ...firstTicket === void 0 ? {} : { firstTicket } })}||${raw}`;
 }
-function head(target7, client2, value2, ticket2, version5) {
+function head(target8, client2, value2, ticket2, version5) {
   return `${JSON.stringify({ type: "DOCHEAD", ticket: ticket2 })}||${JSON.stringify({
     docType: "SYMBOL",
     client: client2,
-    uuid: target7,
+    uuid: target8,
     updateTime: value2.updateTime,
     version: value2.version,
     ...version5 === null ? {} : { editVersion: version5 },
@@ -73189,9 +73201,9 @@ function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
   if (scope6 === void 0) {
     return;
   }
-  const { types: types4 } = scope6.headers;
-  need18(!types4.has(atom.id) || types4.get(atom.id) === atom.type, "canvas-segments atom type changed");
-  types4.set(atom.id, atom.type);
+  const { types: types5 } = scope6.headers;
+  need18(!types5.has(atom.id) || types5.get(atom.id) === atom.type, "canvas-segments atom type changed");
+  types5.set(atom.id, atom.type);
   if (!IGNORED.has(atom.type)) {
     need18(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
     let stream = scope6.streams.get(chunkIndex);
@@ -74818,7 +74830,7 @@ function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   const library2 = [2, 4].includes(expectedContext.document.documentType);
   const asset = checkpoint.documents.find((document3) => document3.uuid === documentUuid5 && !isNativeDocumentDeleted(document3));
   const meta4 = asset?.records.find((record7) => record7.id === "META" && record7.type === "META");
-  const target7 = targetSchema3.parse({
+  const target8 = targetSchema3.parse({
     projectUuid: expectedContext.project.uuid ?? expectedContext.project.projectUuid,
     projectPath: normalizeEasyedaProjectPath(expectedContext.project.path),
     documentUuid: documentUuid5,
@@ -74828,11 +74840,11 @@ function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   if (expectedContext.project.uuid !== void 0 && expectedContext.project.projectUuid !== void 0 && expectedContext.project.uuid !== expectedContext.project.projectUuid || expectedContext.document.uuid !== void 0 && expectedContext.document.documentUuid !== void 0 && expectedContext.document.uuid !== expectedContext.document.documentUuid) {
     throw new Error("Recovery navigation journal identity aliases disagree.");
   }
-  const documents = checkpoint.documents.filter((document3) => document3.uuid === target7.documentUuid && !isNativeDocumentDeleted(document3));
-  if (checkpoint.projectUuid !== target7.projectUuid || documents.length !== 1 || documents[0]?.docType !== { 1: "SCH_PAGE", 2: "SYMBOL", 3: "PCB", 4: "FOOTPRINT" }[target7.documentType] || library2 && expectedContext.document["parentLibraryUuid"] !== void 0 && expectedContext.document["parentLibraryUuid"] !== target7.libraryOwnerUuid) {
+  const documents = checkpoint.documents.filter((document3) => document3.uuid === target8.documentUuid && !isNativeDocumentDeleted(document3));
+  if (checkpoint.projectUuid !== target8.projectUuid || documents.length !== 1 || documents[0]?.docType !== { 1: "SCH_PAGE", 2: "SYMBOL", 3: "PCB", 4: "FOOTPRINT" }[target8.documentType] || library2 && expectedContext.document["parentLibraryUuid"] !== void 0 && expectedContext.document["parentLibraryUuid"] !== target8.libraryOwnerUuid) {
     throw new Error("Recovery navigation target is not an existing checkpoint document.");
   }
-  return target7;
+  return target8;
 }
 async function prepareRecoveryNavigation(input) {
   const captured = structuredClone(input), libraryAtomHeaders = captured.libraryAtomHeaders;
@@ -74867,7 +74879,7 @@ async function prepareRecoveryNavigation(input) {
     checkpoint,
     { checkpointSha256: verified.checkpointSha256, projectUuid: projectUuid4 }
   ) : void 0;
-  const target7 = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
+  const target8 = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
   const navigation = {
     ...captured.navigation?.navigate === void 0 ? {} : { navigate: captured.navigation.navigate },
     ...captured.navigation?.requireExclusiveTabs === void 0 ? {} : { requireExclusiveTabs: captured.navigation.requireExclusiveTabs },
@@ -74875,23 +74887,23 @@ async function prepareRecoveryNavigation(input) {
     ...checkpoint.projectOwnerUuid === void 0 ? {} : { checkpointProjectOwnerUuid: checkpoint.projectOwnerUuid }
   };
   return {
-    target: target7,
-    code: buildRecoveryNavigationCode(target7, navigation),
+    target: target8,
+    code: buildRecoveryNavigationCode(target8, navigation),
     checkpointSha256: verified.checkpointSha256,
     ...libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence }
   };
 }
 function buildRecoveryNavigationCode(value2, options = {}) {
-  const target7 = targetSchema3.parse(value2);
-  if (options.requireEditorReadiness === true && ![1, 3].includes(target7.documentType)) {
+  const target8 = targetSchema3.parse(value2);
+  if (options.requireEditorReadiness === true && ![1, 3].includes(target8.documentType)) {
     throw new Error("Existing-project editor readiness supports only schematic pages and PCB documents.");
   }
   const checkpointProjectOwnerUuid = external_exports.string().min(1).max(64).optional().parse(options.checkpointProjectOwnerUuid);
-  if (target7.projectPath !== normalizeEasyedaProjectPath(target7.projectPath)) {
+  if (target8.projectPath !== normalizeEasyedaProjectPath(target8.projectPath)) {
     throw new Error("Recovery navigation path must be canonical.");
   }
   return `return await (async () => {
-    const target = ${JSON.stringify(target7)};
+    const target = ${JSON.stringify(target8)};
     const checkpointProjectOwnerUuid = ${JSON.stringify(checkpointProjectOwnerUuid ?? null)};
     const fail = (stage) => { throw new Error("Recovery navigation refused: " + stage); };
     const knownFailures = new Set(${JSON.stringify(RECOVERY_NAVIGATION_FAILURE_STAGES)}.map(stage => "Recovery navigation refused: " + stage));
@@ -75974,13 +75986,13 @@ function invokeMainReferenceTransport(input) {
     clearTimeout(timeout);
     containOrSettle();
   };
-  const collect = (target7, chunk) => {
+  const collect = (target8, chunk) => {
     if (settled || closeObserved || failure2 !== null) {
       return;
     }
     const remaining = 131072 - outputBytes, retained2 = Math.min(remaining, chunk.length);
     if (retained2 > 0) {
-      target7.push(Buffer.from(chunk.subarray(0, retained2)));
+      target8.push(Buffer.from(chunk.subarray(0, retained2)));
       outputBytes += retained2;
     }
     if (chunk.length > remaining) {
@@ -79874,17 +79886,17 @@ async function recordedNavigationBinding(journal, events, selected3) {
   });
   current6();
   const expectedContext = { project: { uuid: journal.plan.projectUuid, path: journal.plan.projectPath }, document: { uuid: journal.plan.activeUuid, documentType: 3 } };
-  const target7 = deriveRecoveryNavigationTarget(expectedContext, history);
+  const target8 = deriveRecoveryNavigationTarget(expectedContext, history);
   const headers = await nativeLibraryHeaderEvidence(history, { checkpointSha256: checkpoint["checkpointSha256"], projectUuid: journal.plan.projectUuid });
   current6();
   need37(history.projectOwnerUuid === journal.plan.ownerUuid, "Terminal navigation retained project owner differs.");
-  const code = buildRecoveryNavigationCode(target7, {
+  const code = buildRecoveryNavigationCode(target8, {
     navigate: true,
     requireExclusiveTabs: true,
     requireEditorReadiness: true,
     checkpointProjectOwnerUuid: history.projectOwnerUuid
   });
-  same27(request11, { target: target7, context: expectedContext, checkpoint, codeSha256: sha256Text(code), libraryHeaderEvidence: headers }, "full fixed navigation request");
+  same27(request11, { target: target8, context: expectedContext, checkpoint, codeSha256: sha256Text(code), libraryHeaderEvidence: headers }, "full fixed navigation request");
   need37(phase2(events, index).requestSha256 === sha256Json(request11) && phase2(events, index + 1).requestSha256 === sha256Json(request11), "Terminal navigation request hash differs.");
   same27(Object.keys(raw), ["rawReturn"], "navigation result fields");
   const native = bag9(extractToolPayload(raw["rawReturn"]));
@@ -82757,13 +82769,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         if (!isRecord(identity32) || identity32.libraryUuid !== history.projectUuid || typeof identity32.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target7 = history.documents.find((entry) => entry.uuid === identity32.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
-        const title11 = target7?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
-        if (target7 === void 0 || typeof title11 !== "string" || title11.length === 0) {
+        const target8 = history.documents.find((entry) => entry.uuid === identity32.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const title11 = target8?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
+        if (target8 === void 0 || typeof title11 !== "string" || title11.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
         }
-        attributes2[key] = target7.uuid;
-        associations.push({ uuid: target7.uuid, family: family2, name: title11 });
+        attributes2[key] = target8.uuid;
+        associations.push({ uuid: target8.uuid, family: family2, name: title11 });
       }
     }
   }
@@ -83030,18 +83042,18 @@ function prepareDocumentPageRename(input, history, context3) {
   if (!("uuid" in operation.target)) {
     throw new Error("Page rename target identity is missing.");
   }
-  const target7 = exactDocument(history, operation.target.uuid, "SCH_PAGE");
+  const target8 = exactDocument(history, operation.target.uuid, "SCH_PAGE");
   const headerKeys = /* @__PURE__ */ new Set(["uuid", "docType", "client", "updateTime", "version", "user", "editVersion"]);
-  if (Object.keys(target7.metadata).some((key) => !headerKeys.has(key))) {
+  if (Object.keys(target8.metadata).some((key) => !headerKeys.has(key))) {
     throw new Error("Page rename would drop unreviewed DOCHEAD fields.");
   }
-  const headerEditVersion = Object.hasOwn(target7.metadata, "editVersion") ? external_exports.string().min(1).max(128).parse(target7.metadata["editVersion"]) : null;
-  const before = pageMetaSchema.parse(metadata2(target7));
+  const headerEditVersion = Object.hasOwn(target8.metadata, "editVersion") ? external_exports.string().min(1).max(128).parse(target8.metadata["editVersion"]) : null;
+  const before = pageMetaSchema.parse(metadata2(target8));
   const parent = exactDocument(history, before.schematic, "SCH"), parentMeta = metadata2(parent);
   const parentTitle = title.parse(parentMeta["title"]);
   const activeUuid = context3.document.uuid ?? context3.document.documentUuid ?? "";
   const active2 = exactDocument(history, activeUuid, "SCH_PAGE");
-  if (active2.uuid === target7.uuid || metadata2(active2)["schematic"] !== before.schematic || context3.document.documentType !== 1 || context3.document.tabId !== `${active2.uuid}@${history.projectUuid}` || context3.document["parentProjectUuid"] !== history.projectUuid || context3.schematic?.uuid !== void 0 && context3.schematic.uuid !== before.schematic) {
+  if (active2.uuid === target8.uuid || metadata2(active2)["schematic"] !== before.schematic || context3.document.documentType !== 1 || context3.document.tabId !== `${active2.uuid}@${history.projectUuid}` || context3.document["parentProjectUuid"] !== history.projectUuid || context3.schematic?.uuid !== void 0 && context3.schematic.uuid !== before.schematic) {
     throw new Error("Page rename requires another checkpoint-bound sibling page as the sole active editor.");
   }
   if (parentMeta["source"] !== "" || Object.hasOwn(parentMeta, "blockSymbolUuid")) {
@@ -83053,7 +83065,7 @@ function prepareDocumentPageRename(input, history, context3) {
   const normalized2 = operation.name.toLowerCase();
   const siblingTitles = [];
   for (const document3 of history.documents) {
-    if (document3.docType === "SCH_PAGE" && document3.uuid !== target7.uuid && !isNativeDocumentDeleted(document3)) {
+    if (document3.docType === "SCH_PAGE" && document3.uuid !== target8.uuid && !isNativeDocumentDeleted(document3)) {
       const peer3 = metadata2(document3);
       if (typeof peer3["schematic"] !== "string" || typeof peer3["title"] !== "string") {
         throw new TypeError("Peer page metadata is incomplete.");
@@ -83071,7 +83083,7 @@ function prepareDocumentPageRename(input, history, context3) {
     projectUuid: history.projectUuid,
     ownerUuid: history.projectOwnerUuid,
     branchUuid: history.branchUuid,
-    targetUuid: target7.uuid,
+    targetUuid: target8.uuid,
     parentUuid: before.schematic,
     beforeTitle: before.title,
     activeUuid: active2.uuid,
@@ -83845,20 +83857,20 @@ function prepareDocumentContainerRename(input, history, context3) {
     throw new Error("Document rename target identity is missing.");
   }
   const kind = operation.action === "document.pcb.rename" ? "pcb" : "schematic", type2 = kind === "pcb" ? "PCB" : "SCH";
-  const target7 = exactDocument3(history, operation.target.uuid, type2);
-  const before = (kind === "pcb" ? pcbMeta : schematicMeta).parse(metadata5(target7));
+  const target8 = exactDocument3(history, operation.target.uuid, type2);
+  const before = (kind === "pcb" ? pcbMeta : schematicMeta).parse(metadata5(target8));
   const headerKeys = /* @__PURE__ */ new Set(["uuid", "docType", "client", "updateTime", "version", "user", "editVersion"]);
-  if (Object.keys(target7.metadata).some((key) => !headerKeys.has(key))) {
+  if (Object.keys(target8.metadata).some((key) => !headerKeys.has(key))) {
     throw new Error("Document rename would drop unreviewed DOCHEAD fields.");
   }
-  const headerEditVersion = Object.hasOwn(target7.metadata, "editVersion") ? external_exports.string().min(1).max(128).parse(target7.metadata["editVersion"]) : null;
+  const headerEditVersion = Object.hasOwn(target8.metadata, "editVersion") ? external_exports.string().min(1).max(128).parse(target8.metadata["editVersion"]) : null;
   if (before.board !== "") {
     exactDocument3(history, before.board, "BOARD");
   }
   const active2 = exactDocument3(history, context3.document.uuid ?? context3.document.documentUuid ?? "", "PCB");
   const childUuids = [], siblingTitles = [];
   for (const document3 of history.documents.filter((entry) => !isNativeDocumentDeleted(entry))) {
-    if (document3.docType === type2 && document3.uuid !== target7.uuid) {
+    if (document3.docType === type2 && document3.uuid !== target8.uuid) {
       const peerTitle = title4.parse(metadata5(document3)["title"]);
       siblingTitles.push(peerTitle);
       if (peerTitle.toLowerCase() === operation.name.toLowerCase()) {
@@ -83868,7 +83880,7 @@ function prepareDocumentContainerRename(input, history, context3) {
     if (kind === "schematic" && document3.docType === "SCH_PAGE") {
       const parent = identifier11.parse(metadata5(document3)["schematic"]);
       exactDocument3(history, parent, "SCH");
-      if (parent === target7.uuid) {
+      if (parent === target8.uuid) {
         childUuids.push(document3.uuid);
       }
     }
@@ -83882,7 +83894,7 @@ function prepareDocumentContainerRename(input, history, context3) {
     projectUuid: history.projectUuid,
     ownerUuid: history.projectOwnerUuid,
     branchUuid: history.branchUuid,
-    targetUuid: target7.uuid,
+    targetUuid: target8.uuid,
     activeUuid: active2.uuid,
     activeTabId: context3.document.tabId,
     beforeTitle: before.title,
@@ -84797,9 +84809,9 @@ function decodeLibraryFileResult(envelope3, maxBytes) {
 }
 function validateLibraryMetadata(input, operation) {
   const compiled2 = compileLibraryOperation(operation);
-  const target7 = compiled2.target?.identity;
+  const target8 = compiled2.target?.identity;
   const value2 = external_exports.record(external_exports.string(), external_exports.json()).parse(input);
-  if (target7 === void 0 || !("uuid" in target7) || value2["uuid"] !== target7.uuid || typeof value2["libraryUuid"] !== "string" || value2["libraryUuid"].length === 0 || typeof value2["name"] !== "string" || value2["name"].length === 0) {
+  if (target8 === void 0 || !("uuid" in target8) || value2["uuid"] !== target8.uuid || typeof value2["libraryUuid"] !== "string" || value2["libraryUuid"].length === 0 || typeof value2["name"] !== "string" || value2["name"].length === 0) {
     throw new Error("Library metadata does not prove the exact requested identity.");
   }
   const expectedType = { symbol: "2", footprint: "4", device: "3", model3d: "5" }[operation.action.split(".")[1] ?? ""];
@@ -85339,23 +85351,23 @@ function expectedNativeEmptyNetDefault(source5) {
     throw new Error("Invalid native empty-net source commitment.");
   }
   const id11 = '["RULE_SELECTOR",["NET",""]]';
-  const target7 = source5.objects.find((record7) => record7.id === id11);
-  if (target7 === void 0) {
+  const target8 = source5.objects.find((record7) => record7.id === id11);
+  if (target8 === void 0) {
     throw new Error("Missing reviewed native empty-net selector baseline.");
   }
-  const keys2 = target7.body["ruleKeyValue"];
-  if (target7.type !== "RULE_SELECTOR" || target7.body["ruleOrder"] !== 4 || !isRecord(keys2)) {
+  const keys2 = target8.body["ruleKeyValue"];
+  if (target8.type !== "RULE_SELECTOR" || target8.body["ruleOrder"] !== 4 || !isRecord(keys2)) {
     throw new Error("Unknown native empty-net selector shape.");
   }
   const expectedKeys = { NET_LENGTH_TOLERANCE: ["default", null] };
   if (canonicalJson(keys2) === canonicalJson(expectedKeys)) {
     return source5;
   }
-  if (canonicalJson(keys2) !== "{}" || canonicalJson(target7.body["copperValue"]) !== "{}" || canonicalJson(target7.body["innerPlaneValue"]) !== "{}") {
+  if (canonicalJson(keys2) !== "{}" || canonicalJson(target8.body["copperValue"]) !== "{}" || canonicalJson(target8.body["innerPlaneValue"]) !== "{}") {
     throw new Error("Native empty-net correction would alter unreviewed overrides.");
   }
-  const changed = { ...target7, body: { ...target7.body, ruleKeyValue: expectedKeys } };
-  const value2 = { schema: source5.schema, document: source5.document, objects: source5.objects.map((record7) => record7 === target7 ? changed : record7) };
+  const changed = { ...target8, body: { ...target8.body, ruleKeyValue: expectedKeys } };
+  const value2 = { schema: source5.schema, document: source5.document, objects: source5.objects.map((record7) => record7 === target8 ? changed : record7) };
   return { ...value2, sha256: sha256Json(value2) };
 }
 var init_native_empty_net_default = __esm({
@@ -85392,7 +85404,7 @@ function omit2(source5, ids2) {
 }
 function deriveFootprintBaselineTargets(before, after, checkpoint) {
   const targets = deriveDesignBaselineTargets(before, after);
-  return exportOnlySelector(before, after, checkpoint) ? targets.filter((target7) => target7.id !== SELECTOR) : targets;
+  return exportOnlySelector(before, after, checkpoint) ? targets.filter((target8) => target8.id !== SELECTOR) : targets;
 }
 function verifyFootprintBaseline(input) {
   const projected4 = projectFootprintPadHistory(input);
@@ -85431,7 +85443,7 @@ function verifyFootprintEmptyNetPersistence(input) {
     beforeOmit.add(NET);
     materialized = true;
   }
-  const padTargets = deriveDesignBaselineTargets(input.expectedBefore, input.expectedAfter).filter((target7) => input.expectedBefore.objects.some((record7) => record7.id === target7.id && record7.type === "PAD"));
+  const padTargets = deriveDesignBaselineTargets(input.expectedBefore, input.expectedAfter).filter((target8) => input.expectedBefore.objects.some((record7) => record7.id === target8.id && record7.type === "PAD"));
   const padProjection = projectFootprintPadHistory({ checkpoint: input.before, source: input.expectedBefore, targets: padTargets });
   let history = padProjection.checkpoint;
   let userStamp = null;
@@ -86277,21 +86289,21 @@ async function materialization(input) {
   verifyDesignBaseline({ checkpoint: history, source: source5, targets: [] });
   const native = correlateSchematicNativeSource(source5, input.native);
   const nativeComponents = new Map(native.components.map((component3) => [component3.id, component3]));
-  const target7 = history.documents.find((document3) => document3.uuid === source5.document["uuid"]);
-  if (target7?.docType !== "SCH_PAGE") {
+  const target8 = history.documents.find((document3) => document3.uuid === source5.document["uuid"]);
+  if (target8?.docType !== "SCH_PAGE") {
     throw new Error("Flat display materialization requires its saved ordinary page.");
   }
-  const durable = new Map(target7.records.map((record7) => [record7.id, record7]));
+  const durable = new Map(target8.records.map((record7) => [record7.id, record7]));
   const exported = new Map(source5.objects.map((record7) => [record7.id, record7]));
   const meta4 = durable.get("META");
-  if (meta4?.type !== "META" || target7.records.filter((record7) => record7.type === "META").length !== 1 || source5.objects.some((record7) => record7.type === "META" && record7.id !== "META") || exported.has("META") && !same38(exported.get("META"), { id: meta4.id, type: meta4.type, body: meta4.body }) || target7.records.some((record7) => record7.id !== "META" && !exported.has(record7.id)) || source5.objects.some((record7) => !durable.has(record7.id) && record7.id !== "CANVAS")) {
+  if (meta4?.type !== "META" || target8.records.filter((record7) => record7.type === "META").length !== 1 || source5.objects.some((record7) => record7.type === "META" && record7.id !== "META") || exported.has("META") && !same38(exported.get("META"), { id: meta4.id, type: meta4.type, body: meta4.body }) || target8.records.some((record7) => record7.id !== "META" && !exported.has(record7.id)) || source5.objects.some((record7) => !durable.has(record7.id) && record7.id !== "CANVAS")) {
     throw new Error("Flat display requires complete stored/source target record membership except its exact durable META and default CANVAS.");
   }
   const canvas = exported.get("CANVAS");
   if (!durable.has("CANVAS") && canvas !== void 0 && (canvas.type !== "CANVAS" || !same38(canvas.body, { originX: 0, originY: 0 }))) {
     throw new Error("Flat display source-only CANVAS is not the exact native default origin.");
   }
-  for (const record7 of target7.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
+  for (const record7 of target8.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
     const current6 = exported.get(record7.id);
     if (current6?.body["zIndex"] !== null && (nativeComponents.get(record7.id)?.kind !== "sheet" || current6?.type !== "COMPONENT" || current6.body["zIndex"] !== 0 || !same38(current6.body, { ...record7.body, zIndex: 0 }))) {
       throw new Error("Flat display admits only the exact null-to-zero native drawing-frame initialization.");
@@ -86308,13 +86320,13 @@ async function materialization(input) {
     rows2.push(structuredClone(meta4));
   }
   rows2.sort((left, right) => left.id.localeCompare(right.id));
-  const comparisonTarget = { ...target7, records: rows2, semanticSha256: sha256Json({
-    uuid: target7.uuid,
-    docType: target7.docType,
-    metadata: target7.metadata,
+  const comparisonTarget = { ...target8, records: rows2, semanticSha256: sha256Json({
+    uuid: target8.uuid,
+    docType: target8.docType,
+    metadata: target8.metadata,
     records: rows2.map(({ id: id11, type: type2, body: body4 }) => ({ id: id11, type: type2, body: body4 }))
   }) };
-  const documents = history.documents.map((document3) => document3.uuid === target7.uuid ? comparisonTarget : document3);
+  const documents = history.documents.map((document3) => document3.uuid === target8.uuid ? comparisonTarget : document3);
   const candidate = { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid12, docType: docType2, semanticSha256 }) => ({ uuid: uuid12, docType: docType2, semanticSha256 }))) };
   await yieldProofEventLoop();
   const comparison3 = verifySchematicStoragePersistence({
@@ -86601,11 +86613,11 @@ function flatWireContactIncidence(observation2, wireId) {
   if (page === void 0) {
     throw new Error("Flat wire page is missing.");
   }
-  const target7 = page.wires.find((entry) => entry.id === wireId);
-  if (target7 === void 0) {
+  const target8 = page.wires.find((entry) => entry.id === wireId);
+  if (target8 === void 0) {
     throw new Error("Flat wire target is absent from the complete native graph.");
   }
-  const owned2 = new Set(target7.lines.map((entry) => entry.id));
+  const owned2 = new Set(target8.lines.map((entry) => entry.id));
   const vertices = page.contacts.map((entry) => ({
     lineIds: entry.lineIds.toSorted(),
     pinIds: entry.pinIds.toSorted(),
@@ -88631,8 +88643,8 @@ var init_design_execution = __esm({
           plan2.expectedTopology = designTopologySchema.parse([...beforeTopology ?? [], prepared.componentCreate.topology]);
           journal.planHash = buildPlanHash(plan2);
         }
-        const target7 = before.snapshot.objects.find((object4) => object4.id === targetId2);
-        let baselineTargets = target7 === void 0 ? [] : [{ id: target7.id, fields: Object.keys(target7.body) }];
+        const target8 = before.snapshot.objects.find((object4) => object4.id === targetId2);
+        let baselineTargets = target8 === void 0 ? [] : [{ id: target8.id, fields: Object.keys(target8.body) }];
         if (prepared.expectedSource !== void 0) {
           const derived = context3.document.documentType === 4 ? deriveFootprintBaselineTargets(before.snapshot, prepared.expectedSource, baseline2) : deriveDesignBaselineTargets(before.snapshot, prepared.expectedSource);
           baselineTargets = [...derived].map((entry) => ({ id: entry.id, fields: [...entry.fields] }));
@@ -90792,7 +90804,7 @@ function prepareDocumentClose(input, history, context3) {
     }
     return scopeSchema5.parse({ uuid: uuid12, documentType: { SYMBOL: 2, PCB: 3, FOOTPRINT: 4 }[entry.docType], tabId: `${uuid12}@${history.projectUuid}` });
   };
-  const active2 = member4(context3.document.uuid ?? context3.document.documentUuid), target7 = member4(operation.tabId.split("@")[0]);
+  const active2 = member4(context3.document.uuid ?? context3.document.documentUuid), target8 = member4(operation.tabId.split("@")[0]);
   const plan2 = validatePlan({
     profile: DOCUMENT_CLOSE_PROFILE,
     projectUuid: history.projectUuid,
@@ -90800,10 +90812,10 @@ function prepareDocumentClose(input, history, context3) {
     branchUuid: history.branchUuid,
     projectPath: context3.project.path,
     active: active2,
-    target: target7,
+    target: target8,
     projectRecordsSha256: libraryProjectRecordsHash(history)
   });
-  if (operation.tabId !== target7.tabId) {
+  if (operation.tabId !== target8.tabId) {
     throw new Error("Clean close tab must encode the complete project owner.");
   }
   assertDocumentCloseContext(plan2, context3);
@@ -96266,8 +96278,8 @@ async function prepareMetadata(input, preserveHeaders) {
         target: { uuid: request11.target.symbolUuid },
         patch: request11.patch
       }, history);
-      const target7 = history.documents.find((document3) => document3.uuid === request11.target.symbolUuid);
-      requireCheckpoint(target7 !== void 0);
+      const target8 = history.documents.find((document3) => document3.uuid === request11.target.symbolUuid);
+      requireCheckpoint(target8 !== void 0);
       const observation2 = request11.observationProjection;
       if (observation2 !== void 0) {
         const value2 = observation2.value;
@@ -96288,7 +96300,7 @@ async function prepareMetadata(input, preserveHeaders) {
           plaintextBytes: history.plaintextBytes,
           documents: history.documents.length,
           selectedBranchRecordsSha256: plan2.beforeProjectSha256,
-          targetHeaderSha256: sha256Json(target7.metadata),
+          targetHeaderSha256: sha256Json(target8.metadata),
           targetHeaderEditVersion: plan2.headerEditVersion
         },
         metadata: { before: beforeMetadata, after: { ...beforeMetadata, name: plan2.desiredTitle, description: plan2.desiredDescription }, peerNames: plan2.peerTitles },
@@ -96520,12 +96532,12 @@ function validateCurrentDisposableOpenArguments(input) {
   };
 }
 function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
-  const target7 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
+  const target8 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const navigation = phase5 === "open-project" || phase5 === "open-document";
   return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target7)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target8)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
 const bad=(code='GUARD')=>{failureCode=code;throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad('FIELD');const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad('FIELD');}if(!Object.hasOwn(d,'value'))bad('FIELD');return d.value;};
@@ -96629,12 +96641,12 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
 finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{cleanupFailed=true;}if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailed=true;}}if(cleanupFailed)throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}`;
 }
 function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
-  const target7 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
+  const target8 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const result = currentDisposableOpenResultSchema.parse(raw);
-  const expectedTab = `${target7.documentUuid}@${target7.projectUuid}`;
+  const expectedTab = `${target8.documentUuid}@${target8.projectUuid}`;
   const navigation = phase5 === "open-project" || phase5 === "open-document";
-  if (result.phase !== phase5 || result.projectUuid !== target7.projectUuid || result.documentUuid !== target7.documentUuid || result.dispatchAttempted !== navigation || result.branchUuid !== (result.projectPresent ? target7.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
+  if (result.phase !== phase5 || result.projectUuid !== target8.projectUuid || result.documentUuid !== target8.documentUuid || result.dispatchAttempted !== navigation || result.branchUuid !== (result.projectPresent ? target8.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
     throw new Error("Disposable opening result contradicts its exact target and phase.");
   }
   let validAcknowledgement = result.publicResult === null;
@@ -96782,6 +96794,9 @@ function currentPcbIdentityFamilies(request11) {
     case "eda.pcb_PrimitiveImage.getAllPrimitiveId": {
       return ["Image"];
     }
+    case "eda.pcb_PrimitiveAttribute.getAllPrimitiveId": {
+      return ["Attribute"];
+    }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: {
       return ["Line", "Arc", "Via"];
     }
@@ -96824,6 +96839,28 @@ function validateCurrentPcbIdentitiesArguments(input) {
     issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
   };
 }
+function assertAttributeParentGroups(entry, ids2) {
+  const parents = /* @__PURE__ */ new Set();
+  let offset6 = 0;
+  for (const group of entry.parentGroups) {
+    if (parents.has(group.parentPrimitiveId) || ids2.has(group.parentPrimitiveId)) {
+      throw new Error("PCB attribute parent groups contain duplicate or colliding identities.");
+    }
+    parents.add(group.parentPrimitiveId);
+    if (offset6 + group.ids.length > CURRENT_PCB_IDENTITIES_MAX_IDS) {
+      throw new Error("PCB attribute parent groups exceed the total identity bound.");
+    }
+    for (const id11 of group.ids) {
+      if (entry.ids[offset6] !== id11) {
+        throw new Error("PCB attribute parent groups differ from the complete ordered identities.");
+      }
+      offset6 += 1;
+    }
+  }
+  if (offset6 !== entry.ids.length) {
+    throw new Error("PCB attribute parent groups omit observed identities.");
+  }
+}
 function validateCurrentPcbIdentitiesResult(input, raw) {
   const request11 = parseCurrentPcbIdentitiesRequest(input);
   const payload = currentPcbIdentitiesResultSchema.parse(raw);
@@ -96838,6 +96875,7 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
     throw new Error("PCB identities result has unexpected family observations.");
   }
   const seen = /* @__PURE__ */ new Set();
+  const extra = {};
   for (const entry of observations) {
     if (entry.family === "selected" && entry.ids.length > CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS) {
       throw new Error("PCB selection exceeds its identity bound.");
@@ -96848,9 +96886,12 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
       }
       seen.add(id11);
     }
+    if (entry.family === "Attribute") {
+      assertAttributeParentGroups(entry, seen);
+      extra["attributeParentGroups"] = entry.parentGroups;
+    }
   }
   let value2;
-  const extra = {};
   if (request11.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
     const match = observations.find((entry) => entry.ids.includes(request11.arguments.id));
     if (match === void 0 || !["Line", "Arc", "Via"].includes(match.family)) {
@@ -96876,7 +96917,7 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
     limitations: [...limitations10]
   };
 }
-var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods, methods2, targetSchema7, idSchema2, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, observationSchema, currentPcbIdentitiesResultSchema, limitations10;
+var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods, methods2, targetSchema7, idSchema2, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, idsSchema, attributeParentGroupSchema, observationSchema, currentPcbIdentitiesResultSchema, limitations10;
 var init_current_pcb_identities = __esm({
   "server/src/current-pcb-identities.ts"() {
     init_zod();
@@ -96898,7 +96939,8 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_PrimitivePad.getAllPrimitiveId",
       "eda.pcb_PrimitiveString.getAllPrimitiveId",
       "eda.pcb_PrimitiveDimension.getAllPrimitiveId",
-      "eda.pcb_PrimitiveImage.getAllPrimitiveId"
+      "eda.pcb_PrimitiveImage.getAllPrimitiveId",
+      "eda.pcb_PrimitiveAttribute.getAllPrimitiveId"
     ];
     methods2 = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD];
     targetSchema7 = currentPcbLayersRequestSchema.shape.target;
@@ -96909,7 +96951,16 @@ var init_current_pcb_identities = __esm({
       external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema2 }).strict(), target: targetSchema7 }).strict()
     ]);
     currentPcbIdentitiesQuerySchema = external_exports.object({ method: external_exports.enum(methods2).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
-    observationSchema = external_exports.object({ family: external_exports.enum(families2), ids: external_exports.array(idSchema2).max(CURRENT_PCB_IDENTITIES_MAX_IDS) }).strict();
+    idsSchema = external_exports.array(idSchema2).max(CURRENT_PCB_IDENTITIES_MAX_IDS);
+    attributeParentGroupSchema = external_exports.object({ parentPrimitiveId: idSchema2, ids: idsSchema }).strict();
+    observationSchema = external_exports.discriminatedUnion("family", [
+      external_exports.object({ family: external_exports.enum(families2), ids: idsSchema }).strict(),
+      external_exports.object({
+        family: external_exports.literal("Attribute"),
+        ids: idsSchema,
+        parentGroups: external_exports.array(attributeParentGroupSchema).max(CURRENT_PCB_IDENTITIES_MAX_IDS)
+      }).strict()
+    ]);
     currentPcbIdentitiesResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-identity-observation"),
@@ -96928,6 +96979,7 @@ var init_current_pcb_identities = __esm({
       "String identifies PCB text and preserves the native string-getAll order, excluding views with a native parent. Component attributes and inherited text are outside that family. This filter does not establish complete source ownership or saved membership. The native serializer reads existing font caches, but this adapter copies only globalIndex and never returns text, font, color or geometry.",
       "Dimension IDs preserve native length, radius and angle manager order, without a parent filter. Dimension annotation text and coordinates are serialized internally but not projected. This does not establish rendered measurements, root ownership, complete canvas inventory or saved membership; Dimension is not admitted to positive type lookup.",
       "Image IDs include native vector Image views followed by Picture views, without a parent filter. Native path conversion allocates temporary geometry before output bounds. The reviewed serializer reads existing template/hash metadata without loading image assets; only globalIndex is projected. No picture content, renderability, source ownership or saved membership is established. Image is not admitted to positive type lookup.",
+      "Attribute IDs flatten native component groups in observed order. attributeParentGroups retains each native parentPrimitiveId and its ordered IDs, including empty groups. Parent grouping is an observed native association, not reciprocal model ownership or complete stored ownership. Only loaded component stateWatcher views participate; there is no independent full component/source inventory. Attribute values, formulas, fonts and geometry are not returned. Component serialization still reads existing footprint/device/font caches and pad/via metadata before bounds. No filters or Attribute positive type lookup are supported.",
       "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
       "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
       "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
@@ -97583,8 +97635,8 @@ var init_current_pcb_rename_preflight = __esm({
       clientTicketObservation: external_exports.object({ client: external_exports.string().regex(/^[a-f0-9]{16}$/u), maxTicket: beforeSchema.shape.ticket, samples: external_exports.literal(4) }).strict(),
       runtimeObservation: currentSymbolRuntimeObservationSchema
     }).strict().refine((value2) => {
-      const target7 = value2.peers.find((peer3) => peer3.uuid === value2.target.pcbUuid), uuids = value2.peers.map((peer3) => peer3.uuid);
-      return value2.desiredTitle !== value2.expectedBefore.displayTitle && new Set(uuids).size === uuids.length && uuids.every((uuid12, index) => index === 0 || uuid12 > (uuids[index - 1] ?? uuid12)) && target7 !== void 0 && canonicalJson(target7) === canonicalJson({ uuid: value2.target.pcbUuid, ...value2.expectedBefore }) && value2.peers.every((peer3) => peer3.ticket <= value2.clientTicketObservation.maxTicket);
+      const target8 = value2.peers.find((peer3) => peer3.uuid === value2.target.pcbUuid), uuids = value2.peers.map((peer3) => peer3.uuid);
+      return value2.desiredTitle !== value2.expectedBefore.displayTitle && new Set(uuids).size === uuids.length && uuids.every((uuid12, index) => index === 0 || uuid12 > (uuids[index - 1] ?? uuid12)) && target8 !== void 0 && canonicalJson(target8) === canonicalJson({ uuid: value2.target.pcbUuid, ...value2.expectedBefore }) && value2.peers.every((peer3) => peer3.ticket <= value2.clientTicketObservation.maxTicket);
     });
     notes = [
       "Read-only preflight for an ordinary PCB with empty parent/source in one exact loaded local project/branch and no editor tabs or hidden frames. Supplied expectedBefore values must later be bound to an original prepared baseline; they are not history, ownership or permission proof.",
@@ -98461,15 +98513,15 @@ async function evidence(operationId8) {
     const raw = await readExactUtf8Artifact(artifact2);
     events.push(bag13(JSON.parse(raw.text)));
   }
-  const target7 = bag13(plan2["target"]);
-  const rawPath = external_exports.string().parse(target7["rawWindowsPath"]);
-  const projectUuid4 = hash32.parse(target7["projectUuid"]);
+  const target8 = bag13(plan2["target"]);
+  const rawPath = external_exports.string().parse(target8["rawWindowsPath"]);
+  const projectUuid4 = hash32.parse(target8["projectUuid"]);
   need46(sha256Text(rawPath) === projectUuid4, "path-hash project differs");
-  const branchUuid2 = external_exports.string().regex(/^[a-f0-9]{32}$/u).parse(target7["branchUuid"]), source5 = normalizeEasyedaProjectPath(rawPath);
+  const branchUuid2 = external_exports.string().regex(/^[a-f0-9]{32}$/u).parse(target8["branchUuid"]), source5 = normalizeEasyedaProjectPath(rawPath);
   const baseline2 = await snapshot7(operationId8, eventAt(events, "copy-result"), source5), finish = await snapshot7(operationId8, eventAt(events, "finish-snapshot-result"), source5);
   const ownerUuid = external_exports.string().regex(/^[a-f0-9]{32}$/u).parse(bag13(baseline2.result["targetEvidence"])["ownerUuid"]);
   const targetEvidence2 = bag13(baseline2.result["targetEvidence"]);
-  need46(targetEvidence2["projectUuid"] === projectUuid4 && targetEvidence2["branchUuid"] === branchUuid2 && targetEvidence2["documentUuid"] === target7["documentUuid"] && targetEvidence2["docType"] === "PCB", "baseline target differs from operation");
+  need46(targetEvidence2["projectUuid"] === projectUuid4 && targetEvidence2["branchUuid"] === branchUuid2 && targetEvidence2["documentUuid"] === target8["documentUuid"] && targetEvidence2["docType"] === "PCB", "baseline target differs from operation");
   const beforeLaunch = bag13(plan2["launch"]), finalLaunch = bag13(eventAt(events, "relaunch-result")["launch"]);
   need46(beforeLaunch["jobId"] !== finalLaunch["jobId"] && beforeLaunch["helperInstance"] === finalLaunch["helperInstance"], "replacement launch lineage differs");
   const beforeProof = closure(events, operationId8, false, beforeLaunch);
@@ -98640,10 +98692,10 @@ function bindReaders(snapshotValue, inventory2, history, selected3, final) {
       historySemanticSha256: history.semanticSha256
     }, "recorded final native commitments differ");
   } else {
-    const target7 = bag13(snapshotValue.result["targetEvidence"]);
-    const document3 = history.documents.find((item2) => item2.uuid === target7["documentUuid"]);
+    const target8 = bag13(snapshotValue.result["targetEvidence"]);
+    const document3 = history.documents.find((item2) => item2.uuid === target8["documentUuid"]);
     need46(
-      document3 !== void 0 && target7["projectUuid"] === history.projectUuid && target7["branchUuid"] === history.branchUuid && target7["ownerUuid"] === history.projectOwnerUuid && target7["docType"] === document3.docType && target7["documentSemanticSha256"] === document3.semanticSha256 && target7["historySemanticSha256"] === history.semanticSha256 && target7["headHistoryUuid"] === history.headHistoryUuid,
+      document3 !== void 0 && target8["projectUuid"] === history.projectUuid && target8["branchUuid"] === history.branchUuid && target8["ownerUuid"] === history.projectOwnerUuid && target8["docType"] === document3.docType && target8["documentSemanticSha256"] === document3.semanticSha256 && target8["historySemanticSha256"] === history.semanticSha256 && target8["headHistoryUuid"] === history.headHistoryUuid,
       "recorded baseline native commitments differ"
     );
   }
@@ -99990,16 +100042,16 @@ function componentProofResults(results, kind, targetPrimitiveIds) {
   const summary16 = matches.filter(
     (payload) => payload.detail?.pins === false && payload.detail?.bounds === false
   );
-  const target7 = matches.filter(
+  const target8 = matches.filter(
     (payload) => payload.detail?.pins === true && payload.detail?.bounds === true && canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].toSorted())
   );
-  if (matches.length !== 2 || summary16.length !== 1 || target7.length !== 1) {
+  if (matches.length !== 2 || summary16.length !== 1 || target8.length !== 1) {
     throw new Error(
       `Proof phase did not produce the required summary and target ${kind} results.`
     );
   }
   const [summaryPayload] = summary16;
-  const [targetPayload] = target7;
+  const [targetPayload] = target8;
   if (!summaryPayload || !targetPayload) {
     throw new Error(
       `Proof phase did not produce the required summary and target ${kind} results.`
@@ -104252,8 +104304,8 @@ function failureCategory(error51) {
 async function checkpointPolicy(source5) {
   return { expectedSource: source5, artifactRoots: [join55(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
-function targetContext(target7) {
-  return { project: { uuid: target7.projectUuid, path: target7.projectPath }, document: { uuid: target7.documentUuid, documentType: target7.documentType } };
+function targetContext(target8) {
+  return { project: { uuid: target8.projectUuid, path: target8.projectPath }, document: { uuid: target8.documentUuid, documentType: target8.documentType } };
 }
 function summary5(journal) {
   return {
@@ -104394,8 +104446,8 @@ var init_project_open_execution = __esm({
         if (!isJournal2(journal)) {
           throw new Error("Not a valid project-open transaction journal.");
         }
-        const target7 = projectOpenTargetSchema.parse(journal.plan.target);
-        if (target7.projectPath !== normalizeEasyedaProjectPath(target7.projectPath) || !/\.eprj2$/iu.test(target7.projectPath) || canonicalJson(journal.plan.expectedContext) !== canonicalJson(targetContext(target7)) || journal.preCheckpoint.source !== target7.projectPath) {
+        const target8 = projectOpenTargetSchema.parse(journal.plan.target);
+        if (target8.projectPath !== normalizeEasyedaProjectPath(target8.projectPath) || !/\.eprj2$/iu.test(target8.projectPath) || canonicalJson(journal.plan.expectedContext) !== canonicalJson(targetContext(target8)) || journal.preCheckpoint.source !== target8.projectPath) {
           throw new Error("Project-open journal target or baseline disagrees.");
         }
         validateExpectedFingerprint(journal.plan.expectedFingerprint);
@@ -104416,11 +104468,11 @@ var init_project_open_execution = __esm({
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         ), journal.preCheckpoint);
       }
-      readHistory(checkpoint, target7) {
+      readHistory(checkpoint, target8) {
         return this.services.readNativeHistoryCheckpoint({
           checkpointPath: checkpoint.checkpoint,
           expectedSha256: checkpoint.checkpointSha256,
-          projectUuid: target7.projectUuid,
+          projectUuid: target8.projectUuid,
           libraryAtomHeaders: "preserve"
         });
       }
@@ -104503,13 +104555,13 @@ var init_project_open_execution = __esm({
       }
       async openExisting(request11) {
         const input = projectOpenInputSchema.parse(structuredClone(request11));
-        const target7 = projectOpenTargetSchema.parse({
+        const target8 = projectOpenTargetSchema.parse({
           projectUuid: input.projectUuid,
           projectPath: normalizeEasyedaProjectPath(input.projectPath),
           documentUuid: input.documentUuid,
           documentType: input.documentType
         });
-        if (!/\.eprj2$/iu.test(target7.projectPath)) {
+        if (!/\.eprj2$/iu.test(target8.projectPath)) {
           throw new Error("Project-open source must be a saved .eprj2 project.");
         }
         if (this.engine.executionAuthorityValidator === void 0) {
@@ -104520,13 +104572,13 @@ var init_project_open_execution = __esm({
           throw new Error("Resolve the incomplete transaction before opening another target.");
         }
         await this.runtime(input.expectedFingerprint);
-        const checkpoint = await this.services.createCheckpoint({ source: target7.projectPath, outputDir: join55(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target7.projectPath));
-        const before = await this.readHistory(checkpoint, target7);
-        const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target7.projectUuid });
-        const context3 = targetContext(target7);
+        const checkpoint = await this.services.createCheckpoint({ source: target8.projectPath, outputDir: join55(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target8.projectPath));
+        const before = await this.readHistory(checkpoint, target8);
+        const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target8.projectUuid });
+        const context3 = targetContext(target8);
         deriveRecoveryNavigationTarget(context3, before);
         const operationId8 = newOperationId();
-        const plan2 = { profile: PROFILE16, target: target7, expectedContext: context3, expectedFingerprint: structuredClone(input.expectedFingerprint) };
+        const plan2 = { profile: PROFILE16, target: target8, expectedContext: context3, expectedFingerprint: structuredClone(input.expectedFingerprint) };
         const journal = {
           schema: OPERATION_SCHEMA,
           operationId: operationId8,
@@ -104552,7 +104604,7 @@ var init_project_open_execution = __esm({
         await this.services.createOperation(journal);
         try {
           await this.record(journal, "before", {
-            target: target7,
+            target: target8,
             checkpoint,
             recordsSha256: journal.beforeRecordsSha256,
             documentCount: before.documents.length,
@@ -105570,19 +105622,19 @@ function parseClosedSymbolOperationRequest(input) {
   const value2 = exactData(input, ["action", "target", "operation", "confirmWrite"]);
   requireValue6(value2["action"] === "execute-closed-symbol" && value2["confirmWrite"] === true, "Closed-symbol operation requires explicit write confirmation.");
   const raw = exactData(value2["operation"], ["id", "action", "libraryUuid", "target", "patch"]);
-  const patch4 = exactData(raw["patch"], ["name", "description"]), target7 = exactData(raw["target"], ["uuid"]);
+  const patch4 = exactData(raw["patch"], ["name", "description"]), target8 = exactData(raw["target"], ["uuid"]);
   const scope6 = parseClosedSymbolValidationRequest({
     action: "run-disposable-once",
     target: value2["target"],
     metadata: patch4,
     confirmDisposableMetadataEdit: true
   });
-  requireValue6(typeof raw["id"] === "string" && raw["id"] !== VALIDATION_ACTION_ID && raw["action"] === "library.symbol.modify" && raw["libraryUuid"] === scope6.target.projectUuid && target7["uuid"] === scope6.target.symbolUuid && scope6.metadata.name.trim().length > 0, "Closed-symbol operation identity or title differs.");
+  requireValue6(typeof raw["id"] === "string" && raw["id"] !== VALIDATION_ACTION_ID && raw["action"] === "library.symbol.modify" && raw["libraryUuid"] === scope6.target.projectUuid && target8["uuid"] === scope6.target.symbolUuid && scope6.metadata.name.trim().length > 0, "Closed-symbol operation identity or title differs.");
   const operation = projectSymbolMetadataOperation({
     id: raw["id"],
     action: raw["action"],
     libraryUuid: raw["libraryUuid"],
-    target: { uuid: target7["uuid"] },
+    target: { uuid: target8["uuid"] },
     patch: scope6.metadata
   });
   Object.freeze(operation.target);
@@ -107339,17 +107391,17 @@ var require_buffer_util = __commonJS({
     function concat(list2, totalLength) {
       if (list2.length === 0) return EMPTY_BUFFER;
       if (list2.length === 1) return list2[0];
-      const target7 = Buffer.allocUnsafe(totalLength);
+      const target8 = Buffer.allocUnsafe(totalLength);
       let offset6 = 0;
       for (let i2 = 0; i2 < list2.length; i2++) {
         const buf = list2[i2];
-        target7.set(buf, offset6);
+        target8.set(buf, offset6);
         offset6 += buf.length;
       }
       if (offset6 < totalLength) {
-        return new FastBuffer(target7.buffer, target7.byteOffset, offset6);
+        return new FastBuffer(target8.buffer, target8.byteOffset, offset6);
       }
-      return target7;
+      return target8;
     }
     function _mask(source5, mask2, output, offset6, length) {
       for (let i2 = 0; i2 < length; i2++) {
@@ -108780,29 +108832,29 @@ var require_sender = __commonJS({
           offset6 += 2;
           payloadLength = 126;
         }
-        const target7 = Buffer.allocUnsafe(merge2 ? dataLength + offset6 : offset6);
-        target7[0] = options.fin ? options.opcode | 128 : options.opcode;
-        if (options.rsv1) target7[0] |= 64;
-        target7[1] = payloadLength;
+        const target8 = Buffer.allocUnsafe(merge2 ? dataLength + offset6 : offset6);
+        target8[0] = options.fin ? options.opcode | 128 : options.opcode;
+        if (options.rsv1) target8[0] |= 64;
+        target8[1] = payloadLength;
         if (payloadLength === 126) {
-          target7.writeUInt16BE(dataLength, 2);
+          target8.writeUInt16BE(dataLength, 2);
         } else if (payloadLength === 127) {
-          target7[2] = target7[3] = 0;
-          target7.writeUIntBE(dataLength, 4, 6);
+          target8[2] = target8[3] = 0;
+          target8.writeUIntBE(dataLength, 4, 6);
         }
-        if (!options.mask) return [target7, data9];
-        target7[1] |= 128;
-        target7[offset6 - 4] = mask2[0];
-        target7[offset6 - 3] = mask2[1];
-        target7[offset6 - 2] = mask2[2];
-        target7[offset6 - 1] = mask2[3];
-        if (skipMasking) return [target7, data9];
+        if (!options.mask) return [target8, data9];
+        target8[1] |= 128;
+        target8[offset6 - 4] = mask2[0];
+        target8[offset6 - 3] = mask2[1];
+        target8[offset6 - 2] = mask2[2];
+        target8[offset6 - 1] = mask2[3];
+        if (skipMasking) return [target8, data9];
         if (merge2) {
-          applyMask(data9, mask2, target7, offset6, dataLength);
-          return [target7];
+          applyMask(data9, mask2, target8, offset6, dataLength);
+          return [target8];
         }
         applyMask(data9, mask2, data9, 0, dataLength);
-        return [target7, data9];
+        return [target8, data9];
       }
       /**
        * Sends a close message to the other peer.
@@ -111062,9 +111114,9 @@ async function sandboxDescriptorTargets(pid2) {
     if (!numericDescriptorName(entry)) {
       throw new Error("Sandbox process exposed a malformed descriptor name.");
     }
-    let target7;
+    let target8;
     try {
-      target7 = await readlink(`${directory3}/${entry}`);
+      target8 = await readlink(`${directory3}/${entry}`);
     } catch (error51) {
       if (error51 !== null && typeof error51 === "object" && "code" in error51 && error51.code === "ENOENT") {
         throw new Error(
@@ -111074,7 +111126,7 @@ async function sandboxDescriptorTargets(pid2) {
       }
       throw error51;
     }
-    output.set(Number(entry), target7);
+    output.set(Number(entry), target8);
   }
   return output;
 }
@@ -111104,11 +111156,11 @@ function assertSandboxDescriptorTargets(targets) {
   }
   const pipePairs = [[4, 5], [6, 7], [10, 11], [14, 15]];
   for (const [descriptor10, kind] of expectedDescriptors) {
-    const target7 = targets.get(descriptor10);
-    const accepted = kind === "stdio" && /^socket:\[\d+\]$/u.test(target7 ?? "") || kind === "pipe" && /^pipe:\[\d+\]$/u.test(target7 ?? "") || kind === "eventfd" && target7 === "anon_inode:[eventfd]" || kind === "eventpoll" && target7 === "anon_inode:[eventpoll]" || kind === "null" && target7 === "/dev/null";
+    const target8 = targets.get(descriptor10);
+    const accepted = kind === "stdio" && /^socket:\[\d+\]$/u.test(target8 ?? "") || kind === "pipe" && /^pipe:\[\d+\]$/u.test(target8 ?? "") || kind === "eventfd" && target8 === "anon_inode:[eventfd]" || kind === "eventpoll" && target8 === "anon_inode:[eventpoll]" || kind === "null" && target8 === "/dev/null";
     if (!accepted) {
       throw new Error(
-        `Sandbox descriptor ${String(descriptor10)} differs from the exact Node 24 baseline: ${target7 ?? "missing"}`
+        `Sandbox descriptor ${String(descriptor10)} differs from the exact Node 24 baseline: ${target8 ?? "missing"}`
       );
     }
   }
@@ -111193,17 +111245,17 @@ async function processSocketInodes(pid2) {
   const directory3 = `/proc/${pid2}/fd`;
   const inodes = /* @__PURE__ */ new Set();
   for (const entry of await readdir4(directory3)) {
-    let target7;
+    let target8;
     try {
-      target7 = await readlink(`${directory3}/${entry}`);
+      target8 = await readlink(`${directory3}/${entry}`);
     } catch (error51) {
       if (error51 !== null && typeof error51 === "object" && "code" in error51 && ["ENOENT", "EINVAL"].includes(String(error51.code))) {
-        target7 = void 0;
+        target8 = void 0;
       } else {
         throw error51;
       }
     }
-    const match = target7 === void 0 ? null : /^socket:\[(\d+)\]$/u.exec(target7);
+    const match = target8 === void 0 ? null : /^socket:\[(\d+)\]$/u.exec(target8);
     if (match?.[1] !== void 0) {
       inodes.add(match[1]);
     }
@@ -119274,9 +119326,9 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     assertTrustedOwnership(absolute, info);
     const relativePath = relative8(cwd, absolute).split(sep6).join("/");
     if (info.isSymbolicLink()) {
-      const target7 = await readlink2(absolute);
-      seals.push(sealFor(absolute, info, "symlink", target7));
-      entries5.push({ path: relativePath, kind: "symlink", target: target7, bytes: 0 });
+      const target8 = await readlink2(absolute);
+      seals.push(sealFor(absolute, info, "symlink", target8));
+      entries5.push({ path: relativePath, kind: "symlink", target: target8, bytes: 0 });
       const resolvedTarget3 = await realpath22(absolute);
       if (!isWithin5(cwd, resolvedTarget3)) {
         throw new Error(
@@ -122402,7 +122454,7 @@ function checkedExact(input, kind) {
   return payload;
 }
 function checkedIds(input) {
-  const payload = idsSchema.parse(input), { read_consistency: consistency, authority: _authority, ...sample3 } = payload;
+  const payload = idsSchema2.parse(input), { read_consistency: consistency, authority: _authority, ...sample3 } = payload;
   if (sha256Json(sample3) !== consistency.snapshotSha256) {
     throw new Error("Selected PCB ID observation commitment is invalid.");
   }
@@ -122538,7 +122590,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
   }
   return result;
 }
-var idsRequest, hash38, consistencySchema5, exactSchema, idsSchema;
+var idsRequest, hash38, consistencySchema5, exactSchema, idsSchema2;
 var init_pcb_selected_objects_read = __esm({
   "server/src/pcb-selected-objects-read.ts"() {
     init_zod();
@@ -122558,7 +122610,7 @@ var init_pcb_selected_objects_read = __esm({
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
     exactSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema5 }).loose();
-    idsSchema = external_exports.object({
+    idsSchema2 = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("public-sdk-read"),
       method: external_exports.literal(PCB_SELECTED_OBJECTS_IDS_METHOD),
@@ -123243,9 +123295,9 @@ var init_current_symbol_startup = __esm({
 
 // server/src/current-disposable-open-checkpoint.ts
 import { join as join61 } from "node:path";
-function normalizedSource(target7) {
-  const raw = target7.rawWindowsPath, separator = raw[2];
-  if (!/^[a-z]:[\\/]/iu.test(raw) || separator !== "\\" && separator !== "/" || raw.includes(separator === "\\" ? "/" : "\\") || target7.projectUuid !== sha256Text(raw)) {
+function normalizedSource(target8) {
+  const raw = target8.rawWindowsPath, separator = raw[2];
+  if (!/^[a-z]:[\\/]/iu.test(raw) || separator !== "\\" && separator !== "/" || raw.includes(separator === "\\" ? "/" : "\\") || target8.projectUuid !== sha256Text(raw)) {
     throw new Error("Disposable opening requires one exact absolute drive path and its raw-path project UUID.");
   }
   const segments3 = raw.slice(3).split(separator);
@@ -123262,21 +123314,21 @@ async function accessPolicy(source5) {
     maximumSourceBytes: MAX_SOURCE_BYTES
   };
 }
-function assertSourceBinding(checkpoint, target7, source5) {
-  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || checkpoint.source !== source5 || checkpoint.sourceSha256 !== target7.expectedSourceSha256) {
+function assertSourceBinding(checkpoint, target8, source5) {
+  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || checkpoint.source !== source5 || checkpoint.sourceSha256 !== target8.expectedSourceSha256) {
     throw new Error("Disposable opening checkpoint does not match the exact requested original source.");
   }
 }
-async function targetEvidence(checkpoint, target7) {
+async function targetEvidence(checkpoint, target8) {
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
-    projectUuid: target7.projectUuid,
+    projectUuid: target8.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  const matches = history.documents.filter((document4) => document4.uuid === target7.documentUuid);
+  const matches = history.documents.filter((document4) => document4.uuid === target8.documentUuid);
   const document3 = matches[0];
-  if (history.projectUuid !== target7.projectUuid || !/^[a-f0-9]{32}$/u.test(history.branchUuid) || matches.length !== 1 || document3?.docType !== "PCB" || isNativeDocumentDeleted(document3)) {
+  if (history.projectUuid !== target8.projectUuid || !/^[a-f0-9]{32}$/u.test(history.branchUuid) || matches.length !== 1 || document3?.docType !== "PCB" || isNativeDocumentDeleted(document3)) {
     throw new Error("Disposable opening target is not one undeleted PCB in the project's default branch.");
   }
   return Object.freeze({
@@ -123311,15 +123363,15 @@ async function verifyPreparationCheckpoint(checkpoint, input) {
   await verifyExactManagedArtifact(descriptor10);
 }
 async function prepareCurrentDisposableOpenCheckpoint(input) {
-  const target7 = currentDisposableOpenTargetSchema.parse(input);
-  const inputText = canonicalJson(input), source5 = normalizedSource(target7);
+  const target8 = currentDisposableOpenTargetSchema.parse(input);
+  const inputText = canonicalJson(input), source5 = normalizedSource(target8);
   const checkpoint = await createCheckpoint({
     source: source5,
     outputDir: join61(controlDataDirectory(), "checkpoints"),
     label: "current-disposable-open"
   }, await accessPolicy(source5));
-  assertSourceBinding(checkpoint, target7, source5);
-  const evidence2 = await targetEvidence(checkpoint, target7);
+  assertSourceBinding(checkpoint, target8, source5);
+  const evidence2 = await targetEvidence(checkpoint, target8);
   const observed2 = await readArtifact(checkpoint.checkpoint, 0, 1);
   const preparationCheckpoint = Object.freeze(currentDisposableOpenPreparationCheckpointSchema.parse({
     path: observed2.path,
@@ -123334,14 +123386,14 @@ async function prepareCurrentDisposableOpenCheckpoint(input) {
   return Object.freeze({ profile: PROFILE18, checkpoint, preparationCheckpoint, targetEvidence: evidence2 });
 }
 async function verifyCurrentDisposableOpenCheckpoint(prepared, input) {
-  const target7 = currentDisposableOpenTargetSchema.parse(input);
+  const target8 = currentDisposableOpenTargetSchema.parse(input);
   const inputText = canonicalJson(input), preparedText = canonicalJson(prepared);
-  const checkpoint = structuredClone(prepared.checkpoint), source5 = normalizedSource(target7);
+  const checkpoint = structuredClone(prepared.checkpoint), source5 = normalizedSource(target8);
   if (prepared.profile !== PROFILE18) {
     throw new Error("Disposable opening checkpoint profile is unsupported.");
   }
-  assertSourceBinding(checkpoint, target7, source5);
-  const evidence2 = await targetEvidence(checkpoint, target7);
+  assertSourceBinding(checkpoint, target8, source5);
+  const evidence2 = await targetEvidence(checkpoint, target8);
   if (canonicalJson(evidence2) !== canonicalJson(prepared.targetEvidence)) {
     throw new Error("Disposable opening target evidence changed.");
   }
@@ -123888,7 +123940,7 @@ async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
   };
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
   current6();
-  const target7 = {
+  const target8 = {
     projectUuid: source5.target.projectUuid,
     branchUuid: source5.target.branchUuid,
     documentUuid: source5.target.documentUuid,
@@ -123896,7 +123948,7 @@ async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
   };
   const closedTargetWitness = await readCurrentClosedSymbolMetadata(
     engine2,
-    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request11.target.symbolUuid }, target: target7 },
+    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request11.target.symbolUuid }, target: target8 },
     source5.expectedFingerprint
   );
   current6();
@@ -123950,7 +124002,7 @@ async function prepareCurrentOwnedSymbolCopy(engine2, generation5, input) {
   };
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
   current6();
-  const target7 = {
+  const target8 = {
     projectUuid: source5.target.projectUuid,
     branchUuid: source5.target.branchUuid,
     documentUuid: source5.target.documentUuid,
@@ -123958,7 +124010,7 @@ async function prepareCurrentOwnedSymbolCopy(engine2, generation5, input) {
   };
   const closedTargetWitness = await readCurrentClosedSymbolMetadata(
     engine2,
-    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request11.symbolUuid }, target: target7 },
+    { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request11.symbolUuid }, target: target8 },
     source5.expectedFingerprint
   );
   current6();
@@ -125046,15 +125098,15 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   retain3({ kind: "inventory", value: inventory2 });
   await current6();
   need53(inventory2.checkpointSha256 === copy.sha256, "Current symbol baseline inventory does not bind its raw copy.");
-  const target7 = previous.checkpointPreparation.target;
+  const target8 = previous.checkpointPreparation.target;
   need53(
-    target7.projectUuid === source5.target.projectUuid && target7.branchUuid === source5.target.branchUuid && target7.symbolUuid !== source5.target.documentUuid && previous.openingOperationId === owner.openingOperationId,
+    target8.projectUuid === source5.target.projectUuid && target8.branchUuid === source5.target.branchUuid && target8.symbolUuid !== source5.target.documentUuid && previous.openingOperationId === owner.openingOperationId,
     "Current symbol baseline metadata target differs from its original opening."
   );
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
-    projectUuid: target7.projectUuid,
+    projectUuid: target8.projectUuid,
     libraryAtomHeaders: "preserve",
     ...owner.profile === "private.current-symbol-copy-baseline-owner.v1" ? { documentRecordHistory: "preserve" } : {}
   });
@@ -125062,7 +125114,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   const matches = history.documents.filter((document4) => document4.uuid === source5.target.documentUuid);
   const document3 = matches[0];
   need53(
-    history.projectUuid === target7.projectUuid && history.branchUuid === target7.branchUuid && history.projectOwnerUuid === target7.ownerUuid && matches.length === 1 && document3?.docType === "PCB" && !isNativeDocumentDeleted(document3),
+    history.projectUuid === target8.projectUuid && history.branchUuid === target8.branchUuid && history.projectOwnerUuid === target8.ownerUuid && matches.length === 1 && document3?.docType === "PCB" && !isNativeDocumentDeleted(document3),
     "Current symbol baseline active target is not its exact undeleted default-branch PCB."
   );
   const targetEvidence2 = Object.freeze({
@@ -125080,7 +125132,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     sourceSha256: copy.sha256,
     checkpointSha256: checkpoint.checkpointSha256,
     history,
-    target: target7,
+    target: target8,
     documentUuid: document3.uuid
   });
   retain3({ kind: "startup-premises", value: startupPremises });
@@ -125100,13 +125152,13 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   };
   if (previous.profile === "private.current-owned-symbol-copy-preparation.v1") {
     need53(owner.profile === "private.current-symbol-copy-baseline-owner.v1", "Copy preparation requires its distinct original owner.");
-    const preparation3 = await prepareCurrentSymbolCopyPlan(inventory2, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid, symbolUuid: target7.symbolUuid });
+    const preparation3 = await prepareCurrentSymbolCopyPlan(inventory2, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid, symbolUuid: target8.symbolUuid });
     retain3({ kind: "preparation", value: preparation3 });
     await current6();
     const initial = previous.checkpointPreparation;
-    const sourceDocument = history.documents.find((value2) => value2.uuid === target7.symbolUuid);
+    const sourceDocument = history.documents.find((value2) => value2.uuid === target8.symbolUuid);
     need53(
-      preparation3.ownerUuid === target7.ownerUuid && preparation3.beforeCheckpointSha256 === copy.sha256 && preparation3.beforeRecordsSha256 === history.semanticSha256 && canonicalJson(preparation3.sourceMetadata) === canonicalJson(initial.sourceMetadata) && sourceDocument?.semanticSha256 === initial.sourceDocumentSemanticSha256 && sha256Json(sourceDocument.metadata) === initial.sourceDocumentHeaderSha256 && sourceDocument.documentRecordHistory?.chainSha256 === initial.sourceDocumentRecordsSha256,
+      preparation3.ownerUuid === target8.ownerUuid && preparation3.beforeCheckpointSha256 === copy.sha256 && preparation3.beforeRecordsSha256 === history.semanticSha256 && canonicalJson(preparation3.sourceMetadata) === canonicalJson(initial.sourceMetadata) && sourceDocument?.semanticSha256 === initial.sourceDocumentSemanticSha256 && sha256Json(sourceDocument.metadata) === initial.sourceDocumentHeaderSha256 && sourceDocument.documentRecordHistory?.chainSha256 === initial.sourceDocumentRecordsSha256,
       "Copy baseline source metadata or complete source document changed since original preparation."
     );
     result = Object.freeze({ ...common4, profile: "private.current-symbol-copy-baseline-copy.v1", owner, preparation: preparation3 });
@@ -125116,7 +125168,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     await current6();
     const preparation3 = await prepareCurrentSymbolMetadata({
       checkpoint: { path: checkpoint.checkpoint, bytes: Number(checkpointInfo.size), sha256: checkpoint.checkpointSha256 },
-      target: target7,
+      target: target8,
       patch: previous.checkpointPreparation.patch,
       observationProjection: currentClosedSymbolMetadataProjection(previous.closedTargetWitness.observation)
     });
@@ -125347,16 +125399,16 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy.sha256,
     "Current symbol finish SQL reader did not complete for its original raw copy."
   );
-  const target7 = baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid } : baseline2.preparation.target;
+  const target8 = baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid } : baseline2.preparation.target;
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
-    projectUuid: target7.projectUuid,
+    projectUuid: target8.projectUuid,
     libraryAtomHeaders: "preserve"
   });
   await current6();
   need53(
-    history.projectUuid === target7.projectUuid && history.branchUuid === target7.branchUuid && history.projectOwnerUuid === target7.ownerUuid,
+    history.projectUuid === target8.projectUuid && history.branchUuid === target8.branchUuid && history.projectOwnerUuid === target8.ownerUuid,
     "Current symbol finish native project, branch or owner changed."
   );
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
@@ -126274,15 +126326,15 @@ async function row6(owner, uuid12) {
   need58(selected3 !== void 0);
   return selected3;
 }
-async function selectCurrentUnlockedSqlHead(inventory2, target7) {
+async function selectCurrentUnlockedSqlHead(inventory2, target8) {
   const completion2 = readerCompletion(inventory2);
-  need58(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && canonicalJson(inventory2.schema) === canonicalJson(nativeProjectSymbolSqlSchema(target7.branchUuid).entries));
+  need58(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && canonicalJson(inventory2.schema) === canonicalJson(nativeProjectSymbolSqlSchema(target8.branchUuid).entries));
   const branches = table8(inventory2, "branches"), projects = table8(inventory2, "projects");
-  const branch = await row6(branches, target7.branchUuid), project3 = await row6(projects, target7.projectUuid);
-  need58(projects.rows.length === 1 && text27(cell7(projects, project3, "branch_uuid")) === target7.branchUuid && text27(cell7(projects, project3, "owner_uuid")) === target7.ownerUuid && text27(cell7(branches, branch, "project_uuid")) === target7.projectUuid);
+  const branch = await row6(branches, target8.branchUuid), project3 = await row6(projects, target8.projectUuid);
+  need58(projects.rows.length === 1 && text27(cell7(projects, project3, "branch_uuid")) === target8.branchUuid && text27(cell7(projects, project3, "owner_uuid")) === target8.ownerUuid && text27(cell7(branches, branch, "project_uuid")) === target8.projectUuid);
   const historyUuid = text27(cell7(branches, branch, "history_uuid"));
   need58(/^[a-f0-9]{32}$/u.test(historyUuid));
-  const history = table8(inventory2, `project_history_${target7.branchUuid}`), selected3 = await row6(history, historyUuid);
+  const history = table8(inventory2, `project_history_${target8.branchUuid}`), selected3 = await row6(history, historyUuid);
   const locked = cell7(history, selected3, "is_lock");
   need58(locked.kind === "integer" && locked.decimal === "0");
   const createdAtLiteral = text27(cell7(history, selected3, "created_at"));
@@ -127288,7 +127340,7 @@ function need63(condition, message) {
   }
 }
 function savedEnvelopeBytes(targetUuid, ticket2, desired, content, startup2) {
-  const target7 = { projectUuid: "0".repeat(64), branchUuid: "0".repeat(32), symbolUuid: targetUuid, ownerUuid: "0".repeat(32) };
+  const target8 = { projectUuid: "0".repeat(64), branchUuid: "0".repeat(32), symbolUuid: targetUuid, ownerUuid: "0".repeat(32) };
   const expectedBefore = {
     name: desired.name,
     description: desired.description,
@@ -127297,15 +127349,15 @@ function savedEnvelopeBytes(targetUuid, ticket2, desired, content, startup2) {
     version: String(MAX_NATIVE_TIME),
     ticket: ticket2
   };
-  buildCurrentSavedSymbolReadProgram({ target: target7, expectedBefore, expectedActor: ACTOR, maximumTicket: ticket2, startup: startup2 });
+  buildCurrentSavedSymbolReadProgram({ target: target8, expectedBefore, expectedActor: ACTOR, maximumTicket: ticket2, startup: startup2 });
   const result = {
     profile: "private.current-symbol-saved-read-observation.v1",
-    target: target7,
+    target: target8,
     expectedBefore,
     expectedActor: ACTOR,
     observation: {
       profile: "private.saved-symbol-content-observation.v1",
-      projectUuid: target7.projectUuid,
+      projectUuid: target8.projectUuid,
       targetUuid,
       maximumTicket: ticket2,
       workerClient: CLIENT,
@@ -127603,15 +127655,15 @@ async function hasCanvasOccurrences(chunks, targetUuid) {
   }
   return canvas;
 }
-function assertCurrentDisposableSymbolBaseline(inventory2, binding6, target7, expected3, desired, startup2, restoration) {
-  return assertBaseline(inventory2, binding6, target7, expected3, desired, startup2, restoration, "disposable-validation");
+function assertCurrentDisposableSymbolBaseline(inventory2, binding6, target8, expected3, desired, startup2, restoration) {
+  return assertBaseline(inventory2, binding6, target8, expected3, desired, startup2, restoration, "disposable-validation");
 }
-function assertCurrentOrdinarySymbolBaseline(inventory2, binding6, target7, expected3, desired, startup2) {
-  return assertBaseline(inventory2, binding6, target7, expected3, desired, startup2, void 0, "ordinary-symbol-metadata");
+function assertCurrentOrdinarySymbolBaseline(inventory2, binding6, target8, expected3, desired, startup2) {
+  return assertBaseline(inventory2, binding6, target8, expected3, desired, startup2, void 0, "ordinary-symbol-metadata");
 }
-async function assertBaseline(inventory2, binding6, target7, expected3, desired, startup2, restoration, canvasPurpose) {
+async function assertBaseline(inventory2, binding6, target8, expected3, desired, startup2, restoration, canvasPurpose) {
   const bindingText = canonicalJson({ copy: binding6.copy, checkpoint: binding6.checkpoint });
-  const completion2 = readerCompletion(inventory2), expectedText = canonicalJson(expected3), selected3 = Object.freeze({ ...target7 });
+  const completion2 = readerCompletion(inventory2), expectedText = canonicalJson(expected3), selected3 = Object.freeze({ ...target8 });
   const checkpointSha256 = binding6.checkpoint.checkpointSha256, rawCopySha256 = binding6.copy.sha256;
   need64(/^[a-f0-9]{64}$/u.test(rawCopySha256) && /^[a-f0-9]{64}$/u.test(checkpointSha256) && binding6.copy.source.length > 0 && binding6.copy.source === binding6.checkpoint.source && rawCopySha256 === binding6.checkpoint.sourceSha256 && inventory2.checkpointSha256 === rawCopySha256 && expected3.checkpointSha256 === checkpointSha256);
   need64(Object.keys(selected3).length === 4 && /^[a-f0-9]{32}$/u.test(selected3.ownerUuid) && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(selected3.symbolUuid));
@@ -127687,12 +127739,12 @@ function currentSymbolStartupCollectionEvidence(generation5, engine2) {
     executionAuthorized: false
   });
 }
-function buildCurrentSymbolStartupObservation(target7, expectation) {
-  exact6(target7, ["projectUuid", "branchUuid"]);
-  need65(/^[a-f0-9]{64}$/u.test(target7.projectUuid) && /^[a-f0-9]{32}$/u.test(target7.branchUuid));
+function buildCurrentSymbolStartupObservation(target8, expectation) {
+  exact6(target8, ["projectUuid", "branchUuid"]);
+  need65(/^[a-f0-9]{64}$/u.test(target8.projectUuid) && /^[a-f0-9]{32}$/u.test(target8.branchUuid));
   const selected3 = currentSymbolStartupExpectationSchema.parse(expectation);
   return `let startupStage='project-only-context';
-const observation=(()=>{try{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target7)},startupExpected=${JSON.stringify(selected3)},expired=false;
+const observation=(()=>{try{const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target8)},startupExpected=${JSON.stringify(selected3)},expired=false;
 const bad=()=>{throw new Error('CURRENT_SYMBOL_STARTUP_FAILED');};
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
 const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return{owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
@@ -127707,7 +127759,7 @@ const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,j
 if(utf8Bytes>${MAX_BYTES9}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${MAX_BYTES9})throw new Error('CURRENT_SYMBOL_STARTUP_ENVELOPE');
 return envelope;`;
 }
-function decodeCurrentSymbolStartupObservation(raw, target7, expectation) {
+function decodeCurrentSymbolStartupObservation(raw, target8, expectation) {
   assertUpstreamReplySettled(raw);
   const envelope3 = exact6(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   need65(envelope3["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope3["json"] === "string" && envelope3["json"].length > 0 && envelope3["json"].length <= MAX_BYTES9 && Buffer.byteLength(JSON.stringify(envelope3)) <= MAX_BYTES9);
@@ -127719,7 +127771,7 @@ function decodeCurrentSymbolStartupObservation(raw, target7, expectation) {
   }
   const expected3 = {
     profile: "private.current-symbol-startup-observation.v1",
-    ...target7,
+    ...target8,
     sheetUuids: expectation.sheetUuids,
     templates: expectation.templates,
     executionAuthorized: false
@@ -127819,10 +127871,10 @@ async function qualifyCurrentSymbolWriterStartup(engine2, generation5, remaining
     check3();
     await engine2.assertBridgeDispatchAllowed();
     check3();
-    const target7 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
-    const code = buildCurrentSymbolStartupObservation(target7, expectation);
+    const target8 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
+    const code = buildCurrentSymbolStartupObservation(target8, expectation);
     const intent = await writePhaseArtifact(evidenceId, 0, "startup-intent", {
-      target: target7,
+      target: target8,
       expectation,
       codeSha256: sha256Text(code),
       baselineSha256: sha256Json(baseline2),
@@ -127840,7 +127892,7 @@ async function qualifyCurrentSymbolWriterStartup(engine2, generation5, remaining
     const resultArtifact = await writePhaseArtifact(evidenceId, 0, "startup-result", { raw });
     collection.resultArtifact = Object.freeze(resultArtifact);
     check3();
-    decodeCurrentSymbolStartupObservation(raw, target7, expectation);
+    decodeCurrentSymbolStartupObservation(raw, target8, expectation);
     await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
     check3();
     await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
@@ -129074,9 +129126,9 @@ function scope5(input) {
   return { projectUuid: projectUuid4, branchUuid: branchUuid2 };
 }
 function buildCurrentUploadQueueReadExpression(input) {
-  const target7 = scope5(input);
+  const target8 = scope5(input);
   return `(async()=>{
-const target=${JSON.stringify(target7)},root=globalThis,apply=Reflect.apply;
+const target=${JSON.stringify(target8)},root=globalThis,apply=Reflect.apply;
 let stage='HOST',expired=false,timer,clear;
 const bad=()=>{throw new Error('CURRENT_UPLOAD_QUEUE_READ_REFUSED:'+stage);};
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -129128,7 +129180,7 @@ function decodeCurrentUploadQueueReadReply(raw, expected3) {
   return validateCurrentUploadQueueReadResult(decodeExactReadEnvelope(envelope3), expected3);
 }
 function validateCurrentUploadQueueReadResult(input, expected3) {
-  const target7 = scope5(expected3);
+  const target8 = scope5(expected3);
   const value2 = fields12(input, [
     "profile",
     "projectUuid",
@@ -129142,7 +129194,7 @@ function validateCurrentUploadQueueReadResult(input, expected3) {
     "writerAuthority",
     "executionAuthorized"
   ]);
-  if (value2["profile"] !== CURRENT_UPLOAD_QUEUE_PROFILE || value2["projectUuid"] !== target7.projectUuid || value2["branchUuid"] !== target7.branchUuid || value2["origin"] !== "https://client" || value2["projectV6UploadAbsent"] !== true || value2["localProjectV1UploadAbsent"] !== true || value2["scope"] !== "point-in-time-inactive-target" || value2["startupQualified"] !== false || value2["persistenceVerified"] !== false || value2["writerAuthority"] !== false || value2["executionAuthorized"] !== false) {
+  if (value2["profile"] !== CURRENT_UPLOAD_QUEUE_PROFILE || value2["projectUuid"] !== target8.projectUuid || value2["branchUuid"] !== target8.branchUuid || value2["origin"] !== "https://client" || value2["projectV6UploadAbsent"] !== true || value2["localProjectV1UploadAbsent"] !== true || value2["scope"] !== "point-in-time-inactive-target" || value2["startupQualified"] !== false || value2["persistenceVerified"] !== false || value2["writerAuthority"] !== false || value2["executionAuthorized"] !== false) {
     throw new Error("CURRENT_UPLOAD_QUEUE_RESULT");
   }
   return Object.freeze(value2);
@@ -129629,11 +129681,11 @@ var init_current_symbol_verification_runtime = __esm({
                 }
                 await this.record(slot, `${phase5}-reply`, { raw }, scopeText);
                 marked = structuredClone(slot.journal);
-                const target7 = slot.source.original.source.target;
+                const target8 = slot.source.original.source.target;
                 if (opening) {
-                  decodeCurrentProjectOnlyOpenReply(raw, { ...target7, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
+                  decodeCurrentProjectOnlyOpenReply(raw, { ...target8, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
                 } else {
-                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
+                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
                 }
                 await this.original(slot, scopeText);
               },
@@ -129685,8 +129737,8 @@ var init_current_symbol_verification_runtime = __esm({
         this.busy = true;
         slot.openAttempted = true;
         try {
-          const target7 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
-          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target7), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
+          const target8 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
+          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target8), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
           slot.opened = true;
           slot.journal.state = "verification-project-only-opened";
           await this.record(slot, "verification-open-result", summary7(slot));
@@ -130131,9 +130183,9 @@ async function prepareCurrentSymbolInverseOwner(engine2, predecessor) {
   attempts14.add(predecessor);
   await result.revalidateClosed();
   need70(assertCurrentSymbolVerificationResult(predecessor, engine2) === result);
-  const snapshot8 = result.snapshot, target7 = result.saved.observation.target;
+  const snapshot8 = result.snapshot, target8 = result.saved.observation.target;
   const initial = result.initialMetadata, previous = result.writer.original.baseline.preparation;
-  need70(canonicalJson(target7) === canonicalJson(previous.target) && canonicalJson(initial) === canonicalJson(previous.metadata.before) && canonicalJson({
+  need70(canonicalJson(target8) === canonicalJson(previous.target) && canonicalJson(initial) === canonicalJson(previous.metadata.before) && canonicalJson({
     name: result.saved.observation.expectedBefore.name,
     description: result.saved.observation.expectedBefore.description,
     source: result.saved.observation.expectedBefore.source,
@@ -130152,7 +130204,7 @@ async function prepareCurrentSymbolInverseOwner(engine2, predecessor) {
       bytes: Number(stat3.size),
       sha256: snapshot8.checkpoint.checkpointSha256
     },
-    target: target7,
+    target: target8,
     patch: { name: initial.name, description: initial.description }
   });
   await result.revalidateClosed();
@@ -130272,8 +130324,8 @@ var init_current_copy_aged_sql_reference = __esm({
         unchanged4();
         const journalText = canonicalJson(journal);
         need71(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
-        const target7 = { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid };
-        const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target7);
+        const target8 = { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid };
+        const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target8);
         await current6();
         const clock7 = await windowsClockObservationForResult(proof, "termination");
         await current6();
@@ -130284,7 +130336,7 @@ var init_current_copy_aged_sql_reference = __esm({
           planHash: journal.planHash,
           baselineCopyReceiptSha256: baseline2.copy.receiptSha256,
           baselineLogicalSha256: baseline2.inventory.logicalSha256,
-          target: target7,
+          target: target8,
           parserSource: CURRENT_AGED_SQL_DATE_PARSER_SOURCE,
           historyUuid: head2.historyUuid
         });
@@ -132095,8 +132147,8 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertBridgeAndRecoveryAdmission(operationId8);
           await current6();
           validateSdkLocalRuntimeFingerprint(source5.expectedFingerprint);
-          const target7 = { projectUuid: source5.target.projectUuid, branchUuid: source5.target.branchUuid };
-          const code = buildCurrentUploadQueueReadProgram(target7), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
+          const target8 = { projectUuid: source5.target.projectUuid, branchUuid: source5.target.branchUuid };
+          const code = buildCurrentUploadQueueReadProgram(target8), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need74(typeof scope6 === "function", "Current symbol cache observation lacks its owned scope.");
           let completed4 = false;
           const initial = await scope6.call(this.engine.upstream, async (binding6) => {
@@ -132119,7 +132171,7 @@ var init_current_symbol_baseline_runtime = __esm({
             slot.journal.state = "cache-dispatching";
             slot.journal.nextSafeAction = "Retain this single inactive-target cache observation; do not repeat, navigate, Save or write.";
             await _CurrentSymbolBaselineCoordinator.record(slot, "cache-intent", {
-              target: target7,
+              target: target8,
               programSha256: sha256Json({ code }),
               runtimeFingerprintSha256: sha256Json(fingerprint),
               startupQualified: false,
@@ -132161,7 +132213,7 @@ var init_current_symbol_baseline_runtime = __esm({
                 slot.cacheRaw = raw;
                 slot.cacheReplyRetained = true;
                 await current6(scopeText);
-                slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, target7);
+                slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, target8);
                 await original2(scopeText);
               },
               async () => {
@@ -132305,8 +132357,8 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertBridgeAndRecoveryAdmission(operationId8);
           await current6();
           validateSdkLocalRuntimeFingerprint(source5.expectedFingerprint);
-          const target7 = { ...source5.target, expectedSourceSha256: copy.checkpoint.sourceSha256 };
-          const code = buildCurrentProjectOnlyOpenProgram(target7), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
+          const target8 = { ...source5.target, expectedSourceSha256: copy.checkpoint.sourceSha256 };
+          const code = buildCurrentProjectOnlyOpenProgram(target8), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need74(typeof scope6 === "function", "Current project-only opening lacks its owned scope.");
           let completed4 = false;
           const initial = await scope6.call(this.engine.upstream, async (binding6) => {
@@ -132333,7 +132385,7 @@ var init_current_symbol_baseline_runtime = __esm({
             slot.journal.mutationMayHaveOccurred = true;
             slot.journal.nextSafeAction = "Retain this single project-only navigation. Do not repeat navigation, open an editor, Save or write.";
             await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-intent", {
-              target: target7,
+              target: target8,
               programSha256: sha256Json({ code }),
               source: slot.preopenSource,
               startupPremises: copy.startupPremises,
@@ -132382,7 +132434,7 @@ var init_current_symbol_baseline_runtime = __esm({
                 slot.projectOpenRaw = raw;
                 slot.projectOpenReplyRetained = true;
                 await current6(scopeText);
-                slot.projectOpenObservation = decodeCurrentProjectOnlyOpenReply(raw, target7);
+                slot.projectOpenObservation = decodeCurrentProjectOnlyOpenReply(raw, target8);
                 await original2(scopeText);
               },
               async () => {
@@ -133888,10 +133940,10 @@ async function qualifyCurrentSymbolCopyStartup(engine2, generation5) {
     check3();
     await engine2.assertBridgeDispatchAllowed();
     check3();
-    const target7 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
-    const code = buildCurrentSymbolStartupObservation(target7, expectation);
+    const target8 = { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
+    const code = buildCurrentSymbolStartupObservation(target8, expectation);
     const intent = await writePhaseArtifact(evidenceId, 0, "startup-intent", {
-      target: target7,
+      target: target8,
       expectation,
       codeSha256: sha256Text(code),
       baselineSha256: sha256Json(baseline2),
@@ -133911,7 +133963,7 @@ async function qualifyCurrentSymbolCopyStartup(engine2, generation5) {
     const resultArtifact = await writePhaseArtifact(evidenceId, 0, "startup-result", { raw });
     collection.resultArtifact = Object.freeze(resultArtifact);
     check3();
-    decodeCurrentSymbolStartupObservation(raw, target7, expectation);
+    decodeCurrentSymbolStartupObservation(raw, target8, expectation);
     await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
     check3();
     await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
@@ -134957,7 +135009,7 @@ function reserveCurrentSymbolCopySavedReadCapacity(original2, expectedActor, sta
   const rows2 = currentSymbolCopySourceRows(original2), stamp = 864e13, uuid12 = "0".repeat(16);
   reserveCurrentSymbolCopySavedProgramCapacity(original2, expectedActor, startup2);
   const wanted = original2.destinationMetadata;
-  const target7 = {
+  const target8 = {
     projectUuid: original2.source.projectUuid,
     branchUuid: original2.source.branchUuid,
     ownerUuid: original2.ownerUuid,
@@ -134971,7 +135023,7 @@ function reserveCurrentSymbolCopySavedReadCapacity(original2, expectedActor, sta
     version: String(stamp),
     ticket: original2.metadataTicket
   };
-  const request11 = { target: target7, expectedBefore, expectedActor, maximumTicket: original2.canvasHeaderTicket, startup: startup2 };
+  const request11 = { target: target8, expectedBefore, expectedActor, maximumTicket: original2.canvasHeaderTicket, startup: startup2 };
   if (Buffer.byteLength(JSON.stringify(request11)) > 262144) {
     throw new Error("CURRENT_SYMBOL_COPY_SAVED_REQUEST_CAPACITY");
   }
@@ -134996,12 +135048,12 @@ function reserveCurrentSymbolCopySavedReadCapacity(original2, expectedActor, sta
     ].join("|\n");
     const result = {
       profile: "private.current-symbol-copy-saved-read-observation.v1",
-      target: target7,
+      target: target8,
       expectedBefore,
       expectedActor,
       observation: {
         profile: "private.saved-symbol-content-observation.v1",
-        projectUuid: target7.projectUuid,
+        projectUuid: target8.projectUuid,
         targetUuid: uuid12,
         maximumTicket: original2.canvasHeaderTicket,
         workerClient: uuid12,
@@ -137065,11 +137117,11 @@ var init_current_symbol_copy_verification_runtime = __esm({
                 }
                 await this.record(slot, `${phase5}-reply`, { raw }, scopeText);
                 marked = structuredClone(slot.journal);
-                const target7 = slot.source.original.source.target;
+                const target8 = slot.source.original.source.target;
                 if (opening) {
-                  decodeCurrentProjectOnlyOpenReply(raw, { ...target7, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
+                  decodeCurrentProjectOnlyOpenReply(raw, { ...target8, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
                 } else {
-                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
+                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
                 }
                 await this.original(slot, scopeText);
               },
@@ -137121,8 +137173,8 @@ var init_current_symbol_copy_verification_runtime = __esm({
         this.busy = true;
         slot.openAttempted = true;
         try {
-          const target7 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
-          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target7), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
+          const target8 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
+          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target8), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
           slot.opened = true;
           slot.journal.state = "verification-project-only-opened";
           await this.record(slot, "verification-open-result", summary10(slot));
@@ -137664,6 +137716,54 @@ var init_current_symbol_copy_operation_runtime = __esm({
   }
 });
 
+// server/src/current-schematic-rename-owner.ts
+import { types as types3 } from "node:util";
+function own3(value2, fields19) {
+  if (value2 !== null && typeof value2 === "object" && types3.isProxy(value2)) {
+    throw new Error("Current SCH owner refuses Proxy input.");
+  }
+  const prototype = value2 === null || typeof value2 !== "object" ? void 0 : Object.getPrototypeOf(value2);
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2) || prototype !== Object.prototype && prototype !== null || Reflect.ownKeys(value2).length !== fields19.length) {
+    throw new Error("Current SCH opening owner requires exact own-data fields.");
+  }
+  const result = {};
+  for (const name6 of fields19) {
+    const field8 = Object.getOwnPropertyDescriptor(value2, name6);
+    if (field8 === void 0 || !Object.hasOwn(field8, "value")) {
+      throw new Error("Current SCH opening owner refuses accessors or missing fields.");
+    }
+    result[name6] = field8.value;
+  }
+  return result;
+}
+function parseCurrentSchematicRenameOwnerRequest(input) {
+  const value2 = own3(input, ["operationId", "target", "desiredTitle"]);
+  return freezeDeep(currentSchematicRenameOwnerRequestSchema.parse({
+    ...value2,
+    target: own3(value2["target"], ["projectUuid", "branchUuid", "ownerUuid", "schematicUuid"])
+  }));
+}
+var target7, currentSchematicRenameOwnerRequestSchema;
+var init_current_schematic_rename_owner = __esm({
+  "server/src/current-schematic-rename-owner.ts"() {
+    init_zod();
+    init_sqlite_inventory_core();
+    target7 = external_exports.object({
+      projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
+      branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+      ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+      schematicUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u)
+    }).strict();
+    currentSchematicRenameOwnerRequestSchema = external_exports.object({
+      operationId: external_exports.string().regex(/^[A-Za-z0-9._:-]{1,160}$/u),
+      // Native locale folding is not qualified for non-ASCII or capital I. Match
+      // The later immutable binding's supported subset before consuming an owner.
+      target: target7,
+      desiredTitle: external_exports.string().min(1).max(512).refine((value2) => value2.trim() === value2 && /^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"))
+    }).strict();
+  }
+});
+
 // server/src/current-disposable-open-runtime.ts
 function assertCurrentPcbRenameOpeningOwner(value2, engine2) {
   requireValue15(value2 !== null && typeof value2 === "object", "Current PCB opening owner is missing.");
@@ -137700,6 +137800,13 @@ function assertCompletedCurrentPcbRenameOpeningTransfer(value2, engine2) {
     "Current PCB opening transfer did not complete; its retained owner is cleanup-only."
   );
   return original2;
+}
+function assertCurrentSchematicRenameOpeningOwner(value2, engine2) {
+  requireValue15(value2 !== null && typeof value2 === "object", "Current SCH opening owner is missing.");
+  const issued22 = issuedSchematicRenameOpeningOwners.get(value2);
+  requireValue15(issued22 !== void 0 && issued22.value.source.engine === engine2, "Current SCH opening owner was not issued by this engine.");
+  issued22.current();
+  return issued22.value;
 }
 function assertCurrentSymbolBaselineOwner(value2, engine2) {
   requireValue15(value2 !== null && typeof value2 === "object", "Current symbol baseline original owner is missing.");
@@ -137816,7 +137923,7 @@ function summary11(journal) {
     artifacts: journal.artifacts
   };
 }
-var PROFILE25, digest5, launchSchema2, terminationSchema, closedSessionSchema2, defaults, issuedGenerations, issuedPcbRenameOpeningOwners, issuedCopyBaselineOwners, issuedBaselineOwners, baselineRuntimeReservations, CurrentDisposableOpenCoordinator;
+var PROFILE25, digest5, launchSchema2, terminationSchema, closedSessionSchema2, defaults, issuedGenerations, issuedPcbRenameOpeningOwners, issuedSchematicRenameOpeningOwners, issuedCopyBaselineOwners, issuedBaselineOwners, baselineRuntimeReservations, CurrentDisposableOpenCoordinator;
 var init_current_disposable_open_runtime = __esm({
   "server/src/current-disposable-open-runtime.ts"() {
     init_zod();
@@ -137841,6 +137948,7 @@ var init_current_disposable_open_runtime = __esm({
     init_current_symbol_startup();
     init_machine_profile();
     init_current_pcb_rename_owner();
+    init_current_schematic_rename_owner();
     PROFILE25 = "easyeda-pro-control.current-disposable-open.v1";
     digest5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     launchSchema2 = external_exports.object({
@@ -137872,6 +137980,7 @@ var init_current_disposable_open_runtime = __esm({
     };
     issuedGenerations = /* @__PURE__ */ new WeakMap();
     issuedPcbRenameOpeningOwners = /* @__PURE__ */ new WeakMap();
+    issuedSchematicRenameOpeningOwners = /* @__PURE__ */ new WeakMap();
     issuedCopyBaselineOwners = /* @__PURE__ */ new WeakMap();
     issuedBaselineOwners = /* @__PURE__ */ new WeakMap();
     baselineRuntimeReservations = /* @__PURE__ */ new WeakSet();
@@ -137890,6 +137999,7 @@ var init_current_disposable_open_runtime = __esm({
       copyOpeningCleanups = /* @__PURE__ */ new Map();
       normalCloseAttempts = /* @__PURE__ */ new Set();
       pcbRenameOpeningOwners = /* @__PURE__ */ new Map();
+      schematicRenameOpeningOwners = /* @__PURE__ */ new Map();
       busy = false;
       constructor(options, dependencies3 = {}) {
         this.options = options;
@@ -138330,8 +138440,8 @@ var init_current_disposable_open_runtime = __esm({
             openingPurpose(slot.journal.plan.purpose) === "disposable-validation" && slot.runtime instanceof WindowsControlRuntime && !this.normalCloseAttempts.has(openingOperationId) && slot.journal.normalCloseAttempted !== true,
             "Current PCB opening owner requires its live disposable original opening."
           );
-          const runtime = slot.runtime, target7 = slot.journal.plan.intent.target;
-          requireValue15(request11.target.projectUuid === target7.projectUuid && request11.target.branchUuid === target7.branchUuid && request11.target.pcbUuid === target7.documentUuid, "Current PCB opening transfer cannot retarget the opened PCB.");
+          const runtime = slot.runtime, target8 = slot.journal.plan.intent.target;
+          requireValue15(request11.target.projectUuid === target8.projectUuid && request11.target.branchUuid === target8.branchUuid && request11.target.pcbUuid === target8.documentUuid, "Current PCB opening transfer cannot retarget the opened PCB.");
           await this.services.assertOperationIdUnused(request11.operationId);
           this.currentUntransferred(slot);
           await engine2.assertBridgeAndRecoveryAdmission(openingOperationId);
@@ -138428,6 +138538,125 @@ var init_current_disposable_open_runtime = __esm({
           "Current PCB transfer requires its original retained owner."
         );
         assertCurrentPcbRenameOpeningOwner(owner, this.options.engine);
+        return owner;
+      }
+      async prepareSchematicRenameOpeningOwner(openingOperationId, input) {
+        const request11 = parseCurrentSchematicRenameOwnerRequest(input);
+        requireValue15(
+          !this.busy && request11.operationId !== openingOperationId && !this.schematicRenameOpeningOwners.has(request11.operationId),
+          "Current SCH opening transfer needs one distinct unused operation."
+        );
+        requireValue15(
+          this.productionServices && this.options.engine instanceof EasyedaControlEngine,
+          "Current SCH opening owner cannot issue from injected opening services or an unowned engine."
+        );
+        const engine2 = this.options.engine;
+        this.busy = true;
+        try {
+          const loaded = await this.load(openingOperationId), slot = this.retainedJournal(loaded);
+          this.currentUntransferred(slot);
+          requireValue15(
+            openingPurpose(slot.journal.plan.purpose) === "disposable-validation" && slot.runtime instanceof WindowsControlRuntime && !this.normalCloseAttempts.has(openingOperationId) && slot.journal.normalCloseAttempted !== true,
+            "Current SCH opening owner requires its live disposable original opening."
+          );
+          const runtime = slot.runtime, target8 = slot.journal.plan.intent.target;
+          requireValue15(request11.target.projectUuid === target8.projectUuid && request11.target.branchUuid === target8.branchUuid, "Current SCH opening transfer cannot leave the opened project branch.");
+          await this.services.assertOperationIdUnused(request11.operationId);
+          this.currentUntransferred(slot);
+          await engine2.assertBridgeAndRecoveryAdmission(openingOperationId);
+          this.currentUntransferred(slot);
+          const scope6 = engine2.upstream.withAuthenticatedBridgeDispatchScope;
+          requireValue15(scope6 !== void 0, "Current SCH opening transfer needs an authenticated scope.");
+          const result = await scope6.call(engine2.upstream, async () => {
+            const generation5 = this.issueGeneration(slot, engine2, runtime);
+            const source5 = await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
+            this.currentUntransferred(slot);
+            requireValue15(source5.purpose === "disposable-validation" && source5.runtime === runtime && assertCurrentDisposableOpenGeneration(generation5, engine2) === source5, "Current SCH opening generation changed.");
+            const owner = Object.freeze({
+              profile: "private.current-schematic-rename-opening-owner.v1",
+              operationId: request11.operationId,
+              openingOperationId
+            });
+            const intent = Object.freeze({ target: request11.target, desiredTitle: request11.desiredTitle });
+            const intentText = canonicalJson(intent), journalText = canonicalJson(slot.journal), sourceText = canonicalJson({
+              target: source5.target,
+              expectedFingerprint: source5.expectedFingerprint,
+              checkpoint: source5.preNavigationCheckpoint,
+              launch: source5.launchProjection,
+              session: source5.bridgeSession
+            });
+            const upstream2 = engine2.upstream, validator = engine2.executionAuthorityValidator;
+            const dispatch = upstream2.currentAuthenticatedBridgeDispatchBinding, lifecycle = upstream2.bridgeSessionLifecycle;
+            const capture3 = engine2.captureClosedSessionAuthority, clock7 = engine2.clockObservationForClosedCapture, release = engine2.releaseClosedSessionAuthority;
+            const runtimeStatus = runtime.status;
+            const current6 = () => {
+              requireValue15(
+                runtime.status === runtimeStatus && engine2.captureClosedSessionAuthority === capture3 && engine2.clockObservationForClosedCapture === clock7 && engine2.releaseClosedSessionAuthority === release,
+                "Current SCH opening capture producer or runtime status method changed."
+              );
+              this.current(slot);
+              requireValue15(
+                this.schematicRenameOpeningOwners.get(request11.operationId) === owner && baselineRuntimeReservations.has(runtime) && this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine2 && engine2.upstream === upstream2 && engine2.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycle && upstream2.currentAuthenticatedBridgeDispatchBinding === dispatch && canonicalJson(slot.journal) === journalText && canonicalJson(intent) === intentText && canonicalJson({
+                  target: source5.target,
+                  expectedFingerprint: source5.expectedFingerprint,
+                  checkpoint: source5.preNavigationCheckpoint,
+                  launch: source5.launchProjection,
+                  session: source5.bridgeSession
+                }) === sourceText,
+                "Current SCH opening transfer lost its original owner, intention or historical opening."
+              );
+            };
+            const revalidateEvidence = async () => {
+              current6();
+              const persisted = await this.load(openingOperationId);
+              current6();
+              requireValue15(canonicalJson(persisted) === journalText, "Current SCH opening persisted journal changed.");
+            };
+            const revalidate = async () => {
+              current6();
+              await engine2.assertBridgeAndRecoveryAdmission(owner.operationId);
+              current6();
+              await revalidateEvidence();
+              current6();
+            };
+            this.currentUntransferred(slot);
+            baselineRuntimeReservations.add(runtime);
+            this.baselineJobs.add(slot.launch.jobId);
+            this.generations.clear();
+            this.schematicRenameOpeningOwners.set(request11.operationId, owner);
+            issuedSchematicRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current6, revalidate, revalidateEvidence, state: "retained" });
+            current6();
+            return owner;
+          });
+          assertCurrentSchematicRenameOpeningOwner(result, engine2);
+          const retained2 = this.schematicRenameOpeningOwners.get(request11.operationId);
+          requireValue15(retained2 !== void 0 && retained2 === result, "Current SCH opening scope lost its transferred owner.");
+          const issued22 = issuedSchematicRenameOpeningOwners.get(retained2);
+          requireValue15(issued22 !== void 0 && issued22.state === "retained", "Current SCH opening transfer outcome was already consumed.");
+          issued22.state = "completed";
+          return retained2;
+        } catch (error51) {
+          const retained2 = this.schematicRenameOpeningOwners.get(request11.operationId);
+          const issued22 = retained2 === void 0 ? void 0 : issuedSchematicRenameOpeningOwners.get(retained2);
+          if (issued22 !== void 0) {
+            issued22.state = "failed";
+          }
+          throw error51;
+        } finally {
+          this.generations.delete(openingOperationId);
+          this.busy = false;
+        }
+      }
+      /** Keep a transferred owner reachable if the authenticated scope's exit
+       * failed. This is the same object, not a fresh attempt or recovered authority.
+       */
+      getSchematicRenameOpeningOwner(operationId8) {
+        const owner = this.schematicRenameOpeningOwners.get(operationId8);
+        requireValue15(
+          !this.busy && owner !== void 0 && this.options.engine instanceof EasyedaControlEngine,
+          "Current SCH transfer requires its original retained owner."
+        );
+        assertCurrentSchematicRenameOpeningOwner(owner, this.options.engine);
         return owner;
       }
       /** Internal preparation only. The public opener request schema has no route
@@ -138976,9 +139205,9 @@ var init_current_disposable_open_runtime = __esm({
         const purpose = openingPurpose(plan2.purpose);
         const request11 = purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? parseCurrentSymbolOperationRequest(plan2.intent.request) : parseCurrentDisposableOpenRequest(plan2.intent.request);
         requireValue15(request11.action === "open" && request11.operationId === operationId8, "Current disposable-open original request differs.");
-        const target7 = currentDisposableOpenSealedTargetSchema.parse(plan2.intent.target);
+        const target8 = currentDisposableOpenSealedTargetSchema.parse(plan2.intent.target);
         requireValue15(
-          target7.projectUuid === request11.projectUuid && target7.documentUuid === request11.documentUuid && target7.rawWindowsPath === request11.rawWindowsPath && target7.expectedSourceSha256 === request11.expectedSourceSha256 && canonicalJson(plan2.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) && raw.schema === OPERATION_SCHEMA && raw.operationId === operationId8 && raw.planHash === buildPlanHash(plan2),
+          target8.projectUuid === request11.projectUuid && target8.documentUuid === request11.documentUuid && target8.rawWindowsPath === request11.rawWindowsPath && target8.expectedSourceSha256 === request11.expectedSourceSha256 && canonicalJson(plan2.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) && raw.schema === OPERATION_SCHEMA && raw.operationId === operationId8 && raw.planHash === buildPlanHash(plan2),
           "Current disposable-open journal target or state differs."
         );
         _CurrentDisposableOpenCoordinator.assertStartupPurpose(raw);
@@ -139122,7 +139351,7 @@ var init_current_disposable_open_runtime = __esm({
         this.services.validateFingerprint(fingerprint);
         const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? this.services.prepareOrdinaryCheckpoint(targetOnly(request11)) : this.services.prepareCheckpoint(targetOnly(request11)));
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
-        const target7 = currentDisposableOpenSealedTargetSchema.parse({
+        const target8 = currentDisposableOpenSealedTargetSchema.parse({
           rawWindowsPath: request11.rawWindowsPath,
           projectUuid: request11.projectUuid,
           documentUuid: request11.documentUuid,
@@ -139131,7 +139360,7 @@ var init_current_disposable_open_runtime = __esm({
         });
         const plan2 = { profile: PROFILE25, purpose, intent: {
           request: request11,
-          target: target7,
+          target: target8,
           implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
           ...purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? { startupExpectation: checkpointProof.startupExpectation } : {}
         }, expectedFingerprint: fingerprint };
@@ -139422,7 +139651,8 @@ function buildCurrentPcbIdentitiesProgram(input) {
     Pad: "pcb/extensionAPI/pad-getAll",
     String: "pcb/extensionAPI/string-getAll",
     Dimension: "pcb/extensionAPI/dimension-getAll",
-    Image: "pcb/extensionAPI/image-getAll"
+    Image: "pcb/extensionAPI/image-getAll",
+    Attribute: "pcb/extensionAPI/attribute-getAll"
   };
   const reads = currentPcbIdentityFamilies(request11).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
   return `let timer,clear;
@@ -139471,19 +139701,42 @@ const check=()=>{
 const plain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return value;};
 const exact=(value,keys)=>{plain(value);const actual=Reflect.ownKeys(value);if(actual.length!==keys.length||!actual.every(key=>keys.includes(key)))bad();};
 const text=value=>{if(typeof value!=='string'||value.length===0||value.length>${CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH})bad();return value;};
-const copyIds=(value,selected)=>{
+const listLength=(value,max)=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
- const n=own(value,'length'),max=selected?${CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS}:${CURRENT_PCB_IDENTITIES_MAX_IDS};
+ const n=own(value,'length');
  if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();
+ return n;
+};
+const copyIds=(value,selected)=>{
+ const n=listLength(value,selected?${CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS}:${CURRENT_PCB_IDENTITIES_MAX_IDS});
  const ids=[],seen=new Set();
  for(let i=0;i<n;i++){const entry=own(value,String(i)),id=text(selected?entry:own(plain(entry),'globalIndex'));if(seen.has(id))bad();seen.add(id);ids.push(id);}
  return ids;
+};
+const copyAttributeGroups=value=>{
+ const n=listLength(value,${CURRENT_PCB_IDENTITIES_MAX_IDS}),groups=[],parents=new Set();let total=0;
+ for(let i=0;i<n;i++){
+  const row=own(value,String(i));exact(row,['attrs','parentPrimitiveId']);
+  const parentPrimitiveId=text(own(row,'parentPrimitiveId')),attrs=own(row,'attrs'),length=listLength(attrs,${CURRENT_PCB_IDENTITIES_MAX_IDS});
+  if(parents.has(parentPrimitiveId)||total+length>${CURRENT_PCB_IDENTITIES_MAX_IDS})bad();
+  parents.add(parentPrimitiveId);total+=length;groups.push({parentPrimitiveId,attrs,length});
+ }
+ const ids=[],parentGroups=[],seen=new Set();
+ for(const group of groups){
+  const groupIds=[];
+  for(let i=0;i<group.length;i++){
+   const id=text(own(plain(own(group.attrs,String(i))),'globalIndex'));
+   if(seen.has(id)||parents.has(id))bad();seen.add(id);ids.push(id);groupIds.push(id);
+  }
+  parentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids:groupIds});
+ }
+ return {family:'Attribute',ids,parentGroups};
 };
 const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const read=async()=>{
  await identity();check();const observations=[],seen=new Set();
- for(const entry of reads){const selected=entry.family==='selected',raw=await call(entry.topic,selected?undefined:{});check();const ids=copyIds(raw,selected);check();for(const id of ids){if(seen.has(id))bad();seen.add(id);}observations.push({family:entry.family,ids});}
+ for(const entry of reads){const selected=entry.family==='selected',raw=await call(entry.topic,selected?undefined:{});check();const observation=entry.family==='Attribute'?copyAttributeGroups(raw):{family:entry.family,ids:copyIds(raw,selected)};check();for(const id of observation.ids){if(seen.has(id))bad();seen.add(id);}observations.push(observation);}
  await identity();check();return observations;
 };
 const run=async()=>{
@@ -140118,7 +140371,7 @@ var init_current_pcb_stored_header = __esm({
 // server/src/current-pcb-rename-owner-baseline.ts
 import { lstat as lstat43 } from "node:fs/promises";
 import { join as join67 } from "node:path";
-import { types as types3 } from "node:util";
+import { types as types4 } from "node:util";
 function need85(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB baseline: ${message}`);
@@ -140134,7 +140387,7 @@ function certifyFrozenBaselineData(input) {
       need85(Number.isFinite(value2), "frozen baseline data must be finite JSON");
       return;
     }
-    need85(typeof value2 === "object" && !types3.isProxy(value2), "frozen baseline data must be plain own data");
+    need85(typeof value2 === "object" && !types4.isProxy(value2), "frozen baseline data must be plain own data");
     if (completed4.has(value2)) {
       return;
     }
@@ -140551,8 +140804,8 @@ var init_current_pcb_aged_sql_reference = __esm({
         };
         const journal = await boundary();
         unchanged4();
-        const target7 = baseline2.intent.target;
-        const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target7);
+        const target8 = baseline2.intent.target;
+        const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target8);
         await current6();
         const clock7 = await windowsClockObservationForResult(proof, "termination");
         await current6();
@@ -140563,7 +140816,7 @@ var init_current_pcb_aged_sql_reference = __esm({
           planHash: journal.planHash,
           baselineCopyReceiptSha256: baseline2.copy.receiptSha256,
           baselineLogicalSha256: baseline2.inventory.logicalSha256,
-          target: target7,
+          target: target8,
           parserSource: CURRENT_AGED_SQL_DATE_PARSER_SOURCE,
           historyUuid: head2.historyUuid
         });
@@ -141419,11 +141672,11 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy.sha256,
     "original complete raw SQL reader did not finish"
   );
-  const target7 = baseline2.intent.target;
-  const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
+  const target8 = baseline2.intent.target;
+  const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
   await current6();
   const { history } = decoded;
-  need88(history.projectOwnerUuid === target7.ownerUuid, "project owner changed");
+  need88(history.projectOwnerUuid === target8.ownerUuid, "project owner changed");
   await verifyReceipt2(checkpoint, current6);
   await current6();
   need88(readerCompletion(inventory2) === completion2, "original reader changed");
@@ -142128,10 +142381,10 @@ var init_current_pcb_rename_generation_runtime = __esm({
           }
           await this.engine.assertBridgeAndRecoveryAdmission(operationId8);
           await this.captureCurrent(slot);
-          const target7 = { ...source5.target, expectedSourceSha256: baseline2.copy.sha256 };
-          const cacheTarget = { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid };
+          const target8 = { ...source5.target, expectedSourceSha256: baseline2.copy.sha256 };
+          const cacheTarget = { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid };
           const phase5 = open40 ? OPEN_PHASE2 : CACHE_PHASE2, timeout = open40 ? CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS : CURRENT_UPLOAD_QUEUE_TIMEOUT_MS;
-          const code = open40 ? buildCurrentProjectOnlyOpenProgram(target7) : buildCurrentUploadQueueReadProgram(cacheTarget);
+          const code = open40 ? buildCurrentProjectOnlyOpenProgram(target8) : buildCurrentUploadQueueReadProgram(cacheTarget);
           const verify = open40 ? verifyCurrentProjectOnlyOpenImplementation : verifyCurrentDisposableOpenImplementation;
           const scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need90(scope6 !== void 0, "observation scope is absent");
@@ -142157,7 +142410,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
               slot.journal.mutationMayHaveOccurred = true;
             }
             await _CurrentPcbRenameGenerationCoordinator.record(slot, `${phase5}-intent`, {
-              target: target7,
+              target: target8,
               programSha256: sha256Json({ code }),
               preopenSource: slot.preopen ?? null,
               startupPremises: premises ?? null,
@@ -142209,7 +142462,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
                 }
                 await this.captureCurrent(slot, scopeText);
                 if (open40) {
-                  slot.openObservation = decodeCurrentProjectOnlyOpenReply(raw, target7);
+                  slot.openObservation = decodeCurrentProjectOnlyOpenReply(raw, target8);
                 } else {
                   slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, cacheTarget);
                 }
@@ -142597,7 +142850,7 @@ function need91(condition, message) {
     throw new Error(`Current PCB native metadata: ${message}`);
   }
 }
-function own3(value2, names2) {
+function own4(value2, names2) {
   need91(isRecord(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null) && Reflect.ownKeys(value2).length === names2.length, "exact own-data input required");
   const result = {};
   for (const name6 of names2) {
@@ -142672,7 +142925,7 @@ async function rawPcbClocks(decoded, active2) {
   }
   return result;
 }
-async function projectedPeers(decoded, tree, target7, desiredTitle) {
+async function projectedPeers(decoded, tree, target8, desiredTitle) {
   const documents = decoded.history.documents.filter((document3) => document3.docType === "PCB" && !isNativeDocumentDeleted(document3));
   need91(documents.length <= 4096 && documents.length === Object.keys(tree).length, "complete PCB peer membership differs");
   const raw = await rawPcbClocks(decoded, new Set(documents.map((document3) => document3.uuid))), result = [], sourcePeers = [];
@@ -142685,7 +142938,7 @@ async function projectedPeers(decoded, tree, target7, desiredTitle) {
     need91(JSON.stringify(parsed2) === encoded && Buffer.from(encoded).toString("utf8") === encoded, "canonical PCB metadata differs");
     need91(isRecord(entry) && entry["uuid"] === document3.uuid && entry["title"] === parsed2.title && entry["board"] === parsed2.board && entry["source"] === "" && entry["parent_uuid"] === "" && entry["version"] === header.version && entry["updateTime"] === header.updateTime && (entry["docType"] === void 0 || entry["docType"] === 3), "complete PCB peer history/tree differs");
     const title11 = nativeTitle(parsed2.title);
-    need91(document3.uuid === target7.pcbUuid || title11 !== nativeTitle(desiredTitle), "peer PCB name collision");
+    need91(document3.uuid === target8.pcbUuid || title11 !== nativeTitle(desiredTitle), "peer PCB name collision");
     result.push({
       uuid: document3.uuid,
       title: title11,
@@ -142700,7 +142953,7 @@ async function projectedPeers(decoded, tree, target7, desiredTitle) {
     });
     sourcePeers.push({ uuid: document3.uuid, title: parsed2.title, board: parsed2.board, metadataSha256: sha256Text(encoded), headerSha256: sha256Json(document3.metadata) });
   }
-  const targetClock = raw.get(target7.pcbUuid);
+  const targetClock = raw.get(target8.pcbUuid);
   need91(targetClock !== void 0, "target PCB missing");
   return freezeDeep({
     peers: result.toSorted((left, right) => left.uuid < right.uuid ? -1 : Number(left.uuid > right.uuid)),
@@ -142709,21 +142962,21 @@ async function projectedPeers(decoded, tree, target7, desiredTitle) {
   });
 }
 async function prepareCurrentPcbNativeMetadata(input) {
-  const captured = own3(input, ["before", "target", "desiredTitle"]);
+  const captured = own4(input, ["before", "target", "desiredTitle"]);
   const before = input.before, completion2 = readerCompletion(before);
   need91(captured["before"] === before, "original SQL reader changed");
   need91(completion2.exitCode === 0, "original SQL reader is incomplete");
-  const target7 = freezeDeep(currentPcbRenamePreflightRequestSchema.shape.target.parse(own3(captured["target"], ["projectUuid", "branchUuid", "ownerUuid", "pcbUuid"])));
+  const target8 = freezeDeep(currentPcbRenamePreflightRequestSchema.shape.target.parse(own4(captured["target"], ["projectUuid", "branchUuid", "ownerUuid", "pcbUuid"])));
   const desiredTitle = currentPcbRenamePreflightRequestSchema.shape.desiredTitle.parse(captured["desiredTitle"]);
   nativeTitle(desiredTitle);
-  const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
-  need91(decoded.history.projectOwnerUuid === target7.ownerUuid, "project owner differs");
-  const projected4 = await projectedPeers(decoded, structure(before, target7.branchUuid), target7, desiredTitle), selected3 = projected4.peers.find((peer3) => peer3.uuid === target7.pcbUuid);
-  const documents = decoded.history.documents.filter((document4) => document4.uuid === target7.pcbUuid);
+  const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
+  need91(decoded.history.projectOwnerUuid === target8.ownerUuid, "project owner differs");
+  const projected4 = await projectedPeers(decoded, structure(before, target8.branchUuid), target8, desiredTitle), selected3 = projected4.peers.find((peer3) => peer3.uuid === target8.pcbUuid);
+  const documents = decoded.history.documents.filter((document4) => document4.uuid === target8.pcbUuid);
   const document3 = documents[0];
   need91(selected3 !== void 0 && documents.length === 1 && document3 !== void 0, "unique target PCB missing");
   const { uuid: _uuid2, ...expectedBefore } = selected3;
-  const request11 = freezeDeep(parseCurrentPcbRenamePreflightRequest({ target: target7, expectedBefore, desiredTitle }));
+  const request11 = freezeDeep(parseCurrentPcbRenamePreflightRequest({ target: target8, expectedBefore, desiredTitle }));
   const body4 = freezeDeep({
     profile: "private.current-pcb-native-metadata.v1",
     request: request11,
@@ -143059,10 +143312,10 @@ async function collectCurrentPcbRenameStartupObservation(engine2, generation5) {
     };
     await revalidateCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText);
     check3();
-    const baseline2 = source5.baseline, { target: target7, desiredTitle } = baseline2.intent;
-    const projection8 = await prepareCurrentPcbNativeMetadata({ before: baseline2.inventory, target: target7, desiredTitle });
+    const baseline2 = source5.baseline, { target: target8, desiredTitle } = baseline2.intent;
+    const projection8 = await prepareCurrentPcbNativeMetadata({ before: baseline2.inventory, target: target8, desiredTitle });
     check3();
-    need92(projection8.baseline.historySha256 === baseline2.history.semanticSha256 && projection8.baseline.rawHistorySha256 === baseline2.rawHistorySha256 && projection8.maximumTicket === baseline2.maximumTicket && baseline2.history.projectUuid === target7.projectUuid && baseline2.history.branchUuid === target7.branchUuid && baseline2.history.projectOwnerUuid === target7.ownerUuid);
+    need92(projection8.baseline.historySha256 === baseline2.history.semanticSha256 && projection8.baseline.rawHistorySha256 === baseline2.rawHistorySha256 && projection8.maximumTicket === baseline2.maximumTicket && baseline2.history.projectUuid === target8.projectUuid && baseline2.history.branchUuid === target8.branchUuid && baseline2.history.projectOwnerUuid === target8.ownerUuid);
     const expectation = selectCurrentSymbolStartupExpectation(baseline2.history), fingerprint = source5.source.expectedFingerprint;
     assertExpectedFingerprint(fingerprint);
     validateSdkLocalRuntimeFingerprint(fingerprint);
@@ -143075,7 +143328,7 @@ async function collectCurrentPcbRenameStartupObservation(engine2, generation5) {
     check3();
     const code = buildCurrentPcbRenameStartupObservation(projection8.request, expectation);
     const intent = await writePhaseArtifact(evidenceId, 0, "pcb-startup-intent", {
-      target: target7,
+      target: target8,
       expectation,
       projectionSha256: projection8.projectionSha256,
       codeSha256: sha256Text(code),
@@ -143607,14 +143860,14 @@ function prepareCurrentPcbRenameStructure(input) {
   const structure3 = parseStructure(captured.structureText);
   const documentCount = verifyMembership(structure3);
   need95(structure3.owner.uuid === captured.expectedOwnerUuid, "owner identity differs");
-  const target7 = structure3.pcbs[captured.targetUuid];
-  need95(target7 !== void 0 && target7.uuid === captured.targetUuid, "target PCB identity is missing");
-  need95(target7.title === captured.expectedBefore.title && target7.version === captured.expectedBefore.version && target7.updateTime === captured.expectedBefore.updateTime, "target baseline differs");
-  need95(captured.desiredTitle !== target7.title, "unchanged title refused");
-  need95(captured.documentTime > target7.updateTime, "document clock must be strictly newer");
-  target7.title = captured.desiredTitle;
-  target7.version = String(captured.documentTime);
-  target7.updateTime = captured.documentTime;
+  const target8 = structure3.pcbs[captured.targetUuid];
+  need95(target8 !== void 0 && target8.uuid === captured.targetUuid, "target PCB identity is missing");
+  need95(target8.title === captured.expectedBefore.title && target8.version === captured.expectedBefore.version && target8.updateTime === captured.expectedBefore.updateTime, "target baseline differs");
+  need95(captured.desiredTitle !== target8.title, "unchanged title refused");
+  need95(captured.documentTime > target8.updateTime, "document clock must be strictly newer");
+  target8.title = captured.desiredTitle;
+  target8.version = String(captured.documentTime);
+  target8.updateTime = captured.documentTime;
   const afterStructureText = JSON.stringify(structure3);
   need95(Buffer.byteLength(afterStructureText, "utf8") <= MAX_TEXT_BYTES, "projected structure byte bound exceeded");
   const projection8 = Object.freeze({
@@ -144012,10 +144265,10 @@ async function bindHistory(before, history, structure3, witness) {
     "post-append complete-history capacity exceeded"
   );
   const targets = decoded.history.documents.filter((document3) => document3.uuid === history.targetUuid);
-  const target7 = targets[0];
-  need97(targets.length === 1 && target7 !== void 0 && target7.docType === "PCB" && !isNativeDocumentDeleted(target7), "active ordinary PCB target missing");
-  const header = currentPcbStoredHeaderSchema.parse(target7.metadata);
-  const metadata9 = target7.records.filter((entry) => entry.id === "META" || entry.type === "META");
+  const target8 = targets[0];
+  need97(targets.length === 1 && target8 !== void 0 && target8.docType === "PCB" && !isNativeDocumentDeleted(target8), "active ordinary PCB target missing");
+  const header = currentPcbStoredHeaderSchema.parse(target8.metadata);
+  const metadata9 = target8.records.filter((entry) => entry.id === "META" || entry.type === "META");
   need97(
     metadata9.length === 1 && metadata9[0]?.id === "META" && metadata9[0].type === "META" && JSON.stringify(metadata9[0].body) === history.beforeMetaText,
     "original exact PCB metadata differs"
@@ -144446,9 +144699,9 @@ function peers(decoded, structureText, targetUuid, desiredTitle) {
   return freezeDeep(values2);
 }
 async function projections3(prepared, documentTime, backendTime) {
-  const { witness, target: target7, header } = prepared;
+  const { witness, target: target8, header } = prepared;
   const history = prepareCurrentPcbRenameHistory({
-    targetUuid: target7.pcbUuid,
+    targetUuid: target8.pcbUuid,
     beforeMetaText: prepared.beforeMetaText,
     desiredTitle: prepared.desiredTitle,
     maximumTargetHeaderTime: prepared.maximumTargetHeaderTime,
@@ -144462,8 +144715,8 @@ async function projections3(prepared, documentTime, backendTime) {
   });
   const projected4 = prepareCurrentPcbRenameStructure({
     structureText: prepared.structureText,
-    targetUuid: target7.pcbUuid,
-    expectedOwnerUuid: target7.ownerUuid,
+    targetUuid: target8.pcbUuid,
+    expectedOwnerUuid: target8.ownerUuid,
     expectedBefore: { title: metadataSchema8.parse(JSON.parse(prepared.beforeMetaText)).title, version: header.version, updateTime: header.updateTime },
     desiredTitle: prepared.desiredTitle,
     documentTime
@@ -144475,28 +144728,28 @@ async function prepareCurrentPcbRename(input) {
   const captured = data8(input, ["before", "target", "desiredTitle", "witness"]);
   const before = input.before;
   need98(captured["before"] === before, "original SQL inventory changed");
-  const completion2 = readerCompletion(before), target7 = freezeDeep(targetSchema16.parse(data8(captured["target"])));
+  const completion2 = readerCompletion(before), target8 = freezeDeep(targetSchema16.parse(data8(captured["target"])));
   const rawWitness = data8(captured["witness"]), witness = freezeDeep(witnessSchema3.parse({
     ...rawWitness,
     ...rawWitness["agedHead"] === void 0 ? {} : { agedHead: data8(rawWitness["agedHead"]) }
   }));
   const desiredTitle = title10.parse(captured["desiredTitle"]);
-  need98(witness.projectUuid === target7.projectUuid && witness.branchUuid === target7.branchUuid, "clock witness target differs");
-  const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
-  need98(decoded.history.projectOwnerUuid === target7.ownerUuid, "project owner differs");
-  const matches = decoded.history.documents.filter((document4) => document4.uuid === target7.pcbUuid);
+  need98(witness.projectUuid === target8.projectUuid && witness.branchUuid === target8.branchUuid, "clock witness target differs");
+  const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
+  need98(decoded.history.projectOwnerUuid === target8.ownerUuid, "project owner differs");
+  const matches = decoded.history.documents.filter((document4) => document4.uuid === target8.pcbUuid);
   const document3 = matches[0];
   need98(matches.length === 1 && document3 !== void 0, "unique target is missing");
-  const current6 = pcb3(document3), maximumTargetHeaderTime = await maximumHeader(decoded, target7.pcbUuid);
+  const current6 = pcb3(document3), maximumTargetHeaderTime = await maximumHeader(decoded, target8.pcbUuid);
   need98(
     desiredTitle !== current6.metadata.title && witness.documentClockMinMs > maximumTargetHeaderTime,
     "unchanged title or document clock window overlaps prior headers"
   );
-  const structureText = structure2(before, target7.branchUuid);
-  const pcbPeers = peers(decoded, structureText, target7.pcbUuid, desiredTitle);
+  const structureText = structure2(before, target8.branchUuid);
+  const pcbPeers = peers(decoded, structureText, target8.pcbUuid, desiredTitle);
   const prepared = Object.freeze({
     before,
-    target: target7,
+    target: target8,
     desiredTitle,
     beforeMetaText: current6.text,
     structureText,
@@ -144509,7 +144762,7 @@ async function prepareCurrentPcbRename(input) {
   const reserved = await projections3(prepared, witness.documentClockMaxMs, witness.backendClockMaxMs);
   const body4 = freezeDeep({
     profile: "private.current-pcb-rename-preparation.v1",
-    target: target7,
+    target: target8,
     desiredTitle,
     beforeMetaText: current6.text,
     baseline: {
@@ -145187,14 +145440,14 @@ async function prepareCurrentPcbRenameClock(input) {
   );
   const backendWindow = Object.freeze({ minimumMs: minimum3(before), maximumMs: minimum3(before) + WINDOW_MS3 });
   const documentWindow = Object.freeze({ minimumMs: document3.serverTimeMs, maximumMs: document3.serverTimeMs + WINDOW_MS3 });
-  const { baseline: baseline2 } = source5.source, { target: target7, desiredTitle } = baseline2.intent;
+  const { baseline: baseline2 } = source5.source, { target: target8, desiredTitle } = baseline2.intent;
   const preparation3 = await prepareCurrentPcbRename({
     before: baseline2.inventory,
-    target: target7,
+    target: target8,
     desiredTitle,
     witness: {
-      projectUuid: target7.projectUuid,
-      branchUuid: target7.branchUuid,
+      projectUuid: target8.projectUuid,
+      branchUuid: target8.branchUuid,
       client: source5.observation.clientTicketObservation.client,
       backendActorUuid: expectedActor.uuid,
       documentClockMinMs: documentWindow.minimumMs,
@@ -147036,11 +147289,11 @@ var init_current_pcb_rename_verification_runtime = __esm({
                 }
                 await this.record(slot, `${phase5}-reply`, { raw }, scopeText);
                 marked = structuredClone(slot.journal);
-                const target7 = slot.source.original.source.target;
+                const target8 = slot.source.original.source.target;
                 if (opening) {
-                  decodeCurrentProjectOnlyOpenReply(raw, { ...target7, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
+                  decodeCurrentProjectOnlyOpenReply(raw, { ...target8, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 });
                 } else {
-                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target7.projectUuid, branchUuid: target7.branchUuid });
+                  decodeCurrentUploadQueueReadReply(raw, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
                 }
                 await this.original(slot, scopeText);
               },
@@ -147091,8 +147344,8 @@ var init_current_pcb_rename_verification_runtime = __esm({
         this.busy = true;
         slot.openAttempted = true;
         try {
-          const target7 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
-          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target7), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
+          const target8 = { ...slot.source.original.source.target, expectedSourceSha256: slot.source.snapshot.checkpoint.sourceSha256 };
+          await this.dispatch(slot, "verification-project-only-open", buildCurrentProjectOnlyOpenProgram(target8), CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, true);
           slot.opened = true;
           slot.journal.state = "verification-project-only-opened";
           await this.record(slot, "verification-open-result", summary15(slot));
@@ -148528,7 +148781,7 @@ function inputs2(rawRequest, rawPlan) {
   const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
   requireValue6(new Set(Object.values(nonces)).size === 3, "Operation marker nonces must differ.");
   const operation = exactData(source5["operation"], ["id", "action", "libraryUuid", "target", "patch"]);
-  const patch4 = exactData(operation["patch"], ["name", "description"]), target7 = exactData(operation["target"], ["uuid"]);
+  const patch4 = exactData(operation["patch"], ["name", "description"]), target8 = exactData(operation["target"], ["uuid"]);
   const plan2 = Object.freeze({
     profile: FAMILY3,
     projectUuid: request11.target.projectUuid,
@@ -148552,7 +148805,7 @@ function inputs2(rawRequest, rawPlan) {
   for (const key of ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]) {
     requireValue6(source5[key] === plan2[key], "Operation internal plan does not exactly bind the request and fixed profile.");
   }
-  requireValue6(operation["id"] === request11.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request11.target.projectUuid && target7["uuid"] === request11.target.symbolUuid && patch4["name"] === request11.operation.patch.name && patch4["description"] === request11.operation.patch.description, "Ordinary operation does not match its request.");
+  requireValue6(operation["id"] === request11.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request11.target.projectUuid && target8["uuid"] === request11.target.symbolUuid && patch4["name"] === request11.operation.patch.name && patch4["description"] === request11.operation.patch.description, "Ordinary operation does not match its request.");
   return Object.freeze({ request: request11, plan: plan2 });
 }
 function sameFile9(left, right) {
@@ -151216,7 +151469,7 @@ var init_src = __esm({
       "easyeda_control_pcb_identities",
       {
         title: "Read selected and loaded PCB primitive identities",
-        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad/String/Dimension/Image IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. Dimension combines length/radius/angle views; Image includes vector images and pictures without loading their assets. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. Fill/Polyline/Region remain excluded because their serializer can rebuild children. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
+        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad/String/Dimension/Image/Attribute IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. Dimension combines length/radius/angle views; Image includes vector images and pictures without loading their assets. Attribute results retain ordered native component groups, not reciprocal or stored ownership. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. Fill/Polyline/Region remain excluded because their serializer can rebuild children. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbIdentitiesRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
