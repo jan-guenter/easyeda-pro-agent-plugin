@@ -22,18 +22,24 @@ function literal(value: string): string { return `'${value.replaceAll("'", "''")
 function header(uuid: string, docType = "SCH"): Record<string, unknown> {
   return { docType, client: "b".repeat(16), uuid, updateTime: 1, version: "1", editVersion: "3.0" };
 }
-export async function schematicBaseline(): Promise<Readonly<{ path: string; before: Awaited<ReturnType<typeof inventory>>;
+export async function schematicBaseline(childTime = 1, libraryOrigin?: string, childTitle = "Child title"): Promise<Readonly<{ path: string; before: Awaited<ReturnType<typeof inventory>>;
   metadata: Awaited<ReturnType<typeof prepareCurrentSchematicNativeMetadata>> }>> {
   const original = await fixture(), sheet = "c".repeat(16);
   const raw = [record({ type: "EDIT_HEAD" }, { ...ACTOR, updateTime: 1 }), record({ type: "DOCHEAD", ticket: 1 }, header(IDS.target)),
     record({ type: "META", ticket: 1, id: "META" }, { title: "Source SCH", source: "", board: "", zIndex: null }),
     record({ type: "LINE", ticket: 90, id: "deleted" }, { x: 0 }), record({ type: "LINE", ticket: 100, id: "deleted" }),
     record({ type: "DOCHEAD", ticket: 2 }, header(IDS.peer)), record({ type: "META", ticket: 2, id: "META" }, { title: "Peer SCH", source: "", board: "", zIndex: null }),
-    record({ type: "DOCHEAD", ticket: 3 }, header(sheet, "SCH_PAGE")), record({ type: "META", ticket: 3, id: "META" },
-      { title: "Child title", schematic: IDS.target, source: "", zIndex: 0 })].join("|\n");
+    record({ type: "DOCHEAD", ticket: 3 }, { ...header(sheet, "SCH_PAGE"), updateTime: childTime, version: String(childTime) }), record({ type: "META", ticket: 3, id: "META" },
+      { title: childTitle, schematic: IDS.target, source: "", zIndex: 0 }),
+    ...(libraryOrigin === undefined ? [] : [record({ type: "COMPONENT", ticket: 4, id: "component" }, { attrs: {}, partId: "part" }),
+      record({ type: "ATTR", ticket: 4, id: "symbol-ref" }, { parentId: "component", key: "Symbol", value: "d".repeat(16) }),
+      record({ type: "DOCHEAD", ticket: 5 }, header("d".repeat(16), "SYMBOL")),
+      record({ type: "META", ticket: 5, id: "META" }, { title: "Stored library template", source: libraryOrigin, docType: 2 }),
+      record({ type: "PART", ticket: 5, id: "part" }, {})])].join("|\n");
   const tree = JSON.stringify({ boards: {}, schematics: Object.fromEntries(PEERS.map(peer => [peer.uuid,
-    { uuid: peer.uuid, name: peer.displayName, board: "", source: "", version: "1", updateTime: 1 }])),
-    sheets: { [sheet]: { uuid: sheet, title: "Child title", schematic_uuid: IDS.target, docType: 1, zIndex: 0, source: "", version: "1", updateTime: 1 } },
+    { uuid: peer.uuid, name: peer.displayName, board: "", source: "", version: String(peer.uuid === IDS.target ? childTime : 1), updateTime: peer.uuid === IDS.target ? childTime : 1 }])),
+    sheets: { [sheet]: { uuid: sheet, title: childTitle, schematic_uuid: IDS.target,
+      zIndex: 0, source: "", version: String(childTime), updateTime: childTime } },
     pcbs: {}, panels: {}, blockSymbols: {}, owner: { ...ACTOR, avatar: null } });
   mutate(original.path, [`UPDATE projects SET uuid='${TARGET.projectUuid}'`, `UPDATE branches SET project_uuid='${TARGET.projectUuid}'`,
     `UPDATE project_images SET project_uuid='${TARGET.projectUuid}'`, `UPDATE project_structures SET project_uuid='${TARGET.projectUuid}',structure=${literal(tree)}`,

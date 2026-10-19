@@ -47,7 +47,7 @@ void test("SCH child roster binds original complete SQL, target AST and supplied
   assert.ok(Object.isFrozen(parseCurrentSchematicChildObservation(raw).samples[0].childKv));
 });
 void test("SCH child raw data tickets retain tombstones, ignore DOCHEAD ticket and order by unique zIndex", async () => {
-  const second = { uuid: SECOND, title: "Second", schematic_uuid: IDS.target, docType: 1, zIndex: -1, source: "", version: "1", updateTime: 1 };
+  const second = { uuid: SECOND, title: "Second", schematic_uuid: IDS.target, zIndex: -1, source: "", version: "1", updateTime: 1 };
   const { before, metadata } = await changed({ append: [record({ type: "LINE", ticket: 17, id: "gone" }, { x: 1 }),
     record({ type: "LINE", ticket: 18, id: "gone" }), record({ type: "DOCHEAD", ticket: 1000 }, header(SHEET, "SCH_PAGE")),
     record({ type: "DOCHEAD", ticket: 4 }, header(SECOND, "SCH_PAGE")),
@@ -118,7 +118,7 @@ void test("SCH preparation refuses missing/extra tree rows, reuse, tied order an
     `UPDATE project_structures SET structure=json_set(structure,'$.blockSymbols.${SYMBOL}',json('{}'))`]) {
     const { before, metadata } = await changed({ sql }); await assert.rejects(prepareCurrentSchematicChildRoster(metadata, before));
   }
-  const second = { uuid: SECOND, title: "Second", schematic_uuid: IDS.target, docType: 1, zIndex: 0, source: "", version: "1", updateTime: 1 };
+  const second = { uuid: SECOND, title: "Second", schematic_uuid: IDS.target, zIndex: 0, source: "", version: "1", updateTime: 1 };
   const tied = await changed({ append: [record({ type: "DOCHEAD", ticket: 4 }, header(SECOND, "SCH_PAGE")),
     record({ type: "META", id: "META", ticket: 4 }, { title: "Second", schematic: IDS.target, source: "", zIndex: 0 })].join("|\n"),
   sql: `UPDATE project_structures SET structure=json_set(structure,'$.sheets.${SECOND}',json(${literal(JSON.stringify(second))}))` });
@@ -130,7 +130,7 @@ void test("SCH preparation preserves inherited, reparenting, block-symbol and un
   for (const data of [{ title: "Reuse", source: "", docType: 17 }, { title: "Template", source: "inherited", docType: 2 }]) {
     const baseline = await changed({ append: [record({ type: "DOCHEAD", ticket: 4 }, header(SYMBOL, "SYMBOL")),
       record({ type: "META", ticket: 4, id: "META" }, data)].join("|\n") });
-    await assert.rejects(prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before), /inherited or block-symbol/u);
+    await assert.rejects(prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before), /library origin or block-symbol/u);
   }
   for (const data of [{ title: "Child title", schematic: IDS.target, source: "inherited", zIndex: 0 },
     { title: "Child title", schematic: IDS.peer, source: "", zIndex: 0 }]) {
@@ -138,4 +138,40 @@ void test("SCH preparation preserves inherited, reparenting, block-symbol and un
   }
   const component = await changed({ append: record({ type: "COMPONENT", ticket: 4, id: "component" }, { attrs: { override: true } }) });
   await assert.rejects(prepareCurrentSchematicChildRoster(component.metadata, component.before), /supported no-repair/u);
+});
+
+void test("SCH child eligibility admits stored canonical library-origin ordinary templates without fetching them", async () => {
+  const origin = `${"a".repeat(32)}|${"b".repeat(32)}`;
+  for (const docType of [2, 18, 20]) {
+    const baseline = await changed({ append: [record({ type: "COMPONENT", ticket: 4, id: "component" }, { attrs: {}, partId: "part" }),
+      record({ type: "ATTR", ticket: 4, id: "symbol-ref" }, { parentId: "component", key: "Symbol", value: SYMBOL }),
+      record({ type: "DOCHEAD", ticket: 5 }, header(SYMBOL, "SYMBOL")),
+      record({ type: "META", ticket: 5, id: "META" }, { title: "Stored library template", source: origin, docType }),
+      record({ type: "PART", ticket: 5, id: "part" }, {})].join("|\n") });
+    const roster = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
+    assert.deepEqual(roster.startupInput.templates, [{ uuid: SYMBOL, docType, partId: "part" }]);
+    assert.equal(Object.keys(roster.childKv).length, 1); assert.equal(roster.executionAuthorized, false);
+  }
+});
+
+void test("SCH child tree omission stays distinct from the native getter's constant document type", async () => {
+  const baseline = await changed();
+  const original = JSON.stringify(baseline.before), roster = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
+  assert.equal(roster.childKv[SHEET]?.docType, 1); assert.equal(JSON.stringify(baseline.before), original);
+  for (const value of ["null", "1", "2", "'1'"]) {
+    const invalid = await changed({ sql: `UPDATE project_structures SET structure=json_set(structure,'$.sheets.${SHEET}.docType',${value})` });
+    await assert.rejects(prepareCurrentSchematicChildRoster(invalid.metadata, invalid.before));
+  }
+});
+
+void test("SCH child eligibility still refuses malformed origins, unknown types and imported reuse blocks", async () => {
+  const origin = `${"a".repeat(32)}|${"b".repeat(32)}`;
+  for (const data of [{ source: origin, docType: 17 }, { source: origin, docType: 0 }, { source: origin },
+    { source: null, docType: 2 }, { docType: 2 }, { source: "a".repeat(32), docType: 2 },
+    { source: origin.toUpperCase(), docType: 2 }, { source: `${origin}|extra`, docType: 2 },
+    { source: `${"a".repeat(32)}:${"b".repeat(32)}`, docType: 2 }]) {
+    const baseline = await changed({ append: [record({ type: "DOCHEAD", ticket: 4 }, header(SYMBOL, "SYMBOL")),
+      record({ type: "META", ticket: 4, id: "META" }, { title: "Nonmatching title", ...data })].join("|\n") });
+    await assert.rejects(prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before), /library origin or block-symbol/u);
+  }
 });

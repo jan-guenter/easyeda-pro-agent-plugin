@@ -36,12 +36,13 @@ export interface CurrentSchematicNativeMetadata extends Readonly<typeof LIMITATI
   readonly sourcePeers: readonly Readonly<{ uuid: string; title: string; board: string; metadataSha256: string; headerSha256: string }>[];
   readonly baseline: Readonly<{ sqlSha256: string; checkpointSha256: string; historySha256: string; rawHistorySha256: string;
     targetSourceSha256: string; targetHeaderSha256: string; headHistoryUuid: string; maximumTicket: number;
-    maximumTargetHeaderTime: number; documentCount: number; historyRows: number; chunks: number }>;
+    maximumTargetHeaderTime: number; maximumTargetNativeTime: number; documentCount: number; historyRows: number; chunks: number }>;
   readonly maximumTicket: number;
   readonly nativeTitleSubset: "locale-invariant-printable-ascii-without-capital-i";
   readonly projectionSha256: string;
 }
-interface RawSchematic { readonly headerTicket: number; readonly updateTime: number; readonly version: string; dataTicket: number; }
+interface RawSchematic { readonly headerTicket: number; readonly updateTime: number; readonly version: string; dataTicket: number;
+  nativeUpdateTime: number; nativeVersion: string; }
 interface RawPage { readonly updateTime: number; readonly version: string; parent: string | undefined; }
 const originals = new WeakMap<CurrentSchematicNativeMetadata, Readonly<{ before: Inventory; completion: ReturnType<typeof readerCompletion> }>>();
 function need(condition: boolean, message: string): asserts condition {
@@ -100,14 +101,20 @@ function pageParent(entry: ReturnType<typeof parseNativeRecords>[number], page: 
 function childClocks(pages: ReadonlyMap<string, RawPage>, schematics: ReadonlyMap<string, RawSchematic>): void {
   // Worker onHeadChange2119165 calls schematic.setEditData for an already
   // Associated SCH_PAGE. META handling at2106505 also propagates the sheet clock
-  // To its newly recorded parent. Until propagation is fully modeled, admit
-  // Only stable ordinary parent lineages whose final direct SCH header dominates
-  // Every child clock. This also conservatively checks a first pre-META header.
-  // Deleted pages stay in this check because their parent can still receive time.
+  // To its newly recorded parent. ar.setEditData1857162 advances only for a
+  // Strictly newer timestamp, independent of the document/data ticket. Stable
+  // Ordinary parent lineages therefore retain the maximum direct/child clock.
+  // Refuse equal maximum timestamps with distinct versions: their winner can
+  // Depend on replay order. Deleted pages still contribute historical clocks.
   for (const page of pages.values()) {
     const parent = page.parent === undefined ? undefined : schematics.get(page.parent);
-    need(parent !== undefined && (page.updateTime < parent.updateTime ||
-      (page.updateTime === parent.updateTime && page.version === parent.version)), "child-derived schematic clock is unsupported");
+    need(parent !== undefined, "historical child parent is missing or inactive");
+    if (page.updateTime > parent.nativeUpdateTime) { parent.nativeUpdateTime = page.updateTime; parent.nativeVersion = page.version; }
+  }
+  for (const page of pages.values()) {
+    const parent = page.parent === undefined ? undefined : schematics.get(page.parent);
+    need(parent !== undefined && (page.updateTime !== parent.nativeUpdateTime || page.version === parent.nativeVersion),
+      "equal-time child/parent versions are order-dependent");
   }
 }
 async function rawSchematicClocks(decoded: Decoded, active: ReadonlySet<string>): Promise<ReadonlyMap<string, RawSchematic>> {
@@ -124,7 +131,8 @@ async function rawSchematicClocks(decoded: Decoded, active: ReadonlySet<string>)
           const header = currentSchematicStoredHeaderSchema.parse(entry.body), prior = result.get(current), ticket = integer(entry.header["ticket"]);
           need(header.updateTime > 0 && (prior === undefined || (ticket >= prior.headerTicket && header.updateTime >= prior.updateTime &&
             (header.updateTime !== prior.updateTime || header.version === prior.version))), "schematic header time/version order is unsupported");
-          result.set(current, { headerTicket: ticket, updateTime: header.updateTime, version: header.version, dataTicket: prior?.dataTicket ?? -1 });
+          result.set(current, { headerTicket: ticket, updateTime: header.updateTime, version: header.version,
+            nativeUpdateTime: header.updateTime, nativeVersion: header.version, dataTicket: prior?.dataTicket ?? -1 });
         }
       } else if (type !== "EDIT_HEAD" && current !== undefined) {
         const schematic = result.get(current); need(schematic !== undefined, "raw schematic header missing");
@@ -140,7 +148,8 @@ async function rawSchematicClocks(decoded: Decoded, active: ReadonlySet<string>)
   return result;
 }
 async function projectedPeers(decoded: Decoded, tree: Record<string, unknown>, target: Target, desiredTitle: string): Promise<Readonly<{
-  peers: CurrentSchematicNativeMetadata["peers"]; sourcePeers: CurrentSchematicNativeMetadata["sourcePeers"]; maximumTargetHeaderTime: number;
+  peers: CurrentSchematicNativeMetadata["peers"]; sourcePeers: CurrentSchematicNativeMetadata["sourcePeers"];
+  maximumTargetHeaderTime: number; maximumTargetNativeTime: number;
 }>> {
   const documents = decoded.history.documents.filter(document => document.docType === "SCH" && !isNativeDocumentDeleted(document));
   need(documents.length <= CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_PEERS && documents.length === Object.keys(tree).length, "complete schematic peer membership differs");
@@ -154,19 +163,19 @@ async function projectedPeers(decoded: Decoded, tree: Record<string, unknown>, t
     const encoded = JSON.stringify(meta.body), parsed = metadataSchema.parse(meta.body); const entry = structureEntrySchema.parse(tree[document.uuid]);
     need(JSON.stringify(parsed) === encoded && Buffer.from(encoded).toString("utf8") === encoded, "canonical schematic metadata differs");
     need(JSON.stringify(entry) === JSON.stringify(tree[document.uuid]) && entry.uuid === document.uuid && entry.name === parsed.title &&
-      entry.board === parsed.board && entry.version === header.version && entry.updateTime === header.updateTime, "complete schematic peer history/tree differs");
+      entry.board === parsed.board && entry.version === clock.nativeVersion && entry.updateTime === clock.nativeUpdateTime, "complete schematic peer history/tree differs");
     const name = nativeTitle(parsed.title);
     // Dg.getIdByName1913613 returns an existing target UUID even for a case-only
     // Rename. This initial subset requires empty-string lookup, so refuse every
     // Collision, including the target; do not invent a target-ID exception.
     need(name !== desired, "schematic name collision including case-only rename");
-    peers.push({ uuid: document.uuid, name, displayName: parsed.title, source: "", version: header.version,
-      boardUuid: parsed.board, ticket: clock.dataTicket, updateTime: header.updateTime });
+    peers.push({ uuid: document.uuid, name, displayName: parsed.title, source: "", version: clock.nativeVersion,
+      boardUuid: parsed.board, ticket: clock.dataTicket, updateTime: clock.nativeUpdateTime });
     sourcePeers.push({ uuid: document.uuid, title: parsed.title, board: parsed.board, metadataSha256: sha256Text(encoded), headerSha256: sha256Json(document.metadata) });
   }
   const targetClock = raw.get(target.schematicUuid); need(targetClock !== undefined, "target schematic missing");
   return freezeDeep({ peers: peers.toSorted((left, right) => left.uuid < right.uuid ? -1 : Number(left.uuid > right.uuid)), sourcePeers,
-    maximumTargetHeaderTime: targetClock.updateTime });
+    maximumTargetHeaderTime: targetClock.updateTime, maximumTargetNativeTime: targetClock.nativeUpdateTime });
 }
 /** No witness is supplied before native actor/client/clock observations. The
  * reused decoder is document-type neutral; no SYMBOL or PCB lifecycle token
@@ -188,6 +197,7 @@ export async function prepareCurrentSchematicNativeMetadata(input: Readonly<{ be
     baseline: { sqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256, historySha256: decoded.history.semanticSha256,
       rawHistorySha256: sha256Json(decoded.links), targetSourceSha256: document.semanticSha256, targetHeaderSha256: sha256Json(document.metadata),
       headHistoryUuid: decoded.history.headHistoryUuid, maximumTicket: decoded.maximumTicket, maximumTargetHeaderTime: projected.maximumTargetHeaderTime,
+      maximumTargetNativeTime: projected.maximumTargetNativeTime,
       documentCount: decoded.history.documents.length, historyRows: decoded.history.historyRowCount, chunks: decoded.history.chunkCount },
     maximumTicket: decoded.maximumTicket, nativeTitleSubset: "locale-invariant-printable-ascii-without-capital-i" as const, ...LIMITATIONS });
   need(Buffer.byteLength(JSON.stringify(body)) <= CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, "projection exceeds preflight bound");

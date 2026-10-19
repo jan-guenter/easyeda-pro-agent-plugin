@@ -2,16 +2,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, currentProjectPcbMetadataRequestSchema,
+import { CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, currentProjectPcbMetadataRequestSchema,
   decodeCurrentProjectPcbMetadataReply, parseCurrentProjectPcbMetadataRequest, queryCurrentProjectPcbMetadata,
   validateCurrentProjectPcbMetadataArguments, validateCurrentProjectPcbMetadataResult } from "../src/current-project-pcb-metadata.ts";
 import { buildCurrentProjectPcbMetadataProgram } from "../src/current-project-pcb-metadata-program.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), pcbUuid: "c".repeat(16) };
-const request = { method: "eda.dmt_Pcb.getPcbInfo", target };
+const request = { method: "eda.dmt_Pcb.getPcbInfo", target } as const;
+const inventoryRequest = { method: "eda.dmt_Pcb.getAllPcbsInfo", target: { projectUuid: target.projectUuid, branchUuid: target.branchUuid } } as const;
 function reply(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: value } }; }
-interface Options { readonly before?: string; readonly afterRpc?: string; readonly pendingAt?: number }
+interface Options { readonly before?: string; readonly afterRpc?: string; readonly pendingAt?: number; readonly inventory?: boolean }
 function fixture(options: Options = {}): { run: () => Promise<unknown>; evaluate: (source: string) => unknown; expire: () => void; clears: () => number } {
   let clears = 0, timeout: (() => void) | undefined;
   const context = createContext({ TextEncoder,
@@ -29,12 +30,14 @@ globalThis.info={id:'editor-window-main',belong:'editor-window-main',tabs:[start
 class Tabs{static containerIds=['editor-window-main'];static containerTree={id:'editor-window-main'};static belongContainer='editor-window-main';static currentTabId='tab_page1';static isOpenProjectDoc=true;static isOpenOtherDoc=true;static getActiveTab(){return this.currentTabId;}static getContainerInfo(id){return id===info.id?info:undefined;}static hasTabUnSaved(){return info.tabs.some(tab=>tab.isUnSaved===true);}static isTabUnSaved(id){return info.tabs.some(tab=>tab.tabId===id&&tab.isUnSaved===true);}}
 const forbidden=name=>{denied.push(name);throw new Error('PRIVATE_FORBIDDEN');};
 globalThis.fetch=()=>forbidden('network');globalThis.metadata={uuid:target.pcbUuid,project_uuid:target.projectUuid,title:'board Ω',display_title:'Board Ω',docType:3,parent_uuid:'',source:'template',version:'12345',board:'e'.repeat(16),ticket:12345,updateTime:1000};
+globalThis.pcbMap={[target.pcbUuid]:metadata};
 globalThis.projectDetail={uuid:target.projectUuid,currentBranch:target.branchUuid,isV2Format:false,owner:{uuid:'d'.repeat(32)},archive:false,cbb_project:false};
 class Bus{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||timeout!==0||!Array.isArray(args))return forbidden('receiver');calls.push([topic,[...args]]);
 if(topic==='/PrjDB/pcb/getData'){if(args.length!==2||args[0]!==target.pcbUuid||args[1]!==target.projectUuid)return forbidden('pcb-args');}
+else if(topic==='/PrjDB/pcb/getAllKVDatas'&&${options.inventory === true}){if(args.length!==1||args[0]!==target.projectUuid)return forbidden('inventory-args');}
 else if(topic==='/PrjDB/project/getData'){if(args.length!==1||args[0]!==target.projectUuid)return forbidden('project-args');}else return forbidden(topic);
 if(calls.length===${options.pendingAt ?? 0})await new Promise(resolve=>{globalThis.release=resolve;});await Promise.resolve();${options.afterRpc ?? ""}
-return{message:topic==='/PrjDB/pcb/getData'?metadata:projectDetail};}}
+return{message:topic==='/PrjDB/pcb/getData'?metadata:topic==='/PrjDB/pcb/getAllKVDatas'?pcbMap:projectDetail};}}
 class Permission{constructor(){this._isConcurrentStrictMode=false;this.readOnly=false;}get isConcurrentStrictMode(){return this._isConcurrentStrictMode;}set isConcurrentStrictMode(value){this._isConcurrentStrictMode=value;}getIframeDisableStatusPanelPcb(id){if(this!==UI.concurrentDesign||id!==Tabs.currentTabId)return forbidden('permission-receiver');return{disable:this.readOnly};}}
 globalThis.gVars={currentProject:{projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false},isHistoryMode:false,messageBus:new Bus(),sessionStorageTabs:new Set(),urlCmd:null};
 globalThis.UI={gVars,tabBar:Tabs,concurrentDesign:new Permission()};globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40',dmt_Pcb:{getPcbInfo:()=>forbidden('public-get'),modifyPcbName:()=>forbidden('modify')},dmt_Project:{openProject:()=>forbidden('open')},sys_FileSystem:{save:()=>forbidden('save')}};
@@ -44,7 +47,7 @@ globalThis.extraMarkers=[];globalThis.extraIframes=[];globalThis.blankPools=[];
 document.querySelectorAll=function(selector){if(selector==='[id="tabbar_bodies"]')return[domRoot];if(selector==='iframe')return extraIframes;if(selector==='.blankIframeDiv')return blankPools;if(selector.startsWith('.editframe,'))return extraMarkers;return forbidden('selector');};
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return {
-    run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentProjectPcbMetadataProgram(request)}})()`, context, { timeout: 1000 }) as unknown),
+    run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentProjectPcbMetadataProgram(options.inventory === true ? inventoryRequest : request)}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
     expire(): void { assert.ok(timeout !== undefined); timeout(); }, clears: (): number => clears,
   };
@@ -170,7 +173,7 @@ void test("project-only PCB request/discovery validation is strict and grants no
   assert.equal(currentProjectPcbMetadataRequestSchema.safeParse(request).success, true); assert.deepEqual(parseCurrentProjectPcbMetadataRequest(request), request);
   assert.equal(validateCurrentProjectPcbMetadataArguments(request)["valid"], true);
   const discovery = queryCurrentProjectPcbMetadata({ includeSchemas: true });
-  assert.equal(discovery["total"], 1); assert.equal(discovery["invocationEnabledByDiscovery"], false);
+  assert.equal(discovery["total"], 2); assert.equal(discovery["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(discovery), /inputSchema/u); assert.match(JSON.stringify(discovery), /resultSchema/u);
   assert.match(JSON.stringify(discovery), /fallback/u); assert.match(JSON.stringify(discovery), /not IDMT_PcbItem/u);
   assert.throws(() => queryCurrentProjectPcbMetadata({ runtime: true }));
@@ -201,4 +204,70 @@ void test("project-only PCB result/envelope validation refuses authority promoti
     assert.throws(() => decodeCurrentProjectPcbMetadataReply(reply(invalid), request));
   }
   assert.throws(() => decodeCurrentProjectPcbMetadataReply({ isError: true, content: [], structuredContent: { ok: false, error: "PRIVATE" } }, request));
+});
+
+void test("project-only PCB inventory brackets complete sorted metadata maps and accepts genuine emptiness", async () => {
+  for (const before of ["pcbMap={};", "pcbMap['a'.repeat(16)]={...metadata,uuid:'a'.repeat(16),title:'peer'};"]) {
+    const env = fixture({ inventory: true, before }), envelope = structuredClone(await env.run());
+    const result = decodeCurrentProjectPcbMetadataReply(reply(envelope), inventoryRequest);
+    const count = before === "pcbMap={};" ? 0 : 2;
+    assert.equal(result.pcbs.length, count); assert.equal(result.observedPcbCount, count); assert.equal(result.completeNativePcbMapObserved, true);
+    assert.equal(result.ownerUuid, "d".repeat(32)); assert.equal(result.cadAuthority, false); assert.equal(result.persistenceVerified, false);
+    assert.deepEqual(result.pcbs.map(value => value.uuid), count === 0 ? [] : ["a".repeat(16), target.pcbUuid]);
+    assert.ok(Object.isFrozen(result.pcbs)); for (const pcb of result.pcbs) { assert.ok(Object.isFrozen(pcb)); }
+    const topics = ["/PrjDB/project/getData", "/PrjDB/pcb/getAllKVDatas", "/PrjDB/project/getData"];
+    assert.equal(env.evaluate("JSON.stringify(calls.map(call=>call[0]))"), JSON.stringify([...topics, ...topics]));
+    assert.deepEqual(structuredClone(env.evaluate("denied")), []);
+  }
+  const env = fixture({ inventory: true, before: "Object.defineProperty(metadata,'canvas',{get(){getterReads++;throw new Error('PRIVATE');}});Object.defineProperty(metadata,'creator',{get(){getterReads++;throw new Error('PRIVATE');}});" });
+  const envelope = structuredClone(await env.run()), result = decodeCurrentProjectPcbMetadataReply(reply(envelope), inventoryRequest);
+  assert.equal(result.pcbs[0]?.title, "board Ω"); assert.equal(result.pcbs[0]?.displayTitle, "Board Ω"); assert.equal(env.evaluate("getterReads"), 0);
+});
+
+void test("project-only PCB inventory refuses malformed maps, invalid members, accessors and oversized complete samples", async () => {
+  for (const before of ["pcbMap=undefined;", "pcbMap=[];", "pcbMap=null;", "pcbMap=Object.create({});", "pcbMap.invalid=metadata;",
+    "pcbMap[Symbol('private')]=metadata;", "pcbMap['a'.repeat(16)]={...metadata};", "metadata.project_uuid='e'.repeat(64);", "metadata.docType=4;",
+    "metadata.ticket=-0;", "metadata.source=null;", "Object.defineProperty(pcbMap,target.pcbUuid,{get(){getterReads++;return metadata;}});",
+    "Object.defineProperty(metadata,'title',{get(){getterReads++;return 'PRIVATE';}});",
+    `pcbMap=Object.fromEntries(Array.from({length:${CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS + 1}},(_,i)=>{const id=i.toString(16).padStart(16,'0');return[id,{...metadata,uuid:id}];}));`,
+    "pcbMap=Object.fromEntries(Array.from({length:16},(_,i)=>{const id=i.toString(16).padStart(16,'0');return[id,{...metadata,uuid:id,source:'Ω'.repeat(4096)}];}));"]) {
+    const env = fixture({ inventory: true, before }); await assert.rejects(env.run(), /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u);
+    assert.equal(env.evaluate("calls.length"), 2); assert.equal(env.evaluate("getterReads"), 0); assert.deepEqual(structuredClone(env.evaluate("denied")), []);
+  }
+});
+
+void test("project-only PCB inventory retains no-editor guards, owner binding and both complete samples", async () => {
+  const editor = fixture({ inventory: true, before: "info.tabs.push({tabId:target.pcbUuid+'@'+target.projectUuid,data:{doctype:3}});" });
+  await assert.rejects(editor.run(), /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u); assert.equal(editor.evaluate("calls.length"), 0);
+  for (const afterRpc of ["if(calls.length===2)gVars.currentProject.branchUuid='e'.repeat(32);", "if(calls.length===3)projectDetail.owner.uuid='e'.repeat(32);",
+    "if(calls.length===4)projectDetail.owner.uuid='e'.repeat(32);", "if(calls.length===5)pcbMap={};", "if(calls.length===5)metadata.title='changed';",
+    "if(calls.length===5)pcbMap['e'.repeat(16)]={...metadata,uuid:'e'.repeat(16)};", "if(calls.length===6)gVars.messageBus=new Bus();"]) {
+    await assert.rejects(fixture({ inventory: true, afterRpc }).run(), /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u);
+  }
+  const timeout = fixture({ inventory: true, pendingAt: 2 });
+  const pending = timeout.run(); await flush(); timeout.expire();
+  await assert.rejects(pending, /CURRENT_PROJECT_PCB_METADATA_READ_FAILED/u); timeout.evaluate("release();"); await flush();
+  assert.equal(timeout.evaluate("calls.length"), 2); assert.equal(timeout.clears(), 1);
+});
+
+void test("project-only PCB inventory discovery, strict project target and result membership cannot confer authority", async () => {
+  assert.deepEqual(parseCurrentProjectPcbMetadataRequest(inventoryRequest), inventoryRequest);
+  assert.equal(validateCurrentProjectPcbMetadataArguments(inventoryRequest)["valid"], true);
+  const discovery = queryCurrentProjectPcbMetadata({ method: inventoryRequest.method, includeSchemas: true });
+  assert.equal(discovery["total"], 1); assert.match(JSON.stringify(discovery), /completeNativePcbMapObserved/u);
+  assert.equal(queryCurrentProjectPcbMetadata({ method: request.method })["total"], 1);
+  for (const targetValue of [{ ...inventoryRequest.target, pcbUuid: target.pcbUuid }, { projectUuid: target.projectUuid },
+    { ...inventoryRequest.target, branchUuid: "b".repeat(16) }, Object.defineProperty({ ...inventoryRequest.target }, "projectUuid", { get(): never { throw new Error("getter invoked"); } })]) {
+    assert.equal(validateCurrentProjectPcbMetadataArguments({ ...inventoryRequest, target: targetValue })["valid"], false);
+  }
+  const env = fixture({ inventory: true }), envelope = structuredClone(await env.run());
+  const value = decodeCurrentProjectPcbMetadataReply(reply(envelope), inventoryRequest);
+  const pcb = value.pcbs[0]; assert.ok(pcb);
+  for (const invalid of [{ ...value, observedPcbCount: 0 }, { ...value, completeNativePcbMapObserved: false }, { ...value, cadAuthority: true },
+    { ...value, ownerUuid: "e".repeat(32) }, { ...value, pcbs: [{ ...pcb, projectUuid: "e".repeat(64) }] },
+    { ...value, pcbs: [pcb, pcb], observedPcbCount: 2 }, { ...value, pcbs: [pcb, { ...pcb, uuid: "a".repeat(16) }], observedPcbCount: 2 },
+    { ...value, pcbs: [{ ...pcb, canvas: "PRIVATE" }] }, { ...value, value: pcb }]) {
+    assert.throws(() => decodeCurrentProjectPcbMetadataReply(reply(encodeExactReadEnvelope(invalid)), inventoryRequest));
+  }
+  assert.throws(() => decodeCurrentProjectPcbMetadataReply(reply(encodeExactReadEnvelope(value)), request));
 });

@@ -4,6 +4,109 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+111307 admitted in the restarted host, 2026-10-19; live SCH case safely retired.
+Actual facade3932580/start38751265, parent3930844/start38745428, installed cwd/
+argv/Node/source497/bf33e143/runtime3/69d0abe8/manifest911c785f accepted by root
+and independent review. Maintained exact-main comparison82191 passed1515files/
+30,972,703bytes/42dirs/exactbytes+modes; all18scratch runtime files match.
+Final mainLinux39245648988 passed. Evidence:
+`/root/.cache/easyeda-111307-actual-facade-TeraXs18`.
+
+One ordinary launch `sch-rename-111307-20261019-launch` succeeded with retained
+root21148/Job4977358731c14e4a9ce9cfd9fc7daaca. Authenticated status and editor
+context prove observed StartPage/projectundefined. One open
+`sch-rename-111307-20261019-open` COMPLETED with exact native PCB identity and
+no orphan/hard stop. Never replay launch/open. SCH case
+`sch-rename-111307-20261019-case` captured, normally closed and proved original
+root/Job termination, then baseline-observe-termination refused unsupported
+child-derived schematic clock. No rename or explicit Save. Complete retained
+copy/checkpoint/inventory exists; stopped08/ee221054. Source598016/e4434cc5
+remains exact. Cleanup-retire-closed COMPLETED: plan-invalidated/retired,
+terminal11/98c1caa5. Ordinary launch observe-termination also completed with
+original root/Job termination recorded. No pending live calls or app work.
+Never replay this case; child-clock support requires the next installed payload.
+Production remains excluded. Private evidence directory:
+`/root/.cache/easyeda-111307-schematic-live-DsHmqo4d`.
+
+Candidate125900 on `feature/current-readers-lifecycle-batch` batches Image/Picture
+geometry, project-only schematic metadata and PCB metadata inventory, coverage and
+skill guidance. Root/independent source reviews and focused checks pass. SCH fixes
+separate direct/effective clocks, admit canonical stored ordinary library origins,
+preserve omitted stored sheet docType and conditionally admit capital-I child names
+only with exact native ASCII-fold matches. Target/container policy is unchanged.
+The first consumed offline diagnostic stopped at symbol provenance without final
+hash assertions; subsequent source/copy/stopped08 hashes matched. Second diagnostic
+stopped at child title policy and allfour finalpins matched. Third reviewed helper
+3b0678bd completed once exit0:20docs/59chunks/1container/2children/3templates/
+26structurecopies; metadata/childroster/staticstartup/purestructure preparation pass.
+Allfour before/final pins match, including retiredjournal78f7e24c. This is offline
+only, synthetic clock, native normalization unobserved, no old-case continuation.
+Result2afb1647 retained at
+`/root/.easyeda-pro-control/schematic-conditional-title-review-20261019-YW70Zyp7`.
+All live/helper processes are finished. Frozen candidate125900 built and passed
+compatibility checks: source501/9e0372a7, runtime3/da9bd56c, manifest e81e902b.
+External pins are unchanged. Repository/privacy and allseven official skill
+validators pass. One final local verification and exact-head CI remain before
+publication/install; do not change source, bundle or manifest during those checks.
+Dependencies reinstalled with pinned24.18/11.16:151registry signatures/40attestations,
+zero vulnerabilities and exact sanitizer. Private release evidence:
+`/root/.cache/easyeda-reader-clock-release-MQtx4JEo`.
+Prepared-only offline probe in `/root/.cache/easyeda-reader-clock-probe-Lr7FaUtc`
+has accepted root/independent logic, but final pins/placeholders are not finalized.
+Never run old consumed probes. See `docs/current-reader-clock-batch-2026-10-19.md`.
+PCB text
+pre-create ownership/pending-state observer remains missing; the new dated
+lifecycle audit documents why generation termination solves only post-write
+closure, not pre-create scope. Do not ship another inert prerequisite-only PCB
+release. Existing historical probes/cases remain consumed.
+
+The entries below are historical.
+
+111307 delivered, 2026-10-19; fresh actual-host admission required next.
+Protected PR77 merged as main `b186d349b93b53a88aa8b8b82c6e152155efe388`.
+Reviewed payload `15296b9c8fe8ba7249d23bff2304e1b064087437` has the same complete
+tree `415303d683551803f1736a0b22bf3d8e8a5d9790`. Original frozen local93654
+passed11,500facade/4platform skips/0failures/0cancellations,424bridge tests,
+types/strict lint/build/compatibility/skills/package checks. Repository and
+official seven-skill validators passed. Exact-head Linux39243893262 passed
+build/all8shards/aggregate:11,499passes/5platform skips/0failures. Windows
+39243893251 passed. Independent source/privacy review accepted; Copilot reported
+quota exhaustion, not approval. Duplicate main Windows39245648840 passed;
+main Linux39245648988 is running. Do not repeat the passed exact-tree suite.
+
+Official Git marketplace upgrade46328 installed/enabled
+`0.3.0+codex.20261019111307` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain; cached HEAD
+equals mergedmain. Maintained comparison88255 passed1515files/30,972,703bytes/
+42directories, exact bytes/modes/no extras, from private exact-main Linux
+worktree `/root/.cache/easyeda-111307-merged-main-ZO77xv0q/worktree`.
+Plugin tree d3d3bcc52d5f9c051c8446fabd724b69e257b9e7; inventory
+`c6a75bda6cbc9eca64cb001bfe49afad3eb8755a0db1d5bad38cbaa80892a31b`.
+Source497/bf33e143, runtime3/69d0abe8, manifest911c785f; external pins unchanged.
+Release evidence: `/root/.cache/easyeda-111307-release-GWYnuTn2`.
+
+NEW offline probe cdf6152f completed ONCE in original shell37764, exit0; pins
+e7252bf9. AmbientNode26.11.1 hands off to pinned24.18.0;21restricted tools/eight
+offline SCH queries pass. Originalchild3926601/start38507313/parent3923255
+closed/exited0 via stdinEOF, is absent and has no retained handles. No signals,
+adoption, upstream marker or journal; synthetic profile unchanged and lease
+removed. Two no-socket/descendant samples are not continuous isolation. Complete
+installed inventory remains unchanged. Root/independent source and final-pin
+reviews accepted. Proof SHA
+`d820378d8451e22cb456e0e24171f8e9d3ea08e302dbb10bdf042c8fe981757c`
+in `/root/.cache/easyeda-111307-offline-probe-0ATGnOvP`.
+Never rerun/import this consumed probe or earlier probes.
+Loaded100838 facade3818690 is retained and must not be used after marketplace
+pruning. No live application/process action is pending. Fresh Codex session
+and actual111307 admission are required before new-ID disposable SCH validation.
+The completed failed100838 opening below must never be replayed. Production
+remains excluded. Keep the next PCB-text implementation as a complete lifecycle
+batch; observer eligibility and Save/worker completion are still concrete blockers.
+Detailed release/backlog: `docs/checkpoint-validation-batch-2026-10-19.md`.
+Preserve all branches/worktrees/stash and consumed cases/probes.
+
+The entries below are historical.
+
 111307 source batch prepared, 2026-10-19; not published or installed yet.
 User requested more changes per restart. Candidate combines artifact-local
 checkpoint scratch/final receipt reproof, private pre-navigation failure messages,

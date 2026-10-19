@@ -39,6 +39,7 @@ void test("SCH metadata projects original SQL without actor/client/clock or PCB-
     source: "", version: "1", boardUuid: "", ticket: 100, updateTime: 1 } });
   assert.equal(projection.maximumTicket, 100); assert.equal(projection.peers.length, 2); assert.equal(projection.peers[1]?.ticket, 2);
   assert.equal(projection.baseline.maximumTargetHeaderTime, 1); assert.equal(projection.baseline.sqlSha256, before.logicalSha256);
+  assert.equal(projection.baseline.maximumTargetNativeTime, 1);
   assert.equal(projection.baseline.documentCount, 3); assert.equal(projection.sourcePeers.length, 2);
   assert.ok(Object.isFrozen(projection)); assert.ok(Object.isFrozen(projection.request.target)); assert.ok(Object.isFrozen(projection.sourcePeers[0]));
   for (const key of ["client", "actor", "witness", "documentClock", "backendClock"]) { assert.equal(Object.hasOwn(projection, key), false); }
@@ -85,13 +86,40 @@ void test("SCH metadata refuses unsupported META/source shapes and raw header ti
     await assert.rejects(prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" }));
   }
 });
-void test("SCH metadata refuses child-derived container clocks and unstable historical parent lineage", async () => {
+void test("SCH metadata projects newer child clocks without changing direct headers or SCH data tickets", async () => {
+  const originalHeader = record({ type: "DOCHEAD", ticket: 3 }, header(SHEET, "SCH_PAGE"));
+  const { before } = await baseline({ replaceRaw: [originalHeader, record({ type: "DOCHEAD", ticket: 3 }, header(SHEET, "SCH_PAGE", 2))],
+    sql: `UPDATE project_structures SET structure=json_set(structure,'$.schematics.${IDS.target}.updateTime',2,'$.schematics.${IDS.target}.version','2',
+      '$.sheets.${SHEET}.updateTime',2,'$.sheets.${SHEET}.version','2')` });
+  const projection = await prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" });
+  assert.equal(projection.request.expectedBefore.updateTime, 2); assert.equal(projection.request.expectedBefore.version, "2");
+  assert.equal(projection.request.expectedBefore.ticket, 100); assert.equal(projection.maximumTicket, 100);
+  assert.equal(projection.baseline.maximumTargetHeaderTime, 1); assert.equal(projection.baseline.maximumTargetNativeTime, 2);
+  assert.equal(projection.peers.find(peer => peer.uuid === IDS.peer)?.updateTime, 1);
+});
+void test("SCH metadata preserves later associated and deleted child clocks but never lowers a newer direct clock", async () => {
+  const originalMeta = record({ type: "META", ticket: 3, id: "META" }, { title: "Child title", schematic: IDS.target, source: "", zIndex: 0 });
+  for (const deleted of [false, true]) {
+    const suffix = `${record({ type: "DOCHEAD", ticket: 4 }, header(SHEET, "SCH_PAGE", 3))}|\n${record({ type: "DELETE_DOC", ticket: 4, id: "DELETE_DOC" }, { isDelete: deleted })}`;
+    const { before } = await baseline({ replaceRaw: [originalMeta, `${originalMeta}|\n${suffix}`],
+      sql: `UPDATE project_structures SET structure=json_set(structure,'$.schematics.${IDS.target}.updateTime',3,'$.schematics.${IDS.target}.version','3')` });
+    const projection = await prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" });
+    assert.equal(projection.request.expectedBefore.updateTime, 3); assert.equal(projection.request.expectedBefore.version, "3");
+    assert.equal(projection.request.expectedBefore.ticket, 100); assert.equal(projection.baseline.maximumTargetHeaderTime, 1);
+  }
+  const originalHeader = record({ type: "DOCHEAD", ticket: 1 }, header(IDS.target));
+  const { before } = await baseline({ replaceRaw: [originalHeader, record({ type: "DOCHEAD", ticket: 1 }, header(IDS.target, "SCH", 4))],
+    sql: `UPDATE project_structures SET structure=json_set(structure,'$.schematics.${IDS.target}.updateTime',4,'$.schematics.${IDS.target}.version','4')` });
+  const projection = await prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" });
+  assert.equal(projection.request.expectedBefore.updateTime, 4); assert.equal(projection.baseline.maximumTargetNativeTime, 4);
+});
+void test("SCH metadata refuses unsupported equal-time versions, stale structures and unstable historical parent lineage", async () => {
   const originalHeader = record({ type: "DOCHEAD", ticket: 3 }, header(SHEET, "SCH_PAGE"));
   const originalMeta = record({ type: "META", ticket: 3, id: "META" }, { title: "Child title", schematic: IDS.target, source: "", zIndex: 0 });
   for (const replaceRaw of [[originalHeader, record({ type: "DOCHEAD", ticket: 3 }, header(SHEET, "SCH_PAGE", 2))],
     [originalHeader, record({ type: "DOCHEAD", ticket: 3 }, { ...header(SHEET, "SCH_PAGE"), version: "different" })],
     [originalMeta, `${originalMeta}|\n${record({ type: "META", ticket: 4, id: "META" }, { title: "Child title", schematic: IDS.peer, source: "", zIndex: 0 })}`]] as const) {
     const { before } = await baseline({ replaceRaw });
-    await assert.rejects(prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" }), /child-derived|reparenting/u);
+    await assert.rejects(prepareCurrentSchematicNativeMetadata({ before, target: TARGET, desiredTitle: "Renamed SCH" }), /history\/tree|order-dependent|reparenting/u);
   }
 });

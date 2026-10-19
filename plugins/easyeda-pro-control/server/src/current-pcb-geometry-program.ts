@@ -2,6 +2,7 @@ import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_NUMBER, CURREN
   currentPcbGeometryFamily, parseCurrentPcbGeometryRequest } from "./current-pcb-geometry.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
+import { CURRENT_PCB_IMAGE_ROW_PROGRAM } from "./current-pcb-image-geometry.ts";
 
 /** Current API021d155b / UI3823ed6e / PCB217199c8 only. The native
  * serializers are the same ones used by current identity enumeration.
@@ -14,7 +15,7 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const componentPrimitiveId = "primitiveId" in request.arguments ? request.arguments.primitiveId : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll",
-    Attribute: "pcb/extensionAPI/attribute-getAll", Dimension: "pcb/extensionAPI/dimension-getAll" } as const;
+    Attribute: "pcb/extensionAPI/attribute-getAll", Dimension: "pcb/extensionAPI/dimension-getAll", Image: "pcb/extensionAPI/image-getAll" } as const;
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
@@ -120,6 +121,7 @@ const copyRows=value=>{
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
   const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
+${CURRENT_PCB_IMAGE_ROW_PROGRAM}
   // PCB217199c8@10344964 scales tuples/width once and overwrites model unit with canvas unit.
   // Never call generic dimension-getByIds, rescale these mil values or infer annotation units.
   if(family==='Dimension'){

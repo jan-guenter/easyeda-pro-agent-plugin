@@ -34,6 +34,7 @@ private calls, compatibility changes or newly granted permission.
 After offline discovery, read only the reference for the operation you will use:
 
 - [Current PCB readers](current-pcb-readers.md): project metadata without an editor, layers, IDs, geometry, raw text and component pads.
+- [Current schematic metadata](current-schematic-readers.md): container names and observed child rosters without opening a sheet.
 - [Current symbol metadata](current-symbol-readers.md): metadata observation and checkpoint preparation.
 - [Current utility readers](current-utility-readers.md): geometry calculations, units, shortcuts and extension metadata.
 - [Legacy SDK readers](legacy-sdk-readers.md): older-tuple schematic, PCB and library read contracts.

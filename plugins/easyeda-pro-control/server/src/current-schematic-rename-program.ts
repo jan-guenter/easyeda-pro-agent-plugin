@@ -88,6 +88,7 @@ function request(preparation: CurrentSchematicRenameSqlPreparation, beforeSql: I
   const documentWindow = { minimumMs: original.witness.documentClockMinMs, maximumMs: original.witness.documentClockMaxMs };
   const backendWindow = { minimumMs: original.witness.backendClockMinMs, maximumMs: original.witness.backendClockMaxMs };
   need(documentWindow.minimumMs > metadata.baseline.maximumTargetHeaderTime &&
+    documentWindow.minimumMs > metadata.baseline.maximumTargetNativeTime &&
     Math.max(documentWindow.minimumMs, backendWindow.minimumMs) <= Math.min(documentWindow.maximumMs, backendWindow.maximumMs), "CLOCK_WINDOWS");
   need(extra.rendererTimezoneOffsetMinutes === -original.witness.backendLocalOffsetMinutes, "CLOCK_OFFSET");
   const selected = { ...extra, target: metadata.request.target, desiredTitle: metadata.request.desiredTitle, before, peers: metadata.peers,

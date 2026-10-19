@@ -15,6 +15,20 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
+inventories and schematic-container metadata with complete observed child rosters. These are
+bounded native equivalents, not image-content, circuit or saved-state readers.
+See the
+[Image contract](docs/current-pcb-image-geometry-2026-10-19.md) and
+[schematic metadata guide](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-schematic-readers.md).
+It also corrects schematic baseline projections for child-derived clocks,
+ordinary stored library templates and the native stored sheet shape. The installed111307 attempt stopped before
+rename and was normally closed and retired. Connected rename validation remains
+pending. See the [combined batch record](docs/current-reader-clock-batch-2026-10-19.md).
+The [PCB text observer audit](docs/current-pcb-text-lifecycle-observers-2026-10-19.md)
+records the remaining pre-create ownership and pending-state gaps; no general
+PCB writer is enabled by these additions.
+
 Update `0.3.0+codex.20261019111307` batches checkpoint and validation reliability
 fixes with PCB-text groundwork. Checkpoint verification uses its authorized
 artifact directory for scratch and rechecks the original receipt before success.

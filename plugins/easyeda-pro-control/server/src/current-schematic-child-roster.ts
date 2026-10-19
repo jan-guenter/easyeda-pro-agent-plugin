@@ -25,9 +25,14 @@ type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Decoded = Awaited<ReturnType<typeof decodeCurrentSymbolPreEditHistory>>;
 const shape = currentSchematicChildKvSchema.shape;
 const metadataSchema = z.object({ title: shape.display_title, schematic: shape.schematic_uuid, source: z.literal(""), zIndex: shape.zIndex }).strict();
-const structureSchema = currentSchematicChildKvSchema.omit({ project_uuid: true, display_title: true, ticket: true });
+// WORKER nr.sheet1811070 serializes the unassigned model docType as absent.
+// Its vg.get1919022 independently supplies the native getter's constant type 1.
+// Refuse an explicit stored field: a later native tree refresh would remove it,
+// Violating this lifecycle's unchanged-child relation.
+const structureSchema = currentSchematicChildKvSchema.omit({ project_uuid: true, display_title: true, ticket: true, docType: true }).strict();
 export interface CurrentSchematicChildRoster extends Readonly<typeof CURRENT_SCHEMATIC_CHILD_LIMITATIONS> {
   readonly profile: "private.current-schematic-child-roster.v1";
+  readonly nativeChildTitlePolicy: "ascii-fold-projection-requires-exact-native-match";
   readonly sqlSha256: string;
   readonly metadataProjectionSha256: string;
   readonly historySha256: string;
@@ -93,9 +98,14 @@ function ordinarySymbols(active: readonly NativeDocumentSnapshot[]): void {
     const data = meta(document);
     // SCH b6@5745153 resolves a block symbol by title, including rename-driven
     // Reassociation during Ja. Reject every active block/reuse symbol, not just
-    // A current title match. Imported/inherited templates remain unsupported.
-    need(data["source"] === "" && (data["docType"] === 2 || data["docType"] === 18 || data["docType"] === 20),
-      "inherited or block-symbol/reuse template unsupported");
+    // A current title match. WORKER1931780 returns local metadata; b6 filters
+    // Exact docType, not source. A canonical library-origin pair is provenance
+    // For an already stored ordinary symbol, not a request to fetch its origin.
+    // Referenced templates still need complete local PART/startup validation.
+    const source = data["source"];
+    need(typeof source === "string" && /^(?:|[a-f0-9]{32}\|[a-f0-9]{32})$/u.test(source) &&
+      (data["docType"] === 2 || data["docType"] === 18 || data["docType"] === 20),
+    "unsupported library origin or block-symbol/reuse template");
   }
 }
 async function projectChildren(decoded: Decoded, tree: Record<string, unknown>, metadata: CurrentSchematicNativeMetadata): Promise<Record<string, CurrentSchematicChildKv>> {
@@ -108,11 +118,11 @@ async function projectChildren(decoded: Decoded, tree: Record<string, unknown>, 
     const raw = meta(page); const data = metadataSchema.parse(raw); const header = currentSchematicChildStoredHeaderSchema.parse(page.metadata);
     const entry = structureSchema.parse(tree[page.uuid]);
     need(JSON.stringify(data) === JSON.stringify(raw) && header.uuid === page.uuid && metadata.peers.some(peer => peer.uuid === data.schematic), "canonical ordinary page metadata/header differs");
-    const expected = { uuid: page.uuid, title: data.title, schematic_uuid: data.schematic, docType: 1, zIndex: data.zIndex, source: "", version: header.version, updateTime: header.updateTime };
+    const expected = { uuid: page.uuid, title: data.title, schematic_uuid: data.schematic, zIndex: data.zIndex, source: "", version: header.version, updateTime: header.updateTime };
     need(canonicalJson(entry) === canonicalJson(expected), "complete page history/tree differs");
     const order = positions.get(data.schematic) ?? new Set<number>(); need(!order.has(data.zIndex), "ambiguous equal-zIndex child order unsupported");
     order.add(data.zIndex); positions.set(data.schematic, order);
-    result[page.uuid] = currentSchematicChildKvSchema.parse({ ...expected, project_uuid: metadata.request.target.projectUuid,
+    result[page.uuid] = currentSchematicChildKvSchema.parse({ ...expected, docType: 1, project_uuid: metadata.request.target.projectUuid,
       title: data.title.toLowerCase(), display_title: data.title, ticket: rawTickets.get(page.uuid) });
   }
   return result;
@@ -120,8 +130,9 @@ async function projectChildren(decoded: Decoded, tree: Record<string, unknown>, 
 /** Pinned SCH d9d6a955: w9@5766787 prunes membership, compares child count
  * with tempAst.sort.length and may Xl/mM-initialize missing pages. N1@5469012
  * rebuilds the container; mM@5446807 projects these sheet fields. Unique zIndex
- * Avoids guessing sort tie order. Original metadata already excludes historical
- * Reparenting and child-derived container clocks, including deleted pages.
+ * Avoids guessing sort tie order. Original metadata projects ordinary stable
+ * Child-derived container clocks, including deleted pages, while excluding
+ * Historical reparenting and ambiguous equal-time versions.
  * The neutral startup selector contributes data premises only, never its owner.
  */
 export async function prepareCurrentSchematicChildRoster(metadata: CurrentSchematicNativeMetadata, before: Inventory): Promise<CurrentSchematicChildRoster> {
@@ -135,7 +146,8 @@ export async function prepareCurrentSchematicChildRoster(metadata: CurrentSchema
     board: expectedBefore.boardUuid, version: expectedBefore.version, updateTime: expectedBefore.updateTime, blockSymbolUuid: "",
     sort: selected.map(child => child.uuid), sheets: Object.fromEntries(selected.map(child => [child.uuid,
       { uuid: child.uuid, title: child.title, displayTitle: child.display_title, zIndex: child.zIndex }])) });
-  const body = freezeDeep({ profile: "private.current-schematic-child-roster.v1" as const, sqlSha256: before.logicalSha256,
+  const body = freezeDeep({ profile: "private.current-schematic-child-roster.v1" as const,
+    nativeChildTitlePolicy: "ascii-fold-projection-requires-exact-native-match" as const, sqlSha256: before.logicalSha256,
     metadataProjectionSha256: metadata.projectionSha256, historySha256: decoded.history.semanticSha256, childKv, targetAst, startupInput, ...CURRENT_SCHEMATIC_CHILD_LIMITATIONS });
   assertOriginalCurrentSchematicNativeMetadata(metadata, before); need(readerCompletion(before) === completion, "original reader changed");
   const result = Object.freeze({ ...body, projectionSha256: sha256Json(body) }); originals.set(result, { before, metadata, completion }); return result;

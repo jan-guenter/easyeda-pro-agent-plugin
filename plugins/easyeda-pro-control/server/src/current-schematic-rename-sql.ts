@@ -254,7 +254,8 @@ async function structureRows(before: Inventory, projection: CurrentSchematicRena
   }
   need(selected.length > 0, "baseline structure rows missing"); return Object.freeze(selected);
 }
-async function bindHistory(before: Inventory, history: CurrentSchematicRenameHistoryProjection, structure: CurrentSchematicRenameStructureProjection, witness: CurrentSchematicRenameSqlWitness): Promise<{
+async function bindHistory(before: Inventory, metadataProjection: CurrentSchematicNativeMetadata, history: CurrentSchematicRenameHistoryProjection,
+  structure: CurrentSchematicRenameStructureProjection, witness: CurrentSchematicRenameSqlWitness): Promise<{
   documentCount: number; historyRows: number; chunks: number;
 }> {
   // This decoder is document-type neutral; no symbol plan/authority is reused.
@@ -266,6 +267,11 @@ async function bindHistory(before: Inventory, history: CurrentSchematicRenameHis
   const target = targets[0];
   need(targets.length === 1 && target !== undefined && target.docType === "SCH" && !isNativeDocumentDeleted(target), "active ordinary SCH target missing");
   const header = headerSchema.parse(target.metadata);
+  assertOriginalCurrentSchematicNativeMetadata(metadataProjection, before);
+  const expected = metadataProjection.request.expectedBefore;
+  need(metadataProjection.request.target.schematicUuid === history.targetUuid && sha256Json(target.metadata) === metadataProjection.baseline.targetHeaderSha256 &&
+    target.semanticSha256 === metadataProjection.baseline.targetSourceSha256 && history.documentTime > metadataProjection.baseline.maximumTargetNativeTime,
+  "original direct header and effective native clock differ");
   const metadata = target.records.filter((entry) => entry.id === "META" || entry.type === "META");
   need(metadata.length === 1 && metadata[0]?.id === "META" && metadata[0].type === "META" && JSON.stringify(metadata[0].body) === history.beforeMetaText,
     "original exact SCH metadata differs");
@@ -275,7 +281,7 @@ async function bindHistory(before: Inventory, history: CurrentSchematicRenameHis
   const newMeta: unknown = JSON.parse(history.afterMetaText), oldMeta = metadata[0].body;
   need(isRecord(oldSchematic) && isRecord(newSchematic) && isRecord(newMeta) && header.uuid === history.targetUuid &&
     oldSchematic["name"] === oldMeta["title"] && oldSchematic["board"] === oldMeta["board"] && oldSchematic["source"] === oldMeta["source"] &&
-    oldSchematic["version"] === header.version && oldSchematic["updateTime"] === header.updateTime &&
+    oldSchematic["version"] === expected.version && oldSchematic["updateTime"] === expected.updateTime &&
     newSchematic["name"] === newMeta["title"], "history and complete structure baseline/projection disagree");
   let scannedBytes = 0, scannedRows = 0;
   for (const chunk of decoded.chunks) {
@@ -325,7 +331,7 @@ async function projectIntent(intent: Intent, documentTime: number, backendTime: 
   const structureProjection = prepareCurrentSchematicRenameStructure({ structureText: intent.structureText, targetUuid: target.schematicUuid,
     expectedOwnerUuid: target.ownerUuid, expectedBefore: { name: expectedBefore.displayName, version: expectedBefore.version, updateTime: expectedBefore.updateTime },
     desiredTitle, documentTime });
-  const result = await prepareBoundSql({ before, historyProjection, structureProjection, witness });
+  const result = await prepareBoundSql({ before, metadata, historyProjection, structureProjection, witness });
   assertOriginalCurrentSchematicNativeMetadata(metadata, before); return result;
 }
 /** Freeze intended metadata before a possible future dispatch. Actor strings
@@ -341,7 +347,8 @@ export async function prepareCurrentSchematicRenameSql(input: Readonly<{ before:
   assertOriginalCurrentSchematicNativeMetadata(metadata, before); const completion = readerCompletion(before);
   const witness = captureWitness(captured["witness"]), { target } = metadata.request;
   need(witness.projectUuid === target.projectUuid && witness.branchUuid === target.branchUuid &&
-    witness.documentClockMinMs > metadata.baseline.maximumTargetHeaderTime, "witness target or newer document window differs");
+    witness.documentClockMinMs > metadata.baseline.maximumTargetHeaderTime && witness.documentClockMinMs > metadata.baseline.maximumTargetNativeTime,
+  "witness target or newer direct/native document window differs");
   const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: target.projectUuid, branchUuid: target.branchUuid });
   const documents = decoded.history.documents.filter(document => document.uuid === target.schematicUuid); const document = documents[0];
   need(documents.length === 1 && document !== undefined && document.semanticSha256 === metadata.baseline.targetSourceSha256, "original metadata source differs");
@@ -361,7 +368,7 @@ export async function prepareCurrentSchematicRenameSql(input: Readonly<{ before:
 }
 /** Bind exact supplied observations to original frozen intent. Neither parsed
  * Times nor successful SQL equality establish their live provenance. Recent
- * Unlocked same-head append, child-derived container clocks, reparenting,
+ * Unlocked same-head append, ambiguous equal-time versions, reparenting,
  * Inherited containers, structure INSERT and additional uploads remain refused.
  */
 export async function bindCurrentSchematicRenameSqlTimes(preparation: CurrentSchematicRenameSqlPreparation, input: unknown): Promise<CurrentSchematicRenameSqlPlan> {
@@ -382,16 +389,17 @@ export async function bindCurrentSchematicRenameSqlTimes(preparation: CurrentSch
  * future issuer must freeze intended metadata and clock windows before dispatch
  * and derive exact times only from its original retained native evidence.
  */
-async function prepareBoundSql(input: Readonly<{ before: Inventory; historyProjection: CurrentSchematicRenameHistoryProjection;
+async function prepareBoundSql(input: Readonly<{ before: Inventory; metadata: CurrentSchematicNativeMetadata; historyProjection: CurrentSchematicRenameHistoryProjection;
   structureProjection: CurrentSchematicRenameStructureProjection; witness: CurrentSchematicRenameSqlWitness }>): Promise<CurrentSchematicRenameSqlPlan> {
-  const captured = fields(input, ["before", "historyProjection", "structureProjection", "witness"]);
+  const captured = fields(input, ["before", "metadata", "historyProjection", "structureProjection", "witness"]);
   const before = input.before, historyProjection = input.historyProjection, structureProjection = input.structureProjection;
   need(captured["before"] === before && captured["historyProjection"] === historyProjection && captured["structureProjection"] === structureProjection, "input identity changed");
+  need(captured["metadata"] === input.metadata, "metadata identity changed"); assertOriginalCurrentSchematicNativeMetadata(input.metadata, before);
   const witness = captureWitness(captured["witness"]); supported(before, witness.branchUuid); originalHistory(historyProjection);
   const completion = readerCompletion(before);
   const structures = await structureRows(before, structureProjection, witness, historyProjection.expectedTicket);
   bindProjections(historyProjection, structureProjection, witness, before);
-  const baseline = await bindHistory(before, historyProjection, structureProjection, witness);
+  const baseline = await bindHistory(before, input.metadata, historyProjection, structureProjection, witness);
   const branches = table(before, "branches"), projects = table(before, "projects");
   need(projects.rows.length === 1, "native all-project bookkeeping requires one project row");
   const branch = unique(branches, "uuid", witness.branchUuid), project = unique(projects, "uuid", witness.projectUuid); branchParent(before, branch, witness);

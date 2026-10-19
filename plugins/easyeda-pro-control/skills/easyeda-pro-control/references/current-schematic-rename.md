@@ -66,6 +66,30 @@ tabs, settled project/SCH/PCB holders, complete child membership and dormant
 supplier/standardization panels. The optional opening acknowledgment of
 unqualified schematic startup effects does not bypass these later checks.
 
+A container's metadata clock can come from a newer child sheet, even though its
+own stored SCH header is older. The baseline keeps both clocks and requires a
+write newer than both. It preserves the container's own data ticket and every
+child record; never substitute a child ticket or edit the header to satisfy the
+projection. Stable ordinary parent lineages are supported; conflicting versions
+at the maximum time and historical reparenting refuse. This source support still
+needs a complete connected lifecycle on the updated installed generation.
+
+Ordinary symbols already stored in the project may retain a canonical library
+origin. That provenance is not a block-symbol association and does not trigger
+a remote fetch. Referenced templates still need complete local source and the
+existing PART/startup checks. Imported schematic/page containers, block symbols
+and unresolved templates remain unsupported. The admitted stored sheet shape
+omits `docType` while the native getter returns `1`. Historical explicit fields
+refuse because native reserialization would drop them, violating unchanged-child
+proof. Keep those representations separate; never edit the project file to
+satisfy a reader.
+
+An unchanged child name may contain capital `I`, but the native getter and both
+retained ASTs must match the proposed ASCII-lowercase title before writing.
+This is conditional observation support, not a locale-invariant name claim.
+Turkic dotless output and non-ASCII child names remain unsupported. The target
+container and new rename title retain their stricter no-capital-`I` policy.
+
 Opening and normal closure may automatically persist data. No explicit Save
 is sent. A returned title or native acknowledgment is not completion. Require
 `result.nextPhase:"completed"` and `result.renameVerified:true`. Completion

@@ -38,13 +38,15 @@ void test("project PCB registration preserves strict metadata/preflight union an
   vm.runInContext(stripTypeScriptTypes(source.slice(start, end)), scope);
   assert.equal(wrappers, 1); assert.ok(invoke !== undefined && requestSchema !== undefined);
   const request = { method: "eda.dmt_Pcb.getPcbInfo", target: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), pcbUuid: "c".repeat(16) } };
+  const inventory = { method: "eda.dmt_Pcb.getAllPcbsInfo", target: { projectUuid: request.target.projectUuid, branchUuid: request.target.branchUuid } };
   const preflight = { target: { ...request.target, ownerUuid: "d".repeat(32) }, desiredTitle: "Renamed PCB",
     expectedBefore: { title: "PCB", displayTitle: "PCB", parentUuid: "", source: "", version: "123", boardUuid: "", ticket: 2, updateTime: 123, docType: 3 } };
   for (const invalid of [{ ...request, method: "eda.dmt_Pcb.modifyPcbName" }, { ...request, arguments: {} }, { ...request, code: "caller-code" },
     { ...request, target: { ...request.target, pcbUuid: "wrong" } }, { ...request, target: { ...request.target, tabId: "0" } },
     { ...request, desiredTitle: "Renamed PCB" }, { ...preflight, method: request.method }, { ...preflight, code: "caller-code" },
     { ...preflight, desiredTitle: preflight.expectedBefore.displayTitle }, { ...preflight, target: { ...preflight.target, ownerUuid: "wrong" } },
-    { ...preflight, expectedBefore: { ...preflight.expectedBefore, arbitrary: true } }]) {
+    { ...preflight, expectedBefore: { ...preflight.expectedBefore, arbitrary: true } }, { ...inventory, target: request.target },
+    { ...inventory, desiredTitle: "Renamed PCB" }, { ...inventory, arguments: {} }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0); const parsed: unknown = requestSchema.parse(request);
@@ -54,4 +56,8 @@ void test("project PCB registration preserves strict metadata/preflight union an
   const parsedPreflight: unknown = requestSchema.parse(preflight), preflightResult: unknown = await invoke({ request: parsedPreflight, expectedFingerprint });
   assert.equal(calls.length, 2); assert.equal(calls[1]?.request, parsedPreflight); assert.equal(calls[1]?.route, "preflight");
   assert.ok(preflightResult !== null && typeof preflightResult === "object" && "result" in preflightResult); assert.equal(preflightResult.result, preflightObserved);
+  const parsedInventory: unknown = requestSchema.parse(inventory);
+  const inventoryResult: unknown = await invoke({ request: parsedInventory, expectedFingerprint });
+  assert.equal(calls.length, 3); assert.equal(calls[2]?.request, parsedInventory); assert.equal(calls[2]?.route, "metadata");
+  assert.ok(inventoryResult !== null && typeof inventoryResult === "object" && "result" in inventoryResult); assert.equal(inventoryResult.result, observed);
 });

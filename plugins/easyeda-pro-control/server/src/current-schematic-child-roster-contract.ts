@@ -10,6 +10,11 @@ export const CURRENT_SCHEMATIC_CHILD_MAX_COUNT = 128;
 const MAX_BYTES = 524_288;
 const id = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const title = currentSchematicRenamePreflightRequestSchema.shape.desiredTitle;
+// Unchanged child strings have a conditional ASCII-fold projection, not the
+// Container writer's locale-invariant spelling policy. Actual getter and both
+// ASTs must match that projection; Turkic dotless-I output remains unsupported.
+const childTitle = z.string().min(1).max(512).refine(value => value.trim() === value && /^[\u0020-\u007E]+$/u.test(value),
+  "bounded printable ASCII child title required; actual native ASCII-fold match required separately");
 const finite = z.number().refine(value => !Object.is(value, -0));
 const integer = finite.int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const version = z.string().min(1).max(128);
@@ -18,9 +23,9 @@ const time = integer.max(8_640_000_000_000_000);
 // Schematic_uuid, unlike the SCH container's name/display_name/board fields.
 export const currentSchematicChildStoredHeaderSchema = currentSchematicStoredHeaderSchema.extend({ docType: z.literal("SCH_PAGE") }).strict();
 export const currentSchematicChildKvSchema = z.object({ uuid: id, project_uuid: z.string().regex(/^[a-f0-9]{64}$/u),
-  schematic_uuid: id, title, display_title: title, docType: z.literal(1), zIndex: finite, source: z.literal(""),
+  schematic_uuid: id, title: childTitle, display_title: childTitle, docType: z.literal(1), zIndex: finite, source: z.literal(""),
   version, updateTime: time.positive(), ticket: integer }).strict();
-const childAstSchema = z.object({ uuid: id, title, displayTitle: title, zIndex: finite }).strict();
+const childAstSchema = z.object({ uuid: id, title: childTitle, displayTitle: childTitle, zIndex: finite }).strict();
 export const currentSchematicChildAstSchema = z.object({ uuid: id, title, displayTitle: title, board: z.union([z.literal(""), id]),
   version, updateTime: time.positive(), blockSymbolUuid: z.literal(""),
   sort: z.array(id).max(CURRENT_SCHEMATIC_CHILD_MAX_COUNT), sheets: z.record(id, childAstSchema) }).strict();

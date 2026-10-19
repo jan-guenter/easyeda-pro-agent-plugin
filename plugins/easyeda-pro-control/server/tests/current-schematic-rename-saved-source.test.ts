@@ -15,14 +15,14 @@ import { ACTOR, PAYLOAD, REQUEST, TARGET, schematicBaseline } from "./helpers/cu
 import { IDS, TIMES, applyEffect, encrypted, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 function record(identity: unknown, body: unknown): string { return `${JSON.stringify(identity)}||${JSON.stringify(body)}`; }
-async function setup(): Promise<Readonly<{
+async function setup(childTime = 1, libraryOrigin?: string, childTitle = "Child title"): Promise<Readonly<{
   baseline: Awaited<ReturnType<typeof schematicBaseline>>;
   children: CurrentSchematicChildRoster;
   preparation: Awaited<ReturnType<typeof prepareCurrentSchematicRenameSql>>;
   effect: Awaited<ReturnType<typeof verifyCurrentSchematicRenameStoredEffect>>;
   after: Awaited<ReturnType<typeof inventory>>;
 }>> {
-  const baseline = await schematicBaseline(), children = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
+  const baseline = await schematicBaseline(childTime, libraryOrigin, childTitle), children = await prepareCurrentSchematicChildRoster(baseline.metadata, baseline.before);
   const preparation = await prepareCurrentSchematicRenameSql({ before: baseline.before, metadata: baseline.metadata,
     witness: { projectUuid: TARGET.projectUuid, branchUuid: TARGET.branchUuid, backendActorUuid: ACTOR.uuid, client: "a".repeat(16),
       documentClockMinMs: TIMES.document - 500, documentClockMaxMs: TIMES.document + 500,
@@ -69,6 +69,40 @@ void test("SCH saved source preserves complete peers and children while projecti
   const result = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children));
   assert.equal(result["suppliedSavedMetadataMatched"], true); assert.equal(result["suppliedSavedChildRosterMatched"], true); noAuthority(result);
 });
+void test("SCH child-derived baseline clocks survive full SQL rename and saved projection without changing children", async () => {
+  const childTime = TIMES.document - 1000, f = await setup(childTime, `${"a".repeat(32)}|${"b".repeat(32)}`, "Child Input");
+  assert.equal(f.baseline.metadata.baseline.maximumTargetHeaderTime, 1);
+  assert.equal(f.baseline.metadata.baseline.maximumTargetNativeTime, childTime);
+  assert.equal(f.baseline.metadata.request.expectedBefore.version, String(childTime));
+  assert.equal(f.children.targetAst.updateTime, childTime); assert.equal(f.children.targetAst.version, String(childTime));
+  assert.deepEqual(f.children.startupInput.templates, [{ uuid: "d".repeat(16), docType: 2, partId: "part" }]);
+  assert.equal(f.children.nativeChildTitlePolicy, "ascii-fold-projection-requires-exact-native-match");
+  assert.equal(f.children.childKv["c".repeat(16)]?.title, "child input");
+  assert.equal(f.children.childKv["c".repeat(16)]?.display_title, "Child Input");
+  const source = await prepareCurrentSchematicRenameSavedSource(f.preparation, f.baseline.before, f.baseline.metadata, f.children, f.effect, f.after);
+  const original = originalCurrentSchematicRenameSavedSource(source, f.after);
+  assert.equal(original.metadata.baseline.maximumTargetHeaderTime, TIMES.document);
+  assert.equal(original.metadata.baseline.maximumTargetNativeTime, TIMES.document);
+  assert.equal(original.metadata.request.expectedBefore.updateTime, TIMES.document);
+  assert.deepEqual(original.children.childKv, f.children.childKv);
+  assert.deepEqual(original.metadata.peers.filter(peer => peer.uuid !== TARGET.schematicUuid), f.baseline.metadata.peers.filter(peer => peer.uuid !== TARGET.schematicUuid));
+  const metadata = { ...structuredClone(PAYLOAD), ...original.metadata.request, peers: original.metadata.peers,
+    clientTicketObservation: { client: "f".repeat(16), maxTicket: 101, samples: 4 } };
+  const observed = compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, childObservation(original.children));
+  assert.equal(observed["suppliedSavedMetadataMatched"], true); assert.equal(observed["suppliedSavedChildRosterMatched"], true);
+  const dotless = childObservation(original.children);
+  for (const sample of dotless.samples) {
+    const child = sample.childKv["c".repeat(16)]; assert.ok(child !== undefined); child.title = "child ınput";
+  }
+  assert.throws(() => compareCurrentSchematicRenameSavedObservations(source, f.after, metadata, dotless), /printable ASCII/u);
+  const later = await inventory(f.baseline.path), unchanged = await compareCurrentSchematicRenameLaterSql(source, f.after, later);
+  assert.equal(unchanged["completeLaterSqlUnchanged"], true);
+  await assert.rejects(prepareCurrentSchematicRenameSql({ before: f.baseline.before, metadata: f.baseline.metadata,
+    witness: { projectUuid: TARGET.projectUuid, branchUuid: TARGET.branchUuid, backendActorUuid: ACTOR.uuid, client: "a".repeat(16),
+      documentClockMinMs: childTime, documentClockMaxMs: childTime + 500, backendClockMinMs: TIMES.edit - 1100,
+      backendClockMaxMs: TIMES.edit + 2900, backendLocalOffsetMinutes: 120 } }), /newer direct\/native/u);
+});
+
 void test("SCH saved source requires the original preparation, both original readers, child roster and stored effect", async () => {
   const f = await setup();
   const args = [f.preparation, f.baseline.before, f.baseline.metadata, f.children, f.effect, f.after] as const;

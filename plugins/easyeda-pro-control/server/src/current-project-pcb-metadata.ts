@@ -7,13 +7,19 @@ import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
 export const CURRENT_PROJECT_PCB_METADATA_MAX_BYTES = 64 * 1024;
 export const CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS = 10_000;
 const method = "eda.dmt_Pcb.getPcbInfo";
+const inventoryMethod = "eda.dmt_Pcb.getAllPcbsInfo";
+export const CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS = 128;
 const documentId = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const projectId = z.string().regex(/^[a-f0-9]{64}$/u);
 const branchId = z.string().regex(/^[a-f0-9]{32}$/u);
 const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0));
-const targetSchema = z.object({ projectUuid: projectId, branchUuid: branchId, pcbUuid: documentId }).strict();
-export const currentProjectPcbMetadataRequestSchema = z.object({ method: z.literal(method), target: targetSchema }).strict();
-export const currentProjectPcbMetadataQuerySchema = z.object({ method: z.literal(method).optional(), includeSchemas: z.boolean().default(false) }).strict();
+const projectTargetSchema = z.object({ projectUuid: projectId, branchUuid: branchId }).strict();
+const targetSchema = projectTargetSchema.extend({ pcbUuid: documentId }).strict();
+export const currentProjectPcbMetadataRequestSchema = z.discriminatedUnion("method", [
+  z.object({ method: z.literal(method), target: targetSchema }).strict(),
+  z.object({ method: z.literal(inventoryMethod), target: projectTargetSchema }).strict(),
+]);
+export const currentProjectPcbMetadataQuerySchema = z.object({ method: z.enum([method, inventoryMethod]).optional(), includeSchemas: z.boolean().default(false) }).strict();
 export type CurrentProjectPcbMetadataRequest = z.infer<typeof currentProjectPcbMetadataRequestSchema>;
 const valueSchema = z.object({ uuid: documentId, projectUuid: projectId, ownerUuid: branchId, title: z.string().max(512), displayTitle: z.string().max(512),
   parentUuid: z.union([z.literal(""), documentId]), source: z.string().max(4096), version: z.string().max(128), boardUuid: z.string().max(128),
@@ -25,13 +31,22 @@ export const currentProjectPcbMetadataResultSchema = z.object({ ok: z.literal(tr
   workerIdentityVerified: z.literal(false), cadAuthority: z.literal(false), persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false),
   permissionVerified: z.literal(false), mutationDispatched: z.literal(false), explicitSaveDispatched: z.literal(false) }).strict();
 export type CurrentProjectPcbMetadataResult = z.infer<typeof currentProjectPcbMetadataResultSchema>;
+// Keep the selected-result schema unchanged: rename preflight reuses its exact DTO.
+export const currentProjectPcbInventoryResultSchema = currentProjectPcbMetadataResultSchema.omit({ value: true }).extend({
+  method: z.literal(inventoryMethod), target: projectTargetSchema, ownerUuid: branchId,
+  pcbs: z.array(valueSchema).max(CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS),
+  observedPcbCount: integer.max(CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS), completeNativePcbMapObserved: z.literal(true),
+}).strict();
+export type CurrentProjectPcbInventoryResult = z.infer<typeof currentProjectPcbInventoryResultSchema>;
+const observationSchema = z.discriminatedUnion("method", [currentProjectPcbMetadataResultSchema, currentProjectPcbInventoryResultSchema]);
+type Observation = CurrentProjectPcbMetadataResult | CurrentProjectPcbInventoryResult;
 
 const limitations = [
-  "One existing PCB in the exact loaded local path-hash project and branch. Only the native Start Page and optional hidden blank placeholder are admitted. Editor tabs, hidden/export editors, pending restoration, document URL commands, historical, archived, store, CBB and V2 projects refuse.",
+  "One existing PCB or the complete bounded native PCB metadata map in the exact loaded local path-hash project and branch. Only the native Start Page and optional hidden blank placeholder are admitted. Editor tabs, hidden/export editors, pending restoration, document URL commands, historical, archived, store, CBB and V2 projects refuse.",
   "Two matching project-qualified PCB metadata samples, bracketed by four project identity/owner checks, retain the outer RPC receiver and complete no-editor registry/DOM owners across awaits. These observations are not continuous exclusion, a lock, worker identity, permission or writer authority.",
   "Native-equivalent metadata, not IDMT_PcbItem or public wrapper parity. Native title and display_title are retained separately without renormalization. Source, version and board already use native value || empty-string fallback; original absence/falsy values cannot be recovered. Parent/board membership is not proved. Creator, modifier, createTime and fixed empty description are not returned.",
-  "Only /PrjDB/project/getData and /PrjDB/pcb/getData with explicit project identity are dispatched. No getNeedData/canvas request, public getAllPcbsInfo tree traversal, cloud fetch, clock/client call, navigation, storage-completion request, mutation or explicit Save is made.",
-  "At most 128 containers, 255 tree nodes, 256 registry tabs and 65536 UTF-8 envelope bytes. Missing/accessor-backed/oversized/non-finite values refuse without coercion. The ten-second deadline prevents later reads but cannot cancel an already dispatched native request. Offline tests and discovery are not connected validation.",
+  "Only /PrjDB/project/getData and the selected /PrjDB/pcb/getData or inventory /PrjDB/pcb/getAllKVDatas with explicit project identity are dispatched. Inventory uses the non-swallowing key/value route, including genuine empty maps, and sorts UUIDs for comparison rather than claiming visual tree order. No getNeedData/canvas request, public getAllPcbsInfo tree traversal, caught-error array fallback, cloud fetch, clock/client call, navigation, storage-completion request, mutation or explicit Save is made.",
+  "At most 128 PCBs in inventory mode, 128 containers, 255 tree nodes, 256 registry tabs and 65536 UTF-8 sample/envelope bytes. Inventory bounds apply after native enumeration and cannot cancel it; complete observed map membership is not saved-source membership or startup completion. Missing/accessor-backed/oversized/non-finite values refuse without coercion. The ten-second deadline prevents later reads but cannot cancel an already dispatched native request. Offline tests and discovery are not connected validation.",
 ] as const;
 
 function fields(input: unknown, names: readonly string[]): Record<string, unknown> {
@@ -49,16 +64,22 @@ function fields(input: unknown, names: readonly string[]): Record<string, unknow
 }
 export function parseCurrentProjectPcbMetadataRequest(input: unknown): CurrentProjectPcbMetadataRequest {
   const value = fields(input, ["method", "target"]);
-  return currentProjectPcbMetadataRequestSchema.parse({ method: value["method"], target: fields(value["target"], ["projectUuid", "branchUuid", "pcbUuid"]) });
+  const targetFields = value["method"] === inventoryMethod ? ["projectUuid", "branchUuid"] : ["projectUuid", "branchUuid", "pcbUuid"];
+  return currentProjectPcbMetadataRequestSchema.parse({ method: value["method"], target: fields(value["target"], targetFields) });
 }
 export function queryCurrentProjectPcbMetadata(input: unknown = {}): Record<string, unknown> {
   const query = currentProjectPcbMetadataQuerySchema.parse(input);
-  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{ path: method, method, parameters: ["pcbUuid"],
-    effect: "current-project-only-pcb-metadata-read", implementationKind: "native-task-equivalent", liveValidation: "not-recorded", limitations: [...limitations],
-    provenance: { apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
-      apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
-      implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, implementationKind: "native-task-equivalent", liveValidation: "not-recorded" },
-    ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentProjectPcbMetadataRequestSchema), resultSchema: z.toJSONSchema(currentProjectPcbMetadataResultSchema) } : {}) }] };
+  const selected = [method, inventoryMethod].filter(path => query.method === undefined || path === query.method);
+  const entries: Record<string, unknown>[] = [];
+  for (const path of selected) {
+    entries.push({ path, method: path, parameters: path === method ? ["pcbUuid"] : [],
+      effect: "current-project-only-pcb-metadata-read", implementationKind: "native-task-equivalent", liveValidation: "not-recorded", limitations: [...limitations],
+      provenance: { apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
+        implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, implementationKind: "native-task-equivalent", liveValidation: "not-recorded" },
+      ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentProjectPcbMetadataRequestSchema), resultSchema: z.toJSONSchema(observationSchema) } : {}) });
+  }
+  return { offline: true, invocationEnabledByDiscovery: false, total: selected.length, entries };
 }
 export function validateCurrentProjectPcbMetadataArguments(input: unknown): Record<string, unknown> {
   try { return { valid: true, request: parseCurrentProjectPcbMetadataRequest(input), executionAuthorized: false }; }
@@ -68,18 +89,29 @@ export function validateCurrentProjectPcbMetadataArguments(input: unknown): Reco
       : [{ path: [], message: "Expected exact own-data method and target fields." }] };
   }
 }
-function resultFor(input: unknown, raw: unknown): CurrentProjectPcbMetadataResult {
-  const request = parseCurrentProjectPcbMetadataRequest(input), result = currentProjectPcbMetadataResultSchema.parse(raw);
-  if (result.method !== request.method || canonicalJson(result.target) !== canonicalJson(request.target) ||
-    result.value.uuid !== request.target.pcbUuid || result.value.projectUuid !== request.target.projectUuid) { throw new Error("CURRENT_PROJECT_PCB_METADATA_TARGET"); }
+function resultFor(input: unknown, raw: unknown): Observation {
+  const request = parseCurrentProjectPcbMetadataRequest(input), result = observationSchema.parse(raw);
+  if (result.method !== request.method || canonicalJson(result.target) !== canonicalJson(request.target)) { throw new Error("CURRENT_PROJECT_PCB_METADATA_TARGET"); }
+  if (result.method === method) {
+    if (result.value.uuid !== result.target.pcbUuid || result.value.projectUuid !== result.target.projectUuid) { throw new Error("CURRENT_PROJECT_PCB_METADATA_TARGET"); }
+    Object.freeze(result.value);
+  } else {
+    if (result.observedPcbCount !== result.pcbs.length || result.pcbs.some((value, index) =>
+      value.projectUuid !== result.target.projectUuid || value.ownerUuid !== result.ownerUuid ||
+      (index > 0 && value.uuid <= (result.pcbs[index - 1]?.uuid ?? "")))) { throw new Error("CURRENT_PROJECT_PCB_METADATA_MEMBERSHIP"); }
+    for (const value of result.pcbs) { Object.freeze(value); } Object.freeze(result.pcbs);
+  }
   if (Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES) { throw new Error("CURRENT_PROJECT_PCB_METADATA_BOUND"); }
-  Object.freeze(result.target); Object.freeze(result.value); return Object.freeze(result);
+  Object.freeze(result.target); return Object.freeze(result);
 }
 export function validateCurrentProjectPcbMetadataResult(input: unknown, raw: unknown): Record<string, unknown> {
   return { ...resultFor(input, raw), effect: "current-project-only-pcb-metadata-read", authority: "observed-project-metadata-only;not-write-or-persistence-authority",
     liveValidation: "not-recorded", limitations: [...limitations] };
 }
-export function decodeCurrentProjectPcbMetadataReply(raw: unknown, input: unknown): CurrentProjectPcbMetadataResult {
+export function decodeCurrentProjectPcbMetadataReply(raw: unknown, input: Extract<CurrentProjectPcbMetadataRequest, { method: typeof method }>): CurrentProjectPcbMetadataResult;
+export function decodeCurrentProjectPcbMetadataReply(raw: unknown, input: Extract<CurrentProjectPcbMetadataRequest, { method: typeof inventoryMethod }>): CurrentProjectPcbInventoryResult;
+export function decodeCurrentProjectPcbMetadataReply(raw: unknown, input: unknown): Observation;
+export function decodeCurrentProjectPcbMetadataReply(raw: unknown, input: unknown): Observation {
   assertUpstreamReplySettled(raw);
   const envelope = fields(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope["json"] !== "string" || envelope["json"].length === 0 ||

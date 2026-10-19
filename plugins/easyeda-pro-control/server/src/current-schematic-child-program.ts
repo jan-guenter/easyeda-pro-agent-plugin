@@ -11,6 +11,9 @@ export const CURRENT_SCHEMATIC_CHILD_MAX_BYTES = 524_288;
  * get@1919022; the array route's caught-error fallback is deliberately absent.
  * The snapshot retains SCH holders across each await, not a producer or queue
  * token. No reader result authorizes a future rename or claims startup success.
+ * Unchanged child spelling permits ASCII capital I only when the actual getter
+ * and both retained ASTs match the explicit ASCII-fold projection. This is not
+ * a native-locale claim; dotless-I output refuses before any writer.
  */
 export function buildCurrentSchematicChildProgram(input: unknown): string {
   const { target } = parseCurrentSchematicRenamePreflightRequest(input);
@@ -23,7 +26,7 @@ const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=b
 const finite=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Object.is(value,-0))bad();return value;};
 const integer=value=>{finite(value);if(!Number.isSafeInteger(value)||value<0)bad();return value;};
 const id=value=>{if(typeof value!=='string'||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(value))bad();return value;};
-const title=value=>{if(typeof value!=='string'||value.length<1||value.length>512||value.trim()!==value||!/^[\\x20-\\x7e]+$/.test(value)||value.includes('I'))bad();return value;};
+const title=value=>{if(typeof value!=='string'||value.length<1||value.length>512||value.trim()!==value||!/^[\\x20-\\x7e]+$/.test(value))bad();return value;};
 try{
  const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
  ${buildCurrentProjectOnlySymbolGuard()}
