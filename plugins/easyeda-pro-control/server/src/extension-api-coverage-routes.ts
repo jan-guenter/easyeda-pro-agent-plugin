@@ -25,11 +25,18 @@ interface RouteGroup {
 const groups: RouteGroup[] = [];
 const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
 
-groups.push({ namespace: "dmt_Pcb", methods: ["getPcbInfo"], route: {
-  tool: "easyeda_control_project_pcb", selector: "eda.dmt_Pcb.getPcbInfo;loaded-local-project-no-editors", implementation: "native-task-equivalent",
-  scope: "One explicit project/branch/PCB identity in an already loaded local path-hash project with no editor tabs or hidden frames. Fixed project-qualified native metadata getter, captured RPC receivers and two matching bounded observations bracketed by project-owner checks. Preserves native title/display title, parent, board, source/version, ticket and updateTime. Source/version/board fallbacks are observed getter semantics, not lossless storage. No public-wrapper parity, worker lease, saved membership, startup completion or writer authority. No canvas load, navigation, cloud lookup, mutation or Save. Other PCB metadata, full inventory and renaming remain separate.",
+groups.push({ namespace: "dmt_Schematic", methods: ["getSchematicInfo", "getAllSchematicsInfo"], route: {
+  tool: "easyeda_control_project_schematic", selector: "eda.dmt_Schematic.getSchematicInfo|getAllSchematicsInfo;loaded-local-project-no-editors", implementation: "native-task-equivalent",
+  scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded schematic and sheet metadata maps, bracketed by project-owner checks, retain every observed child association. Selected lookup also matches its exact native getter. Independent native name/displayName, child title/displayTitle, source/version, board, ticket, updateTime and zIndex are preserved; UUID comparison order is not visual order. Complete combined sample is bounded before selected filtering. No public object parity, saved membership, worker lease, AST-holder preflight, startup completion or writer authority. No canvas/source loading, clock/client, name availability, navigation, cloud lookup, mutation or Save.",
+  source: ["current-project-schematic-metadata.ts", "current-project-schematic-metadata-program.ts", "current-project-schematic-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],
+  tests: ["current-project-schematic-metadata.test.ts", "current-project-schematic-metadata-runtime.test.ts", "current-project-schematic-metadata-registration.test.ts", "facade-mode.test.ts"],
+  documentTypes: [1], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-schematic", query: { includeSchemas: true } } } },
+} }, { namespace: "dmt_Pcb", methods: ["getPcbInfo", "getAllPcbsInfo"], route: {
+  tool: "easyeda_control_project_pcb", selector: "eda.dmt_Pcb.getPcbInfo|getAllPcbsInfo;loaded-local-project-no-editors", implementation: "native-task-equivalent",
+  scope: "Explicit project/branch identity and optional selected PCB in an already loaded local path-hash project with no editor tabs or hidden frames. Fixed project-qualified native selected getter or complete key/value metadata map, captured RPC receivers and two matching observations bracketed by project-owner checks. Inventory admits genuine empty maps, sorts UUIDs rather than visual order, and is bounded to 128 PCBs and 65536 UTF-8 sample/envelope bytes after native enumeration. Preserves native title/display title, parent, board, source/version, ticket and updateTime. Source/version/board fallbacks are observed getter semantics, not lossless storage. No public-wrapper parity, worker lease, saved membership, startup completion or writer authority. No canvas load, navigation, cloud lookup, mutation or Save. Current-focused PCB metadata and renaming remain separate.",
   source: ["current-project-pcb-metadata.ts", "current-project-pcb-metadata-program.ts", "current-project-pcb-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],
-  tests: ["current-project-pcb-metadata.test.ts", "current-project-pcb-metadata-runtime.test.ts", "facade-mode.test.ts"],
+  tests: ["current-project-pcb-metadata.test.ts", "current-project-pcb-metadata-runtime.test.ts", "current-project-pcb-metadata-registration.test.ts", "facade-mode.test.ts"],
   documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-pcb", query: { includeSchemas: true } } } },
 } });
@@ -163,6 +170,19 @@ for (const method of ["getAll", "get"] as const) {
     validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
     inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
       action: "pcb-geometry", query: { method: `eda.pcb_PrimitiveDimension.${method}`, includeSchemas: true },
+    } } },
+  } });
+}
+
+for (const method of ["getAll", "get"] as const) {
+  groups.push({ namespace: "pcb_PrimitiveImage", methods: [method], route: {
+    tool: "easyeda_control_pcb_geometry", selector: `eda.pcb_PrimitiveImage.${method}`, implementation: "native-task-equivalent",
+    scope: `Separately pinned current API/UI/PCB Image loaded-view placement. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native image-getAll samples. Retains vector Image then Picture manager order without a parent filter; only existing stateWatcher views participate. DTOs preserve native imageType Image/Picture, identity/lock, layer, start x/y, nonnegative width/height, degree rotation and horizonMirror. Positions and sizes are already mil and are not scaled again. Zero dimensions remain observations, not renderability proof. Start is not a computed rotated bounding box; horizonMirror is the native model flag, not effective rendered mirroring. Native getByIds searches only vector images, so this get equivalent selects from the complete combined family. Template arrays, transformed pathString, Picture hashId, source/binary assets, color, partition/group, ownership and saved membership are omitted and not compared. Existing Picture serialization does not call its asset-backed source getter; vector template/path allocation still precedes facade bounds. No image-content, rendered-bounds, asset-availability, full source, connectivity, persistence or writer-baseline claim. Bounds256rows/256characters per ID/scalar magnitude1e12/393216bytes and complete ordered projected-row equality apply before selection. No public wrapper, SDK constructor, filters, positive generic type lookup, selection change, navigation, mutation or Save. ${method === "get" ? "Only1..256 distinct primitiveIds in an array; exact caller order and all IDs required, no scalar get or missing-ID skipping." : "Empty arguments only; complete observed family order is preserved."}`,
+    source: ["current-pcb-image-geometry.ts", "current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: ["current-pcb-image-geometry.test.ts", "current-pcb-geometry.test.ts", "current-pcb-geometry-registration.test.ts"], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
+      action: "pcb-geometry", query: { method: `eda.pcb_PrimitiveImage.${method}`, includeSchemas: true },
     } } },
   } });
 }

@@ -20,6 +20,7 @@ import { SDK_LOCAL_RUNTIME_PROFILE } from "../src/sdk-local-runtime.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), pcbUuid: "c".repeat(16) };
 const request = { method: "eda.dmt_Pcb.getPcbInfo", target };
+const inventoryRequest = { method: "eda.dmt_Pcb.getAllPcbsInfo", target: { projectUuid: target.projectUuid, branchUuid: target.branchUuid } };
 const payload = { ok: true, kind: "current-project-pcb-metadata-observation", ...request,
   value: { uuid: target.pcbUuid, projectUuid: target.projectUuid, ownerUuid: "d".repeat(32), title: "Observed PCB", displayTitle: "Observed PCB",
     parentUuid: "", source: "", version: "123", boardUuid: "e".repeat(16), ticket: 2, updateTime: 123, docType: 3 },
@@ -75,6 +76,7 @@ function mockSyntheticDigests(context: TestContext, calls: string[]): void {
 
 type ScopeDrift = "initial-guard" | "initial-status" | "pre-execute-guard" | "execute" | "post-execute-guard" | "final-status";
 interface RuntimeOptions {
+  readonly inventory?: boolean;
   readonly quarantineAt?: number;
   readonly scopeMissing?: "reader" | "binding";
   readonly scopeDrift?: ScopeDrift;
@@ -102,7 +104,7 @@ async function runtime(reply: unknown = encoded(payload), options: RuntimeOption
     callTool: async (name: string, args?: Record<string, unknown>, timeoutMs?: number): Promise<unknown> => {
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.deepEqual(Object.keys(args).toSorted(), ["code", "confirmWrite", "timeoutMs"]);
-      assert.equal(args["code"], buildCurrentProjectPcbMetadataProgram(request)); assert.equal(args["confirmWrite"], true);
+      assert.equal(args["code"], buildCurrentProjectPcbMetadataProgram(options.inventory === true ? inventoryRequest : request)); assert.equal(args["confirmWrite"], true);
       assert.equal(args["timeoutMs"], CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 5000); assert.equal(timeoutMs, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 15_000);
       if (options.scopeDrift === "execute") { scope.sessionSequence += 1; }
       if (options.changeFile !== undefined) { await writeFile(resolve(assetsRoot, options.changeFile), "changed synthetic source"); }
@@ -216,11 +218,24 @@ void test("project PCB offline routing exposes only the narrow read and never gr
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_project_pcb"), true);
   const query = queryOfflineApi(apiRequestSchema.parse({ action: "project-pcb", query: { includeSchemas: true } }));
   assert.equal(query.offline, true); assert.ok(query.result !== null && typeof query.result === "object");
-  assert.equal(Reflect.get(query.result, "invocationEnabledByDiscovery"), false); assert.equal(Reflect.get(query.result, "total"), 1);
-  for (const candidate of [request, { ...request, target: { ...target, pcbUuid: "wrong" } }]) {
+  assert.equal(Reflect.get(query.result, "invocationEnabledByDiscovery"), false); assert.equal(Reflect.get(query.result, "total"), 2);
+  for (const candidate of [request, inventoryRequest, { ...request, target: { ...target, pcbUuid: "wrong" } }]) {
     const validation = queryOfflineApi(apiRequestSchema.parse({ action: "project-pcb-validate", query: { request: candidate } }));
     assert.equal(validation.offline, true); assert.ok(validation.result !== null && typeof validation.result === "object");
-    assert.equal(Reflect.get(validation.result, "valid"), candidate === request); assert.equal(Reflect.get(validation.result, "executionAuthorized"), false);
+    assert.equal(Reflect.get(validation.result, "valid"), candidate === request || candidate === inventoryRequest); assert.equal(Reflect.get(validation.result, "executionAuthorized"), false);
   }
   assert.throws(() => apiRequestSchema.parse({ action: "project-pcb", query: { method: "eda.dmt_Pcb.modifyPcbName" } }));
+});
+
+void test("project PCB inventory uses unchanged authenticated runtime admission and rejects selected-method payloads", async (context) => {
+  const { value, ...shared } = payload;
+  const inventory = { ...shared, ...inventoryRequest, ownerUuid: value.ownerUuid, pcbs: [value], observedPcbCount: 1, completeNativePcbMapObserved: true };
+  const fixture = await runtime(encoded(inventory), { inventory: true }); mockSyntheticDigests(context, []);
+  const result = await readCurrentProjectPcbMetadata(fixture.engine, inventoryRequest, fixture.expected);
+  assert.deepEqual(result["pcbs"], [value]); assert.equal(result["completeNativePcbMapObserved"], true);
+  assert.equal(result["cadAuthority"], false); assert.equal(result["persistenceVerified"], false); assert.equal(result["liveValidation"], "not-recorded");
+  assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute", "guard", "status"]);
+  const mismatch = await runtime(encoded(payload), { inventory: true });
+  await assert.rejects(readCurrentProjectPcbMetadata(mismatch.engine, inventoryRequest, mismatch.expected));
+  assert.deepEqual(mismatch.calls, ["guard", "status", "guard", "easyeda_execute"]);
 });

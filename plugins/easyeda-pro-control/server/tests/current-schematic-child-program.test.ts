@@ -84,6 +84,26 @@ void test("SCH guard rejects unbuilt, pending, wrong-project and inconsistent ch
     assert.equal(env.evaluate("calls.length"), 0); assert.deepEqual(structuredClone(env.evaluate("denied")), []);
   }
 });
+void test("SCH child observers conditionally admit capital I only with exact native ASCII-folded KV and both ASTs", async () => {
+  const setTitle = "child.title='child input';child.display_title='Child Input';for(const value of [astSheet,tempSch.sheets[child.uuid]]){value.title=child.title;value.displayTitle=child.display_title;}";
+  const { before, metadata } = await schematicBaseline(1, undefined, "Child Input");
+  const env = fixture({ before: setTitle }), roster = await prepareCurrentSchematicChildRoster(metadata, before);
+  const envelope: unknown = structuredClone(await env.run()), observed = decodeCurrentSchematicChildObservation(wrapped(envelope), REQUEST);
+  compareCurrentSchematicChildRoster(roster, before, observed);
+  assert.equal(roster.nativeChildTitlePolicy, "ascii-fold-projection-requires-exact-native-match");
+  assert.equal(observed.samples[0].childKv["c".repeat(16)]?.display_title, "Child Input");
+  for (const change of ["child.title='child ınput';", "astSheet.title='child ınput';", "tempSch.sheets[child.uuid].title='child ınput';",
+    "child.display_title='Child İnput';", "astSch.displayTitle='Source Input';astSch.title='source input';tempSch.displayTitle=astSch.displayTitle;tempSch.title=astSch.title;"]) {
+    const rejected = fixture({ before: `${setTitle}${change}` });
+    await assert.rejects(rejected.run(), /CURRENT_SCHEMATIC_CHILD_REFUSED:/u);
+    assert.deepEqual(structuredClone(rejected.evaluate("denied")), []);
+  }
+  const supplied = structuredClone(observed);
+  for (const sample of supplied.samples) {
+    const child = sample.childKv["c".repeat(16)]; assert.ok(child !== undefined); child.title = "child ınput";
+  }
+  assert.throws(() => compareCurrentSchematicChildRoster(roster, before, supplied), /printable ASCII/u);
+});
 void test("SCH guard rechecks exact receiver, nested object and projected value identity after native awaits", async () => {
   for (const change of ["SCH={...SCH};", "SCH.gVars={...SCH.gVars};", "SCH.gVars.projectMgr={...SCH.gVars.projectMgr};", "SCH.D.leftTree={...tree};",
     "SCH.gVars.currentProject={...SCH.gVars.currentProject};", "SCH.gVars.currentProject.branchUuid='e'.repeat(32);",

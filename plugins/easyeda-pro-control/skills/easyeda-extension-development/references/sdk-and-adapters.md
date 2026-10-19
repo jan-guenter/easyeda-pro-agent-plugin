@@ -229,10 +229,25 @@ queue, full-SQL or saved-state authority, and do not implement sheet-title edits
 The separate schematic preflight contract and original-SQL metadata projection
 use native `name/displayName`, not PCB `title/parent/docType` fields. Child
 SCH_PAGE headers can advance their parent's version/time through `onHeadChange`.
-The initial projection accepts only stable ordinary parent histories whose direct
-SCH header dominates every child clock; newer child-derived clocks and reparenting
-remain unsupported. Do not infer the container clock from its SCH header alone.
+The projection keeps direct SCH headers separate from effective native metadata
+clocks. For stable ordinary parent histories, the latest direct or child time
+wins, including historical deleted children; its version follows that clock.
+Conflicting versions at the maximum time and historical reparenting refuse.
+The SCH data ticket stays its own ticket, not the child's or the branch maximum.
+New writes must be newer than both direct and effective clocks. Do not infer
+the container clock from its SCH header alone or rewrite that header to match
+child-derived metadata. The complete stored-effect proof still preserves every
+child and unrelated record.
 Matching supplied data or a historical projection is not a live preflight.
+
+Do not reuse a write-title schema for unchanged child observations. Stored
+sheet structures omit `docType`, while the getter supplies `1`. Ordinary stored
+symbols may retain canonical library origins without becoming reuse blocks;
+classify by the pinned native type and keep local template checks. The child
+title profile proposes ASCII folding, then requires the real getter and both
+ASTs to match before writing. It does not infer the Windows locale from Linux
+normalization. A differing native spelling refuses rather than being normalized
+away; the container rename policy remains narrower.
 
 `current-schematic-rename-sql.ts` composes that original metadata with frozen
 intent, separate supplied clock windows, SCH history and structure models.

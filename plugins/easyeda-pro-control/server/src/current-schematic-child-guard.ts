@@ -20,6 +20,7 @@ const schematicChildren=(()=>{
  const integer=value=>{number(value);if(!Number.isSafeInteger(value)||value<0)bad();return value;};
  const id=value=>{if(typeof value!=='string'||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(value))bad();return value;};
  const title=value=>{if(typeof value!=='string'||value.length<1||value.length>512||value.trim()!==value||!/^[\x20-\x7e]+$/.test(value)||value.includes('I'))bad();return value;};
+ const childTitle=value=>{if(typeof value!=='string'||value.length<1||value.length>512||value.trim()!==value||!/^[\x20-\x7e]+$/.test(value))bad();return value;};
  const keys=value=>{plain(value);const result=Reflect.ownKeys(value);if(result.length>128||result.some(key=>typeof key!=='string'))bad();result.forEach(id);return result.sort();};
  const base=()=>{
   projectOnly.check();
@@ -44,7 +45,7 @@ const schematicChildren=(()=>{
   owners.push(schematics,value,sheets,sort);const order=[],seen=new Set(),projected={};
   for(let index=0;index<sheetKeys.length;index++){const uuid=id(own(sort,String(index)));if(seen.has(uuid)||!sheetKeys.includes(uuid))bad();seen.add(uuid);order.push(uuid);}
   for(const uuid of sheetKeys){const child=plain(own(sheets,uuid));owners.push(child);if(own(child,'uuid')!==uuid)bad();
-   const lower=title(own(child,'title')),display=title(own(child,'displayTitle'));if(lower!==display.toLowerCase())bad();
+   const lower=childTitle(own(child,'title')),display=childTitle(own(child,'displayTitle'));if(lower!==display.toLowerCase())bad();
    projected[uuid]={uuid,title:lower,displayTitle:display,zIndex:number(own(child,'zIndex'))};}
   const lower=title(own(value,'title')),display=title(own(value,'displayTitle')),board=own(value,'board'),version=own(value,'version'),updateTime=integer(own(value,'updateTime'));
   if(lower!==display.toLowerCase()||(board!==''&&!id(board))||typeof version!=='string'||version.length<1||version.length>128||updateTime<1||updateTime>8640000000000000)bad();

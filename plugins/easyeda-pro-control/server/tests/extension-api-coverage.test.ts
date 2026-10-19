@@ -49,6 +49,42 @@ void test("all eight legacy project-structure writer routes remain blocked witho
 });
 
 
+void test("project schematic coverage exposes only complete observed metadata and child rosters", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const path of ["eda.dmt_Schematic.getSchematicInfo", "eda.dmt_Schematic.getAllSchematicsInfo"]) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_project_schematic"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [1]);
+    for (const required of ["complete bounded schematic and sheet", "before selected filtering", "No public object parity", "writer authority", "No canvas/source loading"]) {
+      assert.ok(route.scope.includes(required));
+    }
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "project-schematic", query: { includeSchemas: true } } } });
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
+    assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
+    assert.equal(result["total"], 2); assert.equal(result["invocationEnabledByDiscovery"], false);
+  }
+});
+
+void test("project PCB coverage exposes selected metadata and bounded complete inventory without writer authority", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const path of ["eda.dmt_Pcb.getPcbInfo", "eda.dmt_Pcb.getAllPcbsInfo"]) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_project_pcb"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [3]);
+    for (const required of ["complete key/value metadata map", "genuine empty maps", "128 PCBs", "after native enumeration", "No public-wrapper parity", "writer authority"]) {
+      assert.ok(route.scope.includes(required));
+    }
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "project-pcb", query: { includeSchemas: true } } } });
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
+    assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
+    assert.equal(result["total"], 2); assert.equal(result["invocationEnabledByDiscovery"], false);
+  }
+});
+
 void test("ordinary symbol coverage exposes its bounded forward-only history profiles without promoting legacy writes or live evidence", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.modify"); assert.ok(row);
   assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
@@ -740,7 +776,7 @@ void test("current Dimension/Image/Attribute identities retain separate scope wi
       assert.ok(isRecord(valid)); assert.equal(valid["valid"], accepted); assert.equal(valid["executionAuthorized"], false);
     }
     for (const getter of ["get", "getAll"]) {
-      assert.equal(rows.find(entry => entry.path === `eda.pcb_Primitive${family}.${getter}`)?.routes.some(entry => entry.tool === "easyeda_control_pcb_geometry"), family !== "Image");
+      assert.equal(rows.find(entry => entry.path === `eda.pcb_Primitive${family}.${getter}`)?.routes.some(entry => entry.tool === "easyeda_control_pcb_geometry"), true);
     }
   }
   for (const family of ["Fill", "Polyline", "Region"]) {
@@ -798,6 +834,38 @@ void test("current Dimension geometry discovery separates canvas units from fixe
       } })).result;
       assert.ok(isRecord(valid)); assert.equal(valid["valid"], accepted); assert.equal(valid["executionAuthorized"], false);
     }
+  }
+});
+
+void test("current Image geometry discovery preserves native Picture scope without asset or writer authority", () => {
+  const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  for (const method of ["get", "getAll"]) {
+    const path = `eda.pcb_PrimitiveImage.${method}`, row = inventoryExtensionApiCoverage().find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    assert.ok(row.routes.some(route => route.tool === "easyeda_control_sdk_read"));
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb_geometry"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.ok(route.inputDiscovery);
+    for (const text of ["vector Image then Picture", "already mil", "native getByIds searches only vector images",
+      "asset-backed source getter", "omitted and not compared", "before selection", "writer-baseline"]) {
+      assert.ok(route.scope.toLowerCase().includes(text.toLowerCase()));
+    }
+    const catalog = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result; assert.ok(isRecord(catalog));
+    assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+    const argumentsValue = method === "get" ? { primitiveIds: ["picture", "vector-image"] } : {};
+    for (const [argumentsInput, accepted] of [[argumentsValue, true], [{ ...argumentsValue, layer: 13 }, false],
+      [{ ...argumentsValue, primitiveLock: false }, false], [{ primitiveIds: "picture" }, false]] as const) {
+      const valid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: {
+        request: { method: path, arguments: argumentsInput, target },
+      } })).result;
+      assert.ok(isRecord(valid)); assert.equal(valid["valid"], accepted); assert.equal(valid["executionAuthorized"], false);
+    }
+  }
+  for (const method of ["create", "modify", "delete"]) {
+    const row = inventoryExtensionApiCoverage().find(entry => entry.path === `eda.pcb_PrimitiveImage.${method}`); assert.ok(row);
+    assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
   }
 });
 

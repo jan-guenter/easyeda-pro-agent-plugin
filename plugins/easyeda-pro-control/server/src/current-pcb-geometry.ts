@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
+import { CURRENT_PCB_IMAGE_GEOMETRY_LIMITATION, createCurrentPcbImageSchema } from "./current-pcb-image-geometry.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { CURRENT_UI_IMPLEMENTATION } from "./current-ui-implementation.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
@@ -8,9 +9,9 @@ export const CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
 export const CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
 export const CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
 const collectionMethods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
-  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll", "eda.pcb_PrimitiveDimension.getAll"] as const;
+  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll", "eda.pcb_PrimitiveDimension.getAll", "eda.pcb_PrimitiveImage.getAll"] as const;
 const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get", "eda.pcb_PrimitiveVia.get",
-  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get", "eda.pcb_PrimitiveDimension.get"] as const;
+  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get", "eda.pcb_PrimitiveDimension.get", "eda.pcb_PrimitiveImage.get"] as const;
 const componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
 const attributeCollectionMethod = "eda.pcb_PrimitiveAttribute.getAll";
 const attributeSelectedMethod = "eda.pcb_PrimitiveAttribute.get";
@@ -21,6 +22,7 @@ const numberSchema = z.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURREN
 const layerSchema = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65_535, "Invalid native layer ID.");
 const boundedText = z.string().max(1024);
 const idSchema = z.string().min(1).max(256);
+const imageSchema = createCurrentPcbImageSchema(numberSchema, layerSchema, idSchema);
 const holeFields = { diameter: numberSchema.refine((value) => value >= 0, "Negative hole diameter."),
   offsetX: numberSchema, offsetY: numberSchema, rotation: numberSchema };
 const holeSchema = z.discriminatedUnion("shape", [
@@ -92,7 +94,7 @@ export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
 const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry-observation"), target: targetSchema,
-  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema, dimensionSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema, dimensionSchema, imageSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   samples: z.literal(2), implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false),
   persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
 const attributeResultShape = { ...resultShape, rows: z.array(attributeSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
@@ -110,6 +112,7 @@ export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
 ]);
 
 const limitations = [
+  CURRENT_PCB_IMAGE_GEOMETRY_LIMITATION,
   "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
   "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
   "Unfiltered getAll accepts empty arguments. The narrower get equivalent accepts only 1 to 256 distinct primitiveIds in an array, returns DTOs in caller order and refuses the entire request if any ID is unavailable in the observed family. Scalar input and the public method's missing-ID skipping are not supported. This does not change editor selection or prove absence from saved source.",
@@ -129,7 +132,7 @@ const limitations = [
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" {
+export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" | "Image" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -148,6 +151,8 @@ export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "L
     case attributeSelectedMethod: { return "Attribute"; }
     case "eda.pcb_PrimitiveDimension.getAll":
     case "eda.pcb_PrimitiveDimension.get": { return "Dimension"; }
+    case "eda.pcb_PrimitiveImage.getAll":
+    case "eda.pcb_PrimitiveImage.get": { return "Image"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }

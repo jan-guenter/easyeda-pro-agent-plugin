@@ -45,6 +45,27 @@ runtime admission and does not validate the separate rename preflight below.
 A successful read is not saved-state, write-permission, startup qualification or
 PCB rename authority. Use the active-view routes below for geometry.
 
+### Complete observed PCB metadata inventory
+
+The same discovery, validator and `easyeda_control_project_pcb` tool also accept
+`eda.dmt_Pcb.getAllPcbsInfo`. Supply only `target:{projectUuid,branchUuid}`; omit
+`pcbUuid` and `arguments`. The no-editor requirements above still apply.
+
+The native key/value route is sampled twice, with the same project/owner checks.
+It does not use the native array route that can hide an error behind an empty
+list. A genuinely empty native map returns an empty `pcbs` array; changing or
+malformed maps refuse. Each row has the selected reader's metadata fields.
+`observedPcbCount` counts the complete returned map. UUID sorting is comparison
+order, not visual tree order. Parent references remain observations, not verified
+hierarchical membership.
+
+Limits are128PCBs and64KiB for the complete sample and escaped envelope. There
+is no truncation or pagination. Native enumeration happens before those bounds;
+the deadline cannot cancel an outstanding request. Complete native-map
+observation is not complete saved-source membership, startup qualification or
+rename authority. Source/offline tests cover this addition; the earlier live
+selected-PCB case does not validate inventory mode.
+
 ### Read-only rename preflight
 
 Query `project-pcb-preflight` with `includeSchemas:true`, validate the complete
@@ -185,7 +206,8 @@ as identity reads. The board must already be active; this tool never opens it.
 Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll`,
 `eda.pcb_PrimitiveVia.getAll`, `eda.pcb_PrimitiveComponent.getAll`,
 `eda.pcb_PrimitivePad.getAll`, `eda.pcb_PrimitiveString.getAll`,
-`eda.pcb_PrimitiveAttribute.getAll` and `eda.pcb_PrimitiveDimension.getAll`, with empty
+`eda.pcb_PrimitiveAttribute.getAll`, `eda.pcb_PrimitiveDimension.getAll` and
+`eda.pcb_PrimitiveImage.getAll`, with empty
 `arguments` only. Each family also
 supports a narrower `.get` equivalent with `arguments:{"primitiveIds":["id"]}`.
 Use 1 to 256 distinct nonempty IDs, each at most256characters. Scalar IDs,
@@ -197,7 +219,7 @@ does not establish absence from saved source. It does not change selection.
 `getAll` preserves native row order. Both return plain data, not SDK objects
 or methods. Every row
 has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component,
-String, Attribute and Dimension
+String, Attribute, Dimension and Image
 also have `net`; null and empty net text remain distinct, and neither proves
 resolved connectivity.
 
@@ -211,6 +233,7 @@ resolved connectivity.
 | String | `layer`, `x`, `y`, `text`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `key`, `showKey`, `showValue`, `positionIsNull`, `silkColor` |
 | Attribute | `parentPrimitiveId`, `layer`, `x`, `y`, `key`, `value`, `keyVisible`, `valueVisible`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `positionIsNull`, `silkColor` |
 | Dimension | `layer`, `dimensionType`, `coordinateSet`, `lineWidth`, `precision`, `canvasUnit` |
+| Image | `imageType`, `layer`, `x`, `y`, `width`, `height`, `rotation`, `horizonMirror` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad/String rotation use degrees. Arc modes
@@ -323,6 +346,29 @@ The geometry limits of256rows and384KiB apply to the full family even for one
 requested ID. No filters, scalar lookup, selection change, mutation or Save is
 supported. Source review and synthetic tests do not establish a populated live
 Dimension case; the historical empty ID result is separate evidence.
+
+### Image placement and dimensions
+
+Use `eda.pcb_PrimitiveImage.getAll` with empty arguments or `.get` with a
+distinct `primitiveIds` array. Both sample the complete combined vector-image
+and picture collection twice before selection. Native get-by-ID only searches
+vector images, so this adapter deliberately uses getAll for both methods.
+
+`primitiveType` is `Image`; `imageType` distinguishes native `Image` and
+`Picture`. The start anchor `x`/`y` and `width`/`height` are already in mil;
+rotation is already degrees. Do not rescale them. `horizonMirror` preserves the
+native mirror flag. Width and height can be zero; that observation is not
+renderability or manufacturing approval. The anchor and dimensions are not a
+computed rotated/mirrored bounding box.
+
+Template geometry, transformed paths, asset IDs, binary/source content and
+silkscreen color are omitted and not compared. The native vector serializer
+can allocate temporary transformed geometry before facade bounds apply; the
+Picture serializer does not access its asset-backed source getter. Neither
+method proves asset availability, rendered content, parent ownership or saved
+source membership. The full-family256row/384KiB bounds also apply to one-ID
+requests. Source review and synthetic tests are recorded; populated connected
+validation remains pending. These results are not a writer baseline.
 
 ### Polygon-family identity limits
 

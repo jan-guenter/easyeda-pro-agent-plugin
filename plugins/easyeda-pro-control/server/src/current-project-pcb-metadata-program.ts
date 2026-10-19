@@ -1,4 +1,4 @@
-import { CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, parseCurrentProjectPcbMetadataRequest } from "./current-project-pcb-metadata.ts";
+import { CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, parseCurrentProjectPcbMetadataRequest } from "./current-project-pcb-metadata.ts";
 import { buildCurrentProjectOnlySymbolGuard } from "./current-project-only-symbol-guard.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 
@@ -8,9 +8,12 @@ import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
  * The API021d155b wrapper at476238 instead enumerates the mutable public tree.
  * APP52f51ce4 G.show at2317299 omits store from local project metadata.
  * Preserve the existing symbol route's exact optional inactive-flag forms.
+ * Inventory uses GET_ALL_KV2064064 and Sg.getAllKVData1903452, not the manager's
+ * caught-error array route. Native enumeration precedes our response bounds.
  */
 export function buildCurrentProjectPcbMetadataProgram(input: unknown): string {
   const request = parseCurrentProjectPcbMetadataRequest(input);
+  const inventory = request.method === "eda.dmt_Pcb.getAllPcbsInfo";
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)};let expired=false;
@@ -32,18 +35,25 @@ const projectMetadata=async()=>{
  for(const key of ['archive','store','cbb_project']){const flag=own(value,key,true);if(flag!==undefined&&flag!==false&&flag!==null&&flag!==0)bad();}
  const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;
 };
-const sample=async()=>{
- const ownerUuid=await projectMetadata();same();const value=await call('/PrjDB/pcb/getData',[target.pcbUuid,target.projectUuid]);same();
- if(own(value,'uuid')!==target.pcbUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'docType')!==3)bad();
+const metadata=(raw,uuid,ownerUuid)=>{
+ const value=plain(raw);if(own(value,'uuid')!==uuid||own(value,'project_uuid')!==target.projectUuid||own(value,'docType')!==3)bad();
  const parentUuid=text(own(value,'parent_uuid'),32);if(parentUuid!==''&&!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(parentUuid))bad();
- const result={uuid:target.pcbUuid,projectUuid:target.projectUuid,ownerUuid,title:text(own(value,'title'),512),displayTitle:text(own(value,'display_title'),512),
+ return{uuid,projectUuid:target.projectUuid,ownerUuid,title:text(own(value,'title'),512),displayTitle:text(own(value,'display_title'),512),
   parentUuid,source:text(own(value,'source'),4096),version:text(own(value,'version'),128),boardUuid:text(own(value,'board'),128),
   ticket:integer(own(value,'ticket')),updateTime:integer(own(value,'updateTime'),8640000000000000),docType:3};
+};
+const sample=async()=>{
+ const ownerUuid=await projectMetadata();same();
+ ${inventory ? `const map=await call('/PrjDB/pcb/getAllKVDatas',[target.projectUuid]);same();const keys=Reflect.ownKeys(map);
+ if(keys.length>${CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS}||keys.some(key=>typeof key!=='string'||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(key)))bad();keys.sort();
+ const pcbs=keys.map(uuid=>metadata(own(map,uuid),uuid,ownerUuid));
+ const result={ownerUuid,pcbs,observedPcbCount:pcbs.length,completeNativePcbMapObserved:true};
+ if(new TextEncoder().encode(JSON.stringify(result)).byteLength>${CURRENT_PROJECT_PCB_METADATA_MAX_BYTES})bad();` : `const result=metadata(await call('/PrjDB/pcb/getData',[target.pcbUuid,target.projectUuid]),target.pcbUuid,ownerUuid);same();`}
  if(await projectMetadata()!==ownerUuid)bad();same();return result;
 };
 const run=async()=>{
  const first=await sample(),seal=JSON.stringify(first);const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:'current-project-pcb-metadata-observation',method:${JSON.stringify(request.method)},target,value:first,samples:2,currentTabId:projectOnly.currentTabId,
+ const result={ok:true,kind:'current-project-pcb-metadata-observation',method:${JSON.stringify(request.method)},target,${inventory ? "...first" : "value:first"},samples:2,currentTabId:projectOnly.currentTabId,
   implementationKind:'native-task-equivalent',noEditorTabsObserved:true,hiddenEditorsAbsentObserved:true,dirtyTabsAbsentObserved:true,cachedProjectReadOnlyAbsentObserved:true,concurrentStrictModeAbsentObserved:true,
   workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false,permissionVerified:false,mutationDispatched:false,explicitSaveDispatched:false};
  const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
