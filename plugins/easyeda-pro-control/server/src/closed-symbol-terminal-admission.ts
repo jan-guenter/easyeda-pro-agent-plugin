@@ -9,7 +9,10 @@ import { isErrnoException, isRecord, isTerminalOperation, operationHasOrphanedCa
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
 import type { OperationSummary } from "./engine.ts";
 import type { UnknownRecord } from "./core.ts";
-import { MachineProfileError, currentProcessSqlRuntime } from "./machine-profile.ts";
+import { MachineProfileError } from "./machine-profile.ts";
+import type { MachineProfile } from "./machine-profile.ts";
+import { requireCurrentProcessSqlRuntimeLease, withCurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
+import type { CurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
 import { SqlReaderFailureError } from "./sqlite-inventory.ts";
 import { ZodError } from "zod";
 import { ClosureEvidenceChangedError } from "./closed-symbol-terminal-closure-evidence-error.ts";
@@ -199,7 +202,7 @@ async function qualifyCurrentBaselineAbandonment(candidate: DetailedScanCandidat
     return observation(candidate, failureClass(error) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
-async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>>): Promise<QualifiedAdmissionOperation | undefined> {
+async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: MachineProfile["runtime"], lease: CurrentProcessSqlRuntimeLease): Promise<QualifiedAdmissionOperation | undefined> {
   const expected = candidate.terminal;
   if (expected === null) { return observation(candidate, "terminal-evidence-invalid"); }
   try {
@@ -208,20 +211,21 @@ async function qualifyTerminal(candidate: DetailedScanCandidate, runtime: Awaite
     let inspected: unknown;
     if (routing.profile === "easyeda-pro-control.closed-symbol-terminal.v1") {
       const { inspectLockedTerminalForAdmission } = await import("./closed-symbol-terminal-admission-cache.ts");
-      inspected = await inspectLockedTerminalForAdmission(expected, runtime);
+      inspected = await inspectLockedTerminalForAdmission(expected, runtime, lease);
     } else {
       const { inspectAgedTerminalForAdmission } = await import("./closed-symbol-aged-terminal-admission-cache.ts");
-      inspected = await inspectAgedTerminalForAdmission(expected, runtime);
+      inspected = await inspectAgedTerminalForAdmission(expected, runtime, lease);
     }
     const matches = matchesHistoricalAdmission(inspected, expected, routing);
     // No unrelated await follows the inspector's final journal-bound result.
     // A match only omits this historical blocker; no old capability is restored.
     return matches ? undefined : observation(candidate, "terminal-evidence-invalid");
-  } catch (error) { return observation(candidate, failureClass(error)); }
-}
-async function runtimeForScan(): Promise<Awaited<ReturnType<typeof currentProcessSqlRuntime>> | undefined> {
-  try { return await currentProcessSqlRuntime(); }
-  catch { return undefined; }
+  } catch (error) {
+    // A failed runtime lease is scan-fatal, not an individual evidence refusal.
+    // Do not attempt another candidate or cold path after observed Node drift.
+    requireCurrentProcessSqlRuntimeLease(lease);
+    return observation(candidate, failureClass(error));
+  }
 }
 async function qualifiedCandidates(): Promise<QualifiedStateScan> {
   const started = performance.now();
@@ -232,38 +236,46 @@ async function qualifiedCandidates(): Promise<QualifiedStateScan> {
   };
   const results: QualifiedAdmissionOperation[] = [];
   const states: UnknownRecord[] = [];
-  let runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>> | undefined;
-  let runtimeUnavailable = false;
-  for (const candidate of candidates) {
-    candidateCounts[candidate.classification] += 1;
-    if (candidate.compact) {
-      states.push({ operationId: candidate.operationId, state: candidate.state, recordedState: candidate.state, qualification: "legacy" });
-    } else {
-      let result: QualifiedAdmissionOperation | undefined;
-      if (candidate.classification === "legacy") {
-        result = observation(candidate, "legacy");
-      } else if (candidate.classification === "current-baseline") {
-        result = await qualifyCurrentBaselineAbandonment(candidate);
-      } else if (candidate.classification === "incomplete") {
-        result = await qualifyAbandonment(candidate);
-      } else if (candidate.classification === "invalid" || candidate.terminal === null) {
-        result = observation(candidate, "terminal-evidence-invalid");
+  const inspectCandidates = async (lease?: CurrentProcessSqlRuntimeLease): Promise<void> => {
+    for (const candidate of candidates) {
+      candidateCounts[candidate.classification] += 1;
+      if (candidate.compact) {
+        states.push({ operationId: candidate.operationId, state: candidate.state, recordedState: candidate.state, qualification: "legacy" });
       } else {
-        if (runtime === undefined && !runtimeUnavailable) {
-          runtime = await runtimeForScan();
-          runtimeUnavailable = runtime === undefined;
+        let result: QualifiedAdmissionOperation | undefined;
+        if (candidate.classification === "legacy") {
+          result = observation(candidate, "legacy");
+        } else if (candidate.classification === "current-baseline") {
+          result = await qualifyCurrentBaselineAbandonment(candidate);
+        } else if (candidate.classification === "incomplete") {
+          result = await qualifyAbandonment(candidate);
+        } else if (candidate.classification === "invalid" || candidate.terminal === null) {
+          result = observation(candidate, "terminal-evidence-invalid");
+        } else {
+          result = lease === undefined ? observation(candidate, "terminal-evidence-unavailable") : await qualifyTerminal(candidate, lease.runtime, lease);
         }
-        result = runtime === undefined ? observation(candidate, "terminal-evidence-unavailable") : await qualifyTerminal(candidate, runtime);
-      }
-      if (result !== undefined) {
-        results.push(result);
-        if (result.qualification !== "historical-abandonment-verified") {
-          states.push({ operationId: result.summary.operationId, state: result.summary.state,
-            recordedState: result.recordedState, qualification: result.qualification });
+        if (result !== undefined) {
+          results.push(result);
+          if (result.qualification !== "historical-abandonment-verified") {
+            states.push({ operationId: result.summary.operationId, state: result.summary.state,
+              recordedState: result.recordedState, qualification: result.qualification });
+          }
         }
       }
     }
-  }
+  };
+  if (candidates.some(candidate => !candidate.compact && candidate.classification === "terminal" && candidate.terminal !== null)) {
+    let entered = false;
+    try {
+      await withCurrentProcessSqlRuntimeLease(async lease => { entered = true; await inspectCandidates(lease); });
+    } catch (error) {
+      // Initial acquisition failure retains the established per-journal blocker.
+      // Once the scan owns a lease, drift or cleanup failure defeats the whole
+      // Result. Never reacquire or publish already-cleared historical entries.
+      if (entered) { throw error; }
+      await inspectCandidates();
+    }
+  } else { await inspectCandidates(); }
   const ended = performance.now();
   return { operations: results, states, diagnostics: Object.freeze({
     schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: candidates.length,

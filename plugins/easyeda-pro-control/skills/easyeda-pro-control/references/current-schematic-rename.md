@@ -2,10 +2,26 @@
 
 This route changes one ordinary project-local SCH container's title, not a
 sheet title or circuit. It is a native task equivalent with a separate SCH
-owner. The source implements the lifecycle; no connected SCH rename case has
-passed yet. Use only an explicitly disposable project, after admitting the
+owner. Installed143713 passed one complete disposable lifecycle. Use only an
+explicitly disposable project, after admitting the
 installed payload. Ordinary projects, imported/reuse/block containers, child
 reparenting, inverse/delete and explicit Save are unsupported.
+
+## Historical connected scope
+
+Installed `0.3.0+codex.20261019143713` completed one title-only case with
+`nextPhase:"completed"` and `renameVerified:true`. One acknowledged write was
+followed by original root/Job termination and the exact complete closed SQL
+effect. Fresh cache-excluded reopening matched the container, metadata peers,
+complete child roster and both AST memberships/order. Final normal closure and
+complete SQL equality against the post-edit snapshot passed.
+
+Discovery records this as
+`installed143713-disposable-schematic-title-only-lifecycle`, not current
+execution authority. It does not validate another history, payload or invocation,
+complete sheet canvases/connectivity, delayed subscriber completion or
+prospective backend actor identity. No inverse, ordinary-project support or
+generic SDK wrapper is enabled. The completed case must never be replayed.
 
 ## Select the original owner
 
@@ -47,6 +63,52 @@ must also be unique for the later saved absence query.
 Every `advance` names the exact returned `result.nextPhase` in
 `step.expectedPhase`, with the acknowledgments shown by offline discovery.
 
+If the installed schema offers `advance-batch`, it accepts two to four explicit
+adjacent phase steps in one request. This newer action has synthetic/offline
+validation only; it was not present in installed143713 and its connected
+execution has not been validated. Prefer the following pair once the returned
+next phase is `rename-write`, so ordinary closure follows the acknowledged write
+without another agent roundtrip:
+
+```json
+{
+  "action": "advance-batch",
+  "operationId": "sch-rename-unique-case",
+  "steps": [
+    {
+      "expectedPhase": "rename-write",
+      "confirmWrite": true,
+      "acceptSchematicRename": true,
+      "confirmDisposableProject": true
+    },
+    {
+      "expectedPhase": "rename-close",
+      "confirmNormalClose": true,
+      "acceptUnknownFileEffects": true
+    }
+  ]
+}
+```
+
+The entire array validates before any phase runs. Every listed step keeps the
+single-phase guards, acknowledgments, owners and journal behavior. The coordinator
+holds its lock between steps and rechecks the exact next phase. It stops on the
+first error or pending observation, without retrying, polling, dispatching cleanup
+or inferring an unlisted next step. There is no new timeout or clock allowance.
+Cleanup steps are excluded. Split a batch before `baseline-relaunch`; the original
+launch's separate termination record must already be complete before relaunch.
+Do not include that external action in a SCH batch.
+
+Inspect a lost batch reply. `lastBatch` records the explicit requested phases,
+attempted and completed step counts, and `running`, `finished`,
+`observation-pending` or `failed` status. A finished batch is not a finished rename.
+The counts report coordinator attempts, not mutation or persistence proof. A
+pending observation counts as attempted but not completed. Only the last batch
+is retained in memory; later single-phase calls leave that historical summary
+unchanged. Never resubmit the whole batch. If the result explicitly permits a
+pending observation, issue a new single advance for that phase. Resume any later
+unconsumed phases only from the returned next phase and their own acknowledgments.
+
 | Phases | Required result |
 | --- | --- |
 | `baseline-close`, `baseline-observe-termination` | One normal close, original root/Job exit and complete raw SQL/native baseline. |
@@ -71,8 +133,9 @@ own stored SCH header is older. The baseline keeps both clocks and requires a
 write newer than both. It preserves the container's own data ticket and every
 child record; never substitute a child ticket or edit the header to satisfy the
 projection. Stable ordinary parent lineages are supported; conflicting versions
-at the maximum time and historical reparenting refuse. This source support still
-needs a complete connected lifecycle on the updated installed generation.
+at the maximum time and historical reparenting refuse. The installed143713
+result covers its disposable history, not every supported lineage or a later
+installed generation.
 
 Ordinary symbols already stored in the project may retain a canonical library
 origin. That provenance is not a block-symbol association and does not trigger
@@ -111,8 +174,8 @@ project users table; a missing row produces native empty names. The closed SQL
 proof must match those frozen backend names exactly, even when they differ
 from the UI. Do not repair the project users table or change accounts to make
 the names agree. The installed125900 pre-write refusal on their equality is
-terminal for that attempt; the corrected source requires a fresh installed
-generation and a new disposable lifecycle, not a retry.
+terminal for that attempt. Installed143713 passed a new disposable lifecycle
+with the corrected actor model; it did not retry or revive the earlier case.
 
 ## Lost replies and cleanup
 

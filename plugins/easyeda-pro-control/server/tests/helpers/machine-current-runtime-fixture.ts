@@ -8,11 +8,12 @@ import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { TestContext } from "node:test";
-import type { currentProcessSqlRuntime, openVerifiedMachineNode } from "../../src/machine-profile.ts";
+import type { currentProcessSqlRuntime, openVerifiedMachineNode, retainCurrentProcessSqlNode } from "../../src/machine-profile.ts";
 
 interface Proposal {
   currentProcessSqlRuntime: typeof currentProcessSqlRuntime;
   openVerifiedMachineNode: typeof openVerifiedMachineNode;
+  retainCurrentProcessSqlNode: typeof retainCurrentProcessSqlNode;
 }
 
 const actual = { open: fs.open, lstat: fs.lstat, realpath: fs.realpath, readFile: fs.readFile,

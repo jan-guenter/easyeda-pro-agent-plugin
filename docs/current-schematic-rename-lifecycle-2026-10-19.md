@@ -2,6 +2,14 @@
 
 Published version: `0.3.0+codex.20261019100838`.
 
+Later evidence: installed143713 completed the disposable title-only lifecycle,
+including complete intended SQL effect, fresh metadata/peer/child-roster
+verification and final normal closure with unchanged SQL. See the
+[version-specific ledger](api-connected-validation-ledger.md#generation-g20261019-143713-disposable-schematic-title-lifecycle).
+The implementation/release checkpoints below describe the earlier100838
+generation; their pending-validation statements are historical. New phase
+batching and later generations are not covered by the143713 single-phase case.
+
 The new `easyeda_control_disposable_schematic_rename` tool implements a separate
 forward-only title change for one ordinary project-local SCH container in an
 explicitly disposable project. It has offline discovery and validation through

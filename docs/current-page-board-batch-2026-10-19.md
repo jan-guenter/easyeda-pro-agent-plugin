@@ -2,8 +2,69 @@
 
 Published and installed `0.3.0+codex.20261019143713`, 2026-10-19, through
 [PR79](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/79).
-This chat's live host remains125900; a fresh session must admit143713 before
-connected validation. Installation is not connected execution support.
+The delivery chat retained125900. The continuation has now admitted the actual
+143713 host; its new disposable lifecycle completed successfully. Installation alone is not
+connected execution support.
+
+## Next combined update (not published)
+
+Frozen candidate: `0.3.0+codex.20261019163322`. Source506 SHA-256
+`c8842080d16347a7b80c912bc44e9e75d478e92767cbc2219c515212a34c9452`;
+runtime3 SHA-256
+`5f90f560a61ae05d28d45efb720dc40c19e62de75867bc793cf8547bb30cda65`.
+Build and compatibility checks passed, with external pins unchanged. Full
+verification and publication are pending; installed143713 remains untouched.
+
+- Explicit SCH `advance-batch` accepts two to four adjacent, fully acknowledged
+  existing phases. The complete request validates before effects and the
+  coordinator remains locked between steps. Pending observations and failures
+  stop the batch without polling, retries or automatic cleanup. The separate
+  original-launch termination boundary cannot be crossed. This allows a
+  write/normal-close pair without another agent roundtrip. Nineteen focused
+  tests, strict lint/types, skill validation and independent review passed.
+- Private PCB diagnostic-pipe transport implements only two fixed browser
+  discovery reads, bounded framing, correlation and retained stream ownership.
+  Independent review caught numeric overflow becoming non-finite JSON values;
+  the fix and regression are included. Seventeen focused tests, strict
+  lint/types and review passed. There is no runtime import or diagnostic launch
+  yet; native ownership and frame/worker integration remain backlog. See the
+  [transport audit](current-pcb-text-lifecycle-observers-2026-10-19.md).
+- Three runtime/source hashers use fixed 1 MiB buffers instead of the default
+  64 KiB, preserving every fresh byte, size, descriptor/path identity and
+  admission check. The initial stream implementation's six-pass alternating
+  read-only pinned-Node benchmark
+  matched the same 123,655,872 bytes and SHA on every pass: median wall time
+  161.816 to 73.908 ms, median CPU 205.471 to 112.280 ms. Sixty-five existing
+  focused tests, strict lint and independent review passed. This is an isolated
+  hash-throughput result, not measured live lifecycle savings. Repeated assertions
+  exposed retained stream listeners, so the descriptor hasher now uses
+  bounded positional reads; the earlier benchmark does not measure that new
+  implementation.
+- Historical admission retains one private current-Node owner per scan instead
+  of repeatedly acquiring it for each closed-journal observer. Each observer
+  still freshly checks executable bytes, identity, version and core limits
+  before and after reading evidence; the scan checks again before returning.
+  Copied, cross-scan, closed and poisoned leases refuse. Observed runtime drift
+  aborts the scan without fallback, and failed descriptor cleanup defeats
+  success. SQL child execution, journal/sidecar checks and cache keys are
+  unchanged. The positional hash loop avoids retained stream listeners and
+  preserves the descriptor cursor. Root and independent review accepted the
+  change; 49 runtime/lease, 73 scanner, 10 selected cache and three actual
+  closure tests passed, with full types and strict lint clean. These checks
+  do not measure live latency or establish new CAD authority.
+
+Read-only observation of the admitted host during this continuation reported
+675,002,076,343 cumulative `rchar` bytes but 7,191,063,432 physical `read_bytes`,
+with 39:59 CPU time over 31:32 elapsed. These are whole-process counters, not a
+phase profile or proof that every byte came from one validator. Source tracing
+found repeated current-Node acquisition inside historical admission; a
+scan-owned reuse change is now reviewed, with no skipped historical journals or
+cached quarantine result.
+
+The installed snapshot remained unchanged throughout the original live case.
+That lifecycle is now terminal and EasyEDA is closed. Build, exact-payload CI,
+publication and installation of this combined source update remain pending;
+these source checks do not claim delivery.
 
 ## Batched implementation
 
@@ -79,6 +140,25 @@ the disposable source remained byte-identical; both checkpoints also matched.
 The complete logical/native inventory covered 20 documents, 55 rows and 59
 history chunks. This is an unchanged failed case, not a successful rename.
 
+## Installed143713 result
+
+The corrected actor model passed a new complete disposable schematic-title
+lifecycle. The original write was acknowledged once, normal closure proved
+root/Job exit, and the complete SQL comparison found exactly the intended
+title/history/structure delta. A fresh admitted generation excluded upload
+caches, reopened without editor tabs and matched saved container/all-peer
+metadata, the complete child roster and both AST memberships/order. Final
+normal closure and complete unchanged SQL passed. The coordinator returned
+`nextPhase:"completed"` and `renameVerified:true`; no explicit Save was sent.
+The title remains in the disposable fixture. No production design was accessed.
+
+All four new page/board metadata routes also passed in the no-editor generation,
+including a selected page with its expected parent and a populated selected
+board. Version-specific hashes and limits are recorded in the
+[validation ledger](api-connected-validation-ledger.md#generation-g20261019-143713-disposable-schematic-title-lifecycle).
+This does not validate full canvases, connectivity, later generations, or the
+new source-only batching/lease/transport changes.
+
 ## Release verification
 
 The frozen source projection contains 504 files; runtime projection contains
@@ -118,7 +198,8 @@ repository validation passed. Local validation also covered all seven skills.
 Protected PR79 merged as `f1fc00d1047045a514da9f464049efa59639bcd1`, with the
 complete tree identical to the tested payload. The post-merge
 [Linux run](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39277119967)
-is still running at handoff (build passed); post-merge
+reported completed/success on continuation; all build/shard jobs and final gate
+steps passed. Post-merge
 [Windows recovery](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39277119974)
 passed. Final PR evidence and post-merge evidence are distinct.
 
@@ -140,12 +221,15 @@ never be rerun. No installed cache was patched and no live host was terminated.
 
 ## Remaining work
 
-- Actor-model correction, reader review and focused checks are complete;
-  connected rename success still needs a fresh admitted installed generation.
-- The batch is published, installed and offline-verified. Check the post-merge
-  Linux CI result on continuation; then admit the actual143713 process in a fresh
-  session. The current125900 host cannot validate the new implementation.
-- Validate the new page/board routes on the next admitted installed generation.
+- Actor-model correction, four public page/board reads and the complete
+  disposable schematic rename lifecycle passed on admitted143713.
+- The143713 batch is published, installed and offline-verified; both post-merge
+  CI runs passed. The actual143713 process is now admitted and its disposable
+  continuation completed with EasyEDA closed. The next combined source update
+  still needs frozen verification, publication and installation.
+- All four new page/board routes passed on admitted143713: the complete two-page
+  schematic map and populated one-board map matched their selected reads.
+  These are metadata observations, not write or saved-state authority.
   Populated Image/Dimension cases remain separate validation work.
 - Implement the complete PCB text pre-create observer/writer/persistence path.
   The audit identifies a transport boundary, not a claim that all future

@@ -17,6 +17,7 @@ const { deriveClosedSymbolTerminalClosure, ClosureEvidenceChangedError, ClosureI
 const { observeClosedSymbolTerminalClosure, revalidateClosedSymbolTerminalClosure } = await import("../src/closed-symbol-terminal-closure-observer.ts");
 const { sha256Json } = await import("../src/core.ts");
 const { readExactUtf8Artifact } = await import("../src/artifacts.ts");
+const { withCurrentProcessSqlRuntimeLease } = await import("../src/current-process-sql-runtime-lease.ts");
 
 void test("fixed64 role closure retains aliases,18 sidecars, same bytes and no authority", async () => {
   const fixture = await closureFixture(), plan = deriveClosedSymbolTerminalClosure(fixture.input);
@@ -25,6 +26,25 @@ void test("fixed64 role closure retains aliases,18 sidecars, same bytes and no a
   assert.equal(first.files.length, 62); assert.equal(first.absentSidecars.length, 18);
   assert.equal(first.executionAuthorized, false); assert.equal(first.completionProved, false); assert.equal(first.semanticValidationPerformed, false);
   assert.deepEqual(await revalidateClosedSymbolTerminalClosure(fixture.input, first), first);
+});
+void test("borrowed runtime retains one original owner but rechecks all closure bytes on warm observation", async (context) => {
+  const fixture = await closureFixture(), originalOpen = fsPromises.open;
+  let kernelOpens = 0, namedOpens = 0;
+  context.mock.method(fsPromises, "open", (...args: Parameters<typeof fsPromises.open>) => {
+    if (args[0] === "/proc/self/exe") { kernelOpens += 1; }
+    if (args[0] === process.execPath) { namedOpens += 1; }
+    return originalOpen(...args);
+  });
+  syncBuiltinESMExports();
+  context.after((): void => { context.mock.restoreAll(); syncBuiltinESMExports(); });
+  await withCurrentProcessSqlRuntimeLease(async lease => {
+    const first = await observeClosedSymbolTerminalClosure(fixture.input, lease);
+    assert.deepEqual(await revalidateClosedSymbolTerminalClosure(fixture.input, first, lease), first);
+    const path = fixture.input.envelope.body.evidence.savedReadRaw.path;
+    const bytes = await readFile(path); bytes[0] = ((bytes[0] ?? 0) + 1) % 256; await writeFile(path, bytes);
+    await assert.rejects(revalidateClosedSymbolTerminalClosure(fixture.input, first, lease), ClosureEvidenceChangedError);
+  });
+  assert.equal(kernelOpens, 1); assert.equal(namedOpens, 1);
 });
 for (let index = 0; index < 64; index += 1) {
   void test(`changed expected evidence role${String(index)} refuses`, async () => {

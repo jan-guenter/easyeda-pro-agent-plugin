@@ -15,7 +15,13 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
-Update `0.3.0+codex.20261019143713` batches selected/all schematic-page metadata
+Installed `0.3.0+codex.20261019143713` passed one complete disposable schematic
+title-change lifecycle: exact full SQL effect, fresh reopened metadata and child
+roster, final normal closure and unchanged SQL. It also passed all four new
+page/board metadata reads, including a populated selected-board lookup. These
+version-specific results do not enable general editing or later runtimes.
+
+That update batches selected/all schematic-page metadata
 and board metadata readers, passive schematic phase diagnostics, immutable
 clock-reference binding and synthetic-fixture cleanup. It also separates current
 UI actor names from the backend's historical project-user names, retaining the
@@ -24,9 +30,14 @@ the expected parent and complete maps; the board native equivalent selects by
 UUID rather than the public method's name. Neither reads circuits or establishes
 saved-state authority. Installed125900 reached rename preparation, refused an
 actor-data mismatch before mutation and was normally closed and retired with
-complete unchanged-file/SQL proof. Connected schematic rename success remains
-pending. The [batch record](docs/current-page-board-batch-2026-10-19.md) separates
+complete unchanged-file/SQL proof. That earlier failed case remains retired.
+The [batch record](docs/current-page-board-batch-2026-10-19.md) separates
 implemented routes, connected evidence and the remaining backlog.
+
+The next combined update adds explicit two-to-four-step schematic phase
+batches, scan-owned runtime descriptors with fresh checks, bounded positional
+hashing, and a private PCB diagnostic-pipe foundation. These changes are under
+release preparation, not yet installed; no live speedup or PCB writer is claimed.
 
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are

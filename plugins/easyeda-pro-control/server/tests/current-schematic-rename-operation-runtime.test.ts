@@ -8,7 +8,7 @@ import { performance } from "node:perf_hooks";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { isRecord } from "../src/core.ts";
-import { CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, queryCurrentSchematicRenameOperation,
+import { CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, queryCurrentSchematicRenameOperation,
   validateCurrentSchematicRenameOperationArguments } from "../src/current-schematic-rename-operation.ts";
 
 type Value = Record<string, unknown>;
@@ -22,12 +22,14 @@ async function fixture(): Promise<{
   state: { failure: string | undefined; returnedFailure: boolean; pendingAuthentication: boolean; pendingTermination: boolean;
     invariant: boolean; metadata: boolean; childRoster: boolean; cleanupGate: Promise<unknown> | undefined;
     beginGate: Promise<unknown> | undefined;
+    writeGate: Promise<unknown> | undefined; writeStarted: (() => void) | undefined;
     cleanupStarted: (() => void) | undefined;
     scratchGate: Promise<unknown> | undefined; scratchStarted: (() => void) | undefined };
 }> {
   const calls: string[] = [], state = { failure: undefined as string | undefined, returnedFailure: false,
     pendingAuthentication: false, pendingTermination: false, invariant: true, metadata: true, childRoster: true, cleanupGate: undefined as Promise<unknown> | undefined,
     beginGate: undefined as Promise<unknown> | undefined,
+    writeGate: undefined as Promise<unknown> | undefined, writeStarted: undefined as (() => void) | undefined,
     cleanupStarted: undefined as (() => void) | undefined,
     scratchGate: undefined as Promise<unknown> | undefined, scratchStarted: undefined as (() => void) | undefined };
   const clock = Object.freeze({ original: "clock" }), continuation = Object.freeze({ operationId: ID, original: "continuation" });
@@ -68,9 +70,10 @@ async function fixture(): Promise<{
       assert.equal(value, continuation); this.owned = true; this.status["launchRetained"] = true; this.status["launchAttempted"] = true; return this.step("relaunch");
     }
     public generation(): unknown { assert.equal(this.kind, "generation"); return generation; }
-    public execute(selected: unknown, observed: unknown, age: unknown): Value {
+    public async execute(selected: unknown, observed: unknown, age: unknown): Promise<Value> {
       assert.equal(selected, generation); assert.equal(observed, startup); assert.equal(age, clock); assert.equal(scoped, false);
       this.owned = true;
+      state.writeStarted?.(); await state.writeGate;
       if (state.failure === "writer.transfer-before") {
         this.status["ownerRetained"] = false; calls.push("writer.execute"); throw new Error("Synthetic writer transfer never committed");
       }
@@ -119,7 +122,7 @@ async function fixture(): Promise<{
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-schematic-rename-operation-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Promise, performance, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } }, structuredClone, isRecord,
-    CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, controlDataDirectory: (): string => "/synthetic/control",
+    CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, controlDataDirectory: (): string => "/synthetic/control",
     loadRuntimeMachineProfile: async (): Promise<Value> => { await state.beginGate;
       return { profile: { controlDirectory: "/synthetic/control", easyeda: { assetsRoot: "/synthetic/assets" }, runtime: {} } }; },
     loadOperation: (): Promise<Value> => Promise.resolve({ operationId: ID, plan: { profile: "easyeda-pro-control.current-schematic-rename-writer.v1" }, artifacts: [] }),
@@ -159,6 +162,13 @@ function step(phase: unknown): Value {
   return { expectedPhase: phase };
 }
 function advance(value: Harness): Promise<Value> { return value.run({ action: "advance", operationId: ID, step: step(value.inspect()["nextPhase"]) }); }
+function batch(phases: readonly string[]): Value { return { action: "advance-batch", operationId: ID, steps: phases.map(phase => step(phase)) }; }
+function lastBatch(value: Harness): Value {
+  const progress = object(value.inspect()["lastBatch"]);
+  assert.equal(progress["diagnosticOnly"], true); assert.equal(progress["replayAllowed"], false);
+  assert.ok(Object.isFrozen(progress)); assert.ok(Object.isFrozen(progress["requestedPhases"]));
+  return progress;
+}
 async function reach(value: Harness, phase: string): Promise<void> {
   for (let index = 0; index < 30 && value.inspect()["nextPhase"] !== phase; index += 1) { await advance(value); }
   assert.equal(value.inspect()["nextPhase"], phase);
@@ -185,8 +195,99 @@ void test("SCHEMATIC public schema requires exact phase acknowledgments and excl
   }
   const discovery = queryCurrentSchematicRenameOperation({ includeSchemas: true });
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["connectedValidation"], false);
-  assert.equal(discovery["historicalConnectedValidation"], "not-recorded");
+  assert.equal(discovery["historicalConnectedValidation"], "installed143713-disposable-schematic-title-only-lifecycle");
   assert.ok(isRecord(discovery["inputSchema"]));
+});
+
+void test("SCHEMATIC batches validate all bounded adjacent acknowledgments before consuming any phase", async () => {
+  const value = await fixture(); await value.run(BEGIN); await reach(value, "rename-write");
+  const before = structuredClone(value.inspect()), calls = [...value.calls];
+  for (const request of [batch([]), batch(["rename-write"]), batch(["rename-write", "rename-write"]),
+    batch(["rename-write", "rename-observe-termination"]), batch(["cleanup-close", "cleanup-observe-termination"]),
+    batch(["baseline-prepare-clock", "baseline-relaunch"]),
+    batch(["baseline-relaunch", "baseline-admit", "baseline-observe-caches", "baseline-open-project", "baseline-observe-clock"]),
+    { action: "advance-batch", operationId: ID, steps: [step("rename-write"), { expectedPhase: "rename-close" }] },
+    { action: "advance-batch", operationId: ID, steps: [step("rename-write"), { ...step("rename-close"), code: "caller()" }] },
+    { ...batch(["rename-write", "rename-close"]), continueOnError: true }]) {
+    assert.equal(validateCurrentSchematicRenameOperationArguments(request)["valid"], false);
+    await assert.rejects(value.run(request));
+    assert.deepEqual(structuredClone(value.inspect()), before); assert.deepEqual(value.calls, calls);
+  }
+  assert.equal(validateCurrentSchematicRenameOperationArguments(batch(["rename-write", "rename-close"]))["valid"], true);
+  assert.equal(validateCurrentSchematicRenameOperationArguments(batch(["baseline-relaunch", "baseline-admit", "baseline-observe-caches", "baseline-open-project"]))["valid"], true);
+  assert.ok(Object.isFrozen(CURRENT_SCHEMATIC_RENAME_NEXT_PHASES));
+});
+
+void test("SCHEMATIC explicit write-close batch consumes each original phase once and never infers termination", async () => {
+  const value = await fixture(); await value.run(BEGIN); await reach(value, "rename-write");
+  const before = value.calls.length, request = batch(["rename-write", "rename-close"]);
+  const result = await value.run(request);
+  assert.deepEqual(value.calls.slice(before), ["writer.execute", "writer.close"]);
+  assert.equal(result["nextPhase"], "rename-observe-termination"); assert.equal(result["renameVerified"], false);
+  assert.equal(result["busy"], false); assert.equal(diagnostic(value)["current"], null);
+  assert.equal(object(diagnostic(value)["last"])["phase"], "rename-close");
+  assert.deepEqual(structuredClone(lastBatch(value)), { requestedPhases: ["rename-write", "rename-close"],
+    attemptedSteps: 2, completedSteps: 2, status: "finished", diagnosticOnly: true, replayAllowed: false });
+  await assert.rejects(value.run(request)); assert.deepEqual(value.calls.slice(before), ["writer.execute", "writer.close"]);
+  await reach(value, "verification-read"); await value.run(batch(["verification-read", "verification-close", "verification-finish"]));
+  assert.equal(value.inspect()["nextPhase"], "completed"); assert.equal(value.inspect()["renameVerified"], true);
+  assert.equal(lastBatch(value)["completedSteps"], 3);
+});
+
+void test("SCHEMATIC batches stop at pending authentication or termination without polling or dispatching a successor", async () => {
+  for (const [phase, phases, event] of [
+    ["baseline-admit", ["baseline-admit", "baseline-observe-caches", "baseline-open-project"], "generation.admit"],
+    ["baseline-close", ["baseline-close", "baseline-observe-termination", "baseline-prepare-clock"], "baseline.termination"],
+    ["rename-close", ["rename-close", "rename-observe-termination", "verification-start"], "writer.finish"],
+  ] as const) {
+    const value = await fixture(); await value.run(BEGIN); await reach(value, phase);
+    if (phase === "baseline-admit") { value.state.pendingAuthentication = true; } else { value.state.pendingTermination = true; }
+    const before = value.calls.length; await value.run(batch(phases));
+    assert.equal(value.calls.at(-1), event); assert.equal(value.calls.slice(before).filter(call => call === event).length, 1);
+    assert.equal(lastBatch(value)["status"], "observation-pending"); assert.equal(value.inspect()["busy"], false);
+    const count = phase === "baseline-admit" ? 1 : 2;
+    assert.equal(lastBatch(value)["attemptedSteps"], count); assert.equal(lastBatch(value)["completedSteps"], count - 1);
+    assert.equal(object(diagnostic(value)["last"])["outcome"], "observation-pending");
+    const remaining = value.inspect()["nextPhase"]; assert.equal(remaining, phases[count - 1]);
+    await advance(value); assert.notEqual(value.inspect()["nextPhase"], remaining);
+  }
+});
+
+void test("SCHEMATIC failed batches preserve consumed phase errors and cleanup selection without running later or cleanup steps", async () => {
+  for (const mode of ["thrown-write", "returned-write", "thrown-close"] as const) {
+    const value = await fixture(); await value.run(BEGIN); await reach(value, "rename-write");
+    if (mode === "returned-write") { value.state.returnedFailure = true; }
+    else { value.state.failure = mode === "thrown-write" ? "writer.execute" : "writer.close"; }
+    const before = value.calls.length, request = batch(["rename-write", "rename-close", "rename-observe-termination"]);
+    await assert.rejects(value.run(request), mode === "returned-write" ? /retained a stopped stage/u : /Synthetic failure: writer\.(?:execute|close)/u);
+    assert.deepEqual(value.calls.slice(before), mode === "thrown-close" ? ["writer.execute", "writer.close"] : ["writer.execute"]);
+    assert.equal(lastBatch(value)["status"], "failed"); assert.equal(lastBatch(value)["attemptedSteps"], mode === "thrown-close" ? 2 : 1);
+    assert.equal(lastBatch(value)["completedSteps"], mode === "thrown-close" ? 1 : 0);
+    assert.equal(value.inspect()["cleanupOwner"], "writer"); assert.equal(value.inspect()["busy"], false);
+    assert.equal(object(diagnostic(value)["last"])["outcome"], "failed"); assert.equal(diagnostic(value)["current"], null);
+    await assert.rejects(value.run(request)); assert.equal(value.calls.filter(call => call === "writer.execute").length, 1);
+  }
+});
+
+void test("SCHEMATIC batch holds its lock and detached input across awaited write without accepting another action", async () => {
+  const value = await fixture(); await value.run(BEGIN); await reach(value, "rename-write");
+  const gate = Promise.withResolvers<boolean>(), started = Promise.withResolvers<boolean>();
+  value.state.writeGate = gate.promise; value.state.writeStarted = (): void => { started.resolve(true); };
+  const before = value.calls.length, request = batch(["rename-write", "rename-close"]);
+  const pending = value.run(request); await started.promise;
+  try {
+    assert.equal(value.inspect()["busy"], true); assert.equal(value.inspect()["nextPhase"], "stopped");
+    assert.equal(lastBatch(value)["status"], "running"); assert.equal(lastBatch(value)["attemptedSteps"], 1);
+    assert.equal(lastBatch(value)["completedSteps"], 0); assert.equal(object(diagnostic(value)["current"])["phase"], "rename-write");
+    assert.ok(Array.isArray(request["steps"])); request["steps"][1] = step("cleanup-close");
+    for (const next of [batch(["rename-write", "rename-close"]), { action: "advance", operationId: ID, step: step("rename-close") },
+      { action: "cleanup", operationId: ID, confirmAbort: true }, BEGIN]) { await assert.rejects(value.run(next), /already running/u); }
+    const inspection = await value.run({ action: "inspect", operationId: ID }); assert.equal(inspection["busy"], true);
+    assert.equal(value.calls.includes("writer.close"), false);
+  } finally { gate.resolve(true); await pending; }
+  assert.deepEqual(value.calls.slice(before), ["writer.execute", "writer.close"]);
+  assert.deepEqual(structuredClone(lastBatch(value)["requestedPhases"]), ["rename-write", "rename-close"]);
+  assert.equal(value.inspect()["busy"], false); assert.equal(lastBatch(value)["status"], "finished");
 });
 
 void test("SCHEMATIC public phases complete only the original forward lifecycle and actual saved metadata result", async () => {

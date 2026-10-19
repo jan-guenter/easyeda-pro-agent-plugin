@@ -158,7 +158,8 @@ async function verifyFiles(assetsRoot: string, pins: readonly Readonly<{ relativ
       requirePinned(before.isFile() && before.size === BigInt(pin.bytes));
       const hash = createHash("sha256");
       let bytes = 0;
-      for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      // Bound stream buffering while retaining every fresh byte and identity check.
+      for await (const chunk of handle.createReadStream({ autoClose: false, highWaterMark: 1_048_576 })) {
         requirePinned(Buffer.isBuffer(chunk));
         bytes += chunk.length;
         requirePinned(bytes <= pin.bytes);

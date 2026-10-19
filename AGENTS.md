@@ -4,6 +4,70 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+143713 live continuation, 2026-10-19. Root/independent actual facade12516/
+start39944216, parent10763/start39938677, installed1531/42/31,319,304 bytes
+and all source504/runtime3/manifest pins match delivered143713 below.
+Ordinary launch `sch-rename-143713-20261019-launch` COMPLETED functions15:
+root50468/Jobd63841f79c494b67843553b144d903a1/helperf3046dab971e44969096bbbd9ebe3dd9,
+launched08f2ebc9. Status17 authenticated dispatcher ded07x99dcxb504 with no
+incomplete operations/drift. Context19 proved start-page with no project. Open24
+COMPLETED `sch-rename-143713-20261019-open`, exact fixture PCB active and
+preparation checkpoint581632/aec8d006; no persistence/writer inference.
+SCH begin29 and close/termination36 COMPLETED `sch-rename-143713-20261019-case`:
+baseline captured, original root/Job exit proved; baseline phase288999ms.
+Original ordinary-launch termination51 and scratch preparation51 COMPLETED;
+scratch232513ms, reference retained. Relaunch65 COMPLETED490255ms, firstadmit
+returned explicitly pending. Follow-up80 COMPLETEDadmit31214ms/cache66750ms/
+project-only-open65581ms, generation issued. No replay of scratch/launch/open.
+Cells85/89 COMPLETED all/selected page and board metadata reads: two pages in
+one SCH and one populated board, two matching samples each, runtime admission
+before/after, no mutation/explicitSave. Selected page/board match complete maps;
+metadata-only, not persistence authority. Private identities stay in evidence.
+Cell93 COMPLETED clock54982ms/write88714ms/close15893ms. Native acknowledgment
+confirms the intended SCH title-only update, ticket780;
+normal close acknowledged. Never replay write/close. Cell101 COMPLETED original
+root/Job termination and exact full SQL intended effect:20documents, all55old
+rows/59oldchunks preserved, one new SCHhistory; SQLafter1d270e35. Verification
+launch acknowledged, initial admission explicitly pending. Cell105 COMPLETED
+admit/cache/open/read/close/finish: saved metadata/peers/complete child roster/
+both ASTs and final SQL equality pass. nextPhasecompleted/renameVerifiedtrue,
+busyfalse/retired/no failure; EasyEDA closed, never replay. Independent full
+journal+54artifacts/3rawcopies/checkpoints/closureproof audit passed. Journal
+5455efa7, terminal8cc4c35c, finalraw750e4f95/598016, checkpoint7e0bc38f/581632,
+no sidecars. Artifact54 is pre-retirement intent; terminal reply settles flags.
+Last baseline source598016/e4434cc5; no production access or explicitSave.
+Evidence `/root/.cache/easyeda-143713-schematic-live-NbXybE8D`.
+Source-only PCB diagnostic-pipe transport and explicit SCH phase batching are
+implemented in parallel. SCH batching19focusedtests/types/lint/skill validation
+and independent review pass; PCB transport17focusedtests/types/lint and
+independent review pass. Root updated the shared batch tool description.
+Three hashers use1MiB read buffers without dropping freshness checks;
+65existingfocusedtests/lint and independent review passed the stream variant.
+A private scan-owned current-Node lease is implemented/root+independent accepted;
+fresh per-observation/final assertions, poisoned-scan abort, complete original
+cleanup and independent SQL children remain. Repeated descriptor use exposed
+retained stream listeners; nodeDescriptorHash now uses bounded positional reads.
+49runtime/lease,73scanner,10selectedcache,3actualclosuretests/fulltypes/strictlint
+pass. The earlier stream microbenchmark is not evidence for this changed
+implementation or live lifecycle savings. Candidate163322 source frozen;
+build45409 and compatibility check pass. Source506/c8842080,
+runtime3/5f90f560, manifestad8720b7; external pins unchangeda1faf216. Full verify
+running session22023, log in private release-check directory. Repository/all7
+quick validators running93514. Not published or installed. Fresh dormant
+offline probe `/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`
+has root/independent template review only; unfilled pins/approvalfalse, NEVER
+execute before final exact-main/cache/version/hash review. Source/bundles/pins
+frozen during suites; root admits no further live work after upgrading.
+Dependency reinstall/tree/vulnerability checks passed; signatures first failed
+because /tmp is full. With private TMPDIR
+`/root/.cache/easyeda-143713-release-checks-J4S4XcoW`, all151 registry signatures
+and40 attestations passed. Use private cache temp space for remaining suites;
+do not broadly clean /tmp or discard existing evidence.
+The live lifecycle is terminal; build/release may proceed, installed cache stays
+untouched until official upgrade. MainCI39277119967 now reports completed/
+success; all shard/build jobs and final gate steps passed. MainWindows39277119974
+passed. Older current/pending wording below is historical.
+
 Delivered143713, 2026-10-19. PR79 final payload
 `57fa2449236ea632910906830d0533d0fdb8a204` merged normally as main
 `f1fc00d1047045a514da9f464049efa59639bcd1`; complete trees are identical.

@@ -259,9 +259,15 @@ clock values remain comparison inputs, not live provenance. Native observation,
 retained lifecycle ownership, complete effect and saved reopening remain separate
 requirements. The separate disposable SCH coordinator now consumes this model
 through original SCH owners, one tracked pre-clock/write scope, complete closed
-SQL, saved metadata/child-roster verification and final closure. It is implemented
-but not connected-validated; it does not enable the generic wrapper. The public
-route currently selects the aged unlocked-head branch, not every modeled branch.
+SQL, saved metadata/child-roster verification and final closure. Installed143713
+passed one disposable title-only lifecycle, including fresh cache-excluded
+reopening, metadata peers, complete child roster, both AST memberships/order and
+final SQL equality.
+The historical label `installed143713-disposable-schematic-title-only-lifecycle`
+does not admit a later generation, other histories or the generic wrapper. The
+newer explicit `advance-batch` action remains synthetic-tested, not live-validated.
+The public route selects the aged unlocked-head branch, not every modeled branch;
+ordinary projects, inverse and complete canvas/connectivity proof remain excluded.
 
 The unregistered SCH preflight now reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

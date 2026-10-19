@@ -151,11 +151,16 @@ async function nodeDescriptorHash(file: FileHandle, before: Stats): Promise<stri
   const hash = createHash("sha256");
   if (!sameNodeFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
   let total = 0;
-  for await (const chunk of file.createReadStream({ autoClose: false, start: 0 })) {
-    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-    total += bytes.length;
+  // Batch positional reads, not admission. A retained scan descriptor must not
+  // Accumulate FileHandle-backed stream listeners or change its shared cursor.
+  const chunk = Buffer.alloc(1_048_576);
+  for (;;) {
+    const { bytesRead } = await file.read(chunk, 0, chunk.length, total);
+    if (!Number.isSafeInteger(bytesRead) || bytesRead < 0 || bytesRead > chunk.length) { throw new MachineProfileError("machine-node-read-length"); }
+    if (bytesRead === 0) { break; }
+    total += bytesRead;
     if (total > NODE_MAX_BYTES) { throw new MachineProfileError("machine-node-too-large"); }
-    hash.update(bytes);
+    hash.update(chunk.subarray(0, bytesRead));
   }
   if (total !== before.size || !sameNodeFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
   return hash.digest("hex");
@@ -263,12 +268,11 @@ async function closeCurrentProcessNode(file: FileHandle, node: VerifiedMachineNo
  * Derive a SQL runtime from the executable already running this Linux process.
  * Only fixed procfs records and that executable are read; no machine profile,
  * application installation, environment variable or project is consulted.
- * The identity is observed before cleanup, not guaranteed current after it.
- * This returns data, not a retained capability: each SQL child must use the
- * existing descriptor/hash revalidation. Future hostile inode writes remain
- * outside this observational guarantee.
+ * Retain both the kernel executable and checked pathname descriptors until the
+ * owner closes them. Assertions freshly hash/probe the same original files.
+ * Future hostile inode writes remain outside this observational guarantee.
  */
-export async function currentProcessSqlRuntime(): Promise<Readonly<MachineProfile["runtime"]>> {
+export async function retainCurrentProcessSqlNode(): Promise<VerifiedMachineNode> {
   assertSupportedHost();
   if (process.versions.node !== MACHINE_NODE_VERSION) {
     throw new MachineProfileError("machine-current-node-version-mismatch");
@@ -277,6 +281,7 @@ export async function currentProcessSqlRuntime(): Promise<Readonly<MachineProfil
   // Follow this fixed kernel-provided procfs link, never a caller-selected path.
   const file = await open("/proc/self/exe", fsConstants.O_RDONLY);
   let node: VerifiedMachineNode | undefined;
+  let transferred = false;
   try {
     const information = await file.stat();
     if (!information.isFile() || information.size === 0 || information.size > NODE_MAX_BYTES ||
@@ -290,10 +295,21 @@ export async function currentProcessSqlRuntime(): Promise<Readonly<MachineProfil
     });
     node = await retainNodeIdentity(nodeExecutable, kernel.nodeSha256, kernel);
     await node.assertCurrent();
-    return node.runtime;
+    const retained = node;
+    const result = Object.freeze({ runtime: retained.runtime, descriptorPath: retained.descriptorPath,
+      assertCurrent: retained.assertCurrent, close: async (): Promise<void> => { await closeCurrentProcessNode(file, retained); } });
+    transferred = true;
+    return result;
   } finally {
-    await closeCurrentProcessNode(file, node);
+    if (!transferred) { await closeCurrentProcessNode(file, node); }
   }
+}
+
+/** Data-only compatibility entry. The private scan lease retains the same
+ * original descriptors instead; every assertion still rehashes and probes. */
+export async function currentProcessSqlRuntime(): Promise<Readonly<MachineProfile["runtime"]>> {
+  const node = await retainCurrentProcessSqlNode();
+  try { return node.runtime; } finally { await node.close(); }
 }
 
 async function nodeIdentity(nodeExecutable: string): Promise<MachineProfile["runtime"]> {

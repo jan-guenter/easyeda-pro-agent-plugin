@@ -1,8 +1,8 @@
 # Current-project schematic and page metadata
 
-Date: 2026-10-19. This is a source-reviewed, offline-tested native metadata
-reader, not a connected validation report. It adds no schematic writer, canvas
-reader or permission to open a project.
+Date: 2026-10-19. This report describes the source-reviewed, offline-tested
+native metadata reader and the later installed143713 page observations below.
+It adds no schematic writer, canvas reader or permission to open a project.
 
 ## Public API scope
 
@@ -134,8 +134,8 @@ introduced.
 The public wrapper's optional missing result, full public item fields and exact
 wrapper dispatch are intentionally not replicated: this route's contract is an
 exact-target, fail-closed native observation. The former standalone-page getter
-backlog is resolved only at the implementation/offline-test layer. Connected
-page observation remains unvalidated. Current-page/current-container getters
+backlog is implemented and has the limited installed143713 connected evidence
+below. Current-page/current-container getters
 are not offered because this route requires no open editor. Public title-block
 fields, canvas primitives and topology remain omitted because native page
 metadata does not establish circuit contents, electrical connectivity or
@@ -154,3 +154,21 @@ after dispatch, quarantine, malformed arguments and reply authority promotion.
 Registration/offline tests exercise the maintained source registration and
 strict discovery routing. These are offline regressions, not evidence that the
 reader has executed in a connected EasyEDA generation.
+
+## Installed143713 connected page observation
+
+Installed `0.3.0+codex.20261019143713` subsequently passed
+`eda.dmt_Schematic.getAllSchematicPagesInfo` on one disposable project with one
+schematic container and two pages, followed by
+`eda.dmt_Schematic.getSchematicPageInfo` for one of those pages. The selected
+page matched its explicit expected parent, complete maps and exact native
+getter. Both calls retained two matching complete samples and passed runtime
+admission before and after dispatch. No editor, mutation or explicit Save was
+involved.
+
+These two calls do not validate `getSchematicInfo`, `getAllSchematicsInfo`,
+empty-page inventories or later generations. Observed parent membership is
+not saved membership, complete source, canvas, connectivity, worker ownership
+or rename authority. General `liveValidation` fields remain `not-recorded`;
+the [connected validation ledger](api-connected-validation-ledger.md#generation-g20261019-143713-page-and-board-metadata)
+records this version-specific case and its observation hashes.

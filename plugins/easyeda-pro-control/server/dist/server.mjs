@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "397697c9dd23d8ad817da2886c264ac4731e16cd1063b8d9d1b637908723443a";
+const __easyedaBundlePairId = "c91d2c0319938acb1ea8fc1313516bc575893c0c913fc592d8373278b1a30d94";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -15553,13 +15553,20 @@ async function nodeDescriptorHash(file3, before) {
     throw new MachineProfileError("machine-node-changed");
   }
   let total = 0;
-  for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
-    const bytes2 = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-    total += bytes2.length;
+  const chunk = Buffer.alloc(1048576);
+  for (; ; ) {
+    const { bytesRead } = await file3.read(chunk, 0, chunk.length, total);
+    if (!Number.isSafeInteger(bytesRead) || bytesRead < 0 || bytesRead > chunk.length) {
+      throw new MachineProfileError("machine-node-read-length");
+    }
+    if (bytesRead === 0) {
+      break;
+    }
+    total += bytesRead;
     if (total > NODE_MAX_BYTES) {
       throw new MachineProfileError("machine-node-too-large");
     }
-    hash45.update(bytes2);
+    hash45.update(chunk.subarray(0, bytesRead));
   }
   if (total !== before.size || !sameNodeFile(before, await file3.stat())) {
     throw new MachineProfileError("machine-node-changed");
@@ -15643,7 +15650,7 @@ async function closeCurrentProcessNode(file3, node) {
     throw new AggregateError(failures, "machine-current-node-close-failed");
   }
 }
-async function currentProcessSqlRuntime() {
+async function retainCurrentProcessSqlNode() {
   assertSupportedHost();
   if (process.versions.node !== MACHINE_NODE_VERSION) {
     throw new MachineProfileError("machine-current-node-version-mismatch");
@@ -15651,6 +15658,7 @@ async function currentProcessSqlRuntime() {
   const nodeExecutable = pathSchema.parse(process.execPath);
   const file3 = await open2("/proc/self/exe", fsConstants2.O_RDONLY);
   let node;
+  let transferred = false;
   try {
     const information = await file3.stat();
     if (!information.isFile() || information.size === 0 || information.size > NODE_MAX_BYTES || information.mode % 512 !== 493 || Math.floor(information.mode / 512) % 8 !== 0 || information.uid !== 0 && information.uid !== process.getuid?.() || await realpath("/proc/self/exe") !== nodeExecutable) {
@@ -15664,9 +15672,29 @@ async function currentProcessSqlRuntime() {
     });
     node = await retainNodeIdentity(nodeExecutable, kernel.nodeSha256, kernel);
     await node.assertCurrent();
+    const retained2 = node;
+    const result = Object.freeze({
+      runtime: retained2.runtime,
+      descriptorPath: retained2.descriptorPath,
+      assertCurrent: retained2.assertCurrent,
+      close: async () => {
+        await closeCurrentProcessNode(file3, retained2);
+      }
+    });
+    transferred = true;
+    return result;
+  } finally {
+    if (!transferred) {
+      await closeCurrentProcessNode(file3, node);
+    }
+  }
+}
+async function currentProcessSqlRuntime() {
+  const node = await retainCurrentProcessSqlNode();
+  try {
     return node.runtime;
   } finally {
-    await closeCurrentProcessNode(file3, node);
+    await node.close();
   }
 }
 async function validateControlDirectory(path5, allowMissing) {
@@ -36654,9 +36682,9 @@ async function assertManagedFilePathCurrent(absolutePath2, expectedDirectory, ex
       throw new Error(`${label} parent directory changed after publication.`);
     }
     const currentPath = boundManagedChild(currentDirectory, absolutePath2);
-    const current9 = await lstat3(currentPath);
-    assertSameFileIdentity(expectedFile, current9, label);
-    assertManagedFileAuthority(current9, label);
+    const current10 = await lstat3(currentPath);
+    assertSameFileIdentity(expectedFile, current10, label);
+    assertManagedFileAuthority(current10, label);
   } finally {
     await currentDirectory.handle.close();
   }
@@ -36716,9 +36744,9 @@ async function createManagedFileExclusive(path5, label) {
           `${label} reservation is not a private empty regular file.`
         );
       }
-      const current9 = await lstat3(boundPath);
-      assertSameFileIdentity(info, current9, label);
-      assertManagedFileAuthority(current9, label);
+      const current10 = await lstat3(boundPath);
+      assertSameFileIdentity(info, current10, label);
+      assertManagedFileAuthority(current10, label);
       return { absolute, boundPath, directory: directory4, handle, info };
     } catch (error51) {
       await handle.close();
@@ -36745,9 +36773,9 @@ async function closeManagedFile(file3) {
   }
 }
 async function unlinkManagedFile(file3, label) {
-  const current9 = await lstat3(file3.boundPath);
-  assertSameFileIdentity(file3.info, current9, label);
-  assertManagedFileAuthority(current9, label);
+  const current10 = await lstat3(file3.boundPath);
+  assertSameFileIdentity(file3.info, current10, label);
+  assertManagedFileAuthority(current10, label);
   await unlink(file3.boundPath);
   await file3.directory.handle.sync();
 }
@@ -36796,8 +36824,8 @@ async function publishManagedBytesExclusive(path5, label, bytes2, acceptMatching
     cleanupErrors.push(error51);
   });
   try {
-    const current9 = await lstat3(temporary.boundPath);
-    assertSameFileIdentity(temporary.info, current9, `${label} temporary`);
+    const current10 = await lstat3(temporary.boundPath);
+    assertSameFileIdentity(temporary.info, current10, `${label} temporary`);
     await unlink(temporary.boundPath);
     await temporary.directory.handle.sync();
     if (created && publishedBoundPath !== void 0) {
@@ -36820,12 +36848,12 @@ async function publishManagedBytesExclusive(path5, label, bytes2, acceptMatching
           label
         );
       } else if (matchedExisting !== void 0) {
-        const current9 = await openSafeManagedFile(absolute, label);
+        const current10 = await openSafeManagedFile(absolute, label);
         try {
-          assertSameFileIdentity(matchedExisting.info, current9.info, label);
-          assertFileStayedUnchanged(matchedExisting.info, current9.info, label);
+          assertSameFileIdentity(matchedExisting.info, current10.info, label);
+          assertFileStayedUnchanged(matchedExisting.info, current10.info, label);
         } finally {
-          await closeManagedFile(current9);
+          await closeManagedFile(current10);
         }
       }
     } catch (error51) {
@@ -36862,16 +36890,16 @@ async function publishManagedBytesExclusive(path5, label, bytes2, acceptMatching
 }
 async function replaceManagedBytes(path5, label, bytes2) {
   assertManagedJsonByteLimit(bytes2.length, label);
-  const current9 = await openSafeManagedFile(path5, label);
+  const current10 = await openSafeManagedFile(path5, label);
   let temporary;
   try {
     temporary = await createManagedFileExclusive(
-      `${current9.absolute}.tmp-${randomUUID2()}`,
+      `${current10.absolute}.tmp-${randomUUID2()}`,
       `${label} temporary`
     );
   } catch (error51) {
     try {
-      await closeManagedFile(current9);
+      await closeManagedFile(current10);
     } catch (cleanupError) {
       throw new AggregateError(
         [error51, cleanupError],
@@ -36887,7 +36915,7 @@ async function replaceManagedBytes(path5, label, bytes2) {
   try {
     await temporary.handle.writeFile(bytes2);
     await temporary.handle.sync();
-    if (current9.directory.info.dev !== temporary.directory.info.dev || current9.directory.info.ino !== temporary.directory.info.ino) {
+    if (current10.directory.info.dev !== temporary.directory.info.dev || current10.directory.info.ino !== temporary.directory.info.ino) {
       throw new Error(`${label} temporary directory identity disagrees.`);
     }
     await temporary.handle.close();
@@ -36898,18 +36926,18 @@ async function replaceManagedBytes(path5, label, bytes2) {
       temporaryPathInfo,
       `${label} temporary`
     );
-    await current9.handle.close();
+    await current10.handle.close();
     currentHandleClosed = true;
-    const currentPathInfo = await lstat3(current9.boundPath);
-    assertSameFileIdentity(current9.info, currentPathInfo, label);
-    await rename(temporary.boundPath, current9.boundPath);
-    const published = await lstat3(current9.boundPath);
+    const currentPathInfo = await lstat3(current10.boundPath);
+    assertSameFileIdentity(current10.info, currentPathInfo, label);
+    await rename(temporary.boundPath, current10.boundPath);
+    const published = await lstat3(current10.boundPath);
     assertSameFileIdentity(temporary.info, published, label);
     assertManagedFileAuthority(published, label);
-    await current9.directory.handle.sync();
+    await current10.directory.handle.sync();
     await assertManagedFilePathCurrent(
-      current9.absolute,
-      current9.directory,
+      current10.absolute,
+      current10.directory,
       temporary.info,
       label
     );
@@ -36940,11 +36968,11 @@ async function replaceManagedBytes(path5, label, bytes2) {
     cleanupErrors.push(error51);
   });
   if (!currentHandleClosed) {
-    await current9.handle.close().catch((error51) => {
+    await current10.handle.close().catch((error51) => {
       cleanupErrors.push(error51);
     });
   }
-  await current9.directory.handle.close().catch((error51) => {
+  await current10.directory.handle.close().catch((error51) => {
     cleanupErrors.push(error51);
   });
   if (failure2 !== void 0 || cleanupErrors.length > 0) {
@@ -37165,9 +37193,9 @@ async function publishManagedAttachmentExclusive(path5, label, bytes2, kind, bef
         currentDirectory,
         opened.absolute
       );
-      const current9 = await lstat3(currentPath);
-      assertSameFileIdentity(opened.info, current9, label);
-      assertManagedFileAuthority(current9, label);
+      const current10 = await lstat3(currentPath);
+      assertSameFileIdentity(opened.info, current10, label);
+      assertManagedFileAuthority(current10, label);
     } finally {
       await currentDirectory.handle.close();
     }
@@ -37401,14 +37429,14 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
   assertManagedJsonByteLimit(Buffer.byteLength(resultText), "Evidence result");
   assertManagedJsonByteLimit(Buffer.byteLength(receiptText), "Evidence receipt");
   const replaceReservation = async (path5, text36) => {
-    const current9 = await openSafeManagedFile(path5, "Evidence reservation");
+    const current10 = await openSafeManagedFile(path5, "Evidence reservation");
     let temporary;
     let failure2;
     let currentHandleClosed = false;
     let temporaryHandleClosed = false;
     try {
       const existing = await readOpenManagedText(
-        current9,
+        current10,
         "Evidence reservation"
       );
       if (existing !== text36) {
@@ -37424,7 +37452,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
         );
         await temporary.handle.writeFile(text36, "utf8");
         await temporary.handle.sync();
-        if (current9.directory.info.dev !== temporary.directory.info.dev || current9.directory.info.ino !== temporary.directory.info.ino) {
+        if (current10.directory.info.dev !== temporary.directory.info.dev || current10.directory.info.ino !== temporary.directory.info.ino) {
           throw new Error(
             "Evidence temporary and reservation directories disagree."
           );
@@ -37437,26 +37465,26 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
           temporaryPathInfo,
           "Evidence publication temporary"
         );
-        await current9.handle.close();
+        await current10.handle.close();
         currentHandleClosed = true;
-        const markerNow = await lstat3(current9.boundPath);
+        const markerNow = await lstat3(current10.boundPath);
         assertSameFileIdentity(
-          current9.info,
+          current10.info,
           markerNow,
           "Evidence reservation"
         );
-        await rename(temporary.boundPath, current9.boundPath);
-        const published = await lstat3(current9.boundPath);
+        await rename(temporary.boundPath, current10.boundPath);
+        const published = await lstat3(current10.boundPath);
         assertSameFileIdentity(
           temporary.info,
           published,
           "Published evidence"
         );
         assertManagedFileAuthority(published, "Published evidence");
-        await current9.directory.handle.sync();
+        await current10.directory.handle.sync();
         await assertManagedFilePathCurrent(
-          current9.absolute,
-          current9.directory,
+          current10.absolute,
+          current10.directory,
           temporary.info,
           "Published evidence"
         );
@@ -37487,11 +37515,11 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
       });
     }
     if (!currentHandleClosed) {
-      await current9.handle.close().catch((error51) => {
+      await current10.handle.close().catch((error51) => {
         cleanupErrors.push(error51);
       });
     }
-    await current9.directory.handle.close().catch((error51) => {
+    await current10.directory.handle.close().catch((error51) => {
       cleanupErrors.push(error51);
     });
     if (failure2 !== void 0 || cleanupErrors.length > 0) {
@@ -38012,14 +38040,14 @@ async function assertOperationIdUnused(operationId9) {
   };
   try {
     await absent3(directory4);
-    const current9 = await openSafeManagedDirectory(OPERATIONS_DIR, false);
+    const current10 = await openSafeManagedDirectory(OPERATIONS_DIR, false);
     try {
-      if (current9.info.dev !== directory4.info.dev || current9.info.ino !== directory4.info.ino) {
+      if (current10.info.dev !== directory4.info.dev || current10.info.ino !== directory4.info.ino) {
         throw new Error("Operation namespace changed during unused-ID observation.");
       }
-      await absent3(current9);
+      await absent3(current10);
     } finally {
-      await current9.handle.close();
+      await current10.handle.close();
     }
   } finally {
     await directory4.handle.close();
@@ -38327,8 +38355,8 @@ async function verifiedOperationProjection(operationId9, cache) {
     }
     return void 0;
   }
-  const current9 = await hashManagedJsonFile(operationPath(operationId9), "Operation journal");
-  if (current9.sha256 !== validation.bytesSha256) {
+  const current10 = await hashManagedJsonFile(operationPath(operationId9), "Operation journal");
+  if (current10.sha256 !== validation.bytesSha256) {
     forgetOperationValidation(operationId9);
     if (cache !== void 0) {
       forgetOperationProjection(cache, operationId9);
@@ -38925,19 +38953,19 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
           { cause: error51 }
         );
       }
-      let current9;
+      let current10;
       try {
-        current9 = await parseCleanupLease(cleanupPath);
+        current10 = await parseCleanupLease(cleanupPath);
       } catch (readError) {
         if (errorCode2(readError) === "ENOENT") {
           continue;
         }
         throw readError;
       }
-      if (current9.record.token !== existing.record.token || current9.record.pid !== existing.record.pid || !sameIdentity2(
+      if (current10.record.token !== existing.record.token || current10.record.pid !== existing.record.pid || !sameIdentity2(
         {
-          dev: current9.identity.device,
-          ino: current9.identity.inode
+          dev: current10.identity.device,
+          ino: current10.identity.inode
         },
         existing.identity
       )) {
@@ -38946,7 +38974,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await unlinkExpectedPrivateRecord(
         root,
         cleanupPath,
-        current9.identity,
+        current10.identity,
         "EasyEDA facade cleanup lease"
       );
     }
@@ -39040,9 +39068,9 @@ async function acquireFacadeLeaseWithCapability(root) {
         existing.record.token
       );
       try {
-        const current9 = await parseLease(boundPath);
-        if (current9.record.token !== existing.record.token || current9.record.pid !== existing.record.pid || !sameIdentity2(
-          { dev: current9.identity.device, ino: current9.identity.inode },
+        const current10 = await parseLease(boundPath);
+        if (current10.record.token !== existing.record.token || current10.record.pid !== existing.record.pid || !sameIdentity2(
+          { dev: current10.identity.device, ino: current10.identity.inode },
           existing.identity
         )) {
           throw new Error(
@@ -39050,16 +39078,16 @@ async function acquireFacadeLeaseWithCapability(root) {
             { cause: error51 }
           );
         }
-        if (!await boundChildExited(current9.record)) {
+        if (!await boundChildExited(current10.record)) {
           throw new Error(
-            `The stale EasyEDA facade still has a live upstream supervisor (pid ${String(current9.record.childPid)}); refusing to remove its lease.`,
+            `The stale EasyEDA facade still has a live upstream supervisor (pid ${String(current10.record.childPid)}); refusing to remove its lease.`,
             { cause: error51 }
           );
         }
         await unlinkExpectedPrivateRecord(
           root,
           boundPath,
-          current9.identity,
+          current10.identity,
           "EasyEDA facade lease"
         );
       } catch (reconciliationError) {
@@ -39135,9 +39163,9 @@ async function acquireFacadeLeaseWithCapability(root) {
       );
       await temporaryHandle.close();
       temporaryHandle = void 0;
-      const current9 = await parseLease(boundPath);
-      if (!ownsLease(current9.record) || !sameIdentity2(
-        { dev: current9.identity.device, ino: current9.identity.inode },
+      const current10 = await parseLease(boundPath);
+      if (!ownsLease(current10.record) || !sameIdentity2(
+        { dev: current10.identity.device, ino: current10.identity.inode },
         activeLeaseIdentity
       )) {
         throw new Error(
@@ -39713,7 +39741,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_board",
       selector: "eda.dmt_Board.getBoardInfo|getAllBoardsInfo;loaded-local-project-no-editors",
       implementation: "native-task-equivalent",
-      scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded native board key/value maps, bracketed by project-owner checks; selected lookup also matches its exact project-qualified native getter. The public getBoardInfo boardName selector is intentionally replaced by an explicit boardUuid contract; boardName is rejected. Preserves UUID, raw title, zIndex and ticket, with UUID comparison order rather than visual order. Genuine empty maps accepted; full sample bounded to 128 boards and 65536 UTF-8 bytes before selected filtering, after native enumeration. No public IDMT_BoardItem parity, child document membership, saved membership, worker lease, startup completion or writer authority. No canvas/source loading, clock/client, name lookup, navigation, cloud lookup, mutation or Save.",
+      scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded native board key/value maps, bracketed by project-owner checks; selected lookup also matches its exact project-qualified native getter. The public getBoardInfo boardName selector is intentionally replaced by an explicit boardUuid contract; boardName is rejected. Preserves UUID, raw title, zIndex and ticket, with UUID comparison order rather than visual order. Genuine empty maps accepted; full sample bounded to 128 boards and 65536 UTF-8 bytes before selected filtering, after native enumeration. No public IDMT_BoardItem parity, child document membership, saved membership, worker lease, startup completion or writer authority. No canvas/source loading, clock/client, name lookup, navigation, cloud lookup, mutation or Save. Installed143713 passed both methods with one populated board and two matching samples per call. Empty-map behavior and later generations remain unvalidated live.",
       source: ["current-project-board-metadata.ts", "current-project-board-metadata-program.ts", "current-project-board-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],
       tests: ["current-project-board-metadata.test.ts", "current-project-board-metadata-runtime.test.ts", "current-project-board-metadata-registration.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed",
@@ -39723,7 +39751,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_project_schematic",
       selector: "eda.dmt_Schematic.getSchematicInfo|getAllSchematicsInfo|getSchematicPageInfo|getAllSchematicPagesInfo;loaded-local-project-no-editors",
       implementation: "native-task-equivalent",
-      scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded schematic and sheet metadata maps, bracketed by project-owner checks, retain every observed child association. Selected lookup also matches its exact native getter. Independent native name/displayName, child title/displayTitle, source/version, board, ticket, updateTime and zIndex are preserved; UUID comparison order is not visual order. Complete combined sample is bounded before selected filtering. No public object parity, saved membership, worker lease, AST-holder preflight, startup completion or writer authority. No canvas/source loading, clock/client, name availability, navigation, cloud lookup, mutation or Save.",
+      scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded schematic and sheet metadata maps, bracketed by project-owner checks, retain every observed child association. Selected lookup also matches its exact native getter. Independent native name/displayName, child title/displayTitle, source/version, board, ticket, updateTime and zIndex are preserved; UUID comparison order is not visual order. Complete combined sample is bounded before selected filtering. No public object parity, saved membership, worker lease, AST-holder preflight, startup completion or writer authority. No canvas/source loading, clock/client, name availability, navigation, cloud lookup, mutation or Save. Installed143713 passed the selected/all page methods with one container and two pages. Those calls do not validate the selected/all container methods, empty maps, saved membership or later generations.",
       source: ["current-project-schematic-metadata.ts", "current-project-schematic-metadata-program.ts", "current-project-schematic-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],
       tests: ["current-project-schematic-metadata.test.ts", "current-project-schematic-metadata-runtime.test.ts", "current-project-schematic-metadata-registration.test.ts", "facade-mode.test.ts"],
       documentTypes: [1],
@@ -40371,7 +40399,7 @@ var init_extension_api_coverage_routes = __esm({
       tool: "easyeda_control_disposable_schematic_rename",
       selector: "advance;rename-write;disposable-project-local-schematic-title",
       implementation: "native-task-equivalent",
-      scope: "Separate original-owner disposable schematic-container title lifecycle, not generic SDK writer support. Requires the retained disposable opener, exact closed SQL baseline, original SCH metadata and child roster, fresh project-only generation, startup/actor/clock checks and one durable mutation attempt. Preserves every child sheet, peer and unrelated SQL cell. Completion requires original root/Job closure, complete intended SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and complete child roster/both ASTs, final closure and SQL equality. Prospective backend actor, delayed subscriber completion, complete canvas and connectivity are not attested. Printable ASCII without capital I, unique old normalized name, ordinary stable child lineage and no reuse/block-symbol branch only. No explicit Save, inverse, deletion, ordinary-project scope or caller-supplied authority. No connected schematic rename validation is recorded; legacy library route stays blocked.",
+      scope: "Separate original-owner disposable schematic-container title lifecycle, not generic SDK writer support. Requires the retained disposable opener, exact closed SQL baseline, original SCH metadata and child roster, fresh project-only generation, startup/actor/clock checks and one durable mutation attempt. Preserves every child sheet, peer and unrelated SQL cell. Completion requires original root/Job closure, complete intended SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and complete child roster/both ASTs, final closure and SQL equality. Prospective backend actor, delayed subscriber completion, complete canvas and connectivity are not attested. Printable ASCII without capital I, unique old normalized name, ordinary stable child lineage and no reuse/block-symbol branch only. No explicit Save, inverse, deletion, ordinary-project scope or caller-supplied authority. Installed143713 passed one disposable title-only lifecycle with complete closed SQL, cache-excluded fresh metadata/peer/child-roster verification and final closure with unchanged SQL. That single-phase case does not validate advance-batch or later generations; the legacy library route stays blocked.",
       source: [
         "current-schematic-rename-operation.ts",
         "current-schematic-rename-operation-runtime.ts",
@@ -41744,7 +41772,7 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
     if (totalBytes > MAX_TOTAL_BYTES) {
       fail2("total-bytes-limit");
     }
-    let current9;
+    let current10;
     let currentClient;
     const entries5 = yield* parseNativeRecordSteps(plaintext, options.libraryAtomHeaders === "preserve", options.documentRecordHistory === "preserve");
     yield;
@@ -41768,12 +41796,12 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
         }
         currentClient = body4["client"] === void 0 ? void 0 : text(body4["client"], 128);
         const ticket2 = integer2(entry.header["ticket"]);
-        current9 = documents.get(documentUuid5);
-        if (current9 && current9.docType !== docType3) {
+        current10 = documents.get(documentUuid5);
+        if (current10 && current10.docType !== docType3) {
           fail2();
         }
-        if (!current9) {
-          current9 = {
+        if (!current10) {
+          current10 = {
             uuid: documentUuid5,
             docType: docType3,
             metadata: body4,
@@ -41785,32 +41813,32 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
             ...options.pcbTextReloadOrder === "preserve" && docType3 === "PCB" ? { pcbTextReloadHistory: { strings: [], nonStringIds: /* @__PURE__ */ new Set(), tail: [] } } : {},
             ...options.libraryAtomHeaders === "preserve" && (docType3 === "SYMBOL" || docType3 === "FOOTPRINT") ? { libraryAtoms: { occurrences: [], clocks: /* @__PURE__ */ new Map(), hasFirstTicket: false } } : {}
           };
-          documents.set(documentUuid5, current9);
-        } else if (ticket2 === current9.metadataTicket && canonicalJson(current9.metadata) !== canonicalJson(body4)) {
+          documents.set(documentUuid5, current10);
+        } else if (ticket2 === current10.metadataTicket && canonicalJson(current10.metadata) !== canonicalJson(body4)) {
           fail2("document-ticket-conflict");
-        } else if (ticket2 > current9.metadataTicket) {
-          current9.metadata = body4;
-          current9.metadataTicket = ticket2;
+        } else if (ticket2 > current10.metadataTicket) {
+          current10.metadata = body4;
+          current10.metadataTicket = ticket2;
         }
-        retainMetadataHeader(current9, ticket2, body4);
+        retainMetadataHeader(current10, ticket2, body4);
       } else {
-        if (!current9) {
+        if (!current10) {
           fail2();
         }
-        retainLibraryAtom(current9, entry, currentClient, chunkIndex, recordIndex, checkpointSha256);
+        retainLibraryAtom(current10, entry, currentClient, chunkIndex, recordIndex, checkpointSha256);
         if (entry.header["type"] === "DELETE_DOC" || entry.header["id"] === "DELETE_DOC") {
-          current9.metadataHeaders = null;
+          current10.metadataHeaders = null;
         }
-        applyRecord(current9, entry, currentClient);
+        applyRecord(current10, entry, currentClient);
       }
       if (type2 !== "EDIT_HEAD" && options.documentRecordHistory === "preserve") {
-        if (current9?.documentRecordChain === void 0 || entry.recordEncodingSha256 === void 0) {
+        if (current10?.documentRecordChain === void 0 || entry.recordEncodingSha256 === void 0) {
           fail2();
         }
-        if (current9.pcbTextReloadHistory !== void 0) {
-          retainPcbTextReloadRecord(current9.pcbTextReloadHistory, entry, currentClient, current9.documentRecordChain);
+        if (current10.pcbTextReloadHistory !== void 0) {
+          retainPcbTextReloadRecord(current10.pcbTextReloadHistory, entry, currentClient, current10.documentRecordChain);
         }
-        current9.documentRecordChain = appendNativeDocumentRecordChain(current9.documentRecordChain, entry.recordEncodingSha256, integer2(entry.header["ticket"]));
+        current10.documentRecordChain = appendNativeDocumentRecordChain(current10.documentRecordChain, entry.recordEncodingSha256, integer2(entry.header["ticket"]));
       }
       if (materializationBatchReached(budget3)) {
         yield;
@@ -44627,8 +44655,8 @@ async function verifySchematicNativeProfile(assetsRoot) {
       hash45.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
-    const current9 = await lstat6(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
+    const current10 = await lstat6(path5, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Installed schematic native implementation differs from its reviewed profile.");
     }
     return SCHEMATIC_NATIVE_IMPLEMENTATION;
@@ -44672,8 +44700,8 @@ async function verifyLibraryNativeProfile(assetsRoot) {
       hash45.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
-    const current9 = await lstat7(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
+    const current10 = await lstat7(path5, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Native library implementation differs from the reviewed profile.");
     }
     return LIBRARY_NATIVE_IMPLEMENTATION;
@@ -44719,8 +44747,8 @@ async function verifyDeviceAssociationNativeProfile(assetsRoot) {
         hash45.update(chunk);
       }
       const after = await file3.stat({ bigint: true });
-      const current9 = await lstat8(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
+      const current10 = await lstat8(path5, { bigint: true });
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
         throw new Error("Native device implementation differs from the reviewed profile.");
       }
     } finally {
@@ -45937,11 +45965,11 @@ function translatedPin(pin4, dx, dy) {
 }
 function hasLifecycleAttributeDrift(before, after) {
   return before.components.some((model) => {
-    const current9 = after.components.find((entry) => entry.id === model.id);
-    if (current9 === void 0) {
+    const current10 = after.components.find((entry) => entry.id === model.id);
+    if (current10 === void 0) {
       return false;
     }
-    const attrs = [...current9.attributes, ...current9.pins.flatMap((pin4) => pin4.attributes)];
+    const attrs = [...current10.attributes, ...current10.pins.flatMap((pin4) => pin4.attributes)];
     return [...model.attributes, ...model.pins.flatMap((pin4) => pin4.attributes)].some((attr) => {
       const next = attrs.find((entry) => entry.key === attr.key && entry.body["parentId"] === attr.body["parentId"]);
       return next !== void 0 && (attr.id !== next.id || !same4(attr.body["zIndex"], next.body["zIndex"]));
@@ -46282,13 +46310,13 @@ function storedTemplateBodies(sheet3, source5, model) {
   const pins = new Set(model.pins.map((pin4) => pin4.id));
   const selected3 = (record8) => record8.id === model.id || record8.body["parentId"] === model.id || pins.has(String(record8.body["parentId"]));
   const prior = sheet3.records.filter(selected3);
-  const current9 = source5.objects.filter(selected3);
-  if (!same5(prior.map((item2) => item2.id).toSorted(), current9.map((item2) => item2.id).toSorted())) {
+  const current10 = source5.objects.filter(selected3);
+  if (!same5(prior.map((item2) => item2.id).toSorted(), current10.map((item2) => item2.id).toSorted())) {
     fail4();
   }
   const hydration = [];
   for (const stored2 of prior) {
-    const live = current9.find((item2) => item2.id === stored2.id);
+    const live = current10.find((item2) => item2.id === stored2.id);
     if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
       fail4();
     }
@@ -46315,21 +46343,21 @@ function storedTemplateBodies(sheet3, source5, model) {
   }
   return hydration;
 }
-function planSchematicNetFlagClone(input, current9, history, templateInput, allocate) {
-  return planClone(input, current9, history, templateInput, allocate);
+function planSchematicNetFlagClone(input, current10, history, templateInput, allocate) {
+  return planClone(input, current10, history, templateInput, allocate);
 }
-function planHistoricalSchematicNetFlagClone(input, current9, history, templateInput, allocate, observedSource) {
-  if (!same5(current9.document, observedSource.document) || observedSource.sha256 !== sha256Json({ schema: observedSource.schema, document: observedSource.document, objects: observedSource.objects })) {
+function planHistoricalSchematicNetFlagClone(input, current10, history, templateInput, allocate, observedSource) {
+  if (!same5(current10.document, observedSource.document) || observedSource.sha256 !== sha256Json({ schema: observedSource.schema, document: observedSource.document, objects: observedSource.objects })) {
     fail4();
   }
-  return planClone(input, current9, history, templateInput, allocate, observedSource);
+  return planClone(input, current10, history, templateInput, allocate, observedSource);
 }
-function planClone(input, current9, history, templateInput, allocate, historicalAfter) {
+function planClone(input, current10, history, templateInput, allocate, historicalAfter) {
   const step = netFlagCloneStepSchema.parse(input);
-  if (history.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) || current9.document["docType"] !== "SCH_PAGE" || current9.document["editVersion"] !== "3.2.149.88089769") {
+  if (history.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) || current10.document["docType"] !== "SCH_PAGE" || current10.document["editVersion"] !== "3.2.149.88089769") {
     fail4();
   }
-  document(history, string4(current9.document["uuid"]), "SCH_PAGE");
+  document(history, string4(current10.document["uuid"]), "SCH_PAGE");
   if (!isRecord(templateInput) || typeof templateInput["source"] !== "string") {
     fail4();
   }
@@ -46398,7 +46426,7 @@ function planClone(input, current9, history, templateInput, allocate, historical
     schematicHiddenNullOrder(history, sheet3, templateSource, native, relevance2);
   }
   const hydration = storedTemplateBodies(sheet3, templateSource, model);
-  const used3 = new Set(current9.objects.map((entry) => entry.id));
+  const used3 = new Set(current10.objects.map((entry) => entry.id));
   const allocation = (key) => {
     const value2 = allocate(key);
     if (!/^[a-f0-9]{16}$/u.test(value2) || used3.has(value2)) {
@@ -46432,7 +46460,7 @@ function planClone(input, current9, history, templateInput, allocate, historical
   }
   const dx = step.x - number8(model.body["x"]), dy = -step.y - number8(model.body["y"]);
   let zIndex3 = 0;
-  for (const entry of current9.objects) {
+  for (const entry of current10.objects) {
     if (entry.body["zIndex"] !== null && entry.body["zIndex"] !== void 0) {
       zIndex3 = Math.max(zIndex3, number8(entry.body["zIndex"]));
     }
@@ -47500,7 +47528,7 @@ var init_schematic_layout_transport = __esm({
 
 // server/src/flat-wire-markers.ts
 function flatWireMarkerSpecification(source5, native, wireId) {
-  const contacts = /* @__PURE__ */ new Map(), owners6 = /* @__PURE__ */ new Map();
+  const contacts = /* @__PURE__ */ new Map(), owners7 = /* @__PURE__ */ new Map();
   const point6 = (x, y) => {
     if (typeof x !== "number" || typeof y !== "number" || !Number.isSafeInteger(x) || !Number.isSafeInteger(y) || Math.abs(x) > 1e6 || Math.abs(y) > 1e6) {
       throw new Error("Flat wire marker origin is outside the exact integer domain.");
@@ -47521,7 +47549,7 @@ function flatWireMarkerSpecification(source5, native, wireId) {
     if (typeof row7.body["lineGroup"] !== "string") {
       throw new TypeError("Flat wire marker LINE has no exact owner.");
     }
-    owners6.set(row7.id, row7.body["lineGroup"]);
+    owners7.set(row7.id, row7.body["lineGroup"]);
     point6(row7.body["startX"], row7.body["startY"]).lineIds.push(row7.id);
     point6(row7.body["endX"], row7.body["endY"]).lineIds.push(row7.id);
   }
@@ -47530,9 +47558,9 @@ function flatWireMarkerSpecification(source5, native, wireId) {
       point6(pin4.body["x"], pin4.body["y"]).pinIds.push(pin4.id);
     }
   }
-  const selected3 = [...contacts.values()].filter((entry) => entry.lineIds.some((id13) => owners6.get(id13) === wireId));
+  const selected3 = [...contacts.values()].filter((entry) => entry.lineIds.some((id13) => owners7.get(id13) === wireId));
   for (const entry of selected3) {
-    if (entry.lineIds.some((id13) => owners6.get(id13) !== wireId)) {
+    if (entry.lineIds.some((id13) => owners7.get(id13) !== wireId)) {
       throw new Error("Flat wire marker ownership excludes shared-WIRE contacts.");
     }
     const pins = entry.pinIds.length, wires = entry.lineIds.length;
@@ -55440,22 +55468,22 @@ function simulate(operation, before, createdIds, collectInverse) {
   const created = /* @__PURE__ */ new Map();
   const stepProofs = [];
   let inverseSteps = collectInverse ? [] : void 0;
-  let current9 = before;
+  let current10 = before;
   for (const step of operation.operations) {
     const resolved2 = resolveStep(step, created);
     const compiled2 = compileDesignOperation(resolved2);
     const targetId2 = "target" in resolved2 && "primitiveId" in resolved2.target ? resolved2.target.primitiveId : void 0;
     const createdId = compiled2.effect.identity === "create" ? createdIds[step.id] : void 0;
     const ids2 = { ...targetId2 === void 0 ? {} : { targetId: targetId2 }, ...createdId === void 0 ? {} : { createdId } };
-    const next = buildExpectedDesignSource(resolved2, current9, ids2);
-    const delta = verifyDesignSourceEffect(compiled2, current9, next, ids2);
+    const next = buildExpectedDesignSource(resolved2, current10, ids2);
+    const delta = verifyDesignSourceEffect(compiled2, current10, next, ids2);
     const nextObjects = new Map(next.objects.map((object4) => [object4.id, object4]));
     if (locked.some((object4) => canonicalJson({ object: nextObjects.get(object4.id) }) !== canonicalJson({ object: object4 }))) {
       throw new Error("PCB batch cannot modify an initially locked record or its descendants; explicit unlock is a separate operation.");
     }
     if (inverseSteps !== void 0) {
       try {
-        const inverse = buildInverseDesignOperation(resolved2, current9, ids2);
+        const inverse = buildInverseDesignOperation(resolved2, current10, ids2);
         if (inverse === void 0) {
           inverseSteps = void 0;
         } else {
@@ -55470,16 +55498,16 @@ function simulate(operation, before, createdIds, collectInverse) {
       action: step.action,
       targetId: targetId2 ?? null,
       createdId: createdId ?? null,
-      beforeSha256: current9.sha256,
+      beforeSha256: current10.sha256,
       afterSha256: next.sha256,
       delta
     });
     if (createdId !== void 0) {
       created.set(step.id, createdId);
     }
-    current9 = next;
+    current10 = next;
   }
-  return { expected: current9, stepProofs, inverseSteps };
+  return { expected: current10, stepProofs, inverseSteps };
 }
 function expectedDesignBatchSource(input, before, createdIds = {}) {
   return simulate(designBatchOperationSchema.parse(input), before, createdIds, false).expected;
@@ -55498,20 +55526,20 @@ function buildDesignBatchAdapter(input, before, journalCreatedIds) {
   if (operation.operations.some((entry) => isDesignRuleAction(entry.action))) {
     const programs = [];
     const created = /* @__PURE__ */ new Map();
-    let current9 = before;
+    let current10 = before;
     for (const step of operation.operations) {
       const resolved2 = resolveStep(step, created);
       const compiled2 = compileDesignOperation(resolved2);
       const createdId = compiled2.effect.identity === "create" ? createdIds[step.id] : void 0;
       const targetId2 = "target" in resolved2 && "primitiveId" in resolved2.target ? resolved2.target.primitiveId : void 0;
-      const next = buildExpectedDesignSource(resolved2, current9, { ...createdId === void 0 ? {} : { createdId }, ...targetId2 === void 0 ? {} : { targetId: targetId2 } });
-      const adapter = isDesignRuleAction(resolved2.action) ? buildDesignRulePublicAdapter(resolved2, current9) : buildReviewedNativeSourceMerge(current9, next);
+      const next = buildExpectedDesignSource(resolved2, current10, { ...createdId === void 0 ? {} : { createdId }, ...targetId2 === void 0 ? {} : { targetId: targetId2 } });
+      const adapter = isDesignRuleAction(resolved2.action) ? buildDesignRulePublicAdapter(resolved2, current10) : buildReviewedNativeSourceMerge(current10, next);
       programs.push(`if (await (async () => {${adapter.code}
 })() !== true) throw new Error("Typed mixed batch step failed");`);
       if (createdId !== void 0) {
         created.set(step.id, createdId);
       }
-      current9 = next;
+      current10 = next;
     }
     const admission = buildReviewedNativeSourceMerge(before, before), code = `${programs.join("\n")}
 return true;`;
@@ -55742,8 +55770,8 @@ function verifySchematicElectricalEffect(input, before, after, oldNativeInput, n
     const id13 = resolved(operation, ids2);
     if (operation.action === "sch.component-pin.no-connect") {
       const prior = getPin(oldNative, id13).pin;
-      const current9 = getPin(newNative, id13).pin;
-      const marker = current9.noConnect;
+      const current10 = getPin(newNative, id13).pin;
+      const marker = current10.noConnect;
       const value2 = operation.noConnected ? "yes" : "no";
       if (marker === null || marker.value !== value2 || prior.noConnect !== null && marker.id !== prior.noConnect.id) {
         throw new Error("No-connect marker identity/value mismatch.");
@@ -57079,14 +57107,14 @@ function saneHeaderUser(user) {
     return typeof value2 === "string" && value2.length <= (key === "avatar" ? 2048 : 128) && (key === "avatar" || value2.trim().length > 0) && !/[\u0000-\u001F\u007F]/u.test(value2);
   });
 }
-function schematicUserRestoration(previous, current9, beforeCheckpointSha256, afterCheckpointSha256) {
+function schematicUserRestoration(previous, current10, beforeCheckpointSha256, afterCheckpointSha256) {
   const before = previous.metadata;
-  const after = current9.metadata;
-  if (previous.docType !== "SCH_PAGE" || current9.docType !== "SCH_PAGE" || Object.hasOwn(before, "user") || !Object.hasOwn(after, "user") || !saneHeaderUser(after["user"]) || before["editVersion"] !== "3.2.149.88089769" || after["editVersion"] !== before["editVersion"] || !validNativeMetadata(before) || !validNativeMetadata(after) || Number(after["updateTime"]) <= Number(before["updateTime"])) {
+  const after = current10.metadata;
+  if (previous.docType !== "SCH_PAGE" || current10.docType !== "SCH_PAGE" || Object.hasOwn(before, "user") || !Object.hasOwn(after, "user") || !saneHeaderUser(after["user"]) || before["editVersion"] !== "3.2.149.88089769" || after["editVersion"] !== before["editVersion"] || !validNativeMetadata(before) || !validNativeMetadata(after) || Number(after["updateTime"]) <= Number(before["updateTime"])) {
     throw new Error("Saved schematic user metadata is not an exact historical restoration.");
   }
   const oldHistory = checkedHeaderHistory(previous, beforeCheckpointSha256);
-  const newHistory = checkedHeaderHistory(current9, afterCheckpointSha256);
+  const newHistory = checkedHeaderHistory(current10, afterCheckpointSha256);
   if (newHistory.headers.length <= oldHistory.headers.length || !equal2(newHistory.headers.slice(0, oldHistory.headers.length), oldHistory.headers)) {
     throw new Error("Restored user lacks the original linear document-header prefix.");
   }
@@ -57119,15 +57147,15 @@ function schematicUserRestoration(previous, current9, beforeCheckpointSha256, af
     originalHeaderSha256: sha256Json(original2.metadata)
   };
 }
-function verifyTargetMetadata(previous, current9, beforeCheckpointSha256, afterCheckpointSha256) {
+function verifyTargetMetadata(previous, current10, beforeCheckpointSha256, afterCheckpointSha256) {
   const before = previous.metadata;
-  const after = current9.metadata;
+  const after = current10.metadata;
   const fields26 = changedFields(before, after);
   if (fields26.some((field11) => field11 !== "user" && !VOLATILE_METADATA.has(field11))) {
     throw new Error("Saved document metadata changed outside the intended edit.");
   }
   if (fields26.includes("user")) {
-    return schematicUserRestoration(previous, current9, beforeCheckpointSha256, afterCheckpointSha256);
+    return schematicUserRestoration(previous, current10, beforeCheckpointSha256, afterCheckpointSha256);
   }
   if (fields26.length === 0) {
     return void 0;
@@ -57217,11 +57245,11 @@ function verifyChangedRecord(before, after, sourceBefore, sourceAfter) {
     }
   }
 }
-function verifyTargetRecords(previous, current9, expectedBefore, expectedAfter3, projection8) {
+function verifyTargetRecords(previous, current10, expectedBefore, expectedAfter3, projection8) {
   const oldSource = objectMap(expectedBefore.objects.map((record8) => projectOrder(record8, projection8)));
   const newSource = objectMap(expectedAfter3.objects.map((record8) => projectOrder(record8, projection8)));
   const oldDurable = objectMap(previous.records.map((record8) => projectOrder(record8, projection8)));
-  const newDurable = objectMap(current9.records.map((record8) => projectOrder(record8, projection8)));
+  const newDurable = objectMap(current10.records.map((record8) => projectOrder(record8, projection8)));
   const changed = new Set([...oldSource.keys(), ...newSource.keys()].filter((id13) => {
     const before = oldSource.get(id13);
     const after = newSource.get(id13);
@@ -57286,13 +57314,13 @@ function verifyDesignPersistence(input) {
     input.after.checkpointSha256
   );
   for (const [uuid12, previous] of beforeDocuments) {
-    const current9 = afterDocuments.get(uuid12);
-    if (current9 === void 0 || previous.docType !== current9.docType) {
+    const current10 = afterDocuments.get(uuid12);
+    if (current10 === void 0 || previous.docType !== current10.docType) {
       throw new Error("Saved document identity changed.");
     }
     if (uuid12 === previousTarget.uuid) {
-      verifyTargetRecords(previous, current9, input.expectedBefore, input.expectedAfter, projection8);
-    } else if (previous.semanticSha256 !== current9.semanticSha256) {
+      verifyTargetRecords(previous, current10, input.expectedBefore, input.expectedAfter, projection8);
+    } else if (previous.semanticSha256 !== current10.semanticSha256) {
       throw new Error("Another document or library metadata/record changed during save.");
     }
   }
@@ -57863,21 +57891,21 @@ function assertSource(source5) {
   return records2;
 }
 function assertUnlockedAncestry(record8, records2) {
-  let current9 = record8;
+  let current10 = record8;
   const seen = /* @__PURE__ */ new Set();
-  while (current9 !== void 0) {
-    if (seen.has(current9.id) || current9.body["locked"] === true || current9.body["locked"] !== void 0 && typeof current9.body["locked"] !== "boolean") {
+  while (current10 !== void 0) {
+    if (seen.has(current10.id) || current10.body["locked"] === true || current10.body["locked"] !== void 0 && typeof current10.body["locked"] !== "boolean") {
       throw new Error("Locked or ambiguous model-transform ancestry requires a separate explicit unlock.");
     }
-    seen.add(current9.id);
-    const parent = current9.body["parentId"];
+    seen.add(current10.id);
+    const parent = current10.body["parentId"];
     if (parent === void 0 || parent === null || parent === "") {
       return;
     }
     if (typeof parent !== "string" || !records2.has(parent)) {
       throw new Error("Model-transform parent identity is unresolved.");
     }
-    current9 = records2.get(parent);
+    current10 = records2.get(parent);
   }
 }
 function selectedAttribute(operation, source5) {
@@ -58586,17 +58614,17 @@ function projectAttributes(side, document3, source5, native, before, differences
     }
     let hiddenNullOrder;
     if (fields26.includes("zIndex")) {
-      const current9 = exported.body["zIndex"];
+      const current10 = exported.body["zIndex"];
       const stored2 = record8.body["zIndex"];
       const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
       if (stored2 === null && (kind === "part" && exported.body["key"] === "Unique ID" || kind === "netflag" && exported.body["key"] === "Relevance")) {
         hiddenNullOrder = schematicHiddenNullOrder(history, document3, source5, native, record8);
       }
-      if (!uninitializedWireOrder && hiddenNullOrder === void 0 && (typeof stored2 !== "number" || !Number.isSafeInteger(stored2)) || typeof current9 !== "number" || !Number.isSafeInteger(current9) || current9 < 0) {
+      if (!uninitializedWireOrder && hiddenNullOrder === void 0 && (typeof stored2 !== "number" || !Number.isSafeInteger(stored2)) || typeof current10 !== "number" || !Number.isSafeInteger(current10) || current10 < 0) {
         throw new Error("Schematic attribute order is not an exact native integer.");
       }
       const prior = old.get(record8.id);
-      const exactNewWireCreation = prior === void 0 && stored2 === 0 && newWireOrders.get(record8.id) === current9;
+      const exactNewWireCreation = prior === void 0 && stored2 === 0 && newWireOrders.get(record8.id) === current10;
       if (side === "after" && !exactNewWireCreation && (prior?.type !== "ATTR" || prior.body["parentId"] !== record8.body["parentId"] || prior.body["key"] !== record8.body["key"] || !fieldEqual(prior.body, record8.body, "zIndex"))) {
         throw new Error("Changed durable attribute order is neither retained nor the exact captured model order.");
       }
@@ -58716,13 +58744,13 @@ function verifySchematicStoragePersistence(input) {
   const differences = [];
   const newWireOrders = newWireCreationOrders(input, before, after, afterNative);
   const previous = projectAttributes("before", before, input.expectedBefore, beforeNative, before, differences, input.before);
-  const current9 = projectAttributes("after", after, input.expectedAfter, afterNative, before, differences, input.after, new Map(newWireOrders.map((entry) => [entry.relevanceId, entry.zIndex])));
+  const current10 = projectAttributes("after", after, input.expectedAfter, afterNative, before, differences, input.after, new Map(newWireOrders.map((entry) => [entry.relevanceId, entry.zIndex])));
   const frameOrderInitializations = [];
   for (const [index, record8] of previous.entries()) {
     const model = beforeNative.components.find((entry) => entry.id === record8.id);
     const oldSource = input.expectedBefore.objects.find((entry) => entry.id === record8.id);
     const nextSource = input.expectedAfter.objects.find((entry) => entry.id === record8.id);
-    const storedAfter = current9.find((entry) => entry.id === record8.id);
+    const storedAfter = current10.find((entry) => entry.id === record8.id);
     const eligible3 = record8.type === "COMPONENT" && model?.kind === "sheet" && record8.body["zIndex"] === null;
     let initializedOrder;
     if (eligible3) {
@@ -58747,8 +58775,8 @@ function verifySchematicStoragePersistence(input) {
     materializedCanvas = { id: "CANVAS", bodySha256: sha256Json(newCanvas.body) };
   }
   const comparisonBefore = replace(input.before, before, previous);
-  const comparisonAfter = replace(input.after, after, current9);
-  for (const record8 of current9) {
+  const comparisonAfter = replace(input.after, after, current10);
+  for (const record8 of current10) {
     const prior = previous.find((entry) => entry.id === record8.id);
     const sourceBefore = input.expectedBefore.objects.find((entry) => entry.id === record8.id);
     const sourceAfter = input.expectedAfter.objects.find((entry) => entry.id === record8.id);
@@ -59025,8 +59053,8 @@ async function workerProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current9 = await lstat9(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== WORKER.sha256) {
+    const after = await file3.stat({ bigint: true }), current10 = await lstat9(path5, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== WORKER.sha256) {
       fail6();
     }
   } finally {
@@ -59240,8 +59268,8 @@ function fullImportWireOrders(operation, before, records2, native, display2) {
     if (!same14(wire2, records2.get(wire2.id))) {
       throw new Error("Full-import retained wire root changed.");
     }
-    const current9 = children(rows2, wire2.id), prior = children(before.objects, wire2.id);
-    if (!same14(prior.map((row7) => row7.id).toSorted(), current9.map((row7) => row7.id).toSorted())) {
+    const current10 = children(rows2, wire2.id), prior = children(before.objects, wire2.id);
+    if (!same14(prior.map((row7) => row7.id).toSorted(), current10.map((row7) => row7.id).toSorted())) {
       throw new Error("Full-import retained wire child inventory changed.");
     }
     const priorAttrs = prior.filter((row7) => row7.type !== "LINE");
@@ -59267,7 +59295,7 @@ function fullImportWireOrders(operation, before, records2, native, display2) {
     if (lines3.length === 0 || lines3.some((row7) => row7.body["startX"] === row7.body["endX"] === (row7.body["startY"] === row7.body["endY"]))) {
       throw new Error("Full-import retained wire requires nonzero orthogonal lines.");
     }
-    for (const row7 of current9) {
+    for (const row7 of current10) {
       const original2 = old.get(row7.id);
       if (original2 === void 0) {
         throw new Error("Full-import retained wire child is absent.");
@@ -59641,10 +59669,10 @@ function proveQuarterTurnPinDisplacement(history, referenceSource, observedSourc
     translationOrigin = reconstructedOrigin2;
     if (oldPin.noConnect !== null || pin4.noConnect !== null) {
       const old = oldPin.noConnect;
-      const current9 = pin4.noConnect;
+      const current10 = pin4.noConnect;
       const markers = page.records.filter((row7) => row7.type === "ATTR" && row7.id === old?.id);
       const marker = markers[0];
-      if (old === null || current9 === null || old.id !== current9.id || old.value !== "no" || current9.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same15(marker.body, old.body) || !same15(old, { ...current9, body: { ...current9.body, x: old.body["x"], y: old.body["y"] } }) || !same15(point3(old.body), point3(oldPin.body)) || !same15(point3(current9.body), point3(pin4.body))) {
+      if (old === null || current10 === null || old.id !== current10.id || old.value !== "no" || current10.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same15(marker.body, old.body) || !same15(old, { ...current10, body: { ...current10.body, x: old.body["x"], y: old.body["y"] } }) || !same15(point3(old.body), point3(oldPin.body)) || !same15(point3(current10.body), point3(pin4.body))) {
         fail7();
       }
     }
@@ -59701,14 +59729,14 @@ function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, obse
   return changes;
 }
 function bind(history, source5, native, row7) {
-  const owners6 = native.components.filter((model2) => model2.pins.some((pin5) => pin5.id === row7.body["parentId"]));
-  const model = owners6[0], pin4 = model?.pins.find((entry) => entry.id === row7.body["parentId"]);
+  const owners7 = native.components.filter((model2) => model2.pins.some((pin5) => pin5.id === row7.body["parentId"]));
+  const model = owners7[0], pin4 = model?.pins.find((entry) => entry.id === row7.body["parentId"]);
   const attrs = pin4?.attributes.filter((entry) => entry.key === "Pin Number" && entry.id === row7.id);
   const attr = attrs?.[0];
   const symbolId = model?.attributes.find((entry) => entry.key === "Symbol")?.value;
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
   const rotation2 = model?.body["rotation"];
-  if (owners6.length !== 1 || model?.kind !== "part" || ![0, 90, 180, 270].includes(Number(rotation2)) || model.body["isMirror"] !== false || row7.type !== "ATTR" || row7.body["key"] !== "Pin Number" || attrs?.length !== 1 || attr === void 0 || pin4 === void 0 || source5.document["editVersion"] !== "3.2.149.88089769" || symbol4 === void 0 || typeof symbolId !== "string" || typeof rotation2 !== "number" || symbol4.semanticSha256 !== sha256Json({
+  if (owners7.length !== 1 || model?.kind !== "part" || ![0, 90, 180, 270].includes(Number(rotation2)) || model.body["isMirror"] !== false || row7.type !== "ATTR" || row7.body["key"] !== "Pin Number" || attrs?.length !== 1 || attr === void 0 || pin4 === void 0 || source5.document["editVersion"] !== "3.2.149.88089769" || symbol4 === void 0 || typeof symbolId !== "string" || typeof rotation2 !== "number" || symbol4.semanticSha256 !== sha256Json({
     uuid: symbol4.uuid,
     docType: symbol4.docType,
     metadata: symbol4.metadata,
@@ -59875,19 +59903,19 @@ function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior,
   const proofs = [];
   const align2 = (pin4) => {
     const oldPin = prior.pins.find((entry) => entry.id === pin4.id);
-    const current9 = pin4.noConnect, old = oldPin?.noConnect;
-    if (old === void 0 || old === null || current9 === null || same16(old.body["x"], current9.body["x"]) && same16(old.body["y"], current9.body["y"])) {
+    const current10 = pin4.noConnect, old = oldPin?.noConnect;
+    if (old === void 0 || old === null || current10 === null || same16(old.body["x"], current10.body["x"]) && same16(old.body["y"], current10.body["y"])) {
       return;
     }
-    const after = records2.get(current9.id), before = referenceSource.objects.find((row7) => row7.id === old.id);
+    const after = records2.get(current10.id), before = referenceSource.objects.find((row7) => row7.id === old.id);
     const original2 = history.documents.find((doc) => doc.uuid === referenceSource.document["uuid"] && doc.docType === "SCH_PAGE")?.records.find((row7) => row7.id === old.id);
-    if (oldPin === void 0 || old.id !== current9.id || old.value !== "no" || current9.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["parentId"] !== oldPin.id || current9.body["parentId"] !== pin4.id || old.body["value"] !== "no" || current9.body["value"] !== "no" || before?.type !== "ATTR" || after?.type !== "ATTR" || original2?.type !== "ATTR" || !same16(before.body, old.body) || !same16(after.body, current9.body) || !same16(old, { ...current9, body: { ...current9.body, x: old.body["x"], y: old.body["y"] } }) || !same16({ ...original2.body, x: old.body["x"], y: old.body["y"] }, old.body) || !same16([old.body["x"], old.body["y"]], [oldPin.body["x"], oldPin.body["y"]]) || !same16([current9.body["x"], current9.body["y"]], [pin4.body["x"], pin4.body["y"]])) {
+    if (oldPin === void 0 || old.id !== current10.id || old.value !== "no" || current10.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["parentId"] !== oldPin.id || current10.body["parentId"] !== pin4.id || old.body["value"] !== "no" || current10.body["value"] !== "no" || before?.type !== "ATTR" || after?.type !== "ATTR" || original2?.type !== "ATTR" || !same16(before.body, old.body) || !same16(after.body, current10.body) || !same16(old, { ...current10, body: { ...current10.body, x: old.body["x"], y: old.body["y"] } }) || !same16({ ...original2.body, x: old.body["x"], y: old.body["y"] }, old.body) || !same16([old.body["x"], old.body["y"]], [oldPin.body["x"], oldPin.body["y"]]) || !same16([current10.body["x"], current10.body["y"]], [pin4.body["x"], pin4.body["y"]])) {
       throw new Error("Inactive no-connect coordinate lacks its exact stored source/native pin binding.");
     }
     const proof = proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin4);
-    const beforePoint = [number12(old.body["x"]), number12(old.body["y"])], reconstructed = [number12(current9.body["x"]), number12(current9.body["y"])];
-    current9.body["x"] = beforePoint[0];
-    current9.body["y"] = beforePoint[1];
+    const beforePoint = [number12(old.body["x"]), number12(old.body["y"])], reconstructed = [number12(current10.body["x"]), number12(current10.body["y"])];
+    current10.body["x"] = beforePoint[0];
+    current10.body["y"] = beforePoint[1];
     after.body["x"] = beforePoint[0];
     after.body["y"] = beforePoint[1];
     proofs.push({
@@ -60224,24 +60252,24 @@ function verifyInactiveNoConnectWrites(before, after, observed2, typed) {
 }
 function projectDisplacedInactiveNoConnect(history, source5, native, stored2, exported) {
   const page = history.documents.find((doc) => doc.uuid === source5.document["uuid"] && doc.docType === "SCH_PAGE" && !isNativeDocumentDeleted(doc));
-  const owners6 = native.components.filter((model2) => model2.pins.some((pin5) => pin5.noConnect?.id === stored2.id));
-  const model = owners6[0], pins = model?.pins.filter((pin5) => pin5.noConnect?.id === stored2.id);
+  const owners7 = native.components.filter((model2) => model2.pins.some((pin5) => pin5.noConnect?.id === stored2.id));
+  const model = owners7[0], pins = model?.pins.filter((pin5) => pin5.noConnect?.id === stored2.id);
   const pin4 = pins?.[0];
   const marker = pin4?.noConnect;
   const original2 = page?.records.find((row7) => row7.type === "COMPONENT" && row7.id === model?.id);
   const symbolAttrs = model?.attributes.filter((attr) => attr.key === "Symbol"), symbolId = symbolAttrs?.[0]?.value;
-  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners6.length !== 1 || model === void 0 || model.kind !== "part" || pins?.length !== 1 || pin4 === void 0 || marker === void 0 || marker === null || original2 === void 0 || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || stored2.id !== exported.id || stored2.type !== "ATTR" || exported.type !== "ATTR" || stored2.body["key"] !== "NO_CONNECT" || stored2.body["parentId"] !== pin4.id || stored2.body["value"] !== "no" || marker.value !== "no" || !same16(marker.body, exported.body) || !same16({ ...stored2.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same16({ ...original2.body, x: model.body["x"], y: model.body["y"] }, model.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row7) => row7.type === "ATTR" && row7.body["parentId"] === model.id && row7.body["key"] === "Symbol" && row7.body["value"] === symbolId).length !== 1) {
+  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners7.length !== 1 || model === void 0 || model.kind !== "part" || pins?.length !== 1 || pin4 === void 0 || marker === void 0 || marker === null || original2 === void 0 || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || stored2.id !== exported.id || stored2.type !== "ATTR" || exported.type !== "ATTR" || stored2.body["key"] !== "NO_CONNECT" || stored2.body["parentId"] !== pin4.id || stored2.body["value"] !== "no" || marker.value !== "no" || !same16(marker.body, exported.body) || !same16({ ...stored2.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same16({ ...original2.body, x: model.body["x"], y: model.body["y"] }, model.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row7) => row7.type === "ATTR" && row7.body["parentId"] === model.id && row7.body["key"] === "Symbol" && row7.body["value"] === symbolId).length !== 1) {
     throw new Error("Stored inactive no-connect lacks exact component/pin coordinate evidence.");
   }
   const { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
-  const current9 = [number12(model.body["x"]), number12(model.body["y"])], origin = [number12(original2.body["x"]), number12(original2.body["y"])];
+  const current10 = [number12(model.body["x"]), number12(model.body["y"])], origin = [number12(original2.body["x"]), number12(original2.body["y"])];
   const mapped2 = reconstructedOrigin(number12(origin[0]), number12(origin[1]), rotation2);
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL");
   const localPins = symbol4?.records.filter((row7) => row7.type === "PIN" && row7.body["partId"] === model.body["partId"] && `${model.id}-${row7.id}` === pin4.id);
   const local = localPins?.[0];
   const before = [number12(stored2.body["x"]), number12(stored2.body["y"])], reconstructed = [number12(exported.body["x"]), number12(exported.body["y"])];
-  const shifted = before.map((value2, index) => value2 + (number12(current9[index]) - number12(origin[index])));
-  if (same16(origin, current9) || !same16(mapped2, current9) || !same16(reconstructedOrigin(number12(current9[0]), number12(current9[1]), rotation2), current9) || localPins?.length !== 1 || local === void 0 || pin4.body["rotation"] !== (number12(local.body["rotation"]) + 90) % 360 || !same16([pin4.body["x"], pin4.body["y"]], quarterTurnPoint([number12(local.body["x"]), number12(local.body["y"])], current9)) || !same16(reconstructed, [pin4.body["x"], pin4.body["y"]]) || !same16(shifted, reconstructed)) {
+  const shifted = before.map((value2, index) => value2 + (number12(current10[index]) - number12(origin[index])));
+  if (same16(origin, current10) || !same16(mapped2, current10) || !same16(reconstructedOrigin(number12(current10[0]), number12(current10[1]), rotation2), current10) || localPins?.length !== 1 || local === void 0 || pin4.body["rotation"] !== (number12(local.body["rotation"]) + 90) % 360 || !same16([pin4.body["x"], pin4.body["y"]], quarterTurnPoint([number12(local.body["x"]), number12(local.body["y"])], current10)) || !same16(reconstructed, [pin4.body["x"], pin4.body["y"]]) || !same16(shifted, reconstructed)) {
     throw new Error("Stored inactive no-connect is not the exact quarter-turn pin displacement.");
   }
   return { row: { ...stored2, body: { ...stored2.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
@@ -60805,7 +60833,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
     }
     return value2;
   };
-  let current9 = before;
+  let current10 = before;
   yield;
   for (const step of operation.operations) {
     if (step.action === "sch.net-flag.clone") {
@@ -60816,7 +60844,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
       if (template === void 0) {
         throw new Error("The exact net-flag template sheet is not in the retained evidence.");
       }
-      const planned = historicalSource === void 0 ? planSchematicNetFlagClone(step, current9, evidence2.history, template, allocate) : planHistoricalSchematicNetFlagClone(step, current9, evidence2.history, template, allocate, historicalSource);
+      const planned = historicalSource === void 0 ? planSchematicNetFlagClone(step, current10, evidence2.history, template, allocate) : planHistoricalSchematicNetFlagClone(step, current10, evidence2.history, template, allocate, historicalSource);
       for (const record8 of planned.records) {
         if (records2.has(record8.id)) {
           throw new Error("Net-flag addition collides with an existing record.");
@@ -60974,8 +61002,8 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
         throw new Error("Layout changed an initially locked record or its child.");
       }
     }
-    steps.push({ id: step.id, action: step.action, beforeSha256: current9.sha256, afterSha256: next.sha256, delta: compareDocumentSources(current9, next) });
-    current9 = next;
+    steps.push({ id: step.id, action: step.action, beforeSha256: current10.sha256, afterSha256: next.sha256, delta: compareDocumentSources(current10, next) });
+    current10 = next;
     yield;
   }
   const retainedWireOrders = historicalSource === void 0 ? schematicRetainedWireOrders(operation, before, records2, correlateSchematicNativeSource(before, nativeInput), native, display, evidence2) : [];
@@ -61009,11 +61037,11 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
   if (labelBindings.length > 0) {
     inverseSteps = void 0;
   }
-  current9 = snapshot5(before, records2);
+  current10 = snapshot5(before, records2);
   yield;
   if (historicalSource !== void 0) {
     historicalWireOrders(operation, before, records2, native);
-    current9 = snapshot5(before, records2);
+    current10 = snapshot5(before, records2);
     inverseSteps = void 0;
   }
   yield;
@@ -61024,24 +61052,24 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
     if (legacyFlagGroups || historicalSource !== void 0) {
       throw new Error("Ground repair evidence cannot be mixed with a legacy diagnostic mode.");
     }
-    const repaired = deriveSchematicWireGroupRepair(operation, before, current9, native, Object.fromEntries(allocated), netFlags);
+    const repaired = deriveSchematicWireGroupRepair(operation, before, current10, native, Object.fromEntries(allocated), netFlags);
     if (!same17(repaired.descriptor, schematicWireGroupRepairDescriptorSchema.parse(evidence2.wireGroupRepair))) {
       throw new Error("Ground repair descriptor differs from the sealed original operation and creation map.");
     }
-    current9 = repaired.source;
+    current10 = repaired.source;
     for (const merge2 of repaired.descriptor.merges) {
       createdWires.delete(merge2.dropWireId);
     }
-    wireOrders = schematicNewWireOrders(before, new Map(current9.objects.map((row7) => [row7.id, row7])), native, createdWires);
+    wireOrders = schematicNewWireOrders(before, new Map(current10.objects.map((row7) => [row7.id, row7])), native, createdWires);
   }
   yield;
-  native.source = encodeSchematicLayoutSource(current9);
+  native.source = encodeSchematicLayoutSource(current10);
   yield;
   if (!legacyFlagGroups) {
-    verifySchematicFlagWireGroups(current9, native, netFlags);
+    verifySchematicFlagWireGroups(current10, native, netFlags);
   }
   const inverse = inverseSteps === void 0 ? void 0 : schematicLayoutBatchSchema.parse({ id: `inverse:${operation.id}`, action: operation.action, documentType: 1, operations: inverseSteps.toReversed() });
-  return { expected: current9, native, createdIds: Object.freeze(Object.fromEntries(allocated)), steps, inverse, netFlags, wireOrders, retainedWireOrders, labelBindings };
+  return { expected: current10, native, createdIds: Object.freeze(Object.fromEntries(allocated)), steps, inverse, netFlags, wireOrders, retainedWireOrders, labelBindings };
 }
 function simulate2(...args) {
   const steps = simulateSteps(...args);
@@ -61111,17 +61139,17 @@ async function inverseSchematicLayoutCooperatively(input, before, native, create
   return inverse;
 }
 function alignLayoutClones(expected3, source5, native, history) {
-  let current9 = { source: source5, native: correlateSchematicNativeSource(source5, native) };
+  let current10 = { source: source5, native: correlateSchematicNativeSource(source5, native) };
   const proof = [];
   for (const flag of expected3.netFlags) {
-    const aligned = alignSchematicNetFlagCloneLifecycle(flag, current9.source, current9.native);
+    const aligned = alignSchematicNetFlagCloneLifecycle(flag, current10.source, current10.native);
     proof.push(aligned.proof);
-    current9 = aligned;
+    current10 = aligned;
   }
   if (history === void 0) {
-    return { ...current9, proof };
+    return { ...current10, proof };
   }
-  const coordinatePair = alignSchematicCoordinateLifecycle(expected3.expected, expected3.native, current9.source, current9.native, history);
+  const coordinatePair = alignSchematicCoordinateLifecycle(expected3.expected, expected3.native, current10.source, current10.native, history);
   return { source: coordinatePair.source, native: coordinatePair.native, proof, coordinates: coordinatePair.proof };
 }
 function verifySchematicLayoutEffect(input, before, after, oldNative, newNative, createdIds = {}, evidence2, allowCloneLifecycle = false) {
@@ -61197,10 +61225,10 @@ function retainedWireInitialOrders(expected3, input) {
   for (const order2 of expected3.retainedWireOrders.filter((entry) => "profile" in entry && ["full-import-unchanged-retained-wire", "full-import-unchanged-retained-multiple-net-wire"].includes(entry.profile))) {
     for (const { id: id13, key, beforeOrder: initialOrder, order: modelOrder } of retainedWireAttributeOrders(order2)) {
       const prior = records2.get(id13), stored2 = after.records.find((row7) => row7.id === id13);
-      const current9 = input.expectedAfter.objects.find((row7) => row7.id === id13), original2 = input.expectedBefore.objects.find((row7) => row7.id === id13);
+      const current10 = input.expectedAfter.objects.find((row7) => row7.id === id13), original2 = input.expectedBefore.objects.find((row7) => row7.id === id13);
       const durableOrder = prior?.body["zIndex"];
       const laggingMultipleNetOrder = "profile" in order2 && order2.profile === "full-import-unchanged-retained-multiple-net-wire" && typeof durableOrder === "number" && Number.isSafeInteger(durableOrder) && durableOrder >= 0 && durableOrder !== initialOrder;
-      if (prior?.type === "ATTR" && (durableOrder === null || laggingMultipleNetOrder) && stored2?.type === "ATTR" && stored2.body["zIndex"] === initialOrder && original2?.type === "ATTR" && original2.body["parentId"] === order2.id && original2.body["key"] === key && original2.body["zIndex"] === initialOrder && current9?.type === "ATTR" && current9.body["zIndex"] === modelOrder && same17(stored2.body, original2.body) && same17({ ...prior.body, zIndex: initialOrder }, original2.body) && same17({ ...original2.body, zIndex: modelOrder }, current9.body)) {
+      if (prior?.type === "ATTR" && (durableOrder === null || laggingMultipleNetOrder) && stored2?.type === "ATTR" && stored2.body["zIndex"] === initialOrder && original2?.type === "ATTR" && original2.body["parentId"] === order2.id && original2.body["key"] === key && original2.body["zIndex"] === initialOrder && current10?.type === "ATTR" && current10.body["zIndex"] === modelOrder && same17(stored2.body, original2.body) && same17({ ...prior.body, zIndex: initialOrder }, original2.body) && same17({ ...original2.body, zIndex: modelOrder }, current10.body)) {
         records2.set(id13, { ...prior, body: structuredClone(original2.body) });
         materializations.push({ id: id13, parentId: order2.id, key, initialOrder, modelOrder, originalBodySha256: sha256Json(original2.body) });
       }
@@ -61324,9 +61352,9 @@ function layoutStoragePersistence(expected3, input, evidence2, effect) {
       throw new Error("Composed coordinate comparison lost its proved complete native part.");
     }
     for (const id13 of restored.sourceIds) {
-      const captured = coordinateStorage.source.objects.find((row7) => row7.id === id13), current9 = records2.get(id13);
+      const captured = coordinateStorage.source.objects.find((row7) => row7.id === id13), current10 = records2.get(id13);
       const normalized2 = aligned.source.objects.find((row7) => row7.id === id13), stored2 = comparisonPage.records.find((row7) => row7.id === id13);
-      if (captured === void 0 || current9 === void 0 || normalized2 === void 0 || stored2 === void 0 || !same17(current9, captured) || stored2.type !== current9.type || !same17(stored2.body, current9.body) || normalized2.type !== current9.type || !same17({ ...normalized2.body, x: current9.body["x"], y: current9.body["y"] }, current9.body) || (id13 === restored.componentId ? current9.type !== "COMPONENT" : current9.type !== "ATTR" || !["Pin Number", "NO_CONNECT"].includes(String(current9.body["key"])))) {
+      if (captured === void 0 || current10 === void 0 || normalized2 === void 0 || stored2 === void 0 || !same17(current10, captured) || stored2.type !== current10.type || !same17(stored2.body, current10.body) || normalized2.type !== current10.type || !same17({ ...normalized2.body, x: current10.body["x"], y: current10.body["y"] }, current10.body) || (id13 === restored.componentId ? current10.type !== "COMPONENT" : current10.type !== "ATTR" || !["Pin Number", "NO_CONNECT"].includes(String(current10.body["key"])))) {
         throw new Error("Composed coordinate comparison lacks the exact constructor-proved owned row.");
       }
       stored2.body["x"] = number14(normalized2.body["x"]);
@@ -64384,6 +64412,85 @@ var init_engine_operation_summary = __esm({
   }
 });
 
+// server/src/current-process-sql-runtime-lease.ts
+import { AsyncLocalStorage } from "node:async_hooks";
+function current(lease, state2) {
+  if (state2 === void 0 || !state2.active || state2.failed || scopes.getStore() !== lease || state2.node.runtime !== lease.runtime) {
+    throw new MachineProfileError("machine-sql-scan-lease-not-current");
+  }
+}
+function requireCurrentProcessSqlRuntimeLease(lease) {
+  current(lease, owners.get(lease));
+}
+async function assertCurrentProcessSqlRuntimeLease(lease) {
+  const state2 = owners.get(lease);
+  current(lease, state2);
+  if (state2.assertion !== void 0) {
+    throw new MachineProfileError("machine-sql-scan-lease-busy");
+  }
+  const assertion = (async () => {
+    await Promise.resolve();
+    current(lease, state2);
+    await state2.node.assertCurrent();
+  })();
+  state2.assertion = assertion;
+  try {
+    await assertion;
+    current(lease, state2);
+  } catch (error51) {
+    state2.failed = true;
+    throw error51;
+  } finally {
+    state2.assertion = void 0;
+  }
+}
+async function withCurrentProcessSqlRuntimeLease(invoke) {
+  const node = await retainCurrentProcessSqlNode();
+  const lease = Object.freeze({ runtime: node.runtime });
+  const state2 = { node, active: true, failed: false, assertion: void 0 };
+  owners.set(lease, state2);
+  let failed = false;
+  let primary;
+  try {
+    return await scopes.run(lease, async () => {
+      const result = await invoke(lease);
+      await assertCurrentProcessSqlRuntimeLease(lease);
+      return result;
+    });
+  } catch (error51) {
+    failed = true;
+    primary = error51;
+    throw error51;
+  } finally {
+    state2.active = false;
+    const failures = [];
+    if (state2.assertion !== void 0) {
+      try {
+        await state2.assertion;
+      } catch (error51) {
+        failures.push(error51);
+      }
+    }
+    owners.delete(lease);
+    try {
+      await node.close();
+    } catch (error51) {
+      failures.push(error51);
+    }
+    if (failures.length > 0) {
+      throw new AggregateError(failed ? [primary, ...failures] : failures, "machine-sql-scan-lease-cleanup-failed");
+    }
+  }
+}
+var owners, scopes;
+var init_current_process_sql_runtime_lease = __esm({
+  "server/src/current-process-sql-runtime-lease.ts"() {
+    init_machine_profile();
+    owners = /* @__PURE__ */ new WeakMap();
+    scopes = new AsyncLocalStorage();
+  }
+});
+
 // server/src/sqlite-inventory-program.ts
 var SQLITE_INVENTORY_PROGRAM;
 var init_sqlite_inventory_program = __esm({
@@ -64961,19 +65068,19 @@ async function openBoundDirectory(input, create, controlRoot) {
   }
 }
 async function assertDirectoryPathIdentity(directory4) {
-  const current9 = await openBoundDirectory(
+  const current10 = await openBoundDirectory(
     directory4.absolute,
     false,
     directory4.controlRoot
   );
   try {
-    if (current9.info.dev !== directory4.info.dev || current9.info.ino !== directory4.info.ino) {
+    if (current10.info.dev !== directory4.info.dev || current10.info.ino !== directory4.info.ino) {
       throw new Error(
         `Checkpoint directory path changed: ${directory4.absolute}`
       );
     }
   } finally {
-    await current9.handle.close();
+    await current10.handle.close();
   }
   await directory4.controlRoot?.assertCurrent();
 }
@@ -65025,15 +65132,15 @@ async function createBoundFile(directory4, name6, label) {
         `${label} reservation is not a private owner-owned empty regular file.`
       );
     }
-    const current9 = await lstat12(boundPath, { bigint: true });
-    assertSameIdentity(info, current9, label);
+    const current10 = await lstat12(boundPath, { bigint: true });
+    assertSameIdentity(info, current10, label);
     return { absolute, boundPath, directory: directory4, handle, info };
   } catch (error51) {
     const cleanupErrors = [];
     try {
       const opened = await handle.stat({ bigint: true });
-      const current9 = await lstat12(boundPath, { bigint: true });
-      assertSameIdentity(opened, current9, `${label} failed reservation`);
+      const current10 = await lstat12(boundPath, { bigint: true });
+      assertSameIdentity(opened, current10, `${label} failed reservation`);
       await unlink3(boundPath);
       await directory4.handle.sync();
     } catch (cleanupError) {
@@ -65053,11 +65160,11 @@ async function createBoundFile(directory4, name6, label) {
   }
 }
 async function unlinkBoundFile(file3, label, expectedLinkCount = 1n) {
-  const current9 = await lstat12(file3.boundPath, { bigint: true });
-  assertSameIdentity(file3.info, current9, label);
+  const current10 = await lstat12(file3.boundPath, { bigint: true });
+  assertSameIdentity(file3.info, current10, label);
   assertManagedFileAuthority2(
     file3.directory,
-    current9,
+    current10,
     label,
     expectedLinkCount
   );
@@ -65271,9 +65378,9 @@ function dataVersion(database) {
   return Number(value2["data_version"]);
 }
 async function assertBoundPathIdentity(file3, label) {
-  const current9 = await lstat12(file3.boundPath, { bigint: true });
-  assertSameIdentity(file3.info, current9, label);
-  assertManagedFileAuthority2(file3.directory, current9, label);
+  const current10 = await lstat12(file3.boundPath, { bigint: true });
+  assertSameIdentity(file3.info, current10, label);
+  assertManagedFileAuthority2(file3.directory, current10, label);
   await assertDirectoryPathIdentity(file3.directory);
 }
 async function snapshotToNewFile(source5, directory4) {
@@ -65283,14 +65390,14 @@ async function snapshotToNewFile(source5, directory4) {
     file3 = await createBoundFile(directory4, name6, "SQLite backup staging file");
     source5.prepare("VACUUM INTO ?").run(`/proc/self/fd/${file3.handle.fd}`);
     await file3.handle.sync();
-    const current9 = await file3.handle.stat({ bigint: true });
-    if (!isSameIdentity(file3.info, current9) || current9.size === 0n || current9.nlink !== 1n || (current9.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && current9.uid !== BigInt(process.getuid())) {
+    const current10 = await file3.handle.stat({ bigint: true });
+    if (!isSameIdentity(file3.info, current10) || current10.size === 0n || current10.nlink !== 1n || (current10.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && current10.uid !== BigInt(process.getuid())) {
       throw new Error(
         "SQLite backup did not remain a private owner-owned nonempty regular file."
       );
     }
     await assertBoundPathIdentity(file3, "SQLite backup");
-    return { ...file3, info: current9 };
+    return { ...file3, info: current10 };
   } catch (error51) {
     const cleanupErrors = [];
     await file3?.handle.close().catch((cleanupError) => {
@@ -65320,9 +65427,9 @@ async function publishBoundFile(staging, name6, label) {
     const publishedInfo = await lstat12(publishedPath, { bigint: true });
     assertSameIdentity(staging.info, publishedInfo, `Published ${label}`);
     await unlinkBoundFile(staging, `${label} staging file`, 2n);
-    const current9 = await lstat12(publishedPath, { bigint: true });
-    assertSameIdentity(staging.info, current9, `Published ${label}`);
-    if (current9.nlink !== 1n || (current9.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && current9.uid !== BigInt(process.getuid())) {
+    const current10 = await lstat12(publishedPath, { bigint: true });
+    assertSameIdentity(staging.info, current10, `Published ${label}`);
+    if (current10.nlink !== 1n || (current10.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && current10.uid !== BigInt(process.getuid())) {
       throw new Error(
         `Published ${label} is not a private owner-owned single-link file.`
       );
@@ -65337,8 +65444,8 @@ async function publishBoundFile(staging, name6, label) {
   } catch (error51) {
     const cleanupErrors = [];
     try {
-      const current9 = await lstat12(publishedPath, { bigint: true });
-      assertSameIdentity(staging.info, current9, `Published ${label} cleanup`);
+      const current10 = await lstat12(publishedPath, { bigint: true });
+      assertSameIdentity(staging.info, current10, `Published ${label} cleanup`);
       await unlink3(publishedPath);
       await staging.directory.handle.sync();
     } catch (cleanupError) {
@@ -65431,8 +65538,8 @@ async function stableSourceSnapshot(sourceFile, sourceDatabase, targetDirectory)
 }
 async function assertSourceSnapshotCurrent(sourceFile, sourceDatabase, snapshot8) {
   await assertBoundPathIdentity(sourceFile, "Checkpoint source");
-  const current9 = await sourceFile.handle.stat({ bigint: true });
-  assertStableFile(snapshot8.stat, current9, "Checkpoint source");
+  const current10 = await sourceFile.handle.stat({ bigint: true });
+  assertStableFile(snapshot8.stat, current10, "Checkpoint source");
   if (dataVersion(sourceDatabase) !== snapshot8.dataVersion) {
     throw new Error("Checkpoint source changed after its stable snapshot was created.");
   }
@@ -65940,11 +66047,11 @@ async function inspectRecordedClosedCopy(input) {
     await assertArtifact(bound2, copy2.artifactIdentity);
     await assertArtifact(copy2.artifact, copy2.artifactIdentity);
     await root.assertCurrent();
-    const current9 = await root.openDirectory(directoryPath, false);
+    const current10 = await root.openDirectory(directoryPath, false);
     try {
-      requireValue4(current9.info.dev === directory4.info.dev && current9.info.ino === directory4.info.ino, "Recorded copy operation directory changed.");
+      requireValue4(current10.info.dev === directory4.info.dev && current10.info.ino === directory4.info.ino, "Recorded copy operation directory changed.");
     } finally {
-      await current9.handle.close();
+      await current10.handle.close();
     }
     const final = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
     requireValue4(canonicalJson(final.journal) === canonicalJson(initial.journal), "Recorded copy journal changed during inspection.");
@@ -66758,10 +66865,10 @@ function validateStartupResult(inputValue, input) {
     if (step.startsWith("startup-")) {
       result = validateStartupActorReadResult(observation2);
       if (value2["ok"] === true) {
-        const current9 = result["startupActor"];
-        requireValue5(isRecord(current9) && current9["uuid"] === input.ownerUuid, "Startup actor owner differs.");
-        requireValue5(actor7 === void 0 || JSON.stringify(actor7) === JSON.stringify(current9), "Startup actor changed.");
-        actor7 = current9;
+        const current10 = result["startupActor"];
+        requireValue5(isRecord(current10) && current10["uuid"] === input.ownerUuid, "Startup actor owner differs.");
+        requireValue5(actor7 === void 0 || JSON.stringify(actor7) === JSON.stringify(current10), "Startup actor changed.");
+        actor7 = current10;
       }
     } else if (step.startsWith("sw-")) {
       result = validateServiceWorkerReadResult(observation2);
@@ -67702,7 +67809,7 @@ async function noLaterEvidence3(operationId9, artifacts, rawCopy) {
     }
     need7([...required2].every((name6) => seen.has(name6)), "Pre-relaunch abandonment evidence directory is incomplete.");
     const after = await directory4.handle.stat({ bigint: true });
-    const unchanged5 = (current9) => current9.dev === directory4.info.dev && current9.ino === directory4.info.ino && current9.ctimeNs === directory4.info.ctimeNs && current9.mtimeNs === directory4.info.mtimeNs;
+    const unchanged5 = (current10) => current10.dev === directory4.info.dev && current10.ino === directory4.info.ino && current10.ctimeNs === directory4.info.ctimeNs && current10.mtimeNs === directory4.info.mtimeNs;
     need7(unchanged5(after), "Pre-relaunch abandonment evidence directory changed during enumeration.");
     const named = await root.openDirectory(directory4.absolute, false);
     try {
@@ -68309,14 +68416,14 @@ async function captureClosedSymbolJournalBytes(input) {
       throw new ClosureIneligibleError("closure-journal-producer-encoding");
     }
     requireEvidence(identity20(await handle.stat({ bigint: true })) === retained2 && identity20(await lstat16(bound2, { bigint: true })) === retained2 && identity20(await lstat16(path5, { bigint: true })) === retained2, "closure-journal-final-identity");
-    const current9 = await root.openDirectory(dirname11(path5), false);
+    const current10 = await root.openDirectory(dirname11(path5), false);
     try {
       requireEvidence(
-        current9.info.dev === directory4.info.dev && current9.info.ino === directory4.info.ino && current9.info.mode === directory4.info.mode && current9.info.uid === directory4.info.uid && current9.info.gid === directory4.info.gid,
+        current10.info.dev === directory4.info.dev && current10.info.ino === directory4.info.ino && current10.info.mode === directory4.info.mode && current10.info.uid === directory4.info.uid && current10.info.gid === directory4.info.gid,
         "closure-journal-parent-changed"
       );
     } finally {
-      await current9.handle.close();
+      await current10.handle.close();
     }
     await root.assertCurrent();
     deadline();
@@ -68504,11 +68611,11 @@ function validateClockControls(input, expectedScope, role) {
       bad();
     }
   }
-  const current9 = (value2) => {
+  const current10 = (value2) => {
     const row7 = exact6(value2, ["input", "epochMs", "iso", "offsetMinutes", "local"]);
     return vector(value2, integer3(row7["input"], 0, 253402214399999));
   };
-  const clockAfter = current9(v["clockAfter"]), clockBefore = current9(v["clockBefore"]);
+  const clockAfter = current10(v["clockAfter"]), clockBefore = current10(v["clockBefore"]);
   if (clockAfter.epochMs < clockBefore.epochMs || clockAfter.epochMs - clockBefore.epochMs > 1e4 || clockBefore.offsetMinutes !== clockAfter.offsetMinutes) {
     bad();
   }
@@ -69102,7 +69209,7 @@ async function manifestDirectory(parent) {
     throw error51;
   }
 }
-async function observe2(input, profile = "locked") {
+async function observe2(input, profile = "locked", lease) {
   const started = performance5.now();
   let plan2;
   if (profile === "aged") {
@@ -69117,10 +69224,17 @@ async function observe2(input, profile = "locked") {
     }
   };
   deadline();
-  const runtime = await currentProcessSqlRuntime();
-  deadline();
-  same22(runtime, plan2.runtime, "current-runtime");
-  const node = await openVerifiedMachineNode(runtime);
+  let node;
+  if (lease === void 0) {
+    const runtime = await currentProcessSqlRuntime();
+    deadline();
+    same22(runtime, plan2.runtime, "current-runtime");
+    node = await openVerifiedMachineNode(runtime);
+  } else {
+    await assertCurrentProcessSqlRuntimeLease(lease);
+    deadline();
+    same22(lease.runtime, plan2.runtime, "current-runtime");
+  }
   const directories = [], files = [];
   let failed = false;
   let originalFailure;
@@ -69232,11 +69346,11 @@ async function observe2(input, profile = "locked") {
       same22(directoryIdentity(await directory4.handle.stat({ bigint: true })), directory4.identity, "directory-descriptor");
       same22(directoryIdentity(await lstat17(directory4.path, { bigint: true })), directory4.identity, "directory-named");
       if (directory4.managed) {
-        const current9 = await root.openDirectory(directory4.path, false);
+        const current10 = await root.openDirectory(directory4.path, false);
         try {
-          same22(directoryIdentity(current9.info), directory4.identity, "directory-lineage");
+          same22(directoryIdentity(current10.info), directory4.identity, "directory-lineage");
         } finally {
-          await current9.handle.close();
+          await current10.handle.close();
         }
       } else {
         requireEvidence(await realpath11(directory4.path) === directory4.path, "closure-manifest-parent-changed");
@@ -69244,7 +69358,12 @@ async function observe2(input, profile = "locked") {
     }
     await root.assertCurrent();
     same22(directoryIdentity(await root.handle.stat({ bigint: true })), rootIdentity, "root");
-    await node.assertCurrent();
+    if (lease === void 0) {
+      requireEvidence(node !== void 0, "closure-node-owner-missing");
+      await node.assertCurrent();
+    } else {
+      await assertCurrentProcessSqlRuntimeLease(lease);
+    }
     deadline();
     const result = {
       profile: "private.closed-terminal-closure-observation.v1",
@@ -69267,7 +69386,11 @@ async function observe2(input, profile = "locked") {
     originalFailure = error51;
     throw error51;
   } finally {
-    const results = await Promise.allSettled([...files.map((entry) => entry.handle.close()), ...directories.map((entry) => entry.handle.close()), node.close()]);
+    const results = await Promise.allSettled([
+      ...files.map((entry) => entry.handle.close()),
+      ...directories.map((entry) => entry.handle.close()),
+      ...node === void 0 ? [] : [node.close()]
+    ]);
     const failures = results.filter((entry) => entry.status === "rejected").map((entry) => entry.reason);
     if (failures.length > 0 && originalFailure instanceof ClosureIneligibleError) {
       throw new AggregateError([originalFailure, ...failures], "closure-ineligible-cleanup");
@@ -69280,23 +69403,23 @@ async function observe2(input, profile = "locked") {
     }
   }
 }
-function observeClosedSymbolTerminalClosure(input) {
-  return observe2(input);
+function observeClosedSymbolTerminalClosure(input, lease) {
+  return observe2(input, "locked", lease);
 }
-async function revalidateClosedSymbolTerminalClosure(input, previous) {
+async function revalidateClosedSymbolTerminalClosure(input, previous, lease) {
   const retained2 = ownBoundedData(previous);
-  const current9 = await observe2(input);
-  same22(current9, retained2, "previous-observation");
-  return current9;
+  const current10 = await observe2(input, "locked", lease);
+  same22(current10, retained2, "previous-observation");
+  return current10;
 }
-function observeClosedSymbolAgedTerminalClosure(input) {
-  return observe2(input, "aged");
+function observeClosedSymbolAgedTerminalClosure(input, lease) {
+  return observe2(input, "aged", lease);
 }
-async function revalidateClosedSymbolAgedTerminalClosure(input, previous) {
+async function revalidateClosedSymbolAgedTerminalClosure(input, previous, lease) {
   const retained2 = ownBoundedData(previous);
-  const current9 = await observe2(input, "aged");
-  same22(current9, retained2, "previous-observation");
-  return current9;
+  const current10 = await observe2(input, "aged", lease);
+  same22(current10, retained2, "previous-observation");
+  return current10;
 }
 var MAX_JSON_DIGEST_ENTRIES, jsonDigests;
 var init_closed_symbol_terminal_closure_observer = __esm({
@@ -69304,6 +69427,7 @@ var init_closed_symbol_terminal_closure_observer = __esm({
     init_artifacts();
     init_core3();
     init_machine_profile();
+    init_current_process_sql_runtime_lease();
     init_closed_symbol_terminal_closure_plan();
     MAX_JSON_DIGEST_ENTRIES = 512;
     jsonDigests = /* @__PURE__ */ new Map();
@@ -69572,8 +69696,8 @@ function createClockedTransport(raw, source5) {
   const transport2 = {
     ...assertAvailable === void 0 ? {} : { assertClosedSessionAvailable() {
       methods19();
-      const current9 = Object.getOwnPropertyDescriptor(raw, "assertClosedSessionAvailable");
-      if (typeof assertAvailable !== "function" || current9 === void 0 || !Object.hasOwn(current9, "value") || current9.value !== assertAvailable) {
+      const current10 = Object.getOwnPropertyDescriptor(raw, "assertClosedSessionAvailable");
+      if (typeof assertAvailable !== "function" || current10 === void 0 || !Object.hasOwn(current10, "value") || current10.value !== assertAvailable) {
         bad2();
       }
       Reflect.apply(assertAvailable, raw, []);
@@ -69865,7 +69989,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     }
     const launchText = canonicalJson(currentLaunch), resultText = canonicalJson(result);
     const observation2 = freezeClockData({ ...structuredClone(attachment), phase: phase5, ownerBinding: structuredClone(ownerBinding) });
-    function current9() {
+    function current10() {
       requireOwned();
       clockSource?.assertTransport();
       verifyCurrent?.();
@@ -69874,12 +69998,12 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       }
     }
     async function verify() {
-      current9();
+      current10();
       await clockSource?.revalidate();
-      current9();
+      current10();
     }
     originalClocks.set(result, observation2);
-    issuedClocks.set(observation2, { observation: observation2, current: current9, verify });
+    issuedClocks.set(observation2, { observation: observation2, current: current10, verify });
     return observation2;
   }
   function requireOwned() {
@@ -70018,23 +70142,23 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     }
     const original2 = Object.freeze({ launch, retained: retained2, source: source5 });
     const launchText = canonicalJson(launch);
-    function current9() {
+    function current10() {
       requireOwned();
       original2.source.assertSource();
       if (currentLaunch !== original2.launch || lifecycleEpoch !== epoch || canonicalJson(original2.launch) !== launchText || qualifiedClockSources.get(transport2) !== original2.source || originalCaptureResults.get(evidence2) !== original2.retained || authorities.get(original2.retained.evidence.authoritySha256) !== original2.retained || canonicalJson(evidence2) !== canonicalJson(original2.retained.evidence) || original2.retained.receipt.jobId !== original2.launch.jobId || original2.retained.receipt.helperInstance !== original2.launch.helperInstance || normalCloseJobs.has(original2.launch.jobId)) {
         throw new Error("Fresh Windows clock capture, owner or original generation changed.");
       }
     }
-    current9();
+    current10();
     await source5.revalidate();
-    current9();
+    current10();
     const raw = await transport2.request({
       action: "observe-owned-clock",
       captureBindingSha256: retained2.receipt.bindingSha256,
       helperInstance: retained2.receipt.helperInstance,
       jobId: retained2.receipt.jobId
     });
-    current9();
+    current10();
     const base5 = record5(raw);
     if (base5["captureBindingSha256"] !== retained2.receipt.bindingSha256 || base5["jobId"] !== launch.jobId || base5["helperInstance"] !== launch.helperInstance || base5["rootStillLive"] !== true || base5["retainedProcessesLive"] !== true || Date.parse(date5(base5["observedAt"])) < Date.parse(retained2.receipt.capturedAt)) {
       throw new Error("Fresh Windows clock observation changed its retained capture binding.");
@@ -70048,7 +70172,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       bridgeSessionSha256: retained2.bridgeSessionSha256,
       runtimeIdentitySha256: retained2.runtimeIdentitySha256,
       authoritySha256: retained2.evidence.authoritySha256
-    }, current9);
+    }, current10);
     if (observation2?.phase !== "owned-observation") {
       throw new Error("Fresh Windows clock observation was not issued.");
     }
@@ -70116,10 +70240,10 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       throw new Error("Closed-session policy changed while revalidating its helper.");
     }
   }
-  function closedBinding(input, current9 = true) {
+  function closedBinding(input, current10 = true) {
     requireOwned();
     const retained2 = authorities.get(input.executionAuthority.authoritySha256);
-    if (retained2 === void 0 || canonicalJson(input.executionAuthority) !== canonicalJson(retained2.evidence) || retained2.operationId !== input.operationId || retained2.orphanPhase !== input.phase || retained2.challengeAttempt !== input.challengeAttempt || retained2.bridgeSessionSha256 !== sha256Json(input.bridgeSession) || retained2.runtimeIdentitySha256 !== sha256Json(input.runtimeIdentity) || input.launch.jobId !== retained2.receipt.jobId || input.launch.helperInstance !== retained2.receipt.helperInstance || !retained2.receipt.processes.some((entry) => entry.pid === input.launch.root.pid && entry.startIdentity === input.launch.root.startIdentity) || input.launch.root.role !== "easyeda-main" || current9 && canonicalJson(input.launch) !== canonicalJson(currentLaunch)) {
+    if (retained2 === void 0 || canonicalJson(input.executionAuthority) !== canonicalJson(retained2.evidence) || retained2.operationId !== input.operationId || retained2.orphanPhase !== input.phase || retained2.challengeAttempt !== input.challengeAttempt || retained2.bridgeSessionSha256 !== sha256Json(input.bridgeSession) || retained2.runtimeIdentitySha256 !== sha256Json(input.runtimeIdentity) || input.launch.jobId !== retained2.receipt.jobId || input.launch.helperInstance !== retained2.receipt.helperInstance || !retained2.receipt.processes.some((entry) => entry.pid === input.launch.root.pid && entry.startIdentity === input.launch.root.startIdentity) || input.launch.root.role !== "easyeda-main" || current10 && canonicalJson(input.launch) !== canonicalJson(currentLaunch)) {
       throw new Error("Closed-session proof lacks its retained operation, phase, session, runtime or launch.");
     }
     return retained2;
@@ -70319,7 +70443,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     const bound2 = structuredClone(input), callerText = canonicalJson(input);
     const retained2 = closedBinding(bound2), slot = closedSlot(bound2, bound2.intent);
     const epoch = lifecycleEpoch, priorRequestSequence = clockSource?.requestSequence();
-    function current9() {
+    function current10() {
       requireOwned();
       clockSource?.assertSource();
       if (retainedTransportCheck === void 0 || transport2.assertClosedSessionAvailable !== retainedTransportCheck || reviewedHelperCheck === void 0 || policy2.revalidateClosedSessionHelper !== reviewedHelperCheck || policy2.expectedExecutable !== executable || policySha256 !== sha256Json({
@@ -70338,13 +70462,13 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
         throw new Error("Closed-session pending probe owner, input or acknowledged close changed.");
       }
     }
-    current9();
+    current10();
     try {
       const proof = await proveClosedSession(bound2);
-      current9();
+      current10();
       const observation2 = Object.freeze({ status: "terminated", proof });
       terminationObservationOwners.set(observation2, () => {
-        current9();
+        current10();
         assertCurrentClosedSessionCopyAuthority(proof);
       });
       return observation2;
@@ -70355,7 +70479,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       }
       const native = refusal, source5 = clockSource;
       const originalFailure = () => {
-        current9();
+        current10();
         clockSource?.assertTransport();
         if (qualifiedClockSources.get(transport2) !== clockSource || slot.proof !== void 0 || slot.proofInFlight || source5.nativeRefusal(error51) !== native || source5.requestSequence() !== native.requestSequence) {
           throw new Error("Closed-session pending probe no longer owns its original native refusal.", { cause: error51 });
@@ -70449,20 +70573,20 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     },
     async observeExistingApplication() {
       const epoch = lifecycleEpoch;
-      function current9() {
+      function current10() {
         requireOwned();
         if (lifecycleEpoch !== epoch || policy2.revalidateClosedSessionHelper !== reviewedHelperCheck || transport2.assertClosedSessionAvailable !== retainedTransportCheck) {
           throw new Error("Existing application observation lost its original supervisor ownership.");
         }
         retainedTransportCheck?.();
       }
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       const response3 = record5(await transport2.request({ action: "observe-existing-application", executable }));
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       if (Object.keys(response3).length !== 1 || typeof response3["running"] !== "boolean") {
         throw new Error("Existing application observation is malformed.");
       }
@@ -70470,16 +70594,16 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     },
     async observeLaunchTermination(launch) {
       const epoch = lifecycleEpoch, launchText = canonicalJson(launch);
-      function current9() {
+      function current10() {
         requireOwned();
         if (currentLaunch === void 0 || canonicalJson(currentLaunch) !== launchText || canonicalJson(launch) !== launchText || lifecycleEpoch !== epoch || policy2.revalidateClosedSessionHelper !== reviewedHelperCheck || transport2.assertClosedSessionAvailable !== retainedTransportCheck) {
           throw new Error("Launch termination observation requires the unchanged original supervised generation.");
         }
         retainedTransportCheck?.();
       }
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       const response3 = record5(await transport2.request({
         action: "observe-launch-termination",
         jobId: launch.jobId,
@@ -70487,9 +70611,9 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
         rootPid: launch.root.pid,
         rootStartIdentity: launch.root.startIdentity
       }));
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       if (Object.keys(response3).toSorted().join(",") !== "helperInstance,jobId,terminated" || response3["jobId"] !== launch.jobId || response3["helperInstance"] !== launch.helperInstance || typeof response3["terminated"] !== "boolean") {
         throw new Error("Retained launch termination observation is malformed or belongs to another owner.");
       }
@@ -70497,16 +70621,16 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     },
     async observeApplicationWindow(launch) {
       const epoch = lifecycleEpoch, launchText = canonicalJson(launch);
-      function current9() {
+      function current10() {
         requireOwned();
         if (currentLaunch === void 0 || canonicalJson(currentLaunch) !== launchText || canonicalJson(launch) !== launchText || lifecycleEpoch !== epoch || policy2.revalidateClosedSessionHelper !== reviewedHelperCheck || transport2.assertClosedSessionAvailable !== retainedTransportCheck) {
           throw new Error("Application window observation requires the unchanged original supervised generation.");
         }
         retainedTransportCheck?.();
       }
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       const response3 = record5(await transport2.request({
         action: "observe-application-window",
         jobId: launch.jobId,
@@ -70515,9 +70639,9 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
         rootStartIdentity: launch.root.startIdentity,
         rootStartTicks: /^win32:(\d+):/u.exec(launch.root.startIdentity)?.[1]
       }));
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       const hwnd = response3["hwnd"], outcome = response3["outcome"];
       if (Object.keys(response3).toSorted().join(",") !== "helperInstance,hwnd,jobId,outcome" || response3["jobId"] !== launch.jobId || response3["helperInstance"] !== launch.helperInstance || outcome !== "available" && outcome !== "unavailable" && outcome !== "ambiguous" || (outcome === "available" ? typeof hwnd !== "string" || !/^[1-9]\d{0,18}$/u.test(hwnd) : hwnd !== null)) {
         throw new Error("Application window observation is malformed or belongs to another owner.");
@@ -70527,14 +70651,14 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
     async requestNormalClose(input) {
       const epoch = lifecycleEpoch, launch = structuredClone(input.launch), launchText = canonicalJson(launch);
       const windowHandle = text15(input.windowHandle, /^[1-9]\d{0,18}$/u);
-      function current9() {
+      function current10() {
         requireOwned();
         if (input.confirmNormalClose !== true || currentLaunch === void 0 || canonicalJson(currentLaunch) !== launchText || canonicalJson(input.launch) !== launchText || input.windowHandle !== windowHandle || lifecycleEpoch !== epoch || policy2.revalidateClosedSessionHelper !== reviewedHelperCheck || transport2.assertClosedSessionAvailable !== retainedTransportCheck) {
           throw new Error("Normal close requires the unchanged exact supervised application generation.");
         }
         retainedTransportCheck?.();
       }
-      current9();
+      current10();
       if (closedSessionSlots.has(launch.jobId)) {
         throw new Error("This Job has a reserved closed-session close; generic close cannot bypass it.");
       }
@@ -70543,7 +70667,7 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
       }
       normalCloseJobs.add(launch.jobId);
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       const rootStartTicks = /^win32:(\d+):/u.exec(launch.root.startIdentity)?.[1];
       const response3 = record5(await transport2.request({
         action: "normal-close",
@@ -70555,9 +70679,9 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
         rootStartTicks,
         windowHandle
       }));
-      current9();
+      current10();
       await reviewedHelperCheck?.();
-      current9();
+      current10();
       if (Object.keys(response3).toSorted().join(",") !== "closeDispatched,jobId,saveOrDiscardSelected" || response3["closeDispatched"] !== true || response3["jobId"] !== launch.jobId || response3["saveOrDiscardSelected"] !== false) {
         throw new Error("Normal close dispatch is unproven; do not retry blindly.");
       }
@@ -71236,8 +71360,8 @@ async function bindDirectory(absolute) {
       check2(before.isDirectory() && !before.isSymbolicLink(), "Source parent contains a symlink or non-directory.");
       const child = await open18(path5, flags4);
       try {
-        const current9 = await child.stat({ bigint: true });
-        check2(current9.isDirectory() && sameInode(before, current9), "Source directory changed while opening.");
+        const current10 = await child.stat({ bigint: true });
+        check2(current10.isDirectory() && sameInode(before, current10), "Source directory changed while opening.");
       } catch (error51) {
         await child.close();
         throw error51;
@@ -71261,14 +71385,14 @@ async function bindDirectory(absolute) {
   }
 }
 async function assertDirectory(directory4) {
-  const current9 = await bindDirectory(directory4.absolute);
+  const current10 = await bindDirectory(directory4.absolute);
   try {
     check2(
-      sameInode(directory4.info, current9.info) && sameInode(directory4.info, await directory4.handle.stat({ bigint: true })),
+      sameInode(directory4.info, current10.info) && sameInode(directory4.info, await directory4.handle.stat({ bigint: true })),
       "Source directory path changed during copy."
     );
   } finally {
-    await current9.handle.close();
+    await current10.handle.close();
   }
 }
 async function absentSidecars2(path5) {
@@ -72625,9 +72749,9 @@ function metadataPlanForOriginalSymbolSqlPlan(input) {
 }
 function metadataPlanForOriginalCurrentSymbolSqlPlan(input) {
   need17(input !== null && typeof input === "object", "Current SQL metadata requires its original prepared plan.");
-  const current9 = currentPlans.get(input);
-  need17(current9 !== void 0, "Current SQL metadata requires its original prepared plan.");
-  const result = structuredClone(current9.prepared.symbol);
+  const current10 = currentPlans.get(input);
+  need17(current10 !== void 0, "Current SQL metadata requires its original prepared plan.");
+  const result = structuredClone(current10.prepared.symbol);
   Object.freeze(result.beforeTags);
   Object.freeze(result.peerTitles);
   return Object.freeze(result);
@@ -72734,10 +72858,10 @@ async function selectedHistory(before, witness, project3, branch) {
     "Native ID-range history differs from the admitted complete linear chain."
   );
   for (let index = 1; index < rows2.length; index += 1) {
-    const current9 = rows2[index];
+    const current10 = rows2[index];
     const previous = rows2[index - 1];
     need17(
-      current9 !== void 0 && previous !== void 0 && integer5(field2(histories, current9, "id")) < integer5(field2(histories, previous, "id")),
+      current10 !== void 0 && previous !== void 0 && integer5(field2(histories, current10, "id")) < integer5(field2(histories, previous, "id")),
       "Native ID order differs from the admitted linear chain."
     );
   }
@@ -72824,9 +72948,9 @@ async function decodeRawHistoryForOriginalSymbolSqlPlan(input, after) {
 }
 async function decodeRawHistoryForOriginalCurrentSymbolSqlPlan(input, after) {
   need17(input !== null && typeof input === "object", "Current raw SQL history requires its original prepared plan.");
-  const current9 = currentPlans.get(input);
-  need17(current9 !== void 0, "Current raw SQL history requires its original prepared plan.");
-  const { prepared } = current9;
+  const current10 = currentPlans.get(input);
+  need17(current10 !== void 0, "Current raw SQL history requires its original prepared plan.");
+  const { prepared } = current10;
   supported(after, prepared.witness.branchUuid);
   const project3 = unique2(table2(after, "projects"), "uuid", prepared.witness.projectUuid);
   const branch = unique2(table2(after, "branches"), "uuid", prepared.witness.branchUuid);
@@ -72852,25 +72976,25 @@ async function prepareSymbolNewHeadSqlPlan(input) {
   return plan2;
 }
 async function prepareCurrentSymbolNewHeadSqlPlan(input) {
-  const current9 = structuredClone(input.witness);
-  need17(typeof current9.projectUuid === "string" && typeof current9.branchUuid === "string" && typeof current9.backendActorUuid === "string" && typeof current9.client === "string", "Current native identity witness refused.");
-  for (const [minimum5, maximum5] of [[current9.documentClockMinMs, current9.documentClockMaxMs], [current9.backendClockMinMs, current9.backendClockMaxMs]]) {
+  const current10 = structuredClone(input.witness);
+  need17(typeof current10.projectUuid === "string" && typeof current10.branchUuid === "string" && typeof current10.backendActorUuid === "string" && typeof current10.client === "string", "Current native identity witness refused.");
+  for (const [minimum5, maximum5] of [[current10.documentClockMinMs, current10.documentClockMaxMs], [current10.backendClockMinMs, current10.backendClockMaxMs]]) {
     need17(
       typeof minimum5 === "number" && typeof maximum5 === "number" && Number.isSafeInteger(minimum5) && Number.isSafeInteger(maximum5) && !Object.is(minimum5, -0) && !Object.is(maximum5, -0) && minimum5 >= 0 && maximum5 >= minimum5 && maximum5 - minimum5 <= 6e4,
       "Current native clock bounds refused."
     );
   }
-  need17(!Object.is(current9.preDispatchMaxTicket, -0), "Current native ticket witness refused.");
+  need17(!Object.is(current10.preDispatchMaxTicket, -0), "Current native ticket witness refused.");
   const witness = {
-    projectUuid: current9.projectUuid,
-    branchUuid: current9.branchUuid,
-    actorUuid: current9.backendActorUuid,
-    client: current9.client,
-    preDispatchMaxTicket: current9.preDispatchMaxTicket,
-    serverClockMinMs: current9.backendClockMinMs,
-    serverClockMaxMs: current9.backendClockMaxMs,
-    serverLocalOffsetMinutes: current9.backendLocalOffsetMinutes,
-    ...current9.agedHead === void 0 ? {} : { agedHead: current9.agedHead }
+    projectUuid: current10.projectUuid,
+    branchUuid: current10.branchUuid,
+    actorUuid: current10.backendActorUuid,
+    client: current10.client,
+    preDispatchMaxTicket: current10.preDispatchMaxTicket,
+    serverClockMinMs: current10.backendClockMinMs,
+    serverClockMaxMs: current10.backendClockMaxMs,
+    serverLocalOffsetMinutes: current10.backendLocalOffsetMinutes,
+    ...current10.agedHead === void 0 ? {} : { agedHead: current10.agedHead }
   };
   const prepared = await prepareSymbolSqlState({ before: input.before, operation: input.operation, witness });
   const plan2 = Object.freeze({
@@ -72883,7 +73007,7 @@ async function prepareCurrentSymbolNewHeadSqlPlan(input) {
     producerBindingVerified: false,
     executionAuthorized: false
   });
-  currentPlans.set(plan2, { prepared, documentClockMinMs: current9.documentClockMinMs, documentClockMaxMs: current9.documentClockMaxMs });
+  currentPlans.set(plan2, { prepared, documentClockMinMs: current10.documentClockMinMs, documentClockMaxMs: current10.documentClockMaxMs });
   return plan2;
 }
 async function prepareSymbolSqlState(input) {
@@ -73078,11 +73202,11 @@ async function verifySymbolNewHeadSqlEffect(plan2, after) {
   return proof;
 }
 async function verifyCurrentSymbolNewHeadSqlEffect(plan2, after) {
-  const current9 = currentPlans.get(plan2);
-  need17(current9 !== void 0, "Current SQL comparison requires its original prepared plan.");
-  const proof = await verifySymbolSqlEffect(plan2, after, current9.prepared, {
+  const current10 = currentPlans.get(plan2);
+  need17(current10 !== void 0, "Current SQL comparison requires its original prepared plan.");
+  const proof = await verifySymbolSqlEffect(plan2, after, current10.prepared, {
     resultProfile: "easyeda-pro-control.current-symbol-new-head-full-sql-effect.v1",
-    documentClock: { serverClockMinMs: current9.documentClockMinMs, serverClockMaxMs: current9.documentClockMaxMs },
+    documentClock: { serverClockMinMs: current10.documentClockMinMs, serverClockMaxMs: current10.documentClockMaxMs },
     documentEditVersion: "3.2.206"
   });
   return proof;
@@ -73254,20 +73378,20 @@ function head(target8, client2, value2, ticket2, version7) {
     user: value2.user
   })}`;
 }
-function applyHeader(current9, edit, ticketValue, selected3) {
-  need18(current9["docType"] === "SYMBOL", "target header type changed");
-  const hasTime = Boolean(current9["updateTime"]);
-  const updateTime = number16(hasTime ? current9["updateTime"] : edit["updateTime"]);
+function applyHeader(current10, edit, ticketValue, selected3) {
+  need18(current10["docType"] === "SYMBOL", "target header type changed");
+  const hasTime = Boolean(current10["updateTime"]);
+  const updateTime = number16(hasTime ? current10["updateTime"] : edit["updateTime"]);
   need18(updateTime > 0, "clock-dependent missing/zero final header is not admitted");
-  const version7 = text19(current9["version"]);
-  const editVersion = current9["editVersion"];
+  const version7 = text19(current10["version"]);
+  const editVersion = current10["editVersion"];
   need18(editVersion === void 0 || typeof editVersion === "string" && editVersion.length > 0 && editVersion.length <= 128, "stored editor version refused");
   const ticket2 = number16(ticketValue);
   return selected3 === void 0 || selected3.updateTime < updateTime ? {
     updateTime,
     version: version7,
     ticket: selected3 === void 0 ? ticket2 : Math.max(selected3.ticket, ticket2),
-    user: nativeUser(current9, edit),
+    user: nativeUser(current10, edit),
     ...editVersion === void 0 ? {} : { editVersion }
   } : selected3;
 }
@@ -73336,16 +73460,16 @@ function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
     stream.push(atom.id);
   }
 }
-function observeCanvasSegmentsHeader(scope6, current9, edit, ticket2, chunkIndex, firstSymbolUuid, targetUuid) {
+function observeCanvasSegmentsHeader(scope6, current10, edit, ticket2, chunkIndex, firstSymbolUuid, targetUuid) {
   if (scope6 === void 0) {
     return;
   }
   need18(firstSymbolUuid === targetUuid, "canvas-segments target follows a peer SYMBOL cache header");
-  if (number16(current9["updateTime"]) > scope6.headers.latestHeaderTime) {
+  if (number16(current10["updateTime"]) > scope6.headers.latestHeaderTime) {
     scope6.latestHeaderChunkIndex = chunkIndex;
   }
-  observeSingleCanvasHeader(scope6.headers, current9, ticket2);
-  scope6.rawHeader = applyHeader(current9, edit, ticket2, scope6.rawHeader);
+  observeSingleCanvasHeader(scope6.headers, current10, ticket2);
+  scope6.rawHeader = applyHeader(current10, edit, ticket2, scope6.rawHeader);
 }
 async function prepareSavedSymbolProjection(input) {
   const descriptor10 = await prepareProjection(input, "raw");
@@ -73555,7 +73679,7 @@ async function prepareProjection(input, strategy) {
   const singleCanvasScope = strategy === "current-single-canvas-segment-cache" ? { types: /* @__PURE__ */ new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 } : void 0;
   const canvasSegmentsScope = strategy === "current-canvas-segments-cache" ? { headers: { types: /* @__PURE__ */ new Map(), latestHeaderTime: 0, latestHeaderCount: 0, latestHeaderTicket: 0, maximumHeaderTicket: 0 }, streams: /* @__PURE__ */ new Map() } : void 0;
   for (const [chunkIndex, chunk] of chunks.entries()) {
-    let current9, documentCacheEdit, edit;
+    let current10, documentCacheEdit, edit;
     let firstSymbolUuid;
     let targetFragmentRecords = 0;
     const records2 = chunk.split("|\n");
@@ -73573,35 +73697,35 @@ async function prepareProjection(input, strategy) {
       if (header["type"] === "EDIT_HEAD") {
         edit = body3(parsed2.body);
       } else if (header["type"] === "DOCHEAD") {
-        current9 = body3(parsed2.body);
-        if (current9["docType"] === "SYMBOL" && firstSymbolUuid === void 0) {
-          firstSymbolUuid = current9["uuid"];
+        current10 = body3(parsed2.body);
+        if (current10["docType"] === "SYMBOL" && firstSymbolUuid === void 0) {
+          firstSymbolUuid = current10["uuid"];
         }
         edit ??= {
-          uuid: current9["uuid"],
-          username: isRecord(current9["user"]) ? current9["user"]["username"] : void 0,
-          nickname: isRecord(current9["user"]) ? current9["user"]["nickname"] : void 0,
-          updateTime: current9["updateTime"]
+          uuid: current10["uuid"],
+          username: isRecord(current10["user"]) ? current10["user"]["username"] : void 0,
+          nickname: isRecord(current10["user"]) ? current10["user"]["nickname"] : void 0,
+          updateTime: current10["updateTime"]
         };
-        if (current9["uuid"] === targetUuid) {
+        if (current10["uuid"] === targetUuid) {
           targetFragmentRecords += 1;
-          observeSingleCanvasHeader(singleCanvasScope, current9, header["ticket"]);
-          observeCanvasSegmentsHeader(canvasSegmentsScope, current9, edit, header["ticket"], chunkIndex, firstSymbolUuid, targetUuid);
+          observeSingleCanvasHeader(singleCanvasScope, current10, header["ticket"]);
+          observeCanvasSegmentsHeader(canvasSegmentsScope, current10, edit, header["ticket"], chunkIndex, firstSymbolUuid, targetUuid);
           documentCacheEdit ??= {
-            uuid: current9["uuid"],
-            username: isRecord(current9["user"]) ? current9["user"]["username"] : void 0,
-            nickname: isRecord(current9["user"]) ? current9["user"]["nickname"] : void 0,
-            updateTime: current9["updateTime"]
+            uuid: current10["uuid"],
+            username: isRecord(current10["user"]) ? current10["user"]["username"] : void 0,
+            nickname: isRecord(current10["user"]) ? current10["user"]["nickname"] : void 0,
+            updateTime: current10["updateTime"]
           };
-          selected3 = applyHeader(current9, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected3);
+          selected3 = applyHeader(current10, strategy === "raw" ? edit : documentCacheEdit, header["ticket"], selected3);
         }
-      } else if (current9?.["uuid"] === targetUuid) {
+      } else if (current10?.["uuid"] === targetUuid) {
         targetFragmentRecords += 1;
         const id13 = text19(header["id"]), type2 = text19(header["type"]);
         need18(type2 !== "NET" && type2 !== "RULE_SELECTOR", "case-insensitive cross-type key replay is not admitted");
         need18(type2 !== "META" || id13 === "META" && parsed2.body !== null, "noncanonical target META history refused");
         const hasClient = Boolean(header["client"]);
-        const client2 = text19(hasClient ? header["client"] : current9["client"]), ticket2 = number16(header["ticket"]);
+        const client2 = text19(hasClient ? header["client"] : current10["client"]), ticket2 = number16(header["ticket"]);
         need18(/^[a-f0-9]{16}$/u.test(client2), "record client refused");
         const atom = { id: id13, type: type2, ticket: ticket2, client: client2, raw: raw.slice(raw.indexOf("||") + 2) };
         observeSingleCanvasAtom(singleCanvasScope, atom, chunkIndex);
@@ -73982,7 +74106,7 @@ function comparison(operationId9, phase5, preparedSqlPlanSha256, copyReceiptSha2
 async function reconstructClosedSymbolSqlEvidence(input) {
   const { journal, events, baselineInventory, editInventory, verificationInventory, witness, witnessClockArtifact } = input;
   const snapshot8 = canonicalJson({ journal, events, witness, witnessClockArtifact });
-  const current9 = () => {
+  const current10 = () => {
     need19(
       input.journal === journal && input.events === events && input.baselineInventory === baselineInventory && input.editInventory === editInventory && input.verificationInventory === verificationInventory && input.witness === witness && input.witnessClockArtifact === witnessClockArtifact,
       "caller reference changed"
@@ -74028,7 +74152,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
   need19(witnessClockArtifact.path === join25(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
   hash23(witnessClockArtifact.sha256);
   const sqlPlan = await prepareSymbolNewHeadSqlPlan({ before: baselineInventory, operation: journal.plan.operation, witness });
-  current9();
+  current10();
   need19(sqlPlan.headEligibility === "locked", "only the locked-head historical profile is admitted");
   const metadataPlan2 = metadataPlanForOriginalSymbolSqlPlan(sqlPlan);
   need19(metadataPlan2.projectUuid === journal.plan.projectUuid && metadataPlan2.branchUuid === journal.plan.branchUuid && metadataPlan2.ownerUuid === journal.plan.ownerUuid && metadataPlan2.targetUuid === journal.plan.targetUuid, "metadata identity differs");
@@ -74057,11 +74181,11 @@ async function reconstructClosedSymbolSqlEvidence(input) {
   same25(write["witnessClockArtifact"], preparation3.witnessClockArtifact, "write qualification descriptor differs");
   same25(event3(20).generation, event3(21).generation, "witness/write generation differs");
   const editRelation = await verifySymbolNewHeadSqlEffect(sqlPlan, editInventory);
-  current9();
+  current10();
   const editComparison = comparison(operationId9, "edit-sql-compare", preparation3.preparedSqlPlanSha256, editCopy.receiptSha256, editRelation);
   same25(event3(28).data, editComparison, "recorded edit comparison differs from full recomputation");
   const verificationRelation = await compareCompleteClosedSql(editInventory, verificationInventory);
-  current9();
+  current10();
   const verificationComparison = comparison(operationId9, "verify-sql-compare", preparation3.preparedSqlPlanSha256, verificationCopy.receiptSha256, verificationRelation);
   same25(event3(44).data, verificationComparison, "recorded verification comparison differs from full recomputation");
   for (const phase5 of ["edit-sql-compare", "verify-sql-compare"]) {
@@ -74093,7 +74217,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     need19(event3(sequence).requestSha256 === sha256Json(expected3), "SQL request digest differs");
   }
   const decoded = await decodeRawHistoryForOriginalSymbolSqlPlan(sqlPlan, editInventory);
-  current9();
+  current10();
   need19(decoded.history.projectUuid === metadataPlan2.projectUuid && decoded.history.branchUuid === metadataPlan2.branchUuid && decoded.history.projectOwnerUuid === metadataPlan2.ownerUuid && decoded.maximumTicket === sqlPlan.expectedTicket, "decoded raw history identity differs");
   const projection8 = await prepareSavedSymbolProjection({
     chunks: decoded.chunks,
@@ -74101,7 +74225,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     maximumTicket: sqlPlan.expectedTicket,
     currentEditVersion: metadataPlan2.headerEditVersion
   });
-  current9();
+  current10();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
   need19(projectedContentBytes > 0 && projectedContentBytes <= 65536, "projected saved content bound exceeded");
   const sourceBody = {
@@ -74130,7 +74254,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
   const readRequest = bag7(event3(37).data);
   need19(readRequest["profile"] === "private.closed-symbol-saved-read-request.v1" && event3(37).requestSha256 === sha256Json(readRequest), "saved-read request differs");
   same25(readRequest["source"], savedSource, "saved source differs from complete raw history reconstruction");
-  current9();
+  current10();
   return Object.freeze({
     preparation: preparation3,
     editComparison,
@@ -74167,7 +74291,7 @@ function requireValue7(value2, message) {
     throw new Error(message);
   }
 }
-var PHASES2, owners, ClosedSymbolAdmissionStage;
+var PHASES2, owners2, ClosedSymbolAdmissionStage;
 var init_closed_symbol_admission = __esm({
   "server/src/closed-symbol-admission.ts"() {
     init_core3();
@@ -74177,7 +74301,7 @@ var init_closed_symbol_admission = __esm({
       "edit-admission": { ordinal: 1, launch: "edit-launch", capture: "closed-edit" },
       "verify-admission": { ordinal: 2, launch: "verify-launch", capture: "closed-verification" }
     };
-    owners = /* @__PURE__ */ new WeakMap();
+    owners2 = /* @__PURE__ */ new WeakMap();
     ClosedSymbolAdmissionStage = class {
       engine;
       runtime;
@@ -74189,10 +74313,10 @@ var init_closed_symbol_admission = __esm({
         this.runtime = runtime;
         this.validator = engine2.executionAuthorityValidator;
         this.validatorMethods = [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture];
-        let runtimes = owners.get(engine2);
+        let runtimes = owners2.get(engine2);
         if (runtimes === void 0) {
           runtimes = /* @__PURE__ */ new WeakMap();
-          owners.set(engine2, runtimes);
+          owners2.set(engine2, runtimes);
         }
         let owner = runtimes.get(runtime);
         if (owner === void 0) {
@@ -74250,7 +74374,7 @@ var init_closed_symbol_admission = __esm({
           return { gatewayInstanceId: value2["gatewayInstanceId"], ...value2["activeSession"] };
         };
         const sessionText = canonicalJson(session());
-        const current9 = () => {
+        const current10 = () => {
           requireValue7(
             this.validatorMethods.every((method6) => typeof method6 === "function") && this.engine.executionAuthorityValidator === this.validator && [this.validator?.capture, this.validator?.proveTerminated, this.validator?.releaseCapture].every((method6, index) => method6 === this.validatorMethods[index]),
             "Closed admission retained execution validator changed or is unavailable."
@@ -74261,13 +74385,13 @@ var init_closed_symbol_admission = __esm({
             "Closed admission current authenticated scope changed."
           );
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
         unchanged5();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
         unchanged5();
-        current9();
+        current10();
         const request13 = {
           profile: "easyeda-pro-control.closed-symbol-admission-request.v1",
           operationId: operationId9,
@@ -74281,7 +74405,7 @@ var init_closed_symbol_admission = __esm({
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: partial2, requestSha256, data: request13 });
         unchanged5();
-        current9();
+        current10();
         const original2 = await this.engine.captureClosedSessionAuthority(operationId9, selected3.capture, 1);
         this.owner.captures.set(key, original2);
         const captureSha256 = sha256Json(original2);
@@ -74303,7 +74427,7 @@ var init_closed_symbol_admission = __esm({
           requireValue7(sha256Json(original2) === captureSha256, "Closed admission original capture changed.");
         };
         unchanged5();
-        current9();
+        current10();
         captureUnchanged();
         requireValue7(retained2.operationId === operationId9 && retained2.phase === selected3.capture && retained2.challengeAttempt === 1 && canonicalJson(retained2.bridgeSession) === sessionText, "Closed admission capture identity differs.");
         const roots = retained2.executionAuthority.processes.filter((entry) => entry.role === "easyeda-main");
@@ -74313,12 +74437,12 @@ var init_closed_symbol_admission = __esm({
         );
         const after = await this.engine.runtimeIdentity(binding8);
         unchanged5();
-        current9();
+        current10();
         captureUnchanged();
         requireValue7(sha256Json(after) === generation5.runtimeSha256, "Closed admission current native runtime changed.");
         const final = await loadClosedSymbolJournal(operationId9);
         unchanged5();
-        current9();
+        current10();
         captureUnchanged();
         requireValue7(canonicalJson(final.journal) === canonicalJson(journal), "Closed admission durable journal changed.");
         Object.assign(journalInput, journal);
@@ -74407,26 +74531,26 @@ var init_closed_symbol_close = __esm({
             "Closed symbol close cannot run inside an unknown or authenticated scope."
           );
         };
-        const current9 = () => {
+        const current10 = () => {
           outsideScope();
           const status2 = this.runtime.status();
           requireValue8(status2.state === "owned" && canonicalJson(status2.launch) === canonicalJson(launch), "Closed symbol close runtime owner changed.");
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
         unchanged5();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
         unchanged5();
-        current9();
+        current10();
         const intent = await this.runtime.prepareClosedSessionClose({ ...binding8, windowHandle });
         unchanged5();
-        current9();
+        current10();
         const request13 = { intent, capture: capture3, launch };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request13 });
         unchanged5();
-        current9();
+        current10();
         const closeReceipt = await this.runtime.requestClosedSessionNormalClose({ ...binding8, intent, confirmNormalClose: true });
         const result = Object.freeze({
           intent: structuredClone(intent),
@@ -74458,7 +74582,7 @@ var init_closed_symbol_close = __esm({
         requireValue8(event3 !== void 0, "Closed symbol close result artifact missing.");
         slot.eventSha256 = event3.sha256;
         unchanged5();
-        current9();
+        current10();
         Object.assign(input.journal, journal);
         return result;
       }
@@ -74481,24 +74605,24 @@ var init_closed_symbol_close = __esm({
         );
         slot.proving = true;
         try {
-          const current9 = () => {
+          const current10 = () => {
             slot.outsideScope();
             const status2 = this.runtime.status();
             requireValue8(status2.state === "owned" && canonicalJson(status2.launch) === canonicalJson(slot.launch), "Closed symbol proof owner changed.");
             requireValue8(canonicalJson(result) === slot.resultText, "Closed symbol proof result changed.");
           };
-          current9();
+          current10();
           const loaded = await loadClosedSymbolJournal(slot.operationId);
-          current9();
+          current10();
           requireValue8(
             loaded.journal.artifacts.at(-1)?.sha256 === slot.eventSha256,
             "Closed symbol proof journal advanced or changed."
           );
           const input = { ...slot.binding, intent: result.intent, closeReceipt: result.closeReceipt };
           const proof = mode === "probe" ? await this.runtime.probeClosedSessionTermination(input) : await this.runtime.proveClosedSession(input);
-          current9();
+          current10();
           const final = await loadClosedSymbolJournal(slot.operationId);
-          current9();
+          current10();
           requireValue8(
             canonicalJson(final.journal) === canonicalJson(loaded.journal),
             "Closed symbol proof journal advanced or changed."
@@ -74616,7 +74740,7 @@ var init_closed_symbol_copy = __esm({
         );
         const scopeReader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
         requireValue9(typeof scopeReader === "function", "Closed symbol copy cannot inspect bridge scope.");
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           requireValue9(
             this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(this.engine.upstream) === void 0,
@@ -74629,24 +74753,24 @@ var init_closed_symbol_copy = __esm({
             "Closed symbol copy scope changed during authority check."
           );
         };
-        await current9();
+        await current10();
         await this.engine.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        await current9();
+        await current10();
         const root = await controlRootCapability();
-        await current9();
+        await current10();
         const outputDir = join26(controlDataDirectory(), "checkpoints");
         const checkpoint = await createCheckpoint(
           { source: journal.plan.projectPath, outputDir, label: `${phase5}-${operationId9.slice(-8)}` },
           { expectedSource: journal.plan.projectPath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 }
         );
-        await current9();
+        await current10();
         const proofData = JSON.parse(canonicalJson(proof));
         const request13 = { proof: proofData, checkpoint, source: journal.plan.projectPath, generation: generation5 };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request13 });
-        await current9();
+        await current10();
         const copy2 = await copyClosedProjectBytes({
           closureProof: proof,
           source: journal.plan.projectPath,
@@ -74654,7 +74778,7 @@ var init_closed_symbol_copy = __esm({
           artifactDirectory: operationPath(operationId9).slice(0, -5)
         });
         this.copies.set(key, copy2);
-        await current9();
+        await current10();
         const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
         requireValue9(lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs, "Closed symbol copy source lineage changed after checkpoint.");
         const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
@@ -74665,7 +74789,7 @@ var init_closed_symbol_copy = __esm({
           requestSha256,
           data: { copyReceipt: copy2, sqlDigests: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 } }
         });
-        await current9();
+        await current10();
         const final = await loadClosedSymbolJournal(operationId9);
         assertCurrentClosedSessionCopyAuthority(proof);
         unchanged5();
@@ -74772,15 +74896,15 @@ var init_closed_symbol_launch = __esm({
           requestSha256,
           data: { launchReceipt, launchReceiptSha256: sha256Json(launchReceipt) }
         });
-        const current9 = () => {
+        const current10 = () => {
           unchanged5();
           outsideScope();
           const status2 = this.runtime.status();
           requireValue10(status2.state === "owned" && canonicalJson(status2.launch) === canonicalJson(launchReceipt) && canonicalJson(original2) === canonicalJson(launchReceipt), "Bootstrap launch current owner differs from its retained result.");
         };
-        current9();
+        current10();
         const final = await loadClosedSymbolJournal(operationId9);
-        current9();
+        current10();
         requireValue10(canonicalJson(final.journal) === canonicalJson(journal), "Bootstrap launch durable journal changed.");
         Object.assign(journalInput, journal);
         return Object.freeze({ launch: original2, generation: generation5, executionAuthorized: false, admissionProved: false, completionProved: false });
@@ -74872,7 +74996,7 @@ var init_closed_symbol_relaunch = __esm({
             "Closed symbol relaunch retained runtime changed."
           );
         };
-        const current9 = async () => {
+        const current10 = async () => {
           previous();
           requireValue11(
             await assertClosedSessionCopyAuthority(proof) === proof,
@@ -74880,19 +75004,19 @@ var init_closed_symbol_relaunch = __esm({
           );
           previous();
         };
-        await current9();
+        await current10();
         await this.engine.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        await current9();
+        await current10();
         const controlRoot = await controlRootCapability();
-        await current9();
+        await current10();
         const verified = await verifyCheckpoint(retained2.checkpoint.receiptPath, {
           expectedSource: journal.plan.projectPath,
           artifactRoots: [join27(controlDataDirectory(), "checkpoints")],
           controlRoot
         });
-        await current9();
+        await current10();
         requireValue11(
           verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === retained2.checkpoint.receiptPath && verified.checkpoint === retained2.checkpoint.checkpoint && verified.checkpointSha256 === retained2.checkpoint.checkpointSha256 && verified.sourceDumpSha256 === retained2.checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === retained2.checkpoint.checkpointDumpSha256,
           "Closed symbol relaunch checkpoint changed."
@@ -74908,7 +75032,7 @@ var init_closed_symbol_relaunch = __esm({
         };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: null, requestSha256, data: request13 });
-        await current9();
+        await current10();
         const original2 = await this.runtime.launch();
         this.launches.set(key, original2);
         const launchReceipt = structuredClone(original2);
@@ -75415,8 +75539,8 @@ var init_closed_symbol_navigation = __esm({
         const binding8 = journal.bridgeDispatchBeforeOrphan, expected3 = journal.bridgeSessionBeforeOrphan;
         requireValue12(binding8 !== void 0 && expected3 !== void 0, "Closed navigation lacks its dispatch binding.");
         const { gatewayInstanceId, ...activeSession } = expected3;
-        const current9 = this.engine.upstream.bridgeSessionLifecycle?.();
-        requireValue12(isRecord(current9) && current9["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && current9["gatewayInstanceId"] === gatewayInstanceId && canonicalJson(current9["activeSession"]) === canonicalJson(activeSession) && canonicalJson(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.()) === canonicalJson(binding8), "Closed navigation current session changed.");
+        const current10 = this.engine.upstream.bridgeSessionLifecycle?.();
+        requireValue12(isRecord(current10) && current10["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && current10["gatewayInstanceId"] === gatewayInstanceId && canonicalJson(current10["activeSession"]) === canonicalJson(activeSession) && canonicalJson(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.()) === canonicalJson(binding8), "Closed navigation current session changed.");
         _ClosedSymbolNavigationStage.dispatchGeneration(journal, generation5);
       }
       async currentGeneration(journal, generation5) {
@@ -75915,8 +76039,8 @@ function buildCurrentAgedSqlReferenceProgram(input) {
     `assert.equal(identity.electron,${JSON.stringify(CURRENT_MAIN_REFERENCE_VERSIONS.electron)});`
   );
   const controls = buildMainClockReference(scope6);
-  const current9 = buildCurrentAgedSqlClockControls(scope6, "main-reference");
-  return replaceOnce(original2, controls, `(()=>{const currentAgedControls=${current9};
+  const current10 = buildCurrentAgedSqlClockControls(scope6, "main-reference");
+  return replaceOnce(original2, controls, `(()=>{const currentAgedControls=${current10};
 const before=currentAgedControls.controlsBefore,after=currentAgedControls.controlsAfter;
 if(JSON.stringify(before.epochs)!==JSON.stringify(after.epochs)||JSON.stringify(before.sql)!==JSON.stringify(after.sql)||
  before.clockAfter.epochMs>after.clockBefore.epochMs||after.clockAfter.epochMs-before.clockBefore.epochMs>10000||
@@ -76123,7 +76247,7 @@ function invokeMainReferenceTransport(input) {
   };
   try {
     child = spawn4(POWERSHELL, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", input.command], { shell: false, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
-    const current9 = child;
+    const current10 = child;
     const guard = (install) => {
       try {
         install();
@@ -76134,24 +76258,24 @@ function invokeMainReferenceTransport(input) {
       }
     };
     const childError = guard(() => {
-      current9.on("error", () => {
+      current10.on("error", () => {
         fail11("start-failure");
       });
     });
     const childClose = guard(() => {
-      current9.once("close", (code, closedSignal) => {
+      current10.once("close", (code, closedSignal) => {
         closeObserved = true;
         exitCode = code;
         signal = closedSignal;
-        unresolvedChildren.delete(current9);
+        unresolvedChildren.delete(current10);
         if (!requestingContainment && !settingUp) {
           settleClosed();
         }
       });
     });
-    const inputStream = current9.stdin;
-    const outputStream = current9.stdout;
-    const errorStream = current9.stderr;
+    const inputStream = current10.stdin;
+    const outputStream = current10.stdout;
+    const errorStream = current10.stderr;
     const inputError = inputStream !== null && guard(() => {
       inputStream.on("error", () => {
         fail11("stdin-failure");
@@ -76612,7 +76736,7 @@ var init_closed_symbol_main_reference = __esm({
             "Main reference must run outside an authenticated generation."
           );
         };
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           need26(await assertClosedSessionCopyAuthority(proof) === proof, "Main reference baseline closure is no longer owned.");
           unchanged5();
@@ -76626,15 +76750,15 @@ var init_closed_symbol_main_reference = __esm({
           "Main reference requires its original closed baseline immediately before edit launch."
         );
         need26(journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256, "Main reference native source profile differs.");
-        await current9();
+        await current10();
         await this.engine.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        await current9();
+        await current10();
         const baseline2 = await mainReferenceBaseline(journal, events, copy2, inventory2);
-        await current9();
+        await current10();
         const baselineClock = await windowsClockObservationForResult(proof, "termination");
-        await current9();
+        await current10();
         need26(
           baselineClock.clock.status === "observed" && baselineClock.base["checkedAt"] === proof.closedAt && baselineClock.base["jobEmpty"] === true && baselineClock.base["jobId"] === proof["jobId"] && baselineClock.base["helperInstance"] === proof["helperInstance"] && baselineClock.ownerBinding["operationId"] === operationId9 && baselineClock.ownerBinding["phase"] === "closed-baseline" && baselineClock.ownerBinding["challengeAttempt"] === 1 && baselineClock.ownerBinding["closeIntentSha256"] === proof.closeIntentSha256 && baselineClock.ownerBinding["authoritySha256"] === proof.authoritySha256,
           "Main reference original baseline clock is unavailable or mismatched."
@@ -76653,7 +76777,7 @@ var init_closed_symbol_main_reference = __esm({
           referenceUtcMs: Number((BigInt(baselineClock.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
         const invocation = await compileMainReferenceTransportV3(request13);
-        await current9();
+        await current10();
         const directory4 = operationPath(operationId9).slice(0, -5), resultPath = join30(directory4, "10-baseline-main-reference-result.json");
         const beforeIntent = await loadClosedSymbolJournal(operationId9);
         unchanged5();
@@ -76673,9 +76797,9 @@ var init_closed_symbol_main_reference = __esm({
           windowsSideEffects: "one disjoint nonce scratch copy and one owned synthetic Job; no EasyEDA app/profile input",
           executionAuthorized: false
         }));
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         const beforeDispatch = await loadClosedSymbolJournal(operationId9);
         unchanged5();
         assertCurrentClosedSessionCopyAuthority(proof);
@@ -76686,7 +76810,7 @@ var init_closed_symbol_main_reference = __esm({
         const retainedResult = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
         const resultArtifact = Object.freeze(await writePhaseArtifact(operationId9, 10, "baseline-main-reference-result", retainedResult));
         need26(canonicalJson(returned) === returnedText, "Main reference settled reply changed.");
-        await current9();
+        await current10();
         need26(
           resultArtifact.path === resultPath && resultArtifact.bytes <= 196608 && returned.transportFailure === null && returned.rawStdoutBase64 === Buffer.from(returned.stdout).toString("base64") && returned.rawStderrBase64 === Buffer.from(returned.stderr).toString("base64") && returned.exitCode === 0 && returned.signal === null && !returned.timedOut && returned.stderr === "",
           "Main reference transport failed or is ambiguous; never retry it."
@@ -76698,11 +76822,11 @@ var init_closed_symbol_main_reference = __esm({
         const after = observation2["nativeAfter"], before = observation2["nativeBefore"];
         need26(isRecord(before) && isRecord(after) && before["zoneRulesSha256"] === baselineClock.clock.after.zoneRulesSha256 && after["zoneRulesSha256"] === baselineClock.clock.after.zoneRulesSha256 && before["localOffsetMinutes"] === baselineClock.clock.after.localOffsetMinutes && after["localOffsetMinutes"] === baselineClock.clock.after.localOffsetMinutes && before["qpcFrequency"] === baselineClock.clock.after.qpcFrequency && after["qpcFrequency"] === baselineClock.clock.after.qpcFrequency && BigInt(String(before["qpcBefore"])) >= BigInt(baselineClock.clock.after.qpcAfter) && BigInt(String(before["utcBeforeTicks"])) >= BigInt(baselineClock.clock.after.utcAfterTicks), "Main reference OS clock construction differs from baseline closure.");
         await readExactUtf8Artifact(resultArtifact);
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         need26(await assertIssuedWindowsClockObservation(baselineClock) === baselineClock, "Main reference clock issuer changed.");
-        await current9();
+        await current10();
         const final = await loadClosedSymbolJournal(operationId9);
         unchanged5();
         assertCurrentClosedSessionCopyAuthority(proof);
@@ -76985,7 +77109,7 @@ var init_closed_symbol_witness = __esm({
         const unchangedReply = () => {
           need28(settledText === void 0 || canonicalJson(settledReply) === settledText, "Witness settled reply changed after retention.");
         };
-        const current9 = () => {
+        const current10 = () => {
           unchangedReply();
           unchanged5();
           working();
@@ -77006,39 +77130,39 @@ var init_closed_symbol_witness = __esm({
           need28(isRecord(session) && session["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && isRecord(session["activeSession"]) && canonicalJson({ gatewayInstanceId: session["gatewayInstanceId"], ...session["activeSession"] }) === canonicalJson(capture3.bridgeSession), "Witness current session changed.");
         };
         const native = async () => {
-          current9();
+          current10();
           const value2 = await this.engine.runtimeIdentity(binding8);
-          current9();
+          current10();
           need28(sha256Json(value2) === generation5.runtimeSha256, "Witness native runtime changed.");
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        current9();
+        current10();
         need28(journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256 && journal.plan.expectedFingerprintSha256 === sha256Json(this.fingerprint), "Witness sealed implementation pins differ.");
         const fingerprint = await this.engine.controlFingerprintPromise;
-        current9();
+        current10();
         need28(fingerprint.sha256 === journal.plan.facadeSha256, "Witness sealed facade differs.");
         const actualStatus = await this.engine.status();
-        current9();
+        current10();
         assertSubset(actualStatus.stableFingerprint, this.fingerprint, "Witness runtime");
         const bundles = await this.engine.upstream.installedEasyedaBundles?.();
-        current9();
+        current10();
         need28(bundles !== void 0, "Witness installed sources unavailable.");
         await verifyWitnessNativeProfile(bundles.assetsRoot);
-        current9();
+        current10();
         const launchClock = await observed(await launchClockReader.call(this.runtime, launch));
-        current9();
+        current10();
         need28(launchClock.observation.phase === "launch" && canonicalJson(launchClock.observation.base) === launchText, "Witness clock launch differs.");
         const extraCaptures = [];
         try {
           const beforeCapture = await this.engine.captureClosedSessionAuthority(operationId9, "closed-edit", 2);
           this.captures.set(`${operationId9}:before`, beforeCapture);
           extraCaptures.push(beforeCapture);
-          current9();
+          current10();
           const before = await observed(await captureClockReader.call(this.engine, beforeCapture));
-          current9();
+          current10();
           need28(beforeCapture.operationId === operationId9 && beforeCapture.phase === "closed-edit" && beforeCapture.challengeAttempt === 2 && before.observation.phase === "capture" && before.observation.base["bindingSha256"] === beforeCapture.executionAuthority.bindingSha256 && before.observation.base["jobId"] === generation5.jobId && before.observation.base["helperInstance"] === generation5.helperInstance && sha256Json(beforeCapture.runtimeIdentity) === generation5.runtimeSha256 && sha256Json(beforeCapture.bridgeSession) === generation5.sessionSha256, "Witness native-before capture differs.");
           const notBeforeMs = Number((BigInt(before.clock.before.utcBeforeTicks) - EPOCH_TICKS4) / 10000n);
           const plannedWindow = Object.freeze({ notBeforeMs, notAfterMs: notBeforeMs + 6e4 });
@@ -77070,7 +77194,7 @@ var init_closed_symbol_witness = __esm({
           };
           const requestSha256 = sha256Json(request13);
           await appendClosedSymbolEvent(journal, { step: "edit-witness", kind: "intent", generation: generation5, requestSha256, data: request13 });
-          current9();
+          current10();
           const raw = await this.engine.dispatchWithOrphanTracking(
             journal,
             "edit-witness",
@@ -77078,9 +77202,9 @@ var init_closed_symbol_witness = __esm({
             { code, timeoutMs: 15e3, confirmWrite: true },
             25e3,
             async () => {
-              current9();
+              current10();
               await this.engine.assertRecoveryOperationIsolated(operationId9);
-              current9();
+              current10();
               await native();
               const roots = journal.executionAuthorityBeforeOrphan?.processes.filter((entry) => entry.role === "easyeda-main");
               need28(sha256Json(journal.runtimeIdentityBeforeOrphan) === generation5.runtimeSha256 && sha256Json(journal.bridgeSessionBeforeOrphan) === generation5.sessionSha256 && roots?.length === 1 && roots[0]?.pid === generation5.rootPid && roots[0].startIdentity === generation5.rootStartIdentity, "Witness dispatch generation differs.");
@@ -77094,7 +77218,7 @@ var init_closed_symbol_witness = __esm({
               unchangedReply();
             }
           );
-          current9();
+          current10();
           need28(raw === settledReply, "Witness settled reply changed after retention.");
           const qualified = controlScope === void 0 ? void 0 : validateAgedSymbolWitnessReadResult(extractToolPayload(raw), scope6, controlScope);
           const observation2 = qualified?.witness ?? validateSymbolWitnessReadResult(extractToolPayload(raw), scope6);
@@ -77102,9 +77226,9 @@ var init_closed_symbol_witness = __esm({
           const afterCapture = await this.engine.captureClosedSessionAuthority(operationId9, "closed-edit", 3);
           this.captures.set(`${operationId9}:after`, afterCapture);
           extraCaptures.push(afterCapture);
-          current9();
+          current10();
           const after = await observed(await captureClockReader.call(this.engine, afterCapture));
-          current9();
+          current10();
           need28(afterCapture.operationId === operationId9 && afterCapture.phase === "closed-edit" && afterCapture.challengeAttempt === 3 && after.observation.phase === "capture" && after.observation.base["bindingSha256"] === afterCapture.executionAuthority.bindingSha256 && after.observation.base["jobId"] === generation5.jobId && after.observation.base["helperInstance"] === generation5.helperInstance && sha256Json(afterCapture.runtimeIdentity) === generation5.runtimeSha256 && sha256Json(afterCapture.bridgeSession) === generation5.sessionSha256, "Witness native-after capture differs.");
           for (const entry of [launchClock.clock.before, launchClock.clock.after, before.clock.before, before.clock.after, after.clock.before, after.clock.after]) {
             need28(entry.localOffsetMinutes === before.clock.before.localOffsetMinutes && entry.zoneRulesSha256 === before.clock.before.zoneRulesSha256 && entry.qpcFrequency === before.clock.before.qpcFrequency, "Witness OS timezone or counter changed.");
@@ -77197,26 +77321,26 @@ var init_closed_symbol_witness = __esm({
           };
           need28(Buffer.byteLength(JSON.stringify(qualification)) <= 59999, "Witness qualification exceeds its fixed bound.");
           const clockArtifact = Object.freeze(await writePhaseArtifact(operationId9, 20, "edit-witness-clock-qualification", qualification));
-          current9();
+          current10();
           need28(clockArtifact.path === qualificationPath, "Witness qualification path differs.");
           await artifactExact(clockArtifact);
-          current9();
+          current10();
           for (const retained2 of extraCaptures) {
             this.released.add(retained2);
             await releaseCapture.call(this.engine, retained2);
-            current9();
+            current10();
           }
           await native();
           await verifyWitnessNativeProfile(bundles.assetsRoot);
-          current9();
+          current10();
           await artifactExact(clockArtifact);
-          current9();
+          current10();
           if (reference3 !== void 0) {
             need28(await revalidateOriginalMainReference(reference3, this.engine, operationId9) === reference3, "Witness final main-reference evidence differs.");
-            current9();
+            current10();
           }
           const final = await loadClosedSymbolJournal(operationId9);
-          current9();
+          current10();
           need28(canonicalJson(final.journal) === canonicalJson(journal), "Witness durable journal advanced or changed.");
           const result = Object.freeze({
             witness,
@@ -77461,7 +77585,7 @@ var init_closed_symbol_write = __esm({
             "Closed symbol write working plan changed."
           );
         };
-        const current9 = () => {
+        const current10 = () => {
           unchanged5();
           working();
           if (rawReturnText !== void 0) {
@@ -77480,34 +77604,34 @@ var init_closed_symbol_write = __esm({
           need30(isRecord(session) && session["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && isRecord(session["activeSession"]) && canonicalJson({ gatewayInstanceId: session["gatewayInstanceId"], ...session["activeSession"] }) === canonicalJson(capture3.bridgeSession), "Closed symbol write session changed.");
         };
         const native = async () => {
-          current9();
+          current10();
           const value3 = await this.engine.runtimeIdentity(binding8);
-          current9();
+          current10();
           need30(sha256Json(value3) === generation5.runtimeSha256, "Closed symbol write native runtime changed.");
         };
         const qualification = async () => {
           const descriptor10 = witness.clockArtifact;
           need30(descriptor10.bytes > 0 && descriptor10.bytes <= 6e4, "Closed symbol write clock artifact bound refused.");
           await readExactUtf8Artifact(descriptor10);
-          current9();
+          current10();
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        current9();
+        current10();
         need30(journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256 && journal.plan.expectedFingerprintSha256 === sha256Json(this.fingerprint), "Closed symbol write sealed implementation differs.");
         const fingerprint = await this.engine.controlFingerprintPromise;
-        current9();
+        current10();
         need30(fingerprint.sha256 === journal.plan.facadeSha256, "Closed symbol write facade differs.");
         const actualStatus = await this.engine.status();
-        current9();
+        current10();
         assertSubset(actualStatus.stableFingerprint, this.fingerprint, "Closed symbol write runtime");
         const bundles = await this.engine.upstream.installedEasyedaBundles?.();
-        current9();
+        current10();
         need30(bundles !== void 0, "Closed symbol write native sources unavailable.");
         await verifyWitnessNativeProfile(bundles.assetsRoot);
-        current9();
+        current10();
         await qualification();
         const context3 = {
           project: { uuid: journal.plan.projectUuid, path: journal.plan.projectPath },
@@ -77538,7 +77662,7 @@ var init_closed_symbol_write = __esm({
         };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: "edit-write", kind: "intent", generation: generation5, requestSha256, data: request13 });
-        current9();
+        current10();
         need30(journal.mutationMayHaveOccurred, "Closed symbol write intent lacks its durable possible-mutation marker.");
         const dispatchGeneration = () => {
           const roots = journal.executionAuthorityBeforeOrphan?.processes.filter((entry) => entry.role === "easyeda-main");
@@ -77554,10 +77678,10 @@ var init_closed_symbol_write = __esm({
           { code, timeoutMs: 15e3, confirmWrite: true },
           25e3,
           async () => {
-            current9();
+            current10();
             dispatchGeneration();
             await this.engine.assertRecoveryOperationIsolated(operationId9);
-            current9();
+            current10();
             dispatchGeneration();
             await qualification();
             await native();
@@ -77571,7 +77695,7 @@ var init_closed_symbol_write = __esm({
             returnedUnchanged();
           }
         );
-        current9();
+        current10();
         need30(this.returns.get(operationId9) === raw, "Closed symbol write dispatcher returned a different reply object.");
         returnedUnchanged();
         const result = decodeExactReadEnvelope(extractToolPayload(raw));
@@ -77582,7 +77706,7 @@ var init_closed_symbol_write = __esm({
         await native();
         await qualification();
         const final = await loadClosedSymbolJournal(operationId9);
-        current9();
+        current10();
         need30(canonicalJson(final.journal) === canonicalJson(journal), "Closed symbol write durable journal advanced or changed.");
         const artifactSha256 = journal.artifacts.at(-1)?.sha256;
         need30(typeof artifactSha256 === "string", "Closed symbol write result artifact missing.");
@@ -77648,11 +77772,11 @@ async function revalidateOriginalClosedSymbolEditSource(value2, engine2, operati
   const source5 = originalClosedSymbolEditSource(value2, engine2, operationId9);
   const owner = issuedComparisons.get(source5.comparison);
   need31(owner !== void 0, "Closed SQL source owner missing.");
-  const current9 = () => {
+  const current10 = () => {
     need31(originalClosedSymbolEditSource(value2, engine2, operationId9) === source5, "Closed SQL source original changed.");
   };
   const loaded = await loadClosedSymbolJournal(operationId9);
-  current9();
+  current10();
   const bind2 = (data9) => {
     const { journal, events } = data9;
     need31(!journal.hardStop && !journal.orphanedCallPossible && journal.closedPlanSha256 === source5.preparation.closedPlanSha256 && sha256Json(journal.plan.operation) === source5.preparation.operationSha256, "Closed SQL source journal/operation changed.");
@@ -77662,11 +77786,11 @@ async function revalidateOriginalClosedSymbolEditSource(value2, engine2, operati
   };
   bind2(loaded);
   const reread = await readClosedCopySqlInventory({ copy: source5.copy, runtime: owner.runtime });
-  current9();
+  current10();
   await compareCompleteClosedSql(source5.inventory, reread);
-  current9();
+  current10();
   const final = await loadClosedSymbolJournal(operationId9);
-  current9();
+  current10();
   bind2(final);
   need31(canonicalJson(final.journal) === canonicalJson(loaded.journal), "Closed SQL source journal changed during revalidation.");
   return source5;
@@ -77735,13 +77859,13 @@ var init_closed_symbol_sql_comparison = __esm({
         const scope6 = scopeReader.call(this.engine.upstream);
         need31(scope6 !== void 0, "Closed SQL preparation requires its active authenticated scope.");
         const scopeText = canonicalJson(scope6);
-        const current9 = () => {
+        const current10 = () => {
           need31(input.baselineCopy === copy2 && input.baselineInventory === inventory2 && input.witnessResult === witnessResult && canonicalJson(input.journal) === callerText && canonicalJson(input.generation) === generationText, "Closed SQL preparation caller changed.");
           need31(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(this.engine.upstream)) === scopeText, "Closed SQL preparation scope changed.");
           need31(canonicalJson(assertOriginalClosedSymbolWitness(witnessResult, this.engine, operationId9)) === witnessText, "Closed SQL original witness changed.");
         };
         const { journal, events } = await loadClosedSymbolJournal(operationId9);
-        current9();
+        current10();
         need31(canonicalJson(journal) === callerText && !journal.hardStop && !journal.orphanedCallPossible, "Closed SQL preparation journal is stale or quarantined.");
         const artifact2 = journal.artifacts.at(-1), last = events.at(-1);
         need31(
@@ -77751,15 +77875,15 @@ var init_closed_symbol_sql_comparison = __esm({
         const baseline2 = bindClosedSqlCopy({ journal, events, phase: "baseline-copy", copy: copy2, inventory: inventory2 });
         need31(witness.baselineCopyReceiptSha256 === copy2.receiptSha256 && witness.baselineLogicalSha256 === inventory2.logicalSha256 && witness.operationSha256 === sha256Json(journal.plan.operation) && witness.witness.projectUuid === journal.plan.projectUuid && witness.witness.branchUuid === journal.plan.branchUuid, "Closed SQL witness baseline/operation binding differs.");
         await readWitnessClockArtifact(operationId9, witness.clockArtifact, witness.clockArtifactSha256);
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        current9();
+        current10();
         const reread = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
-        current9();
+        current10();
         await compareCompleteClosedSql(inventory2, reread);
-        current9();
+        current10();
         const sqlPlan = await prepareSymbolNewHeadSqlPlan({ before: inventory2, operation: journal.plan.operation, witness: witness.witness });
         const metadataPlan2 = metadataPlanForOriginalSymbolSqlPlan(sqlPlan);
         const body4 = {
@@ -77793,11 +77917,11 @@ var init_closed_symbol_sql_comparison = __esm({
           ready: false
         };
         this.prepared.set(operationId9, slot);
-        current9();
+        current10();
         await readWitnessClockArtifact(operationId9, witness.clockArtifact, witness.clockArtifactSha256);
-        current9();
+        current10();
         const final = await loadClosedSymbolJournal(operationId9);
-        current9();
+        current10();
         need31(canonicalJson(final.journal) === canonicalJson(journal), "Closed SQL preparation journal advanced.");
         slot.ready = true;
         issuedPreparations.set(descriptor10, { engine: this.engine, operationId: operationId9, descriptor: descriptor10, text: slot.text });
@@ -77884,14 +78008,14 @@ var init_closed_symbol_sql_comparison = __esm({
             "Closed SQL comparison requires no authenticated scope."
           );
         };
-        const current9 = async () => {
+        const current10 = async () => {
           outside();
           need31(await assertClosedSessionCopyAuthority(proof) === proof, "Closed SQL comparison closure changed.");
           outside();
         };
-        await current9();
+        await current10();
         const qualification = await readWitnessClockArtifact(operationId9, preparation3.descriptor.witnessClockArtifact, preparation3.descriptor.witnessClockArtifactSha256);
-        await current9();
+        await current10();
         let clockRelation = null;
         let terminationObservation = null;
         if (phase5 === "edit-sql-compare") {
@@ -77905,24 +78029,24 @@ var init_closed_symbol_sql_comparison = __esm({
             witnessArtifactSha256: preparation3.descriptor.witnessArtifactSha256,
             witness: originalWitness.witness
           });
-          await current9();
+          await current10();
           clockRelation = clockProof.relation;
           terminationObservation = clockProof.termination;
         }
         await this.engine.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        await current9();
+        await current10();
         const reread = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
-        await current9();
+        await current10();
         await compareCompleteClosedSql(inventory2, reread);
-        await current9();
+        await current10();
         if (phase5 === "verify-sql-compare") {
           need31(prior !== void 0, "Closed SQL original edit comparison missing.");
           const originalEdit = await readClosedCopySqlInventory({ copy: prior.copy, runtime: this.runtime });
-          await current9();
+          await current10();
           await compareCompleteClosedSql(prior.inventory, originalEdit);
-          await current9();
+          await current10();
         }
         need31(
           terminationObservation === null || clockRelation?.["terminationObservationSha256"] === sha256Json(terminationObservation),
@@ -77945,7 +78069,7 @@ var init_closed_symbol_sql_comparison = __esm({
         };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: bound2.generation, requestSha256, data: request13 });
-        await current9();
+        await current10();
         let comparison3;
         if (phase5 === "edit-sql-compare") {
           comparison3 = await verifySymbolNewHeadSqlEffect(preparation3.descriptor.sqlPlan, inventory2);
@@ -77969,13 +78093,13 @@ var init_closed_symbol_sql_comparison = __esm({
         this.comparisons.set(`${operationId9}:${phase5}`, slot);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "result", generation: bound2.generation, requestSha256, data: result });
         slot.artifactSha256 = journal.artifacts.at(-1)?.sha256;
-        await current9();
+        await current10();
         const finalCopy = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
-        await current9();
+        await current10();
         await compareCompleteClosedSql(inventory2, finalCopy);
-        await current9();
+        await current10();
         await readWitnessClockArtifact(operationId9, preparation3.descriptor.witnessClockArtifact, preparation3.descriptor.witnessClockArtifactSha256);
-        await current9();
+        await current10();
         const final = await loadClosedSymbolJournal(operationId9);
         outside();
         assertCurrentClosedSessionCopyAuthority(proof);
@@ -78030,14 +78154,14 @@ async function revalidateOriginalSavedSymbolSource(value2, engine2, operationId9
 }
 async function prepareOriginalSavedSymbolSource(value2, engine2, operationId9) {
   const source5 = originalClosedSymbolEditSource(value2, engine2, operationId9);
-  const current9 = () => {
+  const current10 = () => {
     need32(originalClosedSymbolEditSource(value2, engine2, operationId9) === source5, "Saved-symbol original SQL comparison changed.");
   };
   need32(await revalidateOriginalClosedSymbolEditSource(value2, engine2, operationId9) === source5, "Saved-symbol historical SQL source changed.");
-  current9();
+  current10();
   const { metadataPlan: metadataPlan2, sqlPlan } = source5.preparation;
   const decoded = await decodeRawHistoryForOriginalSymbolSqlPlan(sqlPlan, source5.inventory);
-  current9();
+  current10();
   need32(
     decoded.history.projectUuid === metadataPlan2.projectUuid && decoded.history.branchUuid === metadataPlan2.branchUuid && decoded.history.projectOwnerUuid === metadataPlan2.ownerUuid && decoded.maximumTicket === sqlPlan.expectedTicket,
     "Saved-symbol decoded identity or ticket differs from the original prepared operation."
@@ -78048,7 +78172,7 @@ async function prepareOriginalSavedSymbolSource(value2, engine2, operationId9) {
     maximumTicket: sqlPlan.expectedTicket,
     currentEditVersion: metadataPlan2.headerEditVersion
   });
-  current9();
+  current10();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
   need32(projectedContentBytes > 0 && projectedContentBytes <= 65536, "Saved-symbol first-stage 64-KiB projected content bound exceeded.");
   const body4 = {
@@ -78075,7 +78199,7 @@ async function prepareOriginalSavedSymbolSource(value2, engine2, operationId9) {
   };
   const descriptor10 = Object.freeze({ ...body4, sourceSha256: sha256Json(body4) });
   need32(await revalidateOriginalClosedSymbolEditSource(value2, engine2, operationId9) === source5, "Saved-symbol final historical SQL source changed.");
-  current9();
+  current10();
   issued3.set(descriptor10, {
     engine: engine2,
     operationId: operationId9,
@@ -78325,7 +78449,7 @@ var init_closed_symbol_saved_read = __esm({
             "Saved read working plan changed."
           );
         };
-        const current9 = () => {
+        const current10 = () => {
           unchanged5();
           working();
           if (rawText !== void 0) {
@@ -78344,43 +78468,43 @@ var init_closed_symbol_saved_read = __esm({
           need34(isRecord(session) && session["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && isRecord(session["activeSession"]) && canonicalJson({ gatewayInstanceId: session["gatewayInstanceId"], ...session["activeSession"] }) === canonicalJson(capture3.bridgeSession), "Saved read session changed.");
         };
         const native = async () => {
-          current9();
+          current10();
           const observed2 = await this.engine.runtimeIdentity(binding8);
-          current9();
+          current10();
           need34(sha256Json(observed2) === generation5.runtimeSha256, "Saved read native runtime changed.");
         };
         const historical3 = async () => {
           need34(await revalidateOriginalSavedSymbolSource(sourceInput, this.engine, operationId9) === source5, "Saved read historical source changed.");
-          current9();
+          current10();
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        current9();
+        current10();
         need34(journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256 && journal.plan.expectedFingerprintSha256 === sha256Json(this.fingerprint), "Saved read sealed implementation differs.");
         const fingerprint = await this.engine.controlFingerprintPromise;
-        current9();
+        current10();
         need34(fingerprint.sha256 === journal.plan.facadeSha256, "Saved read facade differs.");
         const actualStatus = await this.engine.status();
-        current9();
+        current10();
         assertSubset(actualStatus.stableFingerprint, this.fingerprint, "Saved read runtime");
         const bundles = await this.engine.upstream.installedEasyedaBundles?.();
-        current9();
+        current10();
         need34(bundles !== void 0, "Saved read native sources unavailable.");
         await verifyWitnessNativeProfile(bundles.assetsRoot);
-        current9();
+        current10();
         await historical3();
         await native();
         let extraCapture;
         try {
           extraCapture = await this.engine.captureClosedSessionAuthority(operationId9, "closed-verification", 2);
           this.captures.set(operationId9, extraCapture);
-          current9();
+          current10();
           const clock7 = await this.engine.clockObservationForClosedCapture(extraCapture);
-          current9();
+          current10();
           need34(await assertIssuedWindowsClockObservation(clock7) === clock7, "Saved read clock issuer differs.");
-          current9();
+          current10();
           need34(clock7.clock.status === "observed" && clock7.phase === "capture" && clock7.base["bindingSha256"] === extraCapture.executionAuthority.bindingSha256 && clock7.base["jobId"] === generation5.jobId && clock7.base["helperInstance"] === generation5.helperInstance && extraCapture.operationId === operationId9 && extraCapture.phase === "closed-verification" && extraCapture.challengeAttempt === 2 && sha256Json(extraCapture.runtimeIdentity) === generation5.runtimeSha256 && sha256Json(extraCapture.bridgeSession) === generation5.sessionSha256, "Saved read native clock capture differs.");
           const notBeforeMs = Number((BigInt(clock7.clock.before.utcBeforeTicks) - EPOCH_TICKS5) / 10000n);
           const context3 = {
@@ -78414,7 +78538,7 @@ var init_closed_symbol_saved_read = __esm({
           };
           const requestSha256 = sha256Json(request13);
           await appendClosedSymbolEvent(journal, { step: "verify-content-read", kind: "intent", generation: generation5, requestSha256, data: request13 });
-          current9();
+          current10();
           let rawArtifact, rawBytes = 0, rawSha256 = "";
           const dispatchGeneration = () => {
             const roots = journal.executionAuthorityBeforeOrphan?.processes.filter((entry) => entry.role === "easyeda-main");
@@ -78427,10 +78551,10 @@ var init_closed_symbol_saved_read = __esm({
             { code, timeoutMs: 15e3, confirmWrite: true },
             25e3,
             async () => {
-              current9();
+              current10();
               dispatchGeneration();
               await this.engine.assertRecoveryOperationIsolated(operationId9);
-              current9();
+              current10();
               dispatchGeneration();
               await native();
               dispatchGeneration();
@@ -78468,7 +78592,7 @@ var init_closed_symbol_saved_read = __esm({
               originalReply();
             }
           );
-          current9();
+          current10();
           need34(this.returns.get(operationId9) === raw && rawArtifact !== void 0, "Saved read dispatcher returned a different reply or no raw artifact.");
           originalReply();
           const observation2 = extractToolPayload(raw);
@@ -78480,7 +78604,7 @@ var init_closed_symbol_saved_read = __esm({
           const artifactExact2 = async () => {
             need34(rawArtifact !== void 0 && rawArtifact.path === rawPath && rawArtifact.bytes <= ARTIFACT_LIMIT, "Saved read retained raw descriptor differs.");
             const bytes2 = await readExactUtf8Artifact(rawArtifact);
-            current9();
+            current10();
             const value3 = JSON.parse(bytes2.text);
             need34(
               isRecord(value3) && value3["operationId"] === operationId9 && value3["requestSha256"] === requestSha256 && value3["sourceSha256"] === source5.sourceSha256 && value3["rawReturnBytes"] === rawBytes && value3["rawReturnSha256"] === rawSha256 && value3["rawReturnBase64"] === Buffer.from(rawText ?? "").toString("base64"),
@@ -78491,14 +78615,14 @@ var init_closed_symbol_saved_read = __esm({
           await historical3();
           await native();
           await verifyWitnessNativeProfile(bundles.assetsRoot);
-          current9();
+          current10();
           this.released.add(extraCapture);
           await releaseCapture.call(this.engine, extraCapture);
-          current9();
+          current10();
           await native();
           await artifactExact2();
           const final = await loadClosedSymbolJournal(operationId9);
-          current9();
+          current10();
           need34(canonicalJson(final.journal) === canonicalJson(journal), "Saved read durable journal changed.");
           const artifactSha256 = journal.artifacts.at(-1)?.sha256;
           need34(typeof artifactSha256 === "string", "Saved read result artifact missing.");
@@ -78612,7 +78736,7 @@ var init_closed_symbol_startup = __esm({
         const unchangedReply = () => {
           requireValue13(settledText === void 0 || canonicalJson(settledReply) === settledText, "Startup settled reply changed after retention.");
         };
-        const current9 = () => {
+        const current10 = () => {
           unchangedReply();
           working();
           unchanged5();
@@ -78627,15 +78751,15 @@ var init_closed_symbol_startup = __esm({
           const roots = journal.executionAuthorityBeforeOrphan?.processes.filter((entry) => entry.role === "easyeda-main");
           requireValue13(sha256Json(journal.runtimeIdentityBeforeOrphan) === generation5.runtimeSha256 && sha256Json(journal.bridgeSessionBeforeOrphan) === generation5.sessionSha256 && roots?.length === 1 && roots[0]?.pid === generation5.rootPid && roots[0].startIdentity === generation5.rootStartIdentity, "Startup dispatch generation differs.");
         };
-        current9();
+        current10();
         await this.engine.assertBridgeDispatchAllowed();
-        current9();
+        current10();
         await this.engine.assertRecoveryOperationIsolated(operationId9);
-        current9();
+        current10();
         const code = buildStartupProgram(input), request13 = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input, codeSha256: sha256Text(code), directMainFrameOnly: true };
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request13 });
-        current9();
+        current10();
         const raw = await this.engine.dispatchWithOrphanTracking(
           journal,
           phase5,
@@ -78643,13 +78767,13 @@ var init_closed_symbol_startup = __esm({
           { code, timeoutMs: 6e4, confirmWrite: true },
           7e4,
           async () => {
-            current9();
+            current10();
             dispatchGeneration();
             await this.engine.assertRecoveryOperationIsolated(operationId9);
-            current9();
+            current10();
             dispatchGeneration();
             const observed3 = await this.engine.runtimeIdentity(binding8);
-            current9();
+            current10();
             dispatchGeneration();
             requireValue13(sha256Json(observed3) === generation5.runtimeSha256, "Startup current native runtime changed before dispatch.");
           },
@@ -78662,15 +78786,15 @@ var init_closed_symbol_startup = __esm({
             unchangedReply();
           }
         );
-        current9();
+        current10();
         requireValue13(raw === settledReply, "Startup settled reply changed after retention.");
         const result = validateStartupResult(extractToolPayload(raw), input);
         requireValue13(result["ok"] === true, "Startup fixed observation refused; retained result requires review, never replay.");
         const observed2 = await this.engine.runtimeIdentity(binding8);
-        current9();
+        current10();
         requireValue13(sha256Json(observed2) === generation5.runtimeSha256, "Startup current native runtime changed after dispatch.");
         const final = await loadClosedSymbolJournal(operationId9);
-        current9();
+        current10();
         requireValue13(canonicalJson(final.journal) === canonicalJson(journal), "Startup durable journal changed.");
         Object.assign(journalInput, journal);
         return Object.freeze({
@@ -78962,7 +79086,7 @@ var init_closed_symbol_coordinator = __esm({
         });
         assertFullStageOriginals(bindings2, this.engine, value2.operationId);
         const text36 = fullEvidenceText(value2, bindings2);
-        const current9 = () => {
+        const current10 = () => {
           this.outside();
           need35(
             this.journal === journal && this.operationId === value2.operationId && this.lastSuccessfulStage === "verify-sql-compare" && this.headEligibility === headEligibility4 && this.mainReference === mainReference,
@@ -78972,8 +79096,8 @@ var init_closed_symbol_coordinator = __esm({
             need35(slot.copy === retained2.copy && slot.proof === retained2.proof && slot.admission === retained2.admission && slot.launch === retained2.launch && slot.startup === retained2.startup && slot.close === retained2.close, "Full evidence original generation objects changed.");
           }
         };
-        current9();
-        fullEvidenceOwners.set(value2, { engine: this.engine, operationId: value2.operationId, value: value2, bindings: bindings2, text: text36, current: current9, headEligibility: headEligibility4 });
+        current10();
+        fullEvidenceOwners.set(value2, { engine: this.engine, operationId: value2.operationId, value: value2, bindings: bindings2, text: text36, current: current10, headEligibility: headEligibility4 });
         return value2;
       }
       /** Original internal objects, including successful stages before a later error.
@@ -79057,11 +79181,11 @@ var init_closed_symbol_coordinator = __esm({
         need35(canonicalJson(observed2) === observedText && canonicalJson(this.runtime.status()) === statusText, "Coordinator window observation changed during retention.");
         return selectClosedSymbolApplicationWindow(result, generation5.rootPid);
       }
-      async waitForAuthentication(gatewayInstanceId, current9, priorSession) {
+      async waitForAuthentication(gatewayInstanceId, current10, priorSession) {
         const deadline = performance.now() + 6e4, statusText = canonicalJson(this.runtime.status());
         let candidate;
         for (let observation2 = 0; observation2 < 601; observation2 += 1) {
-          current9();
+          current10();
           this.outside();
           need35(canonicalJson(this.runtime.status()) === statusText, "Coordinator runtime changed while awaiting authentication.");
           const lifecycle = this.upstream.bridgeSessionLifecycle();
@@ -79084,7 +79208,7 @@ var init_closed_symbol_coordinator = __esm({
           }
           need35(performance.now() < deadline && observation2 < 600, "Coordinator authentication deadline expired; launch must not be repeated.");
           await delay(100);
-          current9();
+          current10();
           this.outside();
           need35(
             canonicalJson(this.runtime.status()) === statusText && performance.now() <= deadline,
@@ -79094,10 +79218,10 @@ var init_closed_symbol_coordinator = __esm({
         throw new Error("Coordinator authentication observation bound exhausted.");
       }
       /** Fresh one-shot prefix only. Failures never trigger automatic native cleanup. */
-      async waitForTermination(result, current9) {
+      async waitForTermination(result, current10) {
         const deadline = performance.now() + 6e4, statusText = canonicalJson(this.runtime.status());
         for (let observation2 = 0; observation2 < 241; observation2 += 1) {
-          current9();
+          current10();
           this.outside();
           need35(
             canonicalJson(this.runtime.status()) === statusText && performance.now() <= deadline,
@@ -79112,7 +79236,7 @@ var init_closed_symbol_coordinator = __esm({
             need35(retained2 !== void 0, "Coordinator termination ordinal refused.");
             retained2.proof = observed2.proof;
           }
-          current9();
+          current10();
           this.outside();
           assertCurrentClosedSessionTerminationObservation(observed2);
           need35(performance.now() <= deadline, "Coordinator termination deadline expired; close must not be repeated.");
@@ -79121,7 +79245,7 @@ var init_closed_symbol_coordinator = __esm({
           }
           need35(observation2 < 240, "Coordinator termination observation bound exhausted; close must not be repeated.");
           await delay(250);
-          current9();
+          current10();
           this.outside();
           assertCurrentClosedSessionTerminationObservation(observed2);
           need35(
@@ -79151,41 +79275,41 @@ var init_closed_symbol_coordinator = __esm({
             markerSha256: journal.markerSha256
           });
           const workingPlanText = canonicalJson(working());
-          const current9 = () => {
+          const current10 = () => {
             this.owner();
             need35(canonicalJson(planInput) === callerText, "Coordinator caller plan changed.");
             need35(this.journal === journal && journal.operationId === operationId9 && canonicalJson(working()) === workingPlanText, "Coordinator working plan changed.");
           };
-          current9();
+          current10();
           need35(journal.plan.expectedFingerprintSha256 === sha256Json(this.fingerprint), "Coordinator plan fingerprint differs.");
           const implementation = await this.engine.controlFingerprintPromise;
-          current9();
+          current10();
           need35(journal.plan.facadeSha256 === implementation.sha256, "Coordinator plan facade differs.");
           need35(Buffer.byteLength(`${JSON.stringify(this.fingerprint)}
 `) <= 262144, "Coordinator fingerprint artifact exceeds its retained bound.");
           this.fingerprintArtifact = await writePhaseArtifact(operationId9, 0, "expected-fingerprint", this.fingerprint);
-          current9();
+          current10();
           this.lastSuccessfulStage = "planned";
           await this.engine.assertBridgeDispatchAllowed();
-          current9();
+          current10();
           this.outside();
           await this.engine.assertRecoveryOperationIsolated(operationId9);
-          current9();
+          current10();
           this.outside();
           await this.upstream.connect();
-          current9();
+          current10();
           this.outside();
           const before = this.upstream.bridgeSessionLifecycle();
           need35(isRecord(before) && before.schema === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && typeof before.gatewayInstanceId === "string" && /^[A-Za-z0-9_-]{43}$/u.test(before.gatewayInstanceId) && before.activeSession === null, "Coordinator baseline requires no previous authenticated session.");
           this.originals.launch = await this.launch.launch(journal);
           this.lastSuccessfulStage = "baseline-launch";
-          current9();
+          current10();
           this.outside();
-          const authenticated = await this.waitForAuthentication(before.gatewayInstanceId, current9);
-          current9();
+          const authenticated = await this.waitForAuthentication(before.gatewayInstanceId, current10);
+          current10();
           this.outside();
           await this.upstream.withAuthenticatedBridgeDispatchScope(async () => {
-            current9();
+            current10();
             const scopedSession = this.upstream.bridgeSessionLifecycle();
             need35(
               scopedSession?.gatewayInstanceId === before.gatewayInstanceId && canonicalJson(scopedSession.activeSession) === authenticated,
@@ -79193,39 +79317,39 @@ var init_closed_symbol_coordinator = __esm({
             );
             this.originals.admission = await this.admission.admit(journal, "baseline-admission");
             this.lastSuccessfulStage = "baseline-admission";
-            current9();
+            current10();
             this.originals.startup = await this.startup.observe(journal, "baseline-marker-create");
             this.lastSuccessfulStage = "baseline-marker-create";
-            current9();
+            current10();
           });
-          current9();
+          current10();
           this.outside();
           const admission = this.originals.admission;
           need35(admission !== void 0 && this.originals.startup !== void 0, "Coordinator baseline scope has no successful startup.");
           const windowHandle = await this.ownedWindow(journal, admission);
-          current9();
+          current10();
           this.originals.close = await this.close.close({ journal, phase: "baseline-close", generation: admission.generation, capture: admission.capture, windowHandle });
           this.lastSuccessfulStage = "baseline-close";
           this.journalText = canonicalJson(journal);
-          current9();
+          current10();
           this.outside();
-          this.originals.proof = await this.waitForTermination(this.originals.close, current9);
+          this.originals.proof = await this.waitForTermination(this.originals.close, current10);
           this.lastSuccessfulStage = "baseline-termination";
-          current9();
+          current10();
           this.outside();
           const copyProof = await assertClosedSessionCopyAuthority(this.originals.proof);
-          current9();
+          current10();
           this.outside();
           this.originals.copy = await this.copy.copy(journal, "baseline-copy", admission.generation, copyProof);
           this.lastSuccessfulStage = "baseline-copy";
           this.journalText = canonicalJson(journal);
-          current9();
+          current10();
           this.outside();
           await assertClosedSessionCopyAuthority(this.originals.proof);
-          current9();
+          current10();
           this.outside();
           const final = await loadClosedSymbolJournal(operationId9);
-          current9();
+          current10();
           this.outside();
           need35(final.journal.sequence === 10 && canonicalJson(final.journal) === this.journalText, "Coordinator final baseline journal differs.");
           assertCurrentClosedSessionCopyAuthority(this.originals.proof);
@@ -79261,11 +79385,11 @@ var init_closed_symbol_coordinator = __esm({
           active.delete(this.engine);
         }
       }
-      async waitForDisconnectedSession(admitted, proof, current9) {
+      async waitForDisconnectedSession(admitted, proof, current10) {
         const expected3 = admitted.capture.bridgeSession, { gatewayInstanceId, ...activeSession } = expected3;
         const deadline = performance.now() + 6e4, statusText = canonicalJson(this.runtime.status());
         for (let observation2 = 0; observation2 < 601; observation2 += 1) {
-          current9();
+          current10();
           this.outside();
           assertCurrentClosedSessionCopyAuthority(proof);
           need35(canonicalJson(this.runtime.status()) === statusText && performance.now() <= deadline, "Coordinator disconnected-session owner or deadline changed.");
@@ -79280,49 +79404,49 @@ var init_closed_symbol_coordinator = __esm({
         }
         throw new Error("Coordinator disconnection observation bound exhausted.");
       }
-      async launchSubsequent(journal, phase5, current9) {
+      async launchSubsequent(journal, phase5, current10) {
         const previous = phase5 === "edit" ? this.originals : this.edit, slot = phase5 === "edit" ? this.edit : this.verification;
         need35(
           previous.admission !== void 0 && previous.proof !== void 0 && previous.copy !== void 0,
           "Coordinator subsequent launch lacks original preceding evidence."
         );
         const { admission, proof, copy: copy2 } = previous;
-        const gateway = await this.waitForDisconnectedSession(admission, proof, current9);
-        current9();
+        const gateway = await this.waitForDisconnectedSession(admission, proof, current10);
+        current10();
         this.outside();
         assertCurrentClosedSessionCopyAuthority(proof);
         slot.launch = await this.relaunch.launch({ journal, phase: `${phase5}-launch`, proof, copy: copy2.copy, checkpoint: copy2.checkpoint });
         this.lastSuccessfulStage = `${phase5}-launch`;
-        current9();
+        current10();
         this.outside();
-        const session = await this.waitForAuthentication(gateway, current9, admission.capture.bridgeSession);
-        current9();
+        const session = await this.waitForAuthentication(gateway, current10, admission.capture.bridgeSession);
+        current10();
         this.outside();
         return Object.freeze({ gateway, session });
       }
-      async closeAndCopy(journal, phase5, current9) {
+      async closeAndCopy(journal, phase5, current10) {
         const slot = phase5 === "edit" ? this.edit : this.verification;
         const admitted = slot.admission;
         need35(admitted !== void 0 && slot.navigation !== void 0, "Coordinator close lacks original admitted navigation.");
         assertOriginalClosedSymbolNavigation(slot.navigation, this.engine, journal.operationId, `${phase5}-open`);
-        current9();
+        current10();
         this.outside();
         const windowHandle = await this.ownedWindow(journal, admitted, phase5);
-        current9();
+        current10();
         this.outside();
         slot.close = await this.close.close({ journal, phase: `${phase5}-close`, generation: admitted.generation, capture: admitted.capture, windowHandle });
         this.lastSuccessfulStage = `${phase5}-close`;
         this.journalText = canonicalJson(journal);
-        current9();
+        current10();
         this.outside();
-        slot.proof = await this.waitForTermination(slot.close, current9);
+        slot.proof = await this.waitForTermination(slot.close, current10);
         this.lastSuccessfulStage = `${phase5}-termination`;
-        current9();
+        current10();
         this.outside();
         slot.copy = await this.copy.copy(journal, `${phase5}-copy`, admitted.generation, slot.proof);
         this.lastSuccessfulStage = `${phase5}-copy`;
         this.journalText = canonicalJson(journal);
-        current9();
+        current10();
         this.outside();
       }
       /** Fixed locked entry. No phase can be supplied, skipped or replayed. */
@@ -79361,7 +79485,7 @@ var init_closed_symbol_coordinator = __esm({
             markerSha256: journal.markerSha256
           });
           let mainReference;
-          const current9 = () => {
+          const current10 = () => {
             this.owner();
             need35(
               active.has(this.engine) && this.journal === journal && this.operationId === operationId9 && canonicalJson(planInput) === callerText && this.headEligibility === selectedHead && this.mainReference === mainReference,
@@ -79378,22 +79502,22 @@ var init_closed_symbol_coordinator = __esm({
               assertOriginalMainReference(mainReference, this.engine, operationId9);
             }
           };
-          current9();
+          current10();
           this.outside();
           const loaded = await loadClosedSymbolJournal(operationId9);
-          current9();
+          current10();
           this.outside();
           need35(canonicalJson(loaded.journal) === canonicalJson(journal), "Coordinator baseline changed before qualification.");
           if (selectedHead === void 0) {
             assertCurrentClosedSessionCopyAuthority(this.originals.proof);
             const selected3 = await selectOriginalBaselineHead(journal, loaded.events, baseline2.copy, baseline2.inventory);
-            current9();
+            current10();
             this.outside();
             assertCurrentClosedSessionCopyAuthority(this.originals.proof);
             need35(this.headEligibility === void 0 && this.mainReference === void 0, "Coordinator automatic selection was already assigned.");
             selectedHead = selected3.headEligibility;
             this.headEligibility = selectedHead;
-            current9();
+            current10();
           }
           if (selectedHead === "locked") {
             await lockedWitnessBaseline(journal, loaded.events, baseline2.copy, baseline2.inventory);
@@ -79406,19 +79530,19 @@ var init_closed_symbol_coordinator = __esm({
             });
             this.mainReference = reference3;
             mainReference = reference3;
-            current9();
+            current10();
             this.outside();
             assertOriginalMainReference(reference3, this.engine, operationId9);
             this.lastSuccessfulStage = "baseline-main-reference";
           }
-          current9();
+          current10();
           this.outside();
           assertCurrentClosedSessionCopyAuthority(this.originals.proof);
-          const editAuthentication = await this.launchSubsequent(journal, "edit", current9);
-          current9();
+          const editAuthentication = await this.launchSubsequent(journal, "edit", current10);
+          current10();
           this.outside();
           await this.upstream.withAuthenticatedBridgeDispatchScope(async () => {
-            current9();
+            current10();
             const session = this.upstream.bridgeSessionLifecycle();
             need35(
               session?.gatewayInstanceId === editAuthentication.gateway && canonicalJson(session.activeSession) === editAuthentication.session,
@@ -79426,13 +79550,13 @@ var init_closed_symbol_coordinator = __esm({
             );
             this.edit.admission = await this.admission.admit(journal, "edit-admission");
             this.lastSuccessfulStage = "edit-admission";
-            current9();
+            current10();
             this.edit.startup = await this.startup.observe(journal, "edit-marker-read");
             this.lastSuccessfulStage = "edit-marker-read";
-            current9();
+            current10();
             this.edit.navigation = await this.navigation.openCompanion(journal, "edit-open", this.edit.admission.generation, baseline2.checkpoint);
             this.lastSuccessfulStage = "edit-open";
-            current9();
+            current10();
             assertOriginalClosedSymbolNavigation(this.edit.navigation, this.engine, operationId9, "edit-open");
             this.edit.witness = await this.witness.collect({
               journal,
@@ -79441,7 +79565,7 @@ var init_closed_symbol_coordinator = __esm({
               ...mainReference === void 0 ? {} : { mainReference }
             });
             this.lastSuccessfulStage = "edit-witness";
-            current9();
+            current10();
             this.edit.preparation = await this.sql.prepareForWrite({
               journal,
               generation: this.edit.admission.generation,
@@ -79450,16 +79574,16 @@ var init_closed_symbol_coordinator = __esm({
               baselineInventory: baseline2.inventory
             });
             this.lastSuccessfulStage = "edit-preparation";
-            current9();
+            current10();
             this.edit.write = await this.writer.write({ journal, witnessResult: this.edit.witness, preparation: this.edit.preparation });
             this.lastSuccessfulStage = "edit-write";
-            current9();
+            current10();
           });
-          current9();
+          current10();
           this.outside();
           need35(this.edit.write !== void 0 && this.edit.preparation !== void 0, "Coordinator edit scope did not complete.");
-          await this.closeAndCopy(journal, "edit", current9);
-          current9();
+          await this.closeAndCopy(journal, "edit", current10);
+          current10();
           this.outside();
           need35(this.edit.copy !== void 0 && this.edit.proof !== void 0, "Coordinator edit copy/proof missing.");
           this.edit.comparison = await this.sql.compareEdit({
@@ -79472,18 +79596,18 @@ var init_closed_symbol_coordinator = __esm({
           });
           this.lastSuccessfulStage = "edit-sql-compare";
           this.journalText = canonicalJson(journal);
-          current9();
+          current10();
           this.outside();
           assertOriginalClosedSymbolComparison(this.edit.comparison, this.engine, operationId9, "edit-sql-compare");
           this.verification.savedSource = await prepareOriginalSavedSymbolSource(this.edit.comparison, this.engine, operationId9);
           this.lastSuccessfulStage = "verify-source";
-          current9();
+          current10();
           this.outside();
-          const verifyAuthentication = await this.launchSubsequent(journal, "verify", current9);
-          current9();
+          const verifyAuthentication = await this.launchSubsequent(journal, "verify", current10);
+          current10();
           this.outside();
           await this.upstream.withAuthenticatedBridgeDispatchScope(async () => {
-            current9();
+            current10();
             const session = this.upstream.bridgeSessionLifecycle();
             need35(
               session?.gatewayInstanceId === verifyAuthentication.gateway && canonicalJson(session.activeSession) === verifyAuthentication.session,
@@ -79491,25 +79615,25 @@ var init_closed_symbol_coordinator = __esm({
             );
             this.verification.admission = await this.admission.admit(journal, "verify-admission");
             this.lastSuccessfulStage = "verify-admission";
-            current9();
+            current10();
             this.verification.startup = await this.startup.observe(journal, "verify-marker-read");
             this.lastSuccessfulStage = "verify-marker-read";
-            current9();
+            current10();
             need35(this.edit.copy !== void 0 && this.verification.savedSource !== void 0, "Coordinator verification original source missing.");
             this.verification.navigation = await this.navigation.openCompanion(journal, "verify-open", this.verification.admission.generation, this.edit.copy.checkpoint);
             this.lastSuccessfulStage = "verify-open";
-            current9();
+            current10();
             assertOriginalClosedSymbolNavigation(this.verification.navigation, this.engine, operationId9, "verify-open");
             this.verification.savedRead = await this.savedReader.read({ journal, source: this.verification.savedSource, navigationResult: this.verification.navigation });
             this.lastSuccessfulStage = "verify-saved-content";
-            current9();
+            current10();
           });
-          current9();
+          current10();
           this.outside();
           need35(this.verification.savedRead !== void 0, "Coordinator verification scope lacks its original saved read.");
           assertOriginalClosedSymbolSavedRead(this.verification.savedRead, this.engine, operationId9);
-          await this.closeAndCopy(journal, "verify", current9);
-          current9();
+          await this.closeAndCopy(journal, "verify", current10);
+          current10();
           this.outside();
           need35(this.verification.copy !== void 0 && this.verification.proof !== void 0, "Coordinator verification copy/proof missing.");
           this.verification.comparison = await this.sql.compareVerification({
@@ -79521,13 +79645,13 @@ var init_closed_symbol_coordinator = __esm({
           });
           this.lastSuccessfulStage = "verify-sql-compare";
           this.journalText = canonicalJson(journal);
-          current9();
+          current10();
           this.outside();
           await assertClosedSessionCopyAuthority(this.verification.proof);
-          current9();
+          current10();
           this.outside();
           const final = await loadClosedSymbolJournal(operationId9);
-          current9();
+          current10();
           this.outside();
           assertCurrentClosedSessionCopyAuthority(this.verification.proof);
           assertOriginalClosedSymbolSavedRead(this.verification.savedRead, this.engine, operationId9);
@@ -79658,19 +79782,19 @@ function startup(journal, events, ordinal) {
 async function replayRecordedLifecycle(input) {
   const { journal, events, inventories } = input;
   const captured = canonicalJson({ journal, events, fingerprint: input.fingerprint, windows: input.windows, nativeClockSource: input.nativeClockSource });
-  const current9 = () => {
+  const current10 = () => {
     same26(canonicalJson({ journal, events, fingerprint: input.fingerprint, windows: input.windows, nativeClockSource: input.nativeClockSource }), captured, "lifecycle input changed");
   };
   need36(journal.sequence === 44 && events.length === 44 && journal.state === "closed-session-evidence-recorded" && // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Refuse malformed untyped historical flags, not merely truthy values.
   !journal.hardStop && !journal.orphanedCallPossible && journal.saved === false && journal.reopened === false, "Terminal requires exact nonquarantined44 predecessor.");
   await controlRootCapability(false);
-  current9();
+  current10();
   need36(
     input.fingerprint.path === join33(operationPath(journal.operationId).slice(0, -5), "00-expected-fingerprint.json") && input.fingerprint.bytes <= 262144,
     "Terminal fingerprint path or bound differs."
   );
   const fingerprint = bag8(await artifactJson(input.fingerprint));
-  current9();
+  current10();
   validatePrivateFingerprint(fingerprint);
   const implementation = bag8(fingerprint["facadeImplementation"]);
   need36(
@@ -79847,7 +79971,7 @@ async function replayRecordedLifecycle(input) {
       "Terminal owned-window path or bound differs."
     );
     const window = bag8(await artifactJson(windowDescriptor));
-    current9();
+    current10();
     same26(Object.keys(window).toSorted(), ["generation", "observed", "profile"], "owned-window fields");
     same26(window["generation"], generation5, "owned-window generation");
     const observed2 = bag8(window["observed"]);
@@ -79860,7 +79984,7 @@ async function replayRecordedLifecycle(input) {
     need36(selectClosedSymbolApplicationWindow(windows, generation5.rootPid) === closeIntent["windowHandle"], "Terminal window selection and close binding differ.");
     startup(journal, events, ordinal);
     await checkpointArtifact(checkpoint, copy2, journal.plan.projectPath, input.runtime);
-    current9();
+    current10();
     const artifact2 = text23(copy2["artifact"]), bytes2 = copy2["bytes"];
     need36(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && bytes2 > 0 && bytes2 <= 268435456 && dirname17(artifact2) === operationPath(journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]+\.eprj2$/u.test(basename16(artifact2)), "Terminal copy artifact is invalid.");
     result.push({
@@ -79988,7 +80112,7 @@ function reconstructRecordedWrite(input) {
 }
 async function recordedNavigationBinding(journal, events, selected3) {
   const seal2 = canonicalJson({ journal, events });
-  const current9 = () => {
+  const current10 = () => {
     same27(canonicalJson({ journal, events }), seal2, "navigation caller changed");
   };
   const index = selected3 === "edit-open" ? 17 : 35;
@@ -80006,11 +80130,11 @@ async function recordedNavigationBinding(journal, events, selected3) {
     projectUuid: journal.plan.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  current9();
+  current10();
   const expectedContext = { project: { uuid: journal.plan.projectUuid, path: journal.plan.projectPath }, document: { uuid: journal.plan.activeUuid, documentType: 3 } };
   const target8 = deriveRecoveryNavigationTarget(expectedContext, history);
   const headers = await nativeLibraryHeaderEvidence(history, { checkpointSha256: checkpoint["checkpointSha256"], projectUuid: journal.plan.projectUuid });
-  current9();
+  current10();
   need37(history.projectOwnerUuid === journal.plan.ownerUuid, "Terminal navigation retained project owner differs.");
   const code = buildRecoveryNavigationCode(target8, {
     navigate: true,
@@ -80050,7 +80174,7 @@ async function recordedNavigationBinding(journal, events, selected3) {
 async function reconstructRecordedSavedRead(input) {
   const { journal, events, source: source5 } = input;
   const callerSeal = canonicalJson({ journal, events, source: source5, rawArtifact: input.rawArtifact, nativeSource: input.nativeSource });
-  const current9 = () => {
+  const current10 = () => {
     same27(canonicalJson({ journal, events, source: source5, rawArtifact: input.rawArtifact, nativeSource: input.nativeSource }), callerSeal, "saved-read replay caller");
   };
   const request13 = phaseData(events, 37);
@@ -80149,7 +80273,7 @@ async function reconstructRecordedSavedRead(input) {
   need37(rawArtifact.path === rawPath && rawArtifact.bytes > 0 && rawArtifact.bytes <= 245760, "Terminal saved-read raw artifact bound differs.");
   same27(result["rawArtifact"], rawArtifact, "saved-read raw descriptor");
   const retained2 = await readExactUtf8Artifact(rawArtifact);
-  current9();
+  current10();
   const envelope4 = bag9(JSON.parse(retained2.text));
   const encoded = envelope4["rawReturnBase64"], size3 = envelope4["rawReturnBytes"];
   need37(
@@ -80261,20 +80385,20 @@ async function replay(loaded, evidence2, runtime) {
   need38(journal.sequence === 44 && events.length === 44, "Terminal semantic replay needs all44 events.");
   const seal2 = canonicalJson(loaded);
   const evidenceSeal = canonicalJson(evidence2);
-  const current9 = () => {
+  const current10 = () => {
     same28(canonicalJson(loaded), seal2, "replay input");
     same28(canonicalJson(evidence2), evidenceSeal, "replay descriptors");
   };
   same28(evidence2.witnessRaw, phaseArtifact(journal, 20), "witness raw descriptor");
   same28(evidence2.writeRaw, phaseArtifact(journal, 22), "write raw descriptor");
   const baseline2 = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "baseline-copy", runtime });
-  current9();
+  current10();
   const edit = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "edit-copy", runtime });
-  current9();
+  current10();
   const verification2 = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "verify-copy", runtime });
-  current9();
+  current10();
   const witness = await reconstructRecordedLockedSymbolWitness({ journal, events, baselineInventory: baseline2.inventory });
-  current9();
+  current10();
   const lifecycle = await replayRecordedLifecycle({
     journal,
     events,
@@ -80284,7 +80408,7 @@ async function replay(loaded, evidence2, runtime) {
     runtime,
     nativeClockSource: bag10(witness.qualification["launchClock"])
   });
-  current9();
+  current10();
   same28(witness.result.clockArtifact, evidence2.witnessQualification, "witness qualification descriptor");
   const editDispatch = phaseData(events, 13)["bridgeDispatch"];
   validateRecordedCaptureEvidence({
@@ -80316,7 +80440,7 @@ async function replay(loaded, evidence2, runtime) {
     witness: witness.result.witness,
     witnessClockArtifact: witness.result.clockArtifact
   });
-  current9();
+  current10();
   const clockRequest = phaseData(events, 27);
   validateRecordedTerminationEvidence({
     journal,
@@ -80339,9 +80463,9 @@ async function replay(loaded, evidence2, runtime) {
   same28(clockRequest["clockRelation"], clockRelation, "independently replayed exit clock relation");
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
-  current9();
+  current10();
   const navigation = await recordedNavigationBinding(journal, events, "verify-open");
-  current9();
+  current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
     events,
@@ -80350,7 +80474,7 @@ async function replay(loaded, evidence2, runtime) {
     rawArtifact: evidence2.savedReadRaw,
     nativeSource: lifecycle[2].nativeSource
   });
-  current9();
+  current10();
   const final = lifecycle[2];
   need38(typeof final.copy["sha256"] === "string", "Terminal final source digest missing.");
   const finalSource = Object.freeze({
@@ -80380,17 +80504,17 @@ async function replay(loaded, evidence2, runtime) {
   });
   const generations8 = lifecycle.map((row7) => row7.terminal);
   const recheckDependencies = async () => {
-    current9();
+    current10();
     for (const descriptor10 of Object.values(evidence2)) {
       await readExactUtf8Artifact(descriptor10);
-      current9();
+      current10();
     }
     const before = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "baseline-copy", runtime });
-    current9();
+    current10();
     const edited = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "edit-copy", runtime });
-    current9();
+    current10();
     const verified = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "verify-copy", runtime });
-    current9();
+    current10();
     const checked4 = await replayRecordedLifecycle({
       journal,
       events,
@@ -80400,12 +80524,12 @@ async function replay(loaded, evidence2, runtime) {
       runtime,
       nativeClockSource: bag10(witness.qualification["launchClock"])
     });
-    current9();
+    current10();
     same28(checked4.map((row7) => row7.terminal), generations8, "late dependency identities and bytes");
   };
   await recheckDependencies();
   const end = await loadClosedSymbolHistoricalPhaseJournal(journal.operationId);
-  current9();
+  current10();
   same28(end.journal, loaded.journal, "journal changed during semantic replay");
   return Object.freeze({ generations: generations8, results, finalSource, values: values2, recheckDependencies });
 }
@@ -80536,7 +80660,7 @@ var init_closed_symbol_terminal = __esm({
         }
         need38(!used3.has(operationId9), "Terminal completion attempt cannot repeat.");
         used3.add(operationId9);
-        const current9 = () => {
+        const current10 = () => {
           need38(
             assertOriginalClosedSymbolFullEvidence(full, this.engine, operationId9) === original2,
             "Terminal original evidence changed."
@@ -80544,17 +80668,17 @@ var init_closed_symbol_terminal = __esm({
           assertCurrentClosedSessionCopyAuthority(original2.verification.proof);
         };
         const owned2 = async () => {
-          current9();
+          current10();
           await assertClosedSessionCopyAuthority(original2.verification.proof);
-          current9();
+          current10();
         };
         await owned2();
         const loaded = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same28(loaded.journal, original2.journal, "terminal predecessor");
         const evidence2 = evidenceFromOriginal(original2);
         const computed = await replay(loaded, evidence2, this.runtime);
-        current9();
+        current10();
         same28(computed.values, {
           witness: original2.edit.witness,
           preparation: original2.edit.preparation,
@@ -80566,16 +80690,16 @@ var init_closed_symbol_terminal = __esm({
         }, "original and reconstructed results");
         await owned2();
         const root = await controlRootCapability(false);
-        current9();
+        current10();
         const { checkpoint, copy: copy2 } = original2.verification.copy;
         const verifyCurrentSource = async () => {
-          current9();
+          current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
             expectedSource: original2.journal.plan.projectPath,
             artifactRoots: [join35(controlDataDirectory(), "checkpoints")],
             controlRoot: root
           });
-          current9();
+          current10();
           need38(
             verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
             "Terminal current source/checkpoint differs."
@@ -80584,16 +80708,16 @@ var init_closed_symbol_terminal = __esm({
         await verifyCurrentSource();
         await owned2();
         const before = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same28(before.journal, loaded.journal, "prepublication predecessor");
         const envelope4 = envelopeFor(original2.journal, evidence2, computed, (/* @__PURE__ */ new Date()).toISOString());
         need38(Buffer.byteLength(`${JSON.stringify(envelope4)}
 `) <= TERMINAL_MAX_BYTES, "Terminal envelope exceeds its byte bound.");
         const descriptor10 = await writePhaseArtifact(operationId9, 45, "closed-symbol-terminal", envelope4);
         this.retainedArtifacts.set(operationId9, descriptor10);
-        current9();
+        current10();
         const prior = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same28(prior.journal, loaded.journal, "terminal publication predecessor");
         const next = {
           ...structuredClone(original2.journal),
@@ -80603,17 +80727,17 @@ var init_closed_symbol_terminal = __esm({
           terminalArtifact: descriptor10
         };
         await updateOperation(next);
-        current9();
+        current10();
         const inspected = await inspectClosedSymbolTerminal(operationId9, this.runtime);
-        current9();
+        current10();
         need38(inspected.terminalOutcomeVerified && inspected.bodySha256 === envelope4.bodySha256, "Terminal historical reproof differs.");
         await owned2();
         await computed.recheckDependencies();
-        current9();
+        current10();
         await verifyCurrentSource();
         await owned2();
         const final = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same28(final.journal, next, "final completed journal");
         const result = Object.freeze({
           profile: "private.closed-symbol-original-completion.v1",
@@ -80717,7 +80841,7 @@ function expire(now2) {
 function same29(actual, expected3, label) {
   requireEvidence(canonicalJson(actual) === canonicalJson(expected3), `cache-${label}-changed`);
 }
-async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
+async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput, lease) {
   const rootPath2 = resolve11(controlDataDirectory());
   const candidateOwn = ownBoundedData(candidateInput), runtimeOwn = ownBoundedData(runtimeInput);
   const candidate = candidateData(candidateOwn);
@@ -80744,13 +80868,13 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
     }
     throw primary;
   };
-  const current9 = async () => {
+  const current10 = async () => {
     scope6();
     await Reflect.apply(rootCheck, root, []);
     scope6();
   };
   const checked4 = async (invoke) => {
-    await current9();
+    await current10();
     scope6();
     let value2;
     try {
@@ -80759,11 +80883,11 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
       return failAfterScope(error51);
     }
     scope6();
-    await current9();
+    await current10();
     return value2;
   };
   const finalChecked = async (invoke) => {
-    await current9();
+    await current10();
     scope6();
     let value2;
     try {
@@ -80774,7 +80898,7 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
     scope6();
     return value2;
   };
-  await current9();
+  await current10();
   const now2 = performance6.now();
   expire(now2);
   const slot = canonicalJson([rootPath2, candidate.operationId]);
@@ -80782,7 +80906,7 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
   const selected3 = entries3.get(slot);
   if (selected3 !== void 0 && selected3.key === key) {
     try {
-      await finalChecked(() => revalidateClosedSymbolTerminalClosure(selected3.input, selected3.observation));
+      await finalChecked(() => revalidateClosedSymbolTerminalClosure(selected3.input, selected3.observation, lease));
       const end = performance6.now();
       if (end < selected3.enrolledAt || end - selected3.enrolledAt >= LIFETIME_MS2) {
         throw new ClosureIneligibleError("cache-hit-expired");
@@ -80825,7 +80949,7 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput) {
   }
   let observation2;
   try {
-    observation2 = await finalChecked(() => observeClosedSymbolTerminalClosure(input));
+    observation2 = await finalChecked(() => observeClosedSymbolTerminalClosure(input, lease));
   } catch (error51) {
     if (!(error51 instanceof ClosureIneligibleError)) {
       throw error51;
@@ -81746,7 +81870,7 @@ function comparison2(operationId9, phase5, preparedSqlPlanSha256, copyReceiptSha
 async function reconstructAgedClosedSymbolSqlEvidence(input) {
   const { journal, events, baselineInventory, editInventory, verificationInventory, witness, witnessClockArtifact } = input;
   const snapshot8 = canonicalJson({ journal, events, witness, witnessClockArtifact });
-  const current9 = () => {
+  const current10 = () => {
     need44(
       input.journal === journal && input.events === events && input.baselineInventory === baselineInventory && input.editInventory === editInventory && input.verificationInventory === verificationInventory && input.witness === witness && input.witnessClockArtifact === witnessClockArtifact,
       "caller reference changed"
@@ -81792,7 +81916,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
   need44(witnessClockArtifact.path === join38(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
   hash29(witnessClockArtifact.sha256);
   const sqlPlan = await prepareSymbolNewHeadSqlPlan({ before: baselineInventory, operation: journal.plan.operation, witness });
-  current9();
+  current10();
   need44(sqlPlan.headEligibility === "aged-unlocked", "only the aged-unlocked historical profile is admitted");
   const metadataPlan2 = metadataPlanForOriginalSymbolSqlPlan(sqlPlan);
   need44(metadataPlan2.projectUuid === journal.plan.projectUuid && metadataPlan2.branchUuid === journal.plan.branchUuid && metadataPlan2.ownerUuid === journal.plan.ownerUuid && metadataPlan2.targetUuid === journal.plan.targetUuid, "metadata identity differs");
@@ -81821,11 +81945,11 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
   same32(write["witnessClockArtifact"], preparation3.witnessClockArtifact, "write qualification descriptor differs");
   same32(event3(20).generation, event3(21).generation, "witness/write generation differs");
   const editRelation = await verifySymbolNewHeadSqlEffect(sqlPlan, editInventory);
-  current9();
+  current10();
   const editComparison = comparison2(operationId9, "edit-sql-compare", preparation3.preparedSqlPlanSha256, editCopy.receiptSha256, editRelation);
   same32(event3(28).data, editComparison, "recorded edit comparison differs from full recomputation");
   const verificationRelation = await compareCompleteClosedSql(editInventory, verificationInventory);
-  current9();
+  current10();
   const verificationComparison = comparison2(operationId9, "verify-sql-compare", preparation3.preparedSqlPlanSha256, verificationCopy.receiptSha256, verificationRelation);
   same32(event3(44).data, verificationComparison, "recorded verification comparison differs from full recomputation");
   for (const phase5 of ["edit-sql-compare", "verify-sql-compare"]) {
@@ -81857,7 +81981,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     need44(event3(sequence).requestSha256 === sha256Json(expected3), "SQL request digest differs");
   }
   const decoded = await decodeRawHistoryForOriginalSymbolSqlPlan(sqlPlan, editInventory);
-  current9();
+  current10();
   need44(decoded.history.projectUuid === metadataPlan2.projectUuid && decoded.history.branchUuid === metadataPlan2.branchUuid && decoded.history.projectOwnerUuid === metadataPlan2.ownerUuid && decoded.maximumTicket === sqlPlan.expectedTicket, "decoded raw history identity differs");
   const projection8 = await prepareSavedSymbolProjection({
     chunks: decoded.chunks,
@@ -81865,7 +81989,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     maximumTicket: sqlPlan.expectedTicket,
     currentEditVersion: metadataPlan2.headerEditVersion
   });
-  current9();
+  current10();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
   need44(projectedContentBytes > 0 && projectedContentBytes <= 65536, "projected saved content bound exceeded");
   const sourceBody = {
@@ -81894,7 +82018,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
   const readRequest = bag11(event3(37).data);
   need44(readRequest["profile"] === "private.closed-symbol-saved-read-request.v1" && event3(37).requestSha256 === sha256Json(readRequest), "saved-read request differs");
   same32(readRequest["source"], savedSource, "saved source differs from complete raw history reconstruction");
-  current9();
+  current10();
   return Object.freeze({
     preparation: preparation3,
     editComparison,
@@ -81969,18 +82093,18 @@ async function replay2(loaded, evidence2, runtime) {
   need45(journal.sequence === 44 && events.length === 44, "Terminal semantic replay needs all44 events.");
   const seal2 = canonicalJson(loaded);
   const evidenceSeal = canonicalJson(evidence2);
-  const current9 = () => {
+  const current10 = () => {
     same33(canonicalJson(loaded), seal2, "replay input");
     same33(canonicalJson(evidence2), evidenceSeal, "replay descriptors");
   };
   same33(evidence2.witnessRaw, phaseArtifact2(journal, 20), "witness raw descriptor");
   same33(evidence2.writeRaw, phaseArtifact2(journal, 22), "write raw descriptor");
   const baseline2 = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "baseline-copy", runtime });
-  current9();
+  current10();
   const edit = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "edit-copy", runtime });
-  current9();
+  current10();
   const verification2 = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "verify-copy", runtime });
-  current9();
+  current10();
   const nativeClockSource = bag12(phaseData(events, 19)["launchClock"]);
   const lifecycle = await replayRecordedLifecycle({
     journal,
@@ -81991,7 +82115,7 @@ async function replay2(loaded, evidence2, runtime) {
     runtime,
     nativeClockSource
   });
-  current9();
+  current10();
   const referenceInput = {
     journal,
     events,
@@ -82001,9 +82125,9 @@ async function replay2(loaded, evidence2, runtime) {
     mainReferenceResult: evidence2.mainReferenceResult
   };
   const mainReference = await reconstructRecordedMainReference(referenceInput);
-  current9();
+  current10();
   const witness = await reconstructRecordedAgedSymbolWitness(referenceInput);
-  current9();
+  current10();
   same33(witness.qualification["mainReference"], mainReference.result, "aged witness original reference");
   same33(witness.result.clockArtifact, evidence2.witnessQualification, "witness qualification descriptor");
   const editDispatch = phaseData(events, 13)["bridgeDispatch"];
@@ -82036,7 +82160,7 @@ async function replay2(loaded, evidence2, runtime) {
     witness: witness.result.witness,
     witnessClockArtifact: witness.result.clockArtifact
   });
-  current9();
+  current10();
   const clockRequest = phaseData(events, 27);
   validateRecordedTerminationEvidence({
     journal,
@@ -82059,9 +82183,9 @@ async function replay2(loaded, evidence2, runtime) {
   same33(clockRequest["clockRelation"], clockRelation, "independently replayed exit clock relation");
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
-  current9();
+  current10();
   const navigation = await recordedNavigationBinding(journal, events, "verify-open");
-  current9();
+  current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
     events,
@@ -82070,7 +82194,7 @@ async function replay2(loaded, evidence2, runtime) {
     rawArtifact: evidence2.savedReadRaw,
     nativeSource: lifecycle[2].nativeSource
   });
-  current9();
+  current10();
   const final = lifecycle[2];
   need45(typeof final.copy["sha256"] === "string", "Terminal final source digest missing.");
   const finalSource = Object.freeze({
@@ -82102,17 +82226,17 @@ async function replay2(loaded, evidence2, runtime) {
   });
   const generations8 = lifecycle.map((row7) => row7.terminal);
   const recheckDependencies = async () => {
-    current9();
+    current10();
     for (const descriptor10 of Object.values(evidence2)) {
       await readExactUtf8Artifact(descriptor10);
-      current9();
+      current10();
     }
     const before = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "baseline-copy", runtime });
-    current9();
+    current10();
     const edited = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "edit-copy", runtime });
-    current9();
+    current10();
     const verified = await inspectRecordedClosedCopy({ operationId: journal.operationId, phase: "verify-copy", runtime });
-    current9();
+    current10();
     const checked4 = await replayRecordedLifecycle({
       journal,
       events,
@@ -82122,12 +82246,12 @@ async function replay2(loaded, evidence2, runtime) {
       runtime,
       nativeClockSource
     });
-    current9();
+    current10();
     same33(checked4.map((row7) => row7.terminal), generations8, "late dependency identities and bytes");
   };
   await recheckDependencies();
   const end = await loadClosedSymbolHistoricalPhaseJournal(journal.operationId);
-  current9();
+  current10();
   same33(end.journal, loaded.journal, "journal changed during semantic replay");
   return Object.freeze({ generations: generations8, results, finalSource, values: values2, recheckDependencies });
 }
@@ -82260,7 +82384,7 @@ var init_closed_symbol_aged_terminal = __esm({
         }
         need45(!used3.has(operationId9), "Terminal completion attempt cannot repeat.");
         used3.add(operationId9);
-        const current9 = () => {
+        const current10 = () => {
           need45(
             assertOriginalAgedClosedSymbolFullEvidence(full, this.engine, operationId9) === original2,
             "Terminal original evidence changed."
@@ -82268,17 +82392,17 @@ var init_closed_symbol_aged_terminal = __esm({
           assertCurrentClosedSessionCopyAuthority(original2.verification.proof);
         };
         const owned2 = async () => {
-          current9();
+          current10();
           await assertClosedSessionCopyAuthority(original2.verification.proof);
-          current9();
+          current10();
         };
         await owned2();
         const loaded = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same33(loaded.journal, original2.journal, "terminal predecessor");
         const evidence2 = evidenceFromOriginal2(original2);
         const computed = await replay2(loaded, evidence2, this.runtime);
-        current9();
+        current10();
         same33(computed.values, {
           mainReference: original2.mainReference,
           witness: original2.edit.witness,
@@ -82291,16 +82415,16 @@ var init_closed_symbol_aged_terminal = __esm({
         }, "original and reconstructed results");
         await owned2();
         const root = await controlRootCapability(false);
-        current9();
+        current10();
         const { checkpoint, copy: copy2 } = original2.verification.copy;
         const verifyCurrentSource = async () => {
-          current9();
+          current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
             expectedSource: original2.journal.plan.projectPath,
             artifactRoots: [join39(controlDataDirectory(), "checkpoints")],
             controlRoot: root
           });
-          current9();
+          current10();
           need45(
             verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
             "Terminal current source/checkpoint differs."
@@ -82309,16 +82433,16 @@ var init_closed_symbol_aged_terminal = __esm({
         await verifyCurrentSource();
         await owned2();
         const before = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same33(before.journal, loaded.journal, "prepublication predecessor");
         const envelope4 = envelopeFor2(original2.journal, evidence2, computed, (/* @__PURE__ */ new Date()).toISOString());
         need45(Buffer.byteLength(`${JSON.stringify(envelope4)}
 `) <= AGED_TERMINAL_MAX_BYTES, "Terminal envelope exceeds its byte bound.");
         const descriptor10 = await writePhaseArtifact(operationId9, 45, "closed-symbol-terminal", envelope4);
         this.retainedArtifacts.set(operationId9, descriptor10);
-        current9();
+        current10();
         const prior = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same33(prior.journal, loaded.journal, "terminal publication predecessor");
         const next = {
           ...structuredClone(original2.journal),
@@ -82328,17 +82452,17 @@ var init_closed_symbol_aged_terminal = __esm({
           terminalArtifact: descriptor10
         };
         await updateOperation(next);
-        current9();
+        current10();
         const inspected = await inspectClosedSymbolAgedTerminal(operationId9, this.runtime);
-        current9();
+        current10();
         need45(inspected.terminalOutcomeVerified && inspected.bodySha256 === envelope4.bodySha256, "Terminal historical reproof differs.");
         await owned2();
         await computed.recheckDependencies();
-        current9();
+        current10();
         await verifyCurrentSource();
         await owned2();
         const final = await loadClosedSymbolHistoricalPhaseJournal(operationId9);
-        current9();
+        current10();
         same33(final.journal, next, "final completed journal");
         const result = Object.freeze({
           profile: "private.closed-symbol-original-completion.v2",
@@ -82442,7 +82566,7 @@ function expire2(now2) {
 function same34(actual, expected3, label) {
   requireEvidence(canonicalJson(actual) === canonicalJson(expected3), `cache-${label}-changed`);
 }
-async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
+async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput, lease) {
   const rootPath2 = resolve12(controlDataDirectory());
   const candidateOwn = ownBoundedData(candidateInput), runtimeOwn = ownBoundedData(runtimeInput);
   const candidate = candidateData2(candidateOwn);
@@ -82469,13 +82593,13 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
     }
     throw primary;
   };
-  const current9 = async () => {
+  const current10 = async () => {
     scope6();
     await Reflect.apply(rootCheck, root, []);
     scope6();
   };
   const checked4 = async (invoke) => {
-    await current9();
+    await current10();
     scope6();
     let value2;
     try {
@@ -82484,11 +82608,11 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
       return failAfterScope(error51);
     }
     scope6();
-    await current9();
+    await current10();
     return value2;
   };
   const finalChecked = async (invoke) => {
-    await current9();
+    await current10();
     scope6();
     let value2;
     try {
@@ -82499,7 +82623,7 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
     scope6();
     return value2;
   };
-  await current9();
+  await current10();
   const now2 = performance7.now();
   expire2(now2);
   const slot = canonicalJson([rootPath2, candidate.operationId]);
@@ -82507,7 +82631,7 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
   const selected3 = entries4.get(slot);
   if (selected3 !== void 0 && selected3.key === key) {
     try {
-      await finalChecked(() => revalidateClosedSymbolAgedTerminalClosure(selected3.input, selected3.observation));
+      await finalChecked(() => revalidateClosedSymbolAgedTerminalClosure(selected3.input, selected3.observation, lease));
       const end = performance7.now();
       if (end < selected3.enrolledAt || end - selected3.enrolledAt >= LIFETIME_MS3) {
         throw new ClosureIneligibleError("cache-hit-expired");
@@ -82550,7 +82674,7 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput) {
   }
   let observation2;
   try {
-    observation2 = await finalChecked(() => observeClosedSymbolAgedTerminalClosure(input));
+    observation2 = await finalChecked(() => observeClosedSymbolAgedTerminalClosure(input, lease));
   } catch (error51) {
     if (!(error51 instanceof ClosureIneligibleError)) {
       throw error51;
@@ -82725,7 +82849,7 @@ async function qualifyCurrentBaselineAbandonment(candidate) {
     return observation(candidate, failureClass(error51) === "terminal-evidence-invalid" ? "abandonment-evidence-invalid" : "abandonment-evidence-unavailable");
   }
 }
-async function qualifyTerminal(candidate, runtime) {
+async function qualifyTerminal(candidate, runtime, lease) {
   const expected3 = candidate.terminal;
   if (expected3 === null) {
     return observation(candidate, "terminal-evidence-invalid");
@@ -82736,22 +82860,16 @@ async function qualifyTerminal(candidate, runtime) {
     let inspected;
     if (routing.profile === "easyeda-pro-control.closed-symbol-terminal.v1") {
       const { inspectLockedTerminalForAdmission: inspectLockedTerminalForAdmission2 } = await Promise.resolve().then(() => (init_closed_symbol_terminal_admission_cache(), closed_symbol_terminal_admission_cache_exports));
-      inspected = await inspectLockedTerminalForAdmission2(expected3, runtime);
+      inspected = await inspectLockedTerminalForAdmission2(expected3, runtime, lease);
     } else {
       const { inspectAgedTerminalForAdmission: inspectAgedTerminalForAdmission2 } = await Promise.resolve().then(() => (init_closed_symbol_aged_terminal_admission_cache(), closed_symbol_aged_terminal_admission_cache_exports));
-      inspected = await inspectAgedTerminalForAdmission2(expected3, runtime);
+      inspected = await inspectAgedTerminalForAdmission2(expected3, runtime, lease);
     }
     const matches = matchesHistoricalAdmission(inspected, expected3, routing);
     return matches ? void 0 : observation(candidate, "terminal-evidence-invalid");
   } catch (error51) {
+    requireCurrentProcessSqlRuntimeLease(lease);
     return observation(candidate, failureClass(error51));
-  }
-}
-async function runtimeForScan() {
-  try {
-    return await currentProcessSqlRuntime();
-  } catch {
-    return void 0;
   }
 }
 async function qualifiedCandidates() {
@@ -82767,41 +82885,53 @@ async function qualifiedCandidates() {
   };
   const results = [];
   const states = [];
-  let runtime;
-  let runtimeUnavailable = false;
-  for (const candidate of candidates) {
-    candidateCounts[candidate.classification] += 1;
-    if (candidate.compact) {
-      states.push({ operationId: candidate.operationId, state: candidate.state, recordedState: candidate.state, qualification: "legacy" });
-    } else {
-      let result;
-      if (candidate.classification === "legacy") {
-        result = observation(candidate, "legacy");
-      } else if (candidate.classification === "current-baseline") {
-        result = await qualifyCurrentBaselineAbandonment(candidate);
-      } else if (candidate.classification === "incomplete") {
-        result = await qualifyAbandonment(candidate);
-      } else if (candidate.classification === "invalid" || candidate.terminal === null) {
-        result = observation(candidate, "terminal-evidence-invalid");
+  const inspectCandidates = async (lease) => {
+    for (const candidate of candidates) {
+      candidateCounts[candidate.classification] += 1;
+      if (candidate.compact) {
+        states.push({ operationId: candidate.operationId, state: candidate.state, recordedState: candidate.state, qualification: "legacy" });
       } else {
-        if (runtime === void 0 && !runtimeUnavailable) {
-          runtime = await runtimeForScan();
-          runtimeUnavailable = runtime === void 0;
+        let result;
+        if (candidate.classification === "legacy") {
+          result = observation(candidate, "legacy");
+        } else if (candidate.classification === "current-baseline") {
+          result = await qualifyCurrentBaselineAbandonment(candidate);
+        } else if (candidate.classification === "incomplete") {
+          result = await qualifyAbandonment(candidate);
+        } else if (candidate.classification === "invalid" || candidate.terminal === null) {
+          result = observation(candidate, "terminal-evidence-invalid");
+        } else {
+          result = lease === void 0 ? observation(candidate, "terminal-evidence-unavailable") : await qualifyTerminal(candidate, lease.runtime, lease);
         }
-        result = runtime === void 0 ? observation(candidate, "terminal-evidence-unavailable") : await qualifyTerminal(candidate, runtime);
-      }
-      if (result !== void 0) {
-        results.push(result);
-        if (result.qualification !== "historical-abandonment-verified") {
-          states.push({
-            operationId: result.summary.operationId,
-            state: result.summary.state,
-            recordedState: result.recordedState,
-            qualification: result.qualification
-          });
+        if (result !== void 0) {
+          results.push(result);
+          if (result.qualification !== "historical-abandonment-verified") {
+            states.push({
+              operationId: result.summary.operationId,
+              state: result.summary.state,
+              recordedState: result.recordedState,
+              qualification: result.qualification
+            });
+          }
         }
       }
     }
+  };
+  if (candidates.some((candidate) => !candidate.compact && candidate.classification === "terminal" && candidate.terminal !== null)) {
+    let entered = false;
+    try {
+      await withCurrentProcessSqlRuntimeLease(async (lease) => {
+        entered = true;
+        await inspectCandidates(lease);
+      });
+    } catch (error51) {
+      if (entered) {
+        throw error51;
+      }
+      await inspectCandidates();
+    }
+  } else {
+    await inspectCandidates();
   }
   const ended = performance8.now();
   return { operations: results, states, diagnostics: Object.freeze({
@@ -82834,6 +82964,7 @@ var init_closed_symbol_terminal_admission = __esm({
     init_core3();
     init_engine_operation_summary();
     init_machine_profile();
+    init_current_process_sql_runtime_lease();
     init_sqlite_inventory();
     init_zod();
     init_closed_symbol_terminal_closure_evidence_error();
@@ -83351,18 +83482,18 @@ function verifyDocumentPageRenameEffect(input, before, after) {
   if (after.projectUuid !== plan2.projectUuid || after.branchUuid !== plan2.branchUuid || after.projectOwnerUuid !== plan2.ownerUuid) {
     throw new Error("Page rename project, branch or owner changed.");
   }
-  const current9 = exactDocument(after, plan2.targetUuid, "SCH_PAGE"), old = exactDocument(before, plan2.targetUuid, "SCH_PAGE");
+  const current10 = exactDocument(after, plan2.targetUuid, "SCH_PAGE"), old = exactDocument(before, plan2.targetUuid, "SCH_PAGE");
   const peers2 = (history) => history.documents.filter((document3) => document3.uuid !== plan2.targetUuid).map((document3) => projection(document3));
   if (canonicalJson(peers2(before)) !== canonicalJson(peers2(after))) {
     throw new Error("Page rename changed peer records or membership.");
   }
-  const changedKeys = [.../* @__PURE__ */ new Set([...Object.keys(old.metadata), ...Object.keys(current9.metadata)])].filter((key) => Object.hasOwn(old.metadata, key) !== Object.hasOwn(current9.metadata, key) || canonicalJson({ value: old.metadata[key] }) !== canonicalJson({ value: current9.metadata[key] }));
-  const time18 = current9.metadata["updateTime"];
-  if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current9.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current9.metadata["version"] !== String(time18) || typeof current9.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current9.metadata["client"])) {
+  const changedKeys = [.../* @__PURE__ */ new Set([...Object.keys(old.metadata), ...Object.keys(current10.metadata)])].filter((key) => Object.hasOwn(old.metadata, key) !== Object.hasOwn(current10.metadata, key) || canonicalJson({ value: old.metadata[key] }) !== canonicalJson({ value: current10.metadata[key] }));
+  const time18 = current10.metadata["updateTime"];
+  if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current10.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current10.metadata["version"] !== String(time18) || typeof current10.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current10.metadata["client"])) {
     throw new Error("Page rename changed unreviewed header fields.");
   }
-  const expected3 = { ...old, metadata: current9.metadata, records: old.records.map((record8) => record8.id === "META" ? Object.assign(structuredClone(record8), { body: { ...record8.body, title: plan2.desiredTitle } }) : record8) };
-  if (canonicalJson(projection(expected3)) !== canonicalJson(projection(current9))) {
+  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record8) => record8.id === "META" ? Object.assign(structuredClone(record8), { body: { ...record8.body, title: plan2.desiredTitle } }) : record8) };
+  if (canonicalJson(projection(expected3)) !== canonicalJson(projection(current10))) {
     throw new Error("Page rename changed geometry, parent or unrequested metadata.");
   }
   return {
@@ -84103,17 +84234,17 @@ function verifyDocumentContainerRenameEffect(input, before, after) {
     throw new Error("Document rename project, branch or owner changed.");
   }
   const type2 = plan2.kind === "pcb" ? "PCB" : "SCH";
-  const current9 = exactDocument3(after, plan2.targetUuid, type2), old = exactDocument3(before, plan2.targetUuid, type2);
+  const current10 = exactDocument3(after, plan2.targetUuid, type2), old = exactDocument3(before, plan2.targetUuid, type2);
   const peers2 = (history) => history.documents.filter((document3) => document3.uuid !== plan2.targetUuid).map((document3) => projection4(document3));
   if (canonicalJson(peers2(before)) !== canonicalJson(peers2(after))) {
     throw new Error("Document rename changed children, peers or project membership.");
   }
-  const changedKeys = [.../* @__PURE__ */ new Set([...Object.keys(old.metadata), ...Object.keys(current9.metadata)])].filter((key) => Object.hasOwn(old.metadata, key) !== Object.hasOwn(current9.metadata, key) || canonicalJson({ value: old.metadata[key] }) !== canonicalJson({ value: current9.metadata[key] }));
-  const time18 = current9.metadata["updateTime"];
-  if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current9.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current9.metadata["version"] !== String(time18) || typeof current9.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current9.metadata["client"])) {
+  const changedKeys = [.../* @__PURE__ */ new Set([...Object.keys(old.metadata), ...Object.keys(current10.metadata)])].filter((key) => Object.hasOwn(old.metadata, key) !== Object.hasOwn(current10.metadata, key) || canonicalJson({ value: old.metadata[key] }) !== canonicalJson({ value: current10.metadata[key] }));
+  const time18 = current10.metadata["updateTime"];
+  if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current10.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current10.metadata["version"] !== String(time18) || typeof current10.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current10.metadata["client"])) {
     throw new Error("Document rename changed unreviewed header fields.");
   }
-  const newMeta = current9.records.find((record8) => record8.id === "META"), oldMeta = old.records.find((record8) => record8.id === "META");
+  const newMeta = current10.records.find((record8) => record8.id === "META"), oldMeta = old.records.find((record8) => record8.id === "META");
   let maximumTicket = 0;
   for (const document3 of before.documents) {
     maximumTicket = Math.max(maximumTicket, nativeDocumentRecordHistoryProjection(document3).maximumTicket);
@@ -84124,15 +84255,15 @@ function verifyDocumentContainerRenameEffect(input, before, after) {
       maximumTicket = Math.max(maximumTicket, header.ticket);
     }
   }
-  if (oldMeta === void 0 || newMeta === void 0 || newMeta.ticket <= maximumTicket || newMeta.client !== current9.metadata["client"]) {
+  if (oldMeta === void 0 || newMeta === void 0 || newMeta.ticket <= maximumTicket || newMeta.client !== current10.metadata["client"]) {
     throw new Error("Document rename META clock or inherited client is invalid.");
   }
   const expectedMeta = { ...oldMeta, ticket: newMeta.ticket, client: newMeta.client, body: { ...oldMeta.body, title: plan2.desiredTitle } };
-  if (canonicalJson(nativeDocumentRecordHistoryProjection(current9)) !== canonicalJson(appendClosedContainerMetadataRecords(nativeDocumentRecordHistoryProjection(old), current9))) {
+  if (canonicalJson(nativeDocumentRecordHistoryProjection(current10)) !== canonicalJson(appendClosedContainerMetadataRecords(nativeDocumentRecordHistoryProjection(old), current10))) {
     throw new Error("Document rename raw record history is not exactly the pinned DOCHEAD and META suffix.");
   }
-  const expected3 = { ...old, metadata: current9.metadata, records: old.records.map((record8) => record8.id === "META" ? expectedMeta : record8), documentRecordHistory: validateNativeDocumentRecordHistory(current9, after.checkpointSha256) };
-  if (canonicalJson(projection4(expected3)) !== canonicalJson(projection4(current9))) {
+  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record8) => record8.id === "META" ? expectedMeta : record8), documentRecordHistory: validateNativeDocumentRecordHistory(current10, after.checkpointSha256) };
+  if (canonicalJson(projection4(expected3)) !== canonicalJson(projection4(current10))) {
     throw new Error("Document rename changed geometry or unrequested metadata.");
   }
   return {
@@ -85816,13 +85947,13 @@ var init_symbol_persistence = __esm({
 
 // server/src/saved-library-recovery.ts
 function verifySavedLibraryArtifacts(input) {
-  const { expected: expected3, current: current9, save, durable, family: family2 } = input;
-  for (const source5 of [expected3, current9]) {
+  const { expected: expected3, current: current10, save, durable, family: family2 } = input;
+  for (const source5 of [expected3, current10]) {
     if (source5.sha256 !== sha256Json({ schema: source5.schema, document: source5.document, objects: source5.objects })) {
       throw new Error("Saved library source hash changed.");
     }
   }
-  if (canonicalJson(current9) !== canonicalJson(expected3)) {
+  if (canonicalJson(current10) !== canonicalJson(expected3)) {
     throw new Error("Current library source does not match the retained saved edit.");
   }
   if (!isRecord(save) || save["ok"] !== true || save["kind"] !== `${family2}-save-requested`) {
@@ -85875,7 +86006,7 @@ function ordered2(topology) {
 function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, currentTopology, misnamedPins) {
   const native = schematicNativeSnapshotSchema.parse(beforeNative);
   const original2 = ordered2(designTopologySchema.parse(beforeTopology));
-  const current9 = ordered2(designTopologySchema.parse(currentTopology));
+  const current10 = ordered2(designTopologySchema.parse(currentTopology));
   const misnamed = misnamedPinsSchema.parse(misnamedPins);
   const pinIds = native.components.flatMap((component3) => component3.pins.map((pin4) => pin4.id));
   if (new Set(pinIds).size !== pinIds.length) {
@@ -85930,13 +86061,13 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     admittedPin.net = change.observedNet;
     changedPins.push({ ...change, ...identityValue, pinNumber });
   }
-  verifyDesignTopology(admitted, current9);
+  verifyDesignTopology(admitted, current10);
   return {
     profile: "easyeda-pro-control.layout-wire-group-repair-topology.v1",
     componentCount: original2.length,
     pinCount: original2.reduce((count2, part) => count2 + part.pins.length, 0),
     beforeTopologySha256: sha256Json(original2),
-    currentTopologySha256: sha256Json(current9),
+    currentTopologySha256: sha256Json(current10),
     changedPins
   };
 }
@@ -86191,7 +86322,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     }
     const prior = originalRecords.get(id13);
     const expected3 = intendedRecords.get(id13);
-    const current9 = records2.get(id13);
+    const current10 = records2.get(id13);
     if (expected3 === void 0) {
       return fail10();
     }
@@ -86218,7 +86349,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     }
     const wireId = expected3?.body["parentId"];
     const net3 = expected3?.body["value"];
-    if (expected3?.type !== "ATTR" || expected3.body["key"] !== "NET" || expected3.body["locked"] !== false || typeof wireId !== "string" || typeof net3 !== "string" || !net3 || expected3.body["valueVisible"] !== false || current9?.body["valueVisible"] !== true || !same37({ ...current9, body: { ...current9.body, valueVisible: false } }, expected3) || labels.some((label) => label.attributeId === id13)) {
+    if (expected3?.type !== "ATTR" || expected3.body["key"] !== "NET" || expected3.body["locked"] !== false || typeof wireId !== "string" || typeof net3 !== "string" || !net3 || expected3.body["valueVisible"] !== false || current10?.body["valueVisible"] !== true || !same37({ ...current10, body: { ...current10.body, valueVisible: false } }, expected3) || labels.some((label) => label.attributeId === id13)) {
       return fail10();
     }
     const matches = intended.native.components.filter((model) => {
@@ -86249,7 +86380,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
       afterPoint: point5(pin4),
       ...created === void 0 ? {} : { created }
     });
-    current9.body["valueVisible"] = false;
+    current10.body["valueVisible"] = false;
   }
   if (labels.length === 0) {
     return fail10();
@@ -86462,8 +86593,8 @@ async function materialization(input) {
     throw new Error("Flat display source-only CANVAS is not the exact native default origin.");
   }
   for (const record8 of target8.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
-    const current9 = exported.get(record8.id);
-    if (current9?.body["zIndex"] !== null && (nativeComponents.get(record8.id)?.kind !== "sheet" || current9?.type !== "COMPONENT" || current9.body["zIndex"] !== 0 || !same38(current9.body, { ...record8.body, zIndex: 0 }))) {
+    const current10 = exported.get(record8.id);
+    if (current10?.body["zIndex"] !== null && (nativeComponents.get(record8.id)?.kind !== "sheet" || current10?.type !== "COMPONENT" || current10.body["zIndex"] !== 0 || !same38(current10.body, { ...record8.body, zIndex: 0 }))) {
       throw new Error("Flat display admits only the exact null-to-zero native drawing-frame initialization.");
     }
   }
@@ -86675,18 +86806,18 @@ async function prepareFlatDisplayProfile(input) {
 }
 function verifyFlatDisplayObservation(bindingInput, operationInput, context3, evidence2, nativeInput, phase5) {
   const binding8 = assertFlatDisplayBinding(bindingInput, operationInput, context3);
-  const current9 = flatEvidenceState(evidence2, context3, nativeInput);
-  const nativeSource = parseDocumentSource(current9.native.source);
-  const comparisonNative = phase5 === "after" ? { ...current9.native, source: encodeSchematicLayoutSource(nativeSource) } : current9.native;
-  if (!same39(binding8.project, evidence2.projectBinding) || current9.schematicUuid !== binding8.schematicUuid || nativeSource.sha256 !== current9.source.sha256 || current9.source.sha256 !== binding8[phase5].sourceSha256 || schematicNativeSnapshotHash(comparisonNative) !== binding8[phase5].nativeSha256) {
+  const current10 = flatEvidenceState(evidence2, context3, nativeInput);
+  const nativeSource = parseDocumentSource(current10.native.source);
+  const comparisonNative = phase5 === "after" ? { ...current10.native, source: encodeSchematicLayoutSource(nativeSource) } : current10.native;
+  if (!same39(binding8.project, evidence2.projectBinding) || current10.schematicUuid !== binding8.schematicUuid || nativeSource.sha256 !== current10.source.sha256 || current10.source.sha256 !== binding8[phase5].sourceSha256 || schematicNativeSnapshotHash(comparisonNative) !== binding8[phase5].nativeSha256) {
     throw new Error("Flat display phase source, native state or project branch differs from its sealed binding.");
   }
-  verifyMembershipTopology(binding8, evidence2, current9.schematicUuid);
+  verifyMembershipTopology(binding8, evidence2, current10.schematicUuid);
 }
 function verifyFlatDisplayMembershipTopology(bindingInput, operationInput, context3, evidence2, nativeInput) {
   const binding8 = assertFlatDisplayBinding(bindingInput, operationInput, context3);
-  const current9 = flatEvidenceState(evidence2, context3, nativeInput);
-  verifyMembershipTopology(binding8, evidence2, current9.schematicUuid);
+  const current10 = flatEvidenceState(evidence2, context3, nativeInput);
+  verifyMembershipTopology(binding8, evidence2, current10.schematicUuid);
 }
 function verifyMembershipTopology(binding8, evidence2, schematicUuid) {
   assertFlatDisplayLibraryPeers(binding8, evidence2.history);
@@ -86917,10 +87048,10 @@ function assertFlatWireLibraryPeers(binding8, history) {
   }
 }
 function verifyFlatWireObservation(bindingInput, operationInput, context3, evidence2, nativeInput, phase5, lifecycle = false) {
-  const binding8 = assertFlatWireBinding(bindingInput, operationInput, context3), current9 = flatEvidenceState(evidence2, context3, nativeInput);
-  const nativeSource = parseDocumentSource(current9.native.source);
-  const comparisonNative = phase5 === "after" ? { ...current9.native, source: encodeSchematicLayoutSource(nativeSource) } : current9.native;
-  if (!same40(binding8.project, evidence2.projectBinding) || current9.schematicUuid !== binding8.schematicUuid || !lifecycle && (nativeSource.sha256 !== current9.source.sha256 || current9.source.sha256 !== binding8[phase5].sourceSha256 || schematicNativeSnapshotHash(comparisonNative) !== binding8[phase5].nativeSha256) || flatWireContactIncidence(evidence2.observation, binding8.wireId) !== binding8.contactIncidenceSha256 || !same40(evidence2.observation.pages[0]?.wires.find((wire2) => wire2.id === binding8.wireId)?.lines.map((line6) => line6.id).toSorted(), binding8.lineIds)) {
+  const binding8 = assertFlatWireBinding(bindingInput, operationInput, context3), current10 = flatEvidenceState(evidence2, context3, nativeInput);
+  const nativeSource = parseDocumentSource(current10.native.source);
+  const comparisonNative = phase5 === "after" ? { ...current10.native, source: encodeSchematicLayoutSource(nativeSource) } : current10.native;
+  if (!same40(binding8.project, evidence2.projectBinding) || current10.schematicUuid !== binding8.schematicUuid || !lifecycle && (nativeSource.sha256 !== current10.source.sha256 || current10.source.sha256 !== binding8[phase5].sourceSha256 || schematicNativeSnapshotHash(comparisonNative) !== binding8[phase5].nativeSha256) || flatWireContactIncidence(evidence2.observation, binding8.wireId) !== binding8.contactIncidenceSha256 || !same40(evidence2.observation.pages[0]?.wires.find((wire2) => wire2.id === binding8.wireId)?.lines.map((line6) => line6.id).toSorted(), binding8.lineIds)) {
     throw new Error("Flat wire phase differs from its sealed project, exact source/native state or complete contact incidence.");
   }
   assertFlatWireLibraryPeers(binding8, evidence2.history);
@@ -87402,7 +87533,7 @@ function peerProjection(value2) {
   };
 }
 function verifyPcbTextRetainedSaveEffect(authority2, input) {
-  const { before, after, current: current9 } = input;
+  const { before, after, current: current10 } = input;
   if (before.projectUuid !== authority2.projectUuid || after.projectUuid !== before.projectUuid || after.projectOwnerUuid !== before.projectOwnerUuid || after.branchUuid !== before.branchUuid) {
     throw new Error("Retained PCB text checkpoint project, owner or branch changed.");
   }
@@ -87439,7 +87570,7 @@ function verifyPcbTextRetainedSaveEffect(authority2, input) {
     throw new Error("Retained PCB text original creation is absent from storage.");
   }
   exact17({ id: created.id, type: created.type, body: created.body }, expectedCreated2, "Retained PCB text stored creation differs from its original null/black intent.");
-  const observed2 = sourcePhase({ payload: input.currentPayload, snapshot: current9 }, current9);
+  const observed2 = sourcePhase({ payload: input.currentPayload, snapshot: current10 }, current10);
   let carryover;
   if (authority2.legacy) {
     const previous = authority2.before.objects.filter((row7) => row7.type === "STRING"), prior = previous[0];
@@ -87462,7 +87593,7 @@ function verifyPcbTextRetainedSaveEffect(authority2, input) {
       document: authority2.intended.document,
       objects: authority2.intended.objects.map((row7) => row7.id === authority2.createdId ? { ...row7, body: { ...row7.body, specialColor: "#000000" } } : row7)
     };
-    exact17(current9, { ...source5, sha256: sha256Json(source5) }, "Legacy PCB text changed beyond its exact reserved STRING decoder carryover.");
+    exact17(current10, { ...source5, sha256: sha256Json(source5) }, "Legacy PCB text changed beyond its exact reserved STRING decoder carryover.");
     carryover = verifyLegacyPcbTextReloadOrder({
       before: oldTarget,
       after: newTarget,
@@ -87472,7 +87603,7 @@ function verifyPcbTextRetainedSaveEffect(authority2, input) {
       createdId: authority2.createdId
     });
   } else {
-    exact17(current9, authority2.intended, "Retained PCB text v2 reopened source is not exact.");
+    exact17(current10, authority2.intended, "Retained PCB text v2 reopened source is not exact.");
   }
   return {
     profile: authority2.profile,
@@ -87483,7 +87614,7 @@ function verifyPcbTextRetainedSaveEffect(authority2, input) {
     unchangedPeerCount: peers2,
     unchangedTargetRecordCount: oldTarget.records.length,
     intendedSourceSha256: authority2.intended.sha256,
-    observedSourceSha256: current9.sha256,
+    observedSourceSha256: current10.sha256,
     rawObservedSourceSha256: sha256Text(observed2.raw),
     ...carryover === void 0 ? {} : { carryover },
     sourceNormalized: false,
@@ -87739,8 +87870,8 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
         }
         hash45.update(chunk);
       }
-      const after = await file3.stat({ bigint: true }), current9 = await lstat23(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.size !== current9.size || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
+      const after = await file3.stat({ bigint: true }), current10 = await lstat23(path5, { bigint: true });
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.size !== current10.size || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
         throw new Error("Rule-check implementation differs from its reviewed profile.");
       }
     } finally {
@@ -87809,11 +87940,11 @@ function externalRuntimeIdentity(value2) {
   }
   return serialized;
 }
-function assertFacadeOnlyRuntimeUpgrade(original2, current9) {
+function assertFacadeOnlyRuntimeUpgrade(original2, current10) {
   validateExpectedFingerprint(original2);
-  validatePrivateFingerprint(current9);
-  assertSubset(externalRuntimeIdentity(current9), externalRuntimeIdentity(original2), "Unchanged EasyEDA/upstream runtime during facade upgrade");
-  assertSubset(externalRuntimeIdentity(original2), externalRuntimeIdentity(current9), "Complete original EasyEDA/upstream runtime binding");
+  validatePrivateFingerprint(current10);
+  assertSubset(externalRuntimeIdentity(current10), externalRuntimeIdentity(original2), "Unchanged EasyEDA/upstream runtime during facade upgrade");
+  assertSubset(externalRuntimeIdentity(original2), externalRuntimeIdentity(current10), "Complete original EasyEDA/upstream runtime binding");
 }
 function flatEffectProof(journal, proof) {
   return flatTransactionBinding(journal.plan) === void 0 ? proof : {
@@ -88118,12 +88249,12 @@ function lifecycleEquivalent(reference3, observed2) {
     return void 0;
   }
 }
-function assertWirePageLoadAuthority(journal, current9) {
+function assertWirePageLoadAuthority(journal, current10) {
   if (journal.plan.operation.action !== "sch.wire.modify" || journal.context.document.documentType !== 1 || isTerminalOperation(journal) || journal.orphanedCallPossible || !journal.hardStop || journal.saved || journal.reopened || !["apply-needs-review", "runtime-rebound-needs-reconciliation", "target-opened-needs-reconciliation", "target-open-needs-recovery"].includes(journal.state) || journal.beforeNative === void 0 || journal.beforeTopology === void 0 || journal.plan.expectedTopology === void 0 || journal.after !== void 0 || journal.afterNative !== void 0 || journal.layoutWireGroupRepair !== void 0 || journal.artifacts.some((entry) => /-(?:layout-pages?-load[^.]*|[^.]*repair[^.]*|[^.]*save[^.]*|reopened|inverse[^.]*)\.json$/u.test(basename20(entry.path)))) {
     throw new Error("Wire recovery page loading requires one settled pre-Save failure with no prior page load or correction.");
   }
   verifyDesignTopology(journal.beforeTopology, journal.plan.expectedTopology);
-  if (current9.schematic === void 0 || current9.source.sha256 !== journal.before.sha256 || lifecycleEquivalent(state(journal.before, journal.beforeNative), current9) === void 0) {
+  if (current10.schematic === void 0 || current10.source.sha256 !== journal.before.sha256 || lifecycleEquivalent(state(journal.before, journal.beforeNative), current10) === void 0) {
     throw new Error("Wire recovery page loading requires the exact restored source and lifecycle-equivalent original native state.");
   }
 }
@@ -88162,16 +88293,16 @@ async function journalDurableSnapshot(journal, checkpoint = journal.preCheckpoin
     throw new Error("Imported flat display baseline differs from its sealed original checkpoint.");
   }
   assertFlatTransactionLibraryPeers(binding8, baseline2);
-  const current9 = checkpoint === journal.preCheckpoint ? baseline2 : await read2(checkpoint);
-  assertFlatTransactionLibraryPeers(binding8, current9);
+  const current10 = checkpoint === journal.preCheckpoint ? baseline2 : await read2(checkpoint);
+  assertFlatTransactionLibraryPeers(binding8, current10);
   const members = new Map(binding8.members.map((entry) => [entry.uuid, entry]));
-  if (current9.projectUuid !== binding8.project.projectUuid || current9.projectOwnerUuid !== binding8.project.ownerUuid || current9.branchUuid !== binding8.project.branchUuid || current9.documents.length !== binding8.members.length || current9.documents.some((document3) => {
+  if (current10.projectUuid !== binding8.project.projectUuid || current10.projectOwnerUuid !== binding8.project.ownerUuid || current10.branchUuid !== binding8.project.branchUuid || current10.documents.length !== binding8.members.length || current10.documents.some((document3) => {
     const peer4 = members.get(document3.uuid);
     return peer4?.docType !== document3.docType || document3.uuid !== binding8.pageUuid && peer4.semanticSha256 !== document3.semanticSha256;
   })) {
     throw new Error("Imported flat display changed its sealed project or an immutable peer document.");
   }
-  return current9;
+  return current10;
 }
 var PROFILE13, designTransactionActionSchema, DesignExecutor;
 var init_design_execution = __esm({
@@ -88392,13 +88523,13 @@ var init_design_execution = __esm({
       observeFlat(context3) {
         return observeSchematicFlatTopology(this.engine, context3);
       }
-      async flatEvidence(journal, current9, phase5, lifecycle = false) {
+      async flatEvidence(journal, current10, phase5, lifecycle = false) {
         const binding8 = assertFlatTransactionBinding(flatTransactionBinding(journal.plan), journal.plan.operation, journal.context);
-        if (current9.native === void 0) {
+        if (current10.native === void 0) {
           throw new Error("Flat display requires a complete native snapshot.");
         }
         const evidence2 = await this.observeFlat(journal.context);
-        verifyFlatTransactionObservation(binding8, journal.plan.operation, journal.context, evidence2, current9.native, phase5, lifecycle);
+        verifyFlatTransactionObservation(binding8, journal.plan.operation, journal.context, evidence2, current10.native, phase5, lifecycle);
         return evidence2;
       }
       static flatRuntimeGuard(journal, evidence2, phase5) {
@@ -88410,18 +88541,18 @@ var init_design_execution = __esm({
           phase: phase5
         };
       }
-      async transactionTopology(journal, current9, phase5, lifecycle = false) {
+      async transactionTopology(journal, current10, phase5, lifecycle = false) {
         if (flatTransactionBinding(journal.plan) === void 0) {
           return { topology: await readDesignTopology(this.engine, journal.context) };
         }
-        const evidence2 = await this.flatEvidence(journal, current9, phase5, lifecycle);
+        const evidence2 = await this.flatEvidence(journal, current10, phase5, lifecycle);
         return { topology: evidence2.proof.topology, flatEvidence: evidence2 };
       }
-      static async retainFlatLifecycleObservation(journal, current9, phase5, sourcePhase2, evidence2) {
+      static async retainFlatLifecycleObservation(journal, current10, phase5, sourcePhase2, evidence2) {
         if (evidence2 === void 0) {
           return void 0;
         }
-        if (current9.native === void 0) {
+        if (current10.native === void 0) {
           throw new Error("Flat lifecycle observation requires its verified native snapshot.");
         }
         const binding8 = assertFlatDisplayJournal(journal);
@@ -88432,8 +88563,8 @@ var init_design_execution = __esm({
           originalPlanHash: journal.planHash,
           flatBindingSha256: sha256Text(canonicalJson(binding8)),
           context: journal.context,
-          sourceSha256: current9.snapshot.sha256,
-          nativeSha256: schematicNativeSnapshotHash(current9.native)
+          sourceSha256: current10.snapshot.sha256,
+          nativeSha256: schematicNativeSnapshotHash(current10.native)
         }, evidence2);
         const descriptor10 = await _DesignExecutor.artifact(journal, `flat-${phase5}-observation`, artifact2);
         return descriptor10;
@@ -88442,8 +88573,8 @@ var init_design_execution = __esm({
        * admitted states are complete whole-project comparisons, never an exemption
        * for the active target. A mixed or unrelated durable edit refuses Save.
        */
-      static async flatDurability(journal, current9, evidence2, allowAfter) {
-        if (!["sch.layout.batch", "sch.wire.modify"].includes(journal.plan.operation.action) || journal.beforeNative === void 0 || current9.native === void 0) {
+      static async flatDurability(journal, current10, evidence2, allowAfter) {
+        if (!["sch.layout.batch", "sch.wire.modify"].includes(journal.plan.operation.action) || journal.beforeNative === void 0 || current10.native === void 0) {
           throw new Error("Flat display durable classification lacks its exact original layout.");
         }
         return verifyFlatTransactionPersistence({
@@ -88453,8 +88584,8 @@ var init_design_execution = __esm({
           baseline: await journalDurableSnapshot(journal),
           before: journal.before,
           beforeNative: journal.beforeNative,
-          current: current9.snapshot,
-          currentNative: current9.native,
+          current: current10.snapshot,
+          currentNative: current10.native,
           evidence: evidence2,
           allowAfter
         });
@@ -88552,7 +88683,7 @@ var init_design_execution = __esm({
           after: prior.after,
           restored: prior.before
         });
-        const current9 = verify({ ...input, before: related.before });
+        const current10 = verify({ ...input, before: related.before });
         return {
           ok: true,
           schema: "easyeda-pro-control.composed-design-persistence.v1",
@@ -88565,7 +88696,7 @@ var init_design_execution = __esm({
           beforeSemanticSha256: input.before.semanticSha256,
           afterSemanticSha256: input.after.semanticSha256,
           settledPriorInverse: related.evidence,
-          current: current9
+          current: current10
         };
       }
       static async layoutConstructorWitness(journal, baseline2) {
@@ -88955,15 +89086,15 @@ var init_design_execution = __esm({
         await this.engine.assertRecoveryOperationIsolated(operationId9);
         validatePrivateFingerprint(expectedFingerprint);
         const status2 = await this.engine.status();
-        const current9 = status2.stableFingerprint;
-        assertSubset(current9, expectedFingerprint, "Requested replacement runtime");
-        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current9);
+        const current10 = status2.stableFingerprint;
+        assertSubset(current10, expectedFingerprint, "Requested replacement runtime");
+        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current10);
         const oldFingerprint = journal.runtimeFingerprint ?? journal.plan.expectedFingerprint;
-        journal.runtimeFingerprint = structuredClone(current9);
+        journal.runtimeFingerprint = structuredClone(current10);
         journal.state = "runtime-rebound-needs-reconciliation";
         journal.hardStop = true;
         journal.nextSafeAction = "Runtime binding updated without dispatching an edit. Reconcile exact native, topology and durable evidence before committing or further writes.";
-        await _DesignExecutor.artifact(journal, "runtime-rebound", { oldFingerprint, newFingerprint: current9, originalPlanHash: journal.planHash, activeTargetVerified: false });
+        await _DesignExecutor.artifact(journal, "runtime-rebound", { oldFingerprint, newFingerprint: current10, originalPlanHash: journal.planHash, activeTargetVerified: false });
         return summary(journal);
       }
       /** Open only the immutable journal's existing checkpoint-proven target from
@@ -89150,18 +89281,18 @@ var init_design_execution = __esm({
         await this.engine.awaitProjectUploads(journal.context, journal, "layout-repair-upload-barrier");
         const baseline2 = await durableSnapshot(journal.preCheckpoint, journal.context);
         const currentTopology = await this.loadLayoutPagesForJournal(journal, baseline2);
-        const current9 = await this.snapshot(journal.context);
-        if (current9.native === void 0) {
+        const current10 = await this.snapshot(journal.context);
+        if (current10.native === void 0) {
           throw new Error("Layout net-label repair requires the complete current native page.");
         }
         const evidence2 = { history: baseline2, templates: journal.layoutTemplates ?? {} };
         journal.state = "layout-pages-loaded-needs-reconciliation";
         journal.hardStop = true;
         journal.nextSafeAction = "Pages are loaded; label correction has not been prepared or dispatched. Inspect any preflight refusal before further action.";
-        await _DesignExecutor.artifact(journal, "layout-repair-preflight", { ...current9, topology: currentTopology, correctionPrepared: false, correctionDispatched: false });
+        await _DesignExecutor.artifact(journal, "layout-repair-preflight", { ...current10, topology: currentTopology, correctionPrepared: false, correctionDispatched: false });
         let correction;
         try {
-          correction = prepareSchematicLayoutNetLabelRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence2, current9.snapshot, current9.native);
+          correction = prepareSchematicLayoutNetLabelRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence2, current10.snapshot, current10.native);
         } catch (error51) {
           throw transactionError(error51, journal);
         }
@@ -89177,7 +89308,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         journal.hardStop = true;
         journal.nextSafeAction = "Await this one correction and exact source/topology proof; never repeat it or Save on failure.";
         await _DesignExecutor.artifact(journal, "layout-net-label-repair-prepared", {
-          ...current9,
+          ...current10,
           originalPreparation,
           originalAcknowledgment,
           originalPlanHash: journal.planHash,
@@ -89194,7 +89325,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         });
         try {
           const recheck = await this.snapshot(journal.context);
-          if (!sameState(state(current9.snapshot, current9.native), state(recheck.snapshot, recheck.native))) {
+          if (!sameState(state(current10.snapshot, current10.native), state(recheck.snapshot, recheck.native))) {
             throw new Error("Layout changed after repair preparation; correction was not dispatched.");
           }
           const result = await this.call(journal, "layout-net-label-repair-apply", code);
@@ -89228,7 +89359,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
             ...repaired,
             proof,
             topology,
-            correctionDelta: compareDocumentSources(current9.snapshot, repaired.snapshot),
+            correctionDelta: compareDocumentSources(current10.snapshot, repaired.snapshot),
             originalPlanHash: journal.planHash,
             createdIds: journal.createdIds,
             labelBindings: correction.labelBindings
@@ -89269,18 +89400,18 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         const baseline2 = await durableSnapshot(journal.preCheckpoint, journal.context);
         const currentTopology = await this.loadLayoutPagesForJournal(journal, baseline2);
         verifyDesignTopology(journal.beforeTopology, currentTopology);
-        const current9 = await this.snapshot(journal.context);
-        if (current9.native === void 0) {
+        const current10 = await this.snapshot(journal.context);
+        if (current10.native === void 0) {
           throw new Error("Visibility repair requires the complete current native page.");
         }
         const evidence2 = { history: baseline2, templates: journal.layoutTemplates ?? {} };
         journal.state = "layout-pages-loaded-needs-reconciliation";
         journal.hardStop = true;
         journal.nextSafeAction = "Pages and original topology are verified; visibility correction has not been prepared or dispatched.";
-        await _DesignExecutor.artifact(journal, "layout-visibility-preflight", { ...current9, topology: currentTopology, correctionPrepared: false, correctionDispatched: false });
+        await _DesignExecutor.artifact(journal, "layout-visibility-preflight", { ...current10, topology: currentTopology, correctionPrepared: false, correctionDispatched: false });
         let correction, preflightCheckpoint, preflightPersistence;
         try {
-          correction = prepareSchematicLayoutVisibilityRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence2, current9.snapshot, current9.native);
+          correction = prepareSchematicLayoutVisibilityRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence2, current10.snapshot, current10.native);
           preflightCheckpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
             outputDir: join43(controlDataDirectory(), "checkpoints"),
@@ -89295,9 +89426,9 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
               before: baseline2,
               after: await durableSnapshot(preflightCheckpoint, journal.context),
               expectedBefore: journal.before,
-              expectedAfter: current9.snapshot,
+              expectedAfter: current10.snapshot,
               beforeNative: journal.beforeNative,
-              afterNative: current9.native
+              afterNative: current10.native
             },
             journal.createdIds,
             evidence2
@@ -89317,7 +89448,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         journal.hardStop = true;
         journal.nextSafeAction = "Await this one visibility correction and exact original effect proof. Never repeat it or Save on failure.";
         await _DesignExecutor.artifact(journal, "layout-visibility-repair-prepared", {
-          ...current9,
+          ...current10,
           originalPreparation,
           originalAcknowledgment,
           originalPlanHash: journal.planHash,
@@ -89335,7 +89466,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         });
         try {
           const recheck = await this.snapshot(journal.context);
-          if (!sameState(state(current9.snapshot, current9.native), state(recheck.snapshot, recheck.native))) {
+          if (!sameState(state(current10.snapshot, current10.native), state(recheck.snapshot, recheck.native))) {
             throw new Error("Layout changed after visibility repair preparation; correction was not dispatched.");
           }
           const result = await this.call(journal, "layout-visibility-repair-apply", code);
@@ -89369,7 +89500,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
             ...repaired,
             proof,
             topology,
-            correctionDelta: compareDocumentSources(current9.snapshot, repaired.snapshot),
+            correctionDelta: compareDocumentSources(current10.snapshot, repaired.snapshot),
             originalPlanHash: journal.planHash,
             createdIds: journal.createdIds,
             descriptor: correction.descriptor
@@ -89408,15 +89539,15 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
         await this.engine.awaitProjectUploads(journal.context, journal, "layout-wire-group-upload-barrier");
         const baseline2 = await durableSnapshot(journal.preCheckpoint, journal.context);
         const currentTopology = await this.loadLayoutPagesForJournal(journal, baseline2);
-        const current9 = await this.snapshot(journal.context);
-        if (current9.native === void 0) {
+        const current10 = await this.snapshot(journal.context);
+        if (current10.native === void 0) {
           throw new Error("Wire-group correction requires complete native state.");
         }
         const evidence2 = { history: baseline2, templates: journal.layoutTemplates ?? {} };
         journal.state = "layout-pages-loaded-needs-reconciliation";
         journal.hardStop = true;
         journal.nextSafeAction = "Wire-group correction has not been prepared or dispatched. Inspect any preflight refusal; do not Save.";
-        await _DesignExecutor.artifact(journal, "wire-group-repair-preflight", { ...current9, topology: currentTopology, correctionDispatched: false });
+        await _DesignExecutor.artifact(journal, "wire-group-repair-preflight", { ...current10, topology: currentTopology, correctionDispatched: false });
         let correction;
         let preflightPersistence;
         let preflightCheckpoint;
@@ -89427,8 +89558,8 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
             journal.beforeNative,
             journal.createdIds,
             evidence2,
-            current9.snapshot,
-            current9.native
+            current10.snapshot,
+            current10.native
           );
           verifyLayoutWireGroupRepairTopology(journal.beforeNative, journal.beforeTopology, currentTopology, correction.misnamedPins);
           preflightCheckpoint = await this.engine.checkpoint({
@@ -89445,9 +89576,9 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
               before: baseline2,
               after: await durableSnapshot(preflightCheckpoint, journal.context),
               expectedBefore: journal.before,
-              expectedAfter: current9.snapshot,
+              expectedAfter: current10.snapshot,
               beforeNative: journal.beforeNative,
-              afterNative: current9.native
+              afterNative: current10.native
             },
             journal.createdIds,
             evidence2
@@ -89469,7 +89600,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         journal.hardStop = true;
         journal.nextSafeAction = "Await the single wire-group correction and exact original circuit proof. Never repeat it or Save on failure.";
         await _DesignExecutor.artifact(journal, "layout-wire-group-repair-prepared", {
-          ...current9,
+          ...current10,
           originalPreparation,
           originalAcknowledgment,
           originalPlanHash: journal.planHash,
@@ -89487,7 +89618,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         });
         try {
           const recheck = await this.snapshot(journal.context);
-          if (!sameState(state(current9.snapshot, current9.native), state(recheck.snapshot, recheck.native))) {
+          if (!sameState(state(current10.snapshot, current10.native), state(recheck.snapshot, recheck.native))) {
             throw new Error("Document changed after wire-group repair preparation; correction was not dispatched.");
           }
           const result = await this.call(journal, "layout-wire-group-repair-apply", code);
@@ -89521,7 +89652,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             ...repaired,
             proof,
             topology,
-            correctionDelta: compareDocumentSources(current9.snapshot, repaired.snapshot),
+            correctionDelta: compareDocumentSources(current10.snapshot, repaired.snapshot),
             originalPlanHash: journal.planHash,
             createdIds: journal.createdIds,
             descriptor: correction.descriptor
@@ -89570,17 +89701,17 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         }
         const retainedWireSave = journal.plan.operation.action === "sch.wire.modify" && saveEvidence.attempted;
         await this.engine.awaitProjectUploads(journal.context, journal, "reconcile-upload-barrier");
-        const current9 = await this.snapshot(journal.context);
+        const current10 = await this.snapshot(journal.context);
         await _DesignExecutor.verifyWireGroupRepairIntent(journal);
         const baseline2 = await journalDurableSnapshot(journal);
         const constructorWitness = await _DesignExecutor.layoutConstructorWitness(journal, baseline2);
         const beforeState2 = state(journal.before, journal.beforeNative, baseline2, journal.context, journal.layoutTemplates, journal.layoutWireGroupRepair, constructorWitness);
-        const currentState = state(current9.snapshot, current9.native);
+        const currentState = state(current10.snapshot, current10.native);
         if (retainedWireSave) {
-          return this.reconcileSavedWire(journal, current9, beforeState2);
+          return this.reconcileSavedWire(journal, current10, beforeState2);
         }
         if (_DesignExecutor.hasLibrarySaveEvidence(journal)) {
-          const retained2 = await this.verifySavedLibrary(journal, current9);
+          const retained2 = await this.verifySavedLibrary(journal, current10);
           journal.saved = true;
           journal.state = "saved-awaiting-reopen";
           journal.mutationState = "after";
@@ -89608,16 +89739,16 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (flatTransactionBinding(journal.plan) !== void 0) {
             verifyFlatDisplayRetainedSaveAuthority(journal, await _DesignExecutor.phase(journal, "flat-save-prepared"), savedAck);
           }
-          if (journal.after === void 0 || journal.afterNative === void 0 || journal.createdIds === void 0 || journal.beforeNative === void 0 || current9.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0) {
+          if (journal.after === void 0 || journal.afterNative === void 0 || journal.createdIds === void 0 || journal.beforeNative === void 0 || current10.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0) {
             throw new Error("Retained layout Save lacks complete source, native or checkpoint evidence.");
           }
           const ids2 = { createdIds: journal.createdIds, layoutCloneLifecycle: true };
           const compiled2 = compileDesignAction(journal.plan.operation);
           const savedEffect = await verifyDesignActionCooperatively(compiled2, beforeState2, state(journal.after, journal.afterNative), ids2);
           const lifecycle = await verifyDesignActionCooperatively(compiled2, beforeState2, currentState, ids2);
-          const { topology, flatEvidence } = await this.transactionTopology(journal, current9, "after", true);
+          const { topology, flatEvidence } = await this.transactionTopology(journal, current10, "after", true);
           verifyDesignTopology(journal.beforeTopology, topology);
-          const flatLifecycleObservation2 = await _DesignExecutor.retainFlatLifecycleObservation(journal, current9, "retained-save", "after", flatEvidence);
+          const flatLifecycleObservation2 = await _DesignExecutor.retainFlatLifecycleObservation(journal, current10, "retained-save", "after", flatEvidence);
           await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
@@ -89634,14 +89765,14 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               before: beforeState2.history,
               after: savedHistory,
               expectedBefore: journal.before,
-              expectedAfter: current9.snapshot,
+              expectedAfter: current10.snapshot,
               beforeNative: journal.beforeNative,
-              afterNative: current9.native
+              afterNative: current10.native
             },
             journal.createdIds,
             { history: beforeState2.history, templates: journal.layoutTemplates ?? {}, ...journal.layoutWireGroupRepair === void 0 ? {} : { wireGroupRepair: journal.layoutWireGroupRepair }, ...constructorWitness === void 0 ? {} : { constructorWitness } }
           );
-          const flatMaterialization = flatTransactionBinding(journal.plan) === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: savedHistory, source: current9.snapshot, native: current9.native });
+          const flatMaterialization = flatTransactionBinding(journal.plan) === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: savedHistory, source: current10.snapshot, native: current10.native });
           const final = await this.snapshot(journal.context);
           if (!sameState(currentState, state(final.snapshot, final.native))) {
             throw new Error("Layout changed during retained Save verification.");
@@ -89675,7 +89806,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             verifyCopperSaveAcknowledgment(savedAck, await _DesignExecutor.phase(journal, "after"), journal.after);
             const ids2 = { ...journal.targetId === void 0 ? {} : { targetId: journal.targetId }, derivedResult: journal.derivedResult };
             await verifyDesignActionCooperatively(compileDesignAction(journal.plan.operation), beforeState2, state(journal.after), ids2);
-            const lifecycle = verifyCopperLifecycleEquivalence(journal.after, current9.snapshot);
+            const lifecycle = verifyCopperLifecycleEquivalence(journal.after, current10.snapshot);
             if (journal.plan.expectedTopology !== void 0) {
               verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, journal.context));
             }
@@ -89684,7 +89815,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               throw new Error("Copper reconciliation checkpoint receipt missing.");
             }
             const persistence = verifyDesignPersistence({ before: await durableSnapshot(journal.preCheckpoint, journal.context), after: await durableSnapshot(checkpoint, journal.context), expectedBefore: journal.before, expectedAfter: journal.after });
-            await _DesignExecutor.artifact(journal, "reconciled-persisted", { ...current9, checkpoint, persistence, lifecycle, retainedSaveAcknowledgment: savedAck });
+            await _DesignExecutor.artifact(journal, "reconciled-persisted", { ...current10, checkpoint, persistence, lifecycle, retainedSaveAcknowledgment: savedAck });
             journal.saved = true;
             journal.reopened = true;
             journal.state = "completed";
@@ -89705,14 +89836,14 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         if (baselineLifecycle === void 0 && journal.context.document.documentType === 4) {
           const nativeDefault = expectedNativeEmptyNetDefault(journal.before);
           if (sameState(state(nativeDefault), currentState)) {
-            baselineLifecycle = { profile: "footprint-empty-net-default.v1", beforeSourceSha256: journal.before.sha256, currentSourceSha256: current9.snapshot.sha256 };
+            baselineLifecycle = { profile: "footprint-empty-net-default.v1", beforeSourceSha256: journal.before.sha256, currentSourceSha256: current10.snapshot.sha256 };
           }
         }
         if (baselineLifecycle) {
           if (journal.beforeTopology !== void 0) {
-            const { topology, flatEvidence } = await this.transactionTopology(journal, current9, "before", true);
+            const { topology, flatEvidence } = await this.transactionTopology(journal, current10, "before", true);
             verifyDesignTopology(journal.beforeTopology, topology);
-            flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current9, "baseline-reconcile", "before", flatEvidence);
+            flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current10, "baseline-reconcile", "before", flatEvidence);
           }
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
@@ -89726,8 +89857,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             before: await journalDurableSnapshot(journal),
             after: await journalDurableSnapshot(journal, checkpoint),
             expectedBefore: journal.before,
-            expectedAfter: current9.snapshot,
-            ...journal.beforeNative === void 0 || current9.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: current9.native }
+            expectedAfter: current10.snapshot,
+            ...journal.beforeNative === void 0 || current10.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: current10.native }
           };
           let persistence;
           if (flatTransactionBinding(journal.plan) === void 0) {
@@ -89747,7 +89878,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           }
         } else {
           if (journal.plan.operation.action === "sch.layout.batch" && journal.plan.operation.operations.some((step) => step.action === "sch.wire.replace")) {
-            if (journal.createdIds === void 0 || journal.beforeNative === void 0 || current9.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0 || canonicalJson(journal.plan.expectedTopology) !== canonicalJson(journal.beforeTopology)) {
+            if (journal.createdIds === void 0 || journal.beforeNative === void 0 || current10.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0 || canonicalJson(journal.plan.expectedTopology) !== canonicalJson(journal.beforeTopology)) {
               throw new Error("Historical layout recovery lacks its original source, identities or unchanged topology contract.");
             }
             const acknowledgment = await _DesignExecutor.phase(journal, "apply"), prepared2 = await _DesignExecutor.phase(journal, "prepared");
@@ -89757,9 +89888,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             const proof2 = verifyHistoricalSchematicLayoutEffect(
               journal.plan.operation,
               journal.before,
-              current9.snapshot,
+              current10.snapshot,
               journal.beforeNative,
-              current9.native,
+              current10.native,
               journal.createdIds,
               { history: beforeState2.history, templates: journal.layoutTemplates ?? {} }
             );
@@ -89772,12 +89903,12 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               before: beforeState2.history,
               after: await durableSnapshot(checkpoint, journal.context),
               expectedBefore: journal.before,
-              expectedAfter: current9.snapshot,
+              expectedAfter: current10.snapshot,
               beforeNative: journal.beforeNative,
-              afterNative: current9.native
+              afterNative: current10.native
             });
             await _DesignExecutor.artifact(journal, "historical-layout-reconciled-persisted", {
-              ...current9,
+              ...current10,
               checkpoint,
               proof: proof2,
               persistence,
@@ -89787,8 +89918,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               saveDispatchedByRecovery: false,
               reopenedProved: false
             });
-            journal.after = current9.snapshot;
-            journal.afterNative = current9.native;
+            journal.after = current10.snapshot;
+            journal.afterNative = current10.native;
             delete journal.inverse;
             journal.saved = true;
             journal.reopened = false;
@@ -89812,16 +89943,16 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           const compiled2 = prepared?.compiled ?? compileDesignAction(journal.plan.operation);
           const proof = flatEffectProof(journal, await verifyDesignActionCooperatively(compiled2, beforeState2, currentState, { ...ids2, ...journal.plan.operation.action === "sch.layout.batch" ? { layoutCloneLifecycle: true } : {} }));
           if (journal.plan.expectedTopology !== void 0) {
-            const flat = flatTransactionBinding(journal.plan) === void 0 ? void 0 : await this.flatEvidence(journal, current9, "after");
+            const flat = flatTransactionBinding(journal.plan) === void 0 ? void 0 : await this.flatEvidence(journal, current10, "after");
             if (flat !== void 0) {
-              const durable = await _DesignExecutor.flatDurability(journal, current9, flat, true);
+              const durable = await _DesignExecutor.flatDurability(journal, current10, flat, true);
               flatVerification = await _DesignExecutor.retainFlatVerification(journal, "reconcile", flat, durable);
             }
             verifyDesignTopology(journal.plan.expectedTopology, flat?.proof.topology ?? await readDesignTopology(this.engine, journal.context));
           }
-          journal.after = current9.snapshot;
-          if (current9.native !== void 0) {
-            journal.afterNative = current9.native;
+          journal.after = current10.snapshot;
+          if (current10.native !== void 0) {
+            journal.afterNative = current10.native;
           }
           const inverse = journal.plan.flatWire === void 0 ? await inverseDesignActionCooperatively(journal.plan.operation, beforeState2, ids2) : flatWireInverse(journal.plan.operation, journal.before, schematicNativeSnapshotSchema.parse(journal.beforeNative));
           if (flatTransactionBinding(journal.plan) !== void 0) {
@@ -89839,7 +89970,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           await _DesignExecutor.artifact(journal, "reconciled-effect", proof);
         }
         await _DesignExecutor.artifact(journal, "reconciled", {
-          ...current9,
+          ...current10,
           ...durableNoMutation === void 0 ? {} : { durableNoMutation },
           ...flatLifecycleObservation === void 0 ? {} : { flatLifecycleObservation },
           ...flatVerification === void 0 ? {} : { flatVerification }
@@ -89886,7 +90017,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         };
         const baseline2 = await read2(journal.preCheckpoint);
         await this.engine.awaitProjectUploads(journal.context, journal, "pcb-text-retained-save-upload-barrier");
-        const current9 = await this.snapshot(journal.context);
+        const current10 = await this.snapshot(journal.context);
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
           outputDir: join43(controlDataDirectory(), "checkpoints"),
@@ -89898,14 +90029,14 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const proof = verifyPcbTextRetainedSaveEffect(authority2, {
           before: baseline2,
           after: await read2(checkpoint),
-          current: current9.snapshot,
-          currentPayload: current9.payload
+          current: current10.snapshot,
+          currentPayload: current10.payload
         });
         await verifyNativeRuleReportProfile(native.assetsRoot, "pcb-drc");
         await verifyDeviceAssociationNativeProfile(native.assetsRoot);
         await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
         const final = await this.snapshot(journal.context);
-        if (canonicalJson(final) !== canonicalJson(current9)) {
+        if (canonicalJson(final) !== canonicalJson(current10)) {
           throw new Error("PCB text changed during retained Save proof.");
         }
         const checkpointVerification = await this.engine.checkpoint({ receiptPath: checkpoint.receiptPath });
@@ -89939,7 +90070,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       /** Reuse the one retained successful wire lifecycle. This path performs
        * reads, upload barriers and checkpoints only, never Save or navigation.
        */
-      async reconcileSavedWire(journal, current9, beforeState2) {
+      async reconcileSavedWire(journal, current10, beforeState2) {
         const savedDescriptor = selectDesignPhaseDescriptor(journal.artifacts, "save-reopen");
         const savedIndex = savedDescriptor === void 0 ? -1 : journal.artifacts.indexOf(savedDescriptor);
         const priorArtifacts = journal.artifacts.slice(0, savedIndex);
@@ -89948,7 +90079,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           const descriptor10 = selectDesignPhaseDescriptor(priorArtifacts, phase5, true);
           return descriptor10 === void 0 ? [] : [{ phase: phase5, descriptor: descriptor10, index: priorArtifacts.indexOf(descriptor10) }];
         }).toSorted((left, right) => right.index - left.index)[0];
-        if (savedDescriptor === void 0 || savedIndex < 1 || candidate === void 0 || journal.plan.operation.action !== "sch.wire.modify" || journal.after === void 0 || journal.afterNative === void 0 || journal.beforeNative === void 0 || current9.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0 || journal.plan.expectedTopology === void 0) {
+        if (savedDescriptor === void 0 || savedIndex < 1 || candidate === void 0 || journal.plan.operation.action !== "sch.wire.modify" || journal.after === void 0 || journal.afterNative === void 0 || journal.beforeNative === void 0 || current10.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0 || journal.plan.expectedTopology === void 0) {
           throw new Error("Retained wire Save lacks complete original, native, topology or preceding after evidence.");
         }
         const afterPhase = await _DesignExecutor.phase({ ...journal, artifacts: priorArtifacts }, candidate.phase, true);
@@ -89960,12 +90091,12 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const ids2 = journal.targetId === void 0 ? {} : { targetId: journal.targetId };
         const compiled2 = compileDesignAction(journal.plan.operation);
         const savedEffect = await verifyDesignActionCooperatively(compiled2, beforeState2, state(journal.after, journal.afterNative), ids2);
-        const currentState = state(current9.snapshot, current9.native);
+        const currentState = state(current10.snapshot, current10.native);
         const lifecycle = await verifyDesignActionCooperatively(compiled2, beforeState2, currentState, ids2);
-        const { topology, flatEvidence } = await this.transactionTopology(journal, current9, "after", true);
+        const { topology, flatEvidence } = await this.transactionTopology(journal, current10, "after", true);
         verifyDesignTopology(journal.beforeTopology, topology);
         verifyDesignTopology(journal.plan.expectedTopology, topology);
-        const flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current9, "retained-save", "after", flatEvidence);
+        const flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current10, "retained-save", "after", flatEvidence);
         await this.engine.awaitProjectUploads(journal.context, journal, "wire-saved-reconcile-upload-barrier");
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
@@ -89980,11 +90111,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           before: beforeState2.history,
           after: savedHistory,
           expectedBefore: journal.before,
-          expectedAfter: current9.snapshot,
+          expectedAfter: current10.snapshot,
           beforeNative: journal.beforeNative,
-          afterNative: current9.native
+          afterNative: current10.native
         });
-        const flatMaterialization = journal.plan.flatWire === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: savedHistory, source: current9.snapshot, native: current9.native });
+        const flatMaterialization = journal.plan.flatWire === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: savedHistory, source: current10.snapshot, native: current10.native });
         const final = await this.snapshot(journal.context);
         if (!sameState(currentState, state(final.snapshot, final.native))) {
           throw new Error("Wire changed during retained Save verification.");
@@ -90172,7 +90303,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       static hasLibrarySaveEvidence(journal) {
         return [2, 4].includes(journal.context.document.documentType) && (journal.saved || journal.artifacts.some((entry) => /-(?:(?:symbol|footprint)-(?:save|durable-before-close)|library-save-intent)\.json$/u.test(entry.path)));
       }
-      async verifySavedLibrary(journal, current9) {
+      async verifySavedLibrary(journal, current10) {
         const documentType3 = journal.context.document.documentType;
         const documentUuid5 = journal.context.document.uuid;
         const tabId = journal.context.document.tabId;
@@ -90188,7 +90319,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const lifecycle = documentType3 === 2 ? symbolLifecycle(journal.after, baseline2) : footprintLifecycle(journal.after, baseline2, journal.context);
         const save = await _DesignExecutor.phase(journal, `${lifecycle.family}-save`);
         const durable = await _DesignExecutor.phase(journal, `${lifecycle.family}-durable-before-close`);
-        const retained2 = verifySavedLibraryArtifacts({ family: lifecycle.family, expected: journal.after, current: current9.snapshot, scope: lifecycle.scope, save, durable });
+        const retained2 = verifySavedLibraryArtifacts({ family: lifecycle.family, expected: journal.after, current: current10.snapshot, scope: lifecycle.scope, save, durable });
         const ids2 = { ...journal.targetId === void 0 ? {} : { targetId: journal.targetId }, ...journal.createdId === void 0 ? {} : { createdId: journal.createdId } };
         const beforeState2 = state(journal.before, void 0, baseline2, journal.context);
         const prepared = await prepareDesignActionCooperatively(journal.plan.operation, beforeState2, ids2);
@@ -90208,7 +90339,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           throw new Error("Saved library checkpoint project/owner/branch changed.");
         }
         const final = await this.snapshot(journal.context);
-        if (!sameState(state(current9.snapshot), state(final.snapshot))) {
+        if (!sameState(state(current10.snapshot), state(final.snapshot))) {
           throw new Error("Saved library source changed during recovery verification.");
         }
         const intent = await _DesignExecutor.phase(journal, "library-reopen-recovery-intent", true);
@@ -90234,8 +90365,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           navigation: navigation.action
         } };
       }
-      async resumeSavedLibraryReopen(journal, current9) {
-        const retained2 = await this.verifySavedLibrary(journal, current9);
+      async resumeSavedLibraryReopen(journal, current10) {
+        const retained2 = await this.verifySavedLibrary(journal, current10);
         await _DesignExecutor.artifact(journal, "saved-library-reopen-preflight", retained2.evidence);
         if (retained2.navigation.action === "reuse-reopen") {
           return retained2.navigation.receipt;
@@ -90291,15 +90422,15 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           throw new Error("Transaction has no safely dispatchable inverse.");
         }
         await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
-        const current9 = await this.snapshot(journal.context);
-        if (!sameState(state(current9.snapshot, current9.native), state(journal.after, journal.afterNative))) {
+        const current10 = await this.snapshot(journal.context);
+        if (!sameState(state(current10.snapshot, current10.native), state(journal.after, journal.afterNative))) {
           throw new Error("Design changed since apply; inverse refused.");
         }
         let flatGuard;
         let flatVerification;
         if (flatTransactionBinding(journal.plan) !== void 0) {
-          const evidence2 = await this.flatEvidence(journal, current9, "after");
-          const durable = await _DesignExecutor.flatDurability(journal, current9, evidence2, true);
+          const evidence2 = await this.flatEvidence(journal, current10, "after");
+          const durable = await _DesignExecutor.flatDurability(journal, current10, evidence2, true);
           flatVerification = await _DesignExecutor.retainFlatVerification(journal, "inverse", evidence2, durable);
           if (durable["classification"] !== "unchanged-baseline") {
             journal.nextSafeAction = appliedNextSafeAction(journal);
@@ -90310,13 +90441,13 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           assertFlatTransactionInverse(flatTransactionBinding(journal.plan), journal.inverse);
         }
         const inverseTarget = "target" in journal.inverse && "primitiveId" in journal.inverse.target ? journal.inverse.target.primitiveId : void 0;
-        const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current9.snapshot, current9.native, await journalDurableSnapshot(journal), journal.context), inverseTarget === void 0 ? {} : { targetId: inverseTarget }, flatGuard);
+        const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current10.snapshot, current10.native, await journalDurableSnapshot(journal), journal.context), inverseTarget === void 0 ? {} : { targetId: inverseTarget }, flatGuard);
         try {
           journal.inverseAttempted = true;
           await _DesignExecutor.artifact(journal, "design-inverse-intent", {
             operationId: journal.operationId,
             originalPlanHash: journal.planHash,
-            sourceSha256: current9.snapshot.sha256,
+            sourceSha256: current10.snapshot.sha256,
             inverseSha256: sha256Text(canonicalJson(journal.inverse)),
             codeSha256: sha256Text(prepared.code)
           });
@@ -91383,8 +91514,8 @@ async function verifyDocumentContainerRenameNativeProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current9 = await lstat24(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
+    const after = await file3.stat({ bigint: true }), current10 = await lstat24(path5, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
       throw new Error("Native document rename implementation differs from the reviewed profile.");
     }
   } finally {
@@ -91628,8 +91759,8 @@ async function verifyProjectSchematicCreateNativeProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current9 = await lstat25(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current9.dev || after.ino !== current9.ino || after.mtimeNs !== current9.mtimeNs || after.ctimeNs !== current9.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
+    const after = await file3.stat({ bigint: true }), current10 = await lstat25(path5, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
       throw new Error("Native schematic creation implementation differs from the reviewed profile.");
     }
   } finally {
@@ -91803,11 +91934,11 @@ var init_library_recovery = __esm({
         await this.isolated(journal);
         validatePrivateFingerprint(expectedFingerprint);
         const status2 = await this.engine.status();
-        const current9 = status2.stableFingerprint;
-        assertSubset(current9, expectedFingerprint, "Requested replacement library runtime");
-        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current9);
+        const current10 = status2.stableFingerprint;
+        assertSubset(current10, expectedFingerprint, "Requested replacement library runtime");
+        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current10);
         const oldFingerprint = journal.runtimeFingerprint ?? journal.plan.expectedFingerprint;
-        journal.runtimeFingerprint = structuredClone(current9);
+        journal.runtimeFingerprint = structuredClone(current10);
         journal.state = "library-runtime-rebound-needs-reconciliation";
         journal.hardStop = true;
         journal.nextSafeAction = journal.plan.operation.action === "document.close" ? "Original close plan retained. Reconcile the unchanged active editor and target presence without opening, closing or activating any tab." : "Original plan retained. Open its exact target if needed and reconcile without repeating the library operation.";
@@ -91820,7 +91951,7 @@ var init_library_recovery = __esm({
         if (journal.plan.operation.action === "document.schematic.create") {
           journal.nextSafeAction = "Restore the original clean PCB context separately; keep any created schematic closed, then reconcile its retained identity without replay.";
         }
-        await this.services.record(journal, "runtime-rebound", { oldFingerprint, newFingerprint: current9, originalPlanHash: journal.planHash, activeTargetVerified: false });
+        await this.services.record(journal, "runtime-rebound", { oldFingerprint, newFingerprint: current10, originalPlanHash: journal.planHash, activeTargetVerified: false });
         return summary2(journal);
       }
       async openTarget(operationId9) {
@@ -91977,8 +92108,8 @@ var init_library_recovery = __esm({
             return await this.reconcileClose(journal);
           }
           await this.engine.awaitProjectUploads(journal.context, journal, "library-reconcile-upload-barrier");
-          const current9 = await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context);
-          if (sourceHash(current9) !== journal.beforeSourceSha256) {
+          const current10 = await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context);
+          if (sourceHash(current10) !== journal.beforeSourceSha256) {
             throw new Error("Active source differs from the exact library baseline; no automatic source correction is permitted.");
           }
           const baseline2 = receipt(journal.preCheckpoint);
@@ -92185,8 +92316,8 @@ var init_library_recovery = __esm({
         const verified = await this.engine.checkpoint({ receiptPath: baseline2.receiptPath });
         assertUnchangedLibraryCheckpoint(verified, baseline2, "Undispatched preparation baseline verification failed.");
         const before = await this.history(baseline2, context3, journal.plan.operation), preparedPlanSha256 = rederiveUndispatchedLibraryPlan(journal, before);
-        const current9 = await this.engine.exactRead({ kind: sourceKind(context3) }, context3);
-        if (sourceHash(current9) !== journal.beforeSourceSha256) {
+        const current10 = await this.engine.exactRead({ kind: sourceKind(context3) }, context3);
+        if (sourceHash(current10) !== journal.beforeSourceSha256) {
           throw new Error("Undispatched preparation active source differs from its original baseline.");
         }
         const descriptor10 = journal.artifacts[0];
@@ -93938,7 +94069,7 @@ async function verifyCurrentUiImplementation(assetsRoot) {
     needUi(opened.isFile() && before.dev === opened.dev && before.ino === opened.ino && before.size === opened.size && before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
     const hash45 = createHash30("sha256");
     let consumed2 = 0n;
-    for await (const chunk of file3.createReadStream({ autoClose: false })) {
+    for await (const chunk of file3.createReadStream({ autoClose: false, highWaterMark: 1048576 })) {
       needUi(Buffer.isBuffer(chunk));
       consumed2 += BigInt(chunk.length);
       needUi(consumed2 <= before.size && consumed2 <= 128n * 1024n * 1024n);
@@ -94460,17 +94591,17 @@ var init_windows_runtime = __esm({
       /** Exact original runtime return only. This reads a clock fact, never launches. */
       async clockObservationForLaunch(launch) {
         const slot = this.clockLaunches.get(launch);
-        const current9 = () => {
+        const current10 = () => {
           if (slot === void 0 || this.requireSupervisor() !== slot.supervisor || canonicalJson(launch) !== slot.snapshot || canonicalJson(this.currentLaunch) !== slot.snapshot) {
             throw new Error("Runtime clock lookup requires the unchanged original current launch.");
           }
         };
-        current9();
+        current10();
         if (slot === void 0) {
           throw new Error("Original runtime clock launch is missing.");
         }
         const observation2 = await windowsClockObservationForResult(slot.original, "launch");
-        current9();
+        current10();
         return observation2;
       }
       requireSupervisor() {
@@ -94497,19 +94628,19 @@ var init_windows_runtime = __esm({
           throw new Error("Retained runtime has no original fresh-clock method.");
         }
         const evidenceText = canonicalJson(evidence2), launch = this.currentLaunch, launchText = canonicalJson(launch);
-        const current9 = () => {
+        const current10 = () => {
           if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods19 || supervisor.observeCurrentClock !== observe3 || supervisor.capture !== methods19?.capture || canonicalJson(evidence2) !== evidenceText) {
             throw new Error("Fresh runtime clock lost its original capture, supervisor, method or launch.");
           }
         };
-        current9();
+        current10();
         const observation2 = await observe3.call(supervisor, evidence2);
-        current9();
+        current10();
         const issued29 = assertCurrentIssuedWindowsClockObservation(observation2);
         if (issued29 !== observation2 || observation2.phase !== "owned-observation" || launch === null || observation2.base["jobId"] !== launch.jobId || observation2.base["helperInstance"] !== launch.helperInstance || observation2.base["captureBindingSha256"] !== evidence2.bindingSha256 || observation2.ownerBinding["bindingSha256"] !== evidence2.bindingSha256 || observation2.ownerBinding["authoritySha256"] !== evidence2.authoritySha256) {
           throw new Error("Fresh runtime clock returned another original capture or launch.");
         }
-        current9();
+        current10();
         return observation2;
       }
       /** Internal coordinator-only preparation; never starts a helper or application. */
@@ -95469,9 +95600,9 @@ var init_ordinary_launch = __esm({
             }
             assertCurrentLaunch();
           });
-          const current9 = await measure("inventory-before-dispatch", inventory);
+          const current10 = await measure("inventory-before-dispatch", inventory);
           requireValue14(
-            current9.length === operations.length + 1 && current9.every((candidate) => candidate.operationId === request13.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
+            current10.length === operations.length + 1 && current10.every((candidate) => candidate.operationId === request13.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 && candidate.unknownAbandoned === void 0 && candidate.closeIntent === void 0 && candidate.closeAcknowledgment === void 0 : allowsNextLaunch(candidate)),
             "Ordinary launch intent or inventory changed before dispatch."
           );
           requireValue14(await measure("installation-before-dispatch", () => this.verify(this.options)) === facadeSha256, "Ordinary launch installation changed before dispatch.");
@@ -95520,24 +95651,24 @@ var init_ordinary_launch = __esm({
         requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Ordinary window observation profile changed.");
         const observeWindow = runtime.observeApplicationWindow;
         requireValue14(observeWindow !== void 0, "Ordinary retained window observation is unavailable.");
-        const current9 = () => {
+        const current10 = () => {
           requireValue14(this.runtime === runtime && this.retained === retained2 && runtime.observeApplicationWindow === observeWindow && canonicalJson(retained2.launched) === canonicalJson(operation.launched), "Ordinary window observation retained owner changed.");
         };
         const facadeSha256 = digestSchema.parse(await this.verify(this.options));
         requireValue14(facadeSha256 === operation.intent.facadeSha256, "Ordinary window observation installation changed from launch.");
         await this.options.assertAllowed();
-        current9();
+        current10();
         const window = windowObservationSchema.parse(await observeWindow.call(runtime));
-        current9();
+        current10();
         requireValue14(
           window.jobId === retained2.launch.jobId && window.helperInstance === retained2.launch.helperInstance,
           "Ordinary window observation returned another launch."
         );
         requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary window observation installation changed.");
         await this.options.assertAllowed();
-        current9();
+        current10();
         requireValue14(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary window observation journal changed.");
-        current9();
+        current10();
         return { runtime, retained: retained2, window, facadeSha256 };
       }
       async normalClose(request13, operation, operations) {
@@ -95628,17 +95759,17 @@ var init_ordinary_launch = __esm({
         const retained2 = this.retained, runtime = this.runtime;
         requireValue14(runtime !== void 0 && retained2 !== void 0 && retained2.operationId === operationId9 && canonicalJson(operation.launched) === canonicalJson(retained2.launched), "Ordinary launch has no retained owner for this exact operation.");
         const launchText = canonicalJson(retained2.launch), launchedText = canonicalJson(retained2.launched), observe3 = retained2.observeTermination;
-        const current9 = () => {
+        const current10 = () => {
           requireValue14(
             this.runtime === runtime && this.retained === retained2 && runtime.observeLaunchTermination === observe3 && (retained2.status === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === retained2.status) && canonicalJson(retained2.launch) === launchText && canonicalJson(retained2.launched) === launchedText,
             "Ordinary termination retained runtime, launch or observer changed."
           );
         };
-        current9();
+        current10();
         const facadeSha256 = await this.verify(this.options);
-        current9();
+        current10();
         const observed2 = external_exports.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: external_exports.boolean() }).strict().parse(await observe3.call(runtime));
-        current9();
+        current10();
         requireValue14(observed2.jobId === retained2.launch.jobId && observed2.helperInstance === retained2.launch.helperInstance, "Ordinary termination observed another launch.");
         if (!observed2.terminated) {
           return { ...describe3(operationId9, operation), terminationObserved: false };
@@ -95652,7 +95783,7 @@ var init_ordinary_launch = __esm({
         };
         this.uncertain = true;
         await publish(operationId9, "terminated.json", terminated);
-        current9();
+        current10();
         this.uncertain = false;
         if (this.productionServices && runtime instanceof WindowsControlRuntime) {
           requireValue14(
@@ -95676,7 +95807,7 @@ var init_ordinary_launch = __esm({
             designExecutionAuthorized: false
           });
           const recordCurrent = () => {
-            current9();
+            current10();
             requireValue14(
               !this.busy && !this.uncertain && runtime.status === status2 && recordPath === join50(controlDataDirectory(), JOURNAL_DIRECTORY, operationId9, "terminated.json"),
               "Original ordinary termination coordinator is incomplete or changed."
@@ -96141,7 +96272,7 @@ async function verifyFiles(assetsRoot, pins) {
       requirePinned(before.isFile() && before.size === BigInt(pin4.bytes));
       const hash45 = createHash34("sha256");
       let bytes2 = 0;
-      for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      for await (const chunk of handle.createReadStream({ autoClose: false, highWaterMark: 1048576 })) {
         requirePinned(Buffer.isBuffer(chunk));
         bytes2 += chunk.length;
         requirePinned(bytes2 <= pin4.bytes);
@@ -98833,13 +98964,22 @@ function queryCurrentSchematicRenameOperation(input = {}) {
     invocationEnabledByDiscovery: false,
     executionAuthorized: false,
     connectedValidation: false,
-    historicalConnectedValidation: "not-recorded",
+    historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle",
     ordinaryProjectsSupported: false,
     forwardOnly: true,
     inverseSupported: false,
     replayAllowed: false,
     explicitSaveDispatched: false,
-    actions: ["baseline-begin", "advance", "cleanup", "inspect"],
+    actions: ["baseline-begin", "advance", "advance-batch", "cleanup", "inspect"],
+    batch: {
+      minimumSteps: 2,
+      maximumSteps: 4,
+      explicitStepsOnly: true,
+      stopOnPending: true,
+      automaticRetry: false,
+      cleanupStepsAllowed: false,
+      separateLaunchTerminationBoundary: "baseline-prepare-clock -> baseline-relaunch"
+    },
     limitations: [
       "Begin only from this facade's retained disposable easyeda_control_project_open opening. That opener's selected PCB binds the project path; a separate existing SCH container and its owner must match the complete closed SQL baseline. No ordinary project, replacement runtime, supplied clock, executable code or verifier is accepted.",
       "Rename exactly one ordinary project-local schematic container with the pinned project-qualified schematic updateData path. Child sheets, all other containers and every unrelated SQL cell must remain unchanged. Stable ordinary child-derived container clocks are projected from complete history separately from direct SCH headers; the new document time must exceed both. Imported SCH/page containers, reuse/block-symbol branches, child reparenting, ambiguous equal-time versions and generic dmt_Schematic.modifySchematicName enablement are excluded. Locally stored ordinary symbol templates may retain canonical library-origin metadata, with unchanged local PART/startup guards and no origin fetch. Stored child-sheet docType must be absent, independently of native getter type 1. Unchanged child titles require an exact native ASCII-fold match; dotless-I output refuses. Writable container titles are trimmed printable ASCII without capital I; case-only renames and collisions refuse. The original normalized name must be unique for the saved absence query.",
@@ -98848,11 +98988,12 @@ function queryCurrentSchematicRenameOperation(input = {}) {
       "The aged unlocked-head clock reference runs only once while the original baseline remains closed. baseline-observe-clock retains one startup/metadata sample and renderer clock. No supplied observations can manufacture authority.",
       "Retained inspection exposes at most one current and one last phase diagnostic: action, phase, performing/cleanup-selection stage and monotonic elapsed or duration with outcome. Busy plus nextPhase stopped reserves ongoing work; await the original call. These in-memory diagnostics are not writer clocks, cancellation, journal evidence or replay authority and disappear after restart.",
       "Every advance names and acknowledges the exact next phase. Lost responses never permit navigation, write, close or scratch-process replay. Normal observation polls repeat only when explicitly pending; separately offered cleanup phases can continue from partial retained evidence without replaying consumed work. Inspection reports retained originals; journals do not restore continuation after a facade restart.",
+      "advance-batch accepts two to four explicitly ordered adjacent existing steps with every acknowledgment. The entire array validates before dispatch. The coordinator keeps its lock across those steps, rechecks the returned next phase before each, and stops at the first failure or pending observation without polling or inferring another step. It never dispatches cleanup. A batch cannot cross baseline-prepare-clock to baseline-relaunch, which requires a separate original launch termination record. lastBatch retains bounded in-memory requested phases and attempted/completed counts; it is not a replay token. Inspect a lost reply, never resubmit the whole batch.",
       "Opening and normal closure may migrate or automatically persist files. The fixed write makes one title update and awaits its native response; that response alone is not saved completion. No explicit Save, Save/Discard choice, force exit, delete, inverse or restoration is dispatched.",
       "Completion requires the native acknowledgment, original process/Job closure, exact title-only full SQL effect, cache-excluded fresh reopening, matching container metadata, all schematic peers and the complete child roster with both AST memberships and order, then final normal closure and complete SQL equality. Native reopened verification is metadata/roster-only, not a sheet canvas or connectivity read.",
       "Cleanup permanently abandons continuation and selects only a retained original-owner close/termination/closed-retirement phase. Uncertain ownership or consumed unacknowledged actions remain stopped; no recovery bypass is provided.",
       "The delayed schematic subscriber need not have run before normal closure. Original root exit plus an empty retained Job ends the reviewed contained producers; the subsequent exact stored effect decides whether they persisted the intended result. Subscriber completion itself remains unproved. A missing effect or unexpected actor fails without another mutation or Save.",
-      "No connected schematic rename lifecycle has been recorded. Synthetic control-flow and SQL tests do not establish live execution, ordinary-project safety or saved canvas/connectivity coverage."
+      "Installed143713 passed one original-owner disposable schematic-title lifecycle: exact complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster verification and final normal closure with unchanged SQL. That case used single-phase calls; advance-batch and later generations remain unvalidated live. Historical evidence grants no current invocation authority, ordinary-project safety or saved canvas/connectivity coverage."
     ],
     ...query.includeSchemas ? {
       inputSchema: external_exports.toJSONSchema(currentSchematicRenameOperationRequestSchema),
@@ -98869,7 +99010,7 @@ function validateCurrentSchematicRenameOperationArguments(input) {
     issues: parsed2.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
   };
 }
-var CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, operationId5, currentSchematicRenameOperationStepSchema, currentSchematicRenameOperationRequestSchema, currentSchematicRenameOperationQuerySchema;
+var CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, operationId5, currentSchematicRenameOperationStepSchema, CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, batchSteps, currentSchematicRenameOperationRequestSchema, currentSchematicRenameOperationQuerySchema;
 var init_current_schematic_rename_operation = __esm({
   "server/src/current-schematic-rename-operation.ts"() {
     init_zod();
@@ -98905,6 +99046,34 @@ var init_current_schematic_rename_operation = __esm({
         "cleanup-retire-closed"
       ]) }).strict()
     ]);
+    CURRENT_SCHEMATIC_RENAME_NEXT_PHASES = Object.freeze({
+      "baseline-close": "baseline-observe-termination",
+      "baseline-observe-termination": "baseline-prepare-clock",
+      "baseline-prepare-clock": "baseline-relaunch",
+      "baseline-relaunch": "baseline-admit",
+      "baseline-admit": "baseline-observe-caches",
+      "baseline-observe-caches": "baseline-open-project",
+      "baseline-open-project": "baseline-observe-clock",
+      "baseline-observe-clock": "rename-write",
+      "rename-write": "rename-close",
+      "rename-close": "rename-observe-termination",
+      "rename-observe-termination": "verification-start",
+      "verification-start": "verification-admit",
+      "verification-admit": "verification-caches",
+      "verification-caches": "verification-open",
+      "verification-open": "verification-read",
+      "verification-read": "verification-close",
+      "verification-close": "verification-finish",
+      "cleanup-capture": "cleanup-close",
+      "cleanup-close": "cleanup-observe-termination"
+    });
+    batchSteps = external_exports.array(currentSchematicRenameOperationStepSchema).min(2).max(4).refine((steps) => steps.every((step, index) => {
+      if (step.expectedPhase.startsWith("cleanup-")) {
+        return false;
+      }
+      const previous = steps[index - 1];
+      return previous === void 0 || previous.expectedPhase !== "baseline-prepare-clock" && CURRENT_SCHEMATIC_RENAME_NEXT_PHASES[previous.expectedPhase] === step.expectedPhase;
+    }), "A batch needs adjacent forward phases and cannot cross the separate original-launch termination record or include cleanup.");
     currentSchematicRenameOperationRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({
         action: external_exports.literal("baseline-begin"),
@@ -98916,6 +99085,7 @@ var init_current_schematic_rename_operation = __esm({
         acceptSchematicRename: external_exports.literal(true)
       }).strict(),
       external_exports.object({ action: external_exports.literal("advance"), operationId: operationId5, step: currentSchematicRenameOperationStepSchema }).strict(),
+      external_exports.object({ action: external_exports.literal("advance-batch"), operationId: operationId5, steps: batchSteps }).strict(),
       external_exports.object({ action: external_exports.literal("cleanup"), operationId: operationId5, confirmAbort: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId5 }).strict()
     ]).refine(
@@ -101655,17 +101825,17 @@ var init_engine = __esm({
       /** Read-only clock lookup through this engine's original capture token. */
       async clockObservationForClosedCapture(receipt2) {
         const slot = this.closedCaptures.get(receipt2);
-        const current9 = () => {
+        const current10 = () => {
           if (slot === void 0 || slot.releasing || this.closedCaptures.get(receipt2) !== slot || this.executionAuthorityValidator !== slot.validator || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
             throw new Error("Clock lookup requires this engine's unchanged original closed capture.");
           }
         };
-        current9();
+        current10();
         if (slot === void 0) {
           throw new Error("Original closed clock capture is missing.");
         }
         const observation2 = await windowsClockObservationForResult(slot.originalExecutionAuthority, "capture");
-        current9();
+        current10();
         return observation2;
       }
       /** Fresh observation through an existing original closed capture. The capture
@@ -101690,37 +101860,37 @@ var init_engine = __esm({
           throw new Error("Fresh clock requires its original closed capture session.");
         }
         const dispatchSnapshot = canonicalJson(authenticatedBridgeDispatchPayload(slot.dispatchMethod?.call(slot.upstream), session));
-        const current9 = () => {
+        const current10 = () => {
           originalCurrent();
           const active2 = this.authenticatedBridgeSession();
           if (canonicalJson(active2) !== sessionSnapshot || canonicalJson(authenticatedBridgeDispatchPayload(slot.dispatchMethod?.call(slot.upstream), active2)) !== dispatchSnapshot) {
             throw new Error("Fresh clock requires its original authenticated session and current dispatch lease.");
           }
         };
-        current9();
+        current10();
         const observation2 = await observe3.call(slot.validator, slot.originalExecutionAuthority);
-        current9();
+        current10();
         const authority2 = slot.snapshot.executionAuthority, issued29 = assertCurrentIssuedWindowsClockObservation(observation2);
         if (issued29 !== observation2 || observation2.phase !== "owned-observation" || observation2.ownerBinding["operationId"] !== slot.snapshot.operationId || observation2.ownerBinding["phase"] !== slot.snapshot.phase || observation2.ownerBinding["challengeAttempt"] !== slot.snapshot.challengeAttempt || observation2.ownerBinding["authoritySha256"] !== authority2.authoritySha256 || observation2.ownerBinding["bindingSha256"] !== authority2.bindingSha256 || observation2.base["captureBindingSha256"] !== authority2.bindingSha256 || observation2.ownerBinding["bridgeSessionSha256"] !== sha256Text(sessionSnapshot) || observation2.ownerBinding["runtimeIdentitySha256"] !== sha256Text(runtimeSnapshot)) {
           throw new Error("Fresh clock returned another original closed operation, capture, session or runtime.");
         }
-        current9();
+        current10();
         return observation2;
       }
       /** Original working journal only; a loaded copy does not recover clock authority. */
       async clockObservationForTrackedDispatch(operation, phase5) {
         const slot = this.trackedClockCaptures.get(operation);
-        const current9 = () => {
+        const current10 = () => {
           if (slot === void 0 || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.trackedClockCaptures.get(operation) !== slot || this.executionAuthorityValidator !== slot.validator || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot) {
             throw new Error("Clock lookup requires this engine's original operation-bound dispatch capture.");
           }
         };
-        current9();
+        current10();
         if (slot === void 0) {
           throw new Error("Original tracked clock capture is missing.");
         }
         const observation2 = await windowsClockObservationForResult(slot.original, "capture");
-        current9();
+        current10();
         return observation2;
       }
       /** Fresh final-boundary observation for an already admitted, original tracked
@@ -101732,7 +101902,7 @@ var init_engine = __esm({
         if (slot === void 0 || observe3 === void 0) {
           throw new Error("Fresh clock requires an original tracked capture and retained clock method.");
         }
-        const current9 = () => {
+        const current10 = () => {
           if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe3 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
             throw new Error("Fresh clock requires the unchanged original tracked dispatch owner and methods.");
           }
@@ -101741,14 +101911,14 @@ var init_engine = __esm({
             throw new Error("Fresh clock requires its original authenticated session and current dispatch lease.");
           }
         };
-        current9();
+        current10();
         const observation2 = await observe3.call(slot.validator, slot.original);
-        current9();
+        current10();
         const issued29 = assertCurrentIssuedWindowsClockObservation(observation2);
         if (issued29 !== observation2 || observation2.phase !== "owned-observation" || observation2.ownerBinding["operationId"] !== slot.operationId || observation2.ownerBinding["phase"] !== slot.phase || observation2.ownerBinding["challengeAttempt"] !== slot.challengeAttempt || observation2.ownerBinding["authoritySha256"] !== slot.original.authoritySha256 || observation2.ownerBinding["bindingSha256"] !== slot.original.bindingSha256 || observation2.base["captureBindingSha256"] !== slot.original.bindingSha256 || observation2.ownerBinding["bridgeSessionSha256"] !== sha256Text(slot.sessionSnapshot) || observation2.ownerBinding["runtimeIdentitySha256"] !== sha256Text(slot.runtimeSnapshot)) {
           throw new Error("Fresh clock returned another original operation, capture, session or runtime.");
         }
-        current9();
+        current10();
         return observation2;
       }
       /** Release only this engine's original receipt, after all closed copies.
@@ -102319,12 +102489,12 @@ var init_engine = __esm({
         const readLauncherState = this.upstream.launcherState?.bind(this.upstream);
         const launcherState = readLauncherState === void 0 ? await (async () => {
           const startup2 = await launcherFingerprint();
-          const current9 = await launcherFingerprint();
+          const current10 = await launcherFingerprint();
           return {
             startup: startup2,
-            current: current9,
+            current: current10,
             startupSha256: sha256Json(startup2),
-            currentSha256: sha256Json(current9),
+            currentSha256: sha256Json(current10),
             drift: false
           };
         })() : await readLauncherState();
@@ -105128,13 +105298,13 @@ var init_check_execution = __esm({
         await this.engine.assertRecoveryOperationIsolated(operationId9);
         validatePrivateFingerprint(expectedFingerprint);
         const status2 = await this.engine.status();
-        const current9 = status2.stableFingerprint;
-        assertSubset(current9, expectedFingerprint, "Requested check replacement runtime");
-        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current9);
-        journal.runtimeFingerprint = structuredClone(current9);
+        const current10 = status2.stableFingerprint;
+        assertSubset(current10, expectedFingerprint, "Requested check replacement runtime");
+        assertFacadeOnlyRuntimeUpgrade(journal.plan.expectedFingerprint, current10);
+        journal.runtimeFingerprint = structuredClone(current10);
         journal.state = "check-runtime-rebound";
         journal.hardStop = true;
-        await this.record(journal, "runtime-rebound", { fingerprint: current9, originalPlanHash: journal.planHash });
+        await this.record(journal, "runtime-rebound", { fingerprint: current10, originalPlanHash: journal.planHash });
         return summary4(journal);
       }
       async openTarget(operationId9) {
@@ -105885,15 +106055,15 @@ function netGraph(segments3, vias, pads, copper, selected3, findings) {
     return key;
   };
   const root = (key) => {
-    let current9 = key;
-    while (parents.get(current9) !== current9) {
-      const parent = parents.get(current9);
+    let current10 = key;
+    while (parents.get(current10) !== current10) {
+      const parent = parents.get(current10);
       if (parent === void 0) {
         throw new Error("Route graph identity disappeared.");
       }
-      current9 = parent;
+      current10 = parent;
     }
-    return current9;
+    return current10;
   };
   const union2 = (keys2) => {
     const first = keys2[0];
@@ -105953,27 +106123,27 @@ function netGraph(segments3, vias, pads, copper, selected3, findings) {
   const visited = /* @__PURE__ */ new Set();
   let end;
   while (true) {
-    let current9;
+    let current10;
     let best = Infinity;
     for (const [key, value2] of distances) {
       if (!visited.has(key) && value2 < best) {
-        current9 = key;
+        current10 = key;
         best = value2;
       }
     }
-    if (current9 === void 0) {
+    if (current10 === void 0) {
       break;
     }
-    visited.add(current9);
-    if (targets.has(current9)) {
-      end = current9;
+    visited.add(current10);
+    if (targets.has(current10)) {
+      end = current10;
       break;
     }
-    for (const edge of graph.get(current9) ?? []) {
+    for (const edge of graph.get(current10) ?? []) {
       const next = best + edge.segment.length;
       if (next < (distances.get(edge.to) ?? Infinity)) {
         distances.set(edge.to, next);
-        previous.set(edge.to, { from: current9, segment: edge.segment });
+        previous.set(edge.to, { from: current10, segment: edge.segment });
       }
     }
   }
@@ -106115,9 +106285,9 @@ function auditPcbRoutes(source5, inventory2, input) {
     const limit = typeof maximum5 === "number" && Number.isFinite(maximum5) && maximum5 >= 0 ? maximum5 : null;
     let sameEndpointComponentOwners = null;
     if (isPair && paths.length === 2 && paths.every((path5) => path5 !== null && path5 !== void 0)) {
-      const owners6 = paths.map((path5) => [path5?.fromPad, path5?.toPad].map((id13) => pads.find((pad2) => pad2.primitiveId === id13)?.parentComponentPrimitiveId));
-      if (owners6.flat().every((owner) => typeof owner === "string")) {
-        sameEndpointComponentOwners = canonicalJson(owners6[0]?.toSorted()) === canonicalJson(owners6[1]?.toSorted());
+      const owners7 = paths.map((path5) => [path5?.fromPad, path5?.toPad].map((id13) => pads.find((pad2) => pad2.primitiveId === id13)?.parentComponentPrimitiveId));
+      if (owners7.flat().every((owner) => typeof owner === "string")) {
+        sameEndpointComponentOwners = canonicalJson(owners7[0]?.toSorted()) === canonicalJson(owners7[1]?.toSorted());
       }
       if (sameEndpointComponentOwners === false) {
         findings.push(note("pair-endpoint-owner-mismatch", [], "The two pair members do not terminate on the same pair of component owners."));
@@ -106472,7 +106642,7 @@ var init_tool_operation_envelope = __esm({
 function methods5(runtime) {
   return [runtime.capture, runtime.proveTerminated, runtime.releaseCapture, runtime.observeCurrentClock];
 }
-function current(binding8) {
+function current2(binding8) {
   const runtime = binding8.select();
   if (!(runtime instanceof WindowsControlRuntime)) {
     throw new Error("Windows execution validator requires its original runtime owner.");
@@ -106490,13 +106660,13 @@ function current(binding8) {
 function createWindowsRuntimeValidator(select) {
   const binding8 = { select };
   const validator = Object.freeze({
-    capture: (input) => current(binding8).capture(input),
-    proveTerminated: (input) => current(binding8).proveTerminated(input),
-    releaseCapture: (input) => current(binding8).releaseCapture(input),
+    capture: (input) => current2(binding8).capture(input),
+    proveTerminated: (input) => current2(binding8).proveTerminated(input),
+    releaseCapture: (input) => current2(binding8).releaseCapture(input),
     observeCurrentClock: async (input) => {
-      const runtime = current(binding8);
+      const runtime = current2(binding8);
       const observation2 = await runtime.observeCurrentClock(input);
-      current(binding8);
+      current2(binding8);
       return observation2;
     }
   });
@@ -106505,7 +106675,7 @@ function createWindowsRuntimeValidator(select) {
 }
 function assertWindowsRuntimeValidator(validator, runtime) {
   const binding8 = validator === void 0 ? void 0 : issued5.get(validator);
-  if (binding8 === void 0 || binding8.runtime !== runtime || current(binding8) !== runtime) {
+  if (binding8 === void 0 || binding8.runtime !== runtime || current2(binding8) !== runtime) {
     throw new Error("Windows execution validator is not its original issued runtime binding.");
   }
 }
@@ -107441,8 +107611,8 @@ async function preserveSavedEvidence(journal) {
   if (!original2.checkpointMatchesReceipt || original2.checkpointSha256 !== prior["checkpointSha256"] || original2.checkpointDumpSha256 !== prior["checkpointDumpSha256"]) {
     throw new Error("Original recovery checkpoint is no longer intact.");
   }
-  const current9 = await createCheckpoint({ source: source5, outputDir, label: "native-close-recovery-before-discard" }, policy2);
-  return { beforeReceipt: prior, currentCheckpoint: current9, durableChanged: current9.checkpointDumpSha256 !== original2.checkpointDumpSha256 };
+  const current10 = await createCheckpoint({ source: source5, outputDir, label: "native-close-recovery-before-discard" }, policy2);
+  return { beforeReceipt: prior, currentCheckpoint: current10, durableChanged: current10.checkpointDumpSha256 !== original2.checkpointDumpSha256 };
 }
 async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
   const request13 = nativeCloseRecoveryRequestSchema.parse(input);
@@ -117380,7 +117550,7 @@ var init_acorn = __esm({
       }
       return i2 + 2;
     };
-    RegExpValidationState.prototype.current = function current2(forceU) {
+    RegExpValidationState.prototype.current = function current3(forceU) {
       if (forceU === void 0) forceU = false;
       return this.at(this.pos, forceU);
     };
@@ -117405,8 +117575,8 @@ var init_acorn = __esm({
       var pos = this.pos;
       for (var i2 = 0, list2 = chs; i2 < list2.length; i2 += 1) {
         var ch = list2[i2];
-        var current9 = this.at(pos, forceU);
-        if (current9 === -1 || current9 !== ch) {
+        var current10 = this.at(pos, forceU);
+        if (current10 === -1 || current10 !== ch) {
           return false;
         }
         pos = this.nextIndex(pos, forceU);
@@ -119750,37 +119920,37 @@ function enqueueResolvedModule(resolved2, state2) {
   }
   state2.queue.push({ format: resolved2.format, path: resolvedPath });
 }
-async function captureReachableModule(current9, state2) {
-  const currentUrl = pathToFileURL(current9.path).href;
+async function captureReachableModule(current10, state2) {
+  const currentUrl = pathToFileURL(current10.path).href;
   if (state2.modules.has(currentUrl)) {
     return;
   }
-  if (!SUPPORTED_SOURCE_EXTENSIONS.has(extname(current9.path).toLowerCase())) {
+  if (!SUPPORTED_SOURCE_EXTENSIONS.has(extname(current10.path).toLowerCase())) {
     throw new Error(
-      `Reachable upstream graph contains an unsupported executable type: ${current9.path}`
+      `Reachable upstream graph contains an unsupported executable type: ${current10.path}`
     );
   }
   const captured = await readSealedFile(
-    current9.path,
+    current10.path,
     state2.seals,
     state2.capturedSeals
   );
   const execution = executionSourceFor(
     state2.cwd,
-    current9.path,
+    current10.path,
     captured.bytes
   );
   state2.modules.set(currentUrl, {
     bytes: execution.bytes,
     executionSha256: execution.executionSha256,
-    format: current9.format,
-    path: current9.path,
+    format: current10.format,
+    path: current10.path,
     sourceSha256: captured.sha256,
     transform: execution.transform,
     url: currentUrl
   });
   const dependencies3 = parseUpstreamModuleDependencies(
-    current9.format,
+    current10.format,
     execution.bytes
   );
   for (const dependency of dependencies3) {
@@ -119885,9 +120055,9 @@ async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
   };
   try {
     while (queue.length > 0) {
-      const current9 = queue.shift();
-      if (current9 !== void 0) {
-        await captureReachableModule(current9, state2);
+      const current10 = queue.shift();
+      if (current10 !== void 0) {
+        await captureReachableModule(current10, state2);
       }
     }
   } finally {
@@ -120790,16 +120960,16 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   for (let offset7 = 0; offset7 < seals.length; offset7 += batchSize) {
     await Promise.all(
       seals.slice(offset7, offset7 + batchSize).map(async (seal2) => {
-        const current9 = await lstat37(seal2.path);
+        const current10 = await lstat37(seal2.path);
         let currentKind = "unsupported";
-        if (current9.isSymbolicLink()) {
+        if (current10.isSymbolicLink()) {
           currentKind = "symlink";
-        } else if (current9.isDirectory()) {
+        } else if (current10.isDirectory()) {
           currentKind = "directory";
-        } else if (current9.isFile()) {
+        } else if (current10.isFile()) {
           currentKind = "file";
         }
-        if (currentKind !== seal2.kind || current9.dev !== seal2.dev || current9.ino !== seal2.ino || current9.mode !== seal2.mode || current9.size !== seal2.size || current9.mtimeMs !== seal2.mtimeMs || current9.ctimeMs !== seal2.ctimeMs) {
+        if (currentKind !== seal2.kind || current10.dev !== seal2.dev || current10.ino !== seal2.ino || current10.mode !== seal2.mode || current10.size !== seal2.size || current10.mtimeMs !== seal2.mtimeMs || current10.ctimeMs !== seal2.ctimeMs) {
           throw new Error(
             `Trusted upstream execution path changed ${boundary}: ${seal2.path}`
           );
@@ -121105,9 +121275,9 @@ async function stagePrivateRuntimePayload(source5, privateDirectory) {
         throw new Error("Private runtime payload descriptor is closed.");
       }
       const before = await readable.stat({ bigint: true });
-      const current9 = await readExact(readable, source5.length);
+      const current10 = await readExact(readable, source5.length);
       const after = await readable.stat({ bigint: true });
-      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash42("sha256").update(current9).digest("hex") !== sha256) {
+      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash42("sha256").update(current10).digest("hex") !== sha256) {
         throw new Error("Private runtime payload changed before sandbox spawn.");
       }
     };
@@ -122278,7 +122448,7 @@ var init_upstream_seccomp = __esm({
 });
 
 // server/src/upstream.ts
-import { AsyncLocalStorage } from "node:async_hooks";
+import { AsyncLocalStorage as AsyncLocalStorage2 } from "node:async_hooks";
 import { createHash as createHash44, randomBytes as randomBytes11 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -122407,7 +122577,7 @@ var init_upstream = __esm({
     UpstreamEasyedaClient = class {
       options;
       localIntegrityTimings = new LocalIntegrityTimings();
-      authenticatedBridgeDispatchScope = new AsyncLocalStorage();
+      authenticatedBridgeDispatchScope = new AsyncLocalStorage2();
       client = null;
       transport = null;
       connectPromise = null;
@@ -122909,12 +123079,12 @@ var init_upstream = __esm({
           );
         }
         const startup2 = startupAdmission.fingerprint;
-        const current9 = await this.launcherFingerprint();
+        const current10 = await this.launcherFingerprint();
         const startupSha256 = launcherFingerprintSha256(startup2);
-        const currentSha256 = launcherFingerprintSha256(current9);
+        const currentSha256 = launcherFingerprintSha256(current10);
         return {
           startup: startup2,
-          current: current9,
+          current: current10,
           startupSha256,
           currentSha256,
           drift: startupSha256 !== currentSha256
@@ -124841,11 +125011,11 @@ async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
   const scope6 = scopeReader.call(engine2.upstream), session = source5.bridgeSession;
   need49(scope6 !== void 0 && scope6.gatewayInstanceId === session.gatewayInstanceId && scope6.sessionId === session.sessionId && scope6.sessionSequence === session.sequence, "Current symbol preparation scope does not belong to its original session.");
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     need49(assertCurrentDisposableOpenGeneration(generation5, engine2) === source5 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText, "Current symbol preparation owner or authenticated scope changed.");
   };
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
-  current9();
+  current10();
   const target8 = {
     projectUuid: source5.target.projectUuid,
     branchUuid: source5.target.branchUuid,
@@ -124857,14 +125027,14 @@ async function prepareCurrentOwnedSymbolMetadata(engine2, generation5, input) {
     { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request13.target.symbolUuid }, target: target8 },
     source5.expectedFingerprint
   );
-  current9();
+  current10();
   const checkpointPreparation = await prepareCurrentSymbolMetadata({
     ...request13,
     observationProjection: currentClosedSymbolMetadataProjection(closedTargetWitness.observation)
   });
-  current9();
+  current10();
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
-  current9();
+  current10();
   const body4 = {
     profile: "private.current-owned-symbol-metadata-preparation.v1",
     openingOperationId: generation5.operationId,
@@ -124900,14 +125070,14 @@ async function prepareCurrentOwnedSymbolCopy(engine2, generation5, input) {
   const scope6 = reader.call(engine2.upstream), session = source5.bridgeSession;
   need49(scope6 !== void 0 && scope6.gatewayInstanceId === session.gatewayInstanceId && scope6.sessionId === session.sessionId && scope6.sessionSequence === session.sequence, "Current copy preparation scope differs from its original session.");
   const checkpoint = source5.preNavigationCheckpoint.checkpoint, scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     need49(
       assertCurrentDisposableOpenGeneration(generation5, engine2) === source5 && source5.preNavigationCheckpoint.checkpoint === checkpoint && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === reader && canonicalJson(reader.call(engine2.upstream)) === scopeText,
       "Current copy preparation original owner, checkpoint or scope changed."
     );
   };
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
-  current9();
+  current10();
   const target8 = {
     projectUuid: source5.target.projectUuid,
     branchUuid: source5.target.branchUuid,
@@ -124919,11 +125089,11 @@ async function prepareCurrentOwnedSymbolCopy(engine2, generation5, input) {
     { method: "eda.lib_Symbol.get", arguments: { symbolUuid: request13.symbolUuid }, target: target8 },
     source5.expectedFingerprint
   );
-  current9();
+  current10();
   const checkpointPreparation = await prepareCurrentSymbolCopyCheckpoint({ checkpoint, source: request13, observation: closedTargetWitness.observation });
-  current9();
+  current10();
   await revalidateCurrentDisposableOpenGeneration(generation5, engine2);
-  current9();
+  current10();
   const body4 = {
     profile: "private.current-owned-symbol-copy-preparation.v1",
     openingOperationId: generation5.operationId,
@@ -125578,15 +125748,15 @@ async function prepareCurrentSymbolCopyPlan(before, sourceInput) {
     for (const value2 of stringsIn(records2)) {
       strings.push(value2);
     }
-    let current9;
+    let current10;
     for (const record8 of records2) {
       if (record8.header["type"] === "DOCHEAD") {
         const uuid12 = record8.body?.["uuid"];
-        current9 = record8.body?.["docType"] === "SYMBOL" && typeof uuid12 === "string" ? uuid12 : void 0;
-      } else if (current9 !== void 0 && record8.header["type"] !== "EDIT_HEAD") {
+        current10 = record8.body?.["docType"] === "SYMBOL" && typeof uuid12 === "string" ? uuid12 : void 0;
+      } else if (current10 !== void 0 && record8.header["type"] !== "EDIT_HEAD") {
         const ticket2 = record8.header["ticket"];
         need52(typeof ticket2 === "number" && Number.isSafeInteger(ticket2), "raw symbol atom ticket is absent");
-        atomTickets.set(current9, Math.max(atomTickets.get(current9) ?? 0, ticket2));
+        atomTickets.set(current10, Math.max(atomTickets.get(current10) ?? 0, ticket2));
       }
     }
   }
@@ -125752,7 +125922,7 @@ async function revalidateCurrentSymbolCopyBaselineCopy(engine2, value2, proof) {
   await revalidateBaselineCopy(engine2, value2, proof);
 }
 async function revalidateBaselineCopy(engine2, value2, proof) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalBaselineCopy(value2, engine2);
     assertBaselineOwner(value2.owner, engine2);
     assertIssuedClosedFileCopy(value2.copy);
@@ -125763,40 +125933,40 @@ async function revalidateBaselineCopy(engine2, value2, proof) {
       "Current symbol relaunch baseline lineage or reader completion differs."
     );
   };
-  current9();
+  current10();
   need53(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol relaunch lost its original closed authority.");
-  current9();
+  current10();
   await revalidateBaselineOwner(value2.owner, engine2);
-  current9();
+  current10();
   const root = await controlRootCapability();
-  current9();
+  current10();
   const receiptCurrent = async () => {
     const receipt2 = await readArtifact(value2.checkpoint.receiptPath, 0, 65536);
-    current9();
+    current10();
     need53(
       receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(value2.checkpoint),
       "Current symbol relaunch checkpoint receipt changed."
     );
   };
   await receiptCurrent();
-  current9();
+  current10();
   const verified = await verifyCheckpoint(value2.checkpoint.receiptPath, {
     expectedSource: value2.copy.source,
     artifactRoots: [join63(controlDataDirectory(), "checkpoints")],
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  current9();
+  current10();
   const checkpoint = value2.checkpoint;
   need53(
     verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "Current symbol relaunch checkpoint or source changed."
   );
   await receiptCurrent();
-  current9();
+  current10();
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat40(path5, { bigint: true });
-    current9();
+    current10();
     need53(
       stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs,
       "Current symbol relaunch source or checkpoint lineage changed."
@@ -125851,18 +126021,18 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
   const { snapshot: snapshot8, originalSnapshot: snapshotSource } = original2.result;
   const { checkpoint, copy: copy2 } = snapshot8, { inventory: inventory2 } = snapshotSource;
   const preparation3 = original2.preparation.checkpointPreparation, source5 = original2.source;
-  const current9 = async () => {
+  const current10 = async () => {
     need53(await revalidateCurrentSymbolInverseBaselineOwner(owner, engine2) === original2, "Inverse baseline owner changed.");
     need53(assertOriginalCurrentSymbolVerificationSnapshot(snapshot8, engine2) === snapshotSource, "Inverse baseline snapshot changed.");
   };
-  await current9();
+  await current10();
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
     projectUuid: preparation3.target.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  await current9();
+  await current10();
   const matches = history.documents.filter((document4) => document4.uuid === source5.target.documentUuid);
   const document3 = matches[0];
   need53(
@@ -125887,7 +126057,7 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
     target: preparation3.target,
     documentUuid: document3.uuid
   });
-  await current9();
+  await current10();
   need53(
     preparation3.history.headHistoryUuid === history.headHistoryUuid && preparation3.history.documents === history.documents.length,
     "Inverse metadata preparation differs from its complete snapshot."
@@ -125969,7 +126139,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need53(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol baseline termination proof changed.");
     unchanged5();
@@ -125978,14 +126148,14 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     unchanged5();
     assertCurrentClosedSessionCopyAuthority(proof);
   };
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join63(controlDataDirectory(), "checkpoints");
   const policy2 = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 };
   const checkpoint = await createCheckpoint({ source: sourcePath, outputDir, label: `current-symbol-baseline-${owner.operationId.slice(-8)}` }, policy2);
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const openingIdentity = source5.preNavigationCheckpoint.checkpoint.sourceIdentity;
   need53(
     checkpoint.sourceIdentity.dev === openingIdentity.dev && checkpoint.sourceIdentity.ino === openingIdentity.ino && checkpoint.sourceIdentity.birthtimeNs === openingIdentity.birthtimeNs,
@@ -125998,11 +126168,11 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     artifactDirectory: operationPath(owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   need53(inventory2.checkpointSha256 === copy2.sha256, "Current symbol baseline inventory does not bind its raw copy.");
   const target8 = previous.checkpointPreparation.target;
   need53(
@@ -126016,7 +126186,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     libraryAtomHeaders: "preserve",
     ...owner.profile === "private.current-symbol-copy-baseline-owner.v1" ? { documentRecordHistory: "preserve" } : {}
   });
-  await current9();
+  await current10();
   const matches = history.documents.filter((document4) => document4.uuid === source5.target.documentUuid);
   const document3 = matches[0];
   need53(
@@ -126042,7 +126212,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     documentUuid: document3.uuid
   });
   retain3({ kind: "startup-premises", value: startupPremises });
-  await current9();
+  await current10();
   let result;
   const common5 = {
     checkpoint,
@@ -126060,7 +126230,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     need53(owner.profile === "private.current-symbol-copy-baseline-owner.v1", "Copy preparation requires its distinct original owner.");
     const preparation3 = await prepareCurrentSymbolCopyPlan(inventory2, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid, symbolUuid: target8.symbolUuid });
     retain3({ kind: "preparation", value: preparation3 });
-    await current9();
+    await current10();
     const initial = previous.checkpointPreparation;
     const sourceDocument = history.documents.find((value2) => value2.uuid === target8.symbolUuid);
     need53(
@@ -126071,7 +126241,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   } else {
     need53(owner.profile === "private.current-symbol-baseline-owner.v1", "Metadata preparation requires its original metadata owner.");
     const checkpointInfo = await lstat40(checkpoint.checkpoint, { bigint: true });
-    await current9();
+    await current10();
     const preparation3 = await prepareCurrentSymbolMetadata({
       checkpoint: { path: checkpoint.checkpoint, bytes: Number(checkpointInfo.size), sha256: checkpoint.checkpointSha256 },
       target: target8,
@@ -126079,7 +126249,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
       observationProjection: currentClosedSymbolMetadataProjection(previous.closedTargetWitness.observation)
     });
     retain3({ kind: "preparation", value: preparation3 });
-    await current9();
+    await current10();
     need53(
       preparation3.history.headHistoryUuid === history.headHistoryUuid && preparation3.history.documents === history.documents.length,
       "Current symbol baseline metadata and active PCB history disagree."
@@ -126087,10 +126257,10 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     result = Object.freeze({ ...common5, profile: "private.current-symbol-baseline-copy.v1", owner, preparation: preparation3 });
   }
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need53(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "Current symbol baseline checkpoint receipt changed.");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, policy2);
-  await current9();
+  await current10();
   need53(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === checkpoint.sourceSha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol baseline source or checkpoint changed during capture.");
   assertCurrentClosedSessionCopyAuthority(proof);
   unchanged5();
@@ -126153,7 +126323,7 @@ function originalAnySnapshot(snapshot8, engine2) {
 }
 async function revalidateSnapshot(engine2, snapshot8) {
   const original2 = originalAnySnapshot(snapshot8, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need53(originalAnySnapshot(snapshot8, engine2) === original2, "Current symbol post-edit snapshot owner changed.");
     assertIssuedClosedFileCopy(snapshot8.copy);
     assertCurrentClosedSessionCopyAuthority(original2.proof);
@@ -126163,21 +126333,21 @@ async function revalidateSnapshot(engine2, snapshot8) {
       "Current symbol post-edit snapshot lineage or reader completion differs."
     );
   };
-  current9();
+  current10();
   need53(await assertClosedSessionCopyAuthority(original2.proof) === original2.proof, "Current symbol post-edit closure authority changed.");
-  current9();
+  current10();
   const root = await controlRootCapability();
-  current9();
+  current10();
   const receiptCurrent = async () => {
     const receipt2 = await readArtifact(snapshot8.checkpoint.receiptPath, 0, 65536);
-    current9();
+    current10();
     need53(
       receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(snapshot8.checkpoint),
       "Current symbol post-edit checkpoint receipt changed."
     );
   };
   await receiptCurrent();
-  current9();
+  current10();
   const checkpoint = snapshot8.checkpoint;
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
@@ -126185,16 +126355,16 @@ async function revalidateSnapshot(engine2, snapshot8) {
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  current9();
+  current10();
   need53(
     verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "Current symbol post-edit checkpoint or source changed."
   );
   await receiptCurrent();
-  current9();
+  current10();
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat40(path5, { bigint: true });
-    current9();
+    current10();
     need53(
       stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs,
       "Current symbol post-edit source or checkpoint lineage changed."
@@ -126262,7 +126432,7 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
   unchanged5();
   const clock7 = await clockReader.call(engine2, capture3);
   unchanged5();
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need53(await assertClosedSessionCopyAuthority(proof) === proof, "Current symbol finish snapshot lost its original terminal proof.");
     unchanged5();
@@ -126276,16 +126446,16 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  await current9();
+  await current10();
   await engine2.assertRecoveryOperationIsolated(baseline2.owner.operationId);
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join63(controlDataDirectory(), "checkpoints");
   const policy2 = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 };
   const checkpoint = await createCheckpoint({ source: sourcePath, outputDir, label: `current-symbol-finish-${baseline2.owner.operationId.slice(-8)}` }, policy2);
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const oldIdentity = baseline2.checkpoint.sourceIdentity;
   need53(checkpoint.sourceIdentity.dev === oldIdentity.dev && checkpoint.sourceIdentity.ino === oldIdentity.ino && checkpoint.sourceIdentity.birthtimeNs === oldIdentity.birthtimeNs, "Current symbol finish source lineage changed.");
   const copy2 = await copyClosedProjectBytes({
@@ -126295,11 +126465,11 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   const completion2 = readerCompletion(inventory2);
   need53(
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
@@ -126312,16 +126482,16 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
     projectUuid: target8.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  await current9();
+  await current10();
   need53(
     history.projectUuid === target8.projectUuid && history.branchUuid === target8.branchUuid && history.projectOwnerUuid === target8.ownerUuid,
     "Current symbol finish native project, branch or owner changed."
   );
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need53(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "Current symbol finish checkpoint receipt changed.");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, policy2);
-  await current9();
+  await current10();
   need53(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === copy2.sha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol finish source or checkpoint changed during capture.");
   const result = Object.freeze({
     ...predecessor === void 0 ? { profile: baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? "private.current-symbol-copy-finish-snapshot.v1" : "private.current-symbol-finish-snapshot.v1" } : {
@@ -126520,23 +126690,23 @@ function sameInode2(a, b) {
 function sameFile7(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode2(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
-async function directory(absolute, current9) {
+async function directory(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need55(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags4 = constants26.O_RDONLY | constants26.O_DIRECTORY | constants26.O_NOFOLLOW;
   let handle = await open38("/", flags4);
   try {
-    current9();
+    current10();
     for (const segment2 of segments3) {
       const path5 = `/proc/self/fd/${handle.fd}/${segment2}`;
       const before = await lstat41(path5, { bigint: true });
-      current9();
+      current10();
       need55(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
       const child = await open38(path5, flags4);
       try {
-        current9();
+        current10();
         const info2 = await child.stat({ bigint: true });
-        current9();
+        current10();
         need55(info2.isDirectory() && sameInode2(before, info2), "Current preopen source parent changed while opening.");
         await handle.close();
       } catch (error51) {
@@ -126548,10 +126718,10 @@ async function directory(absolute, current9) {
         throw error51;
       }
       handle = child;
-      current9();
+      current10();
     }
     const info = await handle.stat({ bigint: true });
-    current9();
+    current10();
     return { absolute, handle, info };
   } catch (error51) {
     try {
@@ -126562,7 +126732,7 @@ async function directory(absolute, current9) {
     throw error51;
   }
 }
-async function noSidecars4(path5, current9) {
+async function noSidecars4(path5, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     const absent3 = await lstat41(`${path5}${suffix}`).then(() => false, (error51) => {
       if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
@@ -126570,7 +126740,7 @@ async function noSidecars4(path5, current9) {
       }
       throw error51;
     });
-    current9();
+    current10();
     need55(absent3, "Current preopen source has a SQLite sidecar.");
   }
 }
@@ -126578,100 +126748,100 @@ function matchesBaseline(stat3, copy2) {
   const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES7 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
 }
-async function hash41(file3, bytes2, current9) {
+async function hash41(file3, bytes2, current10) {
   const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES2)), digest10 = createHash46("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
-    current9();
+    current10();
     need55(read2.bytesRead > 0, "Current preopen source ended during its bounded read.");
     digest10.update(buffer.subarray(0, read2.bytesRead));
     position += read2.bytesRead;
     await yieldProofEventLoop();
-    current9();
+    current10();
   }
   const eof = await file3.read(Buffer.alloc(1), 0, 1, bytes2);
-  current9();
+  current10();
   need55(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest10.digest("hex");
 }
 async function verifyCurrentSymbolPreopenSource(engine2, copy2) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentSymbolBaselineCopy(copy2, engine2);
   };
-  const observed2 = await verifySource(copy2, current9);
-  current9();
+  const observed2 = await verifySource(copy2, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
 async function verifyCurrentSymbolCopyPreopenSource(engine2, copy2) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentSymbolCopyBaselineCopy(copy2, engine2);
   };
-  const observed2 = await verifySource(copy2, current9);
-  current9();
+  const observed2 = await verifySource(copy2, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
 async function verifyCurrentSymbolPosteditPreopenSource(engine2, snapshot8) {
   const original2 = assertOriginalCurrentSymbolFinishSnapshot(snapshot8, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need55(assertOriginalCurrentSymbolFinishSnapshot(snapshot8, engine2) === original2, "Current preopen post-edit snapshot owner changed.");
   };
-  const observed2 = await verifySource(snapshot8, current9);
-  current9();
+  const observed2 = await verifySource(snapshot8, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });
 }
 async function verifyCurrentSymbolCopyPosteditPreopenSource(engine2, snapshot8) {
   const original2 = assertOriginalCurrentSymbolCopyFinishSnapshot(snapshot8, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need55(assertOriginalCurrentSymbolCopyFinishSnapshot(snapshot8, engine2) === original2, "Current copy preopen snapshot owner changed.");
   };
-  const observed2 = await verifySource(snapshot8, current9);
-  current9();
+  const observed2 = await verifySource(snapshot8, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });
 }
-async function verifySource(copy2, current9) {
-  current9();
+async function verifySource(copy2, current10) {
+  current10();
   const { source: source5, sourceSha256 } = copy2.checkpoint;
   need55(
     process.platform === "linux" && source5.length <= 4096 && isAbsolute27(source5) && resolve22(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory(dirname27(source5), current9);
+  const parent = await directory(dirname27(source5), current10);
   let file3;
   let observation2;
   let failed = false;
   let failure2;
   try {
-    current9();
+    current10();
     const path5 = `/proc/self/fd/${parent.handle.fd}/${basename29(source5)}`;
-    await noSidecars4(path5, current9);
-    current9();
+    await noSidecars4(path5, current10);
+    current10();
     const before = await lstat41(path5, { bigint: true });
-    current9();
+    current10();
     need55(matchesBaseline(before, copy2), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open38(path5, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
-    current9();
+    current10();
     const opened = await file3.stat({ bigint: true });
-    current9();
+    current10();
     need55(sameFile7(before, opened), "Current preopen source changed while opening.");
-    const sha256 = await hash41(file3, Number(before.size), current9);
-    current9();
+    const sha256 = await hash41(file3, Number(before.size), current10);
+    current10();
     need55(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
-    await noSidecars4(path5, current9);
-    current9();
-    const rebound = await directory(parent.absolute, current9);
+    await noSidecars4(path5, current10);
+    current10();
+    const rebound = await directory(parent.absolute, current10);
     try {
       need55(sameInode2(parent.info, rebound.info), "Current preopen source directory path changed.");
     } finally {
       await rebound.handle.close();
     }
-    current9();
+    current10();
     const parentAfter = await parent.handle.stat({ bigint: true });
-    current9();
+    current10();
     const after = await file3.stat({ bigint: true });
-    current9();
+    current10();
     const named = await lstat41(path5, { bigint: true });
-    current9();
+    current10();
     need55(
       sameInode2(parent.info, parentAfter) && sameFile7(before, after) && sameFile7(before, named),
       "Current preopen source descriptor or path changed during reading."
@@ -126700,7 +126870,7 @@ async function verifySource(copy2, current9) {
   if (errors.length > 0) {
     throw new AggregateError(errors, "Current preopen source verification failed.", { cause: errors[0] });
   }
-  current9();
+  current10();
   need55(observation2 !== void 0, "Current preopen source observation is missing.");
   return observation2;
 }
@@ -126716,15 +126886,15 @@ var init_current_symbol_preopen_source = __esm({
 
 // server/src/current-symbol-clock-reservation.ts
 function reserveCurrentSymbolTransactionClockOwner(owner) {
-  if (owner === null || typeof owner !== "object" || owners2.has(owner)) {
+  if (owner === null || typeof owner !== "object" || owners3.has(owner)) {
     throw new Error("Clock dispatch-owner reservation already consumed or missing.");
   }
-  owners2.add(owner);
+  owners3.add(owner);
 }
-var owners2;
+var owners3;
 var init_current_symbol_clock_reservation = __esm({
   "server/src/current-symbol-clock-reservation.ts"() {
-    owners2 = /* @__PURE__ */ new WeakSet();
+    owners3 = /* @__PURE__ */ new WeakSet();
   }
 });
 
@@ -127310,7 +127480,7 @@ async function inspectCurrentSymbolClockEvidence(operationId9) {
       artifacts.push(descriptor10);
     }
     const after = await directory4.handle.stat({ bigint: true });
-    const same42 = (current9) => current9.dev === directory4.info.dev && current9.ino === directory4.info.ino && current9.ctimeNs === directory4.info.ctimeNs && current9.mtimeNs === directory4.info.mtimeNs;
+    const same42 = (current10) => current10.dev === directory4.info.dev && current10.ino === directory4.info.ino && current10.ctimeNs === directory4.info.ctimeNs && current10.mtimeNs === directory4.info.mtimeNs;
     need59(same42(after));
     const named = await root.openDirectory(directory4.absolute, false);
     try {
@@ -127413,25 +127583,25 @@ var init_current_aged_sql_reference = __esm({
           );
           assertCurrentClosedSessionCopyAuthority(proof);
         };
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           await revalidateCurrentSymbolBaselineCopy(engine2, baseline2, proof);
           unchanged5();
         };
-        await current9();
+        await current10();
         await engine2.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await engine2.assertRecoveryOperationIsolated(journalOperationId);
-        await current9();
+        await current10();
         const journal = await loadOperation(journalOperationId);
         unchanged5();
         const journalText = canonicalJson(journal);
         need60(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
         const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, baseline2.preparation.target);
-        await current9();
+        await current10();
         need60(head2.historyUuid === baseline2.preparation.history.headHistoryUuid);
         const clock7 = await windowsClockObservationForResult(proof, "termination");
-        await current9();
+        await current10();
         need60(clock7.clock.status === "observed" && clock7.base["checkedAt"] === proof.closedAt && clock7.ownerBinding["operationId"] === journalOperationId && clock7.ownerBinding["phase"] === closureBinding.phase);
         const binding8 = Object.freeze({
           profile: "private.current-aged-sql-reference-binding.v1",
@@ -127458,7 +127628,7 @@ var init_current_aged_sql_reference = __esm({
           referenceUtcMs: Number((BigInt(clock7.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
         const invocation = await compileCurrentAgedSqlReferenceTransport(request13);
-        await current9();
+        await current10();
         need60(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId9);
@@ -127481,16 +127651,16 @@ var init_current_aged_sql_reference = __esm({
           windowsSideEffects: "one disjoint nonce scratch copy and original synthetic Job; no EasyEDA APP or profile input",
           executionAuthorized: false
         }));
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         need60(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const returned = await invokeMainReferenceTransport(invocation);
         this.returns.set(operationId9, returned);
         const retained2 = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
         const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained2));
-        await current9();
+        await current10();
         need60(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
         const text36 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
         need60(text36.text === returned.stdout);
@@ -127509,7 +127679,7 @@ var init_current_aged_sql_reference = __esm({
         }
         need60(BigInt(nativeBefore.utcBeforeTicks) >= BigInt(clock7.clock.after.utcAfterTicks) && BigInt(nativeBefore.qpcBefore) >= BigInt(clock7.clock.after.qpcAfter));
         await readExactUtf8Artifact(resultArtifact);
-        await current9();
+        await current10();
         need60(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         assertCurrentIssuedWindowsClockObservation(clock7);
@@ -127624,7 +127794,7 @@ function currentAgedSqlCollectionEvidence(generation5, engine2) {
     executionAuthorized: false
   });
 }
-function current3(value2, engine2, generation5) {
+function current4(value2, engine2, generation5) {
   need62(value2 !== null && typeof value2 === "object");
   const original2 = issued9.get(value2);
   need62(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
@@ -127790,7 +127960,7 @@ async function collectCurrentAgedSqlClock(engine2, generation5, reference3) {
   }
 }
 function qualifyCurrentAgedSqlHead(value2, engine2, generation5, backendStart) {
-  const original2 = current3(value2, engine2, generation5);
+  const original2 = current4(value2, engine2, generation5);
   const after = original2.historical.afterClock, clock7 = rawClock(backendStart);
   need62(backendStart !== original2.before && backendStart !== original2.after && canonicalJson(backendStart.ownerBinding) === original2.historical.ownerBindingText && clockProvenance(backendStart) === original2.historical.provenanceText && clock7.before.zoneRulesSha256 === after.after.zoneRulesSha256 && clock7.before.localOffsetMinutes === after.after.localOffsetMinutes && clock7.before.qpcFrequency === after.after.qpcFrequency && BigInt(clock7.before.utcBeforeTicks) >= BigInt(after.after.utcAfterTicks) && BigInt(clock7.before.qpcBefore) >= BigInt(after.after.qpcAfter));
   const selected3 = original2.renderer.controlsBefore.sql[0];
@@ -128539,7 +128709,7 @@ function need64(condition) {
 async function hasCanvasOccurrences(chunks, targetUuid) {
   let canvas = false, steps = 0;
   for (const chunk of chunks) {
-    let current9;
+    let current10;
     const records2 = chunk.split("|\n");
     if (records2.at(-1) === "") {
       records2.pop();
@@ -128549,8 +128719,8 @@ async function hasCanvasOccurrences(chunks, targetUuid) {
       need64(record8 !== void 0);
       const type2 = record8.header["type"];
       if (type2 === "DOCHEAD") {
-        current9 = record8.body?.["uuid"];
-      } else if (type2 !== "EDIT_HEAD" && current9 === targetUuid && (typeof type2 !== "string" || !METADATA_ATOMS.has(type2))) {
+        current10 = record8.body?.["uuid"];
+      } else if (type2 !== "EDIT_HEAD" && current10 === targetUuid && (typeof type2 !== "string" || !METADATA_ATOMS.has(type2))) {
         canvas = true;
       }
       steps += 1;
@@ -129669,7 +129839,7 @@ var init_current_symbol_writer_runtime = __esm({
           sqlRuntime: source5.sqlRuntime
         });
         const frozen = canonicalJson(projection8());
-        const current9 = () => {
+        const current10 = () => {
           need66(
             this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && methods6(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "Current symbol verification continuation was changed or its writer did not retire successfully."
@@ -129677,7 +129847,7 @@ var init_current_symbol_writer_runtime = __esm({
           need66(assertOriginalCurrentSymbolFinishSnapshot(snapshot8, this.engine).inventory === slot.snapshotInventory);
         };
         slot.continuation = token;
-        continuations.set(token, { engine: this.engine, source: source5, current: current9, journalText: () => slot.journalText, consumed: false });
+        continuations.set(token, { engine: this.engine, source: source5, current: current10, journalText: () => slot.journalText, consumed: false });
       }
       getVerificationContinuation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -129738,11 +129908,11 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
   const purpose = source5.original.source.purpose;
   need67(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata");
   const snapshot8 = assertOriginalCurrentSymbolFinishSnapshot(source5.snapshot, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need67(assertOriginalCurrentSymbolWriterContinuation(continuation, engine2) === source5 && assertOriginalCurrentSymbolFinishSnapshot(source5.snapshot, engine2) === snapshot8);
   };
   const decoded = await decodeCompletedCurrentSymbolTransactionHistory(source5.clockPlan, source5.dispatchOwner, snapshot8.inventory);
-  current9();
+  current10();
   const { metadataPlan: metadataPlan2, expectedTicket, expectedDocumentEditVersion } = decoded;
   need67(decoded.decoded.history.semanticSha256 === source5.snapshot.native.historySemanticSha256 && decoded.decoded.history.projectUuid === metadataPlan2.projectUuid && decoded.decoded.history.branchUuid === metadataPlan2.branchUuid && decoded.decoded.history.projectOwnerUuid === metadataPlan2.ownerUuid && decoded.decoded.maximumTicket === expectedTicket);
   const document3 = decoded.decoded.history.documents.find((entry) => entry.uuid === metadataPlan2.targetUuid);
@@ -129775,7 +129945,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     maximumTicket: expectedTicket,
     currentEditVersion: expectedDocumentEditVersion
   });
-  current9();
+  current10();
   const documentCacheProjection = projection8.canvasRecords === 0 ? await prepareCurrentDocumentCacheSavedSymbolProjection({
     chunks: decoded.decoded.chunks,
     targetUuid: metadataPlan2.targetUuid,
@@ -129787,7 +129957,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     maximumTicket: expectedTicket,
     currentEditVersion: expectedDocumentEditVersion
   });
-  current9();
+  current10();
   const projectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(projection8, "0".repeat(16)));
   const documentCacheProjectedContentBytes = Buffer.byteLength(expectedSavedSymbolContent(documentCacheProjection, "0".repeat(16)));
   need67(projectedContentBytes > 0 && projectedContentBytes <= CURRENT_SAVED_SYMBOL_CONTENT_LIMIT);
@@ -129823,7 +129993,7 @@ async function prepareCurrentSavedSymbolSource(continuation, engine2) {
     documentCacheProjection
   });
   await revalidateCurrentSavedSymbolSource(descriptor10, engine2, continuation);
-  current9();
+  current10();
   return descriptor10;
 }
 function verifyCurrentSavedSymbolContent(value2, engine2, continuation, observation2) {
@@ -129894,34 +130064,34 @@ async function collectCurrentSavedSymbolContent(engine2, generation5, sourceValu
   const collection = { engine: engine2, source: sourceValue };
   collections3.set(generation5, collection);
   const dispatch = engine2.dispatchWithOrphanTracking;
-  const current9 = () => {
+  const current10 = () => {
     need68(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.dispatchWithOrphanTracking === dispatch && assertCurrentSymbolVerificationGeneration(generation5, engine2, scopeText) === source5 && assertCurrentSavedSymbolSource(sourceValue, engine2, source5.continuation) === saved);
     source5.current(scopeText);
     if (collection.rawText !== void 0) {
       need68(canonicalJson(collection.raw) === collection.rawText);
     }
   };
-  current9();
+  current10();
   await revalidateCurrentSymbolVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   await revalidateCurrentSavedSymbolSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   const initial = await engine2.status();
-  current9();
+  current10();
   const fingerprint = structuredClone(initial.stableFingerprint);
   assertExpectedFingerprint(fingerprint);
   validateSdkLocalRuntimeFingerprint(fingerprint);
   assertSubset(fingerprint, source5.expectedFingerprint, "Current saved symbol runtime");
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const code = buildCurrentSavedSymbolReadProgram(saved.request), phase5 = "current-symbol-verification-saved-read";
   await source5.record("verify-saved-read-intent", { request: saved.request, source: sourceValue, codeSha256: sha256Text(code), replayAllowed: false }, scopeText);
-  current9();
+  current10();
   const before = structuredClone(source5.journal);
   let marked;
   let raw;
@@ -129935,14 +130105,14 @@ async function collectCurrentSavedSymbolContent(engine2, generation5, sourceValu
       CURRENT_SAVED_SYMBOL_READ_TIMEOUT_MS + 15e3,
       async () => {
         marked = await source5.acceptMark(before, phase5, scopeText);
-        current9();
+        current10();
       },
       async (reply) => {
         collection.raw = reply;
         collection.rawText = canonicalJson(reply);
-        current9();
+        current10();
         await source5.record("verify-saved-read-reply", { raw: reply }, scopeText);
-        current9();
+        current10();
         marked = structuredClone(source5.journal);
       },
       async () => {
@@ -129951,7 +130121,7 @@ async function collectCurrentSavedSymbolContent(engine2, generation5, sourceValu
         } else {
           await source5.revalidate(scopeText);
         }
-        current9();
+        current10();
       }
     );
   } catch (error51) {
@@ -129960,20 +130130,20 @@ async function collectCurrentSavedSymbolContent(engine2, generation5, sourceValu
   }
   need68(marked !== void 0);
   await source5.acceptClear(marked, phase5, scopeText);
-  current9();
+  current10();
   need68(raw === collection.raw);
   const observation2 = decodeCurrentSavedSymbolReadReply(raw, saved.request);
   const relation = verifyCurrentSavedSymbolContent(sourceValue, engine2, source5.continuation, observation2.observation);
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await revalidateCurrentSavedSymbolSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   await revalidateCurrentSymbolVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   const final = await engine2.status();
-  current9();
+  current10();
   need68(canonicalJson(final.stableFingerprint) === canonicalJson(fingerprint));
   const result = Object.freeze({
     profile: "private.current-symbol-saved-read.v1",
@@ -129988,7 +130158,7 @@ async function collectCurrentSavedSymbolContent(engine2, generation5, sourceValu
     persistenceLifecycleComplete: false
   });
   await source5.record("verify-saved-content-result", result, scopeText);
-  current9();
+  current10();
   collection.observation = observation2;
   collection.observationText = canonicalJson(observation2);
   collection.result = result;
@@ -130661,7 +130831,7 @@ var init_current_symbol_verification_runtime = __esm({
         const { capture: capture3, launch } = slot;
         need69(capture3 !== void 0 && launch !== void 0 && slot.generation === void 0);
         const token = Object.freeze({ profile: "private.current-symbol-verification-generation.v1", operationId: slot.source.operationId });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           this.current(slot, scopeText);
           need69(slot.generation === token && slot.opened && slot.admitted && slot.cachesObserved && !slot.failed && !slot.finishing && !slot.closeAttempted && slot.capture === capture3 && slot.launch === launch);
         };
@@ -130673,33 +130843,33 @@ var init_current_symbol_verification_runtime = __esm({
           capture: capture3,
           launch,
           journal: slot.journal,
-          current: current9,
+          current: current10,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.original(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           record: async (phase5, value2, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.record(slot, phase5, value2, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           acceptMark: (before, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             return this.acceptMark(slot, before, phase5, scopeText);
           },
           acceptClear: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.acceptClear(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           retainEngineFailure: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.retainEngineFailure(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         }) });
-        current9();
+        current10();
       }
       async collectSavedContent(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -130911,13 +131081,13 @@ var init_current_symbol_verification_runtime = __esm({
         const token = Object.freeze({ profile: "private.current-symbol-verification-result.v1", operationId: slot.source.operationId });
         const initialMetadata = Object.freeze(structuredClone(slot.source.original.baseline.preparation.metadata.before));
         const resultText = canonicalJson({ snapshot: snapshot8, savedSource, initialMetadata, comparison: slot.comparison });
-        const current9 = () => {
+        const current10 = () => {
           need69(this.slots.get(token.operationId) === slot && slot.resultContinuation === token && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.saved === saved && slot.snapshot === snapshot8 && slot.comparison !== void 0 && canonicalJson({ snapshot: snapshot8, savedSource, initialMetadata, comparison: slot.comparison }) === resultText);
           need69(assertOriginalCurrentSymbolVerificationSnapshot(snapshot8, this.engine) === originalSnapshot2);
           assertCurrentSavedSymbolRead(saved, this.engine, generation5);
         };
         const currentClosed = () => {
-          current9();
+          current10();
           this.current(slot);
           need69(slot.retainForInverse && !slot.releaseAttempted && !slot.inverseTransferred);
           this.closedDispatch(slot);
@@ -130946,7 +131116,7 @@ var init_current_symbol_verification_runtime = __esm({
           }
         };
         slot.resultContinuation = token;
-        verificationResults.set(token, { engine: this.engine, current: current9, source: Object.freeze({
+        verificationResults.set(token, { engine: this.engine, current: current10, source: Object.freeze({
           writer: slot.source,
           snapshot: snapshot8,
           originalSnapshot: originalSnapshot2,
@@ -131049,14 +131219,14 @@ function projection7(owner, original2) {
 }
 function assertCurrentSymbolInverseBaselineOwner(owner, engine2) {
   need70(owner !== null && typeof owner === "object");
-  const issued29 = owners3.get(owner);
+  const issued29 = owners4.get(owner);
   need70(issued29 !== void 0 && issued29.engine === engine2 && canonicalJson(projection7(issued29.owner, issued29.value)) === issued29.text);
   need70(assertCurrentSymbolVerificationResult(issued29.value.predecessor, engine2) === issued29.value.result);
   return issued29.value;
 }
 async function revalidateCurrentSymbolInverseBaselineOwner(owner, engine2) {
   const original2 = assertCurrentSymbolInverseBaselineOwner(owner, engine2);
-  const issued29 = owners3.get(owner);
+  const issued29 = owners4.get(owner);
   need70(issued29 !== void 0);
   if (issued29.transferred) {
     const journal = await loadOperation(original2.predecessor.operationId);
@@ -131068,7 +131238,7 @@ async function revalidateCurrentSymbolInverseBaselineOwner(owner, engine2) {
   return original2;
 }
 async function transferCurrentSymbolInverseBaselineOwner(owner, engine2) {
-  const issued29 = owners3.get(owner), original2 = assertCurrentSymbolInverseBaselineOwner(owner, engine2);
+  const issued29 = owners4.get(owner), original2 = assertCurrentSymbolInverseBaselineOwner(owner, engine2);
   need70(issued29 !== void 0 && !issued29.transferAttempted);
   issued29.transferAttempted = true;
   await original2.result.transfer();
@@ -131078,7 +131248,7 @@ async function transferCurrentSymbolInverseBaselineOwner(owner, engine2) {
 }
 function currentSymbolInverseOwnershipTransferred(owner, engine2) {
   assertCurrentSymbolInverseBaselineOwner(owner, engine2);
-  const issued29 = owners3.get(owner);
+  const issued29 = owners4.get(owner);
   need70(issued29 !== void 0);
   return issued29.transferred;
 }
@@ -131129,10 +131299,10 @@ async function prepareCurrentSymbolInverseOwner(engine2, predecessor) {
     bridgeSession: result.originalSnapshot.capture.bridgeSession
   });
   const value2 = Object.freeze({ source: source5, preparation: preparation3, predecessor, result });
-  owners3.set(owner, { engine: engine2, value: value2, owner, text: canonicalJson(projection7(owner, value2)), transferAttempted: false, transferred: false });
+  owners4.set(owner, { engine: engine2, value: value2, owner, text: canonicalJson(projection7(owner, value2)), transferAttempted: false, transferred: false });
   return owner;
 }
-var attempts14, owners3;
+var attempts14, owners4;
 var init_current_symbol_inverse_owner = __esm({
   "server/src/current-symbol-inverse-owner.ts"() {
     init_artifacts();
@@ -131140,7 +131310,7 @@ var init_current_symbol_inverse_owner = __esm({
     init_current_symbol_metadata_preparation();
     init_current_symbol_verification_runtime();
     attempts14 = /* @__PURE__ */ new WeakSet();
-    owners3 = /* @__PURE__ */ new WeakMap();
+    owners4 = /* @__PURE__ */ new WeakMap();
   }
 });
 
@@ -131216,25 +131386,25 @@ var init_current_copy_aged_sql_reference = __esm({
           );
           assertCurrentClosedSessionCopyAuthority(proof);
         };
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           await revalidateCurrentSymbolCopyBaselineCopy(engine2, baseline2, proof);
           unchanged5();
         };
-        await current9();
+        await current10();
         await engine2.assertBridgeDispatchAllowed();
-        await current9();
+        await current10();
         await engine2.assertRecoveryOperationIsolated(journalOperationId);
-        await current9();
+        await current10();
         const journal = await loadOperation(journalOperationId);
         unchanged5();
         const journalText = canonicalJson(journal);
         need71(journal.operationId === journalOperationId && journal["orphanedCallPossible"] === false);
         const target8 = { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid };
         const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target8);
-        await current9();
+        await current10();
         const clock7 = await windowsClockObservationForResult(proof, "termination");
-        await current9();
+        await current10();
         need71(clock7.clock.status === "observed" && clock7.base["checkedAt"] === proof.closedAt && clock7.ownerBinding["operationId"] === journalOperationId && clock7.ownerBinding["phase"] === closureBinding.phase);
         const binding8 = Object.freeze({
           profile: "private.current-aged-sql-reference-binding.v1",
@@ -131261,7 +131431,7 @@ var init_current_copy_aged_sql_reference = __esm({
           referenceUtcMs: Number((BigInt(clock7.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
         const invocation = await compileCurrentAgedSqlReferenceTransport(request13);
-        await current9();
+        await current10();
         need71(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId9);
@@ -131284,16 +131454,16 @@ var init_current_copy_aged_sql_reference = __esm({
           windowsSideEffects: "one disjoint nonce scratch copy and original synthetic Job; no EasyEDA APP or profile input",
           executionAuthorized: false
         }));
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         need71(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const returned = await invokeMainReferenceTransport(invocation);
         this.returns.set(operationId9, returned);
         const retained2 = retainMainReferenceTransportV2(returned, invocation.requestSha256, intentArtifact.sha256);
         const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained2));
-        await current9();
+        await current10();
         need71(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
         const text36 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
         need71(text36.text === returned.stdout);
@@ -131312,7 +131482,7 @@ var init_current_copy_aged_sql_reference = __esm({
         }
         need71(BigInt(nativeBefore.utcBeforeTicks) >= BigInt(clock7.clock.after.utcAfterTicks) && BigInt(nativeBefore.qpcBefore) >= BigInt(clock7.clock.after.qpcAfter));
         await readExactUtf8Artifact(resultArtifact);
-        await current9();
+        await current10();
         need71(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         assertCurrentIssuedWindowsClockObservation(clock7);
@@ -131368,7 +131538,7 @@ function currentCopyAgedSqlCollectionEvidence(generation5, engine2) {
     executionAuthorized: false
   });
 }
-function current4(value2, engine2, generation5) {
+function current5(value2, engine2, generation5) {
   need72(value2 !== null && typeof value2 === "object");
   const original2 = issued13.get(value2);
   need72(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
@@ -131534,7 +131704,7 @@ async function collectCurrentCopyAgedSqlClock(engine2, generation5, reference3) 
   }
 }
 function qualifyCurrentCopyAgedSqlHead(value2, engine2, generation5, backendStart) {
-  const original2 = current4(value2, engine2, generation5);
+  const original2 = current5(value2, engine2, generation5);
   const after = original2.historical.afterClock, clock7 = rawClock2(backendStart);
   need72(backendStart !== original2.before && backendStart !== original2.after && canonicalJson(backendStart.ownerBinding) === original2.historical.ownerBindingText && clockProvenance2(backendStart) === original2.historical.provenanceText && clock7.before.zoneRulesSha256 === after.after.zoneRulesSha256 && clock7.before.localOffsetMinutes === after.after.localOffsetMinutes && clock7.before.qpcFrequency === after.after.qpcFrequency && BigInt(clock7.before.utcBeforeTicks) >= BigInt(after.after.utcAfterTicks) && BigInt(clock7.before.qpcBefore) >= BigInt(after.after.qpcAfter));
   const selected3 = original2.renderer.controlsBefore.sql[0];
@@ -132441,7 +132611,7 @@ var init_current_symbol_baseline_runtime = __esm({
         try {
           const original2 = assertBaselineOwner2(slot.owner, this.engine);
           const launch = original2.source.launchProjection, prior = original2.source.bridgeSession;
-          const current9 = () => {
+          const current10 = () => {
             this.outsideScope(slot);
             need74(
               slot.copyOpeningCleanupMethods !== void 0 && relaunchMethods(this.engine, this.runtime).every((method6, index) => method6 === slot.copyOpeningCleanupMethods?.[index]) && !slot.journal.orphanedCallPossible && slot.journal.bridgeDispatchBeforeOrphan === void 0 && slot.journal.bridgeSessionBeforeOrphan === void 0 && slot.journal.executionAuthorityBeforeOrphan === void 0,
@@ -132451,15 +132621,15 @@ var init_current_symbol_baseline_runtime = __esm({
             need74(status2.state === "owned" && canonicalJson(status2.launch) === canonicalJson(launch), "Copy cleanup original launch changed.");
           };
           const unchanged5 = async () => {
-            current9();
+            current10();
             if (slot.created) {
               const persisted = await loadOperation(operationId9);
-              current9();
+              current10();
               need74(canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText, "Copy cleanup initial capture journal changed.");
             }
           };
           const closed = () => {
-            current9();
+            current10();
             const lifecycle = this.engine.upstream.bridgeSessionLifecycle?.();
             need74(isRecord(lifecycle) && lifecycle["gatewayInstanceId"] === prior.gatewayInstanceId && lifecycle["activeSession"] === null && Array.isArray(lifecycle["recentClosedSessions"]), "Copy cleanup original bridge is not closed.");
             const matches = lifecycle["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
@@ -132918,21 +133088,21 @@ var init_current_symbol_baseline_runtime = __esm({
               "Current symbol admission selected session changed."
             );
           };
-          const current9 = async (scopeText) => {
+          const current10 = async (scopeText) => {
             sessionCurrent(scopeText);
             await unchanged5(scopeText);
             sessionCurrent(scopeText);
           };
-          await current9();
+          await current10();
           need74(await assertIssuedWindowsClockObservation(launchClock) === launchClock, "Current symbol admission launch clock changed.");
-          await current9();
+          await current10();
           await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-          await current9();
+          await current10();
           slot.journal.admissionAttempted = true;
           slot.journal.state = "admission-dispatching";
           slot.journal.nextSafeAction = "Retain one capture from the new authenticated session; no project open, Save or writer is authorized.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "admission-intent", { launch, launchClock, session, capturePhase: "closed-edit", challengeAttempt: 1 });
-          await current9();
+          await current10();
           let completed5 = false;
           await scope6.call(upstream2, async (binding8) => {
             const scopeText = canonicalJson(binding8);
@@ -132941,9 +133111,9 @@ var init_current_symbol_baseline_runtime = __esm({
               binding8.gatewayInstanceId === session.gatewayInstanceId && binding8.sessionId === session.sessionId && binding8.sessionSequence === session.sequence,
               "Current symbol admission scope differs from its selected session."
             );
-            await current9(scopeText);
+            await current10(scopeText);
             await _CurrentSymbolBaselineCoordinator.record(slot, "admission-capture-intent", { bridgeDispatch: binding8 });
-            await current9(scopeText);
+            await current10(scopeText);
             const capture3 = await this.engine.captureClosedSessionAuthority(operationId9, "closed-edit", 1);
             slot.admissionCapture = capture3;
             retainedCapture = capture3;
@@ -132953,7 +133123,7 @@ var init_current_symbol_baseline_runtime = __esm({
               need74(canonicalJson(capture3) === captureText, "Current symbol admission original capture changed.");
             };
             captured();
-            await current9(scopeText);
+            await current10(scopeText);
             captured();
             need74(capture3.operationId === operationId9 && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === sessionText, "Current symbol admission capture identity differs.");
             const roots = capture3.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
@@ -132963,16 +133133,16 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             const identity32 = await this.engine.runtimeIdentity(binding8);
             captured();
-            await current9(scopeText);
+            await current10(scopeText);
             captured();
             need74(canonicalJson(identity32) === canonicalJson(capture3.runtimeIdentity), "Current symbol admission native runtime changed.");
             slot.admissionClock = await this.engine.clockObservationForClosedCapture(capture3);
             captured();
-            await current9(scopeText);
+            await current10(scopeText);
             captured();
             need74(await assertIssuedWindowsClockObservation(slot.admissionClock) === slot.admissionClock, "Current symbol admission capture clock changed.");
             captured();
-            await current9(scopeText);
+            await current10(scopeText);
             captured();
             await _CurrentSymbolBaselineCoordinator.record(slot, "admission-capture-result", {
               capture: capture3,
@@ -132982,19 +133152,19 @@ var init_current_symbol_baseline_runtime = __esm({
               executionAuthorized: false
             });
             captured();
-            await current9(scopeText);
+            await current10(scopeText);
             captured();
             completed5 = true;
           });
-          await current9();
+          await current10();
           need74(completed5 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0, "Current symbol admission callback did not complete.");
           const finalClock = await this.engine.clockObservationForClosedCapture(slot.admissionCapture);
-          await current9();
+          await current10();
           need74(
             finalClock === slot.admissionClock && await assertIssuedWindowsClockObservation(finalClock) === finalClock,
             "Current symbol admission settled capture clock changed."
           );
-          await current9();
+          await current10();
           slot.journal.state = "admitted";
           slot.journal.nextSafeAction = "New session admitted only. Observe inactive caches before the separately guarded baseline-open-project continuation. No document opening, Save or writer is authorized.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "admission-result", {
@@ -133004,9 +133174,9 @@ var init_current_symbol_baseline_runtime = __esm({
             beforeWriteBaselineVerified: false,
             executionAuthorized: false
           });
-          await current9();
+          await current10();
           need74(await assertIssuedWindowsClockObservation(finalClock) === finalClock, "Current symbol admission final capture clock changed.");
-          await current9();
+          await current10();
           slot.admissionProved = true;
           slot.sessionCurrent = sessionCurrent;
           return summary8(slot);
@@ -133030,7 +133200,7 @@ var init_current_symbol_baseline_runtime = __esm({
         slot.cacheAttempted = true;
         const { source: source5, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
         try {
-          const current9 = async (scopeText) => {
+          const current10 = async (scopeText) => {
             sessionCurrent(scopeText);
             const persisted = await loadOperation(operationId9);
             sessionCurrent(scopeText);
@@ -133040,18 +133210,18 @@ var init_current_symbol_baseline_runtime = __esm({
             );
           };
           const original2 = async (scopeText) => {
-            await current9(scopeText);
+            await current10(scopeText);
             const clock7 = await this.engine.clockObservationForClosedCapture(admissionCapture);
-            await current9(scopeText);
+            await current10(scopeText);
             need74(
               clock7 === admissionClock && await assertIssuedWindowsClockObservation(clock7) === clock7,
               "Current symbol cache admission clock changed."
             );
-            await current9(scopeText);
+            await current10(scopeText);
           };
           await original2();
           await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-          await current9();
+          await current10();
           validateSdkLocalRuntimeFingerprint(source5.expectedFingerprint);
           const target8 = { projectUuid: source5.target.projectUuid, branchUuid: source5.target.branchUuid };
           const code = buildCurrentUploadQueueReadProgram(target8), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
@@ -133066,7 +133236,7 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             await original2(scopeText);
             const initialStatus = await this.engine.status();
-            await current9(scopeText);
+            await current10(scopeText);
             const fingerprint = structuredClone(initialStatus.stableFingerprint);
             validateSdkLocalRuntimeFingerprint(fingerprint);
             assertExpectedFingerprint(fingerprint);
@@ -133085,7 +133255,7 @@ var init_current_symbol_baseline_runtime = __esm({
             });
             await original2(scopeText);
             await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-            await current9(scopeText);
+            await current10(scopeText);
             const before = structuredClone(slot.journal);
             let marked;
             await this.engine.dispatchWithOrphanTracking(
@@ -133106,25 +133276,25 @@ var init_current_symbol_baseline_runtime = __esm({
                 slot.journalText = markedText;
                 marked = structuredClone(slot.journal);
                 slot.cacheClock = await this.engine.clockObservationForTrackedDispatch(slot.journal, CACHE_PHASE);
-                await current9(scopeText);
+                await current10(scopeText);
                 need74(
                   await assertIssuedWindowsClockObservation(slot.cacheClock) === slot.cacheClock,
                   "Current symbol cache dispatch clock changed."
                 );
                 await original2(scopeText);
                 await this.engine.assertRecoveryOperationIsolated(operationId9);
-                await current9(scopeText);
+                await current10(scopeText);
               },
               async (raw) => {
                 slot.cacheRaw = raw;
                 slot.cacheReplyRetained = true;
-                await current9(scopeText);
+                await current10(scopeText);
                 slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, target8);
                 await original2(scopeText);
               },
               async () => {
                 need74(marked !== void 0, "Current symbol cache mark was not accepted; cleanup refused.");
-                await current9(scopeText);
+                await current10(scopeText);
               }
             );
             sessionCurrent(scopeText);
@@ -133142,11 +133312,11 @@ var init_current_symbol_baseline_runtime = __esm({
             slot.journalText = clearedText;
             await original2(scopeText);
             await this.engine.assertBridgeDispatchAllowed();
-            await current9(scopeText);
+            await current10(scopeText);
             await verifyCurrentDisposableOpenImplementation(fingerprint.installedBundles.assetsRoot);
             await original2(scopeText);
             const finalStatus = await this.engine.status();
-            await current9(scopeText);
+            await current10(scopeText);
             const final = finalStatus.stableFingerprint;
             validateSdkLocalRuntimeFingerprint(final);
             need74(canonicalJson(final) === canonicalJson(fingerprint), "Current symbol cache runtime changed around observation.");
@@ -133156,7 +133326,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await original2();
           need74(completed5 && slot.cacheObservation !== void 0, "Current symbol cache scope did not complete.");
           await this.engine.assertBridgeDispatchAllowed();
-          await current9();
+          await current10();
           slot.journal.state = "caches-observed";
           slot.journal.nextSafeAction = "Cache absence is point-in-time only. Use baseline-open-project with explicit opening-effect acceptance for its fresh source, registry and cache checks. Startup, backend actor/clock and writer authority remain unqualified. Do not open a document or Save.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "cache-result", {
@@ -133225,7 +133395,7 @@ var init_current_symbol_baseline_runtime = __esm({
         slot.projectOpenAttempted = true;
         const { source: source5, copy: copy2, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
         try {
-          const current9 = async (scopeText) => {
+          const current10 = async (scopeText) => {
             sessionCurrent(scopeText);
             assertBaselineCopy(copy2, this.engine);
             const persisted = await loadOperation(operationId9);
@@ -133236,14 +133406,14 @@ var init_current_symbol_baseline_runtime = __esm({
             );
           };
           const original2 = async (scopeText) => {
-            await current9(scopeText);
+            await current10(scopeText);
             const clock7 = await this.engine.clockObservationForClosedCapture(admissionCapture);
-            await current9(scopeText);
+            await current10(scopeText);
             need74(
               clock7 === admissionClock && await assertIssuedWindowsClockObservation(clock7) === clock7,
               "Current project-only admission clock changed."
             );
-            await current9(scopeText);
+            await current10(scopeText);
           };
           await original2();
           if (supportedStartup) {
@@ -133261,7 +133431,7 @@ var init_current_symbol_baseline_runtime = __esm({
             );
           }
           await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-          await current9();
+          await current10();
           validateSdkLocalRuntimeFingerprint(source5.expectedFingerprint);
           const target8 = { ...source5.target, expectedSourceSha256: copy2.checkpoint.sourceSha256 };
           const code = buildCurrentProjectOnlyOpenProgram(target8), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
@@ -133276,7 +133446,7 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             await original2(scopeText);
             const initialStatus = await this.engine.status();
-            await current9(scopeText);
+            await current10(scopeText);
             const fingerprint = structuredClone(initialStatus.stableFingerprint);
             validateSdkLocalRuntimeFingerprint(fingerprint);
             assertExpectedFingerprint(fingerprint);
@@ -133304,7 +133474,7 @@ var init_current_symbol_baseline_runtime = __esm({
             });
             await original2(scopeText);
             await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-            await current9(scopeText);
+            await current10(scopeText);
             const before = structuredClone(slot.journal);
             let marked;
             await this.engine.dispatchWithOrphanTracking(
@@ -133325,27 +133495,27 @@ var init_current_symbol_baseline_runtime = __esm({
                 slot.journalText = markedText;
                 marked = structuredClone(slot.journal);
                 slot.projectOpenClock = await this.engine.clockObservationForTrackedDispatch(slot.journal, OPEN_PHASE);
-                await current9(scopeText);
+                await current10(scopeText);
                 need74(
                   await assertIssuedWindowsClockObservation(slot.projectOpenClock) === slot.projectOpenClock,
                   "Current project-only dispatch clock changed."
                 );
                 await original2(scopeText);
                 await this.engine.assertRecoveryOperationIsolated(operationId9);
-                await current9(scopeText);
+                await current10(scopeText);
                 slot.preopenSource = await preopenSource(this.engine, copy2);
                 await original2(scopeText);
               },
               async (raw) => {
                 slot.projectOpenRaw = raw;
                 slot.projectOpenReplyRetained = true;
-                await current9(scopeText);
+                await current10(scopeText);
                 slot.projectOpenObservation = decodeCurrentProjectOnlyOpenReply(raw, target8);
                 await original2(scopeText);
               },
               async () => {
                 need74(marked !== void 0, "Current project-only mark was not accepted; cleanup refused.");
-                await current9(scopeText);
+                await current10(scopeText);
               }
             );
             sessionCurrent(scopeText);
@@ -133363,11 +133533,11 @@ var init_current_symbol_baseline_runtime = __esm({
             slot.journalText = clearedText;
             await original2(scopeText);
             await this.engine.assertBridgeDispatchAllowed();
-            await current9(scopeText);
+            await current10(scopeText);
             await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot);
             await original2(scopeText);
             const finalStatus = await this.engine.status();
-            await current9(scopeText);
+            await current10(scopeText);
             const final = finalStatus.stableFingerprint;
             validateSdkLocalRuntimeFingerprint(final);
             need74(canonicalJson(final) === canonicalJson(fingerprint), "Current project-only runtime changed around navigation.");
@@ -133377,7 +133547,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await original2();
           need74(completed5 && slot.projectOpenObservation !== void 0, "Current project-only scope did not complete.");
           await this.engine.assertBridgeDispatchAllowed();
-          await current9();
+          await current10();
           slot.journal.state = "project-only-opened";
           slot.journal.nextSafeAction = "Project-only return retained; startup producers, backend actor/clock and opening effects remain unqualified. Keep the original facade and use baseline-inspect for purpose-bound clock/lifecycle guidance, or baseline-finish-close then baseline-observe-finish for retained normal closure. This opening authorizes no direct edit. Do not repeat navigation or issue Save.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "project-only-result", {
@@ -133419,7 +133589,7 @@ var init_current_symbol_baseline_runtime = __esm({
         const originalPreparation = slot.originalPreparation;
         const common5 = { source: replacementSource, capture: capture3, launch, launchClock, captureClock: captureClock3 };
         const journalText = slot.journalText;
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           need74(
             this.slots.get(token.operationId) === slot && slot.projectOnlyGeneration === token && canonicalJson(token) === tokenText && slot.owner.operationId === token.operationId && slot.source === source5 && slot.copy === copy2 && slot.sessionCurrent === sessionCurrent && slot.originalPreparation === originalPreparation && canonicalJson(originalPreparation) === slot.originalPreparationText && slot.admissionCapture === capture3 && slot.admissionClock === captureClock3 && slot.launch === launch && slot.launchClock === launchClock && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && slot.projectOpened && slot.admissionProved && slot.cachesObserved && slot.captureReleased && !slot.finishing && !slot.finishCloseAttempted && !slot.finishReleaseAttempted && !slot.finishCaptureReleased && !slot.finished && (slot.writerTransfer === void 0 ? slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText : slot.journal.plan.profile === (slot.purpose === "disposable-symbol-copy" ? "easyeda-pro-control.current-symbol-copy-writer.v1" : "easyeda-pro-control.current-symbol-writer.v1")),
             "Current project-only original generation was changed, stopped or retired."
@@ -133433,10 +133603,10 @@ var init_current_symbol_baseline_runtime = __esm({
         };
         const revalidate = async (scopeText) => {
           const journalCurrent = async () => {
-            current9(scopeText);
+            current10(scopeText);
             const expected3 = slot.writerTransfer === void 0 ? journalText : canonicalJson(slot.journal);
             const journal = await loadOperation(token.operationId);
-            current9(scopeText);
+            current10(scopeText);
             need74(canonicalJson(journal) === expected3 && canonicalJson(slot.journal) === expected3, "Current project-only generation journal changed.");
           };
           await journalCurrent();
@@ -133444,21 +133614,21 @@ var init_current_symbol_baseline_runtime = __esm({
             await assertIssuedWindowsClockObservation(launchClock) === launchClock,
             "Current project-only launch clock changed."
           );
-          current9(scopeText);
+          current10(scopeText);
           const observed2 = await this.engine.clockObservationForClosedCapture(capture3);
-          current9(scopeText);
+          current10(scopeText);
           need74(
             observed2 === captureClock3 && await assertIssuedWindowsClockObservation(captureClock3) === captureClock3,
             "Current project-only capture clock changed."
           );
-          current9(scopeText);
+          current10(scopeText);
           await journalCurrent();
-          current9(scopeText);
+          current10(scopeText);
         };
         slot.projectOnlyGeneration = token;
-        current9();
+        current10();
         const transferLifetime = (owner) => {
-          current9();
+          current10();
           need74(!this.busy && slot.writerTransfer === void 0, "Current symbol writer transfer is already consumed or busy.");
           const currentLaunch = slot.currentLaunch;
           need74(currentLaunch !== void 0, "Current symbol writer transfer has no original launch owner.");
@@ -133505,7 +133675,7 @@ var init_current_symbol_baseline_runtime = __esm({
             transferred.current();
             return owner;
           };
-          issuedCopyProjectOnlyGenerations.set(token, { value: value3, current: current9, revalidate, transfer: transfer2 });
+          issuedCopyProjectOnlyGenerations.set(token, { value: value3, current: current10, revalidate, transfer: transfer2 });
           return;
         }
         need74(
@@ -133520,7 +133690,7 @@ var init_current_symbol_baseline_runtime = __esm({
           transferred.current();
           return owner;
         };
-        issuedProjectOnlyGenerations.set(token, { value: value2, current: current9, revalidate, transfer });
+        issuedProjectOnlyGenerations.set(token, { value: value2, current: current10, revalidate, transfer });
       }
       /** Internal lookup only. History or a new coordinator cannot adopt this
        * original generation, and no caller callback can issue or replace it.
@@ -133582,16 +133752,16 @@ var init_current_symbol_baseline_runtime = __esm({
         this.busy = true;
         slot.agedClockAttempted = true;
         try {
-          const current9 = () => {
+          const current10 = () => {
             need74(
               projectGenerationSource(generation5, this.engine) === original2 && (copyOperation ? slot.copyClockReference : slot.clockReference) === reference3 && slot.clockReferenceAccepted,
               "Current aged clock original generation or reference changed."
             );
           };
           await revalidateProjectGeneration(generation5, this.engine);
-          current9();
+          current10();
           await this.engine.assertBridgeAndRecoveryAdmission(operationId9);
-          current9();
+          current10();
           const scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need74(typeof scope6 === "function", "Current aged clock requires its original authenticated scope.");
           let completed5 = false;
@@ -133614,9 +133784,9 @@ var init_current_symbol_baseline_runtime = __esm({
             );
             completed5 = true;
           });
-          current9();
+          current10();
           await revalidateProjectGeneration(generation5, this.engine);
-          current9();
+          current10();
           need74(completed5 && (copyOperation ? slot.copyAgedClock : slot.agedClock) !== void 0, "Current aged clock scope did not complete.");
           slot.agedClockAccepted = true;
           return summary8(slot);
@@ -133807,12 +133977,12 @@ var init_current_symbol_baseline_runtime = __esm({
               dispatch !== void 0 && prior !== void 0 && authority2 !== void 0 && observeClosure !== void 0 && this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased === observeClosure && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process21) => process21.role === "easyeda-main" && process21.pid === launch.root.pid && process21.startIdentity === launch.root.startIdentity) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "Current symbol finish lacks its exact last-dispatch capture and session binding."
             );
-            const current9 = closedSessionSchema.parse(observeClosure.call(this.engine.upstream, dispatch, prior));
+            const current10 = closedSessionSchema.parse(observeClosure.call(this.engine.upstream, dispatch, prior));
             need74(
-              current9.sessionId === prior.sessionId && current9.sequence === prior.sequence && current9.authenticationReceiptSha256 === prior.authenticationReceiptSha256 && current9.authenticatedAtEpochMs === prior.authenticatedAtEpochMs && current9.closedAtEpochMs >= prior.authenticatedAtEpochMs && (closure6 === void 0 || canonicalJson(current9) === canonicalJson(closure6)),
+              current10.sessionId === prior.sessionId && current10.sequence === prior.sequence && current10.authenticationReceiptSha256 === prior.authenticationReceiptSha256 && current10.authenticatedAtEpochMs === prior.authenticatedAtEpochMs && current10.closedAtEpochMs >= prior.authenticatedAtEpochMs && (closure6 === void 0 || canonicalJson(current10) === canonicalJson(closure6)),
               "Current symbol finish last-dispatch closure changed."
             );
-            closure6 ??= current9;
+            closure6 ??= current10;
           };
           closedDispatch();
           await this.engine.assertRecoveryOperationIsolated(operationId9);
@@ -137244,7 +137414,7 @@ var init_current_symbol_copy_writer_runtime = __esm({
           sqlRuntime: source5.sqlRuntime
         });
         const frozen = canonicalJson(projection8());
-        const current9 = () => {
+        const current10 = () => {
           need80(
             this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && slot.writeResult === writeResult && slot.source.original.baseline.preparation === copyPlan && methods8(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "Current copy verification continuation changed or its writer did not retire successfully."
@@ -137253,7 +137423,7 @@ var init_current_symbol_copy_writer_runtime = __esm({
           assertCurrentSymbolCopyPlanInventory(copyPlan, slot.source.original.baseline.inventory);
         };
         slot.continuation = token;
-        continuations2.set(token, { engine: this.engine, source: source5, current: current9, journalText: () => slot.journalText, consumed: false });
+        continuations2.set(token, { engine: this.engine, source: source5, current: current10, journalText: () => slot.journalText, consumed: false });
       }
       getVerificationContinuation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -137312,7 +137482,7 @@ async function revalidateCurrentCopiedSymbolSource(value2, engine2, continuation
 async function prepareCurrentCopiedSymbolSource(continuation, engine2) {
   const source5 = assertOriginalCurrentSymbolCopyWriterContinuation(continuation, engine2);
   const snapshot8 = assertOriginalCurrentSymbolCopyFinishSnapshot(source5.snapshot, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need81(assertOriginalCurrentSymbolCopyWriterContinuation(continuation, engine2) === source5 && assertOriginalCurrentSymbolCopyFinishSnapshot(source5.snapshot, engine2) === snapshot8);
   };
   const completed5 = completedCurrentSymbolCopyClockSource(source5.clockPlan, source5.dispatchOwner, snapshot8.inventory);
@@ -137322,7 +137492,7 @@ async function prepareCurrentCopiedSymbolSource(continuation, engine2) {
     projectUuid: copyPlan.source.projectUuid,
     branchUuid: copyPlan.source.branchUuid
   });
-  current9();
+  current10();
   need81(decoded.history.semanticSha256 === source5.snapshot.native.historySemanticSha256 && decoded.history.projectUuid === copyPlan.source.projectUuid && decoded.history.branchUuid === copyPlan.source.branchUuid && decoded.history.projectOwnerUuid === copyPlan.ownerUuid && decoded.maximumTicket === copyPlan.canvasHeaderTicket);
   const document3 = decoded.history.documents.find((item2) => item2.uuid === append.targetUuid);
   need81(document3?.docType === "SYMBOL" && document3.metadata["version"] === source5.writeResult.created.version && source5.writeResult.created.ticket === copyPlan.metadataTicket);
@@ -137385,7 +137555,7 @@ async function prepareCurrentCopiedSymbolSource(continuation, engine2) {
     projection: projection8
   });
   await revalidateCurrentCopiedSymbolSource(descriptor10, engine2, continuation);
-  current9();
+  current10();
   return descriptor10;
 }
 function verifyCurrentCopiedSymbolContent(value2, engine2, continuation, observation2) {
@@ -137450,34 +137620,34 @@ async function collectCurrentCopiedSymbolContent(engine2, generation5, sourceVal
   const collection = { engine: engine2, source: sourceValue };
   collections6.set(generation5, collection);
   const dispatch = engine2.dispatchWithOrphanTracking;
-  const current9 = () => {
+  const current10 = () => {
     need82(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.dispatchWithOrphanTracking === dispatch && assertCurrentSymbolCopyVerificationGeneration(generation5, engine2, scopeText) === source5 && assertCurrentCopiedSymbolSource(sourceValue, engine2, source5.continuation) === saved);
     source5.current(scopeText);
     if (collection.rawText !== void 0) {
       need82(canonicalJson(collection.raw) === collection.rawText);
     }
   };
-  current9();
+  current10();
   await revalidateCurrentSymbolCopyVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   await revalidateCurrentCopiedSymbolSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   const initial = await engine2.status();
-  current9();
+  current10();
   const fingerprint = structuredClone(initial.stableFingerprint);
   assertExpectedFingerprint(fingerprint);
   validateSdkLocalRuntimeFingerprint(fingerprint);
   assertSubset(fingerprint, source5.expectedFingerprint, "Current saved symbol runtime");
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const code = buildCurrentSymbolCopySavedReadProgram(saved.copyPlan, saved.request), phase5 = "current-symbol-copy-verification-saved-read";
   await source5.record("verify-saved-read-intent", { request: saved.request, source: sourceValue, codeSha256: sha256Text(code), replayAllowed: false }, scopeText);
-  current9();
+  current10();
   const before = structuredClone(source5.journal);
   let marked;
   let raw;
@@ -137491,14 +137661,14 @@ async function collectCurrentCopiedSymbolContent(engine2, generation5, sourceVal
       CURRENT_SAVED_SYMBOL_READ_TIMEOUT_MS + 15e3,
       async () => {
         marked = await source5.acceptMark(before, phase5, scopeText);
-        current9();
+        current10();
       },
       async (reply) => {
         collection.raw = reply;
         collection.rawText = canonicalJson(reply);
-        current9();
+        current10();
         await source5.record("verify-saved-read-reply", { raw: reply }, scopeText);
-        current9();
+        current10();
         marked = structuredClone(source5.journal);
       },
       async () => {
@@ -137507,7 +137677,7 @@ async function collectCurrentCopiedSymbolContent(engine2, generation5, sourceVal
         } else {
           await source5.revalidate(scopeText);
         }
-        current9();
+        current10();
       }
     );
   } catch (error51) {
@@ -137516,20 +137686,20 @@ async function collectCurrentCopiedSymbolContent(engine2, generation5, sourceVal
   }
   need82(marked !== void 0);
   await source5.acceptClear(marked, phase5, scopeText);
-  current9();
+  current10();
   need82(raw === collection.raw);
   const observation2 = decodeCurrentSymbolCopySavedReadReply(raw, saved.copyPlan, saved.request);
   const relation = verifyCurrentCopiedSymbolContent(sourceValue, engine2, source5.continuation, observation2.observation);
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await revalidateCurrentCopiedSymbolSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   await revalidateCurrentSymbolCopyVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   const final = await engine2.status();
-  current9();
+  current10();
   need82(canonicalJson(final.stableFingerprint) === canonicalJson(fingerprint));
   const result = Object.freeze({
     profile: "private.current-symbol-copy-saved-read.v1",
@@ -137544,7 +137714,7 @@ async function collectCurrentCopiedSymbolContent(engine2, generation5, sourceVal
     persistenceLifecycleComplete: false
   });
   await source5.record("verify-saved-content-result", result, scopeText);
-  current9();
+  current10();
   collection.observation = observation2;
   collection.observationText = canonicalJson(observation2);
   collection.result = result;
@@ -138097,7 +138267,7 @@ var init_current_symbol_copy_verification_runtime = __esm({
         const { capture: capture3, launch } = slot;
         need83(capture3 !== void 0 && launch !== void 0 && slot.generation === void 0);
         const token = Object.freeze({ profile: "private.current-symbol-copy-verification-generation.v1", operationId: slot.source.operationId });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           this.current(slot, scopeText);
           need83(slot.generation === token && slot.opened && slot.admitted && slot.cachesObserved && !slot.failed && !slot.finishing && !slot.closeAttempted && slot.capture === capture3 && slot.launch === launch);
         };
@@ -138109,33 +138279,33 @@ var init_current_symbol_copy_verification_runtime = __esm({
           capture: capture3,
           launch,
           journal: slot.journal,
-          current: current9,
+          current: current10,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.original(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           record: async (phase5, value2, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.record(slot, phase5, value2, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           acceptMark: (before, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             return this.acceptMark(slot, before, phase5, scopeText);
           },
           acceptClear: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.acceptClear(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           retainEngineFailure: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.retainEngineFailure(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         }) });
-        current9();
+        current10();
       }
       async collectSavedContent(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -139357,7 +139527,7 @@ var init_current_disposable_open_runtime = __esm({
             const dispatch = upstream2.currentAuthenticatedBridgeDispatchBinding, lifecycle = upstream2.bridgeSessionLifecycle;
             const capture3 = engine2.captureClosedSessionAuthority, clock7 = engine2.clockObservationForClosedCapture, release = engine2.releaseClosedSessionAuthority;
             const runtimeStatus = runtime.status;
-            const current9 = () => {
+            const current10 = () => {
               requireValue15(
                 runtime.status === runtimeStatus && engine2.captureClosedSessionAuthority === capture3 && engine2.clockObservationForClosedCapture === clock7 && engine2.releaseClosedSessionAuthority === release,
                 "Current PCB opening capture producer or runtime status method changed."
@@ -139375,25 +139545,25 @@ var init_current_disposable_open_runtime = __esm({
               );
             };
             const revalidateEvidence = async () => {
-              current9();
+              current10();
               const persisted = await this.load(openingOperationId);
-              current9();
+              current10();
               requireValue15(canonicalJson(persisted) === journalText, "Current PCB opening persisted journal changed.");
             };
             const revalidate = async () => {
-              current9();
+              current10();
               await engine2.assertBridgeAndRecoveryAdmission(owner.operationId);
-              current9();
+              current10();
               await revalidateEvidence();
-              current9();
+              current10();
             };
             this.currentUntransferred(slot);
             baselineRuntimeReservations.add(runtime);
             this.baselineJobs.add(slot.launch.jobId);
             this.generations.clear();
             this.pcbRenameOpeningOwners.set(request13.operationId, owner);
-            issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current9, revalidate, revalidateEvidence, state: "retained" });
-            current9();
+            issuedPcbRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current10, revalidate, revalidateEvidence, state: "retained" });
+            current10();
             return owner;
           });
           assertCurrentPcbRenameOpeningOwner(result, engine2);
@@ -139476,7 +139646,7 @@ var init_current_disposable_open_runtime = __esm({
             const dispatch = upstream2.currentAuthenticatedBridgeDispatchBinding, lifecycle = upstream2.bridgeSessionLifecycle;
             const capture3 = engine2.captureClosedSessionAuthority, clock7 = engine2.clockObservationForClosedCapture, release = engine2.releaseClosedSessionAuthority;
             const runtimeStatus = runtime.status;
-            const current9 = () => {
+            const current10 = () => {
               requireValue15(
                 runtime.status === runtimeStatus && engine2.captureClosedSessionAuthority === capture3 && engine2.clockObservationForClosedCapture === clock7 && engine2.releaseClosedSessionAuthority === release,
                 "Current SCH opening capture producer or runtime status method changed."
@@ -139494,25 +139664,25 @@ var init_current_disposable_open_runtime = __esm({
               );
             };
             const revalidateEvidence = async () => {
-              current9();
+              current10();
               const persisted = await this.load(openingOperationId);
-              current9();
+              current10();
               requireValue15(canonicalJson(persisted) === journalText, "Current SCH opening persisted journal changed.");
             };
             const revalidate = async () => {
-              current9();
+              current10();
               await engine2.assertBridgeAndRecoveryAdmission(owner.operationId);
-              current9();
+              current10();
               await revalidateEvidence();
-              current9();
+              current10();
             };
             this.currentUntransferred(slot);
             baselineRuntimeReservations.add(runtime);
             this.baselineJobs.add(slot.launch.jobId);
             this.generations.clear();
             this.schematicRenameOpeningOwners.set(request13.operationId, owner);
-            issuedSchematicRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current9, revalidate, revalidateEvidence, state: "retained" });
-            current9();
+            issuedSchematicRenameOpeningOwners.set(owner, { value: Object.freeze({ source: source5, intent }), current: current10, revalidate, revalidateEvidence, state: "retained" });
+            current10();
             return owner;
           });
           assertCurrentSchematicRenameOpeningOwner(result, engine2);
@@ -140000,25 +140170,25 @@ var init_current_disposable_open_runtime = __esm({
           operationId: operationId9,
           openingOperationId: generation5.operationId
         });
-        const current9 = () => {
+        const current10 = () => {
           this.current(slot);
           requireValue15(this.baselineJobs.has(slot.launch.jobId) && this.options.engine === engine2 && engine2.upstream === upstream2 && engine2.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(slot.journal) === journalText && canonicalJson(slot.launch) === slot.launchText && canonicalJson(preparation3) === preparationText, "Current symbol baseline transferred owner changed.");
         };
         const revalidate = async () => {
-          current9();
+          current10();
           await engine2.assertBridgeAndRecoveryAdmission(operationId9);
-          current9();
+          current10();
           const persisted = await this.load(owner.openingOperationId);
-          current9();
+          current10();
           requireValue15(canonicalJson(persisted) === journalText, "Current symbol baseline persisted opening changed.");
         };
-        current9();
+        current10();
         this.generations.delete(generation5.operationId);
         if (preparation3.profile === "private.current-owned-symbol-copy-preparation.v1") {
           requireValue15(source5.purpose === "disposable-validation", "Copy baseline transfer requires its disposable original opening.");
-          issuedCopyBaselineOwners.set(owner, { value: Object.freeze({ source: source5, preparation: preparation3 }), current: current9, revalidate });
+          issuedCopyBaselineOwners.set(owner, { value: Object.freeze({ source: source5, preparation: preparation3 }), current: current10, revalidate });
         } else {
-          issuedBaselineOwners.set(owner, { value: Object.freeze({ source: source5, preparation: preparation3 }), current: current9, revalidate });
+          issuedBaselineOwners.set(owner, { value: Object.freeze({ source: source5, preparation: preparation3 }), current: current10, revalidate });
         }
         return owner;
       }
@@ -140033,7 +140203,7 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(reader !== void 0, "Current symbol preparation cannot inspect the original authenticated session.");
         const generation5 = Object.freeze({ profile: "private.current-disposable-open-generation.v1", operationId: journal.operationId });
         this.generations.set(journal.operationId, generation5);
-        const current9 = () => {
+        const current10 = () => {
           try {
             this.current(slot);
             if (baselineOperationId === void 0) {
@@ -140068,21 +140238,21 @@ var init_current_disposable_open_runtime = __esm({
         });
         const revalidate = async () => {
           try {
-            current9();
+            current10();
             await engine2.assertBridgeAndRecoveryAdmission(journal.operationId);
-            current9();
+            current10();
             await this.admission(source5.expectedFingerprint);
-            current9();
+            current10();
             const persisted = await this.load(journal.operationId);
-            current9();
+            current10();
             requireValue15(canonicalJson(persisted) === journalText, "Current symbol preparation persisted opening changed.");
           } catch (error51) {
             this.generations.delete(journal.operationId);
             throw error51;
           }
         };
-        current9();
-        issuedGenerations.set(generation5, { source: source5, current: current9, revalidate });
+        current10();
+        issuedGenerations.set(generation5, { source: source5, current: current10, revalidate });
         return generation5;
       }
       async load(operationId9) {
@@ -140399,17 +140569,17 @@ var init_current_disposable_open_runtime = __esm({
         });
         const bindingText = originalBinding();
         let journalText = canonicalJson(journal);
-        const current9 = () => {
+        const current10 = () => {
           requireValue15(runtime.observeApplicationWindow === observeWindow && runtime.normalClose === close && runtime.status === status2 && engine2.assertRecoveryOperationIsolated === isolate && engine2.executionAuthorityValidator === validator && engine2.upstream === upstream2 && originalBinding() === bindingText && canonicalJson(journal) === journalText, "Current normal-close retained methods or journal changed.");
           this.currentUntransferred(slot);
         };
         const unchanged5 = async () => {
-          current9();
+          current10();
           const persisted = await this.load(journal.operationId);
-          current9();
+          current10();
           requireValue15(canonicalJson(persisted) === journalText, "Current normal-close persisted journal changed.");
         };
-        current9();
+        current10();
         await isolate.call(engine2, journal.operationId);
         await unchanged5();
         const window = await observeWindow.call(runtime);
@@ -141098,36 +141268,36 @@ async function readCurrentProjectPcbMetadata(engine2, input, expectedFingerprint
     throw new Error("Project PCB metadata requires an authenticated scope.");
   }
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
       throw new Error("Project PCB metadata authenticated scope changed.");
     }
   };
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const initialStatus = await engine2.status();
-  current9();
+  current10();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "Project PCB metadata expected runtime");
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code,
     timeoutMs: CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 5e3,
     confirmWrite: true
   }, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS + 15e3);
-  current9();
+  current10();
   const result = validateCurrentProjectPcbMetadataResult(request13, decodeCurrentProjectPcbMetadataReply(raw, request13));
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const finalStatus = await engine2.status();
-  current9();
+  current10();
   validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
   if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
     throw new Error("Project PCB metadata runtime changed around the observation.");
@@ -141238,36 +141408,36 @@ async function readCurrentProjectSchematicMetadata(engine2, input, expectedFinge
     throw new Error("Project schematic metadata requires an authenticated scope.");
   }
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
       throw new Error("Project schematic metadata authenticated scope changed.");
     }
   };
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const initialStatus = await engine2.status();
-  current9();
+  current10();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "Project schematic metadata expected runtime");
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code,
     timeoutMs: CURRENT_PROJECT_SCHEMATIC_METADATA_TIMEOUT_MS + 5e3,
     confirmWrite: true
   }, CURRENT_PROJECT_SCHEMATIC_METADATA_TIMEOUT_MS + 15e3);
-  current9();
+  current10();
   const result = validateCurrentProjectSchematicMetadataResult(request13, decodeCurrentProjectSchematicMetadataReply(raw, request13));
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const finalStatus = await engine2.status();
-  current9();
+  current10();
   validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
   if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
     throw new Error("Project schematic metadata runtime changed around the observation.");
@@ -141374,36 +141544,36 @@ async function readCurrentProjectBoardMetadata(engine2, input, expectedFingerpri
     throw new Error("Project board metadata requires an authenticated scope.");
   }
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
       throw new Error("Project board metadata authenticated scope changed.");
     }
   };
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const initialStatus = await engine2.status();
-  current9();
+  current10();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "Project board metadata expected runtime");
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code,
     timeoutMs: CURRENT_PROJECT_BOARD_METADATA_TIMEOUT_MS + 5e3,
     confirmWrite: true
   }, CURRENT_PROJECT_BOARD_METADATA_TIMEOUT_MS + 15e3);
-  current9();
+  current10();
   const result = validateCurrentProjectBoardMetadataResult(request13, decodeCurrentProjectBoardMetadataReply(raw, request13));
   await verifyCurrentProjectOnlyOpenImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const finalStatus = await engine2.status();
-  current9();
+  current10();
   validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
   if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
     throw new Error("Project board metadata runtime changed around the observation.");
@@ -141505,36 +141675,36 @@ async function readCurrentPcbRenamePreflight(engine2, input, expectedFingerprint
     throw new Error("PCB rename preflight requires an authenticated scope.");
   }
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
       throw new Error("PCB rename preflight authenticated scope changed.");
     }
   };
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const initialStatus = await engine2.status();
-  current9();
+  current10();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "PCB rename preflight expected runtime");
   await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code,
     timeoutMs: CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS + 5e3,
     confirmWrite: true
   }, CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS + 15e3);
-  current9();
+  current10();
   const result = validateCurrentPcbRenamePreflightResult(request13, decodeCurrentPcbRenamePreflightReply(raw, request13));
   await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const finalStatus = await engine2.status();
-  current9();
+  current10();
   validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
   if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
     throw new Error("PCB rename preflight runtime changed around the observation.");
@@ -141669,11 +141839,11 @@ function copyLineage2(checkpoint, copy2) {
     "raw source identity differs from its checkpoint"
   );
 }
-async function verifyReceipt(checkpoint, current9) {
+async function verifyReceipt(checkpoint, current10) {
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need85(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
@@ -141681,14 +141851,14 @@ async function verifyReceipt(checkpoint, current9) {
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  await current9();
+  await current10();
   need85(
     verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat43(path5, { bigint: true });
-    await current9();
+    await current10();
     need85(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs, "source/checkpoint file identity changed");
   }
 }
@@ -141733,7 +141903,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
   unchanged5();
   const clock7 = await clockReader.call(engine2, input.capture);
   unchanged5();
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need85(await assertClosedSessionCopyAuthority(input.proof) === input.proof, "original termination proof changed");
     unchanged5();
@@ -141749,16 +141919,16 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join67(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-pcb-baseline-${input.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 }
   );
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const identity32 = source5.preNavigationCheckpoint.checkpoint.sourceIdentity;
   need85(checkpoint.sourceIdentity.dev === identity32.dev && checkpoint.sourceIdentity.ino === identity32.ino && checkpoint.sourceIdentity.birthtimeNs === identity32.birthtimeNs, "source was replaced after original opening");
   const copy2 = await copyClosedProjectBytes({
@@ -141768,18 +141938,18 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     artifactDirectory: operationPath(input.owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage2(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   const completion2 = readerCompletion(inventory2);
   need85(
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
     "complete SQL reader did not finish for its original raw copy"
   );
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: rename3.target.projectUuid, branchUuid: rename3.target.branchUuid });
-  await current9();
+  await current10();
   const history = decoded.history, matches = history.documents.filter((document4) => document4.uuid === rename3.target.pcbUuid);
   const document3 = matches[0];
   need85(
@@ -141790,8 +141960,8 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
   need85(entries5.length === 1 && entry?.id === "META" && entry.type === "META", "unique ordinary PCB META is missing");
   const targetHeader = currentPcbStoredHeaderSchema.parse(document3.metadata), targetMetadata = metadataSchema6.parse(entry.body);
   need85(targetHeader.uuid === document3.uuid && JSON.stringify(targetMetadata) === JSON.stringify(entry.body) && targetMetadata.title !== rename3.desiredTitle, "PCB metadata/header is unsupported or desired title is unchanged");
-  await verifyReceipt(checkpoint, current9);
-  await current9();
+  await verifyReceipt(checkpoint, current10);
+  await current10();
   need85(readerCompletion(inventory2) === completion2, "original SQL completion changed");
   const result = freezeDeep({
     profile: "private.current-pcb-rename-baseline.v1",
@@ -141845,19 +142015,19 @@ function assertCurrentPcbRenameClosedClockBinding(value2, engine2) {
 }
 async function assertClosedClockSidecarsAbsent(value2, engine2) {
   const original2 = currentBaselineBinding(value2, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need85(currentBaselineBinding(value2, engine2) === original2, "closed-clock sidecar owner changed");
   };
   for (const path5 of [value2.checkpoint.source, value2.checkpoint.checkpoint, value2.copy.artifact]) {
     for (const suffix of ["-wal", "-shm", "-journal"]) {
-      current9();
+      current10();
       const absent3 = await lstat43(`${path5}${suffix}`).then(() => false, (error51) => {
         if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
           return true;
         }
         throw error51;
       });
-      current9();
+      current10();
       need85(absent3, "closed-clock source, checkpoint or raw copy has a SQLite sidecar");
     }
   }
@@ -141877,7 +142047,7 @@ async function revalidateBaselineEvidence(value2, engine2, revalidateOpening) {
   const unchanged5 = () => {
     need85(currentBaselineBinding(value2, engine2) === original2, "original baseline binding changed");
   };
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need85(await assertClosedSessionCopyAuthority(original2.input.proof) === original2.input.proof, "original closed authority changed");
     unchanged5();
@@ -141888,10 +142058,10 @@ async function revalidateBaselineEvidence(value2, engine2, revalidateOpening) {
     need85(await revalidateOpening(value2.owner, engine2) === original2.source, "opening owner changed");
     unchanged5();
   };
-  await current9();
-  await verifyReceipt(value2.checkpoint, current9);
+  await current10();
+  await verifyReceipt(value2.checkpoint, current10);
   await verifyExactManagedArtifact({ path: value2.copy.artifact, bytes: value2.copy.bytes, sha256: value2.copy.sha256 });
-  await current9();
+  await current10();
   copyLineage2(value2.checkpoint, value2.copy);
   const completion2 = readerCompletion(value2.inventory);
   need85(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && value2.inventory.checkpointSha256 === value2.copy.sha256, "original SQL reader lineage changed");
@@ -142000,14 +142170,14 @@ var init_current_pcb_aged_sql_reference = __esm({
           );
           assertCurrentClosedSessionCopyAuthority(proof);
         };
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           await revalidateCurrentPcbRenameClosedClockEvidence(baseline2, engine2);
           unchanged5();
         };
         let journalText;
         const boundary = async () => {
-          await current9();
+          await current10();
           const selected3 = await loadOperation(journalOperationId);
           unchanged5();
           const text37 = canonicalJson(selected3);
@@ -142026,9 +142196,9 @@ var init_current_pcb_aged_sql_reference = __esm({
         unchanged5();
         const target8 = baseline2.intent.target;
         const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target8);
-        await current9();
+        await current10();
         const clock7 = await windowsClockObservationForResult(proof, "termination");
-        await current9();
+        await current10();
         need86(clock7.clock.status === "observed" && clock7.base["checkedAt"] === proof.closedAt && clock7.ownerBinding["operationId"] === journalOperationId && clock7.ownerBinding["phase"] === closureBinding.phase);
         const binding8 = Object.freeze({
           profile: "private.current-pcb-aged-sql-reference-binding.v1",
@@ -142055,7 +142225,7 @@ var init_current_pcb_aged_sql_reference = __esm({
           referenceUtcMs: Number((BigInt(clock7.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
         const invocation = await compileCurrentAgedSqlReferenceTransport(request13);
-        await current9();
+        await current10();
         need86(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId9);
@@ -142078,9 +142248,9 @@ var init_current_pcb_aged_sql_reference = __esm({
           windowsSideEffects: "one disjoint nonce scratch copy and original synthetic Job; no EasyEDA APP or profile input",
           executionAuthorized: false
         }));
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         need86(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         await boundary();
@@ -142109,7 +142279,7 @@ var init_current_pcb_aged_sql_reference = __esm({
         }
         need86(BigInt(nativeBefore.utcBeforeTicks) >= BigInt(clock7.clock.after.utcAfterTicks) && BigInt(nativeBefore.qpcBefore) >= BigInt(clock7.clock.after.qpcAfter));
         await readExactUtf8Artifact(resultArtifact);
-        await current9();
+        await current10();
         need86(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         await boundary();
@@ -142735,11 +142905,11 @@ function copyLineage3(checkpoint, copy2) {
     "raw source identity differs from checkpoint"
   );
 }
-async function verifyReceipt2(checkpoint, current9) {
+async function verifyReceipt2(checkpoint, current10) {
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need88(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
@@ -142747,14 +142917,14 @@ async function verifyReceipt2(checkpoint, current9) {
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  await current9();
+  await current10();
   need88(
     verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat44(path5, { bigint: true });
-    await current9();
+    await current10();
     need88(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs, "source/checkpoint identity changed");
   }
 }
@@ -142779,7 +142949,7 @@ async function revalidateCurrentPcbRenameSnapshot(engine2, value2) {
     const completion2 = readerCompletion(source5.inventory);
     need88(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && source5.inventory.checkpointSha256 === value2.copy.sha256 && value2.copy.closureProofSha256 === source5.proof.proofSha256, "original reader or copy lineage changed");
   };
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need88(await assertClosedSessionCopyAuthority(source5.proof) === source5.proof, "original closure authority changed");
     unchanged5();
@@ -142788,11 +142958,11 @@ async function revalidateCurrentPcbRenameSnapshot(engine2, value2) {
     need88(await assertIssuedWindowsClockObservation(original2.captureClock) === original2.captureClock, "original capture clock changed");
     unchanged5();
   };
-  await current9();
-  await verifyReceipt2(value2.checkpoint, current9);
+  await current10();
+  await verifyReceipt2(value2.checkpoint, current10);
   copyLineage3(value2.checkpoint, value2.copy);
   await verifyExactManagedArtifact({ path: value2.copy.artifact, sha256: value2.copy.sha256, bytes: value2.copy.bytes });
-  await current9();
+  await current10();
 }
 function captureCurrentPcbRenameFinishSnapshot(engine2, input, onEvidence) {
   return captureSnapshot2(engine2, input, onEvidence);
@@ -142844,7 +143014,7 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
   unchanged5();
   const clock7 = await clockReader.call(engine2, retainedCapture);
   unchanged5();
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need88(await assertClosedSessionCopyAuthority(proof) === proof, "original terminal proof changed");
     unchanged5();
@@ -142858,18 +143028,18 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  await current9();
+  await current10();
   await engine2.assertRecoveryOperationIsolated(baseline2.owner.operationId);
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join69(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-pcb-${phase5}-${baseline2.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 }
   );
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const old = baseline2.checkpoint.sourceIdentity;
   need88(
     checkpoint.sourceIdentity.dev === old.dev && checkpoint.sourceIdentity.ino === old.ino && checkpoint.sourceIdentity.birthtimeNs === old.birthtimeNs,
@@ -142882,11 +143052,11 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage3(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   const completion2 = readerCompletion(inventory2);
   need88(
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
@@ -142894,11 +143064,11 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
   );
   const target8 = baseline2.intent.target;
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
-  await current9();
+  await current10();
   const { history } = decoded;
   need88(history.projectOwnerUuid === target8.ownerUuid, "project owner changed");
-  await verifyReceipt2(checkpoint, current9);
-  await current9();
+  await verifyReceipt2(checkpoint, current10);
+  await current10();
   need88(readerCompletion(inventory2) === completion2, "original reader changed");
   const result = freezeDeep({
     profile: "private.current-pcb-rename-snapshot.v1",
@@ -142963,23 +143133,23 @@ function sameInode3(a, b) {
 function sameFile8(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode3(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
-async function directory2(absolute, current9) {
+async function directory2(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need89(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags4 = constants27.O_RDONLY | constants27.O_DIRECTORY | constants27.O_NOFOLLOW;
   let handle = await open39("/", flags4);
   try {
-    current9();
+    current10();
     for (const segment2 of segments3) {
       const path5 = `/proc/self/fd/${handle.fd}/${segment2}`;
       const before = await lstat45(path5, { bigint: true });
-      current9();
+      current10();
       need89(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
       const child = await open39(path5, flags4);
       try {
-        current9();
+        current10();
         const info2 = await child.stat({ bigint: true });
-        current9();
+        current10();
         need89(info2.isDirectory() && sameInode3(before, info2), "Current preopen source parent changed while opening.");
         await handle.close();
       } catch (error51) {
@@ -142991,10 +143161,10 @@ async function directory2(absolute, current9) {
         throw error51;
       }
       handle = child;
-      current9();
+      current10();
     }
     const info = await handle.stat({ bigint: true });
-    current9();
+    current10();
     return { absolute, handle, info };
   } catch (error51) {
     try {
@@ -143005,7 +143175,7 @@ async function directory2(absolute, current9) {
     throw error51;
   }
 }
-async function noSidecars5(path5, current9) {
+async function noSidecars5(path5, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     const absent3 = await lstat45(`${path5}${suffix}`).then(() => false, (error51) => {
       if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
@@ -143013,7 +143183,7 @@ async function noSidecars5(path5, current9) {
       }
       throw error51;
     });
-    current9();
+    current10();
     need89(absent3, "Current preopen source has a SQLite sidecar.");
   }
 }
@@ -143021,83 +143191,83 @@ function matchesBaseline2(stat3, copy2) {
   const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES10 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
 }
-async function hash43(file3, bytes2, current9) {
+async function hash43(file3, bytes2, current10) {
   const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES3)), digest10 = createHash47("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
-    current9();
+    current10();
     need89(read2.bytesRead > 0, "Current preopen source ended during its bounded read.");
     digest10.update(buffer.subarray(0, read2.bytesRead));
     position += read2.bytesRead;
     await yieldProofEventLoop();
-    current9();
+    current10();
   }
   const eof = await file3.read(Buffer.alloc(1), 0, 1, bytes2);
-  current9();
+  current10();
   need89(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest10.digest("hex");
 }
 async function verifyCurrentPcbRenamePreopenSource(engine2, copy2) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentPcbRenameBaseline(copy2, engine2);
   };
-  const observed2 = await verifySource2(copy2, current9);
-  current9();
+  const observed2 = await verifySource2(copy2, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-pcb-rename-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
 async function verifyCurrentPcbRenamePosteditPreopenSource(engine2, snapshot8) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentPcbRenameSnapshot(snapshot8, engine2);
     need89(snapshot8.phase === "closed-edit", "Current PCB saved opening requires its original post-edit snapshot.");
   };
-  const observed2 = await verifySource2(snapshot8, current9);
-  current9();
+  const observed2 = await verifySource2(snapshot8, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-pcb-rename-postedit-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
-async function verifySource2(copy2, current9) {
-  current9();
+async function verifySource2(copy2, current10) {
+  current10();
   const { source: source5, sourceSha256 } = copy2.checkpoint;
   need89(
     process.platform === "linux" && source5.length <= 4096 && isAbsolute28(source5) && resolve23(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory2(dirname28(source5), current9);
+  const parent = await directory2(dirname28(source5), current10);
   let file3;
   let observation2;
   let failed = false;
   let failure2;
   try {
-    current9();
+    current10();
     const path5 = `/proc/self/fd/${parent.handle.fd}/${basename30(source5)}`;
-    await noSidecars5(path5, current9);
-    current9();
+    await noSidecars5(path5, current10);
+    current10();
     const before = await lstat45(path5, { bigint: true });
-    current9();
+    current10();
     need89(matchesBaseline2(before, copy2), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open39(path5, constants27.O_RDONLY | constants27.O_NOFOLLOW | constants27.O_NONBLOCK);
-    current9();
+    current10();
     const opened = await file3.stat({ bigint: true });
-    current9();
+    current10();
     need89(sameFile8(before, opened), "Current preopen source changed while opening.");
-    const sha256 = await hash43(file3, Number(before.size), current9);
-    current9();
+    const sha256 = await hash43(file3, Number(before.size), current10);
+    current10();
     need89(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
-    await noSidecars5(path5, current9);
-    current9();
-    const rebound = await directory2(parent.absolute, current9);
+    await noSidecars5(path5, current10);
+    current10();
+    const rebound = await directory2(parent.absolute, current10);
     try {
       need89(sameInode3(parent.info, rebound.info), "Current preopen source directory path changed.");
     } finally {
       await rebound.handle.close();
     }
-    current9();
+    current10();
     const parentAfter = await parent.handle.stat({ bigint: true });
-    current9();
+    current10();
     const after = await file3.stat({ bigint: true });
-    current9();
+    current10();
     const named = await lstat45(path5, { bigint: true });
-    current9();
+    current10();
     need89(
       sameInode3(parent.info, parentAfter) && sameFile8(before, after) && sameFile8(before, named),
       "Current preopen source descriptor or path changed during reading."
@@ -143126,7 +143296,7 @@ async function verifySource2(copy2, current9) {
   if (errors.length > 0) {
     throw new AggregateError(errors, "Current preopen source verification failed.", { cause: errors[0] });
   }
-  current9();
+  current10();
   need89(observation2 !== void 0, "Current preopen source observation is missing.");
   return observation2;
 }
@@ -143753,14 +143923,14 @@ var init_current_pcb_rename_generation_runtime = __esm({
           preopenSource: slot.preopen
         });
         const journalText = slot.journalText, text36 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           slot.current(scopeText);
           need90(slot.generation === token && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text36, "generation changed, stopped or retired");
           assertCurrentIssuedWindowsClockObservation(value2.launchClock);
           assertCurrentIssuedWindowsClockObservation(value2.captureClock);
         };
         const transfer = () => {
-          current9();
+          current10();
           need90(!this.busy && slot.writerTransfer === void 0, "writer transfer is busy or already consumed");
           const owner = Object.freeze({ profile: "private.current-pcb-rename-writer-owner.v1", operationId: token.operationId });
           const originalCurrent = slot.current;
@@ -143796,7 +143966,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
         };
         const evidence2 = (scopeText) => {
           if (slot.writerTransfer === void 0) {
-            current9(scopeText);
+            current10(scopeText);
             return;
           }
           need90(!slot.finishing && !slot.writerOwnershipInvalidated, "finished writer cannot revive generation evidence");
@@ -143805,24 +143975,24 @@ var init_current_pcb_rename_generation_runtime = __esm({
         };
         generations4.set(token, {
           value: value2,
-          current: current9,
+          current: current10,
           evidence: evidence2,
           transfer,
           retainedWriter: () => slot.writerTransfer,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.captureCurrent(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
             for (const clock7 of [value2.launchClock, value2.captureClock, value2.cacheClock, value2.projectOpenClock]) {
               need90(await assertIssuedWindowsClockObservation(clock7) === clock7, "generation original clock changed");
-              current9(scopeText);
+              current10(scopeText);
             }
             await this.unchanged(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         });
         slot.generation = token;
-        current9();
+        current10();
       }
       generation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -144116,7 +144286,7 @@ async function rawPcbClocks(decoded, active2) {
   const result = /* @__PURE__ */ new Map();
   let bytes2 = 0;
   for (const chunk of decoded.chunks) {
-    let current9;
+    let current10;
     for (const line6 of chunk.split("|\n")) {
       const records2 = parseNativeRecords(line6);
       const entry = records2[0];
@@ -144124,14 +144294,14 @@ async function rawPcbClocks(decoded, active2) {
       const type2 = entry.header["type"];
       if (type2 === "DOCHEAD") {
         const uuid12 = entry.body?.["uuid"];
-        current9 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
-        if (current9 !== void 0) {
-          const header = currentPcbStoredHeaderSchema.parse(entry.body), prior = result.get(current9), ticket2 = integer14(entry.header["ticket"]);
+        current10 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
+        if (current10 !== void 0) {
+          const header = currentPcbStoredHeaderSchema.parse(entry.body), prior = result.get(current10), ticket2 = integer14(entry.header["ticket"]);
           need91(header.updateTime > 0 && (prior === void 0 || ticket2 >= prior.headerTicket && header.updateTime >= prior.updateTime && (header.updateTime !== prior.updateTime || header.version === prior.version)), "PCB header time/version order is unsupported");
-          result.set(current9, { headerTicket: ticket2, updateTime: header.updateTime, version: header.version, dataTicket: prior?.dataTicket ?? -1 });
+          result.set(current10, { headerTicket: ticket2, updateTime: header.updateTime, version: header.version, dataTicket: prior?.dataTicket ?? -1 });
         }
-      } else if (type2 !== "EDIT_HEAD" && current9 !== void 0) {
-        const pcb5 = result.get(current9);
+      } else if (type2 !== "EDIT_HEAD" && current10 !== void 0) {
+        const pcb5 = result.get(current10);
         need91(pcb5 !== void 0, "raw PCB header missing");
         pcb5.dataTicket = Math.max(pcb5.dataTicket, integer14(entry.header["ticket"]));
       }
@@ -144665,7 +144835,7 @@ function currentPcbAgedSqlCollectionEvidence(generation5, engine2) {
     executionAuthorized: false
   });
 }
-function current5(value2, engine2, generation5) {
+function current6(value2, engine2, generation5) {
   need93(value2 !== null && typeof value2 === "object");
   const original2 = issued19.get(value2);
   need93(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
@@ -144837,7 +145007,7 @@ async function collectCurrentPcbAgedSqlClock(engine2, generation5, reference3, s
   }
 }
 function qualifyCurrentPcbAgedSqlHead(value2, engine2, generation5, backendStart) {
-  const original2 = current5(value2, engine2, generation5);
+  const original2 = current6(value2, engine2, generation5);
   const after = original2.historical.afterClock, clock7 = rawClock3(backendStart);
   need93(backendStart !== original2.before && backendStart !== original2.after && canonicalJson(backendStart.ownerBinding) === original2.historical.ownerBindingText && clockProvenance3(backendStart) === original2.historical.provenanceText && clock7.before.zoneRulesSha256 === after.after.zoneRulesSha256 && clock7.before.localOffsetMinutes === after.after.localOffsetMinutes && clock7.before.qpcFrequency === after.after.qpcFrequency && BigInt(clock7.before.utcBeforeTicks) >= BigInt(after.after.utcAfterTicks) && BigInt(clock7.before.qpcBefore) >= BigInt(after.after.qpcAfter));
   const selected3 = original2.renderer.controlsBefore.sql[0];
@@ -145904,14 +146074,14 @@ function peers(decoded, structureText, targetUuid, desiredTitle) {
   need98(isRecord(tree) && isRecord(tree["pcbs"]), "PCB structure is missing");
   const collection = tree["pcbs"], values2 = [];
   for (const document3 of decoded.history.documents.filter((value2) => value2.docType === "PCB" && !isNativeDocumentDeleted(value2))) {
-    const current9 = pcb3(document3), entry = collection[document3.uuid];
-    need98(isRecord(entry) && entry["uuid"] === document3.uuid && entry["title"] === current9.metadata.title && entry["board"] === current9.metadata.board && entry["source"] === "" && entry["parent_uuid"] === "" && entry["version"] === current9.header.version && entry["updateTime"] === current9.header.updateTime && (entry["docType"] === void 0 || entry["docType"] === 3), "complete PCB peer history/tree differs");
-    need98(document3.uuid === targetUuid || current9.metadata.title.toLowerCase() !== desiredTitle.toLowerCase(), "peer PCB name collision");
+    const current10 = pcb3(document3), entry = collection[document3.uuid];
+    need98(isRecord(entry) && entry["uuid"] === document3.uuid && entry["title"] === current10.metadata.title && entry["board"] === current10.metadata.board && entry["source"] === "" && entry["parent_uuid"] === "" && entry["version"] === current10.header.version && entry["updateTime"] === current10.header.updateTime && (entry["docType"] === void 0 || entry["docType"] === 3), "complete PCB peer history/tree differs");
+    need98(document3.uuid === targetUuid || current10.metadata.title.toLowerCase() !== desiredTitle.toLowerCase(), "peer PCB name collision");
     values2.push({
       uuid: document3.uuid,
-      title: current9.metadata.title,
-      board: current9.metadata.board,
-      metadataSha256: sha256Text(current9.text),
+      title: current10.metadata.title,
+      board: current10.metadata.board,
+      metadataSha256: sha256Text(current10.text),
       headerSha256: sha256Json(document3.metadata)
     });
   }
@@ -145960,9 +146130,9 @@ async function prepareCurrentPcbRename(input) {
   const matches = decoded.history.documents.filter((document4) => document4.uuid === target8.pcbUuid);
   const document3 = matches[0];
   need98(matches.length === 1 && document3 !== void 0, "unique target is missing");
-  const current9 = pcb3(document3), maximumTargetHeaderTime = await maximumHeader(decoded, target8.pcbUuid);
+  const current10 = pcb3(document3), maximumTargetHeaderTime = await maximumHeader(decoded, target8.pcbUuid);
   need98(
-    desiredTitle !== current9.metadata.title && witness.documentClockMinMs > maximumTargetHeaderTime,
+    desiredTitle !== current10.metadata.title && witness.documentClockMinMs > maximumTargetHeaderTime,
     "unchanged title or document clock window overlaps prior headers"
   );
   const structureText = structure2(before, target8.branchUuid);
@@ -145971,9 +146141,9 @@ async function prepareCurrentPcbRename(input) {
     before,
     target: target8,
     desiredTitle,
-    beforeMetaText: current9.text,
+    beforeMetaText: current10.text,
     structureText,
-    header: freezeDeep(current9.header),
+    header: freezeDeep(current10.header),
     maximumTicket: decoded.maximumTicket,
     maximumTargetHeaderTime,
     witness,
@@ -145984,7 +146154,7 @@ async function prepareCurrentPcbRename(input) {
     profile: "private.current-pcb-rename-preparation.v1",
     target: target8,
     desiredTitle,
-    beforeMetaText: current9.text,
+    beforeMetaText: current10.text,
     baseline: {
       sqlSha256: before.logicalSha256,
       checkpointSha256: before.checkpointSha256,
@@ -146464,15 +146634,15 @@ async function verifyCurrentPcbRenameStoredEffect(preparation3, after, expectedD
   const before = inventoryForOriginalCurrentPcbRenamePreparation(preparation3), beforeCompletion = readerCompletion(before);
   const afterCompletion = readerCompletion(after);
   time11(expectedDocumentTime);
-  const current9 = () => {
+  const current10 = () => {
     need101(
       inventoryForOriginalCurrentPcbRenamePreparation(preparation3) === before && readerCompletion(before) === beforeCompletion && readerCompletion(after) === afterCompletion && afterCompletion.observedChildClose && afterCompletion.exitCode === 0 && afterCompletion.exitSignal === null,
       "original completed reader changed"
     );
   };
-  current9();
+  current10();
   const decoded = await decodeCurrentSymbolPreEditHistory(after, { projectUuid: preparation3.target.projectUuid, branchUuid: preparation3.target.branchUuid });
-  current9();
+  current10();
   const { baseline: baseline2 } = preparation3;
   need101(
     decoded.history.projectOwnerUuid === preparation3.target.ownerUuid && decoded.history.documents.length === baseline2.documentCount && decoded.history.historyRowCount === baseline2.historyRows + 1 && decoded.chunks.length === baseline2.chunks + 1 && decoded.links.length === baseline2.chunks + 1 && decoded.maximumTicket === baseline2.maximumTicket + 1 && sha256Json(decoded.links.slice(0, -1)) === baseline2.rawHistorySha256,
@@ -146496,9 +146666,9 @@ async function verifyCurrentPcbRenameStoredEffect(preparation3, after, expectedD
   const backendTime = time11(edit.body?.["updateTime"]), documentTime = time11(header.body["updateTime"]);
   need101(documentTime === expectedDocumentTime, "saved document timestamp differs from the retained native reply");
   const bound2 = await bindCurrentPcbRenameTimes(preparation3, { documentTime, backendTime });
-  current9();
+  current10();
   const comparison3 = await verifyCurrentPcbRenameSql(bound2.sql, after);
-  current9();
+  current10();
   const result = Object.freeze({
     profile: "private.current-pcb-rename-stored-effect.v1",
     preparationSha256: preparation3.preparationSha256,
@@ -146617,9 +146787,9 @@ async function prepareCurrentPcbRenameClock(input) {
   fields19(input, ["engine", "generation", "startup", "dispatchOwner", "beforeClock", "armedClock", "documentBefore"], ["agedHead"]);
   const { engine: engine2, generation: generation5, startup: startup2, dispatchOwner: owner } = input;
   const source5 = assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5);
-  need102(owner !== null && typeof owner === "object" && !attempts22.has(startup2) && !owners4.has(owner), "PCB clock reservation already consumed.");
+  need102(owner !== null && typeof owner === "object" && !attempts22.has(startup2) && !owners5.has(owner), "PCB clock reservation already consumed.");
   attempts22.add(startup2);
-  owners4.add(owner);
+  owners5.add(owner);
   const document3 = documentSample3(input.documentBefore), expectedActor = validateActorProjection(source5.observation.runtimeObservation.actor);
   const tokens = [source5.source.launchClock, source5.source.captureClock, input.beforeClock, input.armedClock];
   const aged = input.agedHead;
@@ -146840,7 +147010,7 @@ function completedCurrentPcbRenameClockSource(plan2, engine2, dispatchOwner, aft
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS4, ASSUMPTIONS3, attempts22, owners4, plans9, lifecycles;
+var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS4, ASSUMPTIONS3, attempts22, owners5, plans9, lifecycles;
 var init_current_pcb_rename_clock = __esm({
   "server/src/current-pcb-rename-clock.ts"() {
     init_core3();
@@ -146878,7 +147048,7 @@ var init_current_pcb_rename_clock = __esm({
       noOtherTargetWriterRequired: true
     });
     attempts22 = /* @__PURE__ */ new WeakSet();
-    owners4 = /* @__PURE__ */ new WeakSet();
+    owners5 = /* @__PURE__ */ new WeakSet();
     plans9 = /* @__PURE__ */ new WeakMap();
     lifecycles = /* @__PURE__ */ new WeakMap();
   }
@@ -147703,7 +147873,7 @@ var init_current_pcb_rename_writer_runtime = __esm({
           sqlRuntime: source5.sqlRuntime
         });
         const frozen = canonicalJson(projection8());
-        const current9 = () => {
+        const current10 = () => {
           need103(
             this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && slot.writeResult === writeResult && slot.preparation === preparation3 && slot.storedEffect === storedEffect && methods12(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "PCB verification continuation changed or its writer did not retire successfully."
@@ -147713,8 +147883,8 @@ var init_current_pcb_rename_writer_runtime = __esm({
           need103(result.preparation === preparation3 && result.storedEffect === storedEffect && result.comparison === slot.comparison);
         };
         slot.continuation = token;
-        continuations4.set(token, { engine: this.engine, source: source5, current: current9, journalText: () => slot.journalText, consumed: false });
-        current9();
+        continuations4.set(token, { engine: this.engine, source: source5, current: current10, journalText: () => slot.journalText, consumed: false });
+        current10();
       }
       getVerificationContinuation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -147777,18 +147947,18 @@ function assertCurrentPcbRenameSavedSource(value2, engine2, continuation) {
 }
 async function revalidateCurrentPcbRenameSavedSource(value2, engine2, continuation) {
   const original2 = assertCurrentPcbRenameSavedSource(value2, engine2, continuation), { snapshot: snapshot8 } = original2.source;
-  const current9 = () => {
+  const current10 = () => {
     need104(assertCurrentPcbRenameSavedSource(value2, engine2, continuation) === original2);
   };
   await verifyExactManagedArtifact({ path: snapshot8.copy.artifact, bytes: snapshot8.copy.bytes, sha256: snapshot8.copy.sha256 });
-  current9();
+  current10();
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: snapshot8.checkpoint.checkpoint,
     expectedSha256: snapshot8.checkpoint.checkpointSha256,
     projectUuid: snapshot8.native.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  current9();
+  current10();
   need104(history.semanticSha256 === snapshot8.native.historySemanticSha256 && history.branchUuid === snapshot8.native.branchUuid && history.projectOwnerUuid === snapshot8.native.ownerUuid);
   return original2;
 }
@@ -147796,7 +147966,7 @@ async function prepareCurrentPcbRenameSavedSource(continuation, engine2) {
   const source5 = assertOriginalCurrentPcbRenameWriterContinuation(continuation, engine2);
   const snapshot8 = assertOriginalCurrentPcbRenameSnapshot(source5.snapshot, engine2);
   need104(source5.snapshot.phase === "closed-edit");
-  const current9 = () => {
+  const current10 = () => {
     need104(assertOriginalCurrentPcbRenameWriterContinuation(continuation, engine2) === source5 && assertOriginalCurrentPcbRenameSnapshot(source5.snapshot, engine2) === snapshot8);
   };
   const completed5 = completedCurrentPcbRenameClockSource(source5.clockPlan, engine2, source5.dispatchOwner, snapshot8.inventory);
@@ -147805,7 +147975,7 @@ async function prepareCurrentPcbRenameSavedSource(continuation, engine2) {
   const previous = JSON.parse(preparation3.beforeMetaText);
   need104(isRecord(previous) && typeof previous["title"] === "string");
   const projection8 = await prepareCurrentPcbNativeMetadata({ before: snapshot8.inventory, target: preparation3.target, desiredTitle: previous["title"] });
-  current9();
+  current10();
   const { uuid: _uuid2, ...acknowledged } = source5.writeResult.after;
   need104(canonicalJson(projection8.request.expectedBefore) === canonicalJson(acknowledged) && projection8.request.expectedBefore.displayTitle === preparation3.desiredTitle && projection8.maximumTicket === completed5.maximumTicket);
   const expectation = selectCurrentSymbolStartupExpectation(history), expectedActor = completed5.expectedActor;
@@ -147837,7 +148007,7 @@ async function prepareCurrentPcbRenameSavedSource(continuation, engine2) {
     expectedActor
   }));
   await revalidateCurrentPcbRenameSavedSource(descriptor10, engine2, continuation);
-  current9();
+  current10();
   return descriptor10;
 }
 function verifyCurrentPcbRenameSavedMetadata(value2, engine2, continuation, observation2) {
@@ -147909,34 +148079,34 @@ async function collectCurrentPcbRenameSavedMetadata(engine2, generation5, source
   const collection = { engine: engine2, source: sourceValue };
   collections9.set(generation5, collection);
   const dispatch = engine2.dispatchWithOrphanTracking;
-  const current9 = () => {
+  const current10 = () => {
     need105(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.dispatchWithOrphanTracking === dispatch && assertCurrentPcbRenameVerificationGeneration(generation5, engine2, scopeText) === source5 && assertCurrentPcbRenameSavedSource(sourceValue, engine2, source5.continuation) === saved);
     source5.current(scopeText);
     if (collection.rawText !== void 0) {
       need105(canonicalJson(collection.raw) === collection.rawText);
     }
   };
-  current9();
+  current10();
   await revalidateCurrentPcbRenameVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   await revalidateCurrentPcbRenameSavedSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   const initial = await engine2.status();
-  current9();
+  current10();
   const fingerprint = structuredClone(initial.stableFingerprint);
   assertExpectedFingerprint(fingerprint);
   validateSdkLocalRuntimeFingerprint(fingerprint);
   assertSubset(fingerprint, source5.expectedFingerprint, "Current saved PCB metadata runtime");
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const code = buildCurrentPcbRenameStartupObservation(saved.request, saved.expectation), phase5 = "current-pcb-rename-verification-saved-read";
   await source5.record("verify-saved-read-intent", { request: saved.request, source: sourceValue, codeSha256: sha256Text(code), replayAllowed: false }, scopeText);
-  current9();
+  current10();
   const before = structuredClone(source5.journal);
   let marked;
   let raw;
@@ -147950,14 +148120,14 @@ async function collectCurrentPcbRenameSavedMetadata(engine2, generation5, source
       CURRENT_SAVED_PCB_METADATA_TIMEOUT_MS + 15e3,
       async () => {
         marked = await source5.acceptMark(before, phase5, scopeText);
-        current9();
+        current10();
       },
       async (reply) => {
         collection.raw = reply;
         collection.rawText = canonicalJson(reply);
-        current9();
+        current10();
         await source5.record("verify-saved-read-reply", { raw: reply }, scopeText);
-        current9();
+        current10();
         marked = structuredClone(source5.journal);
       },
       async () => {
@@ -147966,7 +148136,7 @@ async function collectCurrentPcbRenameSavedMetadata(engine2, generation5, source
         } else {
           await source5.revalidate(scopeText);
         }
-        current9();
+        current10();
       }
     );
   } catch (error51) {
@@ -147975,20 +148145,20 @@ async function collectCurrentPcbRenameSavedMetadata(engine2, generation5, source
   }
   need105(marked !== void 0);
   await source5.acceptClear(marked, phase5, scopeText);
-  current9();
+  current10();
   need105(raw === collection.raw);
   const observation2 = decodeCurrentPcbRenameStartupObservation(raw, saved.request, saved.expectation);
   const relation = verifyCurrentPcbRenameSavedMetadata(sourceValue, engine2, source5.continuation, observation2);
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await revalidateCurrentPcbRenameSavedSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   await revalidateCurrentPcbRenameVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   const final = await engine2.status();
-  current9();
+  current10();
   need105(canonicalJson(final.stableFingerprint) === canonicalJson(fingerprint));
   const result = Object.freeze({
     profile: "private.current-pcb-rename-saved-read.v1",
@@ -148004,7 +148174,7 @@ async function collectCurrentPcbRenameSavedMetadata(engine2, generation5, source
     persistenceLifecycleComplete: false
   });
   await source5.record("verify-saved-metadata-result", result, scopeText);
-  current9();
+  current10();
   collection.observation = observation2;
   collection.observationText = canonicalJson(observation2);
   collection.result = result;
@@ -148581,7 +148751,7 @@ var init_current_pcb_rename_verification_runtime = __esm({
         const { capture: capture3, launch } = slot;
         need106(capture3 !== void 0 && launch !== void 0 && slot.generation === void 0);
         const token = Object.freeze({ profile: "private.current-pcb-rename-verification-generation.v1", operationId: slot.source.operationId });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           this.current(slot, scopeText);
           need106(slot.generation === token && slot.opened && slot.admitted && slot.cachesObserved && !slot.failed && !slot.finishing && !slot.closeAttempted && slot.capture === capture3 && slot.launch === launch);
         };
@@ -148593,33 +148763,33 @@ var init_current_pcb_rename_verification_runtime = __esm({
           capture: capture3,
           launch,
           journal: slot.journal,
-          current: current9,
+          current: current10,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.original(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           record: async (phase5, value2, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.record(slot, phase5, value2, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           acceptMark: (before, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             return this.acceptMark(slot, before, phase5, scopeText);
           },
           acceptClear: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.acceptClear(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           retainEngineFailure: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.retainEngineFailure(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         }) });
-        current9();
+        current10();
       }
       /** The retained name is lifecycle compatibility only. This reads no canvas,
        * geometry or drawing content: saved PCB metadata and complete peer maps only.
@@ -149665,7 +149835,7 @@ async function rawSchematicClocks(decoded, active2) {
   const pages = /* @__PURE__ */ new Map(), result = /* @__PURE__ */ new Map();
   let bytes2 = 0;
   for (const chunk of decoded.chunks) {
-    let current9, currentPage;
+    let current10, currentPage;
     for (const line6 of chunk.split("|\n")) {
       const records2 = parseNativeRecords(line6);
       const entry = records2[0];
@@ -149673,12 +149843,12 @@ async function rawSchematicClocks(decoded, active2) {
       const type2 = entry.header["type"];
       if (type2 === "DOCHEAD") {
         const uuid12 = entry.body?.["uuid"];
-        current9 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
+        current10 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
         currentPage = entry.body?.["docType"] === "SCH_PAGE" ? pageHeader(entry, pages) : void 0;
-        if (current9 !== void 0) {
-          const header = currentSchematicStoredHeaderSchema.parse(entry.body), prior = result.get(current9), ticket2 = integer24(entry.header["ticket"]);
+        if (current10 !== void 0) {
+          const header = currentSchematicStoredHeaderSchema.parse(entry.body), prior = result.get(current10), ticket2 = integer24(entry.header["ticket"]);
           need109(header.updateTime > 0 && (prior === void 0 || ticket2 >= prior.headerTicket && header.updateTime >= prior.updateTime && (header.updateTime !== prior.updateTime || header.version === prior.version)), "schematic header time/version order is unsupported");
-          result.set(current9, {
+          result.set(current10, {
             headerTicket: ticket2,
             updateTime: header.updateTime,
             version: header.version,
@@ -149687,8 +149857,8 @@ async function rawSchematicClocks(decoded, active2) {
             dataTicket: prior?.dataTicket ?? -1
           });
         }
-      } else if (type2 !== "EDIT_HEAD" && current9 !== void 0) {
-        const schematic4 = result.get(current9);
+      } else if (type2 !== "EDIT_HEAD" && current10 !== void 0) {
+        const schematic4 = result.get(current10);
         need109(schematic4 !== void 0, "raw schematic header missing");
         schematic4.dataTicket = Math.max(schematic4.dataTicket, integer24(entry.header["ticket"]));
       } else if (type2 === "META" && currentPage !== void 0) {
@@ -149889,17 +150059,17 @@ async function tickets(decoded, active2) {
   const result = /* @__PURE__ */ new Map();
   let bytes2 = 0;
   for (const chunk of decoded.chunks) {
-    let current9;
+    let current10;
     for (const line6 of chunk.split("|\n")) {
       const records2 = parseNativeRecords(line6);
       const entry = records2[0];
       need110(records2.length === 1 && entry !== void 0, "record framing differs");
       if (entry.header["type"] === "DOCHEAD") {
         const uuid12 = entry.body?.["uuid"];
-        current9 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
-      } else if (entry.header["type"] !== "EDIT_HEAD" && current9 !== void 0) {
+        current10 = typeof uuid12 === "string" && active2.has(uuid12) ? uuid12 : void 0;
+      } else if (entry.header["type"] !== "EDIT_HEAD" && current10 !== void 0) {
         const value2 = shape.ticket.parse(entry.header["ticket"]);
-        result.set(current9, Math.max(result.get(current9) ?? -1, value2));
+        result.set(current10, Math.max(result.get(current10) ?? -1, value2));
       }
       bytes2 += Buffer.byteLength(line6);
       if (bytes2 >= 65536) {
@@ -150111,11 +150281,11 @@ function copyLineage4(checkpoint, copy2) {
     "raw source identity differs from its checkpoint"
   );
 }
-async function verifyReceipt3(checkpoint, current9) {
+async function verifyReceipt3(checkpoint, current10) {
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need111(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
@@ -150123,14 +150293,14 @@ async function verifyReceipt3(checkpoint, current9) {
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  await current9();
+  await current10();
   need111(
     verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat46(path5, { bigint: true });
-    await current9();
+    await current10();
     need111(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs, "source/checkpoint file identity changed");
   }
 }
@@ -150177,7 +150347,7 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
   unchanged5();
   const clock7 = await clockReader.call(engine2, input.capture);
   unchanged5();
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need111(await assertClosedSessionCopyAuthority(input.proof) === input.proof, "original termination proof changed");
     unchanged5();
@@ -150193,16 +150363,16 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join70(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-schematic-baseline-${input.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 }
   );
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const identity32 = source5.preNavigationCheckpoint.checkpoint.sourceIdentity;
   need111(checkpoint.sourceIdentity.dev === identity32.dev && checkpoint.sourceIdentity.ino === identity32.ino && checkpoint.sourceIdentity.birthtimeNs === identity32.birthtimeNs, "source was replaced after original opening");
   const copy2 = await copyClosedProjectBytes({
@@ -150212,18 +150382,18 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
     artifactDirectory: operationPath(input.owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage4(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   const completion2 = readerCompletion(inventory2);
   need111(
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
     "complete SQL reader did not finish for its original raw copy"
   );
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: rename3.target.projectUuid, branchUuid: rename3.target.branchUuid });
-  await current9();
+  await current10();
   const history = decoded.history, matches = history.documents.filter((document4) => document4.uuid === rename3.target.schematicUuid);
   const document3 = matches[0];
   need111(
@@ -150235,13 +150405,13 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
   const targetHeader = currentSchematicStoredHeaderSchema.parse(document3.metadata), targetMetadata = metadataSchema11.parse(entry.body);
   need111(targetHeader.uuid === document3.uuid && JSON.stringify(targetMetadata) === JSON.stringify(entry.body) && targetMetadata.title !== rename3.desiredTitle, "SCH metadata/header is unsupported or desired title is unchanged");
   const metadata10 = await prepareCurrentSchematicNativeMetadata({ before: inventory2, target: rename3.target, desiredTitle: rename3.desiredTitle });
-  await current9();
+  await current10();
   const children2 = await prepareCurrentSchematicChildRoster(metadata10, inventory2);
-  await current9();
+  await current10();
   assertOriginalCurrentSchematicNativeMetadata(metadata10, inventory2);
   assertOriginalCurrentSchematicChildRoster(children2, inventory2, metadata10);
-  await verifyReceipt3(checkpoint, current9);
-  await current9();
+  await verifyReceipt3(checkpoint, current10);
+  await current10();
   need111(readerCompletion(inventory2) === completion2, "original SQL completion changed");
   const result = freezeDeep({
     profile: "private.current-schematic-rename-baseline.v1",
@@ -150297,19 +150467,19 @@ function assertCurrentSchematicRenameClosedClockBinding(value2, engine2) {
 }
 async function assertClosedClockSidecarsAbsent2(value2, engine2) {
   const original2 = currentBaselineBinding2(value2, engine2);
-  const current9 = () => {
+  const current10 = () => {
     need111(currentBaselineBinding2(value2, engine2) === original2, "closed-clock sidecar owner changed");
   };
   for (const path5 of [value2.checkpoint.source, value2.checkpoint.checkpoint, value2.copy.artifact]) {
     for (const suffix of ["-wal", "-shm", "-journal"]) {
-      current9();
+      current10();
       const absent3 = await lstat46(`${path5}${suffix}`).then(() => false, (error51) => {
         if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
           return true;
         }
         throw error51;
       });
-      current9();
+      current10();
       need111(absent3, "closed-clock source, checkpoint or raw copy has a SQLite sidecar");
     }
   }
@@ -150329,7 +150499,7 @@ async function revalidateBaselineEvidence2(value2, engine2, revalidateOpening) {
   const unchanged5 = () => {
     need111(currentBaselineBinding2(value2, engine2) === original2, "original baseline binding changed");
   };
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need111(await assertClosedSessionCopyAuthority(original2.input.proof) === original2.input.proof, "original closed authority changed");
     unchanged5();
@@ -150340,10 +150510,10 @@ async function revalidateBaselineEvidence2(value2, engine2, revalidateOpening) {
     need111(await revalidateOpening(value2.owner, engine2) === original2.source, "opening owner changed");
     unchanged5();
   };
-  await current9();
-  await verifyReceipt3(value2.checkpoint, current9);
+  await current10();
+  await verifyReceipt3(value2.checkpoint, current10);
   await verifyExactManagedArtifact({ path: value2.copy.artifact, bytes: value2.copy.bytes, sha256: value2.copy.sha256 });
-  await current9();
+  await current10();
   copyLineage4(value2.checkpoint, value2.copy);
   const completion2 = readerCompletion(value2.inventory);
   need111(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && value2.inventory.checkpointSha256 === value2.copy.sha256, "original SQL reader lineage changed");
@@ -150454,14 +150624,14 @@ var init_current_schematic_aged_sql_reference = __esm({
           );
           assertCurrentClosedSessionCopyAuthority(proof);
         };
-        const current9 = async () => {
+        const current10 = async () => {
           unchanged5();
           await revalidateCurrentSchematicRenameClosedClockEvidence(baseline2, engine2);
           unchanged5();
         };
         let journalText;
         const boundary = async () => {
-          await current9();
+          await current10();
           const selected3 = await loadOperation(journalOperationId);
           unchanged5();
           const text37 = canonicalJson(selected3);
@@ -150480,9 +150650,9 @@ var init_current_schematic_aged_sql_reference = __esm({
         unchanged5();
         const target8 = baseline2.intent.target;
         const head2 = await selectCurrentUnlockedSqlHead(baseline2.inventory, target8);
-        await current9();
+        await current10();
         const clock7 = await windowsClockObservationForResult(proof, "termination");
-        await current9();
+        await current10();
         need112(clock7.clock.status === "observed" && clock7.base["checkedAt"] === proof.closedAt && clock7.ownerBinding["operationId"] === journalOperationId && clock7.ownerBinding["phase"] === closureBinding.phase);
         const binding8 = Object.freeze({
           profile: "private.current-schematic-aged-sql-reference-binding.v1",
@@ -150509,7 +150679,7 @@ var init_current_schematic_aged_sql_reference = __esm({
           referenceUtcMs: Number((BigInt(clock7.clock.after.utcBeforeTicks) - 621355968000000000n) / 10000n)
         });
         const invocation = await compileCurrentAgedSqlReferenceTransport(request13);
-        await current9();
+        await current10();
         need112(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId9);
@@ -150532,9 +150702,9 @@ var init_current_schematic_aged_sql_reference = __esm({
           windowsSideEffects: "one disjoint nonce scratch copy and original synthetic Job; no EasyEDA APP or profile input",
           executionAuthorized: false
         }));
-        await current9();
+        await current10();
         await readExactUtf8Artifact(intentArtifact);
-        await current9();
+        await current10();
         need112(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         await boundary();
@@ -150563,7 +150733,7 @@ var init_current_schematic_aged_sql_reference = __esm({
         }
         need112(BigInt(nativeBefore.utcBeforeTicks) >= BigInt(clock7.clock.after.utcAfterTicks) && BigInt(nativeBefore.qpcBefore) >= BigInt(clock7.clock.after.qpcAfter));
         await readExactUtf8Artifact(resultArtifact);
-        await current9();
+        await current10();
         need112(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         await boundary();
@@ -151192,11 +151362,11 @@ function copyLineage5(checkpoint, copy2) {
     "raw source identity differs from checkpoint"
   );
 }
-async function verifyReceipt4(checkpoint, current9) {
+async function verifyReceipt4(checkpoint, current10) {
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const receipt2 = await readArtifact(checkpoint.receiptPath, 0, 65536);
-  await current9();
+  await current10();
   need114(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
@@ -151204,14 +151374,14 @@ async function verifyReceipt4(checkpoint, current9) {
     controlRoot: root,
     maximumSourceBytes: 268435456
   });
-  await current9();
+  await current10();
   need114(
     verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === checkpoint.source && verified.sourceSha256 === checkpoint.sourceSha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path5, identity32] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
     const stat3 = await lstat47(path5, { bigint: true });
-    await current9();
+    await current10();
     need114(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity32.dev && stat3.ino.toString() === identity32.ino && stat3.birthtimeNs.toString() === identity32.birthtimeNs && stat3.ctimeNs.toString() === identity32.ctimeNs, "source/checkpoint identity changed");
   }
 }
@@ -151236,7 +151406,7 @@ async function revalidateCurrentSchematicRenameSnapshot(engine2, value2) {
     const completion2 = readerCompletion(source5.inventory);
     need114(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && source5.inventory.checkpointSha256 === value2.copy.sha256 && value2.copy.closureProofSha256 === source5.proof.proofSha256, "original reader or copy lineage changed");
   };
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need114(await assertClosedSessionCopyAuthority(source5.proof) === source5.proof, "original closure authority changed");
     unchanged5();
@@ -151245,11 +151415,11 @@ async function revalidateCurrentSchematicRenameSnapshot(engine2, value2) {
     need114(await assertIssuedWindowsClockObservation(original2.captureClock) === original2.captureClock, "original capture clock changed");
     unchanged5();
   };
-  await current9();
-  await verifyReceipt4(value2.checkpoint, current9);
+  await current10();
+  await verifyReceipt4(value2.checkpoint, current10);
   copyLineage5(value2.checkpoint, value2.copy);
   await verifyExactManagedArtifact({ path: value2.copy.artifact, sha256: value2.copy.sha256, bytes: value2.copy.bytes });
-  await current9();
+  await current10();
 }
 function captureCurrentSchematicRenameFinishSnapshot(engine2, input, onEvidence) {
   return captureSnapshot3(engine2, input, onEvidence);
@@ -151301,7 +151471,7 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
   unchanged5();
   const clock7 = await clockReader.call(engine2, retainedCapture);
   unchanged5();
-  const current9 = async () => {
+  const current10 = async () => {
     unchanged5();
     need114(await assertClosedSessionCopyAuthority(proof) === proof, "original terminal proof changed");
     unchanged5();
@@ -151315,18 +151485,18 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
     onEvidence(Object.freeze(event3));
     unchanged5();
   };
-  await current9();
+  await current10();
   await engine2.assertRecoveryOperationIsolated(baseline2.owner.operationId);
-  await current9();
+  await current10();
   const root = await controlRootCapability();
-  await current9();
+  await current10();
   const outputDir = join72(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-schematic-${phase5}-${baseline2.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root, maximumSourceBytes: 268435456 }
   );
   retain3({ kind: "checkpoint", value: checkpoint });
-  await current9();
+  await current10();
   const old = baseline2.checkpoint.sourceIdentity;
   need114(
     checkpoint.sourceIdentity.dev === old.dev && checkpoint.sourceIdentity.ino === old.ino && checkpoint.sourceIdentity.birthtimeNs === old.birthtimeNs,
@@ -151339,11 +151509,11 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
   retain3({ kind: "copy", value: copy2 });
-  await current9();
+  await current10();
   copyLineage5(checkpoint, copy2);
   const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
-  await current9();
+  await current10();
   const completion2 = readerCompletion(inventory2);
   need114(
     completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
@@ -151351,15 +151521,15 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
   );
   const target8 = baseline2.intent.target;
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
-  await current9();
+  await current10();
   const { history } = decoded, matches = history.documents.filter((document4) => document4.uuid === target8.schematicUuid);
   const document3 = matches[0];
   need114(
     history.projectUuid === target8.projectUuid && history.branchUuid === target8.branchUuid && history.projectOwnerUuid === target8.ownerUuid && matches.length === 1 && document3?.docType === "SCH" && !isNativeDocumentDeleted(document3),
     "complete history differs from the original SCH/project/default-branch/owner"
   );
-  await verifyReceipt4(checkpoint, current9);
-  await current9();
+  await verifyReceipt4(checkpoint, current10);
+  await current10();
   need114(readerCompletion(inventory2) === completion2, "original reader changed");
   const result = freezeDeep({
     profile: "private.current-schematic-rename-snapshot.v1",
@@ -151426,23 +151596,23 @@ function sameInode4(a, b) {
 function sameFile9(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode4(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
-async function directory3(absolute, current9) {
+async function directory3(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need115(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags4 = constants28.O_RDONLY | constants28.O_DIRECTORY | constants28.O_NOFOLLOW;
   let handle = await open40("/", flags4);
   try {
-    current9();
+    current10();
     for (const segment2 of segments3) {
       const path5 = `/proc/self/fd/${handle.fd}/${segment2}`;
       const before = await lstat48(path5, { bigint: true });
-      current9();
+      current10();
       need115(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
       const child = await open40(path5, flags4);
       try {
-        current9();
+        current10();
         const info2 = await child.stat({ bigint: true });
-        current9();
+        current10();
         need115(info2.isDirectory() && sameInode4(before, info2), "Current preopen source parent changed while opening.");
         await handle.close();
       } catch (error51) {
@@ -151454,10 +151624,10 @@ async function directory3(absolute, current9) {
         throw error51;
       }
       handle = child;
-      current9();
+      current10();
     }
     const info = await handle.stat({ bigint: true });
-    current9();
+    current10();
     return { absolute, handle, info };
   } catch (error51) {
     try {
@@ -151468,7 +151638,7 @@ async function directory3(absolute, current9) {
     throw error51;
   }
 }
-async function noSidecars6(path5, current9) {
+async function noSidecars6(path5, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     const absent3 = await lstat48(`${path5}${suffix}`).then(() => false, (error51) => {
       if (error51 instanceof Error && "code" in error51 && error51.code === "ENOENT") {
@@ -151476,7 +151646,7 @@ async function noSidecars6(path5, current9) {
       }
       throw error51;
     });
-    current9();
+    current10();
     need115(absent3, "Current preopen source has a SQLite sidecar.");
   }
 }
@@ -151484,83 +151654,83 @@ function matchesBaseline3(stat3, copy2) {
   const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES13 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
 }
-async function hash44(file3, bytes2, current9) {
+async function hash44(file3, bytes2, current10) {
   const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES4)), digest10 = createHash50("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
-    current9();
+    current10();
     need115(read2.bytesRead > 0, "Current preopen source ended during its bounded read.");
     digest10.update(buffer.subarray(0, read2.bytesRead));
     position += read2.bytesRead;
     await yieldProofEventLoop();
-    current9();
+    current10();
   }
   const eof = await file3.read(Buffer.alloc(1), 0, 1, bytes2);
-  current9();
+  current10();
   need115(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest10.digest("hex");
 }
 async function verifyCurrentSchematicRenamePreopenSource(engine2, copy2) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentSchematicRenameBaseline(copy2, engine2);
   };
-  const observed2 = await verifySource3(copy2, current9);
-  current9();
+  const observed2 = await verifySource3(copy2, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-schematic-rename-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
 async function verifyCurrentSchematicRenamePosteditPreopenSource(engine2, snapshot8) {
-  const current9 = () => {
+  const current10 = () => {
     assertOriginalCurrentSchematicRenameSnapshot(snapshot8, engine2);
     need115(snapshot8.phase === "closed-edit", "Current SCH saved opening requires its original post-edit snapshot.");
   };
-  const observed2 = await verifySource3(snapshot8, current9);
-  current9();
+  const observed2 = await verifySource3(snapshot8, current10);
+  current10();
   return Object.freeze({ ...observed2, profile: "private.current-schematic-rename-postedit-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
-async function verifySource3(copy2, current9) {
-  current9();
+async function verifySource3(copy2, current10) {
+  current10();
   const { source: source5, sourceSha256 } = copy2.checkpoint;
   need115(
     process.platform === "linux" && source5.length <= 4096 && isAbsolute29(source5) && resolve24(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory3(dirname29(source5), current9);
+  const parent = await directory3(dirname29(source5), current10);
   let file3;
   let observation2;
   let failed = false;
   let failure2;
   try {
-    current9();
+    current10();
     const path5 = `/proc/self/fd/${parent.handle.fd}/${basename31(source5)}`;
-    await noSidecars6(path5, current9);
-    current9();
+    await noSidecars6(path5, current10);
+    current10();
     const before = await lstat48(path5, { bigint: true });
-    current9();
+    current10();
     need115(matchesBaseline3(before, copy2), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open40(path5, constants28.O_RDONLY | constants28.O_NOFOLLOW | constants28.O_NONBLOCK);
-    current9();
+    current10();
     const opened = await file3.stat({ bigint: true });
-    current9();
+    current10();
     need115(sameFile9(before, opened), "Current preopen source changed while opening.");
-    const sha256 = await hash44(file3, Number(before.size), current9);
-    current9();
+    const sha256 = await hash44(file3, Number(before.size), current10);
+    current10();
     need115(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
-    await noSidecars6(path5, current9);
-    current9();
-    const rebound = await directory3(parent.absolute, current9);
+    await noSidecars6(path5, current10);
+    current10();
+    const rebound = await directory3(parent.absolute, current10);
     try {
       need115(sameInode4(parent.info, rebound.info), "Current preopen source directory path changed.");
     } finally {
       await rebound.handle.close();
     }
-    current9();
+    current10();
     const parentAfter = await parent.handle.stat({ bigint: true });
-    current9();
+    current10();
     const after = await file3.stat({ bigint: true });
-    current9();
+    current10();
     const named = await lstat48(path5, { bigint: true });
-    current9();
+    current10();
     need115(
       sameInode4(parent.info, parentAfter) && sameFile9(before, after) && sameFile9(before, named),
       "Current preopen source descriptor or path changed during reading."
@@ -151589,7 +151759,7 @@ async function verifySource3(copy2, current9) {
   if (errors.length > 0) {
     throw new AggregateError(errors, "Current preopen source verification failed.", { cause: errors[0] });
   }
-  current9();
+  current10();
   need115(observation2 !== void 0, "Current preopen source observation is missing.");
   return observation2;
 }
@@ -152216,14 +152386,14 @@ var init_current_schematic_rename_generation_runtime = __esm({
           preopenSource: slot.preopen
         });
         const journalText = slot.journalText, text36 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           slot.current(scopeText);
           need116(slot.generation === token && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text36, "generation changed, stopped or retired");
           assertCurrentIssuedWindowsClockObservation(value2.launchClock);
           assertCurrentIssuedWindowsClockObservation(value2.captureClock);
         };
         const transfer = () => {
-          current9();
+          current10();
           need116(!this.busy && slot.writerTransfer === void 0, "writer transfer is busy or already consumed");
           const owner = Object.freeze({ profile: "private.current-schematic-rename-writer-owner.v1", operationId: token.operationId });
           const originalCurrent = slot.current;
@@ -152259,7 +152429,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
         };
         const evidence2 = (scopeText) => {
           if (slot.writerTransfer === void 0) {
-            current9(scopeText);
+            current10(scopeText);
             return;
           }
           need116(!slot.finishing && !slot.writerOwnershipInvalidated, "finished writer cannot revive generation evidence");
@@ -152268,24 +152438,24 @@ var init_current_schematic_rename_generation_runtime = __esm({
         };
         generations6.set(token, {
           value: value2,
-          current: current9,
+          current: current10,
           evidence: evidence2,
           transfer,
           retainedWriter: () => slot.writerTransfer,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.captureCurrent(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
             for (const clock7 of [value2.launchClock, value2.captureClock, value2.cacheClock, value2.projectOpenClock]) {
               need116(await assertIssuedWindowsClockObservation(clock7) === clock7, "generation original clock changed");
-              current9(scopeText);
+              current10(scopeText);
             }
             await this.unchanged(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         });
         slot.generation = token;
-        current9();
+        current10();
       }
       generation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -153163,7 +153333,7 @@ function currentSchematicAgedSqlCollectionEvidence(generation5, engine2) {
     executionAuthorized: false
   });
 }
-function current6(value2, engine2, generation5) {
+function current7(value2, engine2, generation5) {
   need119(value2 !== null && typeof value2 === "object");
   const original2 = issued24.get(value2);
   need119(original2 !== void 0 && original2.engine === engine2 && original2.generation === generation5 && original2.text === canonicalJson(value2));
@@ -153335,7 +153505,7 @@ async function collectCurrentSchematicAgedSqlClock(engine2, generation5, referen
   }
 }
 function qualifyCurrentSchematicAgedSqlHead(value2, engine2, generation5, backendStart) {
-  const original2 = current6(value2, engine2, generation5);
+  const original2 = current7(value2, engine2, generation5);
   const after = original2.historical.afterClock, clock7 = rawClock4(backendStart);
   need119(backendStart !== original2.before && backendStart !== original2.after && canonicalJson(backendStart.ownerBinding) === original2.historical.ownerBindingText && clockProvenance4(backendStart) === original2.historical.provenanceText && clock7.before.zoneRulesSha256 === after.after.zoneRulesSha256 && clock7.before.localOffsetMinutes === after.after.localOffsetMinutes && clock7.before.qpcFrequency === after.after.qpcFrequency && BigInt(clock7.before.utcBeforeTicks) >= BigInt(after.after.utcAfterTicks) && BigInt(clock7.before.qpcBefore) >= BigInt(after.after.qpcAfter));
   const selected3 = original2.renderer.controlsBefore.sql[0];
@@ -154309,16 +154479,16 @@ async function verifyCurrentSchematicRenameStoredEffect(preparation3, before, me
   const beforeCompletion = readerCompletion(before), target8 = metadata10.request.target;
   const afterCompletion = readerCompletion(after);
   time16(expectedDocumentTime);
-  const current9 = () => {
+  const current10 = () => {
     originalCurrentSchematicRenameSqlPreparation(preparation3, before, metadata10);
     need123(
       readerCompletion(before) === beforeCompletion && readerCompletion(after) === afterCompletion && afterCompletion.observedChildClose && afterCompletion.exitCode === 0 && afterCompletion.exitSignal === null,
       "original completed reader changed"
     );
   };
-  current9();
+  current10();
   const decoded = await decodeCurrentSymbolPreEditHistory(after, { projectUuid: target8.projectUuid, branchUuid: target8.branchUuid });
-  current9();
+  current10();
   const { baseline: baseline2 } = metadata10;
   need123(
     decoded.history.projectOwnerUuid === target8.ownerUuid && decoded.history.documents.length === baseline2.documentCount && decoded.history.historyRowCount === baseline2.historyRows + 1 && decoded.chunks.length === baseline2.chunks + 1 && decoded.links.length === baseline2.chunks + 1 && decoded.maximumTicket === baseline2.maximumTicket + 1 && sha256Json(decoded.links.slice(0, -1)) === baseline2.rawHistorySha256,
@@ -154342,9 +154512,9 @@ async function verifyCurrentSchematicRenameStoredEffect(preparation3, before, me
   const backendTime = time16(edit.body?.["updateTime"]), documentTime = time16(header.body["updateTime"]);
   need123(documentTime === expectedDocumentTime, "saved document timestamp differs from the retained native reply");
   const bound2 = await bindCurrentSchematicRenameSqlTimes(preparation3, { documentTime, backendTime });
-  current9();
+  current10();
   const comparison3 = await verifyCurrentSchematicRenameSql(bound2, after);
-  current9();
+  current10();
   const result = Object.freeze({
     profile: "private.current-schematic-rename-stored-effect.v1",
     preparationSha256: preparation3.preparationSha256,
@@ -154398,7 +154568,7 @@ function need124(condition, message) {
     throw new Error(`Current SCH saved source: ${message}`);
   }
 }
-function current7(original2) {
+function current8(original2) {
   const { preparation: preparation3, before, beforeMetadata, beforeChildren, effect, after, metadata: metadata10, children: children2 } = original2;
   originalCurrentSchematicRenameSqlPreparation(preparation3, before, beforeMetadata);
   assertOriginalCurrentSchematicChildRoster(beforeChildren, before, beforeMetadata);
@@ -154409,7 +154579,7 @@ function current7(original2) {
 function originalCurrentSchematicRenameSavedSource(source5, after) {
   const original2 = issued25.get(source5);
   need124(original2 !== void 0 && original2.after === after, "original successful saved-source relation required");
-  current7(original2);
+  current8(original2);
   return original2;
 }
 function assertCurrentSchematicRenameSavedReadEligibility(metadata10, before) {
@@ -154459,7 +154629,7 @@ async function prepareCurrentSchematicRenameSavedSource(preparation3, before, be
     "complete child roster, AST order, or startup premises changed"
   );
   const original2 = Object.freeze({ preparation: preparation3, before, beforeMetadata, beforeChildren, effect, after, metadata: metadata10, children: children2 });
-  current7(original2);
+  current8(original2);
   const body4 = {
     profile: "private.current-schematic-rename-saved-source.v1",
     targetUuid: target8.schematicUuid,
@@ -154487,7 +154657,7 @@ function compareCurrentSchematicRenameSavedObservations(source5, after, rawMetad
   );
   const metadata10 = compareCurrentSchematicRenameObservation(original2.metadata, after, observed2);
   const children2 = compareCurrentSchematicChildRoster(original2.children, after, rawChildren);
-  current7(original2);
+  current8(original2);
   return Object.freeze({
     profile: "private.current-schematic-rename-saved-observations.v1",
     sourceSha256: source5.sourceSha256,
@@ -154507,7 +154677,7 @@ async function compareCurrentSchematicRenameLaterSql(source5, after, later) {
   );
   need124(later.logicalSha256 === after.logicalSha256, "complete later SQL changed");
   await compareCompleteClosedSql(after, later);
-  current7(original2);
+  current8(original2);
   need124(readerCompletion(later) === completion2, "original later reader changed");
   return Object.freeze({
     profile: "private.current-schematic-rename-later-sql-relation.v1",
@@ -154898,9 +155068,9 @@ async function prepareCurrentSchematicRenameClock(input) {
   const source5 = assertOriginalCurrentSchematicRenameStartup(startup2, engine2, generation5);
   const writer = assertCurrentSchematicRenameWriterOwner(owner, engine2, scopeText);
   need126(writer.generation === generation5 && writer.original === source5.source, "Original SCH writer generation differs.");
-  need126(owner !== null && typeof owner === "object" && !attempts27.has(startup2) && !owners5.has(owner), "SCH clock reservation already consumed.");
+  need126(owner !== null && typeof owner === "object" && !attempts27.has(startup2) && !owners6.has(owner), "SCH clock reservation already consumed.");
   attempts27.add(startup2);
-  owners5.add(owner);
+  owners6.add(owner);
   const document3 = documentSample4(input.documentBefore), expectedActor = validateActorProjection(source5.observation.runtimeObservation.actor);
   const tokens = [source5.source.launchClock, source5.source.captureClock, input.beforeClock, input.armedClock];
   const aged = input.agedHead;
@@ -155132,7 +155302,7 @@ function completedCurrentSchematicRenameClockSource(plan2, engine2, dispatchOwne
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS7, ASSUMPTIONS4, attempts27, owners5, plans11, lifecycles2;
+var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS7, ASSUMPTIONS4, attempts27, owners6, plans11, lifecycles2;
 var init_current_schematic_rename_clock = __esm({
   "server/src/current-schematic-rename-clock.ts"() {
     init_core3();
@@ -155171,7 +155341,7 @@ var init_current_schematic_rename_clock = __esm({
       noOtherTargetWriterRequired: true
     });
     attempts27 = /* @__PURE__ */ new WeakSet();
-    owners5 = /* @__PURE__ */ new WeakSet();
+    owners6 = /* @__PURE__ */ new WeakSet();
     plans11 = /* @__PURE__ */ new WeakMap();
     lifecycles2 = /* @__PURE__ */ new WeakMap();
   }
@@ -155287,15 +155457,15 @@ function methods16(engine2) {
     engine2.upstream.currentAuthenticatedBridgeDispatchBinding
   ];
 }
-function current8(collection, scopeText) {
+function current9(collection, scopeText) {
   const { engine: engine2, owner, source: source5 } = collection;
   need127(attempts28.get(owner) === collection && engine2.upstream === collection.upstream && methods16(engine2).every((method6, index) => method6 === collection.methods[index]) && assertCurrentSchematicRenameWriterOwner(owner, engine2, scopeText) === source5);
   need127(assertOriginalCurrentSchematicRenameStartup(collection.startup, engine2, source5.generation).source === source5.original);
 }
 async function unchanged4(collection, scopeText) {
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   const disk = await loadOperation(collection.owner.operationId);
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   need127(
     canonicalJson(disk) === collection.journalText && canonicalJson(collection.source.journal) === collection.journalText,
     "Current SCH writer clock journal changed."
@@ -155307,17 +155477,17 @@ async function record7(collection, phase5, value2, scopeText) {
   const sequence = journal.sequence + 1;
   const artifact2 = await writePhaseArtifact(collection.owner.operationId, sequence, phase5, value2);
   collection.artifacts.set(phase5, Object.freeze(artifact2));
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   journal.sequence = sequence;
   journal.artifacts.push(artifact2);
   journal.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
   await updateOperation(journal);
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   collection.journalText = canonicalJson(journal);
   await unchanged4(collection, scopeText);
 }
 async function acceptMark(collection, before, scopeText) {
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   const { source: source5, engine: engine2 } = collection;
   const lease = engine2.upstream.currentAuthenticatedBridgeDispatchBinding?.();
   need127(lease !== void 0);
@@ -155329,22 +155499,22 @@ async function acceptMark(collection, before, scopeText) {
   });
   const text36 = canonicalJson(source5.journal);
   const disk = await loadOperation(collection.owner.operationId);
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   need127(canonicalJson(disk) === text36 && canonicalJson(source5.journal) === text36, "Current SCH writer clock marked journal changed.");
   collection.journalText = text36;
   return structuredClone(source5.journal);
 }
 async function acceptClear(collection, marked, scopeText) {
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   assertCurrentSymbolCacheClear(marked, collection.source.journal, PHASE);
   const text36 = canonicalJson(collection.source.journal);
   const disk = await loadOperation(collection.owner.operationId);
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   need127(canonicalJson(disk) === text36 && canonicalJson(collection.source.journal) === text36, "Current SCH writer clock cleared journal changed.");
   collection.journalText = text36;
 }
 async function retainEngineFailure(collection, marked, scopeText) {
-  current8(collection, scopeText);
+  current9(collection, scopeText);
   if (canonicalJson(collection.source.journal) === collection.journalText) {
     await unchanged4(collection, scopeText);
     return;
@@ -155385,7 +155555,7 @@ function retainedCurrentSchematicRenameWriterClockJournal(owner, engine2) {
   }
   need127(collection.engine === engine2);
   const scope6 = engine2.upstream.currentAuthenticatedBridgeDispatchBinding?.();
-  current8(collection, scope6 === void 0 ? void 0 : canonicalJson(scope6));
+  current9(collection, scope6 === void 0 ? void 0 : canonicalJson(scope6));
   need127(canonicalJson(collection.source.journal) === collection.journalText, "SCH clock retained journal publication is incomplete.");
   return Object.freeze({ journalText: collection.journalText, cleanupUncertain: collection.cleanupUncertain });
 }
@@ -155413,18 +155583,18 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
   try {
     await unchanged4(collection, scopeText);
     await revalidateCurrentSchematicRenameStartupObservation(startup2, engine2, source5.generation);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     const fingerprint = source5.original.source.expectedFingerprint;
     assertExpectedFingerprint(fingerprint);
     validateSdkLocalRuntimeFingerprint(fingerprint);
     await verifyCurrentProjectOnlySymbolPreflightImplementation(fingerprint.installedBundles.assetsRoot);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     await verifyCurrentSymbolPersistenceImplementation(fingerprint.installedBundles.assetsRoot);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     await engine2.assertBridgeDispatchAllowed();
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     await engine2.assertRecoveryOperationIsolated(owner.operationId);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     const request13 = {
       target: source5.original.baseline.intent.target,
       expectedActor: originalStartup.observation.runtimeObservation.actor,
@@ -155447,13 +155617,13 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
     marked = await acceptMark(collection, unmarked, scopeText);
     await unchanged4(collection, scopeText);
     collection.beforeClock = await engine2.freshClockObservationForClosedCapture(source5.original.capture);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     collection.dispatchAttempted = true;
     const raw = await engine2.upstream.callTool("easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3, dispatch.binding);
     collection.raw = raw;
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     collection.armedClock = await engine2.freshClockObservationForClosedCapture(source5.original.capture);
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     collection.documentBefore = decodeCurrentSchematicRenameWriterClockReply(raw, request13);
     const age = agedHead === void 0 ? void 0 : qualifyCurrentSchematicAgedSqlHead(agedHead, engine2, source5.generation, collection.beforeClock);
     collection.clockPlan = await prepareCurrentSchematicRenameClock({
@@ -155466,7 +155636,7 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
       documentBefore: collection.documentBefore,
       ...age === void 0 ? {} : { agedHead: age }
     });
-    current8(collection, scopeText);
+    current9(collection, scopeText);
     assertUpstreamReplySettled(raw);
     await record7(collection, "schematic-writer-n0-result", {
       raw,
@@ -155519,7 +155689,7 @@ function assertOriginalCurrentSchematicRenameWriterClock(value2, engine2, owner)
     "Original completed SCH writer clock observation required."
   );
   const scope6 = engine2.upstream.currentAuthenticatedBridgeDispatchBinding?.();
-  current8(retained2.collection, scope6 === void 0 ? void 0 : canonicalJson(scope6));
+  current9(retained2.collection, scope6 === void 0 ? void 0 : canonicalJson(scope6));
   const source5 = retained2.source;
   const plan2 = assertOriginalCurrentSchematicRenameClock(source5.clockPlan, engine2, source5.source.generation, source5.startup, owner);
   need127(plan2.writer === source5.source && plan2.before.token === source5.beforeClock && plan2.armed.token === source5.armedClock && canonicalJson(plan2.documentBefore) === canonicalJson(source5.documentBefore) && sha256Json(source5.raw) === value2.rawReplySha256 && source5.journalText === retained2.collection.journalText && canonicalJson(source5.source.journal) === source5.journalText && source5.dispatch === retained2.collection.dispatch && source5.source.journal.orphanedCallPossible && source5.source.journal.orphanedCallPhase === PHASE);
@@ -156248,7 +156418,7 @@ var init_current_schematic_rename_writer_runtime = __esm({
           sqlRuntime: source5.sqlRuntime
         });
         const frozen = canonicalJson(projection8());
-        const current9 = () => {
+        const current10 = () => {
           need128(
             this.slots.get(token.operationId) === slot && slot.continuation === token && slot.retired && !slot.failed && !slot.dispatchCaptureCleanupUncertain && slot.snapshotComplete && slot.comparison !== void 0 && slot.writeAcknowledged && slot.postRecorded && slot.snapshot === snapshot8 && slot.clockPlan === clockPlan && slot.writeInput === writeInput && slot.writeResult === writeResult && slot.preparation === preparation3 && slot.storedEffect === storedEffect && methods17(this.engine).every((method6, index) => method6 === slot.methods[index]) && canonicalJson(projection8()) === frozen,
             "SCH verification continuation changed or its writer did not retire successfully."
@@ -156258,8 +156428,8 @@ var init_current_schematic_rename_writer_runtime = __esm({
           need128(result.preparation === preparation3 && result.storedEffect === storedEffect && result.comparison === slot.comparison);
         };
         slot.continuation = token;
-        continuations6.set(token, { engine: this.engine, source: source5, current: current9, journalText: () => slot.journalText, consumed: false });
-        current9();
+        continuations6.set(token, { engine: this.engine, source: source5, current: current10, journalText: () => slot.journalText, consumed: false });
+        current10();
       }
       getVerificationContinuation(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -156323,18 +156493,18 @@ function assertCurrentSchematicRenameSavedLifecycleSource(value2, engine2, conti
 }
 async function revalidateCurrentSchematicRenameSavedLifecycleSource(value2, engine2, continuation) {
   const original2 = assertCurrentSchematicRenameSavedLifecycleSource(value2, engine2, continuation), { snapshot: snapshot8 } = original2.source;
-  const current9 = () => {
+  const current10 = () => {
     need129(assertCurrentSchematicRenameSavedLifecycleSource(value2, engine2, continuation) === original2);
   };
   await verifyExactManagedArtifact({ path: snapshot8.copy.artifact, bytes: snapshot8.copy.bytes, sha256: snapshot8.copy.sha256 });
-  current9();
+  current10();
   const history = await readNativeHistoryCheckpoint({
     checkpointPath: snapshot8.checkpoint.checkpoint,
     expectedSha256: snapshot8.checkpoint.checkpointSha256,
     projectUuid: snapshot8.native.projectUuid,
     libraryAtomHeaders: "preserve"
   });
-  current9();
+  current10();
   need129(history.semanticSha256 === snapshot8.native.historySemanticSha256 && history.branchUuid === snapshot8.native.branchUuid && history.projectOwnerUuid === snapshot8.native.ownerUuid);
   return original2;
 }
@@ -156342,7 +156512,7 @@ async function prepareCurrentSchematicRenameSavedLifecycleSource(continuation, e
   const source5 = assertOriginalCurrentSchematicRenameWriterContinuation(continuation, engine2);
   const snapshot8 = assertOriginalCurrentSchematicRenameSnapshot(source5.snapshot, engine2);
   need129(source5.snapshot.phase === "closed-edit" && snapshot8.baseline === source5.original.baseline);
-  const current9 = () => {
+  const current10 = () => {
     need129(assertOriginalCurrentSchematicRenameWriterContinuation(continuation, engine2) === source5 && assertOriginalCurrentSchematicRenameSnapshot(source5.snapshot, engine2) === snapshot8);
   };
   const baseline2 = source5.original.baseline;
@@ -156354,7 +156524,7 @@ async function prepareCurrentSchematicRenameSavedLifecycleSource(continuation, e
     source5.storedEffect,
     snapshot8.inventory
   );
-  current9();
+  current10();
   const data9 = originalCurrentSchematicRenameSavedSource(dataSource, snapshot8.inventory);
   const { uuid: uuid12, ...acknowledged } = source5.writeResult.after;
   need129(uuid12 === baseline2.intent.target.schematicUuid && uuid12 === source5.snapshot.native.schematicUuid && canonicalJson(data9.metadata.request.expectedBefore) === canonicalJson(acknowledged) && dataSource.maximumTicket === source5.writeResult.afterMaxTicket && data9.metadata.request.expectedBefore.displayName === baseline2.intent.desiredTitle && canonicalJson(data9.children.startupInput) === canonicalJson(baseline2.children.startupInput) && canonicalJson(source5.writeResult.actor) === canonicalJson(source5.writeInput.expectedActor));
@@ -156383,7 +156553,7 @@ async function prepareCurrentSchematicRenameSavedLifecycleSource(continuation, e
     expectation: data9.children.startupInput
   }));
   await revalidateCurrentSchematicRenameSavedLifecycleSource(descriptor10, engine2, continuation);
-  current9();
+  current10();
   return descriptor10;
 }
 function verifyCurrentSchematicRenameSavedMetadataAndChildren(value2, engine2, continuation, metadata10, children2) {
@@ -156446,34 +156616,34 @@ async function collectCurrentSchematicRenameSavedMetadata(engine2, generation5, 
   const collection = { engine: engine2, source: sourceValue };
   collections12.set(generation5, collection);
   const dispatch = engine2.dispatchWithOrphanTracking;
-  const current9 = () => {
+  const current10 = () => {
     need130(engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.dispatchWithOrphanTracking === dispatch && assertCurrentSchematicRenameVerificationGeneration(generation5, engine2, scopeText) === source5 && assertCurrentSchematicRenameSavedLifecycleSource(sourceValue, engine2, source5.continuation) === saved);
     source5.current(scopeText);
     if (collection.rawText !== void 0) {
       need130(canonicalJson(collection.raw) === collection.rawText);
     }
   };
-  current9();
+  current10();
   await revalidateCurrentSchematicRenameVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   await revalidateCurrentSchematicRenameSavedLifecycleSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   const initial = await engine2.status();
-  current9();
+  current10();
   const fingerprint = structuredClone(initial.stableFingerprint);
   assertExpectedFingerprint(fingerprint);
   validateSdkLocalRuntimeFingerprint(fingerprint);
   assertSubset(fingerprint, source5.expectedFingerprint, "Current saved SCH metadata runtime");
   const assetsRoot = fingerprint.installedBundles.assetsRoot;
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const code = buildCurrentSchematicRenameStartupObservation(saved.request, saved.expectation), phase5 = "current-schematic-rename-verification-saved-read";
   await source5.record("verify-saved-read-intent", { request: saved.request, source: sourceValue, codeSha256: sha256Text(code), replayAllowed: false }, scopeText);
-  current9();
+  current10();
   const before = structuredClone(source5.journal);
   let marked;
   let raw;
@@ -156487,14 +156657,14 @@ async function collectCurrentSchematicRenameSavedMetadata(engine2, generation5, 
       CURRENT_SAVED_SCH_METADATA_TIMEOUT_MS + 15e3,
       async () => {
         marked = await source5.acceptMark(before, phase5, scopeText);
-        current9();
+        current10();
       },
       async (reply) => {
         collection.raw = reply;
         collection.rawText = canonicalJson(reply);
-        current9();
+        current10();
         await source5.record("verify-saved-read-reply", { raw: reply }, scopeText);
-        current9();
+        current10();
         marked = structuredClone(source5.journal);
       },
       async () => {
@@ -156503,7 +156673,7 @@ async function collectCurrentSchematicRenameSavedMetadata(engine2, generation5, 
         } else {
           await source5.revalidate(scopeText);
         }
-        current9();
+        current10();
       }
     );
   } catch (error51) {
@@ -156512,20 +156682,20 @@ async function collectCurrentSchematicRenameSavedMetadata(engine2, generation5, 
   }
   need130(marked !== void 0);
   await source5.acceptClear(marked, phase5, scopeText);
-  current9();
+  current10();
   need130(raw === collection.raw);
   const { observation: observation2, children: children2 } = decodeCurrentSchematicRenameStartupObservation(raw, saved.request, saved.expectation);
   const relation = verifyCurrentSchematicRenameSavedMetadataAndChildren(sourceValue, engine2, source5.continuation, observation2, children2);
   await verifyCurrentProjectOnlySymbolPreflightImplementation(assetsRoot);
-  current9();
+  current10();
   await verifyCurrentSymbolPersistenceImplementation(assetsRoot);
-  current9();
+  current10();
   await revalidateCurrentSchematicRenameSavedLifecycleSource(sourceValue, engine2, source5.continuation);
-  current9();
+  current10();
   await revalidateCurrentSchematicRenameVerificationGeneration(generation5, engine2, scopeText);
-  current9();
+  current10();
   const final = await engine2.status();
-  current9();
+  current10();
   need130(canonicalJson(final.stableFingerprint) === canonicalJson(fingerprint));
   const result = Object.freeze({
     profile: "private.current-schematic-rename-saved-read.v1",
@@ -156543,7 +156713,7 @@ async function collectCurrentSchematicRenameSavedMetadata(engine2, generation5, 
     persistenceLifecycleComplete: false
   });
   await source5.record("verify-saved-metadata-result", result, scopeText);
-  current9();
+  current10();
   collection.observation = observation2;
   collection.observationText = canonicalJson(observation2);
   collection.children = children2;
@@ -157123,7 +157293,7 @@ var init_current_schematic_rename_verification_runtime = __esm({
         const { capture: capture3, launch } = slot;
         need131(capture3 !== void 0 && launch !== void 0 && slot.generation === void 0);
         const token = Object.freeze({ profile: "private.current-schematic-rename-verification-generation.v1", operationId: slot.source.operationId });
-        const current9 = (scopeText) => {
+        const current10 = (scopeText) => {
           this.current(slot, scopeText);
           need131(slot.generation === token && slot.opened && slot.admitted && slot.cachesObserved && !slot.failed && !slot.finishing && !slot.closeAttempted && slot.capture === capture3 && slot.launch === launch);
         };
@@ -157135,33 +157305,33 @@ var init_current_schematic_rename_verification_runtime = __esm({
           capture: capture3,
           launch,
           journal: slot.journal,
-          current: current9,
+          current: current10,
           revalidate: async (scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.original(slot, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           record: async (phase5, value2, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.record(slot, phase5, value2, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           acceptMark: (before, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             return this.acceptMark(slot, before, phase5, scopeText);
           },
           acceptClear: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.acceptClear(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           },
           retainEngineFailure: async (marked, phase5, scopeText) => {
-            current9(scopeText);
+            current10(scopeText);
             await this.retainEngineFailure(slot, marked, phase5, scopeText);
-            current9(scopeText);
+            current10(scopeText);
           }
         }) });
-        current9();
+        current10();
       }
       /** The retained name is lifecycle compatibility only. This reads no canvas,
        * geometry or drawing content: saved SCH metadata, complete peer maps and child roster only.
@@ -157474,22 +157644,22 @@ function diagnosticElapsed(startedAt) {
   return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, elapsed2));
 }
 function finishDiagnostic(slot, outcome) {
-  const current9 = slot.diagnosticCurrent;
-  if (current9 !== void 0) {
-    const terminal = outcome === "succeeded" && current9.action === "advance" && slot.next === current9.phase ? "observation-pending" : outcome;
-    slot.diagnosticLast = Object.freeze({ action: current9.action, phase: current9.phase, durationMs: diagnosticElapsed(current9.startedAt), outcome: terminal });
+  const current10 = slot.diagnosticCurrent;
+  if (current10 !== void 0) {
+    const terminal = outcome === "succeeded" && current10.action === "advance" && slot.next === current10.phase ? "observation-pending" : outcome;
+    slot.diagnosticLast = Object.freeze({ action: current10.action, phase: current10.phase, durationMs: diagnosticElapsed(current10.startedAt), outcome: terminal });
     delete slot.diagnosticCurrent;
   }
 }
 function inspectDiagnostic(slot) {
-  const current9 = slot.diagnosticCurrent;
+  const current10 = slot.diagnosticCurrent;
   return Object.freeze({
     profile: "easyeda-pro-control.current-schematic-rename-phase-diagnostic.v1",
-    current: current9 === void 0 ? null : Object.freeze({
-      action: current9.action,
-      phase: current9.phase,
-      stage: current9.stage,
-      elapsedMs: diagnosticElapsed(current9.startedAt)
+    current: current10 === void 0 ? null : Object.freeze({
+      action: current10.action,
+      phase: current10.phase,
+      stage: current10.stage,
+      elapsedMs: diagnosticElapsed(current10.startedAt)
     }),
     last: slot.diagnosticLast ?? null,
     diagnosticOnly: true,
@@ -157575,25 +157745,61 @@ var init_current_schematic_rename_operation_runtime = __esm({
           this.busy = true;
           slot.cleanupRequested = true;
           slot.diagnosticCurrent = { action: "cleanup", phase: "cleanup", stage: "cleanup-selection", startedAt: performance10.now() };
-          let outcome2 = "failed";
+          let outcome = "failed";
           try {
             await this.chooseCleanup(slot);
-            outcome2 = "succeeded";
+            outcome = "succeeded";
           } finally {
-            finishDiagnostic(slot, outcome2);
+            finishDiagnostic(slot, outcome);
             this.busy = false;
           }
           return this.inspect(slot.operationId);
         }
-        const { expectedPhase: phase5 } = request13.step;
-        need132(slot.next === phase5);
+        const steps = request13.action === "advance-batch" ? request13.steps : [request13.step];
+        const first = steps[0];
+        need132(first !== void 0 && slot.next === first.expectedPhase);
         this.busy = true;
+        try {
+          await (request13.action === "advance-batch" ? this.advanceBatch(slot, steps) : this.advanceStep(slot, first));
+        } finally {
+          this.busy = false;
+        }
+        return this.inspect(slot.operationId);
+      }
+      async advanceBatch(slot, steps) {
+        const progress = {
+          requestedPhases: Object.freeze(steps.map((step) => step.expectedPhase)),
+          attemptedSteps: 0,
+          completedSteps: 0,
+          status: "running"
+        };
+        slot.lastBatch = progress;
+        try {
+          for (const step of steps) {
+            need132(slot.next === step.expectedPhase);
+            progress.attemptedSteps += 1;
+            await this.advanceStep(slot, step);
+            if (slot.next === step.expectedPhase) {
+              progress.status = "observation-pending";
+              return;
+            }
+            progress.completedSteps += 1;
+          }
+          progress.status = "finished";
+        } catch (error51) {
+          progress.status = "failed";
+          throw error51;
+        }
+      }
+      async advanceStep(slot, step) {
+        const { expectedPhase: phase5 } = step;
+        need132(slot.next === phase5);
         slot.next = "stopped";
         slot.attempted.push(phase5);
         slot.diagnosticCurrent = { action: "advance", phase: phase5, stage: "performing", startedAt: performance10.now() };
         let outcome = "failed";
         try {
-          const result = await this.perform(slot, request13.step);
+          const result = await this.perform(slot, step);
           slot.last = structuredClone(result);
           need132(phase5.startsWith("cleanup-") || result["failed"] !== true && result["state"] !== "stopped", "SCHEMATIC rename retained a stopped stage.");
           this.advanceNext(slot, phase5, result);
@@ -157609,9 +157815,7 @@ var init_current_schematic_rename_operation_runtime = __esm({
           throw error51;
         } finally {
           finishDiagnostic(slot, outcome);
-          this.busy = false;
         }
-        return this.inspect(slot.operationId);
       }
       inspect(operationId9) {
         const slot = this.slots.get(operationId9);
@@ -157631,6 +157835,12 @@ var init_current_schematic_rename_operation_runtime = __esm({
           cleanupRequested: slot.cleanupRequested,
           renameVerified: slot.renameVerified,
           phaseDiagnostics: inspectDiagnostic(slot),
+          lastBatch: slot.lastBatch === void 0 ? null : Object.freeze({
+            ...slot.lastBatch,
+            requestedPhases: Object.freeze([...slot.lastBatch.requestedPhases]),
+            diagnosticOnly: true,
+            replayAllowed: false
+          }),
           savedMetadataAndChildRosterOnly: true,
           completeCanvasRead: false,
           ordinaryProjectsSupported: false,
@@ -157852,28 +158062,7 @@ var init_current_schematic_rename_operation_runtime = __esm({
           slot.next = "completed";
           return;
         }
-        const next = {
-          "baseline-close": "baseline-observe-termination",
-          "baseline-observe-termination": "baseline-prepare-clock",
-          "baseline-prepare-clock": "baseline-relaunch",
-          "baseline-relaunch": "baseline-admit",
-          "baseline-admit": "baseline-observe-caches",
-          "baseline-observe-caches": "baseline-open-project",
-          "baseline-open-project": "baseline-observe-clock",
-          "baseline-observe-clock": "rename-write",
-          "rename-write": "rename-close",
-          "rename-close": "rename-observe-termination",
-          "rename-observe-termination": "verification-start",
-          "verification-start": "verification-admit",
-          "verification-admit": "verification-caches",
-          "verification-caches": "verification-open",
-          "verification-open": "verification-read",
-          "verification-read": "verification-close",
-          "verification-close": "verification-finish",
-          "cleanup-capture": "cleanup-close",
-          "cleanup-close": "cleanup-observe-termination"
-        };
-        slot.next = next[phase5] ?? "stopped";
+        slot.next = CURRENT_SCHEMATIC_RENAME_NEXT_PHASES[phase5] ?? "stopped";
       }
       async chooseCleanup(slot) {
         slot.next = "stopped";
@@ -158009,36 +158198,36 @@ async function readCurrentProjectOnlySymbolPreflight(engine2, input, expectedFin
     throw new Error("Project-only symbol observation requires an authenticated scope.");
   }
   const scopeText = canonicalJson(scope6);
-  const current9 = () => {
+  const current10 = () => {
     if (engine2.upstream.currentAuthenticatedBridgeDispatchBinding !== scopeReader || canonicalJson(scopeReader.call(engine2.upstream) ?? null) !== scopeText) {
       throw new Error("Project-only symbol observation authenticated scope changed.");
     }
   };
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const initialStatus = await engine2.status();
-  current9();
+  current10();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial);
   assertExpectedFingerprint(initial);
   assertSubset(initial, expected3, "Project-only symbol expected runtime");
   await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
     code,
     timeoutMs: CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS + 5e3,
     confirmWrite: true
   }, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS + 15e3);
-  current9();
+  current10();
   const result = decodeCurrentProjectOnlySymbolPreflightReply(raw, request13);
   await verifyCurrentProjectOnlySymbolPreflightImplementation(initial.installedBundles.assetsRoot);
-  current9();
+  current10();
   await engine2.assertBridgeDispatchAllowed();
-  current9();
+  current10();
   const finalStatus = await engine2.status();
-  current9();
+  current10();
   validateSdkLocalRuntimeFingerprint(finalStatus.stableFingerprint);
   if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(initial)) {
     throw new Error("Project-only symbol observation runtime changed around the observation.");
@@ -158170,7 +158359,7 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
   const manifest = loadReviewedCompatibilityManifest();
   const manifestDataSeal = dataText(manifest), manifestSeal = dataText(manifestFingerprint);
   const retained2 = [];
-  function current9() {
+  function current10() {
     if (ownValue(engine2, "upstream") !== upstream2 || ownValue(engine2, "controlFingerprintPromise") !== facadePromise || method3(upstream2, "launcherFingerprint") !== launcherReader || method3(upstream2, "installedEasyedaBundles") !== bundleReader) {
       throw new Error("Expected fingerprint local owner or reader changed.");
     }
@@ -158192,13 +158381,13 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
     }
     return result;
   }
-  current9();
+  current10();
   const facadeImplementation = retain3(await facadePromise);
-  current9();
+  current10();
   const upstreamLauncher = retain3(await launcherReader.call(upstream2));
-  current9();
+  current10();
   const installedBundles = retain3(await bundleReader.call(upstream2));
-  current9();
+  current10();
   const pinned = manifest.connectedRuntime;
   const fingerprint = {
     facadeImplementation,
@@ -158229,7 +158418,7 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
   };
   dataText(fingerprint);
   validatePrivateFingerprint(fingerprint);
-  current9();
+  current10();
   freezeData(fingerprint);
   return Object.freeze({
     profile: "easyeda-pro-control.closed-symbol-expected-fingerprint.v1",
@@ -158259,16 +158448,16 @@ function need133(value2, message) {
   }
 }
 function method4(owner, key) {
-  let current9 = owner;
-  for (let depth = 0; current9 !== null && depth < 8; depth += 1) {
-    const item2 = Object.getOwnPropertyDescriptor(current9, key);
+  let current10 = owner;
+  for (let depth = 0; current10 !== null && depth < 8; depth += 1) {
+    const item2 = Object.getOwnPropertyDescriptor(current10, key);
     if (item2 !== void 0) {
       need133(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Disposable entry owner method changed.");
       return item2.value;
     }
-    const parent = Object.getPrototypeOf(current9);
+    const parent = Object.getPrototypeOf(current10);
     need133(parent === null || typeof parent === "object", "Disposable entry owner prototype changed.");
-    current9 = parent;
+    current10 = parent;
   }
   throw new Error("Disposable entry owner method is unavailable.");
 }
@@ -158458,31 +158647,31 @@ var init_closed_symbol_disposable_entry = __esm({
           this.failure = error51;
           return Promise.resolve(this.stopped("validation-stopped"));
         }
-        const current9 = () => {
+        const current10 = () => {
           this.owner();
           need133(this.request === request13 && canonicalJson(parseClosedSymbolValidationRequest(rawRequest)) === requestText && canonicalJson(request13) === requestText, "Disposable entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
           try {
-            current9();
+            current10();
             this.fresh();
             this.phase = "admission";
             await this.engine.assertBridgeDispatchAllowed();
-            current9();
+            current10();
             this.fresh();
             await this.engine.assertNativeUiEditingAllowed();
-            current9();
+            current10();
             this.fresh();
             this.phase = "sql-runtime";
             this.sqlRuntime = await currentProcessSqlRuntime();
             const sqlRuntime = this.sqlRuntime;
-            current9();
+            current10();
             this.fresh();
             this.phase = "expectation";
             this.expected = await buildClosedSymbolExpectedFingerprint(this.engine, this.upstream);
             const expected3 = this.expected;
-            current9();
+            current10();
             this.fresh();
             need133(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
@@ -158492,7 +158681,7 @@ var init_closed_symbol_disposable_entry = __esm({
             const plan2 = this.plan, planText = canonicalJson(plan2);
             let claim3, coordinator;
             const planned = () => {
-              current9();
+              current10();
               need133(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Disposable retained preparation or plan changed.");
             };
             this.phase = "construction";
@@ -158760,16 +158949,16 @@ function need134(value2, message) {
   }
 }
 function method5(owner, key) {
-  let current9 = owner;
-  for (let depth = 0; current9 !== null && depth < 8; depth += 1) {
-    const item2 = Object.getOwnPropertyDescriptor(current9, key);
+  let current10 = owner;
+  for (let depth = 0; current10 !== null && depth < 8; depth += 1) {
+    const item2 = Object.getOwnPropertyDescriptor(current10, key);
     if (item2 !== void 0) {
       need134(Object.hasOwn(item2, "value") && typeof item2.value === "function", "Ordinary entry owner method changed.");
       return item2.value;
     }
-    const parent = Object.getPrototypeOf(current9);
+    const parent = Object.getPrototypeOf(current10);
     need134(parent === null || typeof parent === "object", "Ordinary entry owner prototype changed.");
-    current9 = parent;
+    current10 = parent;
   }
   throw new Error("Ordinary entry owner method is unavailable.");
 }
@@ -158948,31 +159137,31 @@ var init_closed_symbol_operation_entry = __esm({
           this.failure = error51;
           return Promise.resolve(this.stopped());
         }
-        const current9 = () => {
+        const current10 = () => {
           this.owner();
           need134(this.request === request13 && canonicalJson(parseClosedSymbolOperationRequest(rawRequest)) === requestText && canonicalJson(request13) === requestText, "Ordinary entry request changed.");
         };
         this.phase = "queue";
         return this.gate.run(async () => {
           try {
-            current9();
+            current10();
             this.fresh();
             this.phase = "admission";
             await this.engine.assertBridgeDispatchAllowed();
-            current9();
+            current10();
             this.fresh();
             await this.engine.assertNativeUiEditingAllowed();
-            current9();
+            current10();
             this.fresh();
             this.phase = "sql-runtime";
             this.sqlRuntime = await currentProcessSqlRuntime();
             const sqlRuntime = this.sqlRuntime;
-            current9();
+            current10();
             this.fresh();
             this.phase = "expectation";
             this.expected = await buildClosedSymbolExpectedFingerprint(this.engine, this.upstream);
             const expected3 = this.expected;
-            current9();
+            current10();
             this.fresh();
             need134(
               this.runtime.status().reviewedExecutionScopeSha256 === expected3.fingerprint.facadeImplementation.sha256,
@@ -158982,7 +159171,7 @@ var init_closed_symbol_operation_entry = __esm({
             const plan2 = this.plan, planText = canonicalJson(plan2);
             let claim3, coordinator;
             const planned = () => {
-              current9();
+              current10();
               need134(this.plan === plan2 && this.expected === expected3 && this.sqlRuntime === sqlRuntime && this.coordinator === coordinator && this.claim === claim3 && canonicalJson(plan2) === planText, "Ordinary retained preparation or plan changed.");
             };
             this.phase = "construction";
@@ -159232,7 +159421,7 @@ async function runClosedSymbolTool(input, mode) {
     };
     closedSymbolIndexReservation = reservation;
     activeReservation = reservation;
-    const current9 = () => {
+    const current10 = () => {
       if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process20.env || process20.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process20.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve25(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
@@ -159254,7 +159443,7 @@ async function runClosedSymbolTool(input, mode) {
       }
     };
     reason = "setup-refused";
-    current9();
+    current10();
     const assetsRoot = reservation.assetsRoot;
     if (assetsRoot === void 0 || assetsRoot.length === 0) {
       throw new Error("Disposable index requires installed assets configuration.");
@@ -159267,7 +159456,7 @@ async function runClosedSymbolTool(input, mode) {
       throw new Error("Disposable index facade hash refused.");
     }
     reservation.facadeSha256 = facadeSha256;
-    current9();
+    current10();
     phase5 = "entry-import";
     let Entry;
     if (mode === "validation") {
@@ -159277,7 +159466,7 @@ async function runClosedSymbolTool(input, mode) {
       const entryModule = await Promise.resolve().then(() => (init_closed_symbol_operation_entry(), closed_symbol_operation_entry_exports));
       Entry = entryModule.ClosedSymbolOperationEntry;
     }
-    current9();
+    current10();
     phase5 = "construction";
     const paths = {
       pluginRoot: reservation.pluginRoot,
@@ -159294,14 +159483,14 @@ async function runClosedSymbolTool(input, mode) {
     reservation.entry = entry;
     const entryRun = entry.run;
     reservation.entryRun = entryRun;
-    current9();
+    current10();
     phase5 = "entry";
     reason = "entry-boundary-refused";
     reservation.entryInvocationAttempted = true;
     const result = await entryRun.call(entry, parsed2.originalRequest);
     reservation.originalReturn = result;
     reservation.entryReturnObserved = true;
-    current9();
+    current10();
     if (reservation.entry !== entry || reservation.runtime !== runtime || reservation.nativeUi !== nativeUi || reservation.entryRun !== entryRun || reservation.originalReturn !== result) {
       throw new Error("Disposable index retained originals changed.");
     }
@@ -160734,7 +160923,7 @@ var init_src = __esm({
               designMutation: true,
               connectedValidation: false,
               originalOwnerRequired: true,
-              historicalConnectedValidation: "not-recorded",
+              historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle",
               phaseEffectAcknowledgementsRequired: true,
               inverseSupported: false,
               ordinaryProjectsSupported: false,
@@ -162519,7 +162708,7 @@ var init_src = __esm({
       const inputSchema5 = external_exports.object({ request: external_exports.unknown().pipe(currentSchematicRenameOperationRequestSchema) }).strict();
       server.registerTool("easyeda_control_disposable_schematic_rename", {
         title: "Rename one schematic container in an owned disposable project",
-        description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies for the current phase, elapsed time and last outcome. These passive diagnostics are not writer clocks or retry authority; busy plus stopped reserves ongoing work. Never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. No connected schematic rename validation is recorded.",
+        description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. advance-batch accepts two to four explicit adjacent steps with the same acknowledgments, stopping on failure or pending observation without retry or automatic cleanup; inspect lastBatch after a lost reply, never replay the batch. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies for the current phase, elapsed time and last outcome. These passive diagnostics are not writer clocks or retry authority; busy plus stopped reserves ongoing work. Never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. Installed143713 passed one disposable title-only lifecycle with complete closed SQL, fresh saved metadata/peer/child-roster verification and final closure. That single-phase case does not validate advance-batch or later generations.",
         inputSchema: inputSchema5,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
