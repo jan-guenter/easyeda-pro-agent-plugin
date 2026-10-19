@@ -210,4 +210,3 @@ void test("project SCHEMATIC malformed, mismatched, oversized and authority-inve
     assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute"]);
   }
 });
-
