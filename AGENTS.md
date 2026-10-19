@@ -4,6 +4,62 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+125900 delivered, 2026-10-19; fresh actual-host admission required next.
+User requested larger batches per restart. This release combines Image/Picture
+geometry, project-only SCH metadata and PCB inventory, four SCH baseline
+corrections, generated coverage and task-specific skill guidance. No general
+writer or new connected-validation claim. Full backlog:
+`docs/current-reader-clock-batch-2026-10-19.md`.
+
+Protected PR78 merged as main `d2ce6fbe65358445b5ad88d08e68cef52ad5feca`.
+Frozen payload `d9ee3fd82ed03daa3759fc4c6bb1c80bc910b657` has the same complete
+tree `3b91efa8da82573994376f918f2c7bb698bb0e80`. Original local70468 passed
+11,541facade/4platform skips/0failures/0cancellations,424bridge tests, strict
+lint/types/build/compatibility/package checks. Repository/privacy and allseven
+official skill validators passed. Exact-head Linux39258106499 passed all8shards,
+build and aggregate:11,540passes/5platform skips/0failures. Windows39258106717
+passed. Root and independent source/privacy/package reviews accepted. Duplicate
+main Windows39260630531 passed; main Linux39260630574 is running. Observe its
+eventual outcome without rerunning the passed exact-tree suite.
+
+Official Git marketplace upgrade19366 installed/enabled
+`0.3.0+codex.20261019125900` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached HEAD
+equals mergedmain. Maintained comparison75021 and independent full-file review
+passed1524files/31,165,457bytes/42directories, exact bytes/modes/no extras.
+Exact-main Linux worktree:
+`/root/.cache/easyeda-125900-merged-main-lMIXuqsQ/worktree`.
+Plugin tree8df0f5dc; inventory
+`5b6d78fa9410c051bcbd68cb30e34ab51b52f830b1d093266d4fcb2a3a3b60b1`.
+Source501/9e0372a7, runtime3/da9bd56c, manifest e81e902b; external pins unchanged.
+Configured47tools/restricted22/sevenskills,352cross-runtime guarded routes.
+These implementation counts do not measure connected coverage. Release evidence:
+`/root/.cache/easyeda-reader-clock-release-MQtx4JEo`.
+
+NEW offline probe6137633d completed ONCE in original shell85220, exit0; finalpins
+c62dfdab accepted by root/independent review before dispatch. AmbientNode26.11.1
+hands off to pinned24.18.0;22restricted tools and27offline queries pass. Original
+child4064163/start39199678/parent4060790 closed/exited0 via stdinEOF, is absent,
+and has no retained handles. No signals/adoption/upstream marker/journal;
+synthetic profile unchanged and lease removed. Two no-socket/descendant samples
+are not continuous isolation. Final complete installed inventory is unchanged.
+Root and independent retained proof/response/inventory reviews accepted.
+Proof SHA `db2b2a54adcf20d5df2705292bfb38aafe8207cc2940820bbcdb0e3bf0e0fbf7`
+in `/root/.cache/easyeda-reader-clock-probe-Lr7FaUtc`.
+Never import/rerun this consumed probe or earlier probes.
+
+Loaded111307 facade3932580 is retained; do not use it after marketplace pruning.
+No tool or EasyEDA action remains pending. The original111307 launch/open/SCH
+case below and allthree diagnostics remain consumed; the app closed normally
+and the case retired. Fresh session and actual125900 process admission precede
+one NEW-ID disposable SCH lifecycle. New reader populated cases remain separate
+validation. PCB text requires a complete pre-create observer/writer/persistence
+batch, not another inert prerequisite-only release. Production remains excluded.
+Preserve all branches/worktrees/stash/evidence. Final delivery notes here are a
+local handoff; the published frozen report intentionally records its freeze state.
+
+The entries below are historical.
+
 111307 admitted in the restarted host, 2026-10-19; live SCH case safely retired.
 Actual facade3932580/start38751265, parent3930844/start38745428, installed cwd/
 argv/Node/source497/bf33e143/runtime3/69d0abe8/manifest911c785f accepted by root
