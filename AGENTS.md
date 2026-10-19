@@ -4,6 +4,82 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+023200 delivery, 2026-10-19: protected PR73 merged as main
+`fd8ddf8666917d9f2742482c79b1d8c9ecb6f197`. Reviewed final candidate
+`634c9be0d2abe87320d3634ee700fae5b25f5dc1` and main have identical complete
+tree `066d21756a7309398006009d9e4d3150870d1acd`. Exact-head Linux39181856183
+passed build/all eight shards/aggregate:11,318 facade passes/five skips/zero
+failures. Windows39181856210 passed. Duplicate main Windows39182849539 passed;
+main Linux39182849456 is running with build passed. Check its eventual result
+without repeating the passed exact-tree PR suite.
+Copilot review was unavailable due quota; root and independent reviews passed.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261019023200` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached
+marketplace HEAD equals merged main. Root maintained comparison20188 passed:
+exact1,464files/29,522,303bytes/42directories INCLUDING root, committed bytes/
+modes and no extras. Plugin subtree `b7162ef71393282a9bd1bec023df992fb256f7c9`;
+inventory `d25fbbb94a844fcca718e8e5f7027975596402a49e0d046c2ab34158c32c1afa`.
+Source477/8dde97ca, runtime3/21f7a47b, manifest49ca1621; external runtime/bridge
+pins are unchanged. Independent maintained comparison73228 passed identically.
+
+NEW root/independently reviewed offline probe624a3e1e completed ONCE exit0 in
+original shell2611, approved final pins8b508bcb. Configured ambientNode26.11.1
+handed off to pinned24.18.0;20restricted tools and three fixed offline queries
+passed, including catalog11/Attribute empty-argument acceptance/filter refusal.
+Original child3376336/start34668385/parent3374282 exited0 through stdinEOF and
+is absent, without signals/adoption; no held handles remain. Synthetic profile
+unchanged, no upstream execution marker/journal, facade lease removed after EOF.
+Two no-socket samples are not continuous network/descendant isolation. Installed
+inventory is exact before/after. Proof SHA
+`c164c3dc0708ef5f047b852d404ffa40aa6220e524d1270403ce643d09db0650`
+is retained at
+`/root/.cache/easyeda-attribute-023200-offline-probe-TPt8Wg/proof.json`.
+NEVER rerun/import this consumed probe or earlier probes. All local verification
+and probe sessions are terminal. No new023200 connected runtime admission is claimed.
+
+Final frozen local verify70346 completed exit0:11,319facade passes/fourskips/
+zero failures/cancellations,424bridge passes, types/strict lint/coverage/build/
+compatibility/plugin/seven packaged-skill checks passed. Seven official local
+skill validators and repository privacy checks passed; external official plugin
+validator absent. Logfb1efd6c and CIlog8167bbd5 retained in
+`/root/.cache/easyeda-023200-release-INEX4p0m`. Dependency audit verified151
+signatures/40attestations/zero vulnerabilities. All local suites are terminal.
+
+Live013000 empty Dimension/Image case below is complete and nonreplayable;
+original EasyEDA root/Job exit proved, disposable closed bytes unchanged.
+No explicit Save, design edit or production-design access occurred. Actual
+facade3273248 still loads013000; do not use it after marketplace pruning.
+No gateway termination/rebind/hotpatch. A fresh Codex chat must load023200
+before any Attribute connected validation.
+
+Delivered: current-version Attribute identity reader with ordered component
+parent groups and full drift/collision/bounds checks; identity catalog11methods.
+Updated control guidance in the seven-skill package distinguishes historical
+scoped validation from dormant implementations. Separate original SCH opening ownership and fixed
+rename compiler are implemented but unregistered; they do not enable renaming.
+PCB text research documents the missing complete renderer/worker observations.
+No external runtime pin or safety gate was relaxed.
+
+Remaining: fresh023200 actual-host admission and disposable Attribute validation;
+nonempty Dimension/Image validation; SCH callable cleanup/full-SQL baseline,
+fresh project-only generation/cache/startup exclusion, original backend actor/
+clock/producer integration, durable one-attempt writer and closed-SQL/reopen/
+final-closure lifecycle; PCB text complete native Save-participant/queue/worker
+observation, one Save/full closed SQL/reopen/visual lifecycle; safe polygon IDs;
+referenced-symbol propagation/ordinary copy, footprint/device/3D, schematic/PCB
+geometry/routing/copper/stack/rules, ECO/dialog/export/account adapters; upstream
+packaging/bootstrap and wider runtime/platform admission. Inventory774methods
+retains450omissions and80implemented-blocked;342guarded/94blocked/2partial routes
+span different tuples and are not a current-runtime callable-method count.
+See api-coverage.json and the three new2026-10-19 docs for concrete omissions.
+
+Worktree
+`feature/023200-delivery-20261019` starts from merged main; preserve prior
+branches, stash ebe1b55d7a430ae2e3168e373e155957b582eff9, worktrees and logs.
+Everything below is historical.
+
 Candidate023200, 2026-10-19: work is on
 `feature/attribute-sch-owner-20261019`. Added the current exact-target Attribute
 identity reader with parent groups, and dormant original-owner SCH rename
