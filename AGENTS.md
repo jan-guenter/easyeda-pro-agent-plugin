@@ -31,8 +31,12 @@ pass. Proposed JSON optimization was slower and was NOT applied. Root/independen
 reviews accepted SCH, diagnostics and Attribute geometry. Types and
 targeted strict lint pass. Candidate version060000 is built, not published or
 installed. Frozen source482/0a18145e, runtime3/2ce9b592 and manifestf705bc01;
-external runtime/bridge pins are unchanged. Final required verification is running
-in original shell54880. Do not change source/bundles/pins during this suite.
+external runtime/bridge pins are unchanged. Original local verification is running
+in shell54880; it retains one stale bundled-startup assertion (geometry13 instead
+of15), not a passing final suite. Only that test expectation changed; its five
+focused startup cases now pass in shell12006. Source/bundles/pins stayed frozen.
+Protected PR74 is open; final-payload GitHub CI and remaining local gates are
+required before merge. Earlier27bb62e CI is superseded by the test correction.
 Repository/privacy and all seven official skill checks passed. Evidence directory:
 `/root/.cache/easyeda-060000-release-JsN9k3uK`.
 
