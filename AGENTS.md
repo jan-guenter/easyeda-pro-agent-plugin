@@ -58,7 +58,13 @@ a1faf216. Independent package review and pre-push repository/privacy checks pass
 PR79 opened on965aeee. Initial full suite20318 found two startup-test assertion
 failures: board-tool sort order,48tools and4SCHmethods. Test-only correction
 passed all5startup tests82134 and strict lint; source/bundles/pins unchanged.
-Original full run retained; final protected CI will test the corrected payload.
+Three more SDK-test failures had the same stale47/22 counts. A full catalog
+assertion audit also corrected doctor expectations; exactly5literal changes in
+2test files, all12focused tests and strict lint pass. Original full run retained;
+Original20318 completed11577tests/11566pass/7stale-catalogfailures/4skips;
+all7 failures are the corrected count/sort assertions,17focused replacements pass.
+Final protected CI will run the complete corrected payload. Bridge424, repository/
+privacy/package, all7skill checks and final compatibility check64305 pass.
 Release evidence `/root/.cache/easyeda-page-board-release-v7H02UGJ`.
 NEW offline probe PREPARED ONLY, placeholders/dispatchApprovedfalse:
 `/root/.cache/easyeda-page-board-offline-probe-7e85NB2a/probe.mjs`.

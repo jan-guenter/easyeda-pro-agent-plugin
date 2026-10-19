@@ -92,7 +92,14 @@ Focused page/board, lifecycle diagnostics, immutable-reference and actor tests
 passed, with strict type-aware lint and types clean. The initial full local suite
 found two startup-test failures from stale catalog assertions. The test-only
 correction updates board-tool sorting, the 48-tool total and four schematic
-methods; all five startup tests and strict lint then pass. Runtime sources,
+methods; all five startup tests and strict lint then pass. Three SDK-test failures
+shared the old counts; the catalog audit also found two doctor assertions.
+Five literal expectations in those two files were corrected, and all 12 focused
+tests passed. The 424 bridge tests, package/repository/privacy checks and all
+seven skill validators passed. The initial full run finished with 11,566 passes,
+seven stale-catalog assertion failures and four skips; all seven failures are
+covered by the 17 passing corrected focused tests. Final CI runs the complete
+corrected suite. Runtime sources,
 bundles and compatibility pins are unchanged. The original failed run is retained;
 final exact-payload protected CI and official installation remain pending at this
 checkpoint. No failed run is presented as a clean full-suite result.
