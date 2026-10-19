@@ -1,8 +1,9 @@
 # Schematic pages, board metadata and lifecycle follow-through
 
-Candidate `0.3.0+codex.20261019143713`, 2026-10-19. The installed live host remains125900;
-source changes below are not installed or connected-validation claims yet.
-Release and installation evidence will be recorded in `AGENTS.md`.
+Published and installed `0.3.0+codex.20261019143713`, 2026-10-19, through
+[PR79](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/79).
+This chat's live host remains125900; a fresh session must admit143713 before
+connected validation. Installation is not connected execution support.
 
 ## Batched implementation
 
@@ -101,16 +102,49 @@ seven stale-catalog assertion failures and four skips; all seven failures are
 covered by the 17 passing corrected focused tests. Final CI runs the complete
 corrected suite. Runtime sources,
 bundles and compatibility pins are unchanged. The original failed run is retained;
-final exact-payload protected CI and official installation remain pending at this
-checkpoint. No failed run is presented as a clean full-suite result.
+the final exact-payload CI and installation results follow. No failed local run
+is presented as a clean full-suite result.
+
+## Delivery
+
+Final payload `57fa2449236ea632910906830d0533d0fdb8a204` passed
+[Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39274287628)
+and [Windows recovery](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39274287643).
+The eight Linux shards report 11,572 passes, five skips and zero failures;
+424 bridge tests passed and both lint checks report zero warnings/errors.
+Official Codex validators were unavailable on the hosted runner; mandatory
+repository validation passed. Local validation also covered all seven skills.
+
+Protected PR79 merged as `f1fc00d1047045a514da9f464049efa59639bcd1`, with the
+complete tree identical to the tested payload. The post-merge
+[Linux run](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39277119967)
+is still running at handoff (build passed); post-merge
+[Windows recovery](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39277119974)
+passed. Final PR evidence and post-merge evidence are distinct.
+
+The official CLI upgraded the existing named Git marketplace without errors and
+lists143713 installed/enabled. The marketplace checkout equals merged main.
+The maintained exact-main comparison verified all 1,531 packaged files,
+31,319,304 bytes and 42 directories, including exact modes. Inventory SHA-256:
+`d5289f16d3272a0e3bd24e6744c3db146195febaf44a3131b7763ffdd5e318b6`.
+
+A single reviewed configured-startup probe passed all 38 offline requests with
+23 restricted tools and 48 configured tools. Ambient Node26 handed off to pinned
+Node24 without source dependencies. The original child exited cleanly on EOF;
+three full installed inventories matched before/after the probe. No upstream
+execution marker, child process or non-stdio socket was observed at its two
+sampled checkpoints. This does not prove continuous network isolation or live
+EasyEDA validation. Private proof is retained under
+`/root/.cache/easyeda-page-board-offline-probe-7e85NB2a`; it is consumed and must
+never be rerun. No installed cache was patched and no live host was terminated.
 
 ## Remaining work
 
 - Actor-model correction, reader review and focused checks are complete;
   connected rename success still needs a fresh admitted installed generation.
-- The complete runtime batch is frozen. Finish release checks and protected CI,
-  publish once and install through
-  the existing Git marketplace. Verify exact installed bytes and modes.
+- The batch is published, installed and offline-verified. Check the post-merge
+  Linux CI result on continuation; then admit the actual143713 process in a fresh
+  session. The current125900 host cannot validate the new implementation.
 - Validate the new page/board routes on the next admitted installed generation.
   Populated Image/Dimension cases remain separate validation work.
 - Implement the complete PCB text pre-create observer/writer/persistence path.
