@@ -22,6 +22,7 @@ import { join } from "node:path";
 import { after, before, describe, test } from "node:test";
 import type { TestContext } from "node:test";
 import { setTimeout as wait } from "node:timers/promises";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import WebSocketClient from "ws";
 import type { RawData } from "ws";
@@ -1406,7 +1407,7 @@ void describe(
     });
 
     void test("rejects a post-validation control-root pathname replacement", async () => {
-      const parent = await mkdtemp(join("/tmp", "easyeda-upstream-root-cap-"));
+      const parent = await createTestTemporaryDirectory("easyeda-upstream-root-cap-");
       const root = join(parent, "control");
       const movedRoot = join(parent, "control-moved");
       const dataDirectory = join(root, "upstream");

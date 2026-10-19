@@ -1,9 +1,11 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Sealed transaction tests compose real journal storage, executor and fingerprint boundaries with isolated native doubles. */
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { after, afterEach, before, mock, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
+import { assertRejectsAtBoundary } from "./helpers/rejection-boundary.ts";
 import { runInNewContext } from "node:vm";
 import { assertUpstreamReplySettled, isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
@@ -20,7 +22,7 @@ let library: { LibraryExecutor: typeof LibraryExecutor };
 let artifacts: { loadOperation: typeof loadOperation; updateOperation: typeof updateOperation; writePhaseArtifact: typeof writePhaseArtifact };
 let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 before(async () => {
-  root = await mkdtemp("/tmp/easyeda-close-transaction-");
+  root = await createTestTemporaryDirectory("easyeda-close-transaction-");
   originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; configureTestControlRoot(root);
   [library, artifacts, engines] = await Promise.all([import("../src/library-execution.ts"), import("../src/artifacts.ts"), import("../src/engine.ts")]);
 });
@@ -149,6 +151,13 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
     setContext: (context): void => { active = structuredClone(context); } };
 }
 
+async function rejectAfterDispatch(run: ReturnType<typeof fixture>): Promise<void> {
+  await assertRejectsAtBoundary(run.executor.execute(run.request), () => {
+    assert.equal(run.counts().dispatches, 1);
+    assert.notEqual(run.operationId(), "");
+  });
+}
+
 void test("close executor seals preparation before one native close and verifies full database, peers and active source without Save", async () => {
   const run = fixture(); const result = await run.executor.execute(run.request);
   assert.equal(result["state"], "completed"); assert.equal(result["saved"], false); assert.equal(result["reopened"], false);
@@ -163,7 +172,7 @@ void test("close authority, unsupported target and final baseline drift fail bef
 });
 for (const publicationFailure of ["native-return", "verified"] as const) {
   void test(`close publication failure at ${publicationFailure} reconciles absence without another close, open or Save`, async () => {
-    const run = fixture({ publicationFailure }); await assert.rejects(run.executor.execute(run.request));
+    const run = fixture({ publicationFailure }); await rejectAfterDispatch(run);
     await assert.rejects(run.executor.openTarget(run.operationId()), /never opens, closes or reactivates/u);
     const result = await run.executor.reconcileNoMutation(run.operationId()); assert.equal(result["state"], "reconciled-no-mutation");
     assert.ok(isRecord(result["result"])); assert.equal(result["result"]["targetOpenNow"], false); assert.equal(result["result"]["acknowledgmentInferred"], false);
@@ -171,7 +180,7 @@ for (const publicationFailure of ["native-return", "verified"] as const) {
   });
 }
 void test("false close acknowledgment retains quarantine and refuses still-open reconciliation until execution termination is proved", async () => {
-  const run = fixture({ noEffect: true }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ noEffect: true }); await rejectAfterDispatch(run);
   await assert.rejects(run.executor.reconcileNoMutation(run.operationId()), /Prove retained execution termination/u);
   const journal = await artifacts.loadOperation(run.operationId()); assert.equal(journal["orphanedCallPossible"], true);
   assert.deepEqual(run.counts(), { dispatches: 1, closes: 1, observations: 0 });
@@ -179,13 +188,13 @@ void test("false close acknowledgment retains quarantine and refuses still-open 
 for (const options of [{ peerMutation: true }, { databaseMutation: true }, { activeSourceMutation: true }]) {
   // oxlint-disable-next-line eslint/no-loop-func -- Each const case runs after the shared before hook has initialized the same immutable module handles.
   void test(`close collateral mutation remains unresolved in execute and recovery ${JSON.stringify(options)}`, async () => {
-    const run = fixture(options); await assert.rejects(run.executor.execute(run.request)); await assert.rejects(run.executor.reconcileNoMutation(run.operationId()));
+    const run = fixture(options); await rejectAfterDispatch(run); await assert.rejects(run.executor.reconcileNoMutation(run.operationId()));
     assert.equal(run.counts().closes, 1);
     const journal = await artifacts.loadOperation(run.operationId()); assert.equal(journal["hardStop"], true);
   });
 }
 void test("close recovery refuses changed retained plans and third active contexts without observing or repeating close", async () => {
-  const run = fixture({ publicationFailure: "verified" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ publicationFailure: "verified" }); await rejectAfterDispatch(run);
   run.setContext({ ...CONTEXT, document: { ...CONTEXT.document, uuid: "third" } }); await assert.rejects(run.executor.reconcile(run.operationId()));
   run.setContext(CONTEXT);
   const journal = await artifacts.loadOperation(run.operationId()); assert.ok(isRecord(journal["closePlan"]));
@@ -197,7 +206,7 @@ for (const driftAtFinalCheckpoint of ["execute", "recovery"] as const) {
   // oxlint-disable-next-line eslint/no-loop-func -- The before hook initializes shared module handles once, independently of each const test case.
   void test(`close ${driftAtFinalCheckpoint} refuses a last-checkpoint active-context switch`, async () => {
     const run = fixture({ driftAtFinalCheckpoint, ...(driftAtFinalCheckpoint === "recovery" ? { publicationFailure: "verified" } : {}) });
-    await assert.rejects(run.executor.execute(run.request));
+    await rejectAfterDispatch(run);
     if (driftAtFinalCheckpoint === "recovery") { await assert.rejects(run.executor.reconcileNoMutation(run.operationId())); }
     const journal = await artifacts.loadOperation(run.operationId()); assert.equal(journal["hardStop"], true); assert.equal(run.counts().closes, 1);
   });

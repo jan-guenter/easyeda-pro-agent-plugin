@@ -90,6 +90,17 @@ execution authority.
 
 ## Interrupted calls
 
+Checkpoint preparation can fail before the opening journal exists. Newer
+snapshots identify that boundary with `dispatched:false` and a fixed message;
+the original cause stays local. A missing journal by itself does not prove
+non-dispatch. Do not repeat opening to diagnose it or call journal-owned cleanup
+without a journal. Use the original ordinary launcher's retained normal-close
+and termination checks when closure is needed; never adopt a replacement PID.
+Preserve existing checkpoint evidence. Verification scratch now uses the
+authorized checkpoint-artifact directory, so free space there matters rather
+than ambient `/tmp`. Older installed snapshots can still fail on a full `/tmp`;
+do not delete historical evidence or patch their caches to get past the failure.
+
 Newer snapshots retain `failureDiagnostic` in the stopped operation and a
 managed `failure-diagnostic` artifact. It contains the operation `phase`, last
 `hostStage`, fixed `category`, and nullable `nativeStage`/`nativeCode`. Unknown

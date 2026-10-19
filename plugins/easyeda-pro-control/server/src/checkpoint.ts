@@ -10,7 +10,6 @@ import {
   unlink,
 } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import {
   basename,
   dirname,
@@ -932,8 +931,26 @@ async function assertSourceSnapshotCurrent(
   }
 }
 
-function openTemporarySnapshotDirectory(): Promise<BoundDirectory> {
-  return openBoundDirectory(tmpdir(), false);
+async function openTemporarySnapshotDirectory(
+  checkpointDirectory: BoundDirectory,
+  policy: Readonly<CheckpointAccessPolicy> | undefined,
+): Promise<BoundDirectory> {
+  // Verification needs a full SQLite copy. Keep it on the already authorized
+  // Artifact filesystem instead of the unrelated ambient temporary filesystem.
+  // Retain an independent directory handle, but never replace the original
+  // Checkpoint directory capability with a newly resolved inode.
+  assertPolicyArtifact(checkpointDirectory.absolute, policy, "Checkpoint verification snapshot directory");
+  await assertDirectoryPathIdentity(checkpointDirectory);
+  const directory = await openBoundDirectory(checkpointDirectory.absolute, false, checkpointDirectory.controlRoot);
+  try {
+    if (directory.info.dev !== checkpointDirectory.info.dev || directory.info.ino !== checkpointDirectory.info.ino) {
+      throw new Error("Checkpoint verification snapshot directory identity changed.");
+    }
+    return directory;
+  } catch (error) {
+    await directory.handle.close();
+    throw error;
+  }
 }
 
 async function makeSnapshotDescriptorOnly(
@@ -1295,7 +1312,7 @@ export async function verifyCheckpoint(
     } finally {
       checkpointDatabase.close();
     }
-    temporaryDirectory = await openTemporarySnapshotDirectory();
+    temporaryDirectory = await openTemporarySnapshotDirectory(checkpointFile.directory, policy);
     const sourceSnapshot = await stableSourceSnapshot(
       sourceFile,
       sourceDatabase,
@@ -1327,6 +1344,12 @@ export async function verifyCheckpoint(
     const ok =
       sourceMatchesReceipt && checkpointMatchesReceipt && sourceEqualsCheckpoint;
     await beforeTemporarySnapshotCleanup?.();
+    await assertBoundPathIdentity(receiptFile, "Checkpoint receipt");
+    assertStableFile(
+      receiptFile.info,
+      await receiptFile.handle.stat({ bigint: true }),
+      "Checkpoint receipt",
+    );
     await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
     assertStableFile(
       checkpointHash.info,

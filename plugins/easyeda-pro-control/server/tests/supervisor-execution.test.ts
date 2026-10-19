@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
 import {
   mkdir,
-  mkdtemp,
   open,
   readFile,
   readdir,
@@ -14,6 +13,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import { stageReviewedSupervisorExecution } from "../src/supervisor-execution.ts";
 
@@ -44,7 +44,7 @@ void describe("reviewed supervisor execution", () => {
     "executes captured reviewed bytes when the source path is replaced after capture",
     { skip: process.platform !== "linux" },
     async () => {
-      const root = await mkdtemp("/tmp/supervisor-source-race-");
+      const root = await createTestTemporaryDirectory("supervisor-source-race-");
       const sourcePath = join(root, "upstream-supervisor.mjs");
       const oldSourcePath = join(root, "captured-upstream-supervisor.mjs");
       const privatePath = join(root, "private");
@@ -83,7 +83,7 @@ void describe("reviewed supervisor execution", () => {
     "keeps only an unlinked descriptor for the staged supervisor",
     { skip: process.platform !== "linux" },
     async () => {
-      const root = await mkdtemp("/tmp/supervisor-spawn-race-");
+      const root = await createTestTemporaryDirectory("supervisor-spawn-race-");
       const sourcePath = join(root, "upstream-supervisor.mjs");
       const privatePath = join(root, "private");
       await mkdir(privatePath, { mode: 0o700 });
@@ -120,7 +120,7 @@ void describe("reviewed supervisor execution", () => {
     "stages through the retained private-directory descriptor after a path swap",
     { skip: process.platform !== "linux" },
     async () => {
-      const root = await mkdtemp("/tmp/supervisor-directory-race-");
+      const root = await createTestTemporaryDirectory("supervisor-directory-race-");
       const sourcePath = join(root, "upstream-supervisor.mjs");
       const privatePath = join(root, "private");
       const movedPrivatePath = join(root, "private-reviewed");

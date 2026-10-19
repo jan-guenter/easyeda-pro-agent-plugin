@@ -167,3 +167,64 @@ Six focused synthetic tests pass on Node24.18.0 with the test-isolation preload.
 They cover every nonempty inventory, missing/extra field, worker zero, identity
 drift, deferred state, callbacks/proxies/coercion, malformed arrays and false
 authority claims. They do not execute a native worker, timer or Save.
+
+## One-String compiler publication relation
+
+The later source-only `current-pcb-string-publication.ts` adds the missing
+create-to-worker payload comparison. It consumes the original inert create
+candidate and its original exact-target observation plan. The ID, client,
+compiler token and preceding maximum ticket remain supplied inputs, not
+native-issued observations. The module adds no listener, live transport,
+dispatch token, Save operation or runtime registration.
+
+The pinned PCB producer has this path, using zero-based JavaScript string offsets:
+
+- `uploadString` at3149779 calls `localChange` with ID, body and `STRING`.
+- `localChange` at3146068 supplies the target document and head type. The
+  consistency manager at2755522 assigns its current maximum ticket plus one.
+- `cachePendData` at3145459 places `[id,ticket,type,body]` in the document's
+  pending list. Its length counter uses JavaScript string length plus one,
+  not encoded UTF-8 byte length.
+- `publishPendData` at3145812 publishes
+  `[documentMap,client,uniqueId,originDocumentUuid]`, then empties each pending
+  list and replaces the cache. A retained reference sampled afterward is not
+  the original payload. The tests explicitly preserve a structured copy before
+  clearing their synthetic producer cache.
+
+The worker subscriber at2112925 destructures only the first three envelope
+entries. Each record becomes a `remoteChange` call with ticket, client, document,
+ID, body, record type, document type and compiler token. The fourth origin
+document entry is ignored by that subscriber. The new comparison still requires
+it to equal the expected PCB document rather than discarding that producer field.
+The envelope contains no project or branch identity, so matching it cannot prove
+project ownership.
+
+The accepted relation has exactly one PCB document and one `STRING` record. Its
+body must match all19 ordered create-candidate fields byte for byte. Extra
+documents, pending records, BLOB/FONT records, BOARD/POURED/INNER side effects,
+deletions, alternate IDs, nonconsecutive tickets, changed client/token/origin,
+unknown fields, accessors, proxies and sparse arrays all refuse. The plan and
+comparison are frozen. Their projection hash uses a fixed object-field order;
+it is not a raw transport or evidence-artifact hash. Native array positions and
+encoded STRING body bytes are never normalized.
+
+Seven focused tests and24 adjacent create/Save-prerequisite tests pass on pinned
+Node24.18.0. Strict type-aware lint and typecheck pass. These tests use a
+producer-shaped fixture, not an imported vendor renderer, actual worker or
+connected publication. The first test run refused a malformed synthetic tab ID
+before comparisons; correcting that fixture to `document@project` produced the
+31 passing tests. No runtime guard changed for that correction.
+
+The observer gap remains concrete. This follow-up rehashed the PCB, UI and worker
+sources against the table above, inspected their registered services and confirmed
+that none of the reviewed candidate routes exposes the whole renderer/worker
+inventory. `hasSaveData` checks only records belonging to one token;
+`awaitUploadEnd` awaits only `task1`; source compression can initialize worker
+caches. `getPcbScene` returns UI modes, not models or queues. No vendor closure
+was patched or instrumented to expose its private managers. A future observer
+must bind the original frame and worker and capture the complete interval,
+including additional publications and deferred teardrop callbacks. Passing this
+one-batch relation proves neither delivery nor completion, isolation, full SQL
+effect, Save or reopened persistence. All corresponding authority flags remain
+false. The official [Save contract](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.save.html)
+was checked again; its boolean result supplies none of those missing observations.

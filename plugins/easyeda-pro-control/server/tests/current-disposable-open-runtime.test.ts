@@ -558,8 +558,31 @@ void test("ordinary startup refusal creates no journal or navigation and needs n
   const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
     prepareOrdinaryCheckpoint: (): Promise<CurrentDisposableOpenCheckpoint> => Promise.reject(new Error("unsupported ordinary startup")) });
   await assert.rejects(coordinator.runOrdinary({ action: "open", operationId: value.input.operationId,
-    ...TARGET, acceptNormalOpenEffects: true }, FINGERPRINT), /unsupported ordinary startup/u);
+    ...TARGET, acceptNormalOpenEffects: true }, FINGERPRINT), /checkpoint preparation before journal creation or navigation/u);
   assert.equal(value.journals.size, 0); assert.equal(value.artifacts.size, 0); assert.deepEqual(dispatches(value), []);
+});
+
+void test("checkpoint preparation failures retain their local cause and identify no navigation without leaking private text", async () => {
+  for (const ordinary of [false, true]) {
+    const value = fixture(`checkpoint-failure-${String(ordinary)}`);
+    const original = Object.assign(new Error("private-checkpoint-path: database or disk is full"), { code: "ERR_SQLITE_ERROR", errcode: 13 });
+    const refuse = (): Promise<CurrentDisposableOpenCheckpoint> => Promise.reject(original);
+    const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+      prepareCheckpoint: refuse, prepareOrdinaryCheckpoint: refuse });
+    const pending = ordinary ? coordinator.runOrdinary({ action: "open", operationId: value.input.operationId,
+      ...TARGET, acceptNormalOpenEffects: true }, FINGERPRINT) : coordinator.run(value.input, FINGERPRINT);
+    await assert.rejects(pending, (error: unknown): boolean => {
+      assert.ok(error instanceof Error);
+      assert.equal(error.cause, original); assert.equal(Reflect.get(error, "dispatched"), false);
+      assert.match(error.message, /checkpoint preparation before journal creation or navigation/u);
+      assert.match(error.message, /original ordinary launcher/u);
+      assert.doesNotMatch(error.message, /private-checkpoint-path/u);
+      return true;
+    });
+    assert.equal(value.journals.size, 0); assert.equal(value.artifacts.size, 0); assert.deepEqual(dispatches(value), []);
+    assert.equal(value.calls.includes("normal-close"), false);
+    assert.equal(value.calls.includes("termination"), false);
+  }
 });
 
 void test("restored active PCB skips redundant open; null document acknowledgement is not opening success", async () => {

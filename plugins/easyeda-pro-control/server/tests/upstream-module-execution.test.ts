@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { chmod, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import {
   deserializeCapturedUpstreamModuleGraph,
@@ -138,7 +139,7 @@ void describe("captured upstream module execution", () => {
   });
 
   void test("captured logger sends warnings and errors to synchronous stderr without a worker", async () => {
-    const root = await mkdtemp("/tmp/easyeda-logger-graph-test-");
+    const root = await createTestTemporaryDirectory("easyeda-logger-graph-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     const loggerPath = join(implementation, "utils/logger.js");
@@ -205,7 +206,7 @@ export function createLogger(config) {
     "executes descriptor-captured ESM, CommonJS, and lazy bytes after path replacement",
     { skip: process.platform !== "linux" },
     async () => {
-      const root = await mkdtemp("/tmp/easyeda-module-graph-test-");
+      const root = await createTestTemporaryDirectory("easyeda-module-graph-test-");
       const implementation = join(root, "dist");
       const entrypoint = join(implementation, "entry.mjs");
       const eager = join(implementation, "eager.mjs");
@@ -305,7 +306,7 @@ export function createLogger(config) {
   );
 
   void test("rejects a reachable computed dynamic import at execution", async () => {
-    const root = await mkdtemp("/tmp/easyeda-module-graph-dynamic-test-");
+    const root = await createTestTemporaryDirectory("easyeda-module-graph-dynamic-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     try {
@@ -341,7 +342,7 @@ export function createLogger(config) {
     ["computed module.require", "module.require(target)"],
   ] as const) {
     void test(`rejects ${label} at execution`, async () => {
-      const root = await mkdtemp("/tmp/easyeda-module-graph-require-test-");
+      const root = await createTestTemporaryDirectory("easyeda-module-graph-require-test-");
       const implementation = join(root, "dist");
       const entrypoint = join(implementation, "entry.mjs");
       try {
@@ -380,7 +381,7 @@ export function createLogger(config) {
   }
 
   void test("rejects a reachable native addon during capture", async () => {
-    const root = await mkdtemp("/tmp/easyeda-module-graph-addon-test-");
+    const root = await createTestTemporaryDirectory("easyeda-module-graph-addon-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     try {
@@ -413,7 +414,7 @@ export function createLogger(config) {
   });
 
   void test("round-trips a reviewed graph with no dependency edges", async () => {
-    const root = await mkdtemp("/tmp/easyeda-module-graph-empty-edge-test-");
+    const root = await createTestTemporaryDirectory("easyeda-module-graph-empty-edge-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     try {
@@ -446,7 +447,7 @@ export function createLogger(config) {
   });
 
   void test("a warmed dependency parse still recaptures bytes, package format and file permissions", async () => {
-    const root = await mkdtemp("/tmp/easyeda-module-graph-warm-test-");
+    const root = await createTestTemporaryDirectory("easyeda-module-graph-warm-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     const dependency = join(implementation, "dependency.js"), packagePath = join(root, "package.json");
@@ -474,7 +475,7 @@ export function createLogger(config) {
   });
 
   void test("rejects noncanonical graph JSON, URL, NUL, and transform ambiguity", async () => {
-    const root = await mkdtemp("/tmp/easyeda-module-graph-canonical-test-");
+    const root = await createTestTemporaryDirectory("easyeda-module-graph-canonical-test-");
     const implementation = join(root, "dist");
     const entrypoint = join(implementation, "entry.mjs");
     try {
