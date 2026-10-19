@@ -144,18 +144,20 @@ running. It is not a pending-task counter. The official page marks this method
 obsolete since v4.2.
 [Official ratline status](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.getcalculatingratlinestatus.html).
 
-## Concrete next adapter
+## Concrete adapter identified and implemented
 
-Implement a current-PCB attribute identity subset using the fixed
+This research identified a current-PCB attribute identity subset using the fixed
 `pcb/extensionAPI/attribute-getAll` handler at PCB10411443. It enumerates
 `gr.getAllItem()` and returns each component's serialized `ATTR` entries with
 `parentPrimitiveId`. The SDK flattens those groups at API1492267. The installed
 declarations at TYPES436014 and TYPES437434 expose `getAllPrimitiveId` and
 `getAll`. The official `getAll` contract accepts optional parent, layer and
-lock filters. Start with empty arguments rather than silently implementing
+lock filters. The subset accepts empty arguments rather than silently implementing
 those filters. [Official attribute getter](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_primitiveattribute.getall.html).
 
-The adapter review must account for these details:
+Candidate023200 implements this subset with the checks below; see the
+[Attribute reader contract](current-pcb-attribute-identities-2026-10-19.md).
+It remains source-reviewed/offline-tested, with connected validation pending.
 
 - `rL` at PCB8002758 uses the component model manager. Its inherited reader at
   PCB7946904 omits models without `stateWatcher`. Report the returned subset;
