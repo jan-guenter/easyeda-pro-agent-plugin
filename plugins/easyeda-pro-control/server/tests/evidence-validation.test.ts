@@ -1,8 +1,9 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
-import { lstat, mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, open, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 import { canonicalJson, isRecord, sha256Text } from "../src/core.ts";
 import type { UnknownRecord } from "../src/core.ts";
 import type {
@@ -23,7 +24,7 @@ let artifacts: {
 };
 
 before(async () => {
-  dataDirectory = await mkdtemp("/tmp/easyeda-evidence-validation-");
+  dataDirectory = await createTestTemporaryDirectory("easyeda-evidence-validation-");
   configureTestControlRoot(dataDirectory);
   artifacts = await import("../src/artifacts.ts");
 });

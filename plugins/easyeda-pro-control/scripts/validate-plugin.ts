@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* oxlint-disable import/max-dependencies -- Package validation combines the runtime identity, release contract, private-directory and MCP schema checks. */
 import { existsSync } from "node:fs";
-import { lstat, readFile } from "node:fs/promises";
+import { lstat, readFile, realpath } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { z } from "zod";
 
 import {
@@ -27,6 +27,7 @@ import { validateReleaseVersionParity } from "./release-version.ts";
 import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { CURRENT_MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/current-main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
+import { ValidationStdioTransport } from "./validation-stdio-transport.ts";
 
 interface CheckResult {
   readonly detail?: string;
@@ -613,12 +614,15 @@ function resultText(result: unknown): string {
 
 let toolCatalog: ToolSummary[] | { readonly error: string } = [];
 let dataDirectory: PrivateTemporaryDirectory | undefined;
+let client: Client | undefined;
+let transport: ValidationStdioTransport | undefined;
 try {
+  const temporaryRoot = await realpath(tmpdir());
   dataDirectory = await createPrivateTemporaryDirectory(
-    "/tmp/easyeda-control-validation-",
+    join(temporaryRoot, "easyeda-control-validation-"),
     "The EasyEDA validation smoke directory",
   );
-  const transport = new StdioClientTransport({
+  transport = new ValidationStdioTransport({
     command: process.execPath,
     args: [join(pluginRoot, "server", "dist", "server.mjs")],
     cwd: pluginRoot,
@@ -631,9 +635,8 @@ try {
       EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690",
       EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a",
     },
-    stderr: "pipe",
   });
-  const client = new Client(
+  client = new Client(
     { name: "easyeda-pro-control-validation", version: "0.3.0" },
     { capabilities: {} },
   );
@@ -704,21 +707,27 @@ try {
     resultText(writerResult),
   );
 
-  await client.close();
-  await transport.close().catch(() => {
-    // Closing an already closed validation transport needs no recovery action.
-  });
 } catch (error) {
   toolCatalog = { error: errorMessage(error) };
   check("mcp-catalog-smoke", false, toolCatalog.error);
 } finally {
-  if (dataDirectory !== undefined) {
+  let closeFailed = false;
+  try { await client?.close(); }
+  catch (error) { closeFailed = true; check("mcp-catalog-smoke-client-close", false, errorMessage(error)); }
+  try { await transport?.verifyClosed(); }
+  catch (error) { closeFailed = true; check("mcp-catalog-smoke-transport-close", false, errorMessage(error)); }
+  if (dataDirectory !== undefined && !closeFailed && (transport === undefined || transport.closureVerified)) {
     await removeEmptyPrivateTemporaryDirectory(
       dataDirectory,
       "The EasyEDA validation smoke directory",
       ["operations"],
     ).catch((error: unknown) => {
       check("mcp-catalog-smoke-cleanup", false, errorMessage(error));
+    });
+  } else if (dataDirectory !== undefined) {
+    check("mcp-catalog-smoke-cleanup", false, "Smoke directory retained because original child closure failed or is uncertain.");
+    await dataDirectory.handle.close().catch((error: unknown) => {
+      check("mcp-catalog-smoke-directory-close", false, errorMessage(error));
     });
   }
 }

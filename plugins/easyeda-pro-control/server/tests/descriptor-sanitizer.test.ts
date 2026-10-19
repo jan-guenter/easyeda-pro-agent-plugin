@@ -5,7 +5,6 @@ import { once } from "node:events";
 import {
   chmod,
   lstat,
-  mkdtemp,
   open,
   readFile,
   rm,
@@ -15,11 +14,13 @@ import { resolve } from "node:path";
 import process from "node:process";
 import { Readable } from "node:stream";
 import { describe, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import {
   DESCRIPTOR_SANITIZER_BYTES,
   DESCRIPTOR_SANITIZER_FILE_NAME,
   DESCRIPTOR_SANITIZER_SHA256,
+// oxlint-disable-next-line import/max-dependencies -- Exact executable/descriptor tests also use the shared canonical temporary-root helper.
 } from "../src/descriptor-sanitizer-identity.ts";
 
 interface SanitizerResult {
@@ -573,7 +574,7 @@ void describe("reviewed native descriptor sanitizer", () => {
   });
 
   void test("fails closed when the reviewed executable cannot be entered", async () => {
-    const directory = await mkdtemp("/tmp/easyeda-sanitizer-exec-test-");
+    const directory = await createTestTemporaryDirectory("easyeda-sanitizer-exec-test-");
     const invalidExecutable = resolve(directory, "invalid-executable");
     try {
       await writeFile(invalidExecutable, "not an executable image\n", {

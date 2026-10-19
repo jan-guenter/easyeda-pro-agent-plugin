@@ -1404,8 +1404,18 @@ export class CurrentDisposableOpenCoordinator {
     await this.services.assertOperationIdUnused(request.operationId);
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     this.services.validateFingerprint(fingerprint);
-    const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
-      ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
+    let checkpointProof: CurrentDisposableOpenCheckpoint;
+    try {
+      checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
+        ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
+    } catch (error) {
+      // This boundary precedes our journal and every navigation dispatch. Keep
+      // The original local cause without exposing its arbitrary paths/message.
+      throw Object.assign(new Error(
+        "Project opening stopped during checkpoint preparation before journal creation or navigation. Retain any checkpoint evidence; do not automatically repeat opening. Any application closure must use the original ordinary launcher and its retained ownership checks.",
+        { cause: error },
+      ), { dispatched: false });
+    }
     CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
     const target = currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
       documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256, branchUuid: checkpointProof.targetEvidence.branchUuid });

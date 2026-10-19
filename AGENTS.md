@@ -4,6 +4,41 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+111307 source batch prepared, 2026-10-19; not published or installed yet.
+User requested more changes per restart. Candidate combines artifact-local
+checkpoint scratch/final receipt reproof, private pre-navigation failure messages,
+23 test-temp allocations, preserved rejection causes, EOF-only package-validator
+closure and an inert exact PCB String compiler-publication relation. No new writer
+or live observer. Corrected stale plugin metadata: disposable SCH rename is
+implemented/registered, but connected validation remains pending.
+
+Actual100838 facade3818690/start38231939, current parent3816768/start38226185,
+source496/ac897953/runtime3/9a380da1/manifest30e0bedd admitted. Full maintained
+installed comparison passed1507files/30,916,896bytes/42dirs from an exact-main
+Linux worktree after the Windows-mounted comparison timed out120s; failure
+retained. All18scratch runtime files/helper match. MainCI39238721171 passed.
+Evidence: `/root/.cache/easyeda-100838-actual-facade-3EnnyAHc`.
+
+One launch `sch-rename-100838-20261019-launch` started originalroot13840/Job73799c29,
+then auth/context proved StartPage/currentprojectundefined. One open
+`sch-rename-100838-20261019-open` failed databasefull before journal creation.
+Pre-nav checkpointaec8d006/receiptab70ba69 exists; `/tmp`48GiBfull. Verification
+scratch path is source-inferred, no native stack. No open/rename/Save replay.
+Observedwindow213192560; normalclose once acknowledged, originalroot/Job exit
+proved. Closed disposable598016/e4434cc5 unchanged. SCH baseline never began.
+Raw results ed10cedc in `/root/.cache/easyeda-100838-live-open-8mmNcZmk`.
+Do not replay these IDs. Production remains excluded; no production access.
+
+Focused checks:47checkpoint tests,31PCB publication/adjacent tests,219temp tests,
+10final helpers/transport (5overlap),2opener refusal cases; correctedtypes/lint
+clean.81package checks/46tools pass under isolated source smoke. Root and
+independent source reviews accepted; final frozenfull verification/CI/release
+still pending. Do not change source/pins during that suite. Broader backlog and
+scope: `docs/checkpoint-validation-batch-2026-10-19.md`. Installed100838 remains
+unchanged, current host retained; new package will require a fresh session.
+
+The entries below are historical.
+
 100838 delivered, 2026-10-19: protected PR76 merged as main
 `3c7afb9e3eb2066ad1890f3fa4bd43b1381bbf89`. Reviewed payload
 `e3c0583aca288ecc22d1a341e6c044256761d36d` has the same complete tree

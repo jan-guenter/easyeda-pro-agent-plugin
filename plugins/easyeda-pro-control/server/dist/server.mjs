@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "85f754e0897e411777c08dbbf8caf4ea151073a782bdfca882fe5dc3127c8a4f";
+const __easyedaBundlePairId = "924a3084deba5ddc93eeb47d2c63423239fe23ce024a95b3084bb5194d596436";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -64749,7 +64749,6 @@ import {
   realpath as realpath8,
   unlink as unlink3
 } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import {
   basename as basename6,
   dirname as dirname5,
@@ -65400,8 +65399,19 @@ async function assertSourceSnapshotCurrent(sourceFile, sourceDatabase, snapshot8
     throw new Error("Checkpoint source changed after its stable snapshot was created.");
   }
 }
-function openTemporarySnapshotDirectory() {
-  return openBoundDirectory(tmpdir(), false);
+async function openTemporarySnapshotDirectory(checkpointDirectory, policy2) {
+  assertPolicyArtifact(checkpointDirectory.absolute, policy2, "Checkpoint verification snapshot directory");
+  await assertDirectoryPathIdentity(checkpointDirectory);
+  const directory4 = await openBoundDirectory(checkpointDirectory.absolute, false, checkpointDirectory.controlRoot);
+  try {
+    if (directory4.info.dev !== checkpointDirectory.info.dev || directory4.info.ino !== checkpointDirectory.info.ino) {
+      throw new Error("Checkpoint verification snapshot directory identity changed.");
+    }
+    return directory4;
+  } catch (error51) {
+    await directory4.handle.close();
+    throw error51;
+  }
 }
 async function makeSnapshotDescriptorOnly(file3, state2) {
   const linked = await lstat12(file3.boundPath, { bigint: true });
@@ -65705,7 +65715,7 @@ async function verifyCheckpoint(receiptPathInput, policy2, beforeTemporarySnapsh
     } finally {
       checkpointDatabase.close();
     }
-    temporaryDirectory = await openTemporarySnapshotDirectory();
+    temporaryDirectory = await openTemporarySnapshotDirectory(checkpointFile.directory, policy2);
     const sourceSnapshot3 = await stableSourceSnapshot(
       sourceFile,
       sourceDatabase,
@@ -65729,6 +65739,12 @@ async function verifyCheckpoint(receiptPathInput, policy2, beforeTemporarySnapsh
     const sourceEqualsCheckpoint = sourceDumpSha256 === checkpointDumpSha256;
     const ok = sourceMatchesReceipt && checkpointMatchesReceipt && sourceEqualsCheckpoint;
     await beforeTemporarySnapshotCleanup?.();
+    await assertBoundPathIdentity(receiptFile, "Checkpoint receipt");
+    assertStableFile(
+      receiptFile.info,
+      await receiptFile.handle.stat({ bigint: true }),
+      "Checkpoint receipt"
+    );
     await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
     assertStableFile(
       checkpointHash2.info,
@@ -139688,7 +139704,15 @@ var init_current_disposable_open_runtime = __esm({
         await this.services.assertOperationIdUnused(request13.operationId);
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
         this.services.validateFingerprint(fingerprint);
-        const checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? this.services.prepareOrdinaryCheckpoint(targetOnly(request13)) : this.services.prepareCheckpoint(targetOnly(request13)));
+        let checkpointProof;
+        try {
+          checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? this.services.prepareOrdinaryCheckpoint(targetOnly(request13)) : this.services.prepareCheckpoint(targetOnly(request13)));
+        } catch (error51) {
+          throw Object.assign(new Error(
+            "Project opening stopped during checkpoint preparation before journal creation or navigation. Retain any checkpoint evidence; do not automatically repeat opening. Any application closure must use the original ordinary launcher and its retained ownership checks.",
+            { cause: error51 }
+          ), { dispatched: false });
+        }
         _CurrentDisposableOpenCoordinator.assertNotTransferred(runtime);
         const target8 = currentDisposableOpenSealedTargetSchema.parse({
           rawWindowsPath: request13.rawWindowsPath,

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import {
   mkdir,
-  mkdtemp,
   readFile,
   readdir,
   rename,
@@ -11,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import {
   createPrivateTemporaryDirectory,
@@ -19,7 +19,7 @@ import {
 
 void describe("private temporary-directory cleanup", () => {
   void test("removes only the exact empty directory", async () => {
-    const parent = await mkdtemp(join("/tmp", "easyeda-private-temp-test-"));
+    const parent = await createTestTemporaryDirectory("easyeda-private-temp-test-");
     try {
       const directory = await createPrivateTemporaryDirectory(
         join(parent, "private-"),
@@ -38,7 +38,7 @@ void describe("private temporary-directory cleanup", () => {
   });
 
   void test("refuses a pathname replacement without deleting its contents", async () => {
-    const parent = await mkdtemp(join("/tmp", "easyeda-private-temp-swap-"));
+    const parent = await createTestTemporaryDirectory("easyeda-private-temp-swap-");
     const directory = await createPrivateTemporaryDirectory(
       join(parent, "private-"),
       "Test private directory",
@@ -62,4 +62,22 @@ void describe("private temporary-directory cleanup", () => {
       await rm(parent, { recursive: true, force: true });
     }
   });
+
+  for (const child of [false, true]) {
+    void test(`retains unknown contents ${child ? "inside an expected child" : "at the root"}`, async () => {
+      const parent = await createTestTemporaryDirectory("easyeda-private-temp-retain-");
+      const directory = await createPrivateTemporaryDirectory(join(parent, "private-"), "Test private directory");
+      const contentDirectory = child ? join(directory.path, "operations") : directory.path;
+      if (child) { await mkdir(contentDirectory, { mode: 0o700 }); }
+      const marker = join(contentDirectory, "failure-evidence.json");
+      await writeFile(marker, "synthetic retained evidence\n", { flag: "wx", mode: 0o600 });
+      try {
+        await assert.rejects(removeEmptyPrivateTemporaryDirectory(directory, "Test private directory", ["operations"]), /not empty; refusing recursive cleanup/u);
+        assert.equal(await readFile(marker, "utf8"), "synthetic retained evidence\n");
+      } finally {
+        // Only this test's newly created, known synthetic files are removed.
+        await rm(parent, { recursive: true, force: true });
+      }
+    });
+  }
 });

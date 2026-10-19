@@ -18,8 +18,10 @@ import { tmpdir } from "node:os";
 import { join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 import { acquireFacadeLease } from "../src/lease.ts";
+// oxlint-disable-next-line import/max-dependencies -- Lease race tests require the control-root owner plus the shared canonical temporary-root helper.
 import { openControlRootCapability } from "../src/control-root.ts";
 
 type FacadeLease = Awaited<ReturnType<typeof acquireFacadeLease>>;
@@ -169,9 +171,7 @@ void describe("cross-process facade lease", { concurrency: false }, () => {
   });
 
   void test("does not create missing non-final control-root ancestors", async () => {
-    const parent = await mkdtemp(
-      join("/tmp", "easyeda-control-lease-missing-ancestor-"),
-    );
+    const parent = await createTestTemporaryDirectory("easyeda-control-lease-missing-ancestor-");
     const missingParent = join(parent, "missing-parent");
     try {
       await assert.rejects(
@@ -187,9 +187,7 @@ void describe("cross-process facade lease", { concurrency: false }, () => {
   });
 
   void test("rejects a post-validation control-root replacement without creating a lease", async () => {
-    const parent = await mkdtemp(
-      join("/tmp", "easyeda-control-lease-root-swap-"),
-    );
+    const parent = await createTestTemporaryDirectory("easyeda-control-lease-root-swap-");
     const root = join(parent, "control");
     const movedRoot = join(parent, "control-moved");
     await mkdir(root, { mode: 0o700 });

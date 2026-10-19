@@ -15,6 +15,17 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019111307` batches checkpoint and validation reliability
+fixes with PCB-text groundwork. Checkpoint verification uses its authorized
+artifact directory for scratch and rechecks the original receipt before success.
+Opening reports checkpoint-preparation failure before navigation without leaking
+private paths. Test fixtures honor the configured temporary root, rejection tests
+retain setup errors, and package validation closes its original child through
+EOF without forced termination. An exact one-String compiler-publication model
+adds offline checks, not a live observer or writer. The installed100838 SCH test
+stopped before project opening on a full temporary filesystem; rename validation
+remains pending. See the [batch record](docs/checkpoint-validation-batch-2026-10-19.md).
+
 Update `0.3.0+codex.20261019100838` adds a separate disposable schematic-container title
 workflow. It binds one forward rename to original process ownership, complete
 closed SQL checks, fresh saved metadata and child-roster verification, and final

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { lstat, mkdtemp, readFile, readdir, readlink, rm, writeFile } from "node:fs/promises";
+import { lstat, readFile, readdir, readlink, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 import { libraryExecutionLifecycleRefusal } from "../src/library-execution-lifecycle.ts";
+// oxlint-disable-next-line import/max-dependencies -- This process-bound integration test also uses the shared canonical temporary-root helper.
 import { context, fingerprint } from "./pcb-selected-objects-fixture.ts";
 
 const libraryOperations = [
@@ -52,7 +54,7 @@ async function assertOffline(root: string, pid: number, allowEmptyOperationDirec
 }
 
 void test("actual MCP lifecycle refusals precede connection without launching upstream or publishing journals", async (suite) => {
-  const root = await mkdtemp("/tmp/easyeda-lifecycle-preconnection-");
+  const root = await createTestTemporaryDirectory("easyeda-lifecycle-preconnection-");
   const pluginRoot = resolve(import.meta.dirname, "../..");
   const syntheticUpstream = join(root, "must-not-execute.mjs");
   await writeFile(syntheticUpstream, `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(join(root, "upstream-executed"))}, "unexpected execution");\n`);

@@ -1,13 +1,15 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
-import fsPromises, { link, lstat, mkdtemp, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
+import fsPromises, { link, lstat, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { after, afterEach, before, mock, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 import { OPERATION_SCHEMA, buildPlanHash, operationSummary } from "../src/core.ts";
 import type { UnknownRecord } from "../src/core.ts";
 import type { EasyedaControlEngine } from "../src/engine.ts";
 import type { controlRootCapability, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
+// oxlint-disable-next-line import/max-dependencies -- Journal admission races also use the shared canonical temporary-root helper.
 import { runNativeUiWithOperationAdmission } from "../src/native-ui-admission.ts";
 
 // Keep these synthetic reserved claims literal. Importing the journal module
@@ -20,7 +22,7 @@ let artifacts: { controlRootCapability: typeof controlRootCapability; createOper
 let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 
 before(async () => {
-  root = await mkdtemp("/tmp/easyeda-engine-journal-admission-");
+  root = await createTestTemporaryDirectory("easyeda-engine-journal-admission-");
   previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
   configureTestControlRoot(root);
   [artifacts, engines] = await Promise.all([import("../src/artifacts.ts"), import("../src/engine.ts")]);

@@ -561,7 +561,7 @@ void describe("authenticated EasyEDA bridge build", () => {
     );
     try {
       const result = await build({
-        absWorkingDir: "/tmp",
+        absWorkingDir: directory,
         bundle: true,
         define: {
           __MCP_DISPATCHER_BUILD_ID__: JSON.stringify("memory-bound-test"),
@@ -1031,7 +1031,7 @@ void describe("authenticated EasyEDA bridge build", () => {
     });
 
     const result = await build({
-      absWorkingDir: "/tmp",
+      absWorkingDir: directory,
       bundle: true,
       define: {
         __MCP_DISPATCHER_BUILD_ID__: JSON.stringify("root-swap-test"),

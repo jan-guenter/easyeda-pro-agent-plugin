@@ -1,9 +1,10 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Exercise sealed journal storage, immutable native plans and recovery together with synthetic read-only runtime evidence. */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { after, afterEach, before as beforeAll, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 import type { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, isRecord, loadReviewedCompatibilityManifest, newOperationId, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { LibraryJournal } from "../src/library-execution.ts";
@@ -33,7 +34,7 @@ let originalRoot: string | undefined, root = "";
 let artifacts: { createOperation: typeof createOperation; loadOperation: typeof loadOperation; operationPath: typeof operationPath; updateOperation: typeof updateOperation; writePhaseArtifact: typeof writePhaseArtifact };
 let recovery: { LibraryRecoveryCoordinator: typeof LibraryRecoveryCoordinator };
 beforeAll(async () => {
-  root = await mkdtemp("/tmp/easyeda-undispatched-recovery-"); originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
+  root = await createTestTemporaryDirectory("easyeda-undispatched-recovery-"); originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
   configureTestControlRoot(root);
   [artifacts, recovery] = await Promise.all([import("../src/artifacts.ts"), import("../src/library-recovery.ts")]);
 });

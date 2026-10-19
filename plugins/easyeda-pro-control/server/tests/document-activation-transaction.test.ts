@@ -1,9 +1,11 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Transaction regressions use the real executor, journal storage and compatibility contract with explicit native doubles. */
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { after, afterEach, before, mock, test } from "node:test";
+import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
+import { assertRejectsAtBoundary } from "./helpers/rejection-boundary.ts";
 import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint } from "../src/core.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
 import type { LibraryExecuteInput, LibraryExecutor, LibraryJournal } from "../src/library-execution.ts";
@@ -19,7 +21,7 @@ let library: { LibraryExecutor: typeof LibraryExecutor };
 let artifacts: { loadOperation: typeof loadOperation; updateOperation: typeof updateOperation; writePhaseArtifact: typeof writePhaseArtifact };
 let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 before(async () => {
-  root = await mkdtemp("/tmp/easyeda-activation-transaction-");
+  root = await createTestTemporaryDirectory("easyeda-activation-transaction-");
   originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; configureTestControlRoot(root);
   [library, artifacts, engines] = await Promise.all([import("../src/library-execution.ts"), import("../src/artifacts.ts"), import("../src/engine.ts")]);
 });
@@ -124,6 +126,13 @@ function fixture(options: { readonly publicationFailure?: "native-return" | "ver
     operationId: (): string => operationId, counts: (): { dispatches: number; activations: number } => ({ dispatches, activations }), setContext: (context): void => { active = structuredClone(context); } };
 }
 
+async function rejectAfterDispatch(run: ReturnType<typeof fixture>): Promise<void> {
+  await assertRejectsAtBoundary(run.executor.execute(run.request), () => {
+    assert.equal(run.counts().dispatches, 1);
+    assert.notEqual(run.operationId(), "");
+  });
+}
+
 void test("activation executor retains preparation before one call and proves unchanged complete project without Save", async () => {
   const run = fixture(); const result = await run.executor.execute(run.request);
   assert.equal(result["state"], "completed"); assert.equal(result["saved"], false); assert.equal(result["reopened"], false);
@@ -140,7 +149,7 @@ void test("already-active target refusal avoids the native early-resolution call
   assert.deepEqual(run.counts(), { dispatches: 0, activations: 0 }); assert.equal(run.operationId(), "");
 });
 void test("activation recovery observes the retained target after publication failure and never repeats activation", async () => {
-  const run = fixture({ publicationFailure: "verified" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ publicationFailure: "verified" }); await rejectAfterDispatch(run);
   const result = await run.executor.reconcile(run.operationId()); assert.equal(result["state"], "reconciled-no-mutation");
   assert.ok(isRecord(result["result"])); assert.equal(result["result"]["targetActive"], true); assert.equal(result["result"]["acknowledgmentInferred"], false);
   assert.equal(result["saved"], false); assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
@@ -152,7 +161,7 @@ void test("activation recovery can prove an unchanged original tab without an ac
   assert.ok(isRecord(result["result"])); assert.equal(result["result"]["targetActive"], false); assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
 });
 void test("activation recovery does not infer acknowledgment from an observed target after native-return publication failure", async () => {
-  const run = fixture({ publicationFailure: "native-return" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ publicationFailure: "native-return" }); await rejectAfterDispatch(run);
   const result = await run.executor.reconcile(run.operationId()); assert.ok(isRecord(result["result"]));
   assert.equal(result["result"]["targetActive"], true); assert.equal(result["result"]["acknowledgmentInferred"], false);
   assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
@@ -172,7 +181,7 @@ void test("activation and its recovery reject logical database changes outside p
   assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
 });
 void test("activation recovery refuses a third active document and substituted prepared plans", async () => {
-  const run = fixture({ publicationFailure: "verified" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ publicationFailure: "verified" }); await rejectAfterDispatch(run);
   run.setContext({ ...TARGET, document: { ...TARGET.document, uuid: "third" } }); await assert.rejects(run.executor.reconcile(run.operationId()));
   run.setContext(TARGET);
   const journal = await artifacts.loadOperation(run.operationId()); assert.ok(isRecord(journal["activationPlan"]));
@@ -181,12 +190,12 @@ void test("activation recovery refuses a third active document and substituted p
   assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
 });
 void test("activation cannot complete when its final checkpoint observation switches the active document", async () => {
-  const run = fixture({ driftAtFinalCheckpoint: "execute" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ driftAtFinalCheckpoint: "execute" }); await rejectAfterDispatch(run);
   const journal = await artifacts.loadOperation(run.operationId()); assert.equal(journal["state"], "library-needs-review"); assert.equal(journal["hardStop"], true);
   assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
 });
 void test("activation recovery cannot complete when final checkpoint verification switches the active document", async () => {
-  const run = fixture({ publicationFailure: "verified", driftAtFinalCheckpoint: "recovery" }); await assert.rejects(run.executor.execute(run.request));
+  const run = fixture({ publicationFailure: "verified", driftAtFinalCheckpoint: "recovery" }); await rejectAfterDispatch(run);
   await assert.rejects(run.executor.reconcile(run.operationId()));
   const journal = await artifacts.loadOperation(run.operationId()); assert.equal(journal["state"], "library-reconciliation-needs-review"); assert.equal(journal["hardStop"], true);
   assert.deepEqual(run.counts(), { dispatches: 1, activations: 1 });
