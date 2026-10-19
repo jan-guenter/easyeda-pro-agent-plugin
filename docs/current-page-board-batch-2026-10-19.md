@@ -1,19 +1,22 @@
 # Schematic pages, board metadata and lifecycle follow-through
 
-Published and installed `0.3.0+codex.20261019143713`, 2026-10-19, through
-[PR79](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/79).
-The delivery chat retained125900. The continuation has now admitted the actual
-143713 host; its new disposable lifecycle completed successfully. Installation alone is not
-connected execution support.
+Published and installed the combined update `0.3.0+codex.20261019163322`,
+2026-10-19, through
+[PR80](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/80).
+The actual143713 host completed a new disposable schematic-title lifecycle before
+this upgrade. The delivery chat still holds143713; a fresh session must admit
+163322 before further live work. Installation alone is not connected support.
 
-## Next combined update (not published)
+## Combined163322 update
 
-Frozen candidate: `0.3.0+codex.20261019163322`. Source506 SHA-256
+Frozen delivered payload: `0.3.0+codex.20261019163322`. Source506 SHA-256
 `c8842080d16347a7b80c912bc44e9e75d478e92767cbc2219c515212a34c9452`;
 runtime3 SHA-256
 `5f90f560a61ae05d28d45efb720dc40c19e62de75867bc793cf8547bb30cda65`.
-Build and compatibility checks passed, with external pins unchanged. Full
-verification and publication are pending; installed143713 remains untouched.
+Build and compatibility checks passed, with external pins unchanged. Full local
+verification and exact-head protected CI passed. The official named Git
+marketplace upgrade, exact installed comparison and configured offline startup
+verification passed.
 
 - Explicit SCH `advance-batch` accepts two to four adjacent, fully acknowledged
   existing phases. The complete request validates before effects and the
@@ -61,10 +64,59 @@ found repeated current-Node acquisition inside historical admission; a
 scan-owned reuse change is now reviewed, with no skipped historical journals or
 cached quarantine result.
 
-The installed snapshot remained unchanged throughout the original live case.
-That lifecycle is now terminal and EasyEDA is closed. Build, exact-payload CI,
-publication and installation of this combined source update remain pending;
-these source checks do not claim delivery.
+The installed143713 snapshot remained unchanged throughout the original live
+case. That lifecycle is terminal and EasyEDA is closed. The combined163322
+source update is now delivered; its batching/runtime/transport changes do not
+inherit the earlier single-phase live evidence.
+
+## Combined163322 delivery
+
+Final payload `86b34605c9de418cd6e55bdca900e27a7ea8dba1` passed
+[Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39287066949)
+and [Windows recovery](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39287066532).
+The eight Linux shards report 11,611 passes, five skips and zero failures;
+424 bridge tests passed and both lint checks have zero warnings/errors.
+The complete local verification finished successfully with 11,612 facade
+passes, four skips and zero failures, plus all 424 bridge tests. Dependency
+signatures/attestations, vulnerability checks, repository/privacy checks and all
+seven skill validators passed. The official standalone plugin validator was
+unavailable; maintained repository/package/contract checks remained mandatory.
+
+PR80 merged normally as `a4c4576dca6518dece8ab7ec7d60f623c19cd65a`, with the
+complete tree identical to the tested payload. Post-merge
+[Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39289237232)
+is still running; its build passed. Post-merge
+[Windows recovery](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39289237330)
+passed. Exact-payload PR evidence and post-merge evidence are distinct.
+
+The official CLI upgraded only the existing `easyeda-pro-agent` Git marketplace
+from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, with no errors.
+It lists163322 installed/enabled; the marketplace checkout is the merged main.
+The maintained verifier from a fresh exact-main worktree compared all 1,536
+packaged files, 31,401,025 bytes and 42 directories, including exact modes.
+Inventory SHA-256:
+`d3b72af6b28a4b440e796664048cf2f17f5a26db20470ccf6b458a953fe8f526`.
+No installed cache was patched or host terminated.
+
+A single fully reviewed configured-startup probe passed all 49 offline
+discovery/validation requests, including eleven checks of the new batch schema.
+It exposed 23 restricted tools from the 48-tool configuration. Ambient Node26
+handed off to pinned Node24 without source dependencies. The retained original
+child exited cleanly on cooperative EOF, without signals or leftover handles;
+stderr was empty. Three complete installed inventories matched. No upstream
+execution marker, descendant or non-stdio socket was observed at either sampled
+checkpoint; this is not continuous network isolation or a live CAD test.
+Private proof remains in
+`/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`; it is consumed and
+must never be rerun. Proof SHA-256:
+`c45a7d4733266b5667e4c3ebd0a075bb27dc2cd25239179ca02b2d8ea4eb8281`.
+
+The current chat still holds the old143713 facade. A single fresh Codex session
+is required to load and admit163322 before new live work. The old facade was not
+hot-reloaded, rebound or terminated. EasyEDA remains closed; the completed
+disposable title case must not be replayed. The updated control/extension skill
+guidance distinguishes that historical success from the new batch action and
+unfinished PCB transport, and specifies the corresponding continuation limits.
 
 ## Batched implementation
 
@@ -159,7 +211,7 @@ board. Version-specific hashes and limits are recorded in the
 This does not validate full canvases, connectivity, later generations, or the
 new source-only batching/lease/transport changes.
 
-## Release verification
+## Historical143713 release verification
 
 The frozen source projection contains 504 files; runtime projection contains
 three files. External EasyEDA, bridge, dispatcher and upstream compatibility
@@ -185,7 +237,7 @@ bundles and compatibility pins are unchanged. The original failed run is retaine
 the final exact-payload CI and installation results follow. No failed local run
 is presented as a clean full-suite result.
 
-## Delivery
+## Historical143713 delivery
 
 Final payload `57fa2449236ea632910906830d0533d0fdb8a204` passed
 [Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39274287628)
@@ -223,10 +275,10 @@ never be rerun. No installed cache was patched and no live host was terminated.
 
 - Actor-model correction, four public page/board reads and the complete
   disposable schematic rename lifecycle passed on admitted143713.
-- The143713 batch is published, installed and offline-verified; both post-merge
-  CI runs passed. The actual143713 process is now admitted and its disposable
-  continuation completed with EasyEDA closed. The next combined source update
-  still needs frozen verification, publication and installation.
+- The163322 combined update is published, installed and offline-verified with
+  exact-payload CI and byte/mode comparison complete. Admit the actual new
+  process in one fresh session. Live batching and runtime
+  performance remain unvalidated; the completed143713 case must not be replayed.
 - All four new page/board routes passed on admitted143713: the complete two-page
   schematic map and populated one-board map matched their selected reads.
   These are metadata observations, not write or saved-state authority.

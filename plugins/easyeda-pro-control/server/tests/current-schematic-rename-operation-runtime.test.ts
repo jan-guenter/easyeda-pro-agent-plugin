@@ -7,9 +7,10 @@ import { stripTypeScriptTypes } from "node:module";
 import { performance } from "node:perf_hooks";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { isRecord } from "../src/core.ts";
+import { isRecord, sha256Text } from "../src/core.ts";
 import { CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, queryCurrentSchematicRenameOperation,
   validateCurrentSchematicRenameOperationArguments } from "../src/current-schematic-rename-operation.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationRequestSchema } from "../src/current-schematic-operation.ts";
 
 type Value = Record<string, unknown>;
 const ID = "synthetic-schematic-rename", OPENING = "synthetic-schematic-opening";
@@ -17,8 +18,9 @@ const TARGET = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ownerU
 const BEGIN = { action: "baseline-begin", operationId: ID, openingOperationId: OPENING, target: TARGET,
   desiredTitle: "Renamed SCH", confirmDisposableProject: true, acceptSchematicRename: true };
 function object(value: unknown): Value { assert.ok(isRecord(value)); return value; }
-async function fixture(): Promise<{
+async function fixture(purpose: "ordinary-schematic-rename" | "disposable-validation" = "disposable-validation"): Promise<{
   calls: string[]; run: (request: unknown) => Promise<Value>; inspect: () => Value;
+  ordinary: (request: unknown) => Promise<Value>;
   state: { failure: string | undefined; returnedFailure: boolean; pendingAuthentication: boolean; pendingTermination: boolean;
     invariant: boolean; metadata: boolean; childRoster: boolean; cleanupGate: Promise<unknown> | undefined;
     beginGate: Promise<unknown> | undefined;
@@ -115,18 +117,26 @@ async function fixture(): Promise<{
     withAuthenticatedBridgeDispatchScope: async (task: () => Promise<void>): Promise<void> => {
       assert.equal(scoped, false); scoped = true; try { await task(); } finally { scoped = false; }
     } } };
-  const opener = { prepareSchematicRenameOpeningOwner: (opening: unknown, request: Value): Promise<object> => {
+  const opener = { runSchematicOpening: async (request: Value): Promise<Value> => {
+    calls.push(`opening.${String(request["action"])}`);
+    if (request["action"] === "open") { state.writeStarted?.(); await state.writeGate; }
+    return { purpose: CURRENT_SCHEMATIC_OPERATION_PURPOSE, action: request["action"] };
+  }, prepareSchematicRenameOpeningOwner: (opening: unknown, request: Value): Promise<object> => {
     assert.equal(opening, OPENING); assert.equal(request["operationId"], ID); calls.push("opening.transfer");
     return state.failure === "opening.transfer" ? Promise.reject(new Error("Synthetic committed opening transfer refused")) : Promise.resolve(owner);
+  }, prepareOrdinarySchematicRenameOpeningOwner: (opening: unknown, request: Value): Promise<object> => {
+    assert.equal(opening, OPENING); assert.equal(request["operationId"], ID); calls.push("opening.ordinary-transfer"); return Promise.resolve(owner);
   }, getSchematicRenameOpeningOwner: (): object => owner };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-schematic-rename-operation-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Promise, performance, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets" } }, structuredClone, isRecord,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationRequestSchema,
     CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema, controlDataDirectory: (): string => "/synthetic/control",
     loadRuntimeMachineProfile: async (): Promise<Value> => { await state.beginGate;
       return { profile: { controlDirectory: "/synthetic/control", easyeda: { assetsRoot: "/synthetic/assets" }, runtime: {} } }; },
-    loadOperation: (): Promise<Value> => Promise.resolve({ operationId: ID, plan: { profile: "easyeda-pro-control.current-schematic-rename-writer.v1" }, artifacts: [] }),
-    assertCurrentSchematicRenameOpeningOwner: (value: unknown, selected: unknown): Value => { assert.equal(value, owner); assert.equal(selected, engine); return { source: { runtime: {} } }; },
+    loadOperation: (): Promise<Value> => Promise.resolve({ operationId: ID, plan: {
+      profile: "easyeda-pro-control.current-schematic-rename-writer.v1", purpose: CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE }, artifacts: [] }),
+    assertCurrentSchematicRenameOpeningOwner: (value: unknown, selected: unknown): Value => { assert.equal(value, owner); assert.equal(selected, engine); return { source: { runtime: {}, purpose } }; },
     CurrentSchematicRenameBaselineCoordinator: function CurrentSchematicRenameBaselineCoordinator(): Controller { return new Controller("baseline"); },
     CurrentSchematicRenameGenerationCoordinator: function CurrentSchematicRenameGenerationCoordinator(): Controller { return new Controller("generation"); },
     CurrentSchematicRenameWriterCoordinator: function CurrentSchematicRenameWriterCoordinator(): Controller { return new Controller("writer"); },
@@ -148,7 +158,8 @@ async function fixture(): Promise<{
   assert.ok(typeof constructor === "function"); const instance = object(Reflect.construct(constructor, [engine, opener]));
   const invoke = (name: string, argument: unknown): unknown => { const method = instance[name]; assert.equal(typeof method, "function");
     assert.ok(typeof method === "function"); return Reflect.apply(method, instance, [argument]) as unknown; };
-  return { calls, state, run: async request => object(await invoke("run", request)), inspect: (): Value => object(invoke("inspect", ID)) };
+  return { calls, state, run: async request => object(await invoke("run", request)),
+    ordinary: async request => object(await invoke("runOrdinary", request)), inspect: (): Value => object(invoke("inspect", ID)) };
 }
 type Harness = Awaited<ReturnType<typeof fixture>>;
 function step(phase: unknown): Value {
@@ -197,6 +208,54 @@ void test("SCHEMATIC public schema requires exact phase acknowledgments and excl
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["connectedValidation"], false);
   assert.equal(discovery["historicalConnectedValidation"], "installed143713-disposable-schematic-title-only-lifecycle");
   assert.ok(isRecord(discovery["inputSchema"]));
+});
+
+void test("ordinary SCH composes the same single-write lifecycle without accepting a disposable purpose", async () => {
+  const value = await fixture(CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  const ordinaryBegin = { action: BEGIN.action, operationId: ID, openingOperationId: OPENING, target: TARGET,
+    desiredTitle: BEGIN.desiredTitle, acceptSchematicRename: true };
+  await value.ordinary(ordinaryBegin);
+  assert.equal(value.calls[0], "opening.ordinary-transfer");
+  assert.equal(value.inspect()["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  assert.equal(value.inspect()["validationOnly"], true); assert.equal(value.inspect()["ordinaryProjectsSupported"], false);
+  await assert.rejects(value.run({ action: "inspect", operationId: ID }), /another purpose/u);
+  await assert.rejects(value.run({ action: "advance", operationId: ID, step: step("baseline-close") }), /another purpose/u);
+  await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }), /another purpose/u);
+  for (let index = 0; index < 30 && value.inspect()["nextPhase"] !== "completed"; index += 1) {
+    const requested = step(value.inspect()["nextPhase"]); delete requested["confirmDisposableProject"];
+    await value.ordinary({ action: "advance", operationId: ID, step: requested });
+  }
+  assert.equal(value.inspect()["nextPhase"], "completed"); assert.equal(value.inspect()["renameVerified"], true);
+  assert.equal(value.calls.filter(call => call === "writer.execute").length, 1);
+  assert.equal(value.calls.filter(call => call === "verification.read").length, 1);
+  await assert.rejects(value.ordinary({ action: "advance", operationId: ID,
+    step: { expectedPhase: "rename-write", confirmWrite: true, acceptSchematicRename: true } }));
+});
+
+void test("ordinary SCH refuses a wrong-purpose original owner at capture and cleanup fallback", async () => {
+  const value = await fixture();
+  await assert.rejects(value.ordinary({ action: "inspect", operationId: ID }), /another purpose/u);
+  const ordinaryBegin = { action: BEGIN.action, operationId: ID, openingOperationId: OPENING, target: TARGET,
+    desiredTitle: BEGIN.desiredTitle, acceptSchematicRename: true };
+  await assert.rejects(value.ordinary(ordinaryBegin));
+  assert.deepEqual(value.calls, ["opening.ordinary-transfer"]);
+  assert.equal(value.inspect()["renameVerified"], false);
+});
+
+void test("ordinary SCH can inspect its pending opening without clearing its live coordinator gate", async () => {
+  const gate = Promise.withResolvers<boolean>(), started = Promise.withResolvers<boolean>(), value = await fixture(CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  value.state.writeGate = gate.promise; value.state.writeStarted = (): void => { started.resolve(true); };
+  const rawWindowsPath = String.raw`C:\Synthetic\OrdinarySchematic.eprj2`;
+  const opening = value.ordinary({ action: "open", operationId: OPENING, rawWindowsPath, projectUuid: sha256Text(rawWindowsPath),
+    documentUuid: "a".repeat(16), expectedSourceSha256: "b".repeat(64), acceptNormalOpenEffects: true, confirmDisposableProject: true,
+    rename: { target: { ...TARGET, projectUuid: sha256Text(rawWindowsPath) }, desiredTitle: "Renamed SCH" } });
+  try {
+    await started.promise;
+    const snapshot = await value.ordinary({ action: "inspect-opening", operationId: OPENING });
+    assert.equal(snapshot["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+    await assert.rejects(value.ordinary({ action: "observe", operationId: OPENING }), /already running/u);
+    assert.deepEqual(value.calls, ["opening.open", "opening.inspect-opening"]);
+  } finally { gate.resolve(true); await opening; }
 });
 
 void test("SCHEMATIC batches validate all bounded adjacent acknowledgments before consuming any phase", async () => {

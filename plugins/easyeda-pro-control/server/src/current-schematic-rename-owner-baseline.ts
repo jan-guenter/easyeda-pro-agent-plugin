@@ -20,6 +20,8 @@ import type { CurrentSchematicChildRoster } from "./current-schematic-child-rost
 import { assertOriginalCurrentSchematicNativeMetadata, prepareCurrentSchematicNativeMetadata } from "./current-schematic-native-metadata.ts";
 import type { CurrentSchematicNativeMetadata } from "./current-schematic-native-metadata.ts";
 import { currentSchematicStoredHeaderSchema } from "./current-schematic-stored-header.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "./current-schematic-operation.ts";
+import { assertCurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
@@ -230,7 +232,8 @@ export async function captureCurrentSchematicRenameBaseline(engine: EasyedaContr
   const retainedLaunch = source.launchProjection, retainedLaunchText = canonicalJson(retainedLaunch);
   const sourcePath = source.preNavigationCheckpoint.checkpoint.source;
   const scopeReader = engine.upstream.currentAuthenticatedBridgeDispatchBinding;
-  need(source.purpose === "disposable-validation" && sourcePath === normalizeEasyedaProjectPath(source.target.rawWindowsPath) &&
+  need((source.purpose === "disposable-validation" || source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) &&
+    sourcePath === normalizeEasyedaProjectPath(source.target.rawWindowsPath) &&
     rename.target.projectUuid === source.target.projectUuid && rename.target.branchUuid === source.target.branchUuid &&
     typeof scopeReader === "function", "opening target, path or purpose differs");
   // The neutral opener initially owns a PCB. Only its project/branch transfers;
@@ -289,6 +292,10 @@ export async function captureCurrentSchematicRenameBaseline(engine: EasyedaContr
   const metadata = await prepareCurrentSchematicNativeMetadata({ before: inventory, target: rename.target, desiredTitle: rename.desiredTitle }); await current();
   const children = await prepareCurrentSchematicChildRoster(metadata, inventory); await current();
   assertOriginalCurrentSchematicNativeMetadata(metadata, inventory); assertOriginalCurrentSchematicChildRoster(children, inventory, metadata);
+  if (source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+    assertCurrentSchematicOpeningExpectation(source.schematicExpectation, metadata, children);
+    need(canonicalJson(source.startupExpectation) === canonicalJson(children.startupInput), "ordinary SCH startup differs from pre-navigation qualification");
+  }
   await verifyReceipt(checkpoint, current); await current();
   need(readerCompletion(inventory) === completion, "original SQL completion changed");
   const result: CurrentSchematicRenameBaseline = freezeDeep({ profile: "private.current-schematic-rename-baseline.v1", owner: input.owner, intent: rename,

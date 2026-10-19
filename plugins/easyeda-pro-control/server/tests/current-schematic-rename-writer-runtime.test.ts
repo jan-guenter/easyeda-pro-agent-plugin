@@ -105,6 +105,7 @@ async function fixture(failure: Failure = "none"): Promise<{
   const originalSnapshot = Object.freeze({ inventory: after }), snapshot = Object.freeze({ synthetic: "original-schematic-snapshot" });
   let dispatchOwner: unknown, ownerChecks = 0;
   const context = createContext({ Object, Reflect, Map, Date, Promise, AggregateError, structuredClone,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     CURRENT_SCHEMATIC_RENAME_WRITER_DISPATCH_PHASE: "current-schematic-rename-writer-once",
     canonicalJson, isRecord, sha256Json, sha256Text, buildPlanHash: sha256Json,
     assertExpectedFingerprint: noOp, validateSdkLocalRuntimeFingerprint: noOp, assertUpstreamReplySettled: noOp,

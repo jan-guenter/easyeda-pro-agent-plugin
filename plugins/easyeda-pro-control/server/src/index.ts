@@ -122,7 +122,7 @@ import { readShortcutKeys } from "./shortcut-keys-runtime.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { readCurrentPcbLayers } from "./current-pcb-layers-runtime.ts";
 import { currentDisposableOpenRequestSchema } from "./current-disposable-open.ts";
-import { CurrentDisposableOpenCoordinator } from "./current-disposable-open-runtime.ts";
+import { CurrentDisposableOpenCoordinator, inspectCurrentSchematicOpeningHistory } from "./current-disposable-open-runtime.ts";
 import { currentPcbIdentitiesRequestSchema } from "./current-pcb-identities.ts";
 import { readCurrentPcbIdentities } from "./current-pcb-identities-runtime.ts";
 import { currentPcbGeometryRequestSchema } from "./current-pcb-geometry.ts";
@@ -141,6 +141,7 @@ import { currentSymbolCopyOperationRequestSchema } from "./current-symbol-copy-o
 import { currentPcbRenameOperationRequestSchema } from "./current-pcb-rename-operation.ts";
 import { CurrentPcbRenameOperationCoordinator, inspectCurrentPcbRenameHistory } from "./current-pcb-rename-operation-runtime.ts";
 import { currentSchematicRenameOperationRequestSchema } from "./current-schematic-rename-operation.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationRequestSchema } from "./current-schematic-operation.ts";
 import { CurrentSchematicRenameOperationCoordinator, inspectCurrentSchematicRenameHistory } from "./current-schematic-rename-operation-runtime.ts";
 import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { currentProjectOnlySymbolPreflightRequestSchema } from "./current-project-only-symbol-preflight.ts";
@@ -1900,6 +1901,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_disposable_symbol_copy: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_pcb_rename: currentSymbolOperationToolOutputSchema,
   easyeda_control_disposable_schematic_rename: currentSymbolOperationToolOutputSchema,
+  easyeda_control_project_schematic_rename: currentSymbolOperationToolOutputSchema,
   easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2016,6 +2018,9 @@ registerFacadeTool(
           historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle", phaseEffectAcknowledgementsRequired: true, inverseSupported: false,
           ordinaryProjectsSupported: false, savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, genericWritersEnabled: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
+        projectSchematicRename: { tool: "easyeda_control_project_schematic_rename", scope: "ordinary-purpose-schematic-title-lifecycle-disposable-validation-only",
+          runtimeAdmissionRequired: true, designMutation: true, originalOwnerRequired: true, connectedValidation: false,
+          validationOnly: true, ordinaryProjectsSupported: false, inverseSupported: false, genericWritersEnabled: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false, scope: "generic-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
           scope: "registered-disposable-project-and-existing-pcb-opening-plus-owned-validation-reopening", retainedLaunchRequired: true, unchangedStorageGuaranteed: false },
@@ -2568,7 +2573,7 @@ registerFacadeTool(
   "easyeda_control_pcb_geometry",
   {
     title: "Read loaded PCB geometry and placement",
-    description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters, parentless String text, component Attribute text/placement, Dimension geometry and Image/Picture placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style, key/show flags, positionIsNull and serialized silkColor. Attribute adds current model value and keyVisible/valueVisible, preserving complete ordered parent groups even for selected IDs. Name values may already be formula-expanded; raw formulaName and evaluation are omitted. Numeric coordinates remain required. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Grouping does not prove reciprocal ownership. Dimension returns exact length/radius/angle coordinate tuples and line width in mil, type, layer, precision and lock. Its canvasUnit comes from the current canvas, not a verified stored annotation unit; it does not change the coordinate units or prove a rendered measurement. Image preserves native Image/Picture kind, start anchor, width/height, rotation, mirror flag, layer and lock, without assets, paths, hashes or image-content/rendered-bounds claims. Native Image serialization precedes output bounds, but its Picture source getter is not called. No SDK instances, public-wrapper dispatch, optional filters, rendered-glyph proof, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
+    description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters, parentless String text, component Attribute text/placement, Dimension geometry and Image/Picture placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, bounded native POLYGON pathSource with native-pad-style coordinate space, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. POLYGON preserves and compares up to2048 L/ARC/CARC/C/CIRCLE tokens per pad with native four-decimal mil coordinates/radii and degree sweeps; do not infer a board-space or mirrored transform. The serializer selects the last layer1/2/15 style and can omit tiny/unsupported segments. Physical stacks and full rendered geometry remain unverified; populated polygon live validation is pending. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style, key/show flags, positionIsNull and serialized silkColor. Attribute adds current model value and keyVisible/valueVisible, preserving complete ordered parent groups even for selected IDs. Name values may already be formula-expanded; raw formulaName and evaluation are omitted. Numeric coordinates remain required. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Grouping does not prove reciprocal ownership. Dimension returns exact length/radius/angle coordinate tuples and line width in mil, type, layer, precision and lock. Its canvasUnit comes from the current canvas, not a verified stored annotation unit; it does not change the coordinate units or prove a rendered measurement. Image preserves native Image/Picture kind, start anchor, width/height, rotation, mirror flag, layer and lock, without assets, paths, hashes or image-content/rendered-bounds claims. Native Image serialization precedes output bounds, but its Picture source getter is not called. No SDK instances, public-wrapper dispatch, optional filters, rendered-glyph proof, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
     inputSchema: { request: z.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
@@ -3817,6 +3822,53 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_schematic_renam
         currentSchematicRenameOperationCoordinator = new CurrentSchematicRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
       }
       return { result: await currentSchematicRenameOperationCoordinator.run(validated) };
+    });
+  }));
+}
+
+if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(currentSchematicOperationRequestSchema),
+    expectedFingerprint: privateFingerprintSchema.optional() }).strict();
+  server.registerTool("easyeda_control_project_schematic_rename", {
+    title: "Validate the ordinary schematic-title lifecycle on a disposable project",
+    description: "Original-owner ordinary-purpose SCH-container title lifecycle, currently disposable-validation-only. Query offline project-schematic-operation/project-schematic-operation-validate first. open requires confirmDisposableProject:true and seals the exact rename target/title plus supported startup, metadata and complete child projection from the managed pre-navigation checkpoint. Production projects remain blocked pending this composition's own connected validation; the previous disposable lifecycle is not validation of this entrypoint. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member PCB. Opening and normal closure can persist or migrate data. Separate operation and opening IDs retain one original owner through baseline, aged actor/clock proof, exactly one title write, complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster verification and final closed SQL equality. Use returned nextPhase and exact effect acknowledgments; advance-batch accepts two through four adjacent explicit steps and stops on failure or pending observation without retry. No unqualified startup opt-in, replacement target/title, caller code, explicit Save, prompt choice, force close, inverse, restoration or generic writer. Inspect lost replies without replaying writes, navigation, closure or scratch processes. Journals cannot recreate ownership; only offered original-owner cleanup is available after failure. Completion requires renameVerified and nextPhase completed. Canvas/connectivity and delayed subscriber completion remain unverified. The newly composed ordinary-purpose route has source/offline coverage, not a connected lifecycle.",
+    inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  }, guarded(async ({ request, expectedFingerprint }: z.output<typeof inputSchema>) => {
+    const validated = currentSchematicOperationRequestSchema.parse(request);
+    if (validated.action !== "open" && expectedFingerprint !== undefined) {
+      throw new Error("Only initial opening accepts a fingerprint; continuation retains its original authority.");
+    }
+    // Read-only inspection cannot allocate a process owner or wait behind its
+    // Own pending mutation. Purpose is checked even for historical journals.
+    if (validated.action === "inspect") {
+      return { result: await (currentSchematicRenameOperationCoordinator === undefined
+        ? inspectCurrentSchematicRenameHistory(validated.operationId, CURRENT_SCHEMATIC_OPERATION_PURPOSE)
+        : currentSchematicRenameOperationCoordinator.runOrdinary(validated, expectedFingerprint)) };
+    }
+    if (validated.action === "inspect-opening") {
+      return { result: await (currentSchematicRenameOperationCoordinator === undefined
+        ? inspectCurrentSchematicOpeningHistory(validated.operationId)
+        : currentSchematicRenameOperationCoordinator.runOrdinary(validated)) };
+    }
+    return bridgeGate.run(async () => {
+      if (currentSchematicRenameOperationCoordinator === undefined && validated.action !== "open") {
+        throw new Error("Ordinary schematic rename requires this facade's retained original opener and coordinator; journals cannot reconstruct ownership.");
+      }
+      if (currentDisposableOpenCoordinator === undefined) {
+        const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+        const assertOwner = (): void => {
+          if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined || ordinaryLaunchRuntime === undefined ||
+              windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === undefined ||
+              process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            throw new Error("Ordinary schematic rename requires this facade's unchanged retained ordinary launch.");
+          }
+        };
+        currentDisposableOpenCoordinator = new CurrentDisposableOpenCoordinator({ engine, assertOwner,
+          runtime: (): WindowsControlRuntime => { assertOwner(); return ownedWindowsRuntime(); } });
+      }
+      currentSchematicRenameOperationCoordinator ??= new CurrentSchematicRenameOperationCoordinator(engine, currentDisposableOpenCoordinator);
+      return { result: await currentSchematicRenameOperationCoordinator.runOrdinary(validated, expectedFingerprint) };
     });
   }));
 }

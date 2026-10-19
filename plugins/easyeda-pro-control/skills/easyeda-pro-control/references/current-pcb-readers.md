@@ -413,14 +413,24 @@ do not avoid that work or fetch missing libraries.
 ```ts
 { shape: "ELLIPSE" | "OVAL", width, height }
 { shape: "RECT", width, height, cornerRatioPercent }
-{ shape: "POLYGON", details: "not-projected" }
+{ shape: "POLYGON", pathSource, coordinateSpace: "native-pad-style" }
 ```
 
 Width/height are already rounded to0.1mil by the native shape callback. The
 rectangle's fourth value is a percentage, not the corner radius named by the
 public docs. Do not infer a rendered outline: native ELLIPSE may use width
-alone. POLYGON deliberately omits its path; path contents are not compared.
-NGON and unknown representations refuse. Physical-layer pad stacks remain
+alone. POLYGON preserves and compares the native ordered path tokens, including
+on unrequested pads. Coordinates/radii use mil and ARC/CARC sweeps use degrees,
+rounded natively to four decimal places. L, ARC, CARC, variable-degree C and
+CIRCLE are supported, up to2048tokens per pad within the complete response bound.
+An empty serialized path remains an empty observation. Nested paths and R refuse.
+The native callback chooses the last available style in layer order1,2,15;
+`native-pad-style` is not board space. Keep pad x/y/rotation separate: do not
+apply an assumed placement, mirror or layer transform. The serializer may omit
+tiny or unsupported segments, so equality does not prove full model geometry,
+rendered copper or manufacturability. No polygon constructor/decoder or outline
+refresh runs. This added projection has synthetic tests, not populated live
+validation. NGON and unknown representations refuse. Physical-layer pad stacks remain
 unimplemented; default shape is not proof that every layer uses that shape.
 
 `maskExpansion` contains `mode`, `topSolder`, `bottomSolder` and one shared

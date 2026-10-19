@@ -34,7 +34,7 @@ function failureError(code: Failure): Error { return new Error(`PCB_DIAGNOSTIC_P
  * punctuation and quoted tokens first; JSON.parse still validates the grammar.
  * Bounded nesting also keeps malformed/deep native replies out of recursive
  * consumers. Whitespace and alternate valid escapes are not normalized away. */
-function decodeFrame(bytes: Buffer): unknown {
+export function decodeCurrentPcbDiagnosticJson(bytes: Buffer): unknown {
   const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   const nesting: (Set<string> | null)[] = [];
   for (let offset = 0; offset < text.length; offset += 1) {
@@ -176,7 +176,7 @@ export class CurrentPcbDiagnosticPipe {
     const pending = this.#pending;
     if (pending === null || pending.reply !== null || bytes.length === 0) { this.#fail("reply"); return; }
     let decoded: unknown;
-    try { decoded = decodeFrame(bytes); }
+    try { decoded = decodeCurrentPcbDiagnosticJson(bytes); }
     catch { this.#fail("framing"); return; }
     if (!record(decoded) || !Object.is(decoded["id"], pending.id)) { this.#fail("reply"); return; }
     const keys = Object.keys(decoded);

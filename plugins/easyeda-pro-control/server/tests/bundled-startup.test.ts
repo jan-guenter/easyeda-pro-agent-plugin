@@ -134,7 +134,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_disposable_pcb_rename", "easyeda_control_disposable_schematic_rename", "easyeda_control_disposable_symbol_copy", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_history", "easyeda_control_launch", "easyeda_control_pcb_geometry", "easyeda_control_pcb_identities", "easyeda_control_pcb_layers", "easyeda_control_project_board", "easyeda_control_project_open", "easyeda_control_project_pcb", "easyeda_control_project_schematic", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_disposable_pcb_rename", "easyeda_control_disposable_schematic_rename", "easyeda_control_disposable_symbol_copy", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_history", "easyeda_control_launch", "easyeda_control_pcb_geometry", "easyeda_control_pcb_identities", "easyeda_control_pcb_layers", "easyeda_control_project_board", "easyeda_control_project_open", "easyeda_control_project_pcb", "easyeda_control_project_schematic", "easyeda_control_project_schematic_rename", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -223,6 +223,16 @@ void describe("self-contained packaged machine startup", () => {
       desiredTitle: "Renamed SCH", confirmDisposableProject: true, acceptSchematicRename: true,
     } } });
     assert.equal(schematicRenameRequest["valid"], true); assert.equal(schematicRenameRequest["executionAuthorized"], false);
+    const schematicOperation = await api(client, { action: "project-schematic-operation", query: { includeSchemas: true } });
+    assert.equal(schematicOperation["tool"], "easyeda_control_project_schematic_rename");
+    assert.equal(schematicOperation["validationOnly"], true); assert.ok(isObjectRecord(schematicOperation["inputSchema"]));
+    for (const key of ["executionAuthorized", "invocationEnabledByDiscovery", "connectedValidation", "ordinaryProjectsSupported"]) {
+      assert.equal(schematicOperation[key], false);
+    }
+    const schematicOperationRequest = await api(client, { action: "project-schematic-operation-validate", query: { request: {
+      action: "inspect-opening", operationId: "offline-schematic-opening",
+    } } });
+    assert.equal(schematicOperationRequest["valid"], true); assert.equal(schematicOperationRequest["executionAuthorized"], false);
     const invalidShortcut = await client.callTool({ name: "easyeda_control_shortcuts", arguments: {
       request: { method: "eda.sys_ShortcutKey.getShortcutKeys", arguments: { includeSystem: false }, callback: "caller-code" }, expectedFingerprint: {},
     } });
@@ -341,7 +351,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 48);
+      assert.equal(tools.tools.length, 49);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));
@@ -350,6 +360,7 @@ void describe("self-contained packaged machine startup", () => {
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_symbol_metadata"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_pcb"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_schematic"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_schematic_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_project_board"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_symbol_copy"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_pcb_rename"));

@@ -15,6 +15,8 @@ import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_T
   currentDisposableOpenSealedTargetSchema, currentDisposableOpenTargetSchema, parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenPhase, CurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "../src/current-schematic-operation.ts";
+import { currentSchematicOpeningExpectationSchema } from "../src/current-schematic-operation-startup.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "../src/current-disposable-open-diagnostics.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
 import { CurrentDisposableOpenCoordinator, assertCurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
@@ -562,6 +564,72 @@ void test("ordinary startup refusal creates no journal or navigation and needs n
   assert.equal(value.journals.size, 0); assert.equal(value.artifacts.size, 0); assert.deepEqual(dispatches(value), []);
 });
 
+function schematicOpeningFixture(suffix: string): Readonly<{ fixture: Fixture; checkpoint: CurrentDisposableOpenCheckpoint;
+  input: Fixture["input"] & { rename: { target: { projectUuid: string; branchUuid: string; ownerUuid: string; schematicUuid: string }; desiredTitle: string } } }> {
+  const childUuid = "3".repeat(16), schematicUuid = "2".repeat(16), value = fixture(suffix);
+  const rename = { target: { projectUuid: TARGET.projectUuid, branchUuid: SEALED.branchUuid, ownerUuid: "4".repeat(32), schematicUuid }, desiredTitle: "Renamed SCH" };
+  const schematicExpectation = currentSchematicOpeningExpectationSchema.parse({ intent: rename, startup: { sheetUuids: [childUuid], templates: [] },
+    peers: [{ uuid: schematicUuid, name: "source sch", displayName: "Source SCH", source: "", version: "1", boardUuid: "", ticket: 1, updateTime: 1 }],
+    childKv: { [childUuid]: { uuid: childUuid, project_uuid: TARGET.projectUuid, schematic_uuid: schematicUuid, title: "child", display_title: "Child",
+      docType: 1, zIndex: 0, source: "", version: "1", updateTime: 1, ticket: 2 } },
+    targetAst: { uuid: schematicUuid, title: "source sch", displayTitle: "Source SCH", board: "", version: "1", updateTime: 1, blockSymbolUuid: "",
+      sort: [childUuid], sheets: { [childUuid]: { uuid: childUuid, title: "child", displayTitle: "Child", zIndex: 0 } } } });
+  return { fixture: value, input: { ...value.input, rename }, checkpoint: { ...CHECKPOINT,
+    purpose: CURRENT_SCHEMATIC_OPERATION_PURPOSE, startupExpectation: schematicExpectation.startup, schematicExpectation } };
+}
+
+void test("ordinary SCH seals its exact intent and full startup projection before navigation, rejecting sibling purposes", async () => {
+  const { fixture: value, input, checkpoint } = schematicOpeningFixture("ordinary-sch-qualified");
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+    prepareSchematicCheckpoint: (target, rename): Promise<CurrentDisposableOpenCheckpoint> => { assert.deepEqual(target, TARGET); assert.deepEqual(rename, input.rename);
+      value.calls.push("prepare-schematic"); return Promise.resolve(structuredClone(checkpoint)); },
+    verifySchematicCheckpoint: (prepared, target, rename): Promise<void> => { assert.deepEqual(prepared, checkpoint); assert.deepEqual(target, TARGET);
+      assert.deepEqual(rename, input.rename); value.calls.push("verify-schematic"); return Promise.resolve(); },
+  });
+  await coordinator.runSchematicOpening(input, FINGERPRINT);
+  assert.ok(value.calls.indexOf("prepare-schematic") < value.calls.indexOf("dispatch:preflight"));
+  assert.ok(value.calls.indexOf("verify-schematic") < value.calls.indexOf("dispatch:open-project"));
+  const journal = value.journals.get(input.operationId); assert.ok(journal !== undefined);
+  const plan = journal["plan"]; assert.ok(isRecord(plan)); assert.equal(plan["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  const intent = plan["intent"]; assert.ok(isRecord(intent)); assert.deepEqual(intent["schematicExpectation"], checkpoint.schematicExpectation);
+  await coordinator.runSchematicOpening({ action: "inspect-opening", operationId: input.operationId });
+  await assert.rejects(coordinator.run({ action: "inspect", operationId: input.operationId }), /ordinary/u);
+  await assert.rejects(coordinator.runOrdinary({ action: "inspect", operationId: input.operationId }), /Ordinary route/u);
+  await assert.rejects(coordinator.runSchematicOpening({ action: "observe", operationId: input.operationId }, FINGERPRINT), /fingerprint/u);
+  assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document"]);
+});
+
+void test("ordinary SCH startup rejection leaves no journal or navigation", async () => {
+  const { fixture: value, input } = schematicOpeningFixture("ordinary-sch-rejected");
+  const coordinator = new CurrentDisposableOpenCoordinator(value.options, { ...value.services,
+    prepareSchematicCheckpoint: (): Promise<CurrentDisposableOpenCheckpoint> => Promise.reject(new Error("unsupported schematic startup")),
+  });
+  await assert.rejects(coordinator.runSchematicOpening(input, FINGERPRINT), /checkpoint preparation before journal creation or navigation/u);
+  assert.equal(value.journals.size, 0); assert.deepEqual(dispatches(value), []);
+});
+
+void test("ordinary SCH pending opening remains inspectable without admitting a second dispatch", async () => {
+  const { fixture: value, input, checkpoint } = schematicOpeningFixture("ordinary-sch-pending");
+  const gate = Promise.withResolvers<boolean>(), started = Promise.withResolvers<boolean>();
+  const original = value.options.engine.dispatchWithOrphanTracking;
+  const coordinator = new CurrentDisposableOpenCoordinator({ ...value.options, engine: { ...value.options.engine,
+    dispatchWithOrphanTracking: async (...args): ReturnType<typeof original> => {
+      if (args[1] === "open-project") { started.resolve(true); await gate.promise; }
+      return original(...args);
+    },
+  } }, { ...value.services, prepareSchematicCheckpoint: (): Promise<CurrentDisposableOpenCheckpoint> => Promise.resolve(checkpoint),
+    verifySchematicCheckpoint: (): Promise<void> => Promise.resolve() });
+  const pending = coordinator.runSchematicOpening(input, FINGERPRINT);
+  try {
+    await started.promise;
+    const result = await coordinator.runSchematicOpening({ action: "inspect-opening", operationId: input.operationId });
+    assert.equal(result["state"], "open-project-dispatching");
+    await assert.rejects(coordinator.runSchematicOpening({ action: "observe", operationId: input.operationId }), /already in progress/u);
+    assert.deepEqual(dispatches(value), ["dispatch:preflight"]);
+  } finally { gate.resolve(true); await pending; }
+  assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project", "dispatch:open-document"]);
+});
+
 void test("checkpoint preparation failures retain their local cause and identify no navigation without leaking private text", async () => {
   for (const ordinary of [false, true]) {
     const value = fixture(`checkpoint-failure-${String(ordinary)}`);
@@ -744,6 +812,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
     CURRENT_SYMBOL_OPERATION_PURPOSE, parseCurrentSymbolOperationRequest, currentSymbolStartupExpectationSchema,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure, decodeExactReadEnvelope,
     currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, currentClosedSymbolMetadataProjection, readCurrentClosedSymbolMetadata: read,
     CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema, currentSymbolFinishSnapshotStatus,
@@ -752,6 +821,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
     assertOperationIdUnused: services.assertOperationIdUnused, prepareCurrentDisposableOpenCheckpoint: services.prepareCheckpoint,
     prepareCurrentSymbolOperationCheckpoint: services.prepareOrdinaryCheckpoint, verifyCurrentSymbolOperationCheckpoint: services.verifyOrdinaryCheckpoint,
+    prepareCurrentSchematicOperationCheckpoint: services.prepareSchematicCheckpoint, verifyCurrentSchematicOperationCheckpoint: services.verifySchematicCheckpoint,
     verifyCurrentDisposableOpenCheckpoint: services.verifyCheckpoint, verifyCurrentDisposableOpenImplementation: services.verifyImplementation,
     validateSdkLocalRuntimeFingerprint: services.validateFingerprint,
   });

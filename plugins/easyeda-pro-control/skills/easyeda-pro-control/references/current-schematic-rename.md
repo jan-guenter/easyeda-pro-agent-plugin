@@ -1,4 +1,4 @@
-# Disposable schematic-container rename
+# Schematic-container rename lifecycles
 
 This route changes one ordinary project-local SCH container's title, not a
 sheet title or circuit. It is a native task equivalent with a separate SCH
@@ -6,6 +6,45 @@ owner. Installed143713 passed one complete disposable lifecycle. Use only an
 explicitly disposable project, after admitting the
 installed payload. Ordinary projects, imported/reuse/block containers, child
 reparenting, inverse/delete and explicit Save are unsupported.
+
+## New ordinary-purpose validation route
+
+Use `easyeda_control_project_schematic_rename` to validate the newly composed
+ordinary-purpose lifecycle. It is still **disposable-validation-only**: its
+`open` requires `confirmDisposableProject:true`, and discovery reports
+`validationOnly:true`, `ordinaryProjectsSupported:false` and
+`connectedValidation:false`. The older disposable case does not validate this
+entrypoint. Do not use production projects until that gate is deliberately
+changed after its own connected lifecycle passes.
+
+Query `project-schematic-operation` with `includeSchemas:true`; validate exact
+requests with `project-schematic-operation-validate`. Its `open` includes the
+registered path, project UUID, existing PCB UUID, source hash,
+`acceptNormalOpenEffects:true`, `confirmDisposableProject:true`, and
+`rename:{target,desiredTitle}`. Only this initial open accepts the actual
+authenticated `expectedFingerprint` at the tool's top level.
+
+Before navigation, the managed checkpoint seals the rename intent, supported
+startup, SCH metadata peers and complete child projection. The closed baseline
+must still match it. Unsupported or changed data refuse before a title write.
+Do not select the old disposable opener or provide an unqualified-startup opt-in
+to get past that refusal: the new route retains a distinct purpose throughout.
+
+After successful opening, use a separate `baseline-begin` operation ID with
+the same target/title, original `openingOperationId` and
+`acceptSchematicRename:true`. Continue through this same tool. Its phase order,
+clock/closure requirements and completion criteria below remain unchanged,
+but its write step has only `confirmWrite:true` and
+`acceptSchematicRename:true`; the disposable confirmation was consumed at open.
+Its `baseline-open-project` accepts only `acceptNormalOpenEffects:true`, never
+the old route's unqualified schematic-startup acknowledgment.
+
+For an uncertain initial open use `inspect-opening`; for a lifecycle use
+`inspect`. Both allow historical inspection without recreating process ownership.
+Opening recovery offers `observe`, `request-normal-close` or
+`retire-after-termination` only as allowed by the original retained state.
+After baseline transfer, use the rename lifecycle's offered cleanup instead.
+No caller-supplied fingerprint or saved journal can restore continuation.
 
 ## Historical connected scope
 
@@ -64,9 +103,9 @@ Every `advance` names the exact returned `result.nextPhase` in
 `step.expectedPhase`, with the acknowledgments shown by offline discovery.
 
 If the installed schema offers `advance-batch`, it accepts two to four explicit
-adjacent phase steps in one request. This newer action has synthetic/offline
-validation only; it was not present in installed143713 and its connected
-execution has not been validated. Prefer the following pair once the returned
+adjacent phase steps in one request. This action was not present in
+installed143713; that historical single-phase case does not validate batching
+or another invocation. Prefer the following pair once the returned
 next phase is `rename-write`, so ordinary closure follows the acknowledged write
 without another agent roundtrip:
 

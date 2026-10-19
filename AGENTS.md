@@ -4,6 +4,99 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+163322 continuation, 2026-10-19. Actual facade142445/start41574386,
+parent140831/start41571749 independently and root admitted; all506source/3runtime/
+manifest and1536file/42dir/31,401,025byte inventory/modes match delivered163322.
+All18scratch runtime/helper pins pass read-only inspection. Evidence
+`/root/.cache/easyeda-163322-independent-admission-nJ2567UC`.
+New ordinary launch `sch-batch-163322-20261019-launch` completed ONCE in
+functions17: root47396/Jobb62ab2f351264a238972b2c22ba7317b, launchedcac4972e.
+Never replay. Follow-up26 authenticated; context31 proved Start Page.
+Live evidence root
+`/root/.cache/easyeda-163322-batch-live-Jj8NZzmZ`.
+Opener37 `sch-batch-163322-20261019-open` completed exact disposable PCB identity,
+preparation checkpoint581632/7e0bc38f, no Save/persistence inference. Never replay.
+SCH baseline-begin49 `sch-batch-163322-20261019-case` completed captured.
+Batch58 COMPLETED all3steps: baseline-close, baseline-observe-termination and
+baseline-prepare-clock. Original ordinary-launch termination84 also COMPLETED;
+original47396/Job exit is proved, not inferred. Never replay those actions.
+Generation batch85 completed relaunch then stopped on explicitly pending admission.
+Single pending admission106 passed; remaining cache/open batch107 passed both
+steps with generation issued. No relaunch/navigation replay. Batch114 COMPLETED
+all3steps: clock/title-write/normal-close. Intended native title acknowledged,
+ticket781; write120357ms/close21867ms. Never replay write/close or extra Save.
+Batch120 passed closed SQL and verification launch, then stopped on pending
+authentication. Admission123 and cache124 passed. Final4step batch128 COMPLETED:
+saved metadata/peers/child roster/both ASTs, normal closure and final SQL equality.
+nextPhasecompleted/renameVerifiedtrue/retiredtrue, no failed phase, terminated.
+Full SQL proves20documents,56oldhistoryrows/60oldchunks preserved and intended
+new SCH history/ticket781; after/later SQLda1bf5e4. Terminaldf8d9f81 retained in
+the private live evidence root. EasyEDA is CLOSED. NEVER replay this completed
+case or issue extra Save. Independent retained-evidence audit PASSED all54
+artifacts/3rawcopies/receipt chains and native saved payloads. Final fixture598016
+SHAa7fbfb8570dc08cf993777e65693c72943624b36958ce42776d1c08cea4d183b,
+no sidecars. Journal5bfeaa4b; final closed20:56:57.7238466Z, Job empty/exited.
+Disposable fixture source750e4f95/598016 unchanged before launch; no production
+access. Parallel source batch: native diagnostic transport owner, bounded
+polygon-pad geometry projection and ordinary SCH title lifecycle. Polygon45
+focused tests/types/strict lint pass; no populated live polygon validation.
+New ordinary-purpose validation-only route and native diagnostic owner have
+passed focused regression/types/strict lint and independent review. Dependency
+preparation77 passed ci/tree,151registry signatures/40attestations,0vulnerabilities
+and sanitizer check. Evidence `/root/.cache/easyeda-ordinary-sch-polygon-diagnostic-release-cScBpStm`.
+Candidate203733 is frozen/built/pinned. Root and independent audit accept exact
+510source9860210a/3runtime02f4a502/manifestb19afd52; external pins unchanged.
+Geometry result discovery now exposes method-specific successful output schemas;
+46focused tests/types/strict lint pass. First required verify62767 completed
+11639passes/6failures/4skips; retained verify.log in release evidence. Failures
+are omitted VM purpose binding and four stale coverage route/schema expectations.
+Root-reviewed fixture correction30343 and coverage-test correction pass2+48
+focused tests and strict lint. Runtime source/bundles/manifest stay unchanged.
+Final full required suite and repository/all7skill checks are running against
+the corrected frozen test payload; they must pass before merge/install.
+One combined release remains planned. A draft PR may run protected CI in
+parallel; no merge or installation before final local and exact-head CI success.
+
+### Delivered163322 and prior completed work
+
+Delivered163322, 2026-10-19. PR80 payload
+`86b34605c9de418cd6e55bdca900e27a7ea8dba1` merged normally as main
+`a4c4576dca6518dece8ab7ec7d60f623c19cd65a`; complete trees match.
+Exact-head LinuxCI39287066949/Windows39287066532 passed, including all shards
+and final gate:11611facade passes/5skips/0failures,424bridge passes, both lints
+0warnings/errors. Local full verify22023 passed11612/4/0 and424bridge tests.
+All7skill/repository/privacy checks pass; final documentation scan54807 passed.
+Source506/c8842080, runtime3/5f90f560, manifestad8720b7; externalpins unchanged.
+Official named Git marketplace upgrade99674 lists163322 installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, checkoutmaina4c4576.
+Exact comparison61678:1536files/42directories/31,401,025bytes including modes,
+inventoryd3b72af6/plugintreeed76f216. Exact-main worktree:
+`/root/.cache/easyeda-163322-merged-main-8388io0G/worktree`.
+Root/independent final probe review accepted76039288/pinsa7fb5726. Sole offline
+probe33050 completedexit0: actual configured ambientNode26 hands to pinnedNode24;
+49offline requests pass,23restricted/48configuredtools, no source dependencies.
+Originalchild135937 EOFexit/close0, no retained handles/stderr, all3inventories
+unchanged; no upstream marker/children/nonstdio socket at two sampled checkpoints.
+This is not continuous isolation or live CAD validation. Proofc45a7d47/responses
+7599183e in `/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`;
+CONSUMED, NEVER rerun/import/syntax-check. MainLinux39289237232 completed/success;
+all8shards/build/finalgate passed. MainWindows39289237330 passed.
+Current chat holds old143713 facade12516; no old live calls after upgrade,
+no cache patch/hotreload/host termination. Fresh Codex session is required for
+actual163322 admission. EasyEDA is CLOSED; completed143713 title-only case below
+is retired, never replay its rename/open/close/scratch or issue extra Save.
+Next: check mainCI39289237232; admit actual163322, start EasyEDA ourselves when needed, select only new
+disposable cases. Batch useful implementation work before another release.
+Priorities: native PCB pipe/Job/handle and frame/worker integration, complete PCB
+text observer/writer/persistence; populated Image/Dimension validation; broader
+geometry/structure, library/3D, placement/routing/copper, rules/stackup, ECO/ERC/
+DRC/manufacturing/export, upstream bootstrap and additional platform admission.
+New batching and runtime performance remain unvalidated live. No production
+project/record access. Only post-delivery root documentation differs from main on
+`feature/163322-live-continuation`; packaged payload stays byte-exact.
+
+### Completed143713 live case and163322 release preparation (historical)
+
 143713 live continuation, 2026-10-19. Root/independent actual facade12516/
 start39944216, parent10763/start39938677, installed1531/42/31,319,304 bytes
 and all source504/runtime3/manifest pins match delivered143713 below.
@@ -52,19 +145,32 @@ pass. The earlier stream microbenchmark is not evidence for this changed
 implementation or live lifecycle savings. Candidate163322 source frozen;
 build45409 and compatibility check pass. Source506/c8842080,
 runtime3/5f90f560, manifestad8720b7; external pins unchangeda1faf216. Full verify
-running session22023, log in private release-check directory. Repository/all7
-quick validators running93514. Not published or installed. Fresh dormant
+22023 completed exit0:11612facade passes/4skips/0failures,424bridge passes,
+strict lint0warnings/errors. LogSHA70517797 in private release-check directory. Repository/all7
+quick validators93514 passed. Independent frozen release review accepted,
+including exact506source/3runtime/manifest/external projection and redaction of
+unnecessary private fixture identifiers. Payload86b34605c9de418cd6e55bdca900e27a7ea8dba1
+pushed in PR80; exact-head LinuxCI39287066949/Windows39287066532 passed,
+11611facade passes/5skips/0failures,424bridge passes,both lints0warnings/errors.
+Protected mergea4c4576dca6518dece8ab7ec7d60f623c19cd65a has identical complete
+tree. Official named Git marketplace upgrade99674 passed; CLI lists163322
+installed/enabled and marketplaceHEAD is mergedmain. Exact installed comparison
+61678 passes1536files/42directories/31,401,025bytes and modes; inventoryd3b72af6,
+plugintreeed76f216. Fresh exact-main worktree
+`/root/.cache/easyeda-163322-merged-main-8388io0G/worktree`.
+MainLinux39289237232 running, mainWindows39289237330 passed. Fresh dormant
 offline probe `/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`
-has root/independent template review only; unfilled pins/approvalfalse, NEVER
-execute before final exact-main/cache/version/hash review. Source/bundles/pins
-frozen during suites; root admits no further live work after upgrading.
+has final script76039288/pinsa7fb5726; complete root/independent final review
+accepted. Sole approved offline execution33050 completedexit0; result above.
+NEVER rerun/import or launch another attempt. Source/bundles/pins frozen during
+suites; no further old-host live work after upgrading.
 Dependency reinstall/tree/vulnerability checks passed; signatures first failed
 because /tmp is full. With private TMPDIR
 `/root/.cache/easyeda-143713-release-checks-J4S4XcoW`, all151 registry signatures
 and40 attestations passed. Use private cache temp space for remaining suites;
 do not broadly clean /tmp or discard existing evidence.
-The live lifecycle is terminal; build/release may proceed, installed cache stays
-untouched until official upgrade. MainCI39277119967 now reports completed/
+The live lifecycle was terminal before the official upgrade recorded above.
+MainCI39277119967 now reports completed/
 success; all shard/build jobs and final gate steps passed. MainWindows39277119974
 passed. Older current/pending wording below is historical.
 

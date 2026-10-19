@@ -113,6 +113,7 @@ async function fixture(sidecarMutation?: "clock-reader" | "scope-reader" | "scop
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-schematic-rename-owner-baseline.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const))/gu, "");
   const context = createContext({ z, Object, Array, String, Number, Buffer, Error, types, structuredClone, lstat: observeStat, join, controlDataDirectory, controlRootCapability,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     operationPath, readArtifact, verifyExactManagedArtifact, createCheckpoint, verifyCheckpoint, assertIssuedClosedFileCopy, copyClosedProjectBytes,
     readClosedCopySqlInventory: async (input: Parameters<typeof readClosedCopySqlInventory>[0]): ReturnType<typeof readClosedCopySqlInventory> => {
       const result = await readClosedCopySqlInventory(input); return state.cloneReader ? structuredClone(result) : result;

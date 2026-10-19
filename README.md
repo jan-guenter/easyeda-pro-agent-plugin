@@ -34,10 +34,20 @@ complete unchanged-file/SQL proof. That earlier failed case remains retired.
 The [batch record](docs/current-page-board-batch-2026-10-19.md) separates
 implemented routes, connected evidence and the remaining backlog.
 
-The next combined update adds explicit two-to-four-step schematic phase
+Installed `0.3.0+codex.20261019163322` adds explicit two-to-four-step schematic phase
 batches, scan-owned runtime descriptors with fresh checks, bounded positional
-hashing, and a private PCB diagnostic-pipe foundation. These changes are under
-release preparation, not yet installed; no live speedup or PCB writer is claimed.
+hashing, and a private PCB diagnostic-pipe foundation. One disposable batched
+title lifecycle passed on that installed version, including pending-authentication
+continuation, full closed SQL, saved metadata/child-roster readback and final
+closure. No live speedup, new ordinary-purpose validation or PCB writer is claimed.
+
+Candidate `0.3.0+codex.20261019203733` adds [polygon-pad paths](docs/current-pcb-pad-polygon-geometry-2026-10-19.md),
+a [retained native diagnostic owner](docs/current-pcb-diagnostic-owner-2026-10-19.md),
+and an ordinary-purpose schematic-title route with startup qualification before
+navigation. The new title route remains disposable-validation-only until its
+own connected case passes. The diagnostic owner is private and unregistered:
+native installation and frame/worker qualification, complete PCB observers and
+the PCB writer remain unfinished. These changes are not yet published or installed.
 
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are

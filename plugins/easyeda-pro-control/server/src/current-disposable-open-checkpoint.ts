@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The shared pre-navigation checkpoint binds each purpose to its maintained complete history/SQL qualification, managed receipt and machine-pinned reader. */
 import { join } from "node:path";
 import { controlDataDirectory, controlRootCapability, readArtifact, verifyExactManagedArtifact } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
@@ -5,10 +6,15 @@ import type { CheckpointAccessPolicy, CheckpointReceipt } from "./checkpoint.ts"
 import { canonicalJson, normalizeEasyedaProjectPath, sha256Text } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenPreparationCheckpoint, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationIntentSchema } from "./current-schematic-operation.ts";
+import { prepareCurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
+import type { CurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
 import { CURRENT_SYMBOL_OPERATION_PURPOSE } from "./current-symbol-operation.ts";
 import { currentSymbolStartupExpectationSchema, selectCurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import type { CurrentSymbolStartupExpectation } from "./current-symbol-startup.ts";
 import { isNativeDocumentDeleted, readNativeHistoryCheckpoint } from "./native-history.ts";
+import { loadRuntimeMachineProfile } from "./machine-profile.ts";
+import { readExactSqlInventory } from "./sqlite-inventory.ts";
 
 const PROFILE = "easyeda-pro-control.current-disposable-open-checkpoint.v1";
 const MAX_SOURCE_BYTES = 268_435_456;
@@ -23,8 +29,9 @@ export interface CurrentDisposableOpenCheckpoint {
     sourceSha256: string; checkpointSha256: string; documentSemanticSha256: string;
     historySemanticSha256: string; headHistoryUuid: string;
   }>;
-  readonly purpose?: typeof CURRENT_SYMBOL_OPERATION_PURPOSE;
+  readonly purpose?: typeof CURRENT_SYMBOL_OPERATION_PURPOSE | typeof CURRENT_SCHEMATIC_OPERATION_PURPOSE;
   readonly startupExpectation?: CurrentSymbolStartupExpectation;
+  readonly schematicExpectation?: CurrentSchematicOpeningExpectation;
 }
 
 function normalizedSource(target: CurrentDisposableOpenTarget): string {
@@ -165,4 +172,43 @@ export async function verifyCurrentSymbolOperationCheckpoint(prepared: CurrentDi
   if (canonicalJson(prepared) !== preparedText || canonicalJson(input) !== inputText) {
     throw new Error("Ordinary symbol opening retained startup admission changed.");
   }
+}
+
+async function schematicExpectation(prepared: CurrentDisposableOpenCheckpoint, input: unknown): Promise<CurrentSchematicOpeningExpectation> {
+  const intent = currentSchematicOperationIntentSchema.parse(input);
+  if (intent.target.projectUuid !== prepared.targetEvidence.projectUuid || intent.target.branchUuid !== prepared.targetEvidence.branchUuid) {
+    throw new Error("Ordinary SCH opening intent differs from its checkpoint project/default branch.");
+  }
+  const configured = await loadRuntimeMachineProfile();
+  const inventory = await readExactSqlInventory({ checkpointPath: prepared.checkpoint.checkpoint,
+    expectedSha256: prepared.checkpoint.checkpointSha256, runtime: configured.profile.runtime });
+  return prepareCurrentSchematicOpeningExpectation(inventory, intent);
+}
+
+export async function prepareCurrentSchematicOperationCheckpoint(input: CurrentDisposableOpenTarget, rename: unknown): Promise<CurrentDisposableOpenCheckpoint> {
+  const inputText = canonicalJson(input), renameText = canonicalJson(rename);
+  const prepared = await prepareCurrentDisposableOpenCheckpoint(input);
+  const expectation = await schematicExpectation(prepared, rename);
+  await unchanged(prepared.checkpoint, prepared.checkpoint.source);
+  if (canonicalJson(input) !== inputText || canonicalJson(rename) !== renameText) {
+    throw new Error("Ordinary SCH opening input changed during pre-navigation qualification.");
+  }
+  return Object.freeze({ ...prepared, purpose: CURRENT_SCHEMATIC_OPERATION_PURPOSE,
+    startupExpectation: expectation.startup, schematicExpectation: expectation });
+}
+
+export async function verifyCurrentSchematicOperationCheckpoint(prepared: CurrentDisposableOpenCheckpoint,
+  input: CurrentDisposableOpenTarget, rename: unknown): Promise<void> {
+  const before = canonicalJson({ prepared, input, rename });
+  if (prepared.purpose !== CURRENT_SCHEMATIC_OPERATION_PURPOSE || prepared.schematicExpectation === undefined) {
+    throw new Error("Ordinary SCH opening needs its sealed pre-navigation expectation.");
+  }
+  await verifyCurrentDisposableOpenCheckpoint(prepared, input);
+  const expectation = await schematicExpectation(prepared, rename);
+  if (canonicalJson(expectation) !== canonicalJson(prepared.schematicExpectation) ||
+    canonicalJson(expectation.startup) !== canonicalJson(prepared.startupExpectation)) {
+    throw new Error("Ordinary SCH opening startup projection changed.");
+  }
+  await unchanged(prepared.checkpoint, prepared.checkpoint.source);
+  if (before !== canonicalJson({ prepared, input, rename })) { throw new Error("Ordinary SCH checkpoint binding changed during verification."); }
 }

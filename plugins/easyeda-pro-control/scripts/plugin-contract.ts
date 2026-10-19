@@ -22,6 +22,7 @@ export const FACADE_TOOL_NAMES = [
   "easyeda_control_disposable_symbol_copy",
   "easyeda_control_disposable_pcb_rename",
   "easyeda_control_disposable_schematic_rename",
+  "easyeda_control_project_schematic_rename",
   "easyeda_control_status", "easyeda_control_discover", "easyeda_control_context",
   "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui", "easyeda_control_check",
   "easyeda_control_validate_closed_symbol",
