@@ -237,7 +237,7 @@ void test("SCH rename coverage exposes the disposable metadata and child roster 
   assert.equal(row.routes.find(item => item.tool === "easyeda_control_library")?.executionState, "blocked");
   assert.ok(route.inputDiscovery); const result = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result;
   assert.ok(isRecord(result)); assert.equal(result["connectedValidation"], false); assert.equal(result["executionAuthorized"], false);
-  assert.equal(result["historicalConnectedValidation"], "not-recorded"); assert.equal(result["ordinaryProjectsSupported"], false);
+  assert.equal(result["historicalConnectedValidation"], "installed143713-disposable-schematic-title-only-lifecycle"); assert.equal(result["ordinaryProjectsSupported"], false);
   assert.equal(result["forwardOnly"], true); assert.equal(result["inverseSupported"], false);
 });
 

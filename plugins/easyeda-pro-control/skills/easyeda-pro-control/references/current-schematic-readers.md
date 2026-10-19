@@ -70,7 +70,16 @@ either schematic AST, sheet canvas, pins, nets or connectivity; prove saved
 membership, startup/queue completion or worker ownership; or authorize a rename.
 No canvas load, navigation, clock/client lookup, name-availability check, cloud
 lookup, mutation or Save is requested. Source review and offline tests are
-separate from connected validation, which remains pending.
+separate from connected validation.
+
+Installed `0.3.0+codex.20261019143713` passed the all-pages and selected-page
+routes on one disposable project with one container and two pages. The selected
+page matched its expected parent and complete map; both calls passed two
+matching samples and runtime admission before and after dispatch, without
+editors, mutation or explicit Save. This case does not validate the selected/all
+container routes, empty-page inventories, saved membership or later generations.
+The general discovery `liveValidation` flag remains conservative; the exact
+historical case does not grant execution authority.
 
 The [disposable rename lifecycle](current-schematic-rename.md) has separate
 baseline, ownership, clock and persistence requirements. Successful metadata

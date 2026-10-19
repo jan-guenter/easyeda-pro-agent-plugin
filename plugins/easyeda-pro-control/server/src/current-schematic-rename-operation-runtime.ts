@@ -13,7 +13,7 @@ import { CurrentSchematicRenameBaselineCoordinator } from "./current-schematic-r
 import { CurrentSchematicRenameGenerationCoordinator } from "./current-schematic-rename-generation-runtime.ts";
 import type { CurrentProjectOnlySchematicRenameGeneration } from "./current-schematic-rename-generation-runtime.ts";
 import { currentSchematicRenameBaselineClockBinding } from "./current-schematic-rename-owner-baseline.ts";
-import { CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema } from "./current-schematic-rename-operation.ts";
+import { CURRENT_SCHEMATIC_RENAME_NEXT_PHASES, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE, currentSchematicRenameOperationRequestSchema } from "./current-schematic-rename-operation.ts";
 import type { CurrentSchematicRenameOperationPhase, CurrentSchematicRenameOperationRequest, CurrentSchematicRenameOperationStep } from "./current-schematic-rename-operation.ts";
 import { collectCurrentSchematicRenameStartupObservation } from "./current-schematic-rename-startup-runtime.ts";
 import type { CurrentSchematicRenameStartupObservation } from "./current-schematic-rename-startup-runtime.ts";
@@ -35,6 +35,11 @@ interface FinishedDiagnostic {
   readonly action: ActiveDiagnostic["action"]; readonly phase: ActiveDiagnostic["phase"];
   readonly durationMs: number; readonly outcome: DiagnosticOutcome;
 }
+interface BatchProgress {
+  readonly requestedPhases: readonly CurrentSchematicRenameOperationPhase[];
+  attemptedSteps: number; completedSteps: number;
+  status: "running" | "finished" | "observation-pending" | "failed";
+}
 interface Slot {
   readonly operationId: string; readonly openingOperationId: string;
   next: CurrentSchematicRenameOperationPhase | "completed" | "stopped";
@@ -45,6 +50,7 @@ interface Slot {
   startup?: CurrentSchematicRenameStartupObservation; agedClock?: OriginalCurrentSchematicAgedSqlClock;
   cleanup?: CleanupOwner; cleanupRequested: boolean; renameVerified: boolean;
   diagnosticCurrent?: ActiveDiagnostic; diagnosticLast?: FinishedDiagnostic;
+  lastBatch?: BatchProgress;
 }
 function diagnosticElapsed(startedAt: number): number {
   const elapsed = Math.floor(performance.now() - startedAt);
@@ -111,12 +117,37 @@ export class CurrentSchematicRenameOperationCoordinator {
       finally { finishDiagnostic(slot, outcome); this.busy = false; }
       return this.inspect(slot.operationId);
     }
-    const { expectedPhase: phase } = request.step;
-    need(slot.next === phase); this.busy = true; slot.next = "stopped"; slot.attempted.push(phase);
+    const steps = request.action === "advance-batch" ? request.steps : [request.step];
+    const first = steps[0]; need(first !== undefined && slot.next === first.expectedPhase);
+    this.busy = true;
+    try {
+      await (request.action === "advance-batch" ? this.advanceBatch(slot, steps) : this.advanceStep(slot, first));
+    } finally { this.busy = false; }
+    return this.inspect(slot.operationId);
+  }
+  private async advanceBatch(slot: Slot, steps: readonly CurrentSchematicRenameOperationStep[]): Promise<void> {
+    const progress: BatchProgress = { requestedPhases: Object.freeze(steps.map(step => step.expectedPhase)),
+      attemptedSteps: 0, completedSteps: 0, status: "running" };
+    slot.lastBatch = progress;
+    try {
+      for (const step of steps) {
+        // Never infer a phase from a successful-looking preceding response.
+        need(slot.next === step.expectedPhase);
+        progress.attemptedSteps += 1;
+        await this.advanceStep(slot, step);
+        if (slot.next === step.expectedPhase) { progress.status = "observation-pending"; return; }
+        progress.completedSteps += 1;
+      }
+      progress.status = "finished";
+    } catch (error) { progress.status = "failed"; throw error; }
+  }
+  private async advanceStep(slot: Slot, step: CurrentSchematicRenameOperationStep): Promise<void> {
+    const { expectedPhase: phase } = step;
+    need(slot.next === phase); slot.next = "stopped"; slot.attempted.push(phase);
     slot.diagnosticCurrent = { action: "advance", phase, stage: "performing", startedAt: performance.now() };
     let outcome: DiagnosticOutcome = "failed";
     try {
-      const result = await this.perform(slot, request.step); slot.last = structuredClone(result);
+      const result = await this.perform(slot, step); slot.last = structuredClone(result);
       need(phase.startsWith("cleanup-") || result["failed"] !== true && result["state"] !== "stopped", "SCHEMATIC rename retained a stopped stage.");
       this.advanceNext(slot, phase, result);
       outcome = "succeeded";
@@ -126,8 +157,7 @@ export class CurrentSchematicRenameOperationCoordinator {
       try { await this.chooseCleanup(slot); }
       catch (cleanupError) { throw new AggregateError([error, cleanupError], "SCHEMATIC rename failed; inspect the retained cleanup owner.", { cause: cleanupError }); }
       throw error;
-    } finally { finishDiagnostic(slot, outcome); this.busy = false; }
-    return this.inspect(slot.operationId);
+    } finally { finishDiagnostic(slot, outcome); }
   }
   public inspect(operationId: string): Value {
     const slot = this.slots.get(operationId); need(slot !== undefined);
@@ -136,6 +166,8 @@ export class CurrentSchematicRenameOperationCoordinator {
       lastResult: slot.last === undefined ? null : structuredClone(slot.last), originalOwnerRetained: slot.owner !== undefined,
       cleanupOwner: slot.cleanup ?? null, cleanupRequested: slot.cleanupRequested, renameVerified: slot.renameVerified,
       phaseDiagnostics: inspectDiagnostic(slot),
+      lastBatch: slot.lastBatch === undefined ? null : Object.freeze({ ...slot.lastBatch,
+        requestedPhases: Object.freeze([...slot.lastBatch.requestedPhases]), diagnosticOnly: true, replayAllowed: false }),
       savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: false, genericWritersEnabled: false,
       forwardOnly: true, inverseSupported: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
@@ -263,16 +295,7 @@ export class CurrentSchematicRenameOperationCoordinator {
         result["reopenedSchematicChildRosterVerified"] === true);
       slot.renameVerified = true; slot.next = "completed"; return;
     }
-    const next: Partial<Record<CurrentSchematicRenameOperationPhase, CurrentSchematicRenameOperationPhase>> = {
-      "baseline-close": "baseline-observe-termination", "baseline-observe-termination": "baseline-prepare-clock",
-      "baseline-prepare-clock": "baseline-relaunch", "baseline-relaunch": "baseline-admit", "baseline-admit": "baseline-observe-caches",
-      "baseline-observe-caches": "baseline-open-project", "baseline-open-project": "baseline-observe-clock", "baseline-observe-clock": "rename-write",
-      "rename-write": "rename-close", "rename-close": "rename-observe-termination", "rename-observe-termination": "verification-start",
-      "verification-start": "verification-admit", "verification-admit": "verification-caches", "verification-caches": "verification-open",
-      "verification-open": "verification-read", "verification-read": "verification-close", "verification-close": "verification-finish",
-      "cleanup-capture": "cleanup-close", "cleanup-close": "cleanup-observe-termination",
-    };
-    slot.next = next[phase] ?? "stopped";
+    slot.next = CURRENT_SCHEMATIC_RENAME_NEXT_PHASES[phase] ?? "stopped";
   }
   private async chooseCleanup(slot: Slot): Promise<void> {
     slot.next = "stopped";

@@ -29,7 +29,8 @@ export async function verifyCurrentUiImplementation(assetsRoot: string): Promise
       before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
     const hash = createHash("sha256");
     let consumed = 0n;
-    for await (const chunk of file.createReadStream({ autoClose: false })) {
+    // Bound stream buffering while retaining every fresh byte and identity check.
+    for await (const chunk of file.createReadStream({ autoClose: false, highWaterMark: 1_048_576 })) {
       needUi(Buffer.isBuffer(chunk)); consumed += BigInt(chunk.length);
       needUi(consumed <= before.size && consumed <= 128n * 1024n * 1024n); hash.update(chunk);
     }

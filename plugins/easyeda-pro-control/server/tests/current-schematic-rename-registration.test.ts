@@ -12,6 +12,10 @@ const openingOperationId = "schematic-rename-opening", operationId = "schematic-
 const begin = { action: "baseline-begin", operationId, openingOperationId, target: {
   projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), schematicUuid: "d".repeat(16) },
   desiredTitle: "Renamed SCH", confirmDisposableProject: true, acceptSchematicRename: true };
+const batch = { action: "advance-batch", operationId, steps: [
+  { expectedPhase: "rename-write", confirmWrite: true, acceptSchematicRename: true, confirmDisposableProject: true },
+  { expectedPhase: "rename-close", confirmNormalClose: true, acceptUnknownFileEffects: true },
+] };
 type Handler = (input: { request: unknown }) => Promise<unknown>;
 async function registration(retainedOpener: boolean): Promise<{
   invoke: (input: unknown) => Promise<unknown>; allocations: unknown[][]; history: string[]; calls: unknown[]; failNext: () => void;
@@ -65,7 +69,7 @@ void test("SCH registration inspects history without allocating an opener, opera
     const result = await route.invoke({ request: { action: "inspect", operationId } });
     assert.deepEqual(structuredClone(result), { result: { historicalOnly: true, originalOwnerRetained: false, executionAuthorized: false } });
     assert.deepEqual(route.history, [operationId]); assert.deepEqual(route.allocations, []); assert.deepEqual(route.calls, []);
-    for (const request of [{ action: "advance", operationId, step: { expectedPhase: "baseline-admit" } }, { action: "cleanup", operationId, confirmAbort: true }]) {
+    for (const request of [{ action: "advance", operationId, step: { expectedPhase: "baseline-admit" } }, batch, { action: "cleanup", operationId, confirmAbort: true }]) {
       await assert.rejects(route.invoke({ request }), /cannot reconstruct ownership/u);
     }
     if (!retained) { await assert.rejects(route.invoke({ request: begin }), /existing retained disposable opening/u); }
@@ -78,7 +82,7 @@ void test("SCH registration lets only validated inspection bypass the held mutat
   const entered = Promise.withResolvers<boolean>(), release = Promise.withResolvers<boolean>();
   const held = route.gate.run(async () => { entered.resolve(true); await release.promise; }); await entered.promise;
   const requests = [begin, { action: "advance", operationId, step: { expectedPhase: "baseline-admit" } },
-    { action: "cleanup", operationId, confirmAbort: true }];
+    batch, { action: "cleanup", operationId, confirmAbort: true }];
   const pending = requests.map(request => route.invoke({ request }));
   try {
     const inspection = await route.invoke({ request: { action: "inspect", operationId } });
@@ -107,18 +111,22 @@ void test("SCH registration rejects outer and nested injection before retaining 
   }
   await assert.rejects(route.invoke({ request: { ...begin, target: { ...begin.target, symbolUuid: "e".repeat(16) } } }));
   await assert.rejects(route.invoke({ request: { action: "advance", operationId, step: { expectedPhase: "rename-write", confirmWrite: true } } }));
+  await assert.rejects(route.invoke({ request: { ...batch, steps: [batch.steps[0], { expectedPhase: "rename-close" }] } }));
+  await assert.rejects(route.invokeRaw({ request: { ...batch, steps: [batch.steps[0], { ...batch.steps[1], code: "caller()" }] } }));
   assert.deepEqual(route.allocations, []); assert.deepEqual(route.calls, []); assert.deepEqual(route.history, []);
 });
 
 void test("offline SCH rename discovery and exact argument validation never grant runtime or connected-validation authority", () => {
   const discovery = queryCurrentSchematicRenameOperation({ includeSchemas: true });
   assert.equal(discovery["connectedValidation"], false); assert.equal(discovery["ordinaryProjectsSupported"], false);
-  assert.equal(discovery["historicalConnectedValidation"], "not-recorded");
+  assert.equal(discovery["historicalConnectedValidation"], "installed143713-disposable-schematic-title-only-lifecycle");
   assert.equal(discovery["executionAuthorized"], false); assert.equal(discovery["invocationEnabledByDiscovery"], false);
   assert.equal(discovery["tool"], "easyeda_control_disposable_schematic_rename"); assert.notEqual(discovery["inputSchema"], undefined);
   assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "disposable-schematic-rename", query: { includeSchemas: true } })).result, discovery);
   assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "disposable-schematic-rename-validate", query: { request: begin } })).result,
     validateCurrentSchematicRenameOperationArguments(begin));
+  assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "disposable-schematic-rename-validate", query: { request: batch } })).result,
+    { valid: true, request: batch, registrationEnabled: true, executionAuthorized: false });
   for (const request of [{ ...begin, target: { ...begin.target, documentUuid: "replacement" } }, { ...begin, confirmDisposableProject: false }]) {
     const response = queryOfflineApi(apiRequestSchema.parse({ action: "disposable-schematic-rename-validate", query: { request } }));
     assert.equal(z.object({ valid: z.literal(false), executionAuthorized: z.literal(false) }).safeParse(response.result).success, true);

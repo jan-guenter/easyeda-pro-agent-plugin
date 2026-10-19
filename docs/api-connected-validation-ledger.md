@@ -1190,3 +1190,67 @@ The title remains in the disposable fixture. No complete reopened canvas read,
 callback-completion-before-exit, ordinary-project support or later-generation
 admission is claimed. The earlier184000 failed case remains failed/retired;
 this later success does not revive it or authorize replay.
+
+## Generation G20261019-143713: page and board metadata
+
+Installed `0.3.0+codex.20261019143713`, merged main
+`f1fc00d1047045a514da9f464049efa59639bcd1`, passed four project-only metadata
+reads on the disposable schematic-lifecycle fixture. Actual installed
+admission matched the delivered 1,531 files, 42 directories and 31,319,304
+bytes, source504/runtime3 and manifest pins. The
+[batch delivery record](current-page-board-batch-2026-10-19.md#delivery)
+retains the package and offline-startup evidence separately.
+
+All four calls used the admitted143713 generation, exact disposable project
+and branch, no editor tabs and two matching complete native samples. Runtime
+admission passed before and after every call. Selected reads matched their
+complete map and exact native getter; the selected page also matched its
+explicit expected parent. No navigation, mutation or explicit Save was
+requested by these readers.
+
+| Method | Observed scope | Observation SHA-256 |
+| --- | --- | --- |
+| `eda.dmt_Schematic.getAllSchematicPagesInfo` | One schematic container, two pages | `66afe37f21c1e38a7810b97bdec9048c17c7987c85e3a824ffe1ae8e5ffe5c8c` |
+| `eda.dmt_Schematic.getSchematicPageInfo` | One of those pages, expected parent matched | `834c738b76dceda92d955cc14fa8ec113a4f576766908d9fb788e99cbe22cb30` |
+| `eda.dmt_Board.getAllBoardsInfo` | One board | `172856904279976368b1cb4e0f615e9cbcbc0a163e90bfbed6868ad3c56ef65d` |
+| `eda.dmt_Board.getBoardInfo` | Same populated board selected by UUID | `0d61226e9be33364c16d80378c118d336dc7ad84af97007738088f67fa5dd569` |
+
+The board case validates both a populated inventory and a selected lookup;
+it was not an empty-map observation. Empty maps and the selected/all schematic
+container routes were not exercised by these four calls. These are native
+metadata equivalents, not public-wrapper or public-object parity. They do not
+establish saved membership, worker ownership, complete source/canvas,
+connectivity, schematic-rename completion or later-generation admission.
+Generation-neutral inventory and discovery live-validation flags stay
+conservative. Private fixture identities and design payloads are not published.
+
+## Generation G20261019-143713: disposable schematic title lifecycle
+
+The same admitted installed143713 facade completed one new original-owner
+disposable schematic-container rename through single-phase calls. Its initial
+closed baseline covered 20 documents, 55 history rows and 59 chunks. Native
+acknowledgment, retained root/Job termination and complete SQL comparison
+verified the intended title/history/structure effect, preserving every original
+history row/chunk, child sheet, peer and unrelated SQL cell. No explicit Save
+or production-project access occurred.
+
+A separately launched and admitted generation excluded inactive upload caches,
+reopened the project without editor tabs and matched the saved container,
+all schematic peers, complete child roster and both AST memberships/order.
+Final normal closure proved the original process/Job exit and unchanged complete
+SQL against the post-edit snapshot. The coordinator returned
+`nextPhase:"completed"`, `renameVerified:true`, `busy:false`, with no failed
+phase and a retired verification owner. Never replay this completed case.
+
+- Baseline logical SQL: `2d7a11f2f9d24b2a10735a808850748d99559778f8663ecc8e5168ace7607df3`.
+- Post-edit and final logical SQL: `1d270e35fd464f5f99ed17160306475aaafe6303f97ea894de373c06209c2ad6`.
+- Intended appended plaintext chunk: `5b64b073ff681c1764f90f508bdc8f8272b080b4bad26eb7b82eb7090b6f4f8d`.
+- Reopened raw metadata/child observation: `919fb8c0100c5f87d2b8cc2f6cc4b49ca591023db6a98240b30037543f785be5`.
+
+This is saved metadata/roster verification, not complete sheet-canvas or
+electrical-connectivity readback. Delayed subscriber completion and prospective
+backend actor attestation remain unproved; actual saved actors were checked.
+The route remains disposable-only, forward-only, without inverse or generic
+SDK writer enablement. New `advance-batch`, runtime-lease/hash changes and later
+installed generations are not covered by this historical single-phase case.
+Earlier failed cases remain retired failures; none is revived by this result.

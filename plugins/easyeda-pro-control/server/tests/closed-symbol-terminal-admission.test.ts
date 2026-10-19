@@ -24,11 +24,12 @@ before(async () => {
   const agedUrl = new URL("../src/closed-symbol-aged-terminal-admission-cache.ts", import.meta.url);
   const abandonmentUrl = new URL("../src/closed-symbol-abandonment.ts", import.meta.url);
   const runtimeUrl = new URL("../src/machine-profile.ts", import.meta.url);
+  const leaseUrl = new URL("../src/current-process-sql-runtime-lease.ts", import.meta.url);
   const syntheticUrl = new URL("helpers/closed-symbol-terminal-admission-unit-fixture.ts", import.meta.url);
   const adapterUrl = new URL("../src/closed-symbol-terminal-admission.ts", import.meta.url);
   const hooks = registerHooks({ resolve(specifier, context, nextResolve) {
     const resolved = nextResolve(specifier, context);
-    if (context.parentURL === adapterUrl.href && (resolved.url === inspectorUrl.href || resolved.url === agedUrl.href || resolved.url === runtimeUrl.href || resolved.url === abandonmentUrl.href)) {
+    if (context.parentURL === adapterUrl.href && (resolved.url === inspectorUrl.href || resolved.url === agedUrl.href || resolved.url === runtimeUrl.href || resolved.url === leaseUrl.href || resolved.url === abandonmentUrl.href)) {
       return { url: syntheticUrl.href, shortCircuit: true };
     }
     return resolved;
@@ -152,6 +153,41 @@ void test("valid fixed inspector result is omitted from both adapters but is ins
   assert.equal(await selected(operationId), undefined);
   assert.equal(unitState.inspected.filter((value) => value === operationId).length, 3);
   assert.equal(unitState.runtimeCalls, runtimeBefore + 3);
+});
+
+void test("locked and aged candidates share only their own scan's original runtime lease", async () => {
+  const aged = await journal({}, true, "easyeda-pro-control.closed-symbol-terminal.v2"), locked = await journal({}, true);
+  const calls = unitState.runtimeCalls, closes = unitState.leaseCloses;
+  await states();
+  const first = unitState.leases.at(-1); assert.ok(first);
+  const lockedInput = unitState.lockedInputs.findLast(entry => typeof entry.candidate === "object" && entry.candidate !== null && "operationId" in entry.candidate && entry.candidate.operationId === locked);
+  const agedInput = unitState.agedInputs.findLast(entry => typeof entry.candidate === "object" && entry.candidate !== null && "operationId" in entry.candidate && entry.candidate.operationId === aged);
+  assert.equal(lockedInput?.lease, first); assert.equal(agedInput?.lease, first);
+  assert.equal(lockedInput.runtime, first.runtime); assert.equal(agedInput.runtime, first.runtime);
+  assert.equal(unitState.runtimeCalls, calls + 1); assert.equal(unitState.leaseCloses, closes + 1);
+  await states(); assert.notEqual(unitState.leases.at(-1), first);
+  assert.equal(unitState.runtimeCalls, calls + 2); assert.equal(unitState.leaseCloses, closes + 2);
+});
+void test("scan lease final failure cannot publish cleared entries or reacquire in the same scan", async () => {
+  const failure = new Error("Synthetic required lease cleanup failure");
+  const calls = unitState.runtimeCalls, closes = unitState.leaseCloses;
+  unitState.leaseFinalFailure = failure;
+  try { await assert.rejects(states(), error => error === failure); }
+  finally { unitState.leaseFinalFailure = undefined; }
+  assert.equal(unitState.runtimeCalls, calls + 1); assert.equal(unitState.leaseCloses, closes + 1);
+  await states(); assert.equal(unitState.runtimeCalls, calls + 2);
+});
+void test("poisoned lease stops the scan before another candidate or reacquisition", async () => {
+  const first = await journal({}, true), later = await journal({}, true);
+  const calls = unitState.runtimeCalls, closes = unitState.leaseCloses;
+  const laterCalls = unitState.inspected.filter(operationId => operationId === later).length;
+  unitState.before.set(first, () => {
+    unitState.leasePoisoned = true; return Promise.reject(new MachineProfileError("synthetic-node-drift"));
+  });
+  try { await assert.rejects(states(), /synthetic-lease-not-current/u); }
+  finally { unitState.leasePoisoned = false; unitState.before.delete(first); }
+  assert.equal(unitState.inspected.filter(operationId => operationId === later).length, laterCalls);
+  assert.equal(unitState.runtimeCalls, calls + 1); assert.equal(unitState.leaseCloses, closes + 1);
 });
 for (const [field, value] of [
   ["profile", "wrong"], ["operationId", "easyeda-other-operation"], ["classification", "evidence-only"],

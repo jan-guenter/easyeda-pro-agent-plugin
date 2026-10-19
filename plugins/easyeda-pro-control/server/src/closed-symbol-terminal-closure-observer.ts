@@ -1,4 +1,5 @@
 /** Bounded private byte/identity observation; never an admission cache or authority issuer. */
+/* oxlint-disable import/max-dependencies -- Explicit scan-owner borrowing joins the existing fixed evidence/runtime boundaries; hiding either dependency would obscure ownership. */
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import type { BigIntStats } from "node:fs";
@@ -9,6 +10,9 @@ import { performance } from "node:perf_hooks";
 import { controlRootCapability } from "./artifacts.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentProcessSqlRuntime, openVerifiedMachineNode } from "./machine-profile.ts";
+import type { VerifiedMachineNode } from "./machine-profile.ts";
+import { assertCurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
+import type { CurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
 import { CLOSURE_LIMITS, ClosureEvidenceChangedError, ClosureIneligibleError, deriveClosedSymbolTerminalClosure, ownBoundedData, requireEvidence } from "./closed-symbol-terminal-closure-plan.ts";
 import type { ClosurePlan, ClosureRole } from "./closed-symbol-terminal-closure-plan.ts";
 import type { AgedClosurePlan } from "./closed-symbol-aged-terminal-closure-plan.ts";
@@ -86,7 +90,7 @@ async function manifestDirectory(parent: string): Promise<RetainedDirectory> {
   catch (error) { await handle.close(); throw error; }
 }
 
-async function observe(input: unknown, profile: "locked" | "aged" = "locked"): Promise<ClosureObservation> {
+async function observe(input: unknown, profile: "locked" | "aged" = "locked", lease?: CurrentProcessSqlRuntimeLease): Promise<ClosureObservation> {
   const started = performance.now();
   let plan: ClosurePlan | AgedClosurePlan;
   if (profile === "aged") {
@@ -97,8 +101,13 @@ async function observe(input: unknown, profile: "locked" | "aged" = "locked"): P
   } else { plan = deriveClosedSymbolTerminalClosure(input); }
   const deadline = (): void => { if (performance.now() - started > CLOSURE_LIMITS.deadlineMs) { throw new ClosureIneligibleError("closure-elapsed-deadline"); } };
   deadline();
-  const runtime = await currentProcessSqlRuntime(); deadline(); same(runtime, plan.runtime, "current-runtime");
-  const node = await openVerifiedMachineNode(runtime);
+  let node: VerifiedMachineNode | undefined;
+  if (lease === undefined) {
+    const runtime = await currentProcessSqlRuntime(); deadline(); same(runtime, plan.runtime, "current-runtime");
+    node = await openVerifiedMachineNode(runtime);
+  } else {
+    await assertCurrentProcessSqlRuntimeLease(lease); deadline(); same(lease.runtime, plan.runtime, "current-runtime");
+  }
   const directories: RetainedDirectory[] = [], files: RetainedFile[] = [];
   let failed = false;
   let originalFailure: unknown;
@@ -185,7 +194,9 @@ async function observe(input: unknown, profile: "locked" | "aged" = "locked"): P
       } else { requireEvidence(await realpath(directory.path) === directory.path, "closure-manifest-parent-changed"); }
     }
     await root.assertCurrent(); same(directoryIdentity(await root.handle.stat({ bigint: true })), rootIdentity, "root");
-    await node.assertCurrent(); deadline();
+    if (lease === undefined) { requireEvidence(node !== undefined, "closure-node-owner-missing"); await node.assertCurrent(); }
+    else { await assertCurrentProcessSqlRuntimeLease(lease); }
+    deadline();
     const result = { profile: "private.closed-terminal-closure-observation.v1" as const, plan, root: rootIdentity,
       directories: Object.freeze(directories.map((entry) => Object.freeze({ path: entry.path, identity: entry.identity }))),
       files: Object.freeze(fileMetadata.map((entry) => Object.freeze(entry))), absentSidecars: Object.freeze(absentSidecars.map((entry) => Object.freeze(entry))), observedBytes,
@@ -195,7 +206,8 @@ async function observe(input: unknown, profile: "locked" | "aged" = "locked"): P
   } catch (error) { failed = true; originalFailure = error; throw error; }
   finally {
     // Attempt every close, retaining any already-observed refusal unchanged.
-    const results = await Promise.allSettled([...files.map((entry) => entry.handle.close()), ...directories.map((entry) => entry.handle.close()), node.close()]);
+    const results = await Promise.allSettled([...files.map((entry) => entry.handle.close()), ...directories.map((entry) => entry.handle.close()),
+      ...(node === undefined ? [] : [node.close()])]);
     const failures = results.filter((entry) => entry.status === "rejected").map((entry) => entry.reason as unknown);
     // oxlint-disable-next-line eslint/no-unsafe-finally -- A failed close is not a cache-eligibility condition; preserve both failures without overriding a known evidence contradiction.
     if (failures.length > 0 && originalFailure instanceof ClosureIneligibleError) { throw new AggregateError([originalFailure, ...failures], "closure-ineligible-cleanup"); }
@@ -206,15 +218,15 @@ async function observe(input: unknown, profile: "locked" | "aged" = "locked"): P
     }
   }
 }
-export function observeClosedSymbolTerminalClosure(input: unknown): Promise<ClosureObservation> { return observe(input); }
-export async function revalidateClosedSymbolTerminalClosure(input: unknown, previous: unknown): Promise<ClosureObservation> {
+export function observeClosedSymbolTerminalClosure(input: unknown, lease?: CurrentProcessSqlRuntimeLease): Promise<ClosureObservation> { return observe(input, "locked", lease); }
+export async function revalidateClosedSymbolTerminalClosure(input: unknown, previous: unknown, lease?: CurrentProcessSqlRuntimeLease): Promise<ClosureObservation> {
   const retained = ownBoundedData(previous);
-  const current = await observe(input);
+  const current = await observe(input, "locked", lease);
   same(current, retained, "previous-observation"); return current;
 }
-export function observeClosedSymbolAgedTerminalClosure(input: unknown): Promise<ClosureObservation> { return observe(input, "aged"); }
-export async function revalidateClosedSymbolAgedTerminalClosure(input: unknown, previous: unknown): Promise<ClosureObservation> {
+export function observeClosedSymbolAgedTerminalClosure(input: unknown, lease?: CurrentProcessSqlRuntimeLease): Promise<ClosureObservation> { return observe(input, "aged", lease); }
+export async function revalidateClosedSymbolAgedTerminalClosure(input: unknown, previous: unknown, lease?: CurrentProcessSqlRuntimeLease): Promise<ClosureObservation> {
   const retained = ownBoundedData(previous);
-  const current = await observe(input, "aged");
+  const current = await observe(input, "aged", lease);
   same(current, retained, "previous-observation"); return current;
 }

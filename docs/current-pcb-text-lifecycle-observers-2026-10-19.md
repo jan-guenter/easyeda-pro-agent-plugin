@@ -172,3 +172,97 @@ not establish that every integration is impossible. The batch adds these
 findings only: no debugger activation, transport expansion, inert observer
 module, writer registration or guard relaxation. No tests were needed for this
 documentation-only change.
+
+## Private diagnostic-pipe groundwork after delivery143713
+
+The next source-only batch adds a byte transport, not another supplied-data PCB
+snapshot. `current-pcb-diagnostic-pipe.ts` implements Chromium's NUL-terminated
+JSON framing over two existing Node streams. Its only requests are fixed
+`Browser.getVersion` and `Target.getTargets` calls. There is no runtime import,
+MCP registration, generic send, JavaScript evaluation, target attachment,
+breakpoint, pause, resume, socket, process launch or CAD command.
+
+The transport reserves one request before writing, uses monotonic request IDs,
+and requires both the matching response and successful original write callback.
+It rejects duplicate or conflicting replies, unexpected sessions/events,
+duplicate JSON keys, non-finite numbers, malformed UTF-8, oversized frames and deep JSON. Limits
+are 1 MiB per frame, 8 MiB received per transport, 32 requests and 5 seconds per
+request. Timeout is a terminal protocol failure, not cancellation or permission
+to resend. Unknown result fields remain intact. Results have no semantic target
+or script admission, and `nativeOwnerVerified` remains false.
+
+Seventeen focused tests use actual Node byte streams with a synthetic peer. They
+cover fragmented multibyte input, coalesced duplicates, partial unsolicited
+input, delayed and failed write callbacks, deadlines, bounds and retained
+listeners. Strict type-aware lint and TypeScript checks pass. No EasyEDA or
+Windows diagnostic connection was opened. These tests establish the byte
+transport behavior only, not the native helper or installed application's
+support for the selected protocol.
+
+### Feasible launch-time transport
+
+The installed runtime metadata pins Electron `41.2.1-jlc-sa-win-x64.5` and
+Chromium `146.0.7680.188`. Upstream Electron `v41.2.1` selects the Chromium pipe
+handler when launched with `--remote-debugging-pipe`. Its separate port branch
+is not used. This gives a concrete candidate without exposing an HTTP debugger
+endpoint. The custom JLC build still requires its own controlled qualification;
+matching embedded version numbers do not prove identical native behavior.
+[Electron v41.2.1 startup implementation](https://github.com/electron/electron/blob/v41.2.1/shell/browser/electron_browser_main_parts.cc#L439-L452),
+[upstream dependency versions](https://github.com/electron/electron/blob/v41.2.1/DEPS#L2-L6).
+
+On Windows, the matching Chromium source reads two inherited anonymous pipe
+handles from `--remote-debugging-io-pipes=<read>,<write>`. It requires unsigned
+32-bit handle encodings and validates each handle as a pipe before adopting it.
+Its default pipe protocol is NUL-terminated JSON; CBOR is a separate explicit
+mode. These are the source contracts used by the new byte transport, not an
+argument-format change to the ordinary launcher.
+[Chromium handle adoption](https://github.com/chromium/chromium/blob/146.0.7680.188/content/browser/devtools/devtools_agent_host_impl.cc#L79-L123),
+[Chromium pipe framing](https://github.com/chromium/chromium/blob/146.0.7680.188/content/browser/devtools/devtools_pipe_handler.cc).
+
+Pipe lifetime is part of application lifetime. Electron's disconnect callback
+posts a `Browser::Quit` request. Therefore the new transport never calls
+`end`, `destroy`, `close`, `unref` or any process signal, including on timeout,
+malformed replies or write failure. It continues owning its original listeners
+after failure; it removes only those listeners after both original streams have
+actually emitted `close`. That is transport cleanup, not proof that EasyEDA or
+its Job terminated. A future native owner must keep its pipe handles alive
+until its separately reviewed normal-close policy permits release.
+[Electron disconnect callback](https://github.com/electron/electron/blob/v41.2.1/shell/browser/electron_browser_main_parts.cc#L440-L447).
+
+### Remaining integration, in order
+
+1. Add a separate retained Windows diagnostic launch owner. The existing
+   ordinary `windows-authority.ps1` launcher passes no arguments, sets
+   `inheritHandles=false`, and installs only `PROC_THREAD_ATTRIBUTE_JOB_LIST`.
+   Do not change its no-flags contract silently. The diagnostic owner needs
+   two anonymous pipes, non-inheritable parent ends, exactly the two browser
+   ends in `PROC_THREAD_ATTRIBUTE_HANDLE_LIST`, and the existing non-breakaway
+   Job relation. The native helper must validate actual handles and retain
+   them before fallible work. Handle strings are not process authority.
+   [Microsoft handle-list requirements](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute).
+2. Add bounded binary transfer between that original helper and facade. Do not
+   connect to a discovered TCP endpoint, accept caller pipe handles, adopt a
+   historical PID or close the pipe when an individual request times out.
+   Failure must retain the original launch and normal-close path, including
+   Save/Discard prompts. Helper EOF also needs explicit treatment because
+   closing its handles can ask Electron to quit.
+3. Qualify the custom installed runtime with a disposable, project-free
+   diagnostic launch. Bind the initial browser reply to the original helper,
+   process handle and non-breakaway Job. A version string alone is insufficient.
+   Verify normal closure and absence of an exposed debugger socket separately.
+4. Add exact original target/session, frame and worker ownership, script-byte
+   admission and execution-context invalidation. `Target.getTargets` is only
+   discovery. It does not establish which worker owns the project, and some
+   ordinary PCB iframes may share a page target. Attachment and any debugger
+   enablement require owned detach and pause/resume handling before use.
+5. Implement fixed native reads for the compiler, complete model holders,
+   loaded footprint compilers, pending producer state and project worker.
+   Refuse optimized-away or inaccessible bindings. No arbitrary expressions,
+   DevTools UI clicks, patched vendor closures or matching caller snapshots.
+   Keep the complete eligibility interval, one-shot create, full SQL effect
+   and saved/reopened verification as separate requirements.
+
+This establishes a concrete transport direction and its first tested component.
+It does not remove the complete pre-create observer blocker, grant a diagnostic
+launch capability or enable the PCB text writer. Existing compatibility pins,
+ordinary launch behavior and installed runtime bytes are unchanged.

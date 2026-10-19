@@ -18,11 +18,28 @@ export const currentSchematicRenameOperationStepSchema = z.discriminatedUnion("e
 ]);
 export type CurrentSchematicRenameOperationStep = z.infer<typeof currentSchematicRenameOperationStepSchema>;
 export type CurrentSchematicRenameOperationPhase = CurrentSchematicRenameOperationStep["expectedPhase"];
+/** Nominal edges only. Runtime observations may instead remain pending or stop. */
+export const CURRENT_SCHEMATIC_RENAME_NEXT_PHASES: Readonly<Partial<Record<CurrentSchematicRenameOperationPhase, CurrentSchematicRenameOperationPhase>>> = Object.freeze({
+  "baseline-close": "baseline-observe-termination", "baseline-observe-termination": "baseline-prepare-clock",
+  "baseline-prepare-clock": "baseline-relaunch", "baseline-relaunch": "baseline-admit", "baseline-admit": "baseline-observe-caches",
+  "baseline-observe-caches": "baseline-open-project", "baseline-open-project": "baseline-observe-clock", "baseline-observe-clock": "rename-write",
+  "rename-write": "rename-close", "rename-close": "rename-observe-termination", "rename-observe-termination": "verification-start",
+  "verification-start": "verification-admit", "verification-admit": "verification-caches", "verification-caches": "verification-open",
+  "verification-open": "verification-read", "verification-read": "verification-close", "verification-close": "verification-finish",
+  "cleanup-capture": "cleanup-close", "cleanup-close": "cleanup-observe-termination",
+});
+const batchSteps = z.array(currentSchematicRenameOperationStepSchema).min(2).max(4).refine(steps => steps.every((step, index) => {
+  if (step.expectedPhase.startsWith("cleanup-")) { return false; }
+  const previous = steps[index - 1];
+  return previous === undefined || previous.expectedPhase !== "baseline-prepare-clock" &&
+    CURRENT_SCHEMATIC_RENAME_NEXT_PHASES[previous.expectedPhase] === step.expectedPhase;
+}), "A batch needs adjacent forward phases and cannot cross the separate original-launch termination record or include cleanup.");
 export const currentSchematicRenameOperationRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("baseline-begin"), operationId, openingOperationId: operationId,
     target: currentSchematicRenameOwnerRequestSchema.shape.target, desiredTitle: currentSchematicRenameOwnerRequestSchema.shape.desiredTitle,
     confirmDisposableProject: z.literal(true), acceptSchematicRename: z.literal(true) }).strict(),
   z.object({ action: z.literal("advance"), operationId, step: currentSchematicRenameOperationStepSchema }).strict(),
+  z.object({ action: z.literal("advance-batch"), operationId, steps: batchSteps }).strict(),
   z.object({ action: z.literal("cleanup"), operationId, confirmAbort: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId }).strict(),
 ]).refine(value => value.action !== "baseline-begin" || value.operationId !== value.openingOperationId,
@@ -33,9 +50,11 @@ export function queryCurrentSchematicRenameOperation(input: unknown = {}): Recor
   const query = currentSchematicRenameOperationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_disposable_schematic_rename", purpose: CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE,
     registrationEnabled: true, invocationEnabledByDiscovery: false, executionAuthorized: false, connectedValidation: false,
-    historicalConnectedValidation: "not-recorded", ordinaryProjectsSupported: false,
+    historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle", ordinaryProjectsSupported: false,
     forwardOnly: true, inverseSupported: false, replayAllowed: false, explicitSaveDispatched: false,
-    actions: ["baseline-begin", "advance", "cleanup", "inspect"],
+    actions: ["baseline-begin", "advance", "advance-batch", "cleanup", "inspect"],
+    batch: { minimumSteps: 2, maximumSteps: 4, explicitStepsOnly: true, stopOnPending: true, automaticRetry: false,
+      cleanupStepsAllowed: false, separateLaunchTerminationBoundary: "baseline-prepare-clock -> baseline-relaunch" },
     limitations: [
       "Begin only from this facade's retained disposable easyeda_control_project_open opening. That opener's selected PCB binds the project path; a separate existing SCH container and its owner must match the complete closed SQL baseline. No ordinary project, replacement runtime, supplied clock, executable code or verifier is accepted.",
       "Rename exactly one ordinary project-local schematic container with the pinned project-qualified schematic updateData path. Child sheets, all other containers and every unrelated SQL cell must remain unchanged. Stable ordinary child-derived container clocks are projected from complete history separately from direct SCH headers; the new document time must exceed both. Imported SCH/page containers, reuse/block-symbol branches, child reparenting, ambiguous equal-time versions and generic dmt_Schematic.modifySchematicName enablement are excluded. Locally stored ordinary symbol templates may retain canonical library-origin metadata, with unchanged local PART/startup guards and no origin fetch. Stored child-sheet docType must be absent, independently of native getter type 1. Unchanged child titles require an exact native ASCII-fold match; dotless-I output refuses. Writable container titles are trimmed printable ASCII without capital I; case-only renames and collisions refuse. The original normalized name must be unique for the saved absence query.",
@@ -44,11 +63,12 @@ export function queryCurrentSchematicRenameOperation(input: unknown = {}): Recor
       "The aged unlocked-head clock reference runs only once while the original baseline remains closed. baseline-observe-clock retains one startup/metadata sample and renderer clock. No supplied observations can manufacture authority.",
       "Retained inspection exposes at most one current and one last phase diagnostic: action, phase, performing/cleanup-selection stage and monotonic elapsed or duration with outcome. Busy plus nextPhase stopped reserves ongoing work; await the original call. These in-memory diagnostics are not writer clocks, cancellation, journal evidence or replay authority and disappear after restart.",
       "Every advance names and acknowledges the exact next phase. Lost responses never permit navigation, write, close or scratch-process replay. Normal observation polls repeat only when explicitly pending; separately offered cleanup phases can continue from partial retained evidence without replaying consumed work. Inspection reports retained originals; journals do not restore continuation after a facade restart.",
+      "advance-batch accepts two to four explicitly ordered adjacent existing steps with every acknowledgment. The entire array validates before dispatch. The coordinator keeps its lock across those steps, rechecks the returned next phase before each, and stops at the first failure or pending observation without polling or inferring another step. It never dispatches cleanup. A batch cannot cross baseline-prepare-clock to baseline-relaunch, which requires a separate original launch termination record. lastBatch retains bounded in-memory requested phases and attempted/completed counts; it is not a replay token. Inspect a lost reply, never resubmit the whole batch.",
       "Opening and normal closure may migrate or automatically persist files. The fixed write makes one title update and awaits its native response; that response alone is not saved completion. No explicit Save, Save/Discard choice, force exit, delete, inverse or restoration is dispatched.",
       "Completion requires the native acknowledgment, original process/Job closure, exact title-only full SQL effect, cache-excluded fresh reopening, matching container metadata, all schematic peers and the complete child roster with both AST memberships and order, then final normal closure and complete SQL equality. Native reopened verification is metadata/roster-only, not a sheet canvas or connectivity read.",
       "Cleanup permanently abandons continuation and selects only a retained original-owner close/termination/closed-retirement phase. Uncertain ownership or consumed unacknowledged actions remain stopped; no recovery bypass is provided.",
       "The delayed schematic subscriber need not have run before normal closure. Original root exit plus an empty retained Job ends the reviewed contained producers; the subsequent exact stored effect decides whether they persisted the intended result. Subscriber completion itself remains unproved. A missing effect or unexpected actor fails without another mutation or Save.",
-      "No connected schematic rename lifecycle has been recorded. Synthetic control-flow and SQL tests do not establish live execution, ordinary-project safety or saved canvas/connectivity coverage.",
+      "Installed143713 passed one original-owner disposable schematic-title lifecycle: exact complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster verification and final normal closure with unchanged SQL. That case used single-phase calls; advance-batch and later generations remain unvalidated live. Historical evidence grants no current invocation authority, ordinary-project safety or saved canvas/connectivity coverage.",
     ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentSchematicRenameOperationRequestSchema),
       stepSchema: z.toJSONSchema(currentSchematicRenameOperationStepSchema) } : {}) };
 }

@@ -212,7 +212,7 @@ void describe("self-contained packaged machine startup", () => {
     assert.equal(historyRequest["valid"], true); assert.equal(historyRequest["executionAuthorized"], false);
     const schematicRename = await api(client, { action: "disposable-schematic-rename", query: { includeSchemas: true } });
     assert.equal(schematicRename["tool"], "easyeda_control_disposable_schematic_rename");
-    assert.equal(schematicRename["historicalConnectedValidation"], "not-recorded");
+    assert.equal(schematicRename["historicalConnectedValidation"], "installed143713-disposable-schematic-title-only-lifecycle");
     assert.ok(isObjectRecord(schematicRename["inputSchema"]));
     for (const key of ["executionAuthorized", "invocationEnabledByDiscovery", "connectedValidation", "ordinaryProjectsSupported"]) {
       assert.equal(schematicRename[key], false);

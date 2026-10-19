@@ -90,4 +90,21 @@ source/fingerprint changes, quarantine, timeout without retry, strict DTOs and
 authority rejection. Runtime tests register cleanup for each newly created
 private fixture before setup continues. Both TypeScript projects and targeted
 type-aware lint pass with zero warnings. No live application call or production
-design access was performed. Connected validation remains unrecorded.
+design access was performed during that source/offline checkpoint.
+
+## Installed143713 connected observation
+
+Installed `0.3.0+codex.20261019143713` subsequently passed
+`eda.dmt_Board.getAllBoardsInfo` on a disposable project containing one board,
+then `eda.dmt_Board.getBoardInfo` for that same observed UUID. The selected
+result matched the complete map and exact native getter. Both calls retained
+two matching complete samples, passed runtime admission before and after
+dispatch, and ran with no editors, mutation or explicit Save.
+
+This is positive evidence for a populated selected-board lookup and its full
+inventory, not merely an empty-map result. Empty-board inventory behavior
+remains covered by synthetic tests, not this connected case. Public name
+selection, child relationships, saved membership, worker ownership and
+later-generation admission remain unproved. The general `liveValidation`
+fields stay `not-recorded`; the version-specific result and observation hashes
+are in the [connected validation ledger](api-connected-validation-ledger.md#generation-g20261019-143713-page-and-board-metadata).

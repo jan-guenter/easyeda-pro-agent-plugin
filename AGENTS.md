@@ -4,6 +4,110 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+143713 live continuation, 2026-10-19. Root/independent actual facade12516/
+start39944216, parent10763/start39938677, installed1531/42/31,319,304 bytes
+and all source504/runtime3/manifest pins match delivered143713 below.
+Ordinary launch `sch-rename-143713-20261019-launch` COMPLETED functions15:
+root50468/Jobd63841f79c494b67843553b144d903a1/helperf3046dab971e44969096bbbd9ebe3dd9,
+launched08f2ebc9. Status17 authenticated dispatcher ded07x99dcxb504 with no
+incomplete operations/drift. Context19 proved start-page with no project. Open24
+COMPLETED `sch-rename-143713-20261019-open`, exact fixture PCB active and
+preparation checkpoint581632/aec8d006; no persistence/writer inference.
+SCH begin29 and close/termination36 COMPLETED `sch-rename-143713-20261019-case`:
+baseline captured, original root/Job exit proved; baseline phase288999ms.
+Original ordinary-launch termination51 and scratch preparation51 COMPLETED;
+scratch232513ms, reference retained. Relaunch65 COMPLETED490255ms, firstadmit
+returned explicitly pending. Follow-up80 COMPLETEDadmit31214ms/cache66750ms/
+project-only-open65581ms, generation issued. No replay of scratch/launch/open.
+Cells85/89 COMPLETED all/selected page and board metadata reads: two pages in
+one SCH and one populated board, two matching samples each, runtime admission
+before/after, no mutation/explicitSave. Selected page/board match complete maps;
+metadata-only, not persistence authority. Private identities stay in evidence.
+Cell93 COMPLETED clock54982ms/write88714ms/close15893ms. Native acknowledgment
+confirms the intended SCH title-only update, ticket780;
+normal close acknowledged. Never replay write/close. Cell101 COMPLETED original
+root/Job termination and exact full SQL intended effect:20documents, all55old
+rows/59oldchunks preserved, one new SCHhistory; SQLafter1d270e35. Verification
+launch acknowledged, initial admission explicitly pending. Cell105 COMPLETED
+admit/cache/open/read/close/finish: saved metadata/peers/complete child roster/
+both ASTs and final SQL equality pass. nextPhasecompleted/renameVerifiedtrue,
+busyfalse/retired/no failure; EasyEDA closed, never replay. Independent full
+journal+54artifacts/3rawcopies/checkpoints/closureproof audit passed. Journal
+5455efa7, terminal8cc4c35c, finalraw750e4f95/598016, checkpoint7e0bc38f/581632,
+no sidecars. Artifact54 is pre-retirement intent; terminal reply settles flags.
+Last baseline source598016/e4434cc5; no production access or explicitSave.
+Evidence `/root/.cache/easyeda-143713-schematic-live-NbXybE8D`.
+Source-only PCB diagnostic-pipe transport and explicit SCH phase batching are
+implemented in parallel. SCH batching19focusedtests/types/lint/skill validation
+and independent review pass; PCB transport17focusedtests/types/lint and
+independent review pass. Root updated the shared batch tool description.
+Three hashers use1MiB read buffers without dropping freshness checks;
+65existingfocusedtests/lint and independent review passed the stream variant.
+A private scan-owned current-Node lease is implemented/root+independent accepted;
+fresh per-observation/final assertions, poisoned-scan abort, complete original
+cleanup and independent SQL children remain. Repeated descriptor use exposed
+retained stream listeners; nodeDescriptorHash now uses bounded positional reads.
+49runtime/lease,73scanner,10selectedcache,3actualclosuretests/fulltypes/strictlint
+pass. The earlier stream microbenchmark is not evidence for this changed
+implementation or live lifecycle savings. Candidate163322 source frozen;
+build45409 and compatibility check pass. Source506/c8842080,
+runtime3/5f90f560, manifestad8720b7; external pins unchangeda1faf216. Full verify
+running session22023, log in private release-check directory. Repository/all7
+quick validators running93514. Not published or installed. Fresh dormant
+offline probe `/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`
+has root/independent template review only; unfilled pins/approvalfalse, NEVER
+execute before final exact-main/cache/version/hash review. Source/bundles/pins
+frozen during suites; root admits no further live work after upgrading.
+Dependency reinstall/tree/vulnerability checks passed; signatures first failed
+because /tmp is full. With private TMPDIR
+`/root/.cache/easyeda-143713-release-checks-J4S4XcoW`, all151 registry signatures
+and40 attestations passed. Use private cache temp space for remaining suites;
+do not broadly clean /tmp or discard existing evidence.
+The live lifecycle is terminal; build/release may proceed, installed cache stays
+untouched until official upgrade. MainCI39277119967 now reports completed/
+success; all shard/build jobs and final gate steps passed. MainWindows39277119974
+passed. Older current/pending wording below is historical.
+
+Delivered143713, 2026-10-19. PR79 final payload
+`57fa2449236ea632910906830d0533d0fdb8a204` merged normally as main
+`f1fc00d1047045a514da9f464049efa59639bcd1`; complete trees are identical.
+Final PR LinuxCI39274287628 and WindowsCI39274287643 passed:11572facade passes,
+5skips/0failures;424bridge passes; strict type-aware/bridge lint0warnings/errors.
+Official validators were unavailable on hosted CI; mandatory repository checks
+passed, and all7local skill checks passed. MainCI39277119967 is still running
+(build passed); mainWindows39277119974 passed. Do not imply main Linux finished.
+Official named Git-marketplace upgrade91241 completed without errors; CLI lists
+`0.3.0+codex.20261019143713` installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, marketplaceHEADmain.
+Exact installed comparison11943 passes1531files/42directories/31,319,304bytes,
+including modes; inventoryd5289f16, plugintreecfbe0b7e. Source504/8e5c7352,
+runtime3/f3c99535/manifest9f8d5e7b, external
+pinsunchangeda1faf216. Exact-main worktree is
+`/root/.cache/easyeda-143713-merged-main-jodVaaCx/worktree`.
+Root/independent final probe review acceptedc00d8b46/pins3e851c80. Sole offline
+probe59338 COMPLETEDexit0: configured ambientNode26 handed to pinnedNode24,
+23restricted/48configured tools,38offline queries passed. Originalchild6383
+EOFexit/close0, no remaining handles, stderr0. No upstream marker/children/socket
+at both sampled checkpoints; no continuous isolation or live CAD claim.
+All3full installed inventories unchanged. Proof44525dff and responsesd1602580 in
+`/root/.cache/easyeda-page-board-offline-probe-7e85NB2a`; consumed, NEVER rerun.
+Release/CI evidence in `/root/.cache/easyeda-page-board-release-v7H02UGJ`.
+Current chat still holds125900; no live calls after upgrade, no host termination
+or cache patch. Fresh session must admit actual143713 before further live work.
+EasyEDA is closed; previous case retired unchanged, no rename/explicitSave.
+Next: check mainCI; admit143713; start EasyEDA ourselves and use a NEW disposable
+SCHrename case with corrected actor model, then validate page/board metadata.
+Read returned lifecycle phases and close promptly after acknowledged rename;
+do not spend the bounded clock window on optional artifact inspection. No clock
+window relaxation or replay. Populated Image/Dimension validation, complete PCB
+text observers/writer/persistence, broader geometry/library/routing/rules/ECO/
+manufacturing and packaging/platform coverage remain backlog. See the current
+batch report. The production project and its project record remain excluded.
+Local continuation branch `feature/143713-live-continuation` retains only the
+post-installation handoff documentation beyond main; packaged payload unchanged.
+
+### Completed125900 case and pre-release evidence (historical)
+
 125900 actual-host continuation, 2026-10-19. New branch
 `feature/schematic-live-pcb-observers`. Root/independent admit actualfacade4070374/
 start39263289, parent4068702/start39258196, exact installed125900 cwd/argv/Node24,
@@ -66,11 +170,10 @@ all7 failures are the corrected count/sort assertions,17focused replacements pas
 Final protected CI will run the complete corrected payload. Bridge424, repository/
 privacy/package, all7skill checks and final compatibility check64305 pass.
 Release evidence `/root/.cache/easyeda-page-board-release-v7H02UGJ`.
-NEW offline probe PREPARED ONLY, placeholders/dispatchApprovedfalse:
+The offline probe was initially prepared with placeholders/dispatchApprovedfalse:
 `/root/.cache/easyeda-page-board-offline-probe-7e85NB2a/probe.mjs`.
-Do not run before final pins and complete root/independent review. Prior consumed
-probes remain consumed; never import or rerun. Final CI/publication/install pending.
-Production excluded. Entries below are historical.
+Final review, sole execution, CI, publication and installation are recorded above.
+All consumed probes remain consumed; never import or rerun. Production excluded.
 
 Prior delivery and continuation records are preserved in
 [engineering-record-2026-10-17-181500-through-2026-10-19-125900.md](docs/history/engineering-record-2026-10-17-181500-through-2026-10-19-125900.md).

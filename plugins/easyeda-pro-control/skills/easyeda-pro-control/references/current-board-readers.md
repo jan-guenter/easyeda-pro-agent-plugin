@@ -43,4 +43,10 @@ No canvas/source loading, cloud lookup, name lookup, clock/client query,
 navigation, mutation or Save is performed. Complete observed maps do not prove
 saved membership, persistent state, worker ownership, startup completion or
 permission to rename. These methods are source-reviewed and offline-tested;
-connected validation remains pending on the installed generation.
+installed `0.3.0+codex.20261019143713` also passed both routes on a disposable
+project containing one board. The selected UUID matched the full inventory and
+direct getter, with two matching samples and runtime admission before and after
+each call. This validates a populated selected-board case, not an empty-map
+case, public name selection, saved membership or a later generation. No editor,
+mutation or explicit Save was involved. The general discovery `liveValidation`
+flag remains conservative; the historical result is not execution authority.

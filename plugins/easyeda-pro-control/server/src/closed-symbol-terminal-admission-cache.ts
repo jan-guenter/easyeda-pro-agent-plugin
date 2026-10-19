@@ -8,6 +8,7 @@ import { TERMINAL_STATE, parseClosedSymbolTerminalArtifact, parseClosedSymbolTer
 import type { HistoricalTerminalInspection } from "./closed-symbol-terminal.ts";
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import { machineProfileSchema } from "./machine-profile.ts";
+import type { CurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
 import { captureClosedSymbolJournalBytes } from "./closed-symbol-terminal-closure-journal.ts";
 import { observeClosedSymbolTerminalClosure, revalidateClosedSymbolTerminalClosure } from "./closed-symbol-terminal-closure-observer.ts";
 import type { ClosureObservation } from "./closed-symbol-terminal-closure-observer.ts";
@@ -63,7 +64,7 @@ function same(actual: unknown, expected: unknown, label: string): void { require
 
 /** Candidate hashes select only. A resident exists solely after this module's
  * fixed complete cold replay and unchanged-byte observation. No setter exists. */
-export async function inspectLockedTerminalForAdmission(candidateInput: unknown, runtimeInput: unknown): Promise<HistoricalTerminalInspection> {
+export async function inspectLockedTerminalForAdmission(candidateInput: unknown, runtimeInput: unknown, lease?: CurrentProcessSqlRuntimeLease): Promise<HistoricalTerminalInspection> {
   const rootPath = resolve(controlDataDirectory());
   const candidateOwn = ownBoundedData(candidateInput), runtimeOwn = ownBoundedData(runtimeInput);
   const candidate = candidateData(candidateOwn);
@@ -111,7 +112,7 @@ export async function inspectLockedTerminalForAdmission(candidateInput: unknown,
   const selected = entries.get(slot);
   if (selected !== undefined && selected.key === key) {
     try {
-      await finalChecked(() => revalidateClosedSymbolTerminalClosure(selected.input, selected.observation));
+      await finalChecked(() => revalidateClosedSymbolTerminalClosure(selected.input, selected.observation, lease));
       const end = performance.now();
       if (end < selected.enrolledAt || end - selected.enrolledAt >= LIFETIME_MS) { throw new ClosureIneligibleError("cache-hit-expired"); }
       scope();
@@ -142,7 +143,7 @@ export async function inspectLockedTerminalForAdmission(candidateInput: unknown,
   const result = historicalData(returned, candidate, envelope.bodySha256);
   if (input === undefined) { scope(); return result; }
   let observation: ClosureObservation;
-  try { observation = await finalChecked(() => observeClosedSymbolTerminalClosure(input)); }
+  try { observation = await finalChecked(() => observeClosedSymbolTerminalClosure(input, lease)); }
   catch (error) {
     if (!(error instanceof ClosureIneligibleError)) { throw error; }
     // Observation may await filesystem work before finding an eligibility limit.

@@ -178,7 +178,7 @@ void test("restricted status separates historical metadata and canvas validation
     inverseSupported: false, ordinaryProjectsSupported: false, savedMetadataOnly: true, completeCanvasRead: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableSchematicRename"]), JSON.stringify({ tool: "easyeda_control_disposable_schematic_rename",
     scope: "original-disposable-project-local-schematic-title-forward-only", runtimeAdmissionRequired: true, designMutation: true,
-    connectedValidation: false, originalOwnerRequired: true, historicalConnectedValidation: "not-recorded",
+    connectedValidation: false, originalOwnerRequired: true, historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle",
     phaseEffectAcknowledgementsRequired: true, inverseSupported: false, ordinaryProjectsSupported: false,
     savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",

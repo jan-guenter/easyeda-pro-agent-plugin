@@ -1,0 +1,222 @@
+/** Private groundwork for a future helper-owned Chromium diagnostic pipe.
+ * No runtime imports this module. Byte streams are not process/Job authority,
+ * and discovery replies are not frame, worker, script or CAD admission.
+ *
+ * Electron 41.2.1 requests Browser::Quit on debugging-pipe disconnect. This
+ * class therefore NEVER ends, destroys or closes either stream, even on error.
+ * The future native owner must retain both pipe handles until its reviewed
+ * application-closure policy permits release. No TCP endpoint is supported. */
+import type { Readable, Writable } from "node:stream";
+
+const MAX_FRAME_BYTES = 1024 * 1024;
+const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
+const MAX_SESSION_BYTES = 8 * MAX_FRAME_BYTES;
+const MAX_REQUESTS = 32;
+const DEADLINE_MS = 5000;
+type Reply = Readonly<Record<string, unknown>>;
+type Method = "Browser.getVersion" | "Target.getTargets";
+type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" | "reply" | "remote-error" | "deadline" | "budget";
+interface Pending {
+  readonly id: number;
+  readonly resolve: (value: Reply) => void;
+  readonly reject: (error: Error) => void;
+  readonly timer: ReturnType<typeof setTimeout>;
+  written: boolean;
+  reply: Reply | null;
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function failureError(code: Failure): Error { return new Error(`PCB_DIAGNOSTIC_PIPE_${code.toUpperCase()}`); }
+
+/** JSON.parse alone silently discards duplicate keys. Walk only its structural
+ * punctuation and quoted tokens first; JSON.parse still validates the grammar.
+ * Bounded nesting also keeps malformed/deep native replies out of recursive
+ * consumers. Whitespace and alternate valid escapes are not normalized away. */
+function decodeFrame(bytes: Buffer): unknown {
+  const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  const nesting: (Set<string> | null)[] = [];
+  for (let offset = 0; offset < text.length; offset += 1) {
+    const character = text[offset];
+    if (character === "{" || character === "[") {
+      if (nesting.length >= 64) { throw failureError("framing"); }
+      nesting.push(character === "{" ? new Set() : null);
+    } else if (character === "}" || character === "]") { nesting.pop(); }
+    else if (character === '"') {
+      const start = offset; offset += 1;
+      while (offset < text.length && text[offset] !== '"') {
+        if (text[offset] === "\\") { offset += 1; }
+        offset += 1;
+      }
+      let following = offset + 1;
+      while (following < text.length && [" ", "\t", "\n", "\r"].includes(text[following] ?? "")) { following += 1; }
+      if (text[following] === ":") {
+        const keys = nesting.at(-1); const key: unknown = JSON.parse(text.slice(start, offset + 1));
+        if (keys === null || keys === undefined || typeof key !== "string" || keys.has(key)) { throw failureError("framing"); }
+        keys.add(key);
+      }
+    }
+  }
+  const parsed: unknown = JSON.parse(text, (_key: string, value: unknown): unknown => {
+    if (typeof value === "number" && !Number.isFinite(value)) { throw failureError("framing"); }
+    return value;
+  });
+  return parsed;
+}
+
+/** Only two fixed browser-level reads are implemented. There is deliberately
+ * no generic send, target attachment, JavaScript evaluation, pause, resume,
+ * reconnect, retry or pipe-close method. Construction acquires nothing; the
+ * caller retains this object before start attaches fallible event listeners. */
+export class CurrentPcbDiagnosticPipe {
+  readonly #input: Readable;
+  readonly #output: Writable;
+  #started = false;
+  #failure: Failure | null = null;
+  #pending: Pending | null = null;
+  #nextId = 1;
+  #receivedBytes = 0;
+  #buffer = Buffer.alloc(4096);
+  #used = 0;
+  #inputEnded = false;
+  #inputClosed = false;
+  #outputClosed = false;
+  #released = false;
+
+  public constructor(input: Readable, output: Writable) {
+    this.#input = input; this.#output = output;
+  }
+
+  public start(): void {
+    if (this.#started) { throw new Error("PCB_DIAGNOSTIC_PIPE_START_CONSUMED"); }
+    this.#started = true;
+    try {
+      // Error handlers precede data delivery. A partial attachment failure is
+      // Retained on this original object; it never triggers a disconnect.
+      this.#input.on("error", this.#inputError);
+      this.#output.on("error", this.#outputError);
+      this.#input.on("end", this.#inputEnd);
+      this.#input.on("close", this.#inputClose);
+      this.#output.on("close", this.#outputClose);
+      if (this.#input.destroyed || this.#input.readableEnded || this.#output.destroyed || this.#output.writableEnded) {
+        throw new Error("PCB_DIAGNOSTIC_PIPE_ALREADY_ENDED");
+      }
+      this.#input.on("data", this.#data);
+    } catch { this.#fail("attachment"); throw failureError("attachment"); }
+  }
+
+  public getVersion(): Promise<Reply> { return this.#request("Browser.getVersion"); }
+  public getTargets(): Promise<Reply> { return this.#request("Target.getTargets"); }
+
+  public status(): Readonly<{ started: boolean; failure: Failure | null; pendingRequestId: number | null;
+    requestCount: number; receivedBytes: number; inputEnded: boolean; inputClosed: boolean;
+    outputClosed: boolean; listenersReleased: boolean; nativeOwnerVerified: false; executionAuthorized: false }> {
+    return Object.freeze({ started: this.#started, failure: this.#failure, pendingRequestId: this.#pending?.id ?? null,
+      requestCount: this.#nextId - 1, receivedBytes: this.#receivedBytes, inputEnded: this.#inputEnded,
+      inputClosed: this.#inputClosed, outputClosed: this.#outputClosed, listenersReleased: this.#released,
+      nativeOwnerVerified: false, executionAuthorized: false });
+  }
+
+  /** Remove this object's listeners only after BOTH streams have emitted close.
+   * This observes transport closure, not original EasyEDA/Job termination.
+   * It does not close a stream or authorize a fresh launch. */
+  public releaseClosedListeners(): void {
+    if (!this.#inputClosed || !this.#outputClosed || this.#pending !== null) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_RETAIN_ORIGINAL_STREAMS");
+    }
+    this.#input.removeListener("data", this.#data);
+    this.#input.removeListener("error", this.#inputError);
+    this.#input.removeListener("end", this.#inputEnd);
+    this.#input.removeListener("close", this.#inputClose);
+    this.#output.removeListener("error", this.#outputError);
+    this.#output.removeListener("close", this.#outputClose);
+    this.#released = true;
+  }
+
+  // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
+  async #request(method: Method): Promise<Reply> {
+    if (!this.#started || this.#released) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
+    if (this.#failure !== null) { throw failureError(this.#failure); }
+    if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
+    if (this.#nextId > MAX_REQUESTS) { this.#fail("budget"); throw failureError("budget"); }
+    const id = this.#nextId; this.#nextId += 1;
+    const deferred = Promise.withResolvers<Reply>();
+    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
+      timer: setTimeout(() => { this.#fail("deadline"); }, DEADLINE_MS), written: false, reply: null };
+    this.#pending = pending;
+    // Reserve before write, including synchronous throw and synchronous peer
+    // Reply. A callback error still defeats an earlier received response.
+    try {
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable completion is callback-based; an ACK does not replace the write callback.
+      this.#output.write(Buffer.from(`${JSON.stringify({ id, method })}\0`), (error): void => {
+        if (error !== null && error !== undefined) { this.#fail("output"); }
+        else if (this.#pending === pending && this.#failure === null) { pending.written = true; this.#complete(); }
+      });
+    } catch { this.#fail("output"); }
+    return deferred.promise;
+  }
+
+  #fail(code: Failure): void {
+    this.#failure ??= code;
+    this.#used = 0;
+    const pending = this.#pending;
+    this.#pending = null;
+    if (pending !== null) { clearTimeout(pending.timer); pending.reject(failureError(this.#failure)); }
+  }
+
+  #complete(): void {
+    const pending = this.#pending;
+    if (this.#failure === null && pending !== null && pending.written && pending.reply !== null) {
+      this.#pending = null; clearTimeout(pending.timer); pending.resolve(pending.reply);
+    }
+  }
+
+  #frame(bytes: Buffer): void {
+    const pending = this.#pending;
+    if (pending === null || pending.reply !== null || bytes.length === 0) { this.#fail("reply"); return; }
+    let decoded: unknown;
+    try { decoded = decodeFrame(bytes); }
+    catch { this.#fail("framing"); return; }
+    if (!record(decoded) || !Object.is(decoded["id"], pending.id)) { this.#fail("reply"); return; }
+    const keys = Object.keys(decoded);
+    if (keys.length !== 2 || !keys.includes("id") || (keys.includes("result") === keys.includes("error"))) {
+      this.#fail("reply"); return;
+    }
+    if (keys.includes("error")) { this.#fail("remote-error"); return; }
+    const result = decoded["result"];
+    if (!record(result)) { this.#fail("reply"); return; }
+    // Keep the complete decoded result, including unknown fields. No target or
+    // Script token is issued and no semantic completeness claim is made here.
+    pending.reply = result;
+  }
+
+  readonly #data = (chunk: unknown): void => {
+    if (this.#failure !== null) { return; }
+    if (this.#pending === null) { this.#fail("reply"); return; }
+    if (!Buffer.isBuffer(chunk) || chunk.length === 0 || chunk.length > MAX_CHUNK_BYTES ||
+      this.#receivedBytes + chunk.length > MAX_SESSION_BYTES) { this.#fail("framing"); return; }
+    this.#receivedBytes += chunk.length;
+    let start = 0;
+    while (start < chunk.length && this.#failure === null) {
+      const delimiter = chunk.indexOf(0, start), end = delimiter === -1 ? chunk.length : delimiter;
+      const size = end - start; const needed = this.#used + size;
+      if (needed > MAX_FRAME_BYTES) { this.#fail("framing"); return; }
+      if (needed > this.#buffer.length) {
+        const replacement = Buffer.alloc(Math.min(MAX_FRAME_BYTES, Math.max(needed, this.#buffer.length * 2)));
+        this.#buffer.copy(replacement, 0, 0, this.#used); this.#buffer = replacement;
+      }
+      chunk.copy(this.#buffer, this.#used, start, end); this.#used = needed;
+      if (delimiter !== -1) { this.#frame(this.#buffer.subarray(0, this.#used)); this.#used = 0; }
+      start = end + 1;
+    }
+    // Validate every coalesced frame before settling the matching response.
+    if (this.#pending?.reply !== null && this.#used > 0) { this.#fail("reply"); }
+    this.#complete();
+  };
+  readonly #inputError = (): void => { this.#fail("input"); };
+  readonly #outputError = (): void => { this.#fail("output"); };
+  readonly #inputEnd = (): void => { this.#inputEnded = true; this.#fail(this.#used === 0 ? "eof" : "framing"); };
+  readonly #inputClose = (): void => { this.#inputClosed = true; this.#fail("closed"); };
+  readonly #outputClose = (): void => { this.#outputClosed = true; this.#fail("closed"); };
+}
