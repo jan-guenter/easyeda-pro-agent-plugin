@@ -4,14 +4,23 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-SCH rename candidate100838, 2026-10-19, branch
-`feature/schematic-dispatch-admission-cache`, based on handoff772eea8 and merged
-main7d0a4162. Current source adds a separate original-owner disposable SCH
-title-only lifecycle, aged SQL reference/clock qualification, one write, closed
-SQL effect, fresh saved metadata/child-roster read and final closure. No connected
-SCH rename result exists. Root/independent review corrected the N0/write
-capture-epoch and authenticated-scope composition issues before release.
-Do not treat isolated mocked tests as proof of those composed paths.
+100838 delivered, 2026-10-19: protected PR76 merged as main
+`3c7afb9e3eb2066ad1890f3fa4bd43b1381bbf89`. Reviewed payload
+`e3c0583aca288ecc22d1a341e6c044256761d36d` has the same complete tree
+`78d6ea69cdd5309a825c8fbbfd837273991bc128`. Exact-head Linux39236751786 passed
+build, all8shards and aggregate:11,472facade passes/5platform skips/0failures/
+0cancellations. Windows39236751716 passed. All424bridge tests, strict lint/types,
+dependency signatures/audit, package/repository/sevenskill checks and bundle
+reproduction passed in clean CI. Root/independent reviews passed; Copilot hit
+quota, not a human-review claim. Main Windows39238721196 passed; duplicate
+main Linux39238721171 is running. Check its eventual status without rerunning
+the passed exact-tree suite.
+
+This adds original-owner disposable SCH title rename, aged SQL/clock qualification,
+one write, full closed SQL effect, fresh saved metadata/child-roster read and final
+closure. Connected SCH validation remains pending. Root/independent review fixed
+N0/write capture-epoch and authenticated-scope composition. Public discovery does
+not authorize execution; no ordinary-project, inverse, sheet or circuit writer.
 
 Compact completed/nonblocking legacy projections preserve fresh journal/phase
 byte/path checks and all existing cache bounds. Synthetic390-journal runs
@@ -20,34 +29,53 @@ Public catalog is46 full/21 restricted tools. Generated inventory774methods:
 212public-subset/33native-equivalent/79blocked/450omitted;347guarded/94blocked/
 2partial routes. These are implementation counts, not connected coverage.
 
-Actual installed070000 admission is complete: facade3623789/start37814763,
-Codex parent3621256/start37785902, pinnedNode24.18.0. Original installed485source/
-76c9fafb,3runtime/2ac69694,manifest1aa82663 and full1482-file inventoryd2e3f4e1
-match mergedmain. Evidence `/root/.cache/easyeda-070000-actual-facade-GVRAJKtZ`;
-process-source7e4f01ba,installed-payload17feceff. The maintained verifier emitted
-complete successful JSON and exited, but its original shell exit code was not
-retained. Both prior main CI platforms now passed, including Linux39203647033.
-No live EasyEDA call, launch, design read/edit, Save or restoration occurred in
-this implementation session. Production remains excluded. Preserve all consumed
-probes and completed cases below; do not rerun them.
-
-Next: run frozen candidate mandatory release gates and protected CI, publish/install and verify the
-new package. Then a fresh Codex session must load/admit it before a disposable
-SCH lifecycle. Broader backlog: populated Dimension/Image, PCB text writer,
-polygon identities, libraries/3D, layout/routing/ECO/export, bootstrap/platform
-adapters and connected admission timing. Release details:
-`docs/current-schematic-rename-lifecycle-2026-10-19.md`.
-Version is0.3.0+codex.20261019100838. Source review and focused checks passed.
-Final frozen source496/ac897953, runtime3/9a380da1, manifest30e0bedd; external
-pins unchanged. Corrected lint/types/build/compatibility and repository44958
-passed. Full verify80715 is running in
+Both local full runs are FAILED, not release passes. Original80715 exhausted
+the48GiB/tmp mount:10,379pass/986fail/21cancel/3skip. Disk-backed17559 finished
+11,339pass/112fail/0cancel/4skip; older hardcoded/tmp fixtures still failed.
+The four masked first-run errors and all112retry failure titles explicitly
+passed in clean exact-head CI. Fourteen retry errors swallowed an earlier
+predispatch cause, so do not claim their local causes were conclusively proved.
+No evidence directory was deleted. Local19813 passed424bridge/allskills, then
+the hardcoded/tmp catalog smoke/cleanup failed. Logs remain in
 `/root/.cache/easyeda-schematic-rename-release-A9qW1juF`.
-Retain initial lint/8MiB package-limit failures; the exact reviewed facade now
-has a12MiB limit and still receives the full privacy scan. All65changed files
-passed independent full-content privacy review. Publication/installation and
-connected SCH validation remain pending. Preserve the070000
-loaded host and all earlier branches/worktrees/stash. The checkpoints below
-are historical, including their now-satisfied fresh070000-admission requirement.
+First/full-retry log hashes c823ece3/cdab11cc. Corrected lint/types/build/compatibility
+and repository44958 passed locally. Initial lint/8MiB package-limit failures are
+retained; the exact reviewed facade has a12MiB limit and full privacy scanning.
+All65changed files passed independent full-content privacy review.
+
+Official Git marketplace upgrade49009 installed/enabled
+`0.3.0+codex.20261019100838` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached HEAD
+equals mergedmain. Maintained comparison86154 passed1507files/30,916,896bytes/
+42directories, exact bytes/modes/no extras. Plugin tree33d255d3, inventory
+`feb1cb5d58fcdc6392842ebcd0b8d929301652e7697f0790900b6a1d0be950c2`.
+Source496/ac897953, runtime3/9a380da1, manifest30e0bedd; external pins unchanged.
+Earlier read-only comparison from the feature checkout refused HEAD mismatch;
+using the exact cachedmain verifier corrected the caller path, not any cache.
+
+New offline probea21f9584, pins17b83b3c, completed ONCE in original shell52627,
+exit0. AmbientNode26.11.1 hands off to pinned24.18.0;21restrictedtools and eight
+SCH offline acceptance/refusal queries pass. Original child3812692/start38175962/
+parent3809366 closed/exited0 via stdinEOF, is absent and has no retained handles.
+No signals/adoption/upstream marker/journal; synthetic profile unchanged and
+lease removed. Two no-socket/descendant samples are not continuous isolation.
+Final complete installed inventory is unchanged. Root and independent retained
+proof/inventory/response reviews passed. Proof SHA
+`d4e0918341a5b623e8f8d3d80bdeb0ab4ce4287f981ed489a518594e8c4ed7a0`.
+Never import/rerun this consumed probe. Evidence directory:
+`/root/.cache/easyeda-schematic-rename-100838-offline-probe-3Q2TNb`.
+
+Next: fresh Codex session and actual100838 host admission, then one original-owner
+disposable SCH lifecycle. Broader backlog: populated Dimension/Image, PCB text
+writer, polygon identities, libraries/3D, layout/routing/ECO/export, bootstrap/
+platform adapters, connected timing, removal of hardcoded/tmp test fixtures and
+preservation of original setup errors in adversarial rejection assertions.
+Release details: `docs/current-schematic-rename-lifecycle-2026-10-19.md`.
+No live EasyEDA call, launch, design read/edit, Save or restoration occurred.
+Production remains excluded. Preserve070000host3623789, all branches/worktrees/
+stash and consumed probes/cases. Its historical admission is in
+`/root/.cache/easyeda-070000-actual-facade-GVRAJKtZ`; do not use the old host after
+marketplace pruning. The checkpoints below are historical.
 
 070000 delivered, 2026-10-19: protected PR75 merged as main
 `7d0a4162c2e664f8ecd51ccb392ec8ccc2d431fe`. Reviewed candidate

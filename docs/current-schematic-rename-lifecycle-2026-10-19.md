@@ -1,6 +1,6 @@
 # Disposable schematic rename lifecycle
 
-Candidate version: `0.3.0+codex.20261019100838`.
+Published version: `0.3.0+codex.20261019100838`.
 
 The new `easyeda_control_disposable_schematic_rename` tool implements a separate
 forward-only title change for one ordinary project-local SCH container in an
@@ -107,13 +107,56 @@ verification and protected CI were pending at this prepublication checkpoint.
 The new skill reference routes agents through the phase-specific SCH workflow
 and explicitly separates discovery, installation and live validation.
 
+## Delivery
+
+[PR76](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/76) merged
+as `3c7afb9e3eb2066ad1890f3fa4bd43b1381bbf89`. Its complete tree matches the
+reviewed payload `e3c0583aca288ecc22d1a341e6c044256761d36d` exactly.
+Exact-head Linux CI39236751786 passed the build, all eight test shards and the
+aggregate check. The facade totals were 11,472 passes, five platform skips,
+zero failures and zero cancellations. Windows39236751716 also passed. CI passed
+424 bridge tests, strict zero-warning lint/types, signatures/security audits,
+reproducible builds and the package, repository and seven-skill checks.
+Copilot could not review because of quota; root and independent reviews passed.
+
+The local full-suite results remain failed. The first exhausted the 48 GiB
+`/tmp` mount and ended with 10,379 passes, 986 failures, 21 cancellations and
+three skips. The unchanged disk-backed retry ended with 11,339 passes, 112
+failures and four skips; older tests still hardcode `/tmp`. All four ambiguous
+first-run errors and every failed retry title explicitly passed on clean CI.
+Fourteen retry errors mask an earlier predispatch rejection, so their individual
+local causes remain unproved. Local bridge/skill checks
+passed, but the local catalog smoke and cleanup also failed on that mount.
+No failed test directory was deleted, and no guard was relaxed to obtain CI
+success. Removing hardcoded temporary paths is test-infrastructure backlog.
+
+The official Git marketplace upgrade installed and enabled the new version.
+Its cached HEAD equals merged main. Maintained verification compared all 1,507
+files, 30,916,896 bytes and 42 directories with committed bytes and modes, with
+no extras. The inventory SHA-256 is
+`feb1cb5d58fcdc6392842ebcd0b8d929301652e7697f0790900b6a1d0be950c2`.
+An initial read-only comparison refused the feature checkout's different HEAD;
+the corrected call used the cached merged-main verifier. No cache was edited.
+The new configured offline probe passed once in its original shell. Ambient
+Node26.11.1 handed off to pinned24.18.0. It listed 21 restricted tools and passed
+eight SCH discovery/schema acceptance and refusal queries, without calling the
+live SCH tool. The original child exited0 through stdin EOF with no retained
+handles, signals or adoption. Its synthetic profile and the complete installed
+inventory stayed unchanged; the facade lease was removed. Two samples observed
+no non-stdio sockets or descendants. They do not establish continuous isolation.
+Proof SHA-256 is
+`d4e0918341a5b623e8f8d3d80bdeb0ab4ce4287f981ed489a518594e8c4ed7a0`.
+This probe is consumed and must never run again. Actual host admission and
+connected SCH validation have not occurred. Root and independent reviews of
+the retained proof, three inventories and all eight response hashes passed.
+
 ## Remaining work
 
-- Build, frozen-payload verification, protected CI, publication and marketplace installation for this source candidate.
 - Fresh host admission and one original-owner disposable SCH rename lifecycle after installation. No consumed historical probe or completed case may be replayed.
 - Populated Dimension/Image validation, PCB text writer prerequisites and full lifecycle.
 - Safe complete polygon identities; broader component-library/3D, schematic/PCB editing, routing, ECO and export adapters.
 - Additional platform tuples, bootstrap packaging and connected admission timing.
+- Remove hardcoded `/tmp` paths from older test and validation fixtures without deleting retained evidence. Preserve original setup errors when adversarial assertions expect rejection.
 
 Exact per-method omissions remain in the generated API inventory. Route counts
 are not a count of currently callable or live-validated methods.
