@@ -12,7 +12,9 @@ const collectionMethods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc
 const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get", "eda.pcb_PrimitiveVia.get",
   "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get"] as const;
 const componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
-const methods = [...collectionMethods, ...selectedMethods, componentPadsMethod] as const;
+const attributeCollectionMethod = "eda.pcb_PrimitiveAttribute.getAll";
+const attributeSelectedMethod = "eda.pcb_PrimitiveAttribute.get";
+const methods = [...collectionMethods, ...selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const numberSchema = z.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER)
   .refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
@@ -59,6 +61,12 @@ const stringSchema = z.object({ ...identity, primitiveType: z.literal("String"),
   rotation: numberSchema, reverse: z.boolean(), expansion: numberSchema, mirror: z.boolean(),
   key: boundedText, showKey: z.boolean(), showValue: z.boolean(), positionIsNull: z.boolean(),
   silkColor: z.string().min(1).max(128).nullable() }).strict();
+const attributeSchema = stringSchema.omit({ primitiveType: true, text: true, showKey: true, showValue: true }).extend({
+  primitiveType: z.literal("Attribute"), parentPrimitiveId: idSchema, value: z.string().max(65_536),
+  keyVisible: z.boolean(), valueVisible: z.boolean(),
+}).strict();
+const attributeGroupsSchema = z.array(z.object({ parentPrimitiveId: idSchema,
+  ids: z.array(idSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
 const padSchema = z.object({ ...base, primitiveType: z.literal("Pad"), layer: z.union([z.literal(1), z.literal(2), z.literal(12)]),
   padNumber: boundedText, x: numberSchema, y: numberSchema, rotation: numberSchema, metallization: z.boolean(),
   padType: z.union([z.literal(0), z.literal(1), z.literal(2)]), hole: holeSchema,
@@ -69,6 +77,8 @@ export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.enum(collectionMethods), arguments: z.object({}).strict(), target: targetSchema }).strict(),
   z.object({ method: z.enum(selectedMethods), arguments: z.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema }).strict(),
   z.object({ method: z.literal(componentPadsMethod), arguments: z.object({ primitiveId: idSchema }).strict(), target: targetSchema }).strict(),
+  z.object({ method: z.literal(attributeCollectionMethod), arguments: z.object({}).strict(), target: targetSchema }).strict(),
+  z.object({ method: z.literal(attributeSelectedMethod), arguments: z.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema }).strict(),
 ]);
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
@@ -76,6 +86,8 @@ const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry
   rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   samples: z.literal(2), implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false),
   persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
+const attributeResultShape = { ...resultShape, rows: z.array(attributeSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+  attributeParentGroups: attributeGroupsSchema, relationshipEvidence: z.literal("native-component-attribute-groups"), reciprocalParentVerified: z.literal(false) };
 export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
   z.object({ ...resultShape, method: z.enum(collectionMethods) }).strict(),
   z.object({ ...resultShape, method: z.enum(selectedMethods), observedRowCount: z.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
@@ -84,6 +96,8 @@ export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
     observedPadCount: z.number().int().min(0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
     relationshipEvidence: z.literal("native-component-child-list-and-global-pad-membership"),
     reciprocalParentVerified: z.literal(false), symbolPinMappingVerified: z.literal(false) }).strict(),
+  z.object({ ...attributeResultShape, method: z.literal(attributeCollectionMethod) }).strict(),
+  z.object({ ...attributeResultShape, method: z.literal(attributeSelectedMethod), observedRowCount: z.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
 ]);
 
 const limitations = [
@@ -95,16 +109,17 @@ const limitations = [
   "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
   "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
   "String is the PCB text family, not pcb_PrimitiveText. Native string-getAll excludes views with a native parent, so get is limited to that same observed family and does not cover component attributes or inherited text. DTOs retain raw text and fontFamily, layer, placement, fontSize, lineWidth, alignMode 1..9, degree rotation, reverse, expansion, mirror, key, showKey, showValue, positionIsNull and serialized silkColor. Native internal distances are multiplied by 10 to mil; rotation is multiplied by 180 then divided by Math.PI, matching the installed public mapper without defaults or coercion. Empty text/font/key strings remain empty; missing or undefined projected scalars refuse. Only silkColor accepts null. The native serializer applies color.toString()||null, so its null does not prove an absent raw model color; nonempty colors stay bounded raw strings, not validated CSS. Text has no net field. Raw value and display flags do not prove rendered text. Outlines, font cache, zIndex, partition/group, model type and source ownership are omitted and not compared. Existing font caches are read by the native serializer, without loading fonts or refreshing geometry.",
+  "Attribute observes existing component-view groups through fixed attribute-getAll. Each DTO adds parentPrimitiveId, key/value and keyVisible/valueVisible with the same finite numeric placement, style, display-state and serialized-color projection as String. Nullable public coordinates are not coerced; positionIsNull remains separate. Value is current model text: Name may already be formula-expanded, unlike the raw Component Name metadata. FormulaName, evaluation, rendered text, outlines and font objects are omitted. Complete ordered attributeParentGroups retain every parent and its ordered child IDs, including empty groups, even for get. Two complete group-and-scalar samples must match before selection. Grouping does not prove reciprocal ownership or complete stored component/attribute membership. Parent/layer/lock filters are unsupported; the existing identity-only reader has separate larger limits.",
   "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
   "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
   "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
   "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
-  "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily/key string, 128 per serialized String silkColor, 65536 UTF-16 units per String text, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+  "At most 256 rows per observed family or child list, 256 Attribute parent groups and 256 total Attribute rows, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily/key string, 128 per serialized String/Attribute silkColor, 65536 UTF-16 units per String text or Attribute value, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
   "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation.",
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" {
+export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -119,6 +134,8 @@ export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "L
     case componentPadsMethod: { return "Pad"; }
     case "eda.pcb_PrimitiveString.getAll":
     case "eda.pcb_PrimitiveString.get": { return "String"; }
+    case attributeCollectionMethod:
+    case attributeSelectedMethod: { return "Attribute"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
@@ -146,6 +163,27 @@ export function validateCurrentPcbGeometryArguments(input: unknown): Record<stri
     issues: result.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),
   };
 }
+function assertAttributeGroups(payload: z.infer<typeof currentPcbGeometryResultSchema>): void {
+  if (!("attributeParentGroups" in payload)) { return; }
+  const memberships = new Map<string, string>(), orderedIds: string[] = [], parents = new Set<string>();
+  for (const group of payload.attributeParentGroups) {
+    if (parents.has(group.parentPrimitiveId)) { throw new Error("PCB Attribute groups contain duplicate parents."); }
+    parents.add(group.parentPrimitiveId);
+  }
+  for (const group of payload.attributeParentGroups) {
+    if (orderedIds.length + group.ids.length > CURRENT_PCB_GEOMETRY_MAX_ROWS) { throw new Error("PCB Attribute groups exceed their total identity bound."); }
+    for (const id of group.ids) {
+      if (parents.has(id) || memberships.has(id)) { throw new Error("PCB Attribute groups contain duplicate or colliding identities."); }
+      memberships.set(id, group.parentPrimitiveId); orderedIds.push(id);
+    }
+  }
+  for (const row of payload.rows) {
+    if (memberships.get(row.primitiveId) !== row.parentPrimitiveId) { throw new Error("PCB Attribute row differs from its observed parent group."); }
+  }
+  if (payload.method === attributeCollectionMethod) {
+    if (canonicalJson(orderedIds) !== canonicalJson(payload.rows.map(row => row.primitiveId))) { throw new Error("PCB Attribute groups differ from the complete ordered rows."); }
+  } else if (payload.observedRowCount !== orderedIds.length) { throw new Error("PCB Attribute groups differ from the complete observed count."); }
+}
 export function validateCurrentPcbGeometryResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parseCurrentPcbGeometryRequest(input);
   const payload = currentPcbGeometryResultSchema.parse(raw);
@@ -156,6 +194,7 @@ export function validateCurrentPcbGeometryResult(input: unknown, raw: unknown): 
     if (row.primitiveType !== expectedFamily || seen.has(row.primitiveId)) { throw new Error("PCB geometry result contains duplicate or unexpected family identities."); }
     seen.add(row.primitiveId);
   }
+  assertAttributeGroups(payload);
   const { rows, ...metadata } = payload;
   const counts: Record<string, number> = { observedRowCount: rows.length };
   if ("primitiveIds" in request.arguments) {

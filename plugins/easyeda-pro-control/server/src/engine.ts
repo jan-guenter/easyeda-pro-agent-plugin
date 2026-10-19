@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
-import { scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
+import { observeQualifiedAdmissionOperations, scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
+import type { AdmissionScanDiagnostics } from "./closed-symbol-terminal-admission.ts";
 import { assertCurrentIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { IssuedCurrentWindowsClockObservation, IssuedWindowsClockObservation } from "./windows-authority.ts";
 import {
@@ -487,6 +488,7 @@ export interface OperationSummary {
 export interface StatusAdmissionObservation {
   readonly observedAt: string;
   readonly incompleteOperations: readonly OperationSummary[];
+  readonly diagnostics: AdmissionScanDiagnostics;
 }
 
 interface DurableBaselineFailure {
@@ -2879,11 +2881,12 @@ export class EasyedaControlEngine {
    * No other guard accepts this result, and every new invocation scans again.
    */
   public async observeStatusAdmission(): Promise<StatusAdmissionObservation> {
-    const operations = await scanQualifiedAdmissionOperations();
+    const { operations, diagnostics } = await observeQualifiedAdmissionOperations();
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return {
       observedAt: now(),
       incompleteOperations: structuredClone(operations.filter((entry) => entry.unfinished).map((entry) => entry.summary)),
+      diagnostics,
     };
   }
 

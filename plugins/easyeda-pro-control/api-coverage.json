@@ -13,7 +13,7 @@
       "omitted": 450
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 342,
+      "available-with-runtime-guards": 344,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -15845,6 +15845,40 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveAttribute.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB Attribute loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native attribute-getAll samples. Retains ordered component parent groups including empty groups and all child IDs; parentPrimitiveId is an observed association, not reciprocal ownership or saved membership. DTOs copy bounded own identity/lock, layer, numeric placement, key/value, keyVisible/valueVisible, fontFamily/fontSize/lineWidth, alignMode1..9, degree rotation, reverse/expansion/mirror, positionIsNull and serialized silkColor. Distances multiply by10 to mil; radians multiply by180 then divide by Math.PI. Value is native model text and may already contain an expanded Name formula; raw formulaName and evaluation are omitted. Null coordinates are refused rather than coerced; positionIsNull stays separate. Empty strings remain exact; only serialized silkColor accepts null, which does not prove raw-model color, and nonempty colors are not validated CSS. Existing font/footprint/device caches are read without loading assets. No fonts/outlines, full source, rendered-text, connectivity, ownership, persistence, write or Save claim. Complete ordered groups and all projected rows must match before selection, with duplicate/colliding identities refused. Bounds256groups/256totalrows/393216bytes apply before selection; native serialization still precedes those bounds. No filters, public wrapper, SDK constructor or positive type lookup. Only1..256 distinct primitiveIds in an array; exact caller order and all IDs required, no scalar get or missing-ID skipping.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveAttribute.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveAttribute.get",
           "implementation": "public-method",
@@ -15903,6 +15937,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveAttribute.getAll",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB Attribute loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native attribute-getAll samples. Retains ordered component parent groups including empty groups and all child IDs; parentPrimitiveId is an observed association, not reciprocal ownership or saved membership. DTOs copy bounded own identity/lock, layer, numeric placement, key/value, keyVisible/valueVisible, fontFamily/fontSize/lineWidth, alignMode1..9, degree rotation, reverse/expansion/mirror, positionIsNull and serialized silkColor. Distances multiply by10 to mil; radians multiply by180 then divide by Math.PI. Value is native model text and may already contain an expanded Name formula; raw formulaName and evaluation are omitted. Null coordinates are refused rather than coerced; positionIsNull stays separate. Empty strings remain exact; only serialized silkColor accepts null, which does not prove raw-model color, and nonempty colors are not validated CSS. Existing font/footprint/device caches are read without loading assets. No fonts/outlines, full source, rendered-text, connectivity, ownership, persistence, write or Save claim. Complete ordered groups and all projected rows must match before selection, with duplicate/colliding identities refused. Bounds256groups/256totalrows/393216bytes apply before selection; native serialization still precedes those bounds. No filters, public wrapper, SDK constructor or positive type lookup. Empty arguments only; complete observed family and group order are preserved.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveAttribute.getAll",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",

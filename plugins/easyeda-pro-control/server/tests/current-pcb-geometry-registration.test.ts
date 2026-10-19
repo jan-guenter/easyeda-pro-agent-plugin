@@ -45,11 +45,14 @@ void test("PCB geometry registration preserves strict target requests and the se
     { ...request, target: { ...target, tabId: "wrong" } }, { ...request, code: "caller-code" },
     { ...request, method: "eda.pcb_PrimitiveLine.get", arguments: { primitiveIds: "one" } },
     { ...request, method: "eda.pcb_PrimitivePad.get", arguments: { primitiveIds: ["one", "one"] } },
+    { ...request, method: "eda.pcb_PrimitiveAttribute.getAll", arguments: { parentPrimitiveId: "parent" } },
+    { ...request, method: "eda.pcb_PrimitiveAttribute.get", arguments: { primitiveIds: ["one"], parentPrimitiveId: "parent" } },
+    { ...request, method: "eda.pcb_PrimitiveAttribute.get", arguments: { primitiveIds: "one" } },
     { ...request, method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId: ["one"] } }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
-  for (const family of ["Line", "Arc", "Via", "Component", "Pad", "String"]) {
+  for (const family of ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute"]) {
     for (const method of ["getAll", "get"]) {
       const parsed: unknown = requestSchema.parse({ ...request, method: `eda.pcb_Primitive${family}.${method}`,
         arguments: method === "get" ? { primitiveIds: ["one"] } : {} });
@@ -64,5 +67,5 @@ void test("PCB geometry registration preserves strict target requests and the se
   assert.equal(calls.at(-1), association);
   assert.ok(associationResult !== null && typeof associationResult === "object" && "result" in associationResult);
   assert.equal(associationResult.result, observed);
-  assert.equal(calls.length, 13);
+  assert.equal(calls.length, 15);
 });

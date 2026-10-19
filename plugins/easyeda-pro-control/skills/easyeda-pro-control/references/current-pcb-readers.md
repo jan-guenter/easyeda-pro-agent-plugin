@@ -162,7 +162,10 @@ is obtained. Values, formulas, fonts and geometry are omitted. Native component
 serialization still reads existing footprint/device/font caches and pad/via
 metadata before the adapter can bound its reply. There are no parent/layer/lock
 filters or Attribute type-lookup support. At most20,000 groups and20,000 total
-attribute IDs share the existing byte bound. Connected validation is pending.
+attribute IDs share the existing byte bound. Installed023200 passed one
+populated disposable case: six attributes in two groups, with two matching
+samples, retained normal closure and unchanged closed-file bytes. Empty groups,
+the separate geometry methods and later runtimes remain outside that case.
 
 Limits: 20,000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes
 combined evidence. No truncation or coercion. Native serializers allocate DTOs
@@ -181,7 +184,8 @@ as identity reads. The board must already be active; this tool never opens it.
 
 Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll`,
 `eda.pcb_PrimitiveVia.getAll`, `eda.pcb_PrimitiveComponent.getAll`,
-`eda.pcb_PrimitivePad.getAll` and `eda.pcb_PrimitiveString.getAll`, with empty
+`eda.pcb_PrimitivePad.getAll`, `eda.pcb_PrimitiveString.getAll` and
+`eda.pcb_PrimitiveAttribute.getAll`, with empty
 `arguments` only. Each family also
 supports a narrower `.get` equivalent with `arguments:{"primitiveIds":["id"]}`.
 Use 1 to 256 distinct nonempty IDs, each at most256characters. Scalar IDs,
@@ -192,7 +196,7 @@ does not establish absence from saved source. It does not change selection.
 
 `getAll` preserves native row order. Both return plain data, not SDK objects
 or methods. Every row
-has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component and String
+has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component, String and Attribute
 also have `net`; null and empty net text remain distinct, and neither proves
 resolved connectivity.
 
@@ -204,6 +208,7 @@ resolved connectivity.
 | Component | `layer` (1/2), `x`, `y`, `rotation`; optional raw `designator`, `name`, `manufacturer`, `manufacturerPart`, `supplier`, `supplierPart` |
 | Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole`, `defaultCopperShape`, `maskExpansion`, `thermal` |
 | String | `layer`, `x`, `y`, `text`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `key`, `showKey`, `showValue`, `positionIsNull`, `silkColor` |
+| Attribute | `parentPrimitiveId`, `layer`, `x`, `y`, `key`, `value`, `keyVisible`, `valueVisible`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `positionIsNull`, `silkColor` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad/String rotation use degrees. Arc modes
@@ -259,6 +264,31 @@ non-finite numbers, invalid alignment, duplicate IDs and incomplete output refus
 These three current-runtime String readers have source review and offline tests
 only. A returned text observation is not saved-source, rendering, connectivity
 or writer proof.
+
+### Component attribute text and placement
+
+Use `eda.pcb_PrimitiveAttribute.getAll` with empty arguments or `.get` with a
+distinct `primitiveIds` array. Both enumerate existing component views and
+compare the complete projected family twice before selecting requested IDs.
+`attributeParentGroups` retains every observed parent and its ordered child IDs,
+including empty groups, even for selected-ID reads. Duplicate parents, duplicate
+children, parent/child collisions and changed grouping refuse. This is native
+association evidence, not reciprocal or complete saved ownership.
+
+`value` is current model text. A Name formula may already have been evaluated
+by a previous native update; this reader does not evaluate it or return the
+raw `formulaName` field. Do not equate Attribute `value` with the Component
+reader's raw `name`. `keyVisible`/`valueVisible` describe flags, not rendered
+visibility. Distances use mil and rotations degrees, with String's same scalar
+conversion, alignment and serialized-color limits. Numeric coordinates remain
+required even when `positionIsNull` is true; null coordinates are not coerced.
+
+At most256 parent groups and256 total rows share the384KiB evidence bound.
+Full-family checks still apply when selecting one ID. Font caches, outlines,
+source expressions, saved membership and rendering are omitted. No filters,
+scalar lookup, setters, font loading or Save are requested. Source review and
+offline tests do not establish connected validation of these geometry methods;
+the separately tested ID reader does not validate these additional fields.
 
 ### Pad parameters
 

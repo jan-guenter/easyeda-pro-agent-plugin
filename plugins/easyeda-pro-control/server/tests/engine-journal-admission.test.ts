@@ -163,9 +163,18 @@ void test("status admission reports one dated cloned observation and every later
   assert.ok(Date.parse(observation.observedAt) >= startedAt);
   assert.ok(Date.parse(observation.observedAt) <= Date.now());
   assert.deepEqual(observation.incompleteOperations, [expected]);
+  assert.equal(observation.diagnostics.schema, "easyeda-pro-control.admission-scan-diagnostics.v1");
+  assert.equal(observation.diagnostics.journalCount, 1);
+  assert.deepEqual(observation.diagnostics.candidateCounts, { legacy: 1, incomplete: 0, invalid: 0, terminal: 0, "current-baseline": 0 });
+  assert.ok(Object.isFrozen(observation.diagnostics));
+  assert.ok(Object.isFrozen(observation.diagnostics.candidateCounts));
+  for (const duration of [observation.diagnostics.journalScanMs, observation.diagnostics.historicalQualificationMs, observation.diagnostics.totalMs]) {
+    assert.ok(Number.isSafeInteger(duration) && duration >= 0);
+  }
   assert.ok(observation.incompleteOperations[0] !== undefined);
   observation.incompleteOperations[0].nextSafeAction = "caller mutation";
   const repeated = await engine.observeStatusAdmission();
+  assert.notEqual(repeated.diagnostics, observation.diagnostics);
   assert.deepEqual(repeated.incompleteOperations, [expected]);
   await artifacts.updateOperation({ ...journal, state: "completed", orphanedCallPossible: true });
   await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);

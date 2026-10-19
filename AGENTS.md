@@ -4,6 +4,50 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+060000 candidate, 2026-10-19: continued on `feature/023200-delivery-20261019`,
+preserving local handoffd9068bf and prior stash/branches. Main Linux39182849456
+finished SUCCESS onfd8ddf86; the prior delivered023200 tree has both CI platforms
+green. Fresh actual facade3385215/start35631739, parent3383543/start35625895,
+installed023200 source477/8dde97ca/runtime3/21f7a47b/manifest49ca1621 and complete
+1464-file inventoryd25fbbb9 were independently verified. Actual audit evidence:
+`/root/.cache/easyeda-023200-actual-facade-v5ziJRaU`.
+
+NEW live023200 Attribute ID case COMPLETED and NONREPLAYABLE. Launch
+`pcb-attribute-023200-20261019-launch`, open
+`pcb-attribute-023200-20261019-open`, then one ID reader returned two matching
+samples:6attributes/2componentgroups. Observationc3795321, admitted fingerprint
+cfbb007d. One normal close consumed; original root47656/Job7c671941 exit proved.
+Closed disposable file598016bytes/e4434cc5 exact, no sidecars, byte-identical
+to retained195000closedcopy. No explicit Save, edit, restore or production access.
+Full replies/closedcomparison are in
+`/root/.cache/easyeda-attribute-023200-live-abuJNiP6`; no live operation pending.
+
+Candidate adds current Attribute.get/getAll text/placement with complete ordered
+parent groups, strict bounds and explicit-ID selection;70focused tests pass.
+Private SCH initial-close/full-SQL baseline and fresh-generation/cache/startup
+plumbing add48focused passes. They remain unregistered: no SCH writer authority.
+Status admission-scan diagnostics add no scans or skipped checks;96focused tests
+pass. Proposed JSON optimization was slower and was NOT applied. Root/independent
+reviews accepted SCH, diagnostics and Attribute geometry. Types and
+targeted strict lint pass. Candidate version060000 is built, not published or
+installed. Frozen source482/0a18145e, runtime3/2ce9b592 and manifestf705bc01;
+external runtime/bridge pins are unchanged. Final required verification is running
+in original shell54880. Do not change source/bundles/pins during this suite.
+Repository/privacy and all seven official skill checks passed. Evidence directory:
+`/root/.cache/easyeda-060000-release-JsN9k3uK`.
+
+Next: finish final required checks,
+protected GitHub CI/publication, official Git marketplace upgrade and exact installed
+proof. Fresh session will be needed to load060000 before Attribute geometry live
+validation; do not hotpatch/adopt/terminate configured facade3385215. Remaining:
+populated Dimension/Image cases; SCH actor/clock qualification, one-attempt writer,
+complete closed SQL/saved reopen/final closure; PCB text complete Save participant/
+queue observations and write lifecycle; safe polygon IDs; broader schematic/PCB,
+library/3D/ECO/export/account/bootstrap/platform backlog. Current774methods retains
+450omitted/80implemented-blocked;344guarded/94blocked/2partial routes are multi-tuple
+implementation counts, not universally callable methods. Detailed reasons remain
+inapi-coverage.json and dated reports. Everything below is historical.
+
 023200 delivery, 2026-10-19: protected PR73 merged as main
 `fd8ddf8666917d9f2742482c79b1d8c9ecb6f197`. Reviewed final candidate
 `634c9be0d2abe87320d3634ee700fae5b25f5dc1` and main have identical complete

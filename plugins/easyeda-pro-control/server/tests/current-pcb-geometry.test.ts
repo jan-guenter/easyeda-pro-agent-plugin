@@ -45,13 +45,13 @@ function environment(options: Options = {}): { run: () => Promise<unknown>; eval
     }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" || topic === "pcb/extensionAPI/attribute-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
-  runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
+  runInContext(`globalThis.rows=${JSON.stringify(defaults)};rows.Attribute=[{parentPrimitiveId:'component-b',attrs:[{...rows.String[0],globalIndex:'attribute-b',key:'Name',value:'ABC-1',formulaName:'={Manufacturer Part}'}]},{parentPrimitiveId:'empty-parent',attrs:[]},{parentPrimitiveId:'component-a',attrs:[{...rows.String[1],globalIndex:'attribute-a'}]}];globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String'};
+globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/attribute-getAll':'Attribute'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -137,7 +137,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 13);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 15);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -155,6 +155,125 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.ok(arcRaw !== null && typeof arcRaw === "object" && "rows" in arcRaw && Array.isArray(arcRaw.rows));
   const arcRow: unknown = arcRaw.rows[0]; assert.ok(arcRow !== null && typeof arcRow === "object");
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
+});
+
+void test("current Attribute projection retains native text/style and complete ordered parent groups", async () => {
+  const input = inputFor("eda.pcb_PrimitiveAttribute.getAll");
+  const fixture = environment({ input, beforeChild: `for(const group of rows.Attribute)for(const row of group.attrs){
+class Point {constructor(p){this.x=p.x;this.y=p.y;this._hashed=1;}get hash(){getterReads++;throw new Error('POINT_GETTER');}}
+row.position=new Point(row.position);for(const key of ['formulaName','font','zIndex','partition','groupId','modelType','net'])
+Object.defineProperty(row,key,{get(){getterReads++;throw new Error('OMITTED_FIELD');}});}` });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
+  assert.deepEqual(result["value"], [
+    { primitiveId: "attribute-b", primitiveType: "Attribute", primitiveLock: false, parentPrimitiveId: "component-b", layer: 3,
+      x: 1.234567 * 10, y: -2.345678 * 10, key: "Name", value: "ABC-1", keyVisible: false, valueVisible: true,
+      fontFamily: "default", fontSize: 120, lineWidth: 8, alignMode: 3, rotation: 45, reverse: false, expansion: 0,
+      mirror: false, positionIsNull: false, silkColor: "#000000" },
+    { primitiveId: "attribute-a", primitiveType: "Attribute", primitiveLock: true, parentPrimitiveId: "component-a", layer: 4,
+      x: 0, y: 20, key: "Label", value: "", keyVisible: true, valueVisible: false, fontFamily: "", fontSize: 0,
+      lineWidth: 0, alignMode: 9, rotation: -90, reverse: true, expansion: -1.25, mirror: true, positionIsNull: true, silkColor: null },
+  ]);
+  assert.deepEqual(result["attributeParentGroups"], [{ parentPrimitiveId: "component-b", ids: ["attribute-b"] },
+    { parentPrimitiveId: "empty-parent", ids: [] }, { parentPrimitiveId: "component-a", ids: ["attribute-a"] }]);
+  assert.equal(result["relationshipEvidence"], "native-component-attribute-groups"); assert.equal(result["reciprocalParentVerified"], false);
+  assert.equal(result["observedRowCount"], 2); assert.equal(fixture.evaluateChild("getterReads"), 0);
+  assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const beforeChild of ["rows.Attribute=[];", "rows.Attribute.forEach(group=>{group.attrs=[];});"]) {
+    const empty = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await environment({ input, beforeChild }).run()));
+    assert.deepEqual(empty["value"], []); assert.equal(empty["observedRowCount"], 0);
+    assert.ok(Array.isArray(empty["attributeParentGroups"])); assert.equal(empty["attributeParentGroups"].length, beforeChild.includes("forEach") ? 3 : 0);
+  }
+});
+
+void test("current Attribute get requires exact caller order while retaining every group and full-family count", async () => {
+  const input = inputFor("eda.pcb_PrimitiveAttribute.get", ["attribute-a", "attribute-b"]);
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  const result = validateCurrentPcbGeometryResult(input, raw);
+  assert.ok(Array.isArray(result["value"])); assert.deepEqual(result["value"].map((row: Record<string, unknown>) => row["primitiveId"]), ["attribute-a", "attribute-b"]);
+  assert.equal(result["observedRowCount"], 2); assert.equal(result["returnedRowCount"], 2);
+  const selectedInput = inputFor("eda.pcb_PrimitiveAttribute.get", ["attribute-b"]);
+  const selectedRaw: unknown = decodeExactReadEnvelope(await environment({ input: selectedInput }).run());
+  const selected = validateCurrentPcbGeometryResult(selectedInput, selectedRaw);
+  assert.equal(selected["observedRowCount"], 2); assert.equal(selected["returnedRowCount"], 1);
+  assert.deepEqual(selected["attributeParentGroups"], result["attributeParentGroups"]);
+  for (const argumentsValue of [{ primitiveIds: "attribute-b" }, { primitiveIds: [] }, { primitiveIds: ["attribute-b", "attribute-b"] },
+    { primitiveIds: ["attribute-b"], parentPrimitiveId: "component-b" }]) {
+    assert.equal(validateCurrentPcbGeometryArguments({ ...selectedInput, arguments: argumentsValue })["valid"], false);
+  }
+  for (const argumentsValue of [{ parentPrimitiveId: "component-b" }, { layer: 3 }, { primitiveLock: false }]) {
+    assert.equal(validateCurrentPcbGeometryArguments({ ...inputFor("eda.pcb_PrimitiveAttribute.getAll"), arguments: argumentsValue })["valid"], false);
+  }
+  const missing = environment({ input: inputFor("eda.pcb_PrimitiveAttribute.get", ["attribute-b", "missing"]) });
+  await assert.rejects(missing.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(missing.evaluateChild("dataReads"), 2);
+  assert.ok(selectedRaw !== null && typeof selectedRaw === "object" && "rows" in selectedRaw && Array.isArray(selectedRaw.rows));
+  const first: unknown = selectedRaw.rows[0]; assert.ok(first !== null && typeof first === "object");
+  for (const invalid of [{ ...selectedRaw, observedRowCount: 1 }, { ...selectedRaw, attributeParentGroups: [] },
+    { ...selectedRaw, rows: [{ ...first, parentPrimitiveId: "empty-parent" }] },
+    { ...selectedRaw, attributeParentGroups: [{ parentPrimitiveId: "component-b", ids: ["attribute-b"] }, { parentPrimitiveId: "component-b", ids: ["attribute-a"] }] },
+    { ...selectedRaw, attributeParentGroups: [{ parentPrimitiveId: "component-b", ids: ["attribute-b", "attribute-b"] }] },
+    { ...selectedRaw, attributeParentGroups: [{ parentPrimitiveId: "attribute-b", ids: ["attribute-b", "attribute-a"] }] },
+    { ...selectedRaw, reciprocalParentVerified: true }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(selectedInput, invalid));
+  }
+  const allInput = inputFor("eda.pcb_PrimitiveAttribute.getAll"), allRaw: unknown = decodeExactReadEnvelope(await environment({ input: allInput }).run());
+  assert.ok(allRaw !== null && typeof allRaw === "object" && "rows" in allRaw && Array.isArray(allRaw.rows));
+  const allRows: readonly unknown[] = allRaw.rows;
+  assert.throws(() => validateCurrentPcbGeometryResult(allInput, { ...allRaw, rows: allRows.toReversed() }));
+});
+
+void test("current Attribute rejects malformed groups, identities and scalars before a second sample", async () => {
+  const input = inputFor("eda.pcb_PrimitiveAttribute.get", ["attribute-b"]);
+  const malformed = ["rows.Attribute[2].parentPrimitiveId='component-b';", "rows.Attribute[2].parentPrimitiveId='attribute-b';",
+    "rows.Attribute[2].parentPrimitiveId='';", "rows.Attribute[2].parentPrimitiveId='x'.repeat(257);", "rows.Attribute[2].extra=true;",
+    "rows.Attribute[2].attrs[0].globalIndex='attribute-b';", "rows.Attribute[2].attrs[0].globalIndex='';",
+    "delete rows.Attribute[1];", "delete rows.Attribute[2].attrs[0];", "rows.Attribute[2].attrs={};",
+    "Object.defineProperty(rows.Attribute[1],'parentPrimitiveId',{get(){getterReads++;throw new Error('ACCESSOR');}});",
+    "Object.defineProperty(rows.Attribute[1],'attrs',{get(){getterReads++;throw new Error('ACCESSOR');}});",
+    "rows.Attribute[2].attrs[0].position.x=null;", "rows.Attribute[2].attrs[0].position.y=-0;",
+    "rows.Attribute[2].attrs[0].value=null;", "rows.Attribute[2].attrs[0].value='x'.repeat(65537);",
+    "rows.Attribute[2].attrs[0].fontFamily='x'.repeat(1025);", "rows.Attribute[2].attrs[0].fontSize=Infinity;",
+    "rows.Attribute[2].attrs[0].strokeWidth=NaN;", "rows.Attribute[2].attrs[0].rotation=1e12;",
+    "rows.Attribute[2].attrs[0].reverseExpansion=1e12;", "rows.Attribute[2].attrs[0].layerId=65536;",
+    "rows.Attribute[2].attrs[0].origin=0;", "rows.Attribute[2].attrs[0].origin=10;", "rows.Attribute[2].attrs[0].silkColor='';",
+    "rows.Attribute[2].attrs[0].silkColor='x'.repeat(129);", "rows.Attribute[2].attrs[0].key='x'.repeat(1025);",
+    "rows.Attribute=Array.from({length:257},(_,i)=>({parentPrimitiveId:'parent-'+i,attrs:[]}));",
+    "rows.Attribute[2].attrs=Array.from({length:256},(_,i)=>({...rows.Attribute[2].attrs[0],globalIndex:'extra-'+i}));",
+    "rows.Attribute[2].attrs=Array.from({length:257},(_,i)=>({...rows.Attribute[2].attrs[0],globalIndex:'extra-'+i}));"];
+  for (const key of ["globalIndex", "locked", "layerId", "position", "value", "key", "showKey", "showValue", "fontFamily",
+    "fontSize", "strokeWidth", "origin", "rotation", "reverse", "reverseExpansion", "mirror", "positionIsNull", "silkColor"]) {
+    malformed.push(`delete rows.Attribute[2].attrs[0].${key};`,
+      `Object.defineProperty(rows.Attribute[2].attrs[0],'${key}',{get(){getterReads++;throw new Error('ACCESSOR');}});`);
+  }
+  for (const beforeChild of malformed) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, beforeChild);
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 1);
+  }
+  const boundFirst = environment({ input, beforeChild: "Object.defineProperty(rows.Attribute[0].attrs[0],'value',{get(){getterReads++;throw new Error('EARLY_ROW');}});rows.Attribute[2].attrs=Array.from({length:256},(_,i)=>({globalIndex:'extra-'+i}));" });
+  await assert.rejects(boundFirst.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(boundFirst.evaluateChild("getterReads"), 0);
+});
+
+void test("current Attribute compares full parent and scalar samples before selection and bounds compound evidence", async () => {
+  const input = inputFor("eda.pcb_PrimitiveAttribute.get", ["attribute-b"]);
+  const changes = ["rows.Attribute[1].parentPrimitiveId='new-empty';", "rows.Attribute[2].parentPrimitiveId='new-parent';",
+    "rows.Attribute.reverse();", "rows.Attribute.splice(1,1);", "rows.Attribute[2].attrs[0].value+='changed';",
+    "rows.Attribute[2].attrs[0].key+='changed';", "rows.Attribute[2].attrs[0].showKey=false;", "rows.Attribute[2].attrs[0].showValue=true;",
+    "rows.Attribute[2].attrs[0].position.x=10;", "rows.Attribute[2].attrs[0].position.y=10;", "rows.Attribute[2].attrs[0].positionIsNull=false;",
+    "rows.Attribute[2].attrs[0].layerId=3;", "rows.Attribute[2].attrs[0].locked=false;", "rows.Attribute[2].attrs[0].fontFamily='changed';",
+    "rows.Attribute[2].attrs[0].fontSize=10;", "rows.Attribute[2].attrs[0].strokeWidth=1;", "rows.Attribute[2].attrs[0].origin=1;",
+    "rows.Attribute[2].attrs[0].rotation=0;", "rows.Attribute[2].attrs[0].reverse=false;", "rows.Attribute[2].attrs[0].reverseExpansion=0;",
+    "rows.Attribute[2].attrs[0].mirror=false;", "rows.Attribute[2].attrs[0].silkColor='#000000';"];
+  for (const change of changes) {
+    const fixture = environment({ input, afterCall: `if(topic==='pcb/extensionAPI/attribute-getAll'&&dataReads===2){${change}}` });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }, change); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  }
+  const oversized = environment({ input, beforeChild: "rows.Attribute[0].attrs=Array.from({length:7},(_,i)=>({...rows.Attribute[0].attrs[0],globalIndex:i===0?'attribute-b':'extra-'+i,value:'漢'.repeat(65536)}));" });
+  await assert.rejects(oversized.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(oversized.evaluateChild("dataReads"), 1);
+  for (const options of [{ afterCall: "if(topic==='pcb/extensionAPI/attribute-getAll')throw new Error('NATIVE_FAILURE');" },
+    { fastDeadline: true, afterCall: "if(topic==='pcb/extensionAPI/attribute-getAll')await new Promise(()=>{});" }]) {
+    const fixture = environment({ input, ...options }); await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("dataReads"), 1);
+  }
 });
 
 void test("current String projection keeps alignments and serialized display state without reading omitted model state", async () => {

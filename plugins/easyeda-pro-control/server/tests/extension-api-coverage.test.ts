@@ -704,7 +704,7 @@ void test("shortcut coverage keeps legacy and current-version routes distinct wi
   assert.match(JSON.stringify(result), /inputSchema/u);
 });
 
-void test("current Dimension/Image/Attribute identities are discoverable without promoting geometry or effectful polygon serializers", () => {
+void test("current Dimension/Image/Attribute identities retain separate scope without promoting effectful polygon serializers", () => {
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
   const rows = inventoryExtensionApiCoverage();
@@ -723,11 +723,38 @@ void test("current Dimension/Image/Attribute identities are discoverable without
       assert.ok(isRecord(valid)); assert.equal(valid["valid"], accepted); assert.equal(valid["executionAuthorized"], false);
     }
     for (const getter of ["get", "getAll"]) {
-      assert.equal(rows.find(entry => entry.path === `eda.pcb_Primitive${family}.${getter}`)?.routes.some(entry => entry.tool === "easyeda_control_pcb_geometry"), false);
+      assert.equal(rows.find(entry => entry.path === `eda.pcb_Primitive${family}.${getter}`)?.routes.some(entry => entry.tool === "easyeda_control_pcb_geometry"), family === "Attribute");
     }
   }
   for (const family of ["Fill", "Polyline", "Region"]) {
     assert.equal(rows.find(entry => entry.path === `eda.pcb_Primitive${family}.getAllPrimitiveId`)?.routes.some(entry => entry.tool === "easyeda_control_pcb_identities"), false);
+  }
+});
+
+void test("current Attribute geometry discovery retains legacy routes and the grouped native subset", () => {
+  const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  for (const method of ["get", "getAll"]) {
+    const path = `eda.pcb_PrimitiveAttribute.${method}`;
+    const row = inventoryExtensionApiCoverage().find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    assert.ok(row.routes.some(route => route.tool === "easyeda_control_sdk_read"));
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb_geometry"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.ok(route.inputDiscovery);
+    for (const scope of ["ordered component parent groups including empty groups", "expanded Name formula", "Null coordinates are refused", "No filters", "No fonts/outlines"]) {
+      assert.ok(route.scope.includes(scope));
+    }
+    const catalog = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"])).result; assert.ok(isRecord(catalog));
+    assert.equal(catalog["total"], 1); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+    const argumentsValue = method === "get" ? { primitiveIds: ["attribute-b", "attribute-a"] } : {};
+    for (const [argumentsInput, accepted] of [[argumentsValue, true], [{ ...argumentsValue, parentPrimitiveId: "component-a" }, false]] as const) {
+      const valid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: {
+        request: { method: path, arguments: argumentsInput, target },
+      } })).result;
+      assert.ok(isRecord(valid)); assert.equal(valid["valid"], accepted); assert.equal(valid["executionAuthorized"], false);
+    }
   }
 });
 
