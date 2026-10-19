@@ -3,10 +3,14 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
+import { z } from "zod";
 import { isRecord } from "../src/core.ts";
 import { CALCULATION_ONLY_TOOLS } from "../src/facade-mode.ts";
 
-interface Observation { observedAt: string; incompleteOperations: unknown[] }
+const DIAGNOSTICS = Object.freeze({ schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: 3,
+  candidateCounts: { legacy: 2, incomplete: 1, invalid: 0, terminal: 0, "current-baseline": 0 },
+  journalScanMs: 120, historicalQualificationMs: 30, totalMs: 150 });
+interface Observation { observedAt: string; incompleteOperations: unknown[]; diagnostics: typeof DIAGNOSTICS }
 type Handler = (input: object) => Promise<Record<string, unknown>>;
 
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
@@ -40,7 +44,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
         calls.push("admission");
         admissionCount += 1;
         if (refused) { return Promise.reject(new Error("fresh orphan blocks status")); }
-        return Promise.resolve({ observedAt: `observation-${String(admissionCount)}`, incompleteOperations: [{ observation: admissionCount }] });
+        return Promise.resolve({ observedAt: `observation-${String(admissionCount)}`, incompleteOperations: [{ observation: admissionCount }], diagnostics: DIAGNOSTICS });
       },
       recover: (): never => { throw new Error("Status must reuse only its same-invocation admission observation."); },
       status: (): Promise<object> => {
@@ -93,6 +97,7 @@ void test("registered status uses one fresh admission and labels its report obse
     const result = await fixture.invoke({});
     assert.equal(result["incompleteOperationsObservedAt"], `observation-${String(request)}`);
     assert.equal(JSON.stringify(result["incompleteOperations"]), JSON.stringify([{ observation: request }]));
+    assert.equal(result["admissionScan"], DIAGNOSTICS);
   }
   assert.deepEqual(fixture.calls, ["admission", "list-tools", "lease-start", "status", "lease-end",
     "admission", "list-tools", "lease-start", "status", "lease-end"]);
@@ -107,9 +112,30 @@ void test("registered disconnected status resamples runtime under a lease withou
     const fixture = await registeredStatus({ disconnected: true, connectDuringProbe });
     const result = await fixture.invoke({});
     assert.equal(result["incompleteOperationsObservedAt"], "observation-1");
+    assert.equal(result["admissionScan"], DIAGNOSTICS);
     const expected = ["admission", "list-tools", "status"];
     if (connectDuringProbe) { expected.push("lease-start", "status", "lease-end"); }
     assert.deepEqual(fixture.calls, expected);
+  }
+});
+
+void test("status admission diagnostics schema bounds numeric aggregates and refuses private fields", async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf("const statusAdmissionDiagnosticsSchema = z.object({");
+  const end = source.indexOf("const statusSuccessOutputSchema = z", start);
+  assert.ok(start !== -1 && end > start);
+  const schema: unknown = vm.runInNewContext(`${source.slice(start, end)}\nstatusAdmissionDiagnosticsSchema;`, { z, Number });
+  assert.ok(schema instanceof z.ZodObject);
+  assert.deepEqual(schema.parse(DIAGNOSTICS), DIAGNOSTICS);
+  for (const field of ["journalCount", "journalScanMs", "historicalQualificationMs", "totalMs"] as const) {
+    for (const value of [-1, 0.5, Infinity, Number.MAX_SAFE_INTEGER + 1, "1"]) {
+      assert.equal(schema.safeParse({ ...DIAGNOSTICS, [field]: value }).success, false);
+    }
+  }
+  for (const value of [{ ...DIAGNOSTICS, operationId: "private" },
+    { ...DIAGNOSTICS, candidateCounts: { ...DIAGNOSTICS.candidateCounts, path: "private" } },
+    { ...DIAGNOSTICS, candidateCounts: { ...DIAGNOSTICS.candidateCounts, legacy: -1 } }]) {
+    assert.equal(schema.safeParse(value).success, false);
   }
 });
 

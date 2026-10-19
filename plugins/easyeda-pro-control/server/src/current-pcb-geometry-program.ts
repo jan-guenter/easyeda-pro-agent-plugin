@@ -13,7 +13,8 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const primitiveIds = "primitiveIds" in request.arguments ? request.arguments.primitiveIds : null;
   const componentPrimitiveId = "primitiveId" in request.arguments ? request.arguments.primitiveId : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
-    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll" } as const;
+    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll", String: "pcb/extensionAPI/string-getAll",
+    Attribute: "pcb/extensionAPI/attribute-getAll" } as const;
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
@@ -125,16 +126,19 @@ const copyRows=value=>{
   }
   // PCB217199c8@10397039 selects existing parentless views; yr.toJSON@7384285 retains internal units.
   // API021d155b@1502811 scales these distances by 10 and radians by 180/PI. Never invoke SDK constructors with their defaults.
-  if(family==='String'){
+  // Attribute uses the same yr.toJSON scalars; API021d155b@1492186 applies the identical conversions.
+  if(family==='String'||family==='Attribute'){
    const position=point(own(row,'position')),alignMode=integer(own(row,'origin'));if(alignMode<1||alignMode>9)bad();
    // yr.toJSON emits silkColor as color.toString()||null. Copy that serialized
    // Observation only: null is not proof of absent raw color or source ownership.
    const silkColor=text(own(row,'silkColor'),128,true);if(silkColor==='')bad();
-   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),text:text(own(row,'value'),65536),
+   const value=text(own(row,'value'),65536),showKey=bool(own(row,'showKey')),showValue=bool(own(row,'showValue'));
+   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),
     fontFamily:text(own(row,'fontFamily'),1024),fontSize:num(num(own(row,'fontSize'))*10),lineWidth:num(num(own(row,'strokeWidth'))*10),
     alignMode,rotation:num(num(own(row,'rotation'))*180/Math.PI),reverse:bool(own(row,'reverse')),
     expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror')),key:text(own(row,'key'),1024),
-    showKey:bool(own(row,'showKey')),showValue:bool(own(row,'showValue')),positionIsNull:bool(own(row,'positionIsNull')),silkColor});continue;
+    ...(family==='Attribute'?{value,keyVisible:showKey,valueVisible:showValue}:{text:value,showKey,showValue}),
+    positionIsNull:bool(own(row,'positionIsNull')),silkColor});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){
@@ -156,7 +160,28 @@ const copyRows=value=>{
 };
 const call=async(name,arg)=>{check();const reply=await apply(rpc,channel,[name,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
-const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=copyRows(raw);check();await identity();check();return rows;};
+// PCB217199c8@10411430 supplies loaded component groups, not reciprocal or stored ownership.
+// Bound all groups/total children and collect every parent before projecting any Attribute row.
+const copyAttributeGroups=value=>{
+ const n=arrayLength(value),groups=[],parents=new Set();let total=0;
+ for(let i=0;i<n;i++){
+  const group=own(value,String(i));exact(group,['attrs','parentPrimitiveId']);
+  const parentPrimitiveId=text(own(group,'parentPrimitiveId'),256),attrs=own(group,'attrs'),count=arrayLength(attrs);
+  if(parentPrimitiveId.length===0||parents.has(parentPrimitiveId)||total+count>${CURRENT_PCB_GEOMETRY_MAX_ROWS})bad();
+  total+=count;parents.add(parentPrimitiveId);groups.push({parentPrimitiveId,attrs});
+ }
+ const rows=[],attributeParentGroups=[],seen=new Set();
+ for(const group of groups){
+  const ids=[];
+  for(const row of copyRows(group.attrs)){
+   if(parents.has(row.primitiveId)||seen.has(row.primitiveId))bad();seen.add(row.primitiveId);ids.push(row.primitiveId);
+   rows.push({...row,parentPrimitiveId:group.parentPrimitiveId});
+  }
+  attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
+ }
+ return{rows,attributeParentGroups};
+};
+const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=family==='Attribute'?copyAttributeGroups(raw):copyRows(raw);check();await identity();check();return rows;};
 // PCB217199c8@10336862 enumerates gr.getItem(id).getPads() with full IDs. API021d155b@1427274 supplies its own input as public parent ID.
 // Correlate observed child membership only; do not infer reverse parents, reconstructed IDs or symbol-pin mapping.
 const readComponentPads=async()=>{
@@ -177,14 +202,16 @@ const readComponentPads=async()=>{
 const run=async()=>{
  const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
- const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'?first.rows:first;
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:firstRows,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ if(family==='Attribute')Object.assign(observation,{attributeParentGroups:first.attributeParentGroups,relationshipEvidence:'native-component-attribute-groups',reciprocalParentVerified:false});
  if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
   relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
   if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
  const complete=encode(observation);if(primitiveIds===null)return complete;
- const byId=new Map(first.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
- return encode({...observation,rows:selected,observedRowCount:first.length});
+ const byId=new Map(firstRows.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
+ return encode({...observation,rows:selected,observedRowCount:firstRows.length});
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_GEOMETRY_READ_FAILED'));},10000]);});
 return await Promise.race([run(),timeout]);

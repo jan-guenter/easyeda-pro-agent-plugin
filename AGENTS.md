@@ -4,6 +4,130 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+060000 candidate, 2026-10-19: continued on `feature/023200-delivery-20261019`,
+preserving local handoffd9068bf and prior stash/branches. Main Linux39182849456
+finished SUCCESS onfd8ddf86; the prior delivered023200 tree has both CI platforms
+green. Fresh actual facade3385215/start35631739, parent3383543/start35625895,
+installed023200 source477/8dde97ca/runtime3/21f7a47b/manifest49ca1621 and complete
+1464-file inventoryd25fbbb9 were independently verified. Actual audit evidence:
+`/root/.cache/easyeda-023200-actual-facade-v5ziJRaU`.
+
+NEW live023200 Attribute ID case COMPLETED and NONREPLAYABLE. Launch
+`pcb-attribute-023200-20261019-launch`, open
+`pcb-attribute-023200-20261019-open`, then one ID reader returned two matching
+samples:6attributes/2componentgroups. Observationc3795321, admitted fingerprint
+cfbb007d. One normal close consumed; original root47656/Job7c671941 exit proved.
+Closed disposable file598016bytes/e4434cc5 exact, no sidecars, byte-identical
+to retained195000closedcopy. No explicit Save, edit, restore or production access.
+Full replies/closedcomparison are in
+`/root/.cache/easyeda-attribute-023200-live-abuJNiP6`; no live operation pending.
+
+Candidate adds current Attribute.get/getAll text/placement with complete ordered
+parent groups, strict bounds and explicit-ID selection;70focused tests pass.
+Private SCH initial-close/full-SQL baseline and fresh-generation/cache/startup
+plumbing add48focused passes. They remain unregistered: no SCH writer authority.
+Status admission-scan diagnostics add no scans or skipped checks;96focused tests
+pass. Proposed JSON optimization was slower and was NOT applied. Root/independent
+reviews accepted SCH, diagnostics and Attribute geometry. Types and
+targeted strict lint pass. Candidate version060000 is built, not published or
+installed. Frozen source482/0a18145e, runtime3/2ce9b592 and manifestf705bc01;
+external runtime/bridge pins are unchanged. Original local verification is running
+in shell54880; it retains one stale bundled-startup assertion (geometry13 instead
+of15), not a passing final suite. Only that test expectation changed; its five
+focused startup cases now pass in shell12006. Source/bundles/pins stayed frozen.
+Protected PR74 is open; final-payload GitHub CI and remaining local gates are
+required before merge. Earlier27bb62e CI is superseded by the test correction.
+Repository/privacy and all seven official skill checks passed. Evidence directory:
+`/root/.cache/easyeda-060000-release-JsN9k3uK`.
+
+Next: finish final required checks,
+protected GitHub CI/publication, official Git marketplace upgrade and exact installed
+proof. Fresh session will be needed to load060000 before Attribute geometry live
+validation; do not hotpatch/adopt/terminate configured facade3385215. Remaining:
+populated Dimension/Image cases; SCH actor/clock qualification, one-attempt writer,
+complete closed SQL/saved reopen/final closure; PCB text complete Save participant/
+queue observations and write lifecycle; safe polygon IDs; broader schematic/PCB,
+library/3D/ECO/export/account/bootstrap/platform backlog. Current774methods retains
+450omitted/80implemented-blocked;344guarded/94blocked/2partial routes are multi-tuple
+implementation counts, not universally callable methods. Detailed reasons remain
+inapi-coverage.json and dated reports. Everything below is historical.
+
+023200 delivery, 2026-10-19: protected PR73 merged as main
+`fd8ddf8666917d9f2742482c79b1d8c9ecb6f197`. Reviewed final candidate
+`634c9be0d2abe87320d3634ee700fae5b25f5dc1` and main have identical complete
+tree `066d21756a7309398006009d9e4d3150870d1acd`. Exact-head Linux39181856183
+passed build/all eight shards/aggregate:11,318 facade passes/five skips/zero
+failures. Windows39181856210 passed. Duplicate main Windows39182849539 passed;
+main Linux39182849456 is running with build passed. Check its eventual result
+without repeating the passed exact-tree PR suite.
+Copilot review was unavailable due quota; root and independent reviews passed.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261019023200` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached
+marketplace HEAD equals merged main. Root maintained comparison20188 passed:
+exact1,464files/29,522,303bytes/42directories INCLUDING root, committed bytes/
+modes and no extras. Plugin subtree `b7162ef71393282a9bd1bec023df992fb256f7c9`;
+inventory `d25fbbb94a844fcca718e8e5f7027975596402a49e0d046c2ab34158c32c1afa`.
+Source477/8dde97ca, runtime3/21f7a47b, manifest49ca1621; external runtime/bridge
+pins are unchanged. Independent maintained comparison73228 passed identically.
+
+NEW root/independently reviewed offline probe624a3e1e completed ONCE exit0 in
+original shell2611, approved final pins8b508bcb. Configured ambientNode26.11.1
+handed off to pinned24.18.0;20restricted tools and three fixed offline queries
+passed, including catalog11/Attribute empty-argument acceptance/filter refusal.
+Original child3376336/start34668385/parent3374282 exited0 through stdinEOF and
+is absent, without signals/adoption; no held handles remain. Synthetic profile
+unchanged, no upstream execution marker/journal, facade lease removed after EOF.
+Two no-socket samples are not continuous network/descendant isolation. Installed
+inventory is exact before/after. Proof SHA
+`c164c3dc0708ef5f047b852d404ffa40aa6220e524d1270403ce643d09db0650`
+is retained at
+`/root/.cache/easyeda-attribute-023200-offline-probe-TPt8Wg/proof.json`.
+NEVER rerun/import this consumed probe or earlier probes. All local verification
+and probe sessions are terminal. No new023200 connected runtime admission is claimed.
+
+Final frozen local verify70346 completed exit0:11,319facade passes/fourskips/
+zero failures/cancellations,424bridge passes, types/strict lint/coverage/build/
+compatibility/plugin/seven packaged-skill checks passed. Seven official local
+skill validators and repository privacy checks passed; external official plugin
+validator absent. Logfb1efd6c and CIlog8167bbd5 retained in
+`/root/.cache/easyeda-023200-release-INEX4p0m`. Dependency audit verified151
+signatures/40attestations/zero vulnerabilities. All local suites are terminal.
+
+Live013000 empty Dimension/Image case below is complete and nonreplayable;
+original EasyEDA root/Job exit proved, disposable closed bytes unchanged.
+No explicit Save, design edit or production-design access occurred. Actual
+facade3273248 still loads013000; do not use it after marketplace pruning.
+No gateway termination/rebind/hotpatch. A fresh Codex chat must load023200
+before any Attribute connected validation.
+
+Delivered: current-version Attribute identity reader with ordered component
+parent groups and full drift/collision/bounds checks; identity catalog11methods.
+Updated control guidance in the seven-skill package distinguishes historical
+scoped validation from dormant implementations. Separate original SCH opening ownership and fixed
+rename compiler are implemented but unregistered; they do not enable renaming.
+PCB text research documents the missing complete renderer/worker observations.
+No external runtime pin or safety gate was relaxed.
+
+Remaining: fresh023200 actual-host admission and disposable Attribute validation;
+nonempty Dimension/Image validation; SCH callable cleanup/full-SQL baseline,
+fresh project-only generation/cache/startup exclusion, original backend actor/
+clock/producer integration, durable one-attempt writer and closed-SQL/reopen/
+final-closure lifecycle; PCB text complete native Save-participant/queue/worker
+observation, one Save/full closed SQL/reopen/visual lifecycle; safe polygon IDs;
+referenced-symbol propagation/ordinary copy, footprint/device/3D, schematic/PCB
+geometry/routing/copper/stack/rules, ECO/dialog/export/account adapters; upstream
+packaging/bootstrap and wider runtime/platform admission. Inventory774methods
+retains450omissions and80implemented-blocked;342guarded/94blocked/2partial routes
+span different tuples and are not a current-runtime callable-method count.
+See api-coverage.json and the three new2026-10-19 docs for concrete omissions.
+
+Worktree
+`feature/023200-delivery-20261019` starts from merged main; preserve prior
+branches, stash ebe1b55d7a430ae2e3168e373e155957b582eff9, worktrees and logs.
+Everything below is historical.
+
 Candidate023200, 2026-10-19: work is on
 `feature/attribute-sch-owner-20261019`. Added the current exact-target Attribute
 identity reader with parent groups, and dormant original-owner SCH rename

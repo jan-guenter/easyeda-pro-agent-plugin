@@ -15,6 +15,17 @@ PCB metadata and peers after fresh reopening, final SQL equality and original
 process closure. No explicit Save, inverse or production-design access ran.
 Ordinary-project rename and general PCB editing remain disabled.
 
+Update `0.3.0+codex.20261019060000` adds current-version Attribute value/placement
+reads with complete parent-group comparisons and caller-order ID selection.
+The separate installed023200 ID reader passed a populated disposable case;
+the new value/placement fields still need installed validation. Schematic rename
+now has private initial-closure/full-SQL baseline and fresh-generation/startup
+plumbing, but its writer and saved/reopened lifecycle remain unregistered.
+Status now reports journal-scan and historical-qualification timing without
+skipping checks or caching authority. See the [Attribute projection](docs/current-pcb-attribute-geometry-research-2026-10-19.md),
+[schematic generation](docs/current-schematic-rename-generation-2026-10-19.md)
+and [status diagnostics](docs/status-admission-diagnostics-2026-10-19.md).
+
 Update `0.3.0+codex.20261019023200` adds current-version component-attribute ID
 reads with ordered parent-group evidence and strict drift/bounds checks. It also
 adds a separate schematic opening-owner transfer and dormant rename compiler;
@@ -569,7 +580,7 @@ paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
 Current source classifications are 212 public subsets, 32 native equivalents,
 no lifecycle-only methods, 80 implemented-but-blocked methods and 450
-omissions. Their execution routes comprise 342 available with runtime guards,
+omissions. Their execution routes comprise 344 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

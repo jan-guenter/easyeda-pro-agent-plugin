@@ -22,9 +22,10 @@ transfers exclude each other, and an actual symbol-baseline reservation excludes
 SCH transfer. No PCB or symbol authority token is accepted by the SCH issuer.
 If authenticated scope exit fails after reservation, the same SCH owner remains
 reachable, but its completed-transfer assertion refuses. It cannot be replayed
-under a different operation ID. This retains the owner needed for cleanup;
-there is no callable SCH cleanup coordinator yet. The baseline/normal-close
-coordinator that will consume it is still missing.
+under a different operation ID. This retains the owner needed for cleanup.
+The original delivery did not include that coordinator. The later
+[baseline implementation](current-schematic-rename-baseline-2026-10-19.md)
+now supplies callable private cleanup and complete closed SQL capture.
 
 The initial opening is a PCB in the same disposable project. A SCH container is
 not that PCB. The transfer therefore seals the exact project and branch, while
@@ -129,13 +130,13 @@ for the exported holder identities and the narrower fields that can be read.
 
 ## Remaining implementation
 
-1. Add a distinct SCH baseline coordinator that journals the transfer intent,
-   retains an original close capture, allows one normal close, proves original
-   root/Job termination and captures the complete closed SQL baseline. Failed
-   transfers must reach cleanup without becoming completed transfers.
-2. Add a distinct fresh project-only SCH generation and startup collector. Bind
-   original SQL, child roster, cache exclusions and actor/clock observations to
-   that generation. Do not substitute PCB/symbol owner tokens.
+1. The distinct SCH [baseline and cleanup coordinator](current-schematic-rename-baseline-2026-10-19.md)
+   is implemented. It journals original capture and one normal close, binds
+   root/Job termination to complete SQL, and keeps failed transfers cleanup-only.
+2. The distinct [fresh generation and startup collector](current-schematic-rename-generation-2026-10-19.md)
+   is implemented privately. It binds original SQL, child metadata, cache
+   observations and retained startup holders. Backend actor/clock qualification
+   and connected validation remain open. No PCB/symbol owner is substituted.
 3. Bind independent original Windows clock observations and the backend
    producer model to SCH preparation, then journal exactly one mutation before
    dispatch. The dormant program alone cannot establish these facts.

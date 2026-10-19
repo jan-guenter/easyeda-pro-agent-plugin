@@ -1,5 +1,6 @@
 /** Private combined historical qualification. No current execution or replay grant. */
 /* oxlint-disable import/max-dependencies -- Fixed existing admission dependencies plus two inert error classes; importing the cache graph here would break lazy profile isolation. */
+import { performance } from "node:perf_hooks";
 import { createOperationScanner, readExactUtf8Artifact } from "./artifacts.ts";
 import { FAMILY } from "./closed-symbol-journal.ts";
 import { TERMINAL_STATE, parseClosedSymbolTerminalArtifact } from "./closed-symbol-terminal-shape.ts";
@@ -49,6 +50,24 @@ export interface QualifiedAdmissionOperation {
   readonly authorityRestored: false;
   readonly executionAuthorized: false;
   readonly replayAllowed: false;
+}
+/** Bounded aggregate timings from one complete scan, never reusable admission.
+ * No operation identities, paths, error text or source bytes enter this report.
+ */
+export interface AdmissionScanDiagnostics {
+  readonly schema: "easyeda-pro-control.admission-scan-diagnostics.v1";
+  readonly journalCount: number;
+  readonly candidateCounts: Readonly<Record<ScanCandidate["classification"], number>>;
+  readonly journalScanMs: number;
+  readonly historicalQualificationMs: number;
+  readonly totalMs: number;
+}
+interface QualifiedScan {
+  readonly operations: QualifiedAdmissionOperation[];
+  readonly diagnostics: AdmissionScanDiagnostics;
+}
+function diagnosticInteger(value: number): number {
+  return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.round(value)));
 }
 
 function project(operation: UnknownRecord): ScanCandidate {
@@ -182,12 +201,18 @@ async function qualifyTerminal(candidate: ScanCandidate, runtime: Awaited<Return
     return matches ? undefined : observation(candidate, "terminal-evidence-invalid");
   } catch (error) { return observation(candidate, failureClass(error)); }
 }
-async function qualifiedCandidates(): Promise<QualifiedAdmissionOperation[]> {
+async function qualifiedCandidates(): Promise<QualifiedScan> {
+  const started = performance.now();
   const candidates = await rawCandidates();
+  const journalScanEnded = performance.now();
+  const candidateCounts: Record<ScanCandidate["classification"], number> = {
+    legacy: 0, incomplete: 0, invalid: 0, terminal: 0, "current-baseline": 0,
+  };
   const results: QualifiedAdmissionOperation[] = [];
   let runtime: Awaited<ReturnType<typeof currentProcessSqlRuntime>> | undefined;
   let runtimeUnavailable = false;
   for (const candidate of candidates) {
+    candidateCounts[candidate.classification] += 1;
     if (candidate.classification === "legacy") {
       results.push(observation(candidate, "legacy"));
     } else if (candidate.classification === "current-baseline") {
@@ -208,19 +233,32 @@ async function qualifiedCandidates(): Promise<QualifiedAdmissionOperation[]> {
       }
     }
   }
-  return results;
+  const ended = performance.now();
+  return { operations: results, diagnostics: Object.freeze({
+    schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: candidates.length,
+    candidateCounts: Object.freeze(candidateCounts), journalScanMs: diagnosticInteger(journalScanEnded - started),
+    historicalQualificationMs: diagnosticInteger(ended - journalScanEnded), totalMs: diagnosticInteger(ended - started),
+  }) };
 }
 
 /** Fixed async wrapper for the three engine admission views. */
 export async function scanQualifiedAdmissionOperations(): Promise<QualifiedAdmissionOperation[]> {
-  const candidates = await qualifiedCandidates();
-  return candidates.filter((entry) => entry.bridgeBlocking || entry.unfinished);
+  const scanned = await qualifiedCandidates();
+  return scanned.operations.filter((entry) => entry.bridgeBlocking || entry.unfinished);
+}
+
+/** One fresh status scan with passive aggregate diagnostics. Other guards call
+ * their own scanner; neither the result nor its timings can be supplied back.
+ */
+export async function observeQualifiedAdmissionOperations(): Promise<QualifiedScan> {
+  const scanned = await qualifiedCandidates();
+  return { operations: scanned.operations.filter((entry) => entry.bridgeBlocking || entry.unfinished), diagnostics: scanned.diagnostics };
 }
 
 /** Direct guards omit proven historical completion or abandonment without rewriting state. */
 export async function listQualifiedOperationStates(): Promise<UnknownRecord[]> {
-  const candidates = await qualifiedCandidates();
-  return candidates.filter((entry) => entry.qualification !== "historical-abandonment-verified").map((entry) => ({ operationId: entry.summary.operationId, state: entry.summary.state,
+  const scanned = await qualifiedCandidates();
+  return scanned.operations.filter((entry) => entry.qualification !== "historical-abandonment-verified").map((entry) => ({ operationId: entry.summary.operationId, state: entry.summary.state,
     recordedState: entry.recordedState, qualification: entry.qualification }));
 }
 

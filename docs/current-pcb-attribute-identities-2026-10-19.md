@@ -1,8 +1,9 @@
 # Current PCB Attribute identities
 
 Research date: 2026-10-19. This adds a narrow current-runtime reader candidate
-to the existing PCB identity adapter. It does not claim connected validation,
-saved membership, complete ownership or writer authority. Research used inert
+to the existing PCB identity adapter. The later installed case below records
+scoped connected validation, not saved membership, complete ownership or writer
+authority. Research used inert
 installed source and official documentation; no CAD call or example was run.
 
 ## Contract and exact sources
@@ -103,5 +104,27 @@ validator with cross-realm DTOs. They cover ordered/empty groups, parent changes
 with unchanged flattened IDs, duplicates/collisions, malformed descriptors,
 pre-flatten aggregate bounds, byte limits and strict empty arguments. These are
 adapter tests, not execution of the native vendor callback or a populated live
-board. A separately admitted disposable nonempty case remains required before
-claiming representative connected validation.
+board. The separately admitted nonempty case below supplies scoped live evidence.
+
+## Installed023200 populated disposable case
+
+The restarted installed `0.3.0+codex.20261019023200` facade passed exact process,
+source, bundle and installed-file admission. Its authenticated current runtime
+then opened the selected disposable PCB through the original retained launcher.
+One Attribute ID request returned two matching samples: six unique attributes
+in two ordered component groups, three attributes per group. The runtime checked
+the exact target and fingerprint before and after the observation. Observation
+commitment: `c3795321f18d94bc2d56800fb53d7a4fd5a862fea513795d9356ab8411a13d0f`.
+
+One normal-close request was acknowledged. A separate original root/Job
+termination observation passed. The closed disposable file remained598,016bytes
+with SHA-256`e4434cc5d6a5a2d19729093485406e486499790e5f32d994a1d35bb5709d5b4d`,
+byte-identical to its retained earlier closed copy, with no SQLite sidecars.
+No explicit Save, design edit, restoration or production-design access ran.
+The case is completed and must not be replayed.
+
+This validates populated ID/group observation on that payload and fixture.
+It does not validate the new Attribute geometry/value methods, empty-group live
+behavior, filters, reciprocal ownership, complete persisted membership or a
+later runtime. Unchanged closed bytes are a separate case result, not a
+persistence guarantee of the reader.

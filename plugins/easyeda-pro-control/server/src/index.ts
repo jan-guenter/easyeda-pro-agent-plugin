@@ -1751,6 +1751,20 @@ const failureOutputSchema = z
     error: errorOutputSchema,
   })
   .strict();
+const statusAdmissionDiagnosticsSchema = z.object({
+  schema: z.literal("easyeda-pro-control.admission-scan-diagnostics.v1"),
+  journalCount: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  candidateCounts: z.object({
+    legacy: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    incomplete: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    invalid: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    terminal: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    "current-baseline": z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  }).strict(),
+  journalScanMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  historicalQualificationMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  totalMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+}).strict();
 const statusSuccessOutputSchema = z
   .object({
     facade: recordSchema.optional(),
@@ -1759,6 +1773,7 @@ const statusSuccessOutputSchema = z
     upstreamProcess: recordSchema.optional(),
     incompleteOperations: z.array(recordSchema).optional(),
     incompleteOperationsObservedAt: nonEmptyStringSchema.optional(),
+    admissionScan: statusAdmissionDiagnosticsSchema.optional(),
     safetyModel: nonEmptyStringSchema.optional(),
     ...optionalFailureOutputShape,
   })
@@ -1996,6 +2011,7 @@ registerFacadeTool(
     upstreamProcess: upstream.processDiagnostics(),
     incompleteOperations: admission.incompleteOperations,
     incompleteOperationsObservedAt: admission.observedAt,
+    admissionScan: admission.diagnostics,
     safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-local-utilities-with-separate-runtime-admission",
   })),
 );
@@ -2512,7 +2528,7 @@ registerFacadeTool(
   "easyeda_control_pcb_geometry",
   {
     title: "Read loaded PCB geometry and placement",
-    description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters and parentless String text on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style in mil/degrees, key/show flags, positionIsNull and serialized silkColor. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Component attributes, rendered glyphs and ownership are excluded. No SDK instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
+    description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters, parentless String text and component Attribute text/placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style, key/show flags, positionIsNull and serialized silkColor. Attribute adds current model value and keyVisible/valueVisible, preserving complete ordered parent groups even for selected IDs. Name values may already be formula-expanded; raw formulaName and evaluation are omitted. Numeric coordinates remain required. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Grouping does not prove reciprocal ownership. No SDK instances, public-wrapper dispatch, optional filters, rendered-glyph proof, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
     inputSchema: { request: z.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },

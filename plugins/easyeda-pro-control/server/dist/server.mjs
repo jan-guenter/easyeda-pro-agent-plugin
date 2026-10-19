@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a9cbe890e12cce0ffb293de8141240df56d6b3b3ce92728937fdb3859226f24f";
+const __easyedaBundlePairId = "8be6993fcda33ecd06a6e1aa157b0f710c2ba58cf0584df65b1014c6dcbd3699";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39817,6 +39817,23 @@ var init_extension_api_coverage_routes = __esm({
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
           action: identitiesOnly ? "pcb-identities" : "pcb-geometry",
           query: { method: `eda.pcb_PrimitiveString.${method6}`, includeSchemas: true }
+        } } }
+      } });
+    }
+    for (const method6 of ["getAll", "get"]) {
+      groups.push({ namespace: "pcb_PrimitiveAttribute", methods: [method6], route: {
+        tool: "easyeda_control_pcb_geometry",
+        selector: `eda.pcb_PrimitiveAttribute.${method6}`,
+        implementation: "native-task-equivalent",
+        scope: `Separately pinned current API/UI/PCB Attribute loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native attribute-getAll samples. Retains ordered component parent groups including empty groups and all child IDs; parentPrimitiveId is an observed association, not reciprocal ownership or saved membership. DTOs copy bounded own identity/lock, layer, numeric placement, key/value, keyVisible/valueVisible, fontFamily/fontSize/lineWidth, alignMode1..9, degree rotation, reverse/expansion/mirror, positionIsNull and serialized silkColor. Distances multiply by10 to mil; radians multiply by180 then divide by Math.PI. Value is native model text and may already contain an expanded Name formula; raw formulaName and evaluation are omitted. Null coordinates are refused rather than coerced; positionIsNull stays separate. Empty strings remain exact; only serialized silkColor accepts null, which does not prove raw-model color, and nonempty colors are not validated CSS. Existing font/footprint/device caches are read without loading assets. No fonts/outlines, full source, rendered-text, connectivity, ownership, persistence, write or Save claim. Complete ordered groups and all projected rows must match before selection, with duplicate/colliding identities refused. Bounds256groups/256totalrows/393216bytes apply before selection; native serialization still precedes those bounds. No filters, public wrapper, SDK constructor or positive type lookup. ${method6 === "get" ? "Only1..256 distinct primitiveIds in an array; exact caller order and all IDs required, no scalar get or missing-ID skipping." : "Empty arguments only; complete observed family and group order are preserved."}`,
+        source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+        tests: ["current-pcb-geometry.test.ts", "current-pcb-geometry-registration.test.ts"],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: {
+          action: "pcb-geometry",
+          query: { method: `eda.pcb_PrimitiveAttribute.${method6}`, includeSchemas: true }
         } } }
       } });
     }
@@ -82470,6 +82487,10 @@ var init_closed_symbol_aged_terminal_admission_cache = __esm({
 });
 
 // server/src/closed-symbol-terminal-admission.ts
+import { performance as performance8 } from "node:perf_hooks";
+function diagnosticInteger(value2) {
+  return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.round(value2)));
+}
 function project2(operation) {
   const plan2 = operation["plan"];
   const family2 = isRecord(plan2) ? plan2["profile"] : void 0;
@@ -82621,11 +82642,21 @@ async function qualifyTerminal(candidate, runtime) {
   }
 }
 async function qualifiedCandidates() {
+  const started = performance8.now();
   const candidates = await rawCandidates();
+  const journalScanEnded = performance8.now();
+  const candidateCounts = {
+    legacy: 0,
+    incomplete: 0,
+    invalid: 0,
+    terminal: 0,
+    "current-baseline": 0
+  };
   const results = [];
   let runtime;
   let runtimeUnavailable = false;
   for (const candidate of candidates) {
+    candidateCounts[candidate.classification] += 1;
     if (candidate.classification === "legacy") {
       results.push(observation(candidate, "legacy"));
     } else if (candidate.classification === "current-baseline") {
@@ -82652,15 +82683,27 @@ async function qualifiedCandidates() {
       }
     }
   }
-  return results;
+  const ended = performance8.now();
+  return { operations: results, diagnostics: Object.freeze({
+    schema: "easyeda-pro-control.admission-scan-diagnostics.v1",
+    journalCount: candidates.length,
+    candidateCounts: Object.freeze(candidateCounts),
+    journalScanMs: diagnosticInteger(journalScanEnded - started),
+    historicalQualificationMs: diagnosticInteger(ended - journalScanEnded),
+    totalMs: diagnosticInteger(ended - started)
+  }) };
 }
 async function scanQualifiedAdmissionOperations() {
-  const candidates = await qualifiedCandidates();
-  return candidates.filter((entry) => entry.bridgeBlocking || entry.unfinished);
+  const scanned = await qualifiedCandidates();
+  return scanned.operations.filter((entry) => entry.bridgeBlocking || entry.unfinished);
+}
+async function observeQualifiedAdmissionOperations() {
+  const scanned = await qualifiedCandidates();
+  return { operations: scanned.operations.filter((entry) => entry.bridgeBlocking || entry.unfinished), diagnostics: scanned.diagnostics };
 }
 async function listQualifiedOperationStates() {
-  const candidates = await qualifiedCandidates();
-  return candidates.filter((entry) => entry.qualification !== "historical-abandonment-verified").map((entry) => ({
+  const scanned = await qualifiedCandidates();
+  return scanned.operations.filter((entry) => entry.qualification !== "historical-abandonment-verified").map((entry) => ({
     operationId: entry.summary.operationId,
     state: entry.summary.state,
     recordedState: entry.recordedState,
@@ -94634,7 +94677,7 @@ var init_ordinary_launch_recovery = __esm({
 });
 
 // server/src/ordinary-launch-timings.ts
-import { performance as performance8 } from "node:perf_hooks";
+import { performance as performance9 } from "node:perf_hooks";
 function bounded(value2) {
   return Number.isFinite(value2) ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value2))) : 0;
 }
@@ -94660,7 +94703,7 @@ var init_ordinary_launch_timings = __esm({
     OrdinaryLaunchTimings = class {
       #clock;
       #stages = /* @__PURE__ */ new Map();
-      constructor(clock7 = () => performance8.now()) {
+      constructor(clock7 = () => performance9.now()) {
         this.#clock = clock7;
       }
       #now() {
@@ -97019,6 +97062,10 @@ function currentPcbGeometryFamily(request11) {
     case "eda.pcb_PrimitiveString.get": {
       return "String";
     }
+    case attributeCollectionMethod:
+    case attributeSelectedMethod: {
+      return "Attribute";
+    }
     default: {
       throw new Error("Unsupported current PCB geometry method.");
     }
@@ -97064,6 +97111,42 @@ function validateCurrentPcbGeometryArguments(input) {
     issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
   };
 }
+function assertAttributeGroups(payload) {
+  if (!("attributeParentGroups" in payload)) {
+    return;
+  }
+  const memberships = /* @__PURE__ */ new Map(), orderedIds = [], parents = /* @__PURE__ */ new Set();
+  for (const group of payload.attributeParentGroups) {
+    if (parents.has(group.parentPrimitiveId)) {
+      throw new Error("PCB Attribute groups contain duplicate parents.");
+    }
+    parents.add(group.parentPrimitiveId);
+  }
+  for (const group of payload.attributeParentGroups) {
+    if (orderedIds.length + group.ids.length > CURRENT_PCB_GEOMETRY_MAX_ROWS) {
+      throw new Error("PCB Attribute groups exceed their total identity bound.");
+    }
+    for (const id11 of group.ids) {
+      if (parents.has(id11) || memberships.has(id11)) {
+        throw new Error("PCB Attribute groups contain duplicate or colliding identities.");
+      }
+      memberships.set(id11, group.parentPrimitiveId);
+      orderedIds.push(id11);
+    }
+  }
+  for (const row7 of payload.rows) {
+    if (memberships.get(row7.primitiveId) !== row7.parentPrimitiveId) {
+      throw new Error("PCB Attribute row differs from its observed parent group.");
+    }
+  }
+  if (payload.method === attributeCollectionMethod) {
+    if (canonicalJson(orderedIds) !== canonicalJson(payload.rows.map((row7) => row7.primitiveId))) {
+      throw new Error("PCB Attribute groups differ from the complete ordered rows.");
+    }
+  } else if (payload.observedRowCount !== orderedIds.length) {
+    throw new Error("PCB Attribute groups differ from the complete observed count.");
+  }
+}
 function validateCurrentPcbGeometryResult(input, raw) {
   const request11 = parseCurrentPcbGeometryRequest(input);
   const payload = currentPcbGeometryResultSchema.parse(raw);
@@ -97080,6 +97163,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     }
     seen.add(row7.primitiveId);
   }
+  assertAttributeGroups(payload);
   const { rows: rows2, ...metadata9 } = payload;
   const counts2 = { observedRowCount: rows2.length };
   if ("primitiveIds" in request11.arguments) {
@@ -97108,7 +97192,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations11]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema8, numberSchema, layerSchema2, boundedText4, idSchema3, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity29, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, stringSchema, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations11;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod, methods3, targetSchema8, numberSchema, layerSchema2, boundedText4, idSchema3, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity29, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, stringSchema, attributeSchema, attributeGroupsSchema, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, attributeResultShape, currentPcbGeometryResultSchema, limitations11;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -97136,7 +97220,9 @@ var init_current_pcb_geometry = __esm({
       "eda.pcb_PrimitiveString.get"
     ];
     componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
-    methods3 = [...collectionMethods2, ...selectedMethods, componentPadsMethod];
+    attributeCollectionMethod = "eda.pcb_PrimitiveAttribute.getAll";
+    attributeSelectedMethod = "eda.pcb_PrimitiveAttribute.get";
+    methods3 = [...collectionMethods2, ...selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod];
     targetSchema8 = currentPcbLayersRequestSchema.shape.target;
     numberSchema = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value2) => !Object.is(value2, -0), "Signed zero is not supported by this JSON observation.");
     layerSchema2 = numberSchema.refine((value2) => Number.isInteger(value2) && value2 >= 0 && value2 <= 65535, "Invalid native layer ID.");
@@ -97237,6 +97323,17 @@ var init_current_pcb_geometry = __esm({
       positionIsNull: external_exports.boolean(),
       silkColor: external_exports.string().min(1).max(128).nullable()
     }).strict();
+    attributeSchema = stringSchema.omit({ primitiveType: true, text: true, showKey: true, showValue: true }).extend({
+      primitiveType: external_exports.literal("Attribute"),
+      parentPrimitiveId: idSchema3,
+      value: external_exports.string().max(65536),
+      keyVisible: external_exports.boolean(),
+      valueVisible: external_exports.boolean()
+    }).strict();
+    attributeGroupsSchema = external_exports.array(external_exports.object({
+      parentPrimitiveId: idSchema3,
+      ids: external_exports.array(idSchema3).max(CURRENT_PCB_GEOMETRY_MAX_ROWS)
+    }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
     padSchema = external_exports.object({
       ...base3,
       primitiveType: external_exports.literal("Pad"),
@@ -97256,7 +97353,9 @@ var init_current_pcb_geometry = __esm({
     currentPcbGeometryRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema8 }).strict(),
       external_exports.object({ method: external_exports.enum(selectedMethods), arguments: external_exports.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema8 }).strict(),
-      external_exports.object({ method: external_exports.literal(componentPadsMethod), arguments: external_exports.object({ primitiveId: idSchema3 }).strict(), target: targetSchema8 }).strict()
+      external_exports.object({ method: external_exports.literal(componentPadsMethod), arguments: external_exports.object({ primitiveId: idSchema3 }).strict(), target: targetSchema8 }).strict(),
+      external_exports.object({ method: external_exports.literal(attributeCollectionMethod), arguments: external_exports.object({}).strict(), target: targetSchema8 }).strict(),
+      external_exports.object({ method: external_exports.literal(attributeSelectedMethod), arguments: external_exports.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema8 }).strict()
     ]);
     currentPcbGeometryQuerySchema = external_exports.object({ method: external_exports.enum(methods3).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
     resultShape = {
@@ -97270,6 +97369,13 @@ var init_current_pcb_geometry = __esm({
       persistenceVerified: external_exports.literal(false),
       sourceMembershipVerified: external_exports.literal(false)
     };
+    attributeResultShape = {
+      ...resultShape,
+      rows: external_exports.array(attributeSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+      attributeParentGroups: attributeGroupsSchema,
+      relationshipEvidence: external_exports.literal("native-component-attribute-groups"),
+      reciprocalParentVerified: external_exports.literal(false)
+    };
     currentPcbGeometryResultSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ ...resultShape, method: external_exports.enum(collectionMethods2) }).strict(),
       external_exports.object({ ...resultShape, method: external_exports.enum(selectedMethods), observedRowCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
@@ -97282,7 +97388,9 @@ var init_current_pcb_geometry = __esm({
         relationshipEvidence: external_exports.literal("native-component-child-list-and-global-pad-membership"),
         reciprocalParentVerified: external_exports.literal(false),
         symbolPinMappingVerified: external_exports.literal(false)
-      }).strict()
+      }).strict(),
+      external_exports.object({ ...attributeResultShape, method: external_exports.literal(attributeCollectionMethod) }).strict(),
+      external_exports.object({ ...attributeResultShape, method: external_exports.literal(attributeSelectedMethod), observedRowCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict()
     ]);
     limitations11 = [
       "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
@@ -97293,11 +97401,12 @@ var init_current_pcb_geometry = __esm({
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
       "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
       "String is the PCB text family, not pcb_PrimitiveText. Native string-getAll excludes views with a native parent, so get is limited to that same observed family and does not cover component attributes or inherited text. DTOs retain raw text and fontFamily, layer, placement, fontSize, lineWidth, alignMode 1..9, degree rotation, reverse, expansion, mirror, key, showKey, showValue, positionIsNull and serialized silkColor. Native internal distances are multiplied by 10 to mil; rotation is multiplied by 180 then divided by Math.PI, matching the installed public mapper without defaults or coercion. Empty text/font/key strings remain empty; missing or undefined projected scalars refuse. Only silkColor accepts null. The native serializer applies color.toString()||null, so its null does not prove an absent raw model color; nonempty colors stay bounded raw strings, not validated CSS. Text has no net field. Raw value and display flags do not prove rendered text. Outlines, font cache, zIndex, partition/group, model type and source ownership are omitted and not compared. Existing font caches are read by the native serializer, without loading fonts or refreshing geometry.",
+      "Attribute observes existing component-view groups through fixed attribute-getAll. Each DTO adds parentPrimitiveId, key/value and keyVisible/valueVisible with the same finite numeric placement, style, display-state and serialized-color projection as String. Nullable public coordinates are not coerced; positionIsNull remains separate. Value is current model text: Name may already be formula-expanded, unlike the raw Component Name metadata. FormulaName, evaluation, rendered text, outlines and font objects are omitted. Complete ordered attributeParentGroups retain every parent and its ordered child IDs, including empty groups, even for get. Two complete group-and-scalar samples must match before selection. Grouping does not prove reciprocal ownership or complete stored component/attribute membership. Parent/layer/lock filters are unsupported; the existing identity-only reader has separate larger limits.",
       "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
       "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
       "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
       "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
-      "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily/key string, 128 per serialized String silkColor, 65536 UTF-16 units per String text, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "At most 256 rows per observed family or child list, 256 Attribute parent groups and 256 total Attribute rows, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily/key string, 128 per serialized String/Attribute silkColor, 65536 UTF-16 units per String text or Attribute value, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
       "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
   }
@@ -101333,11 +101442,12 @@ var init_engine = __esm({
        * No other guard accepts this result, and every new invocation scans again.
        */
       async observeStatusAdmission() {
-        const operations = await scanQualifiedAdmissionOperations();
+        const { operations, diagnostics } = await observeQualifiedAdmissionOperations();
         assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
         return {
           observedAt: now(),
-          incompleteOperations: structuredClone(operations.filter((entry) => entry.unfinished).map((entry) => entry.summary))
+          incompleteOperations: structuredClone(operations.filter((entry) => entry.unfinished).map((entry) => entry.summary)),
+          diagnostics
         };
       }
       async assertRecoveryOperationIsolated(operationId8) {
@@ -139835,7 +139945,8 @@ function buildCurrentPcbGeometryProgram(input) {
     Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll",
     Pad: "pcb/extensionAPI/pad-getAll",
-    String: "pcb/extensionAPI/string-getAll"
+    String: "pcb/extensionAPI/string-getAll",
+    Attribute: "pcb/extensionAPI/attribute-getAll"
   };
   return `let timer,clear;
 try{
@@ -139948,16 +140059,19 @@ const copyRows=value=>{
   }
   // PCB217199c8@10397039 selects existing parentless views; yr.toJSON@7384285 retains internal units.
   // API021d155b@1502811 scales these distances by 10 and radians by 180/PI. Never invoke SDK constructors with their defaults.
-  if(family==='String'){
+  // Attribute uses the same yr.toJSON scalars; API021d155b@1492186 applies the identical conversions.
+  if(family==='String'||family==='Attribute'){
    const position=point(own(row,'position')),alignMode=integer(own(row,'origin'));if(alignMode<1||alignMode>9)bad();
    // yr.toJSON emits silkColor as color.toString()||null. Copy that serialized
    // Observation only: null is not proof of absent raw color or source ownership.
    const silkColor=text(own(row,'silkColor'),128,true);if(silkColor==='')bad();
-   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),text:text(own(row,'value'),65536),
+   const value=text(own(row,'value'),65536),showKey=bool(own(row,'showKey')),showValue=bool(own(row,'showValue'));
+   rows.push({...identity,layer:layer(own(row,'layerId')),x:num(position.x*10),y:num(position.y*10),
     fontFamily:text(own(row,'fontFamily'),1024),fontSize:num(num(own(row,'fontSize'))*10),lineWidth:num(num(own(row,'strokeWidth'))*10),
     alignMode,rotation:num(num(own(row,'rotation'))*180/Math.PI),reverse:bool(own(row,'reverse')),
     expansion:num(num(own(row,'reverseExpansion'))*10),mirror:bool(own(row,'mirror')),key:text(own(row,'key'),1024),
-    showKey:bool(own(row,'showKey')),showValue:bool(own(row,'showValue')),positionIsNull:bool(own(row,'positionIsNull')),silkColor});continue;
+    ...(family==='Attribute'?{value,keyVisible:showKey,valueVisible:showValue}:{text:value,showKey,showValue}),
+    positionIsNull:bool(own(row,'positionIsNull')),silkColor});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){
@@ -139979,7 +140093,28 @@ const copyRows=value=>{
 };
 const call=async(name,arg)=>{check();const reply=await apply(rpc,channel,[name,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
-const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=copyRows(raw);check();await identity();check();return rows;};
+// PCB217199c8@10411430 supplies loaded component groups, not reciprocal or stored ownership.
+// Bound all groups/total children and collect every parent before projecting any Attribute row.
+const copyAttributeGroups=value=>{
+ const n=arrayLength(value),groups=[],parents=new Set();let total=0;
+ for(let i=0;i<n;i++){
+  const group=own(value,String(i));exact(group,['attrs','parentPrimitiveId']);
+  const parentPrimitiveId=text(own(group,'parentPrimitiveId'),256),attrs=own(group,'attrs'),count=arrayLength(attrs);
+  if(parentPrimitiveId.length===0||parents.has(parentPrimitiveId)||total+count>${CURRENT_PCB_GEOMETRY_MAX_ROWS})bad();
+  total+=count;parents.add(parentPrimitiveId);groups.push({parentPrimitiveId,attrs});
+ }
+ const rows=[],attributeParentGroups=[],seen=new Set();
+ for(const group of groups){
+  const ids=[];
+  for(const row of copyRows(group.attrs)){
+   if(parents.has(row.primitiveId)||seen.has(row.primitiveId))bad();seen.add(row.primitiveId);ids.push(row.primitiveId);
+   rows.push({...row,parentPrimitiveId:group.parentPrimitiveId});
+  }
+  attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
+ }
+ return{rows,attributeParentGroups};
+};
+const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=family==='Attribute'?copyAttributeGroups(raw):copyRows(raw);check();await identity();check();return rows;};
 // PCB217199c8@10336862 enumerates gr.getItem(id).getPads() with full IDs. API021d155b@1427274 supplies its own input as public parent ID.
 // Correlate observed child membership only; do not infer reverse parents, reconstructed IDs or symbol-pin mapping.
 const readComponentPads=async()=>{
@@ -140000,14 +140135,16 @@ const readComponentPads=async()=>{
 const run=async()=>{
  const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
- const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request11.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'?first.rows:first;
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request11.method)},target,rows:firstRows,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ if(family==='Attribute')Object.assign(observation,{attributeParentGroups:first.attributeParentGroups,relationshipEvidence:'native-component-attribute-groups',reciprocalParentVerified:false});
  if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
   relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
   if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
  const complete=encode(observation);if(primitiveIds===null)return complete;
- const byId=new Map(first.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
- return encode({...observation,rows:selected,observedRowCount:first.length});
+ const byId=new Map(firstRows.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
+ return encode({...observation,rows:selected,observedRowCount:firstRows.length});
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_GEOMETRY_READ_FAILED'));},10000]);});
 return await Promise.race([run(),timeout]);
@@ -150213,7 +150350,7 @@ function registerFacadeTool(name6, config2, handler) {
     handler
   );
 }
-var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentDisposableOpenCoordinator, currentPcbRenameOperationCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema2, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, currentSymbolOperationToolOutputSchema, toolOutputSchemas, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
+var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentDisposableOpenCoordinator, currentPcbRenameOperationCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema2, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusAdmissionDiagnosticsSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, currentSymbolOperationToolOutputSchema, toolOutputSchemas, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
 var init_src = __esm({
   async "server/src/index.ts"() {
     init_mcp();
@@ -150655,6 +150792,20 @@ var init_src = __esm({
       ok: external_exports.literal(false),
       error: errorOutputSchema
     }).strict();
+    statusAdmissionDiagnosticsSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.admission-scan-diagnostics.v1"),
+      journalCount: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      candidateCounts: external_exports.object({
+        legacy: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        incomplete: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        invalid: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        terminal: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+        "current-baseline": external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+      }).strict(),
+      journalScanMs: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      historicalQualificationMs: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      totalMs: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+    }).strict();
     statusSuccessOutputSchema = external_exports.object({
       facade: recordSchema.optional(),
       upstream: recordSchema.optional(),
@@ -150662,6 +150813,7 @@ var init_src = __esm({
       upstreamProcess: recordSchema.optional(),
       incompleteOperations: external_exports.array(recordSchema).optional(),
       incompleteOperationsObservedAt: nonEmptyStringSchema.optional(),
+      admissionScan: statusAdmissionDiagnosticsSchema.optional(),
       safetyModel: nonEmptyStringSchema.optional(),
       ...optionalFailureOutputShape
     }).catchall(external_exports.unknown());
@@ -150903,6 +151055,7 @@ var init_src = __esm({
         upstreamProcess: upstream.processDiagnostics(),
         incompleteOperations: admission.incompleteOperations,
         incompleteOperationsObservedAt: admission.observedAt,
+        admissionScan: admission.diagnostics,
         safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-local-utilities-with-separate-runtime-admission"
       }))
     );
@@ -151499,7 +151652,7 @@ var init_src = __esm({
       "easyeda_control_pcb_geometry",
       {
         title: "Read loaded PCB geometry and placement",
-        description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters and parentless String text on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style in mil/degrees, key/show flags, positionIsNull and serialized silkColor. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Component attributes, rendered glyphs and ownership are excluded. No SDK instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
+        description: "Observe Line/Arc/Via geometry, Component metadata, Pad parameters, parentless String text and component Attribute text/placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. String returns raw text/font, pose/style, key/show flags, positionIsNull and serialized silkColor. Attribute adds current model value and keyVisible/valueVisible, preserving complete ordered parent groups even for selected IDs. Name values may already be formula-expanded; raw formulaName and evaluation are omitted. Numeric coordinates remain required. Color is a bounded raw string or native-normalized null, not validated CSS or raw-model color proof. Grouping does not prove reciprocal ownership. No SDK instances, public-wrapper dispatch, optional filters, rendered-glyph proof, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
