@@ -3,6 +3,8 @@
 import { performance } from "node:perf_hooks";
 import { controlDataDirectory, loadOperation } from "./artifacts.ts";
 import { isRecord } from "./core.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationRequestSchema } from "./current-schematic-operation.ts";
+import type { CurrentSchematicOperationLifecycleRequest, CurrentSchematicOperationStep } from "./current-schematic-operation.ts";
 import { assertCurrentSchematicRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentDisposableOpenCoordinator, CurrentSchematicRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
 import { collectCurrentSchematicAgedSqlClock } from "./current-schematic-aged-sql-issuer.ts";
@@ -23,6 +25,9 @@ import type { EasyedaControlEngine } from "./engine.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 
 type Value = Readonly<Record<string, unknown>>;
+type Purpose = typeof CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE | typeof CURRENT_SCHEMATIC_OPERATION_PURPOSE;
+type LifecycleRequest = CurrentSchematicRenameOperationRequest | CurrentSchematicOperationLifecycleRequest;
+type Step = CurrentSchematicRenameOperationStep | CurrentSchematicOperationStep;
 type CleanupOwner = "opening" | "baseline" | "generation" | "writer" | "verification";
 type DiagnosticOutcome = "succeeded" | "failed" | "observation-pending";
 interface ActiveDiagnostic {
@@ -42,6 +47,7 @@ interface BatchProgress {
 }
 interface Slot {
   readonly operationId: string; readonly openingOperationId: string;
+  readonly purpose: Purpose;
   next: CurrentSchematicRenameOperationPhase | "completed" | "stopped";
   readonly attempted: string[]; failedPhase?: string; last?: Value;
   owner?: CurrentSchematicRenameOpeningOwner;
@@ -76,11 +82,21 @@ function need(condition: boolean, message = "SCHEMATIC rename requires its retai
 }
 
 /** Historical inspection never restores authority or changes journal state. */
-export async function inspectCurrentSchematicRenameHistory(operationId: string): Promise<Value> {
+export async function inspectCurrentSchematicRenameHistory(operationId: string,
+  purpose: Purpose = CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE): Promise<Value> {
   const journal = await loadOperation(operationId);
   need(journal.operationId === operationId && isRecord(journal.plan) &&
     ["easyeda-pro-control.current-schematic-rename-baseline.v1", "easyeda-pro-control.current-schematic-rename-writer.v1",
       "easyeda-pro-control.current-schematic-rename-verification.v1"].includes(String(journal.plan["profile"])), "SCHEMATIC rename history belongs to another purpose.");
+  let plan = journal.plan;
+  for (let depth = 0; depth < 3; depth += 1) {
+    need(plan["purpose"] === undefined || plan["purpose"] === purpose, "SCHEMATIC rename history belongs to another purpose.");
+    const previous: unknown = plan["writerPlan"] ?? plan["baselinePlan"];
+    if (previous === undefined) {
+      need(plan["purpose"] === purpose, "SCHEMATIC baseline purpose is missing or different."); break;
+    }
+    need(depth < 2 && isRecord(previous), "SCHEMATIC purpose lineage is malformed."); plan = previous;
+  }
   return { profile: "easyeda-pro-control.current-schematic-rename-history.v1", operationId, state: journal["state"],
     journalPath: journal["journalPath"], artifacts: journal.artifacts, nextSafeAction: journal["nextSafeAction"],
     hardStop: journal["hardStop"], orphanedCallPossible: journal["orphanedCallPossible"], mutationMayHaveOccurred: journal["mutationMayHaveOccurred"],
@@ -100,14 +116,35 @@ export class CurrentSchematicRenameOperationCoordinator {
     this.engine = engine; this.opener = opener; this.writer = new CurrentSchematicRenameWriterCoordinator(engine);
     this.verifier = new CurrentSchematicRenameVerificationCoordinator(engine); this.scratch = new CurrentSchematicAgedSqlReferenceStage(engine);
   }
-  public async run(input: unknown): Promise<Value> {
+  public run(input: unknown): Promise<Value> {
     const request = currentSchematicRenameOperationRequestSchema.parse(structuredClone(input));
+    return this.runLifecycle(request, CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE);
+  }
+  public async runOrdinary(input: unknown, expectedFingerprint?: Record<string, unknown>): Promise<Value> {
+    const request = currentSchematicOperationRequestSchema.parse(structuredClone(input));
+    need(request.action === "open" || expectedFingerprint === undefined, "Ordinary SCH continuation cannot replace its runtime fingerprint.");
+    // Lost replies must remain inspectable without taking or releasing the live
+    // Mutation slot. The opener checks the sealed purpose before returning data.
+    if (request.action === "inspect-opening") { return this.opener.runSchematicOpening(request); }
+    if (request.action === "open" || request.action === "observe" ||
+      request.action === "request-normal-close" || request.action === "retire-after-termination") {
+      need(!this.busy, "SCHEMATIC rename operation is already running.");
+      this.busy = true;
+      try { return await this.opener.runSchematicOpening(request, expectedFingerprint); }
+      finally { this.busy = false; }
+    }
+    return this.runLifecycle(request, CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  }
+  private async runLifecycle(request: LifecycleRequest, purpose: Purpose): Promise<Value> {
     if (request.action === "inspect") {
-      return this.slots.has(request.operationId) ? this.inspect(request.operationId) : inspectCurrentSchematicRenameHistory(request.operationId);
+      const slot = this.slots.get(request.operationId);
+      if (slot === undefined) { return inspectCurrentSchematicRenameHistory(request.operationId, purpose); }
+      need(slot.purpose === purpose, "SCHEMATIC rename inspection belongs to another purpose."); return this.inspect(request.operationId);
     }
     need(!this.busy, "SCHEMATIC rename operation is already running.");
-    if (request.action === "baseline-begin") { return this.begin(request); }
+    if (request.action === "baseline-begin") { return this.begin(request, purpose); }
     const slot = this.slots.get(request.operationId); need(slot !== undefined, "SCHEMATIC rename cannot reconstruct ownership from a journal.");
+    need(slot.purpose === purpose, "SCHEMATIC rename continuation belongs to another purpose.");
     if (request.action === "cleanup") {
       need(!slot.renameVerified && slot.next !== "completed" && !slot.cleanupRequested, "SCHEMATIC rename cleanup was already selected or operation completed.");
       this.busy = true; slot.cleanupRequested = true;
@@ -125,7 +162,7 @@ export class CurrentSchematicRenameOperationCoordinator {
     } finally { this.busy = false; }
     return this.inspect(slot.operationId);
   }
-  private async advanceBatch(slot: Slot, steps: readonly CurrentSchematicRenameOperationStep[]): Promise<void> {
+  private async advanceBatch(slot: Slot, steps: readonly Step[]): Promise<void> {
     const progress: BatchProgress = { requestedPhases: Object.freeze(steps.map(step => step.expectedPhase)),
       attemptedSteps: 0, completedSteps: 0, status: "running" };
     slot.lastBatch = progress;
@@ -141,7 +178,7 @@ export class CurrentSchematicRenameOperationCoordinator {
       progress.status = "finished";
     } catch (error) { progress.status = "failed"; throw error; }
   }
-  private async advanceStep(slot: Slot, step: CurrentSchematicRenameOperationStep): Promise<void> {
+  private async advanceStep(slot: Slot, step: Step): Promise<void> {
     const { expectedPhase: phase } = step;
     need(slot.next === phase); slot.next = "stopped"; slot.attempted.push(phase);
     slot.diagnosticCurrent = { action: "advance", phase, stage: "performing", startedAt: performance.now() };
@@ -161,19 +198,20 @@ export class CurrentSchematicRenameOperationCoordinator {
   }
   public inspect(operationId: string): Value {
     const slot = this.slots.get(operationId); need(slot !== undefined);
-    return Object.freeze({ profile: "easyeda-pro-control.current-schematic-rename-operation.v1", operationId, purpose: CURRENT_SCHEMATIC_RENAME_OPERATION_PURPOSE,
+    return Object.freeze({ profile: "easyeda-pro-control.current-schematic-rename-operation.v1", operationId, purpose: slot.purpose,
       openingOperationId: slot.openingOperationId, nextPhase: slot.next, busy: this.busy, attemptedPhases: [...slot.attempted], failedPhase: slot.failedPhase ?? null,
       lastResult: slot.last === undefined ? null : structuredClone(slot.last), originalOwnerRetained: slot.owner !== undefined,
       cleanupOwner: slot.cleanup ?? null, cleanupRequested: slot.cleanupRequested, renameVerified: slot.renameVerified,
       phaseDiagnostics: inspectDiagnostic(slot),
       lastBatch: slot.lastBatch === undefined ? null : Object.freeze({ ...slot.lastBatch,
         requestedPhases: Object.freeze([...slot.lastBatch.requestedPhases]), diagnosticOnly: true, replayAllowed: false }),
-      savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: false, genericWritersEnabled: false,
+      savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: false,
+      validationOnly: slot.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE, genericWritersEnabled: false,
       forwardOnly: true, inverseSupported: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
-  private async begin(request: Extract<CurrentSchematicRenameOperationRequest, { action: "baseline-begin" }>): Promise<Value> {
+  private async begin(request: Extract<LifecycleRequest, { action: "baseline-begin" }>, purpose: Purpose): Promise<Value> {
     need(!this.slots.has(request.operationId), "SCHEMATIC rename baseline attempt already exists."); this.busy = true;
-    const slot: Slot = { operationId: request.operationId, openingOperationId: request.openingOperationId, next: "stopped",
+    const slot: Slot = { operationId: request.operationId, openingOperationId: request.openingOperationId, purpose, next: "stopped",
       attempted: ["baseline-begin"], cleanupRequested: false, renameVerified: false };
     this.slots.set(request.operationId, slot);
     slot.diagnosticCurrent = { action: "baseline-begin", phase: "baseline-begin", stage: "performing", startedAt: performance.now() };
@@ -183,9 +221,13 @@ export class CurrentSchematicRenameOperationCoordinator {
       configured = await loadRuntimeMachineProfile();
       need(configured.profile.controlDirectory === controlDataDirectory() && configured.profile.easyeda.assetsRoot === process.env["EASYEDA_ASSETS_ROOT"],
         "SCHEMATIC baseline machine profile differs from the active facade.");
-      slot.owner = await this.opener.prepareSchematicRenameOpeningOwner(request.openingOperationId,
-        { operationId: request.operationId, target: request.target, desiredTitle: request.desiredTitle });
+      const intent = { operationId: request.operationId, target: request.target, desiredTitle: request.desiredTitle };
+      slot.owner = await (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE
+        ? this.opener.prepareOrdinarySchematicRenameOpeningOwner(request.openingOperationId, intent)
+        : this.opener.prepareSchematicRenameOpeningOwner(request.openingOperationId, intent));
       const original = assertCurrentSchematicRenameOpeningOwner(slot.owner, this.engine);
+      need(original.source.purpose === (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE ? purpose : "disposable-validation"),
+        "SCHEMATIC baseline owner belongs to another opening purpose.");
       slot.baseline = new CurrentSchematicRenameBaselineCoordinator(this.engine, original.source.runtime, configured.profile.runtime);
       slot.generation = new CurrentSchematicRenameGenerationCoordinator(this.engine, original.source.runtime);
       slot.last = structuredClone(await slot.baseline.capture(slot.owner)); slot.next = "baseline-close";
@@ -200,6 +242,8 @@ export class CurrentSchematicRenameOperationCoordinator {
       try {
         if (slot.owner !== undefined && slot.baseline === undefined && configured !== undefined) {
           const original = assertCurrentSchematicRenameOpeningOwner(slot.owner, this.engine);
+          need(original.source.purpose === (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE ? purpose : "disposable-validation"),
+            "SCHEMATIC cleanup owner belongs to another opening purpose.");
           slot.baseline = new CurrentSchematicRenameBaselineCoordinator(this.engine, original.source.runtime, configured.profile.runtime);
           slot.generation = new CurrentSchematicRenameGenerationCoordinator(this.engine, original.source.runtime);
         }
@@ -209,7 +253,7 @@ export class CurrentSchematicRenameOperationCoordinator {
     } finally { finishDiagnostic(slot, outcome); this.busy = false; }
     return this.inspect(slot.operationId);
   }
-  private async perform(slot: Slot, step: CurrentSchematicRenameOperationStep): Promise<Value> {
+  private async perform(slot: Slot, step: Step): Promise<Value> {
     const { baseline, generation } = slot;
     const id = slot.operationId;
     need(baseline !== undefined && generation !== undefined);
@@ -225,7 +269,9 @@ export class CurrentSchematicRenameOperationCoordinator {
       case "baseline-relaunch": { need(slot.reference !== undefined); return generation.relaunch(await baseline.closedContinuation(id)); }
       case "baseline-admit": { return generation.admit(id); }
       case "baseline-observe-caches": { return generation.observeCaches(id); }
-      case "baseline-open-project": { return generation.openProject(id, step.acceptUnqualifiedSchematicStartupEffects); }
+      case "baseline-open-project": {
+        return generation.openProject(id, "acceptUnqualifiedSchematicStartupEffects" in step ? step.acceptUnqualifiedSchematicStartupEffects : false);
+      }
       case "baseline-observe-clock": {
         need(slot.reference !== undefined); slot.currentGeneration = generation.generation(id);
         await this.engine.assertBridgeAndRecoveryAdmission(id);

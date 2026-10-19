@@ -269,6 +269,30 @@ newer explicit `advance-batch` action remains synthetic-tested, not live-validat
 The public route selects the aged unlocked-head branch, not every modeled branch;
 ordinary projects, inverse and complete canvas/connectivity proof remain excluded.
 
+`current-schematic-operation.ts` now composes a distinct ordinary-purpose
+entrypoint with pre-navigation checkpoint-derived startup, metadata peers and
+complete child projection. The opening, baseline, writer and verification plans
+retain that purpose; cross-purpose owners and historical journals cannot resume
+it. Until its own connected case passes, the public open still requires
+`confirmDisposableProject:true` and reports `validationOnly:true` with ordinary
+production scope disabled. The shared writer's historical success is not proof
+of this new startup/ownership composition. Keep this temporary scope gate
+separate from the permanent startup, clock and full-SQL guards.
+
+The private PCB diagnostic path now has a separate Windows owner in
+`current-pcb-diagnostic-owner.ts` and `pcb-diagnostic-owner.ps1`. It creates the
+original process inside its Job with exactly two inherited anonymous-pipe
+handles and permits only browser version/target discovery. It is not imported
+by a runtime registration. A protocol failure must retain helper stdin and
+native pipes: Electron can quit when those pipes disconnect. Release follows
+original root and complete Job exit, not a timeout. Synthetic child-pipe tests
+and Windows empty-Job construction do not qualify the custom EasyEDA build.
+Before live integration, bind the complete executable/profile/native paths,
+journal launch intent, and implement exact target/frame/worker/script/context
+ownership. Neither returned target metadata nor a matching browser version
+authorizes debugger attachment or execution. Complete PCB text observers,
+writer and persistence remain separate unfinished work.
+
 The unregistered SCH preflight now reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL
 projection. It also observes client/ticket, UI actor and renderer/server clocks;

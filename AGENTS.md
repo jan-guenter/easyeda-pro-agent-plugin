@@ -4,6 +4,61 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+163322 continuation, 2026-10-19. Actual facade142445/start41574386,
+parent140831/start41571749 independently and root admitted; all506source/3runtime/
+manifest and1536file/42dir/31,401,025byte inventory/modes match delivered163322.
+All18scratch runtime/helper pins pass read-only inspection. Evidence
+`/root/.cache/easyeda-163322-independent-admission-nJ2567UC`.
+New ordinary launch `sch-batch-163322-20261019-launch` completed ONCE in
+functions17: root47396/Jobb62ab2f351264a238972b2c22ba7317b, launchedcac4972e.
+Never replay. Follow-up26 authenticated; context31 proved Start Page.
+Live evidence root
+`/root/.cache/easyeda-163322-batch-live-Jj8NZzmZ`.
+Opener37 `sch-batch-163322-20261019-open` completed exact disposable PCB identity,
+preparation checkpoint581632/7e0bc38f, no Save/persistence inference. Never replay.
+SCH baseline-begin49 `sch-batch-163322-20261019-case` completed captured.
+Batch58 COMPLETED all3steps: baseline-close, baseline-observe-termination and
+baseline-prepare-clock. Original ordinary-launch termination84 also COMPLETED;
+original47396/Job exit is proved, not inferred. Never replay those actions.
+Generation batch85 completed relaunch then stopped on explicitly pending admission.
+Single pending admission106 passed; remaining cache/open batch107 passed both
+steps with generation issued. No relaunch/navigation replay. Batch114 COMPLETED
+all3steps: clock/title-write/normal-close. Intended native title acknowledged,
+ticket781; write120357ms/close21867ms. Never replay write/close or extra Save.
+Batch120 passed closed SQL and verification launch, then stopped on pending
+authentication. Admission123 and cache124 passed. Final4step batch128 COMPLETED:
+saved metadata/peers/child roster/both ASTs, normal closure and final SQL equality.
+nextPhasecompleted/renameVerifiedtrue/retiredtrue, no failed phase, terminated.
+Full SQL proves20documents,56oldhistoryrows/60oldchunks preserved and intended
+new SCH history/ticket781; after/later SQLda1bf5e4. Terminaldf8d9f81 retained in
+the private live evidence root. EasyEDA is CLOSED. NEVER replay this completed
+case or issue extra Save. Independent retained-evidence audit PASSED all54
+artifacts/3rawcopies/receipt chains and native saved payloads. Final fixture598016
+SHAa7fbfb8570dc08cf993777e65693c72943624b36958ce42776d1c08cea4d183b,
+no sidecars. Journal5bfeaa4b; final closed20:56:57.7238466Z, Job empty/exited.
+Disposable fixture source750e4f95/598016 unchanged before launch; no production
+access. Parallel source batch: native diagnostic transport owner, bounded
+polygon-pad geometry projection and ordinary SCH title lifecycle. Polygon45
+focused tests/types/strict lint pass; no populated live polygon validation.
+New ordinary-purpose validation-only route and native diagnostic owner have
+passed focused regression/types/strict lint and independent review. Dependency
+preparation77 passed ci/tree,151registry signatures/40attestations,0vulnerabilities
+and sanitizer check. Evidence `/root/.cache/easyeda-ordinary-sch-polygon-diagnostic-release-cScBpStm`.
+Candidate203733 is frozen/built/pinned. Root and independent audit accept exact
+510source9860210a/3runtime02f4a502/manifestb19afd52; external pins unchanged.
+Geometry result discovery now exposes method-specific successful output schemas;
+46focused tests/types/strict lint pass. First required verify62767 completed
+11639passes/6failures/4skips; retained verify.log in release evidence. Failures
+are omitted VM purpose binding and four stale coverage route/schema expectations.
+Root-reviewed fixture correction30343 and coverage-test correction pass2+48
+focused tests and strict lint. Runtime source/bundles/manifest stay unchanged.
+Final full required suite and repository/all7skill checks are running against
+the corrected frozen test payload; they must pass before merge/install.
+One combined release remains planned. A draft PR may run protected CI in
+parallel; no merge or installation before final local and exact-head CI success.
+
+### Delivered163322 and prior completed work
+
 Delivered163322, 2026-10-19. PR80 payload
 `86b34605c9de418cd6e55bdca900e27a7ea8dba1` merged normally as main
 `a4c4576dca6518dece8ab7ec7d60f623c19cd65a`; complete trees match.
@@ -24,8 +79,8 @@ Originalchild135937 EOFexit/close0, no retained handles/stderr, all3inventories
 unchanged; no upstream marker/children/nonstdio socket at two sampled checkpoints.
 This is not continuous isolation or live CAD validation. Proofc45a7d47/responses
 7599183e in `/root/.cache/easyeda-combined-batch-offline-probe-jmMfmUNb`;
-CONSUMED, NEVER rerun/import/syntax-check. MainLinux39289237232 still running;
-mainWindows39289237330 passed. Exact PR CI and post-merge CI remain distinct.
+CONSUMED, NEVER rerun/import/syntax-check. MainLinux39289237232 completed/success;
+all8shards/build/finalgate passed. MainWindows39289237330 passed.
 Current chat holds old143713 facade12516; no old live calls after upgrade,
 no cache patch/hotreload/host termination. Fresh Codex session is required for
 actual163322 admission. EasyEDA is CLOSED; completed143713 title-only case below

@@ -4,6 +4,8 @@
 /* oxlint-disable import/max-dependencies -- Compose original SCH issuers and maintained document-neutral lifecycle checks; no caller-supplied authority callbacks. */
 import { loadOperation, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "./current-schematic-operation.ts";
+import { assertCurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
 import { assertExpectedFingerprint, assertUpstreamReplySettled, buildPlanHash, canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import type { OriginalCurrentSchematicAgedSqlClock } from "./current-schematic-aged-sql-issuer.ts";
 import { verifyCurrentProjectOnlySymbolPreflightImplementation, verifyCurrentSymbolPersistenceImplementation } from "./current-disposable-open-profile.ts";
@@ -233,7 +235,10 @@ export class CurrentSchematicRenameWriterCoordinator {
     this.busy = true; let slot: Slot | undefined;
     try {
       const original = assertCurrentProjectOnlySchematicRenameGeneration(generation, this.engine);
-      need(original.source.purpose === "disposable-validation");
+      need(original.source.purpose === "disposable-validation" || original.source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+      if (original.source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+        assertCurrentSchematicOpeningExpectation(original.source.schematicExpectation, original.baseline.metadata, original.baseline.children);
+      }
       assertCurrentSchematicRenameSavedReadEligibility(original.baseline.metadata, original.baseline.inventory);
       assertOriginalCurrentSchematicRenameStartup(startup, this.engine, generation);
       await revalidateCurrentSchematicRenameStartupObservation(startup, this.engine, generation);
@@ -257,7 +262,7 @@ export class CurrentSchematicRenameWriterCoordinator {
       }
       slot = this.retainSlot(reservation, false); const journal = slot.journal;
       need(canonicalJson(journal) === slot.journalText); await this.unchanged(slot);
-      journal.plan = { profile: PROFILE, baselinePlan: structuredClone(journal.plan), baselineJournalSha256: sha256Json(beforeJournal),
+      journal.plan = { profile: PROFILE, purpose: journal.plan["purpose"], baselinePlan: structuredClone(journal.plan), baselineJournalSha256: sha256Json(beforeJournal),
         baselineCopyReceiptSha256: original.baseline.copy.receiptSha256, intentSha256: sha256Json(original.baseline.intent), startupSha256: sha256Json(startup) };
       journal.planHash = buildPlanHash(journal.plan); journal.state = "schematic-rename-writer-preparing"; journal.hardStop = true;
       journal.nextSafeAction = "Retain the original one-shot SCH writer; no public writer, Save, replay, inverse, delete or reopen is enabled.";

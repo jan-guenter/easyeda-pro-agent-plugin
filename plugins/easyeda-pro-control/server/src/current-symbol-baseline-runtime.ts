@@ -373,7 +373,9 @@ export class CurrentSymbolBaselineCoordinator {
       canonicalJson(this.sqlRuntime) === canonicalJson(original.result.writer.sqlRuntime), "Inverse baseline original runtime differs.");
     assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
     assertOriginalCurrentAgedSqlReference(reference, this.engine, copy);
-    const plan: Journal["plan"] = { profile: PROFILE, purpose: source.purpose ?? "disposable-validation", openingOperationId: owner.openingOperationId, target: source.target,
+    const purpose = source.purpose ?? "disposable-validation";
+    need(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata", "Symbol inverse cannot consume another operation purpose.");
+    const plan: Journal["plan"] = { profile: PROFILE, purpose, openingOperationId: owner.openingOperationId, target: source.target,
       expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
       preparationSha256: original.preparation.preparationSha256, inverseOf: original.predecessor.operationId };
     const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,
@@ -383,7 +385,7 @@ export class CurrentSymbolBaselineCoordinator {
       cacheAttempted: false, projectOpenAttempted: false, finishCloseAttempted: false, finishReleaseAttempted: false,
       finishSnapshotAttempted: false, finishSnapshotCaptured: false, finishSnapshotFailed: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), nextSafeAction: "Inverse adoption has not transferred closure ownership." };
-    const slot: Slot = { owner, purpose: source.purpose ?? "disposable-validation", ownerText: canonicalJson(owner), originalPreparation: original.preparation,
+    const slot: Slot = { owner, purpose, ownerText: canonicalJson(owner), originalPreparation: original.preparation,
       originalPreparationText: canonicalJson(original.preparation), journal, journalText: canonicalJson(journal), created: false,
       capture: original.result.originalSnapshot.capture, proof: original.result.originalSnapshot.proof, copy,
       closeAttempted: true, copyAttempted: true, baselineCaptured: true, relaunchAttempted: false, releaseAttempted: false, captureReleased: false,
@@ -491,6 +493,8 @@ export class CurrentSymbolBaselineCoordinator {
     const original = assertBaselineOwner(owner, this.engine), source = original.source;
     need(source.runtime === this.runtime, "Current symbol baseline has another runtime.");
     const purpose = owner.profile === "private.current-symbol-copy-baseline-owner.v1" ? "disposable-symbol-copy" : source.purpose ?? "disposable-validation";
+    need(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata" || purpose === "disposable-symbol-copy",
+      "Symbol baseline cannot consume another operation purpose.");
     const plan: Journal["plan"] = { profile: PROFILE, purpose, openingOperationId: owner.openingOperationId, target: source.target,
       expectedFingerprintSha256: sha256Json(source.expectedFingerprint), launch: source.launchProjection,
       preparationSha256: original.preparation.preparationSha256 };

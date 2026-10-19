@@ -74,6 +74,7 @@ async function fixture(): Promise<{
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-schematic-rename-baseline-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Promise, Date, structuredClone, OPERATION_SCHEMA, buildPlanHash, canonicalJson, sha256Json,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     createOperation: (journal: Bag): Promise<void> => { assert.equal(state.disk, undefined); state.disk = structuredClone(journal); return Promise.resolve(); },
     loadOperation: (operationId: string): Promise<Bag> => { assert.equal(operationId, id); assert.ok(state.disk); return Promise.resolve(structuredClone(state.disk)); },
     operationPath: (operationId: string): string => `/synthetic/${operationId}.json`,

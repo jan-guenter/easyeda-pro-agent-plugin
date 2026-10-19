@@ -99,6 +99,7 @@ async function fixture(): Promise<{
   const closed = { original: { source }, baseline, capture: priorCapture, proof, journal, sqlRuntime: Object.freeze({ synthetic: "sql-runtime" }) }, continuation = Object.freeze({ operationId: id });
   let claimed = false;
   const context = createContext({ z, Object, Promise, Date, JSON, structuredClone, canonicalJson, isRecord, sha256Json,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     claimCurrentSchematicRenameClosedContinuation: (token: unknown, candidate: unknown, candidateRuntime: unknown): Promise<unknown> => {
       assert.equal(token, continuation); assert.equal(candidate, engine); assert.equal(candidateRuntime, runtime); assert.equal(state.wrongRuntime, false);
       assert.equal(claimed, false); claimed = true; return Promise.resolve(closed);

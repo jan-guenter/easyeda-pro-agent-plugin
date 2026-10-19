@@ -7,8 +7,8 @@ import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_T
 import type { CurrentDisposableOpenRequest, CurrentDisposableOpenSealedTarget, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "./current-disposable-open-diagnostics.ts";
 import type { CurrentOpenFailureContext, CurrentOpenFailureDiagnostic } from "./current-disposable-open-diagnostics.ts";
-import { prepareCurrentDisposableOpenCheckpoint, prepareCurrentSymbolOperationCheckpoint,
-  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSymbolOperationCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import { prepareCurrentDisposableOpenCheckpoint, prepareCurrentSchematicOperationCheckpoint, prepareCurrentSymbolOperationCheckpoint,
+  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSchematicOperationCheckpoint, verifyCurrentSymbolOperationCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, verifyCurrentDisposableOpenImplementation } from "./current-disposable-open-profile.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
@@ -39,13 +39,19 @@ import { parseCurrentPcbRenameOwnerRequest } from "./current-pcb-rename-owner.ts
 import type { CurrentPcbRenameOwnerIntent } from "./current-pcb-rename-owner.ts";
 import { parseCurrentSchematicRenameOwnerRequest } from "./current-schematic-rename-owner.ts";
 import type { CurrentSchematicRenameOwnerIntent } from "./current-schematic-rename-owner.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationOpeningRequestSchema } from "./current-schematic-operation.ts";
+import type { CurrentSchematicOperationOpeningRequest } from "./current-schematic-operation.ts";
+import { currentSchematicOpeningExpectationSchema } from "./current-schematic-operation-startup.ts";
+import type { CurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
 
 type Value = Record<string, unknown>;
 type Phase = "preflight" | "open-project" | "open-document" | "observe";
 type OpenRequest = Extract<CurrentDisposableOpenRequest, { action: "open" }>;
 type OrdinaryOpenRequest = Extract<CurrentSymbolOperationRequest, { action: "open" }>;
-export type CurrentDisposableOpenPurpose = "disposable-validation" | typeof CURRENT_SYMBOL_OPERATION_PURPOSE;
-type BaselinePurpose = CurrentDisposableOpenPurpose | "disposable-symbol-copy";
+type SchematicOpenRequest = Extract<CurrentSchematicOperationOpeningRequest, { action: "open" }>;
+export type CurrentDisposableOpenPurpose = "disposable-validation" | typeof CURRENT_SYMBOL_OPERATION_PURPOSE | typeof CURRENT_SCHEMATIC_OPERATION_PURPOSE;
+type SymbolOpenPurpose = Exclude<CurrentDisposableOpenPurpose, typeof CURRENT_SCHEMATIC_OPERATION_PURPOSE>;
+type BaselinePurpose = SymbolOpenPurpose | "disposable-symbol-copy";
 const PROFILE = "easyeda-pro-control.current-disposable-open.v1";
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const launchSchema = z.object({ jobId: z.string().regex(/^[a-f0-9]{32}$/u), helperInstance: z.string().regex(/^[a-f0-9]{32}$/u),
@@ -59,8 +65,8 @@ const closedSessionSchema = z.object({ authenticatedAtEpochMs: z.number().int().
 interface Plan extends Value {
   profile: typeof PROFILE;
   purpose?: CurrentDisposableOpenPurpose;
-  intent: { request: OpenRequest | OrdinaryOpenRequest; target: CurrentDisposableOpenSealedTarget; implementation: typeof CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION;
-    startupExpectation?: CurrentSymbolStartupExpectation };
+  intent: { request: OpenRequest | OrdinaryOpenRequest | SchematicOpenRequest; target: CurrentDisposableOpenSealedTarget; implementation: typeof CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION;
+    startupExpectation?: CurrentSymbolStartupExpectation; schematicExpectation?: CurrentSchematicOpeningExpectation };
   expectedFingerprint: Value;
 }
 interface OpenJournal extends TrackedDispatchOperationJournal {
@@ -108,6 +114,7 @@ export interface CurrentDisposableOpenOptions {
 const defaults = { createOperation, loadOperation, updateOperation, writePhaseArtifact, assertOperationIdUnused,
   prepareCheckpoint: prepareCurrentDisposableOpenCheckpoint, verifyCheckpoint: verifyCurrentDisposableOpenCheckpoint,
   prepareOrdinaryCheckpoint: prepareCurrentSymbolOperationCheckpoint, verifyOrdinaryCheckpoint: verifyCurrentSymbolOperationCheckpoint,
+  prepareSchematicCheckpoint: prepareCurrentSchematicOperationCheckpoint, verifySchematicCheckpoint: verifyCurrentSchematicOperationCheckpoint,
   verifyImplementation: verifyCurrentDisposableOpenImplementation, validateFingerprint: validateSdkLocalRuntimeFingerprint };
 /** Offline-test seams only; never parsed from a tool request. */
 export type CurrentDisposableOpenDependencies = Partial<typeof defaults>;
@@ -121,6 +128,7 @@ export interface CurrentDisposableOpenGenerationSource {
   readonly runtime: WindowsControlRuntime;
   readonly purpose: CurrentDisposableOpenPurpose;
   readonly startupExpectation?: CurrentSymbolStartupExpectation;
+  readonly schematicExpectation?: CurrentSchematicOpeningExpectation;
   readonly target: CurrentDisposableOpenSealedTarget;
   readonly expectedFingerprint: Value;
   /** A retained status projection, not an issued launch/close/copy capability. */
@@ -329,8 +337,28 @@ function requireValue(condition: boolean, message: string): asserts condition { 
 /** Historical missing purpose is disposable only, never an ordinary edit grant. */
 function openingPurpose(value: unknown): CurrentDisposableOpenPurpose {
   if (value === undefined || value === "disposable-validation") { return "disposable-validation"; }
-  requireValue(value === CURRENT_SYMBOL_OPERATION_PURPOSE, "Current opening purpose is unsupported.");
+  requireValue(value === CURRENT_SYMBOL_OPERATION_PURPOSE || value === CURRENT_SCHEMATIC_OPERATION_PURPOSE, "Current opening purpose is unsupported.");
   return value;
+}
+/** Read-only ordinary SCH opening history. Never creates or recovers an owner. */
+export async function inspectCurrentSchematicOpeningHistory(operationId: string): Promise<Value> {
+  const journal: unknown = await loadOperation(operationId);
+  requireValue(isOpenJournal(journal) && journal.operationId === operationId &&
+    journal.schema === OPERATION_SCHEMA && canonicalJson(journal.plan.intent.implementation) === canonicalJson(CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION) &&
+    openingPurpose(journal.plan.purpose) === CURRENT_SCHEMATIC_OPERATION_PURPOSE &&
+    journal.planHash === buildPlanHash(journal.plan), "Ordinary SCH opening history has another purpose or malformed plan.");
+  const request = currentSchematicOperationOpeningRequestSchema.parse(journal.plan.intent.request);
+  requireValue(request.action === "open" && request.operationId === operationId, "Ordinary SCH opening request differs.");
+  const target = currentDisposableOpenSealedTargetSchema.parse(journal.plan.intent.target);
+  const expectation = currentSchematicOpeningExpectationSchema.parse(journal.plan.intent.schematicExpectation);
+  requireValue(canonicalJson(targetOnly(target)) === canonicalJson(targetOnly(request)) &&
+    expectation.intent.target.projectUuid === target.projectUuid && expectation.intent.target.branchUuid === target.branchUuid &&
+    canonicalJson(expectation.intent) === canonicalJson(request.rename) && journal.checkpointProof.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE &&
+    canonicalJson(expectation) === canonicalJson(journal.checkpointProof.schematicExpectation) &&
+    canonicalJson(expectation.startup) === canonicalJson(journal.plan.intent.startupExpectation) &&
+    canonicalJson(expectation.startup) === canonicalJson(journal.checkpointProof.startupExpectation), "Ordinary SCH opening history lost its sealed expectation.");
+  return { ...summary(journal), originalOwnerRetained: false, continuationAvailable: false, historicalOnly: true,
+    normalCloseAttempted: journal.normalCloseAttempted === true };
 }
 function targetOnly(request: CurrentDisposableOpenTarget): CurrentDisposableOpenTarget {
   return { rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
@@ -573,6 +601,30 @@ export class CurrentDisposableOpenCoordinator {
     } finally { this.busy = false; }
   }
 
+  /** Fixed ordinary SCH entry; it cannot consume symbol or disposable openings. */
+  public async runSchematicOpening(input: unknown, expectedFingerprint?: Value): Promise<Value> {
+    const request = currentSchematicOperationOpeningRequestSchema.parse(structuredClone(input));
+    requireValue(request.action === "open" || expectedFingerprint === undefined, "SCH continuation cannot replace its original runtime fingerprint.");
+    if (request.action === "inspect-opening") {
+      const journal = await this.load(request.operationId);
+      requireValue(openingPurpose(journal.plan.purpose) === CURRENT_SCHEMATIC_OPERATION_PURPOSE, "Ordinary SCH route cannot consume another opening purpose.");
+      return { ...summary(journal), normalCloseAttempted: this.normalCloseAttempts.has(journal.operationId) || journal.normalCloseAttempted === true };
+    }
+    requireValue(!this.busy, "Current project opening is already in progress."); this.busy = true;
+    try {
+      if (request.action === "open") {
+        requireValue(expectedFingerprint !== undefined, "Ordinary SCH opening requires its expected fingerprint.");
+        this.generations.clear(); return await this.open(request, structuredClone(expectedFingerprint), CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+      }
+      const journal = await this.load(request.operationId);
+      requireValue(openingPurpose(journal.plan.purpose) === CURRENT_SCHEMATIC_OPERATION_PURPOSE, "Ordinary SCH route cannot consume another opening purpose.");
+      this.generations.clear();
+      if (request.action === "request-normal-close") { return await this.requestNormalClose(journal, CURRENT_SCHEMATIC_OPERATION_PURPOSE); }
+      if (request.action === "retire-after-termination") { return await this.retire(journal); }
+      return await this.observe(journal);
+    } finally { this.busy = false; }
+  }
+
   /** Separate copy entry: no opening, fingerprint replacement or metadata token is accepted. */
   public async runCopy(input: unknown): Promise<Value> {
     const request = parseCurrentSymbolCopyOperationRequest(structuredClone(input));
@@ -659,7 +711,7 @@ export class CurrentDisposableOpenCoordinator {
       "Current symbol baseline belongs to another purpose or its ordinary owner is unavailable.");
   }
 
-  private async inspectSymbolHistory(operationId: string, purpose: CurrentDisposableOpenPurpose): Promise<Value> {
+  private async inspectSymbolHistory(operationId: string, purpose: SymbolOpenPurpose): Promise<Value> {
     this.busy = true;
     try { return await inspectCurrentSymbolHistory(operationId, purpose); }
     finally { this.busy = false; }
@@ -758,7 +810,14 @@ export class CurrentDisposableOpenCoordinator {
   }
 
 
-  public async prepareSchematicRenameOpeningOwner(openingOperationId: string, input: unknown): Promise<CurrentSchematicRenameOpeningOwner> {
+  public prepareSchematicRenameOpeningOwner(openingOperationId: string, input: unknown): Promise<CurrentSchematicRenameOpeningOwner> {
+    return this.prepareSchematicOpeningOwner(openingOperationId, input, "disposable-validation");
+  }
+  public prepareOrdinarySchematicRenameOpeningOwner(openingOperationId: string, input: unknown): Promise<CurrentSchematicRenameOpeningOwner> {
+    return this.prepareSchematicOpeningOwner(openingOperationId, input, CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  }
+  private async prepareSchematicOpeningOwner(openingOperationId: string, input: unknown,
+    purpose: "disposable-validation" | typeof CURRENT_SCHEMATIC_OPERATION_PURPOSE): Promise<CurrentSchematicRenameOpeningOwner> {
     const request = parseCurrentSchematicRenameOwnerRequest(input);
     requireValue(!this.busy && request.operationId !== openingOperationId && !this.schematicRenameOpeningOwners.has(request.operationId),
       "Current SCH opening transfer needs one distinct unused operation.");
@@ -768,9 +827,13 @@ export class CurrentDisposableOpenCoordinator {
     try {
       const loaded = await this.load(openingOperationId), slot = this.retainedJournal(loaded);
       this.currentUntransferred(slot);
-      requireValue(openingPurpose(slot.journal.plan.purpose) === "disposable-validation" && slot.runtime instanceof WindowsControlRuntime &&
+      requireValue(openingPurpose(slot.journal.plan.purpose) === purpose && slot.runtime instanceof WindowsControlRuntime &&
         !this.normalCloseAttempts.has(openingOperationId) && slot.journal.normalCloseAttempted !== true,
-      "Current SCH opening owner requires its live disposable original opening.");
+      "Current SCH opening owner requires its live original opening with the same purpose.");
+      if (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+        requireValue(canonicalJson(slot.journal.plan.intent.schematicExpectation?.intent) === canonicalJson({ target: request.target, desiredTitle: request.desiredTitle }),
+          "Ordinary SCH transfer cannot change its pre-navigation rename intention.");
+      }
       // SCH is a project container, not the initial PCB document. Its UUID and
       // Owner remain unqualified until the separate original closed-SQL baseline.
       const runtime = slot.runtime, target = slot.journal.plan.intent.target;
@@ -782,7 +845,7 @@ export class CurrentDisposableOpenCoordinator {
       const result: unknown = await scope.call(engine.upstream, async () => {
         const generation = this.issueGeneration(slot, engine, runtime);
         const source = await revalidateCurrentDisposableOpenGeneration(generation, engine); this.currentUntransferred(slot);
-        requireValue(source.purpose === "disposable-validation" && source.runtime === runtime &&
+        requireValue(source.purpose === purpose && source.runtime === runtime &&
           assertCurrentDisposableOpenGeneration(generation, engine) === source, "Current SCH opening generation changed.");
         const owner = Object.freeze({ profile: "private.current-schematic-rename-opening-owner.v1" as const,
           operationId: request.operationId, openingOperationId });
@@ -1158,7 +1221,7 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
-  public async inspectSymbolBaseline(operationId: string, purpose: CurrentDisposableOpenPurpose = "disposable-validation"): Promise<Value> {
+  public async inspectSymbolBaseline(operationId: string, purpose: SymbolOpenPurpose = "disposable-validation"): Promise<Value> {
     requireValue(!this.busy, "Current symbol baseline coordinator is busy.");
     this.busy = true;
     try {
@@ -1243,6 +1306,7 @@ export class CurrentDisposableOpenCoordinator {
     };
     const source = Object.freeze({ engine, runtime, purpose: openingPurpose(journal.plan.purpose),
       ...(journal.plan.intent.startupExpectation === undefined ? {} : { startupExpectation: journal.plan.intent.startupExpectation }),
+      ...(journal.plan.intent.schematicExpectation === undefined ? {} : { schematicExpectation: journal.plan.intent.schematicExpectation }),
       target: journal.plan.intent.target, expectedFingerprint: journal.plan.expectedFingerprint,
       launchProjection: slot.launch, bridgeSession: session, preNavigationCheckpoint: journal.checkpointProof });
     const revalidate = async (): Promise<void> => {
@@ -1261,7 +1325,10 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(isOpenJournal(raw), "Current disposable-open journal is malformed or has another profile.");
     const { plan } = raw;
     const purpose = openingPurpose(plan.purpose);
-    const request = purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? parseCurrentSymbolOperationRequest(plan.intent.request) : parseCurrentDisposableOpenRequest(plan.intent.request);
+    let request;
+    if (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) { request = currentSchematicOperationOpeningRequestSchema.parse(plan.intent.request); }
+    else if (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE) { request = parseCurrentSymbolOperationRequest(plan.intent.request); }
+    else { request = parseCurrentDisposableOpenRequest(plan.intent.request); }
     requireValue(request.action === "open" && request.operationId === operationId, "Current disposable-open original request differs.");
     const target = currentDisposableOpenSealedTargetSchema.parse(plan.intent.target);
     requireValue(target.projectUuid === request.projectUuid && target.documentUuid === request.documentUuid &&
@@ -1286,14 +1353,25 @@ export class CurrentDisposableOpenCoordinator {
   }
 
   private static assertStartupPurpose(journal: OpenJournal): void {
-    if (openingPurpose(journal.plan.purpose) === CURRENT_SYMBOL_OPERATION_PURPOSE) {
-      requireValue(journal.checkpointProof.purpose === CURRENT_SYMBOL_OPERATION_PURPOSE &&
+    const purpose = openingPurpose(journal.plan.purpose);
+    if (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE || purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+      requireValue(journal.checkpointProof.purpose === purpose &&
         currentSymbolStartupExpectationSchema.safeParse(journal.plan.intent.startupExpectation).success &&
         canonicalJson(journal.plan.intent.startupExpectation) === canonicalJson(journal.checkpointProof.startupExpectation),
-      "Ordinary symbol opening lost its sealed pre-navigation startup expectation.");
+      "Ordinary opening lost its sealed pre-navigation startup expectation.");
     } else {
       requireValue(journal.plan.intent.startupExpectation === undefined && journal.checkpointProof.purpose === undefined &&
         journal.checkpointProof.startupExpectation === undefined, "Disposable opening cannot inherit ordinary startup authority.");
+    }
+    if (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+      const expectation = currentSchematicOpeningExpectationSchema.parse(journal.plan.intent.schematicExpectation);
+      requireValue(canonicalJson(expectation) === canonicalJson(journal.checkpointProof.schematicExpectation) &&
+        canonicalJson(expectation.startup) === canonicalJson(journal.plan.intent.startupExpectation) &&
+        "rename" in journal.plan.intent.request && canonicalJson(expectation.intent) === canonicalJson(journal.plan.intent.request.rename),
+      "Ordinary SCH opening lost its sealed rename/startup/child expectation.");
+    } else {
+      requireValue(journal.plan.intent.schematicExpectation === undefined && journal.checkpointProof.schematicExpectation === undefined,
+        "Other opening purposes cannot inherit ordinary SCH expectations.");
     }
   }
 
@@ -1359,9 +1437,15 @@ export class CurrentDisposableOpenCoordinator {
           await engine.assertRecoveryOperationIsolated(journal.operationId);
           if (phase === "open-project") {
             failureContext.hostStage = "checkpoint-reproof";
-            await (openingPurpose(journal.plan.purpose) === CURRENT_SYMBOL_OPERATION_PURPOSE
-              ? this.services.verifyOrdinaryCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request))
-              : this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request)));
+            const purpose = openingPurpose(journal.plan.purpose), request = journal.plan.intent.request;
+            if (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+              requireValue("rename" in request, "Ordinary SCH opening intention is missing.");
+              await this.services.verifySchematicCheckpoint(journal.checkpointProof, targetOnly(request), request.rename);
+            } else {
+              await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
+                ? this.services.verifyOrdinaryCheckpoint(journal.checkpointProof, targetOnly(request))
+                : this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(request)));
+            }
           }
           this.currentUntransferred(slot);
           failureContext.hostStage = "tracked-dispatch";
@@ -1391,7 +1475,7 @@ export class CurrentDisposableOpenCoordinator {
     return result;
   }
 
-  private async open(request: OpenRequest | OrdinaryOpenRequest, fingerprint: Value,
+  private async open(request: OpenRequest | OrdinaryOpenRequest | SchematicOpenRequest, fingerprint: Value,
     purpose: CurrentDisposableOpenPurpose = "disposable-validation"): Promise<Value> {
     const { engine } = this.options;
     this.options.assertOwner();
@@ -1406,8 +1490,13 @@ export class CurrentDisposableOpenCoordinator {
     this.services.validateFingerprint(fingerprint);
     let checkpointProof: CurrentDisposableOpenCheckpoint;
     try {
-      checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
-        ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
+      if (purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE) {
+        requireValue("rename" in request, "Ordinary SCH opening intention is missing.");
+        checkpointProof = await this.services.prepareSchematicCheckpoint(targetOnly(request), request.rename);
+      } else {
+        checkpointProof = await (purpose === CURRENT_SYMBOL_OPERATION_PURPOSE
+          ? this.services.prepareOrdinaryCheckpoint(targetOnly(request)) : this.services.prepareCheckpoint(targetOnly(request)));
+      }
     } catch (error) {
       // This boundary precedes our journal and every navigation dispatch. Keep
       // The original local cause without exposing its arbitrary paths/message.
@@ -1420,7 +1509,8 @@ export class CurrentDisposableOpenCoordinator {
     const target = currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: request.rawWindowsPath, projectUuid: request.projectUuid,
       documentUuid: request.documentUuid, expectedSourceSha256: request.expectedSourceSha256, branchUuid: checkpointProof.targetEvidence.branchUuid });
     const plan: Plan = { profile: PROFILE, purpose, intent: { request, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION,
-      ...(purpose === CURRENT_SYMBOL_OPERATION_PURPOSE ? { startupExpectation: checkpointProof.startupExpectation } : {}) }, expectedFingerprint: fingerprint };
+      ...(purpose === "disposable-validation" ? {} : { startupExpectation: checkpointProof.startupExpectation }),
+      ...(purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE ? { schematicExpectation: checkpointProof.schematicExpectation } : {}) }, expectedFingerprint: fingerprint };
     const journal: OpenJournal = { schema: OPERATION_SCHEMA, operationId: request.operationId, journalPath: operationPath(request.operationId),
       planHash: buildPlanHash(plan), plan, state: "planned", mutationState: "not-inferred", saved: false, reopened: false,
       orphanedCallPossible: false, hardStop: true, mutationMayHaveOccurred: false, sequence: 0, artifacts: [],

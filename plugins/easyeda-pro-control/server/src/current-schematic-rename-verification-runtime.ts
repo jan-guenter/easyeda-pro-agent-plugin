@@ -285,7 +285,8 @@ export class CurrentSchematicRenameVerificationCoordinator {
       delete slot.journal.bridgeSessionBeforeOrphan; delete slot.journal.bridgeDispatchBeforeOrphan;
       delete slot.journal.executionAuthorityBeforeOrphan; delete slot.journal.runtimeIdentityBeforeOrphan;
       delete slot.journal.orphanedCallPhase; delete slot.journal.orphanedCallMarkedAt; delete slot.journal.orphanedCallReturnedAt;
-      slot.journal.plan = { profile: PROFILE, writerPlan: previous.plan, writerJournalSha256: sha256Json(previous), posteditCopyReceiptSha256: source.snapshot.copy.receiptSha256 };
+      slot.journal.plan = { profile: PROFILE, purpose: previous.plan["purpose"], writerPlan: previous.plan,
+        writerJournalSha256: sha256Json(previous), posteditCopyReceiptSha256: source.snapshot.copy.receiptSha256 };
       slot.journal.planHash = buildPlanHash(slot.journal.plan); slot.journal.state = "verification-launch-dispatching"; slot.journal.hardStop = true;
       await this.record(slot, "verification-launch-intent", { previousJournal: previous, posteditSnapshot: source.snapshot, replayAllowed: false });
       await verifyCurrentSchematicRenamePosteditPreopenSource(this.engine, source.snapshot); await this.unchanged(slot);

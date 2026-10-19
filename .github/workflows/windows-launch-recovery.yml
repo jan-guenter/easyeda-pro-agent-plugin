@@ -99,3 +99,40 @@ jobs:
           if ($result.sameNameProcessPresent) { throw 'Unexpected EasyEDA process on the fresh hosted runner.' }
           Write-Output 'Windows PowerShell 5.1 recovery helper emitted no stderr, observed its parent and no EasyEDA process.'
           exit 0
+
+      - name: Compile diagnostic owner and check empty Job and pipe inheritance
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-owner.ps1'
+          $child = [Diagnostics.Process]::new()
+          $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
+          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly'
+          $child.StartInfo.UseShellExecute = $false
+          $child.StartInfo.CreateNoWindow = $true
+          $child.StartInfo.RedirectStandardOutput = $true
+          $child.StartInfo.RedirectStandardError = $true
+          try {
+            if (-not $child.Start()) { throw 'Diagnostic compilation helper did not start.' }
+            $stdout = $child.StandardOutput.ReadToEndAsync()
+            $stderr = $child.StandardError.ReadToEndAsync()
+            if (-not $child.WaitForExit(30000)) { throw 'Diagnostic compilation helper timed out.' }
+            if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout, $stderr), 5000)) {
+              throw 'Diagnostic compilation helper output did not close.'
+            }
+            if ($child.ExitCode -ne 0 -or $stderr.Result.Length -ne 0) {
+              throw ('Diagnostic compilation failed. Exit=' + $child.ExitCode + ' stderr=' + $stderr.Result)
+            }
+            if ($stdout.Result.Length -gt 4096 -or $stdout.Result -cnotmatch '\A[^\r\n]+\r?\n\z') {
+              throw 'Diagnostic compilation helper emitted an invalid output shape.'
+            }
+            $result = $stdout.Result | ConvertFrom-Json
+            if ((@($result.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'compiled,emptyJob,pipesChecked,processLaunched,schema' -or
+                $result.schema -cne 'easyeda-pro-control.pcb-diagnostic-compile.v1' -or
+                $result.compiled -cne $true -or $result.emptyJob -cne $true -or
+                $result.pipesChecked -cne $true -or $result.processLaunched -cne $false) {
+              throw 'Diagnostic compilation helper did not prove the empty native construction.'
+            }
+          } finally { $child.Dispose() }
+          Write-Output 'Diagnostic helper compiled and checked an empty Job plus four anonymous pipe endpoints; no application launched.'

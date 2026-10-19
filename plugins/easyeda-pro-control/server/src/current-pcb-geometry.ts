@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
 import { CURRENT_PCB_IMAGE_GEOMETRY_LIMITATION, createCurrentPcbImageSchema } from "./current-pcb-image-geometry.ts";
+import { CURRENT_PCB_PAD_POLYGON_LIMITATION, createCurrentPcbPadPolygonPathSchema } from "./current-pcb-pad-polygon.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { CURRENT_UI_IMPLEMENTATION } from "./current-ui-implementation.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
@@ -33,7 +34,8 @@ const defaultCopperShapeSchema = z.discriminatedUnion("shape", [
   z.object({ shape: z.literal("ELLIPSE"), width: numberSchema, height: numberSchema }).strict(),
   z.object({ shape: z.literal("OVAL"), width: numberSchema, height: numberSchema }).strict(),
   z.object({ shape: z.literal("RECT"), width: numberSchema, height: numberSchema, cornerRatioPercent: numberSchema }).strict(),
-  z.object({ shape: z.literal("POLYGON"), details: z.literal("not-projected") }).strict(),
+  z.object({ shape: z.literal("POLYGON"), pathSource: createCurrentPcbPadPolygonPathSchema(numberSchema),
+    coordinateSpace: z.literal("native-pad-style") }).strict(),
 ]);
 const maskExpansionSchema = z.object({ mode: z.union([z.literal(1), z.literal(2)]), topSolder: numberSchema,
   bottomSolder: numberSchema, paste: numberSchema }).strict();
@@ -113,6 +115,7 @@ export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
 
 const limitations = [
   CURRENT_PCB_IMAGE_GEOMETRY_LIMITATION,
+  CURRENT_PCB_PAD_POLYGON_LIMITATION,
   "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
   "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
   "Unfiltered getAll accepts empty arguments. The narrower get equivalent accepts only 1 to 256 distinct primitiveIds in an array, returns DTOs in caller order and refuses the entire request if any ID is unavailable in the observed family. Scalar input and the public method's missing-ID skipping are not supported. This does not change editor selection or prove absence from saved source.",
@@ -124,7 +127,7 @@ const limitations = [
   "Attribute observes existing component-view groups through fixed attribute-getAll. Each DTO adds parentPrimitiveId, key/value and keyVisible/valueVisible with the same finite numeric placement, style, display-state and serialized-color projection as String. Nullable public coordinates are not coerced; positionIsNull remains separate. Value is current model text: Name may already be formula-expanded, unlike the raw Component Name metadata. FormulaName, evaluation, rendered text, outlines and font objects are omitted. Complete ordered attributeParentGroups retain every parent and its ordered child IDs, including empty groups, even for get. Two complete group-and-scalar samples must match before selection. Grouping does not prove reciprocal ownership or complete stored component/attribute membership. Parent/layer/lock filters are unsupported; the existing identity-only reader has separate larger limits.",
   "Dimension observes native Length, Radius then Angle manager order, with no parent filter and only existing stateWatcher views. DTOs contain type, layer, lock, precision0..4, nonnegative lineWidth and a coordinateSet of eight numbers for Length or six for Radius/Protractor. Coordinates and lineWidth are already mil in the native callback and are not scaled again. Radius coordinates include a text anchor, not glyph bounds. canvasUnit is the current document unit mm/cm/inch/mil: native getAll overwrites each model's unit, so it is neither the coordinate unit nor verified annotation unit. No bare unit field, rendered measurement, inferred length/radius/angle, annotation text/font/color/textFollow, parent/partition/group, source ownership or persistence is projected. Explicit-ID get uses the same complete getAll sample, not the native generic getByIds lookup. Generic type lookup remains unchanged.",
   "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
-  "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
+  "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON pathSource is copied and compared with its native-pad-style coordinate space as separately documented. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
   "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
   "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
   "At most 256 rows per observed family or child list, 256 Attribute parent groups and 256 total Attribute rows, 256 characters per identity, 1024 characters per net/rule name/pad number/component metadata/fontFamily/key string, 128 per serialized String/Attribute silkColor, 65536 UTF-16 units per String text or Attribute value, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
@@ -132,7 +135,7 @@ const limitations = [
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" | "Image" {
+export function currentPcbGeometryFamily(request: Pick<CurrentPcbGeometryRequest, "method">): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" | "Image" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -156,6 +159,32 @@ export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "L
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
+/** Describe the successful facade result, not its internal rows envelope. Each
+ * entry includes only its own method/family; JSON Schema cannot carry all of
+ * the request-relative and native observation checks performed at runtime.
+ */
+function discoveryResultSchema(method: CurrentPcbGeometryRequest["method"]): z.ZodType {
+  const native = currentPcbGeometryResultSchema.options.find(option => option.shape.method.safeParse(method).success);
+  if (native === undefined) { throw new Error("Unsupported current PCB geometry result method."); }
+  const row = { Line: lineSchema, Arc: arcSchema, Via: viaSchema, Component: componentSchema, Pad: padSchema,
+    String: stringSchema, Attribute: attributeSchema, Dimension: dimensionSchema, Image: imageSchema }[currentPcbGeometryFamily({ method })];
+  const selected = method.endsWith(".get");
+  const count = z.number().int().min(selected ? 1 : 0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+  const hash = z.string().regex(/^[a-f0-9]{64}$/u);
+  const uiImplementation = z.object({ version: z.literal(CURRENT_UI_IMPLEMENTATION.version), relativePath: z.literal(CURRENT_UI_IMPLEMENTATION.relativePath),
+    sha256: z.literal(CURRENT_UI_IMPLEMENTATION.sha256) }).strict();
+  const runtimeAdmission = z.object({ profile: z.literal("easyeda-pro-control.current-pcb-geometry-runtime.v1"), fingerprintSha256: hash,
+    uiImplementation, beforeAndAfterChecked: z.literal(true), scope: z.literal("explicit-current-pcb-loaded-view-geometry-only"),
+    designExecutionAuthorized: z.literal(false), persistenceVerified: z.literal(false), liveValidation: z.literal("not-recorded") }).strict();
+  const projection = z.object(native.shape).omit({ rows: true });
+  return projection.extend({ method: z.literal(method), value: z.array(row).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+    observedRowCount: count, ...(selected || method === componentPadsMethod ? { returnedRowCount: count } : {}),
+    units: z.object({ linear: z.literal("mil"), arcAngle: z.literal("degrees"), rotation: z.literal("degrees") }).strict(),
+    effect: z.literal("current-pcb-loaded-view-geometry-read"), encoding: z.literal("native-getter-projection-without-public-wrapper-rounding"),
+    authority: z.literal("explicit-target-loaded-view-geometry-only;not-design-or-persistence-authority"),
+    liveValidation: z.literal("not-recorded"), limitations: z.array(z.string()).length(limitations.length), observationSha256: hash, runtimeAdmission,
+  }).strict();
+}
 export function queryCurrentPcbGeometry(input: unknown = {}): Record<string, unknown> {
   const query = currentPcbGeometryQuerySchema.parse(input);
   const entries = methods.filter((method) => query.method === undefined || query.method === method).map((method) => {
@@ -168,7 +197,12 @@ export function queryCurrentPcbGeometry(input: unknown = {}): Record<string, unk
         apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
         uiVersion: CURRENT_UI_IMPLEMENTATION.version, uiSha256: CURRENT_UI_IMPLEMENTATION.sha256,
         implementationKind: "native-task-equivalent", liveValidation: "not-recorded" } };
-    if (query.includeSchemas) { entry["inputSchema"] = z.toJSONSchema(currentPcbGeometryRequestSchema); }
+    if (query.includeSchemas) {
+      entry["inputSchema"] = z.toJSONSchema(currentPcbGeometryRequestSchema);
+      entry["resultSchema"] = z.toJSONSchema(discoveryResultSchema(method));
+      entry["resultSchemaScope"] = "successful-tool-result;not-error-envelope";
+      entry["resultSchemaLimitations"] = "Structural JSON Schema only: runtime additionally checks polygon command grammar, signed zero, integer/range refinements, Dimension type/tuple agreement, exact request target, identity uniqueness/order, group membership, observed counts, complete byte bounds and matching native samples. Schema validity supplies no runtime admission, execution authority or live validation.";
+    }
     return entry;
   });
   return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };

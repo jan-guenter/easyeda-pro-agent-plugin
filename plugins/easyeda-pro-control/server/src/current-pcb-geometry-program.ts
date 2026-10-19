@@ -3,6 +3,7 @@ import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_NUMBER, CURREN
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { CURRENT_PCB_IMAGE_ROW_PROGRAM } from "./current-pcb-image-geometry.ts";
+import { CURRENT_PCB_PAD_POLYGON_PROGRAM } from "./current-pcb-pad-polygon.ts";
 
 /** Current API021d155b / UI3823ed6e / PCB217199c8 only. The native
  * serializers are the same ones used by current identity enumeration.
@@ -94,10 +95,11 @@ const hole=row=>{
 };
 // PCB217199c8@10297659: native default-shape dimensions already use mil, rounded to 0.1 mil by qe.
 // RECT's fourth item is ratio*100, not the physical corner radius described by the public type.
-// A polygon marker deliberately omits its unreviewed path; neither its contents nor special layer stacks are sampled.
+// Polygon paths are existing native style coordinates, separately scaled/rounded by $1. Do not apply pad placement here.
+${CURRENT_PCB_PAD_POLYGON_PROGRAM}
 const defaultCopperShape=row=>{
  const tuple=own(row,'defaultPadShapeAspect'),n=arrayLength(tuple),shape=own(tuple,'0');
- if(shape==='POLYGON'){if(n!==2||!Array.isArray(own(tuple,'1')))bad();return{shape,details:'not-projected'};}
+ if(shape==='POLYGON'){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,'1')),coordinateSpace:'native-pad-style'};}
  if((shape==='RECT'&&n!==4)||((shape==='ELLIPSE'||shape==='OVAL')&&n!==3)||!['RECT','ELLIPSE','OVAL'].includes(shape))bad();
  const result={shape,width:num(own(tuple,'1')),height:num(own(tuple,'2'))};
  if(shape==='RECT')result.cornerRatioPercent=num(own(tuple,'3'));return result;

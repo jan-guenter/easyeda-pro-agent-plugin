@@ -63,6 +63,7 @@ async function fixture(failure: Failure = "none"): Promise<{
     return Promise.resolve();
   } };
   const context = createContext({ Object, Map, WeakMap, Date, Error, AggregateError, structuredClone, canonicalJson, sha256Json, sha256Text,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
     assertExpectedFingerprint: noOp, validateSdkLocalRuntimeFingerprint: noOp, assertUpstreamReplySettled: noOp,
     verifyCurrentProjectOnlySymbolPreflightImplementation: noOp, verifyCurrentSymbolPersistenceImplementation: noOp,
     assertCurrentSchematicRenameWriterOwner: (value: unknown, selectedEngine: unknown, scope: unknown): typeof source => {

@@ -15,14 +15,18 @@ import { parseCurrentSchematicRenameOwnerRequest } from "../src/current-schemati
 import { parseCurrentPcbRenameOwnerRequest } from "../src/current-pcb-rename-owner.ts";
 import { currentSymbolBaselineRequestSchema } from "../src/current-symbol-baseline-runtime.ts";
 import { currentOwnedSymbolCopyRequestSchema } from "../src/current-symbol-owned-preparation.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE, currentSchematicOperationOpeningRequestSchema } from "../src/current-schematic-operation.ts";
+import { currentSchematicOpeningExpectationSchema } from "../src/current-schematic-operation-startup.ts";
+import { currentSymbolStartupExpectationSchema } from "../src/current-symbol-startup.ts";
 
 type Bag = Record<string, unknown>;
 const OPEN = "synthetic-schematic-opening", OWNER = "synthetic-schematic-owner";
 function noOp(): undefined { return undefined; }
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
-async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: boolean; injected?: boolean; closed?: boolean }> = {}): Promise<{
+async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: boolean; injected?: boolean; closed?: boolean; ordinary?: boolean }> = {}): Promise<{
   request: ReturnType<typeof parseCurrentSchematicRenameOwnerRequest>;
   begin: (request?: unknown, sibling?: boolean) => Promise<unknown>;
+  beginOrdinary: (request?: unknown) => Promise<unknown>;
   get: (id?: string) => unknown;
   original: (owner: unknown, wrongEngine?: boolean) => unknown;
   completed: (owner: unknown) => unknown;
@@ -39,22 +43,34 @@ async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: 
   const rawWindowsPath = String.raw`C:\Synthetic\SchematicFixture.eprj2`;
   const projectUuid = sha256Text(rawWindowsPath);
   const target = { rawWindowsPath, projectUuid, documentUuid: "1".repeat(16), branchUuid: "2".repeat(32), expectedSourceSha256: "3".repeat(64) };
-  const openingRequest = { action: "open", operationId: OPEN, rawWindowsPath, projectUuid, documentUuid: target.documentUuid,
-    expectedSourceSha256: target.expectedSourceSha256, confirmDisposableProject: true, acceptNormalOpenEffects: true };
   const request = parseCurrentSchematicRenameOwnerRequest({ operationId: OWNER,
     target: { projectUuid, branchUuid: target.branchUuid, schematicUuid: "a".repeat(16), ownerUuid: "6".repeat(32) }, desiredTitle: "Renamed SCH" });
+  const childUuid = "c".repeat(16), rename = { target: request.target, desiredTitle: request.desiredTitle };
+  const schematicExpectation = currentSchematicOpeningExpectationSchema.parse({ intent: rename, startup: { sheetUuids: [childUuid], templates: [] },
+    peers: [{ uuid: request.target.schematicUuid, name: "source sch", displayName: "Source SCH", source: "", version: "1", boardUuid: "", ticket: 1, updateTime: 1 }],
+    childKv: { [childUuid]: { uuid: childUuid, project_uuid: projectUuid, schematic_uuid: request.target.schematicUuid, title: "child", display_title: "Child",
+      docType: 1, zIndex: 0, source: "", version: "1", updateTime: 1, ticket: 2 } },
+    targetAst: { uuid: request.target.schematicUuid, title: "source sch", displayTitle: "Source SCH", board: "", version: "1", updateTime: 1, blockSymbolUuid: "",
+      sort: [childUuid], sheets: { [childUuid]: { uuid: childUuid, title: "child", displayTitle: "Child", zIndex: 0 } } } });
+  const ordinary = options.ordinary === true;
+  const sealed = ordinary ? { startupExpectation: schematicExpectation.startup, schematicExpectation } : {};
+  const openingRequest = { action: "open", operationId: OPEN, rawWindowsPath, projectUuid, documentUuid: target.documentUuid,
+    expectedSourceSha256: target.expectedSourceSha256, confirmDisposableProject: true, acceptNormalOpenEffects: true,
+    ...(ordinary ? { rename } : {}) };
   const launch = { jobId: "4".repeat(32), helperInstance: "5".repeat(32),
     root: { pid: 50, role: "easyeda-main", startIdentity: `win32:12345678901234567:job:${"4".repeat(32)}` } };
   const prior = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 2,
     authenticationReceiptSha256: "6".repeat(64), authenticatedAtEpochMs: 1000 };
   const fingerprint = { synthetic: true, installedBundles: { assetsRoot: "/synthetic/assets" } };
-  const plan = { profile: "easyeda-pro-control.current-disposable-open.v1", purpose: "disposable-validation",
-    intent: { request: openingRequest, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION }, expectedFingerprint: fingerprint };
+  const purpose = ordinary ? CURRENT_SCHEMATIC_OPERATION_PURPOSE : "disposable-validation";
+  const plan = { profile: "easyeda-pro-control.current-disposable-open.v1", purpose,
+    intent: { request: openingRequest, target, implementation: CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, ...sealed }, expectedFingerprint: fingerprint };
   const journal: Bag = { schema: OPERATION_SCHEMA, operationId: OPEN, journalPath: "/synthetic/opening.json", plan, planHash: buildPlanHash(plan),
     state: "completed", mutationState: "not-inferred", saved: false, reopened: false, hardStop: false, orphanedCallPossible: false,
     mutationMayHaveOccurred: true, sequence: 4, artifacts: [], updatedAt: "2026-10-18T00:00:00.000Z", nextSafeAction: "Synthetic opening",
     projectDispatchConsumed: true, documentDispatchConsumed: true, result: { outcome: "target-native-identity-observed" },
-    checkpointProof: { profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: {}, targetEvidence: {} },
+    checkpointProof: { profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: {}, targetEvidence: {},
+      ...(ordinary ? { purpose, ...sealed } : {}) },
     originalLaunch: launch, bridgeSessionBeforeOrphan: prior, bridgeDispatchBeforeOrphan: {},
     ...(options.closed === true ? { normalCloseAttempted: true } : {}) };
   let currentLaunch = launch, disk = structuredClone(journal), scopeDepth = 0, sessionPresent = true;
@@ -83,6 +99,8 @@ async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: 
   const context = createContext({ z, Object, Reflect, Promise, structuredClone, canonicalJson, buildPlanHash, isRecord, sha256Text, assertSubset, OPERATION_SCHEMA,
     CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, parseCurrentSchematicRenameOwnerRequest, parseCurrentPcbRenameOwnerRequest,
     CURRENT_SYMBOL_OPERATION_PURPOSE: "ordinary-symbol-metadata", EasyedaControlEngine: Object, WindowsControlRuntime: Object,
+    CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
+    currentSchematicOperationOpeningRequestSchema, currentSchematicOpeningExpectationSchema, currentSymbolStartupExpectationSchema,
     currentSymbolBaselineRequestSchema, currentOwnedSymbolCopyRequestSchema,
     CurrentSymbolBaselineCoordinator: class { public readonly syntheticBoundary = true; },
     prepareCurrentOwnedSymbolMetadata: (): never => { throw new Error("Synthetic symbol source-preparation stop"); },
@@ -92,6 +110,7 @@ async function fixture(options: Readonly<{ scopeFailure?: boolean; holdUnused?: 
     assertOperationIdUnused: (): Promise<unknown> => { state.unused += 1; return options.holdUnused === true ? barrier.promise : Promise.resolve(); },
     prepareCurrentDisposableOpenCheckpoint: noOp, verifyCurrentDisposableOpenCheckpoint: noOp,
     prepareCurrentSymbolOperationCheckpoint: noOp, verifyCurrentSymbolOperationCheckpoint: noOp,
+    prepareCurrentSchematicOperationCheckpoint: noOp, verifyCurrentSchematicOperationCheckpoint: noOp,
     verifyCurrentDisposableOpenImplementation: noOp, validateSdkLocalRuntimeFingerprint: noOp,
     testPcbRequest: { operationId: "synthetic-pcb-owner", target: { projectUuid, branchUuid: target.branchUuid, pcbUuid: target.documentUuid, ownerUuid: "6".repeat(32) }, desiredTitle: "Renamed PCB" },
     testSymbolRequest: { operationId: "synthetic-symbol-owner", preparation: { checkpoint: { path: "/synthetic/checkpoint.eprj2", bytes: 1, sha256: "1".repeat(64) },
@@ -108,6 +127,7 @@ const first=new CurrentDisposableOpenCoordinator(testOptions,testInjected?{asser
 const sibling=new CurrentDisposableOpenCoordinator(testOptions);
 first.retained.set('${OPEN}',testOpening);sibling.retained.set('${OPEN}',testOpening);
 ({begin:(request,useSibling)=>(useSibling?sibling:first).prepareSchematicRenameOpeningOwner('${OPEN}',request),
+beginOrdinary:request=>first.prepareOrdinarySchematicRenameOpeningOwner('${OPEN}',request),
 get:id=>first.getSchematicRenameOpeningOwner(id),original:(value,wrong)=>assertCurrentSchematicRenameOpeningOwner(value,wrong?{}:testEngine),
 completed:value=>assertCompletedCurrentSchematicRenameOpeningTransfer(value,testEngine),
 revalidate:value=>revalidateCurrentSchematicRenameOpeningOwner(value,testEngine),
@@ -117,6 +137,7 @@ pcbOriginal:value=>assertCurrentPcbRenameOpeningOwner(value,testEngine),reserved
   const invoke = (name: string, args: unknown[]): unknown => { const method = api[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, undefined, args) as unknown; };
   return { request, begin: async (input = request, sibling = false): Promise<unknown> => await invoke("begin", [input, sibling]),
+    beginOrdinary: async (input = request): Promise<unknown> => await invoke("beginOrdinary", [input]),
     get: (id = OWNER): unknown => invoke("get", [id]), original: (owner, wrong = false): unknown => invoke("original", [owner, wrong]),
     completed: (owner): unknown => invoke("completed", [owner]), revalidate: async (owner): Promise<unknown> => await invoke("revalidate", [owner]),
     evidence: async (owner): Promise<unknown> => await invoke("evidence", [owner]),
@@ -147,6 +168,25 @@ void test("SCH transfer retains the exact original opener, intent and one shared
   await assert.rejects(f.begin(), /distinct unused/u);
   await assert.rejects(f.begin({ ...f.request, operationId: "second-owner" }), /transferred/u);
   assert.deepEqual(f.state.actions, []); assert.equal(f.state.scopes, 1);
+});
+
+void test("ordinary SCH owner transfer binds the sealed pre-navigation intent and rejects every sibling-purpose entry", async () => {
+  const f = await fixture({ ordinary: true });
+  await assert.rejects(f.begin(), /same purpose/u);
+  await assert.rejects(f.pcb(), /disposable/u); await assert.rejects(f.symbol());
+  for (const request of [{ ...f.request, desiredTitle: "Another title" },
+    ...["ownerUuid", "branchUuid", "schematicUuid"].map(key => Object.assign(structuredClone(f.request), {
+      target: Object.assign(structuredClone(f.request.target), { [key]: "9".repeat(key === "schematicUuid" ? 16 : 32) }) }))]) {
+    await assert.rejects(f.beginOrdinary(request), /pre-navigation rename intention/u);
+  }
+  assert.equal(f.reserved(), false); assert.equal(f.state.unused, 0);
+  const owner = await f.beginOrdinary();
+  const original = bag(f.original(owner));
+  assert.equal(bag(original["source"])["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
+  assert.deepEqual(bag(bag(original["source"])["schematicExpectation"])["intent"], { target: f.request.target, desiredTitle: f.request.desiredTitle });
+  assert.equal(await f.revalidate(owner), original); assert.equal(f.reserved(), true); assert.deepEqual(f.state.actions, []);
+  const disposable = await fixture(); await assert.rejects(disposable.beginOrdinary(), /same purpose/u);
+  assert.equal(disposable.reserved(), false);
 });
 
 void test("competing SCH transfers cannot both reserve one original runtime", async () => {

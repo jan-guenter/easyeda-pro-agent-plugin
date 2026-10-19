@@ -12,6 +12,8 @@ import { claimCurrentSchematicRenameClosedContinuation } from "./current-schemat
 import type { CurrentSchematicRenameClosedContinuation, CurrentSchematicRenameClosedContinuationSource } from "./current-schematic-rename-baseline-runtime.ts";
 import { assertOriginalCurrentSchematicRenameBaseline, revalidateCurrentSchematicRenameBaseline } from "./current-schematic-rename-owner-baseline.ts";
 import type { CurrentSchematicRenameBaseline } from "./current-schematic-rename-owner-baseline.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "./current-schematic-operation.ts";
+import { assertCurrentSchematicOpeningExpectation } from "./current-schematic-operation-startup.ts";
 import { verifyCurrentSchematicRenamePreopenSource } from "./current-schematic-rename-preopen-source.ts";
 import type { CurrentSchematicRenamePreopenSourceObservation } from "./current-schematic-rename-preopen-source.ts";
 import { CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS, buildCurrentProjectOnlyOpenProgram, decodeCurrentProjectOnlyOpenReply } from "./current-project-only-open.ts";
@@ -358,12 +360,18 @@ export class CurrentSchematicRenameGenerationCoordinator {
     const { source, capture, launch } = slot, baseline = slot.closed.baseline;
     try {
       await this.captureCurrent(slot);
+      const ordinary = source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE;
+      if (ordinary) {
+        need(!acceptEffects, "ordinary SCH opening cannot accept unqualified startup effects");
+        assertCurrentSchematicOpeningExpectation(source.schematicExpectation, baseline.metadata, baseline.children);
+        need(canonicalJson(source.startupExpectation) === canonicalJson(baseline.children.startupInput), "ordinary startup expectation changed");
+      }
       // Startup needs the initial PCB as its nonzero native-count witness;
       // The intended SCH target is separately bound by the original baseline.
       const premises = open ? await assessCurrentStartupPremises({ inventory: baseline.inventory, sourceSha256: baseline.copy.sha256,
         checkpointSha256: baseline.copy.sha256, history: baseline.history, target: baseline.intent.target, documentUuid: source.target.documentUuid }) : undefined;
       await this.captureCurrent(slot);
-      need(premises === undefined || premises.historicalSubsetSatisfied || (acceptEffects && premises.activeSchematicPages > 0 &&
+      need(premises === undefined || premises.historicalSubsetSatisfied || ((ordinary || acceptEffects) && premises.activeSchematicPages > 0 &&
         premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages"), "startup prerequisites require unsupported opening effects");
       if (open) { slot.openAttempted = true; } else { slot.cacheAttempted = true; }
       await this.engine.assertBridgeAndRecoveryAdmission(operationId); await this.captureCurrent(slot);
@@ -387,6 +395,7 @@ export class CurrentSchematicRenameGenerationCoordinator {
         if (open) { slot.journal.mutationMayHaveOccurred = true; }
         await CurrentSchematicRenameGenerationCoordinator.record(slot, `${phase}-intent`, { target, programSha256: sha256Json({ code }),
           preopenSource: slot.preopen ?? null, startupPremises: premises ?? null, unqualifiedSchematicStartupEffectsAccepted: open && acceptEffects,
+          ordinarySchematicStartupExpectation: ordinary ? source.schematicExpectation : null,
           startupQualified: false, executionAuthorized: false }); await this.captureCurrent(slot, scopeText);
         const before = structuredClone(slot.journal); let marked: Journal | undefined;
         await this.engine.dispatchWithOrphanTracking(slot.journal, phase, "easyeda_execute", { code, timeoutMs: timeout + (open ? 0 : 5000), confirmWrite: true },

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
+import { z } from "zod";
+import { isRecord } from "../src/core.ts";
 import { parseCurrentPcbGeometryRequest, queryCurrentPcbGeometry, validateCurrentPcbGeometryArguments,
   validateCurrentPcbGeometryResult } from "../src/current-pcb-geometry.ts";
 import type { CurrentPcbGeometryRequest } from "../src/current-pcb-geometry.ts";
 import { buildCurrentPcbGeometryProgram } from "../src/current-pcb-geometry-program.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
+import { CURRENT_UI_IMPLEMENTATION } from "../src/current-ui-implementation.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
@@ -162,6 +165,63 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.ok(arcRaw !== null && typeof arcRaw === "object" && "rows" in arcRaw && Array.isArray(arcRaw.rows));
   const arcRow: unknown = arcRaw.rows[0]; assert.ok(arcRow !== null && typeof arcRow === "object");
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
+});
+
+void test("geometry discovery returns bounded method-specific successful result schemas and discloses remaining parser refinements", async () => {
+  const catalog = queryCurrentPcbGeometry({ includeSchemas: true }), entries = catalog["entries"];
+  assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  assert.ok(Array.isArray(entries)); assert.equal(entries.length, 19);
+  assert.ok(Buffer.byteLength(JSON.stringify(catalog), "utf8") < 1024 * 1024);
+  for (const rawEntry of entries) {
+    const entry: unknown = rawEntry; assert.ok(isRecord(entry));
+    const method = entry["method"], schema = entry["resultSchema"];
+    assert.ok(typeof method === "string" && isRecord(schema));
+    const properties = schema["properties"]; assert.ok(isRecord(properties));
+    const methodSchema = properties["method"], values = properties["value"];
+    assert.ok(isRecord(methodSchema) && isRecord(values) && isRecord(values["items"]));
+    const rowProperties = values["items"]["properties"]; assert.ok(isRecord(rowProperties));
+    const family = rowProperties["primitiveType"]; assert.ok(isRecord(family));
+    assert.equal(methodSchema["const"], method);
+    assert.equal(family["const"], method.endsWith("getAllPinsByPrimitiveId") ? "Pad" : method.slice("eda.pcb_Primitive".length).split(".")[0]);
+    assert.equal(schema["additionalProperties"], false); assert.equal(properties["rows"], undefined);
+    assert.equal(Object.hasOwn(properties, "returnedRowCount"), method.endsWith(".get") || method.endsWith("getAllPinsByPrimitiveId"));
+    assert.equal(entry["resultSchemaScope"], "successful-tool-result;not-error-envelope");
+    assert.match(String(entry["resultSchemaLimitations"]), /polygon command grammar.*exact request target.*no runtime admission/u);
+  }
+  const brief = queryCurrentPcbGeometry()["entries"]; assert.ok(Array.isArray(brief));
+  assert.ok(brief.every((entry: unknown) => isRecord(entry) && entry["inputSchema"] === undefined && entry["resultSchema"] === undefined));
+  for (const method of ["eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId"] as const) {
+    let argumentFields: Record<string, unknown> = {};
+    if (method.endsWith(".get")) { argumentFields = { primitiveIds: ["pad-b"] }; }
+    else if (method.endsWith("getAllPinsByPrimitiveId")) { argumentFields = { primitiveId: "component-b" }; }
+    const request = parseCurrentPcbGeometryRequest({ method, target, arguments: argumentFields });
+    const raw: unknown = decodeExactReadEnvelope(await environment({ input: request,
+      beforeChild: "rows.Pad[0].defaultPadShapeAspect=['POLYGON',[0,0,'L',10,0,10,10,0,0]];" }).run());
+    assert.ok(isRecord(raw) && Array.isArray(raw["rows"]));
+    const observed = validateCurrentPcbGeometryResult(request, raw);
+    const result = { ...observed, observationSha256: "a".repeat(64), runtimeAdmission: {
+      profile: "easyeda-pro-control.current-pcb-geometry-runtime.v1", fingerprintSha256: "b".repeat(64), uiImplementation: CURRENT_UI_IMPLEMENTATION,
+      beforeAndAfterChecked: true, scope: "explicit-current-pcb-loaded-view-geometry-only", designExecutionAuthorized: false,
+      persistenceVerified: false, liveValidation: "not-recorded" } };
+    const entry: unknown = entries.find((candidate: unknown) => isRecord(candidate) && candidate["method"] === method);
+    assert.ok(isRecord(entry) && isRecord(entry["resultSchema"]));
+    const schema = z.fromJSONSchema(entry["resultSchema"]);
+    assert.equal(schema.safeParse(result).success, true);
+    assert.equal(schema.safeParse({ ...result, method: "eda.pcb_PrimitiveLine.getAll" }).success, false);
+    const rows: unknown[] = raw["rows"];
+    const first = rows[0]; assert.ok(isRecord(first));
+    const malformed = { ...first, defaultCopperShape: { shape: "POLYGON", coordinateSpace: "native-pad-style", pathSource: [0, 0, "L", 1] } };
+    const observedValues = observed["value"]; assert.ok(Array.isArray(observedValues));
+    const values: unknown[] = observedValues;
+    assert.equal(schema.safeParse({ ...result, value: [malformed, ...values.slice(1)] }).success, true);
+    assert.throws(() => validateCurrentPcbGeometryResult(request, { ...raw, rows: [malformed, ...rows.slice(1)] }));
+    for (const changed of [{ ...malformed, primitiveType: "Component" },
+      { ...malformed, defaultCopperShape: { ...malformed.defaultCopperShape, coordinateSpace: "board" } },
+      { ...malformed, defaultCopperShape: { ...malformed.defaultCopperShape, pathSource: ["R"] } },
+      { ...malformed, defaultCopperShape: { ...malformed.defaultCopperShape, pathSource: Array.from({ length: 2049 }, () => 0) } }]) {
+      assert.equal(schema.safeParse({ ...result, value: [changed, ...values.slice(1)] }).success, false);
+    }
+  }
 });
 
 void test("current Dimension projection keeps all three tuple types in native mil and separates canvasUnit", async () => {
@@ -705,15 +765,74 @@ void test("current Pad shape and mask parameters retain callback precision while
   assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
 });
 
-void test("current Pad polygon marker neither reads nor claims equality of omitted path contents", async () => {
+void test("current Pad polygon preserves native line, arc, Bezier and circle paths without placement transforms", async () => {
   const input = inputFor(methods[4]);
-  const fixture = environment({ input, beforeChild: "const path=[];Object.defineProperty(path,'0',{get(){getterReads++;throw new Error('PRIVATE_POLYGON');}});rows.Pad[0].defaultPadShapeAspect=['POLYGON',path];",
-    afterCall: "if(dataReads===2)rows.Pad[0].defaultPadShapeAspect[1]=['CIRCLE',1,2,3];" });
-  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run())), value = result["value"];
-  assert.ok(Array.isArray(value));
-  const first: unknown = value[0]; assert.ok(first !== null && typeof first === "object" && "defaultCopperShape" in first);
-  assert.deepEqual(first.defaultCopperShape, { shape: "POLYGON", details: "not-projected" });
-  assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  for (const pathSource of [[], ["CIRCLE", 1.2345, -2.3456, 0], [0, 0, "L", 10, 0, 10, 10, 0, 0],
+    [0, 0, "ARC", -45.1234, 5, 10, "CARC", 90, 20, 30],
+    [1, 2, "C", 3, 4, 5, 6, 7, 8], [1, 2, "C", 3, 4],
+    [0, 0, "L", 10, 0, "ARC", 45, 20, 10, "C", 30, 20, 40, 20, 50, 10, "L", 60, 10]]) {
+    const fixture = environment({ input, beforeChild: `rows.Pad[0].defaultPadShapeAspect=['POLYGON',${JSON.stringify(pathSource)}];
+Object.defineProperty(rows.Pad[0],'specialPadShapeAspect',{get(){getterReads++;throw new Error('PRIVATE_STACK');}});` });
+    const raw = decodeExactReadEnvelope(await fixture.run());
+    const result = validateCurrentPcbGeometryResult(input, raw), value = result["value"];
+    assert.ok(Array.isArray(value));
+    const first: unknown = value[0]; assert.ok(first !== null && typeof first === "object" && "defaultCopperShape" in first);
+    assert.deepEqual(first.defaultCopperShape, { shape: "POLYGON", pathSource, coordinateSpace: "native-pad-style" });
+    assert.ok("x" in first && "rotation" in first);
+    assert.equal(first.x, 1.1234567); assert.equal(first.rotation, 45.1234567);
+    assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+  }
+});
+
+void test("current Pad polygon refuses incomplete, unknown, accessor and oversized paths even on unrequested pads", async () => {
+  const input = inputFor("eda.pcb_PrimitivePad.get", ["pad-a"]);
+  for (const path of ["['R',0,0,1,1,0,0]", "[['CIRCLE',0,0,1]]", "[0,0]", "['L',0,0]", "[0,0,'L']", "[0,0,'L',1]",
+    "[0,0,'ARC',90,1]", "[0,0,'CARC',90,1,1,2,2]", "[0,0,'C',1,1,2]", "[0,0,'CIRCLE',1,1,1]",
+    "['CIRCLE',0,0,-1]", "['CIRCLE',0,0,1,2]", "['CIRCLE',0,0,'1']", "['CIRCLE',0,-0,1]",
+    "['CIRCLE',0,NaN,1]", "['CIRCLE',0,1e13,1]", "['CIRCLE',0,Infinity,1]", "[0,0,'L',...Array(2046).fill(0)]"]) {
+    const fixture = environment({ input, beforeChild: `rows.Pad[0].defaultPadShapeAspect=['POLYGON',${path}];` });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+  for (const mutation of ["delete path[1];", "path.extra=1;", "path[Symbol('extra')]=1;", "Object.setPrototypeOf(path,{});",
+    "Object.defineProperty(path,'1',{get(){getterReads++;throw new Error('PRIVATE_PATH');}});",
+    "delete path[1];Object.defineProperty(Array.prototype,'1',{get(){getterReads++;throw new Error('PRIVATE_PATH');}});"]) {
+    const fixture = environment({ input, beforeChild: `const path=['CIRCLE',0,0,1];rows.Pad[0].defaultPadShapeAspect=['POLYGON',path];${mutation}` });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+});
+
+void test("current Pad polygon includes complete unselected path tokens in double-sample equality and host schema", async () => {
+  const input = inputFor("eda.pcb_PrimitivePad.get", ["pad-a"]);
+  const setup = "rows.Pad[0].defaultPadShapeAspect=['POLYGON',[0,0,'ARC',45,1,1]];";
+  for (const mutation of ["rows.Pad[0].defaultPadShapeAspect[1][3]=46;", "rows.Pad[0].defaultPadShapeAspect[1][2]='CARC';",
+    "rows.Pad[0].defaultPadShapeAspect[1]=[];", "rows.Pad[0].defaultPadShapeAspect[1]=['CIRCLE',0,0,1];"]) {
+    await assert.rejects(environment({ input, beforeChild: setup, afterCall: `if(dataReads===2){${mutation}}` }).run(),
+      { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  const allInput = inputFor(methods[4]), raw: unknown = decodeExactReadEnvelope(await environment({ input: allInput, beforeChild: setup }).run());
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+  for (const pathSource of [["R", 0, 0, 1, 1, 0, 0], [0, 0, "ARC", 1, 1], ["CIRCLE", 0, 0, -1], ["CIRCLE", 0, -0, 1], ["CIRCLE", 0, 0, Infinity], [0, 0, "L", ...Array.from({ length: 2046 }, () => 0)]]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(allInput, { ...raw, rows: [{ ...row,
+      defaultCopperShape: { shape: "POLYGON", pathSource, coordinateSpace: "native-pad-style" } }] }));
+  }
+  for (const coordinateSpace of ["board", undefined]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(allInput, { ...raw, rows: [{ ...row,
+      defaultCopperShape: { shape: "POLYGON", pathSource: ["CIRCLE", 0, 0, 1], coordinateSpace } }] }));
+  }
+});
+
+void test("current Pad polygon accepts its inclusive token bound and retains complete evidence byte refusal", async () => {
+  const input = inputFor(methods[4]);
+  // Initial point plus one L segment and a C block with 2042 scalars: 2048 total.
+  const setup = "const path=[0,0,'L',1,1,'C',...Array(2042).fill(0)];rows.Pad[0].defaultPadShapeAspect=['POLYGON',path];";
+  const boundary = environment({ input, beforeChild: setup });
+  validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await boundary.run()));
+  const large = environment({ input, beforeChild: `${setup}rows.Pad=Array.from({length:256},(_,i)=>({...rows.Pad[0],globalIndex:'pad-'+i}));` });
+  await assert.rejects(large.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(large.evaluateChild("dataReads"), 1);
 });
 
 void test("current Pad enrichment rejects unavailable own data, malformed shapes and conversion overflow", async () => {

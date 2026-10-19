@@ -176,7 +176,8 @@ async function fixture(context: TestContext, mode: Mode): Promise<{
     assert.equal(value, startup); assert.equal(selectedEngine, engine); assert.equal(selectedGeneration, generation);
     assert.equal(state.finishing, false); assert.equal(state.retired, false); return startupSource;
   };
-  const common = { assertExpectedFingerprint: noOp, validateSdkLocalRuntimeFingerprint: noOp, assertUpstreamReplySettled,
+  const common = { CURRENT_SCHEMATIC_OPERATION_PURPOSE: "ordinary-schematic-rename",
+    assertExpectedFingerprint: noOp, validateSdkLocalRuntimeFingerprint: noOp, assertUpstreamReplySettled,
     verifyCurrentProjectOnlySymbolPreflightImplementation: noOp, verifyCurrentSymbolPersistenceImplementation: noOp,
     assertOriginalCurrentSchematicRenameStartup: startupAssert, revalidateCurrentSchematicRenameStartupObservation: startupAssert,
     assertCurrentSchematicRenameWriterOwner: ownerAssert, originalCurrentSchematicRenameSqlPreparation,

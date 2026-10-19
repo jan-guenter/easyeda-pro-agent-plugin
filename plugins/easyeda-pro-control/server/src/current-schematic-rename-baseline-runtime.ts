@@ -3,6 +3,7 @@
  */
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, sha256Json } from "./core.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "./current-schematic-operation.ts";
 import { assertCompletedCurrentSchematicRenameOpeningTransfer, assertCurrentSchematicRenameOpeningOwner, revalidateCurrentSchematicRenameOpeningOwner } from "./current-disposable-open-runtime.ts";
 import type { CurrentSchematicRenameOpeningOwner, CurrentSchematicRenameOpeningOwnerSource } from "./current-disposable-open-runtime.ts";
 import { assertOriginalCurrentSchematicRenameBaseline, captureCurrentSchematicRenameBaseline, revalidateCurrentSchematicRenameBaseline } from "./current-schematic-rename-owner-baseline.ts";
@@ -167,7 +168,9 @@ export class CurrentSchematicRenameBaselineCoordinator {
     need(!this.busy && !this.slots.has(owner.operationId), "capture requires an unused original operation");
     const original = cleanupOnly ? assertCurrentSchematicRenameOpeningOwner(owner, this.engine) : assertCompletedCurrentSchematicRenameOpeningTransfer(owner, this.engine);
     need(original.source.runtime === this.runtime, "opening runtime differs");
-    const plan: Journal["plan"] = { profile: PROFILE, purpose: "disposable-schematic-rename", openingOperationId: owner.openingOperationId,
+    const plan: Journal["plan"] = { profile: PROFILE,
+      purpose: original.source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE ? CURRENT_SCHEMATIC_OPERATION_PURPOSE : "disposable-schematic-rename",
+      openingOperationId: owner.openingOperationId,
       target: original.source.target, intent: original.intent, launch: original.source.launchProjection,
       expectedFingerprintSha256: sha256Json(original.source.expectedFingerprint) };
     const journal: Journal = { schema: OPERATION_SCHEMA, operationId: owner.operationId, journalPath: operationPath(owner.operationId), plan,

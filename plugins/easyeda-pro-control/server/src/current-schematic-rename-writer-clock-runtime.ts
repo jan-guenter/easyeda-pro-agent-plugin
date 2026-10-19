@@ -6,6 +6,7 @@
 /* oxlint-disable import/max-dependencies -- Bind SCH-owned generation/startup/clock issuers to maintained journal transitions; no PCB ownership or injectable production callbacks. */
 import { loadOperation, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
+import { CURRENT_SCHEMATIC_OPERATION_PURPOSE } from "./current-schematic-operation.ts";
 import { assertExpectedFingerprint, assertUpstreamReplySettled, canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { qualifyCurrentSchematicAgedSqlHead } from "./current-schematic-aged-sql-issuer.ts";
 import type { OriginalCurrentSchematicAgedSqlClock } from "./current-schematic-aged-sql-issuer.ts";
@@ -152,7 +153,8 @@ export async function collectCurrentSchematicRenameWriterClock(engine: EasyedaCo
   const scope = engine.upstream.currentAuthenticatedBridgeDispatchBinding?.(); need(scope !== undefined);
   const scopeText = canonicalJson(scope), source = assertCurrentSchematicRenameWriterOwner(owner, engine, scopeText);
   const originalStartup = assertOriginalCurrentSchematicRenameStartup(startup, engine, source.generation);
-  need(originalStartup.source === source.original && source.original.source.purpose === "disposable-validation");
+  need(originalStartup.source === source.original && (source.original.source.purpose === "disposable-validation" ||
+    source.original.source.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE));
   need(!attempts.has(owner), "Current SCH writer clock attempt already consumed.");
   const collection: Collection = { engine, owner, startup, source, upstream: engine.upstream, methods: methods(engine),
     journalText: canonicalJson(source.journal), artifacts: new Map(), dispatchAttempted: false, failureObserved: false, cleanupUncertain: false };

@@ -22,9 +22,9 @@ void test("portable MCP launch requires the exact bundled launcher tuple without
   }
 });
 
-void test("all 48 facade tools include scoped board/PCB/SCH reads, disposable PCB/SCH rename and copy, ordinary metadata, launch and legacy refusals", () => {
-  assert.equal(FACADE_TOOL_NAMES.length, 48);
-  assert.equal(new Set(FACADE_TOOL_NAMES).size, 48);
+void test("all 49 facade tools include scoped board/PCB/SCH reads, disposable PCB/SCH rename and copy, ordinary-purpose SCH validation, metadata, launch and legacy refusals", () => {
+  assert.equal(FACADE_TOOL_NAMES.length, 49);
+  assert.equal(new Set(FACADE_TOOL_NAMES).size, 49);
   for (const name of ["easyeda_control_api", "easyeda_control_sdk_read", "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui",
     "easyeda_control_execute", "easyeda_control_apply", "easyeda_control_check", "easyeda_control_validate_closed_symbol", "easyeda_control_symbol_metadata", "easyeda_control_system", "easyeda_control_extensions", "easyeda_control_shortcuts", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_pcb_identities", "easyeda_control_history", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol", "easyeda_control_project_symbol_metadata"]) {
     assert.ok(FACADE_TOOL_NAMES.some((entry) => entry === name));
