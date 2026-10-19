@@ -48,11 +48,14 @@ void test("PCB geometry registration preserves strict target requests and the se
     { ...request, method: "eda.pcb_PrimitiveAttribute.getAll", arguments: { parentPrimitiveId: "parent" } },
     { ...request, method: "eda.pcb_PrimitiveAttribute.get", arguments: { primitiveIds: ["one"], parentPrimitiveId: "parent" } },
     { ...request, method: "eda.pcb_PrimitiveAttribute.get", arguments: { primitiveIds: "one" } },
+    { ...request, method: "eda.pcb_PrimitiveDimension.getAll", arguments: { layer: 13 } },
+    { ...request, method: "eda.pcb_PrimitiveDimension.get", arguments: { primitiveIds: "one" } },
+    { ...request, method: "eda.pcb_PrimitiveDimension.get", arguments: { primitiveIds: ["one"], primitiveLock: false } },
     { ...request, method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId: ["one"] } }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
-  for (const family of ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute"]) {
+  for (const family of ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute", "Dimension"]) {
     for (const method of ["getAll", "get"]) {
       const parsed: unknown = requestSchema.parse({ ...request, method: `eda.pcb_Primitive${family}.${method}`,
         arguments: method === "get" ? { primitiveIds: ["one"] } : {} });
@@ -67,5 +70,5 @@ void test("PCB geometry registration preserves strict target requests and the se
   assert.equal(calls.at(-1), association);
   assert.ok(associationResult !== null && typeof associationResult === "object" && "result" in associationResult);
   assert.equal(associationResult.result, observed);
-  assert.equal(calls.length, 15);
+  assert.equal(calls.length, 17);
 });

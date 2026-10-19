@@ -184,8 +184,8 @@ as identity reads. The board must already be active; this tool never opens it.
 
 Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll`,
 `eda.pcb_PrimitiveVia.getAll`, `eda.pcb_PrimitiveComponent.getAll`,
-`eda.pcb_PrimitivePad.getAll`, `eda.pcb_PrimitiveString.getAll` and
-`eda.pcb_PrimitiveAttribute.getAll`, with empty
+`eda.pcb_PrimitivePad.getAll`, `eda.pcb_PrimitiveString.getAll`,
+`eda.pcb_PrimitiveAttribute.getAll` and `eda.pcb_PrimitiveDimension.getAll`, with empty
 `arguments` only. Each family also
 supports a narrower `.get` equivalent with `arguments:{"primitiveIds":["id"]}`.
 Use 1 to 256 distinct nonempty IDs, each at most256characters. Scalar IDs,
@@ -196,7 +196,8 @@ does not establish absence from saved source. It does not change selection.
 
 `getAll` preserves native row order. Both return plain data, not SDK objects
 or methods. Every row
-has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component, String and Attribute
+has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component,
+String, Attribute and Dimension
 also have `net`; null and empty net text remain distinct, and neither proves
 resolved connectivity.
 
@@ -209,6 +210,7 @@ resolved connectivity.
 | Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole`, `defaultCopperShape`, `maskExpansion`, `thermal` |
 | String | `layer`, `x`, `y`, `text`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `key`, `showKey`, `showValue`, `positionIsNull`, `silkColor` |
 | Attribute | `parentPrimitiveId`, `layer`, `x`, `y`, `key`, `value`, `keyVisible`, `valueVisible`, `fontFamily`, `fontSize`, `lineWidth`, `alignMode`, `rotation`, `reverse`, `expansion`, `mirror`, `positionIsNull`, `silkColor` |
+| Dimension | `layer`, `dimensionType`, `coordinateSet`, `lineWidth`, `precision`, `canvasUnit` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad/String rotation use degrees. Arc modes
@@ -286,9 +288,56 @@ required even when `positionIsNull` is true; null coordinates are not coerced.
 At most256 parent groups and256 total rows share the384KiB evidence bound.
 Full-family checks still apply when selecting one ID. Font caches, outlines,
 source expressions, saved membership and rendering are omitted. No filters,
-scalar lookup, setters, font loading or Save are requested. Source review and
-offline tests do not establish connected validation of these geometry methods;
-the separately tested ID reader does not validate these additional fields.
+scalar lookup, setters, font loading or Save are requested.
+
+Installed060000 passed one disposable case: six attributes in two complete
+parent groups, followed by two Designators requested in reversed caller order.
+Both calls returned matching complete double samples and identical projected
+values/groups. Original-process/Job closure was proved and the closed fixture
+remained byte-exact with no sidecars. No edit or explicit Save was requested.
+This case covers the observed default fonts/styles and null serialized colors;
+it does not validate Name formulas, nondefault styles, rendering, saved ownership
+or a later runtime. The earlier ID-only case is separate evidence.
+
+### Dimension coordinates and styles
+
+Use `eda.pcb_PrimitiveDimension.getAll` with empty arguments or `.get` with a
+distinct `primitiveIds` array. Both use the complete native Dimension family,
+with two matching ordered samples before caller-order selection. The native
+get-by-ID callback is not used because it also searches unrelated families.
+
+`coordinateSet` contains eight numbers for Length: left, start, end and right
+X/Y pairs. Radius contains six: end, start and text-anchor X/Y pairs. Angle
+contains six: start, center and end X/Y pairs. These coordinates and `lineWidth`
+are already in mil. Do not multiply them by ten again or convert them based on
+`canvasUnit`. The DTO also retains dimension type, layer, lock and precision.
+
+The native getter overwrites the annotation's unit with the current canvas unit.
+The adapter therefore calls this field `canvasUnit`, limited to `mm`, `cm`,
+`inch` and `mil`. It is not the coordinate unit or proof of the stored annotation
+unit. Annotation text, actual rendered length/radius/angle, glyph bounds and
+parent ownership remain unverified. No measurement is recomputed.
+
+All three native managers include existing loaded views without a parent filter.
+The geometry limits of256rows and384KiB apply to the full family even for one
+requested ID. No filters, scalar lookup, selection change, mutation or Save is
+supported. Source review and synthetic tests do not establish a populated live
+Dimension case; the historical empty ID result is separate evidence.
+
+### Polygon-family identity limits
+
+Fill, Polyline and Region identity enumeration is unavailable on the current
+runtime. Their native family getters serialize shapes before returning IDs;
+simplified polygons can rebuild model/view children during serialization.
+Selecting only IDs afterward does not avoid those effects.
+
+The object-tree event is not an equivalent fallback. Its parent filtering differs
+from all three family contracts, and its delayed reply has no request or frame
+identity. The original serializer-free managers are not exposed to the extension.
+Do not substitute tree IDs, select-all, a region query or a private topic call.
+A fixed observer bound to the original managers is needed before these methods
+can join the current identity reader. This restriction does not change separately
+pinned legacy routes or authorize a runtime patch.
 
 ### Pad parameters
 

@@ -4,6 +4,129 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+060000 resumed, 2026-10-19: actual configured facade3499503/start35965124,
+current Codex parent3497877/start35959264, pinned Node24.18.0 and installed
+060000 source482/0a18145e/runtime3/2ce9b592/manifestf705bc01 independently
+verified. Full maintained comparison85412 passes1475files/29822922bytes/
+42directories, exact bytes/modes/no extras, inventoryc1a71916 against merged
+main559c4e14. Evidence `/root/.cache/easyeda-060000-actual-facade-ZcsooQf7`;
+process/source prooff4aede52, installed proofa369686c. This is host/file
+admission only. Prior main Linux39199358744 now SUCCESS, all eight shards and
+aggregate passed. Both main platforms are green; no repeated suite needed.
+
+Current live060000: new launch/open IDs
+`pcb-attribute-geometry-060000-20261019-launch` and
+`pcb-attribute-geometry-060000-20261019-open` each completed once. Original
+root33380/Job817041505a51424585febb38a4642764, launch digestb91d0704 and
+window14750884 retained by facade3499503. Attribute getAll passed6rows/2groups,
+observatione638d1af; explicit get passed two Designators in reversed caller
+order, observationc370d677. Both return two complete matching samples under
+fingerprint3a84a260. Exact projected values/groups agree between calls. One
+normal-close call80 completed acknowledged; retained observe-termination88 proves
+original root/Job exit. Final closed comparison e4434cc5/598016 is byte-identical
+to retained195000copy, no sidecars and stable descriptor/path identity. Case is
+COMPLETED/NONREPLAYABLE. No live operation remains pending.
+No edit, explicit Save, restore or production access. Private reply evidence
+is `/root/.cache/easyeda-attribute-geometry-060000-live-VnKc1V4j`.
+
+Source candidate070000 on `feature/070000-dimension-schematic-clock` is built,
+NOT published/installed. Dimension get/getAll and private SCH clock/stored-effect
+modules passed root/independent review.77Dimension and10SCH focused tests,
+types/targeted strict lint pass. Historical skill-case body moved byte-exact
+to optional reference; all81links resolve, doc review accepted. Source485/
+76c9fafb, runtime3/2ac69694, manifest1aa82663; external pins unchanged.
+Dependency/signatures/audit/build/compatibility checks pass. Frozen full verify
+is running in shell25144 with logs under
+`/root/.cache/easyeda-070000-release-kd1Yf76m`; do not change code/bundles/pins.
+Original repository check refused a production name in the new SCH doc;
+replaced it with 'production design', final repository9552 exits0. All seven
+official skill validators pass. No source guard was changed for these checks.
+
+Polygon source research found no
+safe complete identity route through the admitted extension boundary; see
+`docs/current-pcb-polygon-identities-research-2026-10-19.md`. Fill/Polyline/
+Region serialization can rebuild children; the tree-event alternative has
+different parent membership and no correlated response. No bypass added.
+
+Next after070000 delivery: fresh actual host admission; populated Dimension/Image
+cases; complete SCH one-attempt dispatch, post-clock, closed SQL/reopened child
+roster and final closure; PCB text Save-participant/queue/worker observations and
+writer lifecycle; safe polygon alternatives; broader library/3D, layout/routing,
+ECO/export/account/bootstrap/platform adapters. Admission performance candidate:
+compact cached completed/nonblocking legacy journal summaries while freshly
+checking every byte/path/artifact. Cache pressure is a hypothesis, not measured
+or implemented; never cache authority. Current774distinct methods retain450omitted/
+80blocked.346guarded/94blocked/2partial routes are multi-tuple counts, not current
+live-callable methods.
+
+The following delivery checkpoint is historical; its fresh-session requirement
+has been met, including the exact connected Attribute case above.
+
+060000 delivery, 2026-10-19: protected PR74 merged as main
+`559c4e140c5724bde593c43f6d5b3f4e1bbe90fd`. Final reviewed candidate
+`8479376798bb0260991d01226f491021e9453c2a` has the same complete tree
+`730d6a93cdfe8d1cc566dd1cc5790ee1589565a6`. Exact-head Linux39198136659 passed
+build, all eight shards and aggregate:11,372 facade passes/five platform skips/
+zero failures. Windows39198136642 passed. Duplicate main Windows39199358687
+passed; main Linux39199358744 is running. Check its eventual result without
+repeating the passed exact-tree PR suite. Copilot review was unavailable due
+quota; root and independent implementation reviews passed.
+
+Official Git marketplace upgrade installed/enabled
+`0.3.0+codex.20261019060000` from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Cached
+marketplace HEAD equals merged main. Maintained comparison89456 completed exit0:
+exact1,475files/29,822,922bytes/42directories INCLUDING root, all committed bytes/
+modes and no extras. Plugin tree `8f3da0746ba4f07eb6ed25a919ef400927dfbd60`;
+inventory `c1a71916d9a26d99bb3dc88280fa384d1b04e92254bb591df5cff53c5d444247`.
+Source482/0a18145e, runtime3/2ce9b592, manifestf705bc01. External pins unchanged.
+
+NEW root/independently reviewed offline probeadf9ed4f completed ONCE exit0 in
+original shell56896 with approved pins06043544. Configured ambientNode26.11.1
+handed off to pinned24.18.0;20restricted tools and five offline queries passed:
+geometry catalog15, Attribute get/getAll acceptance and filter/scalar refusal.
+Original child3494339/start35940339/parent3492515 exited0 through stdinEOF and
+is absent; no signals/adoption or held handles. Synthetic profile unchanged,
+no upstream execution marker/journal, lease removed after EOF. Two no-socket/
+descendant samples are not continuous isolation. Installed inventory is exact
+before/after. Root and independent retained-proof reviews passed. Proof SHA
+`b37109be0de56b6eabbee8822a19f02722a25eef5bc50903f79fe53ca2d67ad0`
+is retained at
+`/root/.cache/easyeda-attribute-060000-offline-probe-IRt6ez/proof.json`.
+NEVER rerun/import this consumed probe or earlier ones. All local/probe sessions
+are terminal. No live060000 admission is claimed. Actual configured facade3385215
+still loads023200 and was not terminated/hotpatched/adopted; do not use it after
+marketplace pruning. A fresh Codex session must load/admit060000 before Attribute
+geometry connected testing. No CAD action or recovery is pending.
+
+Original local verify54880 finished exit1:11,372 facade passes/four skips/one
+stale bundled-startup assertion (13 instead of15). The test-only correction's
+five startup cases passed12006. Final local types/strict lint,424 bridge tests,
+package/seven skills/repository checks passed93555; seven official skill checks
+also passed. Source/bundles/pins stayed fixed and committed bundles reproduce.
+The original failure is retained, not relabeled; final exact-payload CI above
+passed separately. Dependency audit verified151signatures/40attestations/zero
+vulnerabilities. Local verification sessions are terminal. Evidence directory:
+`/root/.cache/easyeda-060000-release-JsN9k3uK`; verify log53b7c95e, final CI8bab4979.
+
+Delivered: Attribute value/placement reader and updated control guidance;
+private SCH initial-closure/full-SQL baseline and fresh-generation/startup
+plumbing (unregistered, no writer); bounded admission-scan timing diagnostics.
+The populated023200 Attribute ID case below is complete and nonreplayable;
+the disposable project is closed/unchanged and no production design was accessed.
+
+Next: fresh actual060000 host admission, disposable Attribute geometry validation;
+nonempty Dimension/Image cases; SCH-specific clock/actor and stored-effect binding,
+one-attempt writer, full closed SQL/saved metadata+child-roster reopen/final closure;
+PCB text complete Save-participant/queue/worker observations and write lifecycle;
+safe polygon readers; broader library/3D, schematic/PCB, ECO/export/account,
+bootstrap and platform adapters. PCB coordinator modules are templates, not SCH
+authority tokens. Current774methods still includes450omitted/80implemented-blocked;
+344guarded/94blocked/2partial routes are not a live-callable-method count.
+Worktree `feature/060000-delivery-20261019` starts at merged main. Preserve prior
+branches, stash ebe1b55d7a430ae2e3168e373e155957b582eff9, worktrees and evidence.
+Everything below is historical.
+
 060000 candidate, 2026-10-19: continued on `feature/023200-delivery-20261019`,
 preserving local handoffd9068bf and prior stash/branches. Main Linux39182849456
 finished SUCCESS onfd8ddf86; the prior delivered023200 tree has both CI platforms

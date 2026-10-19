@@ -2,6 +2,13 @@
 
 Use `easyeda_control_api` before guessing a method, argument name, unit or nested
 operation shape. It does not start the bridge, invoke EasyEDA or change journals.
+Catalog options belong inside `request.query`, not directly inside `request`.
+For example, inspect one geometry method with
+`request:{action:"pcb-geometry",query:{method:"eda.pcb_PrimitiveAttribute.getAll",includeSchemas:true}}`.
+Validate its assembled inner request with
+`request:{action:"pcb-geometry-validate",query:{request:operation}}`.
+Filter by one method when possible; unfiltered schema catalogs can be large.
+
 Its request actions separate documentation from execution:
 
 ```json

@@ -13,7 +13,7 @@
       "omitted": 450
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 344,
+      "available-with-runtime-guards": 346,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -17077,6 +17077,40 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveDimension.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB Dimension loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native dimension-getAll samples. Retains Length then Radius then Angle manager order without a parent filter; only existing stateWatcher views participate. DTOs copy bounded own identity/lock, layer, exact dimensionType, coordinateSet, lineWidth, precision0..4 and canvasUnit. Length tuples have8numbers; Radius/Protractor tuples have6. Coordinates and nonnegative lineWidth are already mil and are not scaled again. canvasUnit preserves only current-document mm/cm/inch/mil: native getAll overwrites model units, so this is not the coordinate unit or verified annotation unit. No bare unit, rendered measurement, inferred length/radius/angle, annotation text/font/color/textFollow, reciprocal parent, partition/group, full source, connectivity, ownership, persistence, write or Save claim. Radius tuple includes a text anchor, not glyph bounds. Complete ordered projected rows must match before selection; duplicate identities and malformed tuples refuse. Bounds256rows/256characters per ID/scalar magnitude1e12/393216bytes apply before selection, while native enumeration/serialization precedes these bounds. No filters, public wrapper, SDK constructor, native generic getByIds or positive type lookup. Only1..256 distinct primitiveIds in an array; exact caller order and all IDs required, no scalar get or missing-ID skipping.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveDimension.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveDimension.get",
           "implementation": "public-method",
@@ -17135,6 +17169,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveDimension.getAll",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB Dimension loaded-view geometry. Exact active ordinary type-3 target, captured frame/receiver and two complete matching native dimension-getAll samples. Retains Length then Radius then Angle manager order without a parent filter; only existing stateWatcher views participate. DTOs copy bounded own identity/lock, layer, exact dimensionType, coordinateSet, lineWidth, precision0..4 and canvasUnit. Length tuples have8numbers; Radius/Protractor tuples have6. Coordinates and nonnegative lineWidth are already mil and are not scaled again. canvasUnit preserves only current-document mm/cm/inch/mil: native getAll overwrites model units, so this is not the coordinate unit or verified annotation unit. No bare unit, rendered measurement, inferred length/radius/angle, annotation text/font/color/textFollow, reciprocal parent, partition/group, full source, connectivity, ownership, persistence, write or Save claim. Radius tuple includes a text anchor, not glyph bounds. Complete ordered projected rows must match before selection; duplicate identities and malformed tuples refuse. Bounds256rows/256characters per ID/scalar magnitude1e12/393216bytes apply before selection, while native enumeration/serialization precedes these bounds. No filters, public wrapper, SDK constructor, native generic getByIds or positive type lookup. Empty arguments only; complete observed family order is preserved.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveDimension.getAll",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",

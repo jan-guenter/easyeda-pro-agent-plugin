@@ -8,9 +8,9 @@ export const CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
 export const CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
 export const CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
 const collectionMethods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
-  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll"] as const;
+  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll", "eda.pcb_PrimitiveString.getAll", "eda.pcb_PrimitiveDimension.getAll"] as const;
 const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get", "eda.pcb_PrimitiveVia.get",
-  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get"] as const;
+  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get", "eda.pcb_PrimitiveString.get", "eda.pcb_PrimitiveDimension.get"] as const;
 const componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
 const attributeCollectionMethod = "eda.pcb_PrimitiveAttribute.getAll";
 const attributeSelectedMethod = "eda.pcb_PrimitiveAttribute.get";
@@ -67,6 +67,15 @@ const attributeSchema = stringSchema.omit({ primitiveType: true, text: true, sho
 }).strict();
 const attributeGroupsSchema = z.array(z.object({ parentPrimitiveId: idSchema,
   ids: z.array(idSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+const dimensionCoordinatesSchema = z.union([
+  z.tuple([numberSchema, numberSchema, numberSchema, numberSchema, numberSchema, numberSchema]),
+  z.tuple([numberSchema, numberSchema, numberSchema, numberSchema, numberSchema, numberSchema, numberSchema, numberSchema]),
+]);
+const dimensionSchema = z.object({ ...identity, primitiveType: z.literal("Dimension"), layer: layerSchema,
+  dimensionType: z.enum(["Length Dimension", "Radius Dimension", "Protractor Dimension"]), coordinateSet: dimensionCoordinatesSchema,
+  canvasUnit: z.enum(["mm", "cm", "inch", "mil"]), lineWidth: numberSchema.refine((value) => value >= 0, "Negative dimension line width."),
+  precision: numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 4, "Invalid dimension precision.") }).strict().refine((row) => row.coordinateSet.length === (row.dimensionType === "Length Dimension" ? 8 : 6),
+  "Dimension coordinate tuple does not match its type.");
 const padSchema = z.object({ ...base, primitiveType: z.literal("Pad"), layer: z.union([z.literal(1), z.literal(2), z.literal(12)]),
   padNumber: boundedText, x: numberSchema, y: numberSchema, rotation: numberSchema, metallization: z.boolean(),
   padType: z.union([z.literal(0), z.literal(1), z.literal(2)]), hole: holeSchema,
@@ -83,7 +92,7 @@ export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
 const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry-observation"), target: targetSchema,
-  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+  rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema, stringSchema, dimensionSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   samples: z.literal(2), implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false),
   persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
 const attributeResultShape = { ...resultShape, rows: z.array(attributeSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
@@ -110,6 +119,7 @@ const limitations = [
   "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
   "String is the PCB text family, not pcb_PrimitiveText. Native string-getAll excludes views with a native parent, so get is limited to that same observed family and does not cover component attributes or inherited text. DTOs retain raw text and fontFamily, layer, placement, fontSize, lineWidth, alignMode 1..9, degree rotation, reverse, expansion, mirror, key, showKey, showValue, positionIsNull and serialized silkColor. Native internal distances are multiplied by 10 to mil; rotation is multiplied by 180 then divided by Math.PI, matching the installed public mapper without defaults or coercion. Empty text/font/key strings remain empty; missing or undefined projected scalars refuse. Only silkColor accepts null. The native serializer applies color.toString()||null, so its null does not prove an absent raw model color; nonempty colors stay bounded raw strings, not validated CSS. Text has no net field. Raw value and display flags do not prove rendered text. Outlines, font cache, zIndex, partition/group, model type and source ownership are omitted and not compared. Existing font caches are read by the native serializer, without loading fonts or refreshing geometry.",
   "Attribute observes existing component-view groups through fixed attribute-getAll. Each DTO adds parentPrimitiveId, key/value and keyVisible/valueVisible with the same finite numeric placement, style, display-state and serialized-color projection as String. Nullable public coordinates are not coerced; positionIsNull remains separate. Value is current model text: Name may already be formula-expanded, unlike the raw Component Name metadata. FormulaName, evaluation, rendered text, outlines and font objects are omitted. Complete ordered attributeParentGroups retain every parent and its ordered child IDs, including empty groups, even for get. Two complete group-and-scalar samples must match before selection. Grouping does not prove reciprocal ownership or complete stored component/attribute membership. Parent/layer/lock filters are unsupported; the existing identity-only reader has separate larger limits.",
+  "Dimension observes native Length, Radius then Angle manager order, with no parent filter and only existing stateWatcher views. DTOs contain type, layer, lock, precision0..4, nonnegative lineWidth and a coordinateSet of eight numbers for Length or six for Radius/Protractor. Coordinates and lineWidth are already mil in the native callback and are not scaled again. Radius coordinates include a text anchor, not glyph bounds. canvasUnit is the current document unit mm/cm/inch/mil: native getAll overwrites each model's unit, so it is neither the coordinate unit nor verified annotation unit. No bare unit field, rendered measurement, inferred length/radius/angle, annotation text/font/color/textFollow, parent/partition/group, source ownership or persistence is projected. Explicit-ID get uses the same complete getAll sample, not the native generic getByIds lookup. Generic type lookup remains unchanged.",
   "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
   "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
   "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
@@ -119,7 +129,7 @@ const limitations = [
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" {
+export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -136,6 +146,8 @@ export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "L
     case "eda.pcb_PrimitiveString.get": { return "String"; }
     case attributeCollectionMethod:
     case attributeSelectedMethod: { return "Attribute"; }
+    case "eda.pcb_PrimitiveDimension.getAll":
+    case "eda.pcb_PrimitiveDimension.get": { return "Dimension"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
