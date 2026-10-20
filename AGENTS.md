@@ -4,6 +4,68 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261020053706` through protected PR83 on2026-10-20.
+Payload87ae78ea, history-only finalhead
+`1bdf53b5ee1d540e4336cbc3ba67f307469d02e5`, merged main
+`20a67ee0e20810a4f4a50c0b6cd474aa40da2b06`; complete tree459aeb36 unchanged.
+This is one combined worker discovery/source/state and native-error evidence batch,
+not a successful connected launch or PCB writer qualification.
+Local required verify9449 passed11759facade/4skips/0failures and424bridge,
+strict types/type-aware lint and package/MCP/skills checks. Logb2b6c146,
+frozen-input94996a43; source520/1178dd1f, runtime3/8cbddf9b, manifest67baf1de.
+Repository/privacy and all7skills passed; external compatibility pins unchanged.
+Exact-head Linux39376599868 passed11758facade/5skips/0failures,424bridge,
+all8shards/build/finalgate; Windows39376599866 passed including native compile/
+emptyJob/pipes. Superseded39376304595 was cancelled by the history-only merge;
+it is not the release's passing evidence. Post-main Windows39377961592 passed;
+Linux39377961737 is still running at this checkpoint, with build green.
+
+Official named Git marketplace upgrade34823 and list31302 confirm installed/
+enabled053706 from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`,
+marketplaceHEAD exact merged main. Maintained comparison69468 passed1564files/
+42directories/32,137,842bytes and modes; inventoryc6ea3e08, plugin tree8293eded,
+receiptb1d5359e. Exact-main worktree:
+`/root/.cache/easyeda-053706-merged-main-qMzdCVbd/worktree`.
+Release evidence `/root/.cache/easyeda-worker-diagnostic-release-0LVXl95L`.
+Root and independent whole-script/final-pin review accepted probe42a72637;
+root approved pins6005f854. Sole offline execution65521 PASSED: configured
+ambientNode26 hands to pinnedNode24,3offline-only tools/50configured policies/
+7skills,4offline API queries. Synthetic missing PCB asset deliberately selects
+this mode; this is not the separate25tool restricted registration or live admission.
+Original child712966/start45143998 exited/closed0 on EOF, no signals/stderr/
+retained handles. All3installed inventories exact; two samples had no children/
+nonstdio sockets and upstream sentinel stayed absent, not continuous isolation.
+Evidence `/root/.cache/easyeda-worker-offline-probe-gzUC6KQl`,
+proof3dc7b9f7/responses456e7727. CONSUMED: never rerun/import/syntax-check.
+Running old20041000 host601405 was not killed, rebound or hotpatched.
+A fresh Codex session must load/admit053706 before further live calls.
+EasyEDA remains closed; no project navigation/CAD/Save, production access or
+pending original native helper. The diagnostic case below is terminal, never replay.
+This post-delivery checkpoint is local handoff documentation, not part of PR83's
+already installed immutable payload.
+
+Next work:
+
+1. Check the automatic merged-main Linux CI result, then admit the new host.
+   Qualify one new original-owned diagnostic launch and full normal cleanup.
+   Any new creation refusal now retains its Windows error; the old cause is unknown.
+2. Add a retained-owner disposable-project opener and qualify the implemented
+   parent-scoped worker discovery, pinned source/context and fixed state read.
+   Start Page need not have a project worker; no alternate/manual opener bypass.
+3. Finish renderer/compiler/model/Save-participant and pending-producer observation,
+   then the one-shot PCB String writer and full closed/reopened SQL/content proof.
+4. Qualify populated Image/Dimension/polygon-Pad readers; remaining schematic/
+   connectivity/structure, libraries/3D, PCB placement/routing/copper/rules/stackup,
+   ECO/ERC/DRC and manufacturing/export remain implementation backlog.
+5. Portable upstream bootstrap and independently admitted runtime/platform tuples.
+
+Inventory remains774methods:212public subsets/33native equivalents/
+79implemented-but-blocked/450omitted. Internal diagnostics do not change these
+coverage counts. Batch further useful implementation before another version.
+Details: `docs/current-pcb-worker-diagnostics-2026-10-20.md`.
+
+### Completed20041000 continuation and053706 release preparation (historical)
+
 Fresh20041000 continuation: actual facade601405/start44848567 and parent599503/
 start44813258 independently and root admitted. Complete1558file/42directory/
 32,006,490byte/mode inventory4656dae6, all517source/3runtime/manifest and five
