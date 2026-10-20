@@ -2,8 +2,9 @@
 
 Use `easyeda_control_pcb_diagnostic_validation` only to qualify the separate
 native diagnostic owner. It starts the reviewed application in its existing
-profile, observes fixed browser/frame/script identities, and normally closes
-that original process. It does not open a project or enable CAD operations.
+profile, observes fixed browser/frame/script identities and an existing direct
+child project worker, and normally closes that original process. The worker read
+reports selected flags and queue counts. It does not open a project or enable CAD operations.
 This registered source route has offline regression coverage; connected native
 validation is not recorded. Older installed snapshots may lack the tool.
 
@@ -41,18 +42,35 @@ below belong inside the diagnostic tool's `request` object.
 4. `inspect-frames` takes that `targetId`. It attaches once, retains the original
    session/event handler and returns actual frame IDs with loader and parent
    identity. A frame ID is not necessarily its target ID.
-5. `inspect-script` takes a `frameId` from that retained tree and exactly one
+5. For page script identity, `inspect-script` takes a `frameId` from that retained tree and exactly one
    `family`: `ui`, `pcb` or `public-api`. Choose the family actually loaded in
    that frame. The facade supplies the fixed versioned asset path, complete
    source hash and byte count. It checks the default context's unique ID and
    complete source, then rechecks target/frame identity. Only one script
    inspection is available for this generation. A missing family is not
    permission to navigate, attach again or try another family after consumption.
-6. `observe-window` returns the original application's unique `hwnd`, or no
+6. For the worker branch, `inspect-workers` requests a fixed direct-child worker
+   attachment from the retained page session. It never pauses workers or adopts
+   a worker from browser discovery. The returned inventory contains at most
+   16 workers with opaque target/session IDs, without titles or URLs. An empty
+   inventory is not proof that the application has no workers.
+7. `inspect-worker-script` takes one `targetId` from that worker inventory.
+   The facade binds the original child session, its unique execution context
+   and the complete pinned project-worker source. It does not reuse a page
+   frame/default-world contract for worker contexts. A missing or mismatching
+   source ends this branch; no alternate worker selection or direct attachment.
+8. `observe-worker-state` takes no expression or field selector. It takes one
+   point-in-time sample using an immutable program with the original unique context ID and inspector
+   `throwOnSideEffect:true`. Only own-data identities/flags, named queue counts
+   and timer-presence labels are returned. It never invokes vendor methods,
+   reads upload/design payloads, waits for tasks or clears queues. Treat counts
+   as sampled diagnostics, not complete membership or a completion barrier.
+   Do not disable the effect check after a refusal.
+9. `observe-window` returns the original application's unique `hwnd`, or no
    usable window. `normal-close` additionally takes that observed `hwnd` and
    `confirmNormalClose:true`. It rechecks the window and sends one normal-close
    request. Never choose Save/Discard or force exit as part of this workflow.
-7. Use `observe-termination` until it proves the original root exited and its
+10. Use `observe-termination` until it proves the original root exited and its
    entire Job is empty. A close acknowledgment or missing window is not that
    proof. Then use `release-closed`. Completion requires `state:"released"`,
    not merely `state:"terminated"`; durable receipt settlement may still be needed.
@@ -61,12 +79,27 @@ Normal closure may persist application data or display a prompt. Leave an
 unexpected Save/Discard prompt unanswered and report it. Do not disconnect the
 diagnostic pipe to close EasyEDA: Electron can quit when that pipe closes.
 
+Each worker stage is consumed once. On the Start Page, no project worker may
+exist: the pinned project manager creates it while opening a project. This
+workflow currently has no diagnostic-owned disposable-project opener, and
+ordinary/bridge opening is excluded while the diagnostic owner is retained.
+Do not use an unrelated opener, DevTools expression or manual project navigation
+to manufacture reachability. Report the missing prerequisite and close/release
+normally. Worker diagnostics can inspect a qualifying worker already present
+within the authorized session; they do not authorize restoring production tabs.
+
 ## Lost replies and failures
 
 - `inspect` is local and does not replay native actions. Supply
-  `observation:"browser"`, `"frames"` or `"script"` to retrieve one recorded or
+  `observation:"browser"`, `"frames"`, `"script"`, `"workers"`, `"worker-script"`
+  or `"worker-state"` to retrieve one recorded or
   retained stage result. Check `busy`, consumed-stage flags, `resultRetained`
   and `published`; a failed response does not authorize another dispatch.
+  The original owner also retains a bounded `nativeLaunchError` label and,
+  after a proved failed creation, `createProcessError`. The latter is the
+  immediately captured numeric Windows error, not arbitrary exception text.
+  Older evidence may lack it; do not guess the failure cause from a generic
+  refusal or an absent process. Cleanup proof retains the code when available.
 - If publication failed, keep the original facade alive. When offered,
   `settle-records` takes the inspected `intentSha256` as `expectedIntentSha256`.
   It publishes only absent records from the original retained bytes. It neither
@@ -105,13 +138,21 @@ Browser discovery is bounded to 8 MiB. Attached transport allows 64 MiB total,
 only the script-source reply allows a 32 MiB encoded frame and 20 MiB decoded
 UTF-8 source. The larger source allowance covers the pinned UI asset, not
 arbitrary event or response expansion.
+The full documented path, including the optional page script, uses all 32
+requests. Do not add extra CDP probes or repeat a consumed observation.
 
 `sourceVerified:true` proves only the selected script's complete bytes in the
-observed target/frame/default context. URL matching alone is insufficient.
+observed target and its retained page or worker context. URL matching alone is insufficient.
 It does not prove a project-worker association, compiler ownership, bridge
 authentication, complete drawing state, queue completion or saved contents.
-There is no arbitrary CDP method, JavaScript evaluation, pause/resume, project
-navigation, CAD writer or Save. Observation is sampled, not continuous.
+There is no arbitrary CDP method or caller JavaScript. The sole worker expression
+has a one-second inspector deadline, no command-line API, user gesture, promise
+awaiting, preview generation or CSP bypass. Its by-value result is bounded to
+16 KiB; selected queue counts are bounded to 65,536. These output limits do not
+make native reflection free or prove that another process stayed unchanged.
+The effect check is not a sandbox or proof of pristine builtins. Native worker
+association, latent callbacks and compiler ownership remain unverified.
+There is no pause/resume, project navigation, CAD writer or Save. Observation is sampled, not continuous.
 `projectFreeVerified`, `profileIsolated`, `debuggerSocketAbsenceVerified` and
 `executionAuthorized` remain false. Pipe-only launch arguments do not prove
 that no debugger socket exists.

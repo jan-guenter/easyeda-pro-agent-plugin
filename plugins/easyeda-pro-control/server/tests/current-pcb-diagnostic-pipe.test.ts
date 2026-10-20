@@ -6,6 +6,7 @@ import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -270,4 +271,90 @@ void test("source transport enforces its separate 32 MiB frame and64 MiB lifetim
     await outcome;
   }
   retained(cumulative);
+});
+
+function workerAttached(sessionId = "child-session", targetId = "child-target"): unknown {
+  return { method: "Target.attachedToTarget", sessionId: "session-1", params: { sessionId,
+    targetInfo: { targetId, type: "worker", attached: true, url: "https://synthetic/editor?entry=worker.js", title: "private worker" },
+    waitingForDebugger: false } };
+}
+void test("direct worker discovery retains parent-scoped children before ACK but grants selection only after completion", async context => {
+  const childEvents: DiagnosticEvent[] = [], parentEvents: DiagnosticEvent[] = [], value = fixture(context);
+  await attach(value, parentEvents);
+  const discovered = value.pipe.enableWorkerDiscovery(event => { childEvents.push(event); });
+  assert.deepEqual(JSON.parse(value.sent[1]?.subarray(0, -1).toString() ?? "") as unknown,
+    { id: 2, method: "Target.setAutoAttach", params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId: "session-1" });
+  value.input.write(wire(workerAttached()));
+  assert.throws(() => { value.pipe.selectWorkerSession("child-session"); }, /WORKER_SELECTION/u);
+  assert.equal(parentEvents.length, 0); assert.equal(childEvents.length, 1);
+  value.input.write(wire({ id: 2, result: {}, sessionId: "session-1" })); await discovered;
+  assert.throws(() => { value.pipe.selectWorkerSession("foreign"); }, /WORKER_SELECTION/u);
+  value.pipe.selectWorkerSession("child-session");
+  const runtime = value.pipe.enableWorkerRuntime();
+  assert.equal(value.sent[2]?.toString(), '{"id":3,"method":"Runtime.enable","params":{},"sessionId":"child-session"}\0');
+  value.input.write(Buffer.concat([
+    wire({ method: "Runtime.executionContextCreated", sessionId: "child-session", params: { context: { id: 7 } } }),
+    wire({ id: 3, result: {}, sessionId: "child-session" }),
+  ])); await runtime;
+  assert.equal(childEvents.length, 2); assert.equal(parentEvents.length, 0);
+  assert.throws(() => { value.pipe.selectWorkerSession("child-session"); }, /WORKER_SELECTION/u);
+  await assert.rejects(value.pipe.enableWorkerDiscovery(() => { assert.fail("Consumed discovery must not deliver events"); }), /WORKER_DISCOVERY_INPUT/u); retained(value);
+});
+void test("worker state uses the selected child and immutable evaluation fields without helper expression authority", async context => {
+  const value = fixture(context); await attach(value, []);
+  const discovery = value.pipe.enableWorkerDiscovery(event => { assert.equal(event.method, "Target.attachedToTarget"); });
+  const child = workerAttached();
+  value.input.write(Buffer.concat([wire(child), wire({ id: 2, result: {}, sessionId: "session-1" })])); await discovery;
+  value.pipe.selectWorkerSession("child-session");
+  const observed = value.pipe.observeWorkerState("unique-worker");
+  const expected = { id: 3, method: "Runtime.evaluate", params: diagnosticWorkerEvaluationParams("unique-worker"), sessionId: "child-session" };
+  assert.equal(value.sent[2]?.toString(), `${JSON.stringify(expected)}\0`);
+  assert.deepEqual(diagnosticNativeRequest(value.sent[2] ?? Buffer.alloc(0)),
+    { action: "send", requestId: 3, method: "Runtime.evaluate", sessionId: "child-session", uniqueContextId: "unique-worker" });
+  value.input.write(wire({ id: 3, result: { result: { type: "string", value: "{}" } }, sessionId: "child-session" }));
+  await observed; retained(value);
+  for (const change of [{ expression: "1" }, { throwOnSideEffect: false }, { timeout: 0 }, { userGesture: true },
+    { contextId: 7 }, { awaitPromise: true }, { allowUnsafeEvalBlockedByCSP: true }]) {
+    assert.throws(() => diagnosticNativeRequest(wire({ ...expected, params: { ...expected.params, ...change } })), /OUTBOUND/u);
+  }
+  assert.deepEqual(diagnosticNativeRequest(wire({ id: 1, method: "Target.setAutoAttach", params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId: "parent" })),
+    { action: "send", requestId: 1, method: "Target.setAutoAttach", sessionId: "parent" });
+  for (const change of [{ autoAttach: false }, { waitForDebuggerOnStart: true }, { flatten: false }, { filter: [{ exclude: false }] }]) {
+    assert.throws(() => diagnosticNativeRequest(wire({ id: 1, method: "Target.setAutoAttach",
+      params: { ...DIAGNOSTIC_WORKER_ATTACH_PARAMS, ...change }, sessionId: "parent" })), /OUTBOUND/u);
+  }
+});
+void test("worker events cannot attach recursively or bypass the fixed direct-child bound", async context => {
+  const value = fixture(context); await attach(value, []);
+  const discovery = value.pipe.enableWorkerDiscovery(event => { assert.equal(event.sessionId, "session-1"); });
+  for (let index = 0; index < 16; index += 1) {
+    const child = workerAttached(`child-${String(index)}`, `target-${String(index)}`);
+    value.input.write(wire(child));
+  }
+  const rejected = assert.rejects(discovery, /PIPE_REPLY/u);
+  value.input.write(wire(workerAttached("overflow", "overflow"))); await rejected; retained(value);
+  const nested = fixture(context); await attach(nested, []);
+  const started = nested.pipe.enableWorkerDiscovery(event => {
+    if (event.sessionId !== "session-1") { throw new Error("recursive attachment refused"); }
+  });
+  const nestedChild = workerAttached();
+  nested.input.write(Buffer.concat([wire(nestedChild), wire({ id: 2, result: {}, sessionId: "session-1" })])); await started;
+  nested.pipe.selectWorkerSession("child-session");
+  const pending = assert.rejects(nested.pipe.enableWorkerRuntime(), /PIPE_REPLY/u);
+  nested.input.write(wire({ method: "Target.attachedToTarget", sessionId: "child-session", params: {} }));
+  await pending; retained(nested);
+});
+void test("worker-specific failure preserves original streams and parent navigation checks", async context => {
+  const value = fixture(context);
+  const attached = value.pipe.attachTarget("target-1", event => {
+    if (event.method === "Page.frameNavigated") { throw new Error("original parent changed"); }
+  });
+  value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); await attached;
+  const discovery = value.pipe.enableWorkerDiscovery(event => { assert.equal(event.method, "Target.attachedToTarget"); });
+  const child = workerAttached();
+  value.input.write(Buffer.concat([wire(child), wire({ id: 2, result: {}, sessionId: "session-1" })])); await discovery;
+  value.pipe.selectWorkerSession("child-session");
+  const observed = assert.rejects(value.pipe.enableWorkerRuntime(), /PIPE_REPLY/u);
+  value.input.write(wire({ method: "Page.frameNavigated", params: {}, sessionId: "session-1" }));
+  await observed; retained(value);
 });

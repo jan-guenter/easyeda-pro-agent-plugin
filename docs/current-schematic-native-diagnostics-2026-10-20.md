@@ -1,7 +1,8 @@
 # Schematic and native diagnostic continuation — 2026-10-20
 
-This batch continues delivered203733 without replacing the running facade.
-It is source work, not a release or connected native diagnostic qualification.
+This batch was published as20041000 through PR82 and installed from the named
+Git marketplace. It does not replace the already running203733 facade and is
+not connected native diagnostic qualification.
 No production project or production record is in scope.
 
 ## Connected schematic case
@@ -68,7 +69,7 @@ then an actual retained frame and one internally pinned script family. No caller
 hash, URL, executable, expression or CDP method is accepted. Inspection and
 original-owner cleanup do not require bridge authentication. Exact retained
 results can be published after a journal-write failure without native replay.
-The tool is not installed or connected-validated yet.
+The tool is installed; loading the new host and connected validation remain pending.
 
 ## Bounds and evidence
 
@@ -85,8 +86,8 @@ duplicate-key, UTF-8 and finite-number checks remain in force.
 Focused tests include real child-process pipes carrying a synthetic12 MiB source,
 framing/identity invalidation, source pinning and original-owner cleanup. The
 Windows CI smoke exercises compilation, an empty Job/pipes and synthetic native
-file/ancestor leases without launching EasyEDA. The changed native smoke has not
-run yet. Linux SDK10.0.112 is not the reviewed10.0.111 compiler, so it was not
+file/ancestor leases without launching EasyEDA. The final Windows CI smoke passed.
+Linux SDK10.0.112 is not the reviewed10.0.111 compiler, so it was not
 silently substituted or admitted by changing the pin.
 
 Primary protocol references describe upstream contracts, not custom-build
@@ -125,7 +126,8 @@ a VM fixture omitted the new real exclusion imports, causing3ReferenceErrors.
 Only those fixtures changed; their44tests/types/strict lint pass. A separate
 synthetic-credential URL fixture was rewritten through URL fields without a
 secret-scanner exception; its15tests pass. The first log and frozen-input proof
-are retained. Final full verification/CI and installation are still pending.
+are retained. Final full verification, exact-head and merged-main CI passed;
+the official marketplace installation and exact bytes/modes comparison passed.
 
 The first Windows CI run compiled the helper but exposed a synthetic-smoke
 exception mismatch: Framework rejects the colon path before the custom check.
@@ -136,3 +138,30 @@ Smoke fixtures alone normalize their freshly created TEMP directory's short
 alias before strict admission. Production path and ownership checks are intact.
 Root/independent review and45focused tests/types/strict lint pass. The interrupted
 outdated local suite is retained as interrupted evidence, not a passing result.
+
+## Delivered update
+
+PR82 payload`7db022808b82ee26179d4c1f4e73505028c33560` merged normally as
+main`03e9f679c68290ba807a288e5ae122ac57f50860`, with identical complete trees.
+Exact PR Linux39370355599/Windows39370355553 and merged-main
+Linux39371695226/Windows39371695308 passed. Local full verification passed
+11733facade tests/four platform skips/zero failures and424bridge tests; CI had
+11732facade passes/five platform skips. Strict type-aware lint/types, repository,
+all seven skills, package/MCP and frozen-input checks passed.
+
+The official named Git marketplace upgrade installed/enabled20041000 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, checkout exact main.
+Complete comparison passed1558files/42directories/32,006,490bytes and modes;
+inventory`4656dae6`, plugin subtree`0c521549`. The one-shot configured offline
+probe passed25restricted tools/50configured policies/seven skills and31API
+schema queries. AmbientNode26 handed to pinnedNode24; original child596442
+closed/exited0 after EOF with no stderr or retained handles. All three complete
+inventories remained exact. No diagnostic/live tool was invoked; two absence
+samples are not continuous isolation. Proof`5222be62`, responses`58864f3a`.
+
+The running203733 host was not replaced. A fresh session must load and admit the
+installed update before the next disposable native diagnostic lifecycle. PCB
+worker/compiler and writer implementation remain pending; this release does not
+claim full API execution support. The coverage inventory retains450omissions and
+79implemented-but-blocked methods with concrete reasons. No production data was
+accessed, and the completed ordinary SCH case must not be replayed.

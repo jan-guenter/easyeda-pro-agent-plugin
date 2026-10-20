@@ -7,8 +7,12 @@
  * The original native owner must retain both pipe handles until its reviewed
  * application-closure policy permits release. No TCP endpoint is supported. */
 import type { Readable, Writable } from "node:stream";
-import { DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, diagnosticExact, diagnosticToken } from "./current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
+  diagnosticExact, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
+import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
+
+export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
 const MAX_FRAME_BYTES = 1024 * 1024;
 const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
@@ -32,43 +36,9 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 function failureError(code: Failure): Error { return new Error(`PCB_DIAGNOSTIC_PIPE_${code.toUpperCase()}`); }
 
-/** JSON.parse alone silently discards duplicate keys. Walk only its structural
- * punctuation and quoted tokens first; JSON.parse still validates the grammar.
- * Bounded nesting also keeps malformed/deep native replies out of recursive
- * consumers. Whitespace and alternate valid escapes are not normalized away. */
-export function decodeCurrentPcbDiagnosticJson(bytes: Buffer): unknown {
-  const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-  const nesting: (Set<string> | null)[] = [];
-  for (let offset = 0; offset < text.length; offset += 1) {
-    const character = text[offset];
-    if (character === "{" || character === "[") {
-      if (nesting.length >= 64) { throw failureError("framing"); }
-      nesting.push(character === "{" ? new Set() : null);
-    } else if (character === "}" || character === "]") { nesting.pop(); }
-    else if (character === '"') {
-      const start = offset; offset += 1;
-      while (offset < text.length && text[offset] !== '"') {
-        if (text[offset] === "\\") { offset += 1; }
-        offset += 1;
-      }
-      let following = offset + 1;
-      while (following < text.length && [" ", "\t", "\n", "\r"].includes(text[following] ?? "")) { following += 1; }
-      if (text[following] === ":") {
-        const keys = nesting.at(-1); const key: unknown = JSON.parse(text.slice(start, offset + 1));
-        if (keys === null || keys === undefined || typeof key !== "string" || keys.has(key)) { throw failureError("framing"); }
-        keys.add(key);
-      }
-    }
-  }
-  const parsed: unknown = JSON.parse(text, (_key: string, value: unknown): unknown => {
-    if (typeof value === "number" && !Number.isFinite(value)) { throw failureError("framing"); }
-    return value;
-  });
-  return parsed;
-}
-
-/** Fixed browser discovery and one identity-only flattened attachment. There is
- * no generic send, JavaScript evaluation, pause, resume,
+/** Fixed browser discovery, one page attachment and bounded direct workers.
+ * One immutable worker read is supported. There is no generic send or caller
+ * JavaScript, pause, resume,
  * reconnect, retry or pipe-close method. Construction acquires nothing; the
  * caller retains this object before start attaches fallible event listeners. */
 export class CurrentPcbDiagnosticPipe {
@@ -89,6 +59,10 @@ export class CurrentPcbDiagnosticPipe {
   #event: ((event: DiagnosticEvent) => void) | null = null;
   #eventCount = 0;
   #eventBytes = 0;
+  #workerEvent: ((event: DiagnosticEvent) => void) | null = null;
+  readonly #workerSessions = new Map<string, string>();
+  #workerDiscoverySettled = false;
+  #selectedWorkerSession: string | null = null;
 
   public constructor(input: Readable, output: Writable) {
     this.#input = input; this.#output = output;
@@ -131,6 +105,45 @@ export class CurrentPcbDiagnosticPipe {
   public getScriptSource(scriptId: string): Promise<Reply> {
     if (this.#sessionId === null || !diagnosticToken(scriptId)) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#sessionId });
+  }
+  /** One fixed direct-child discovery on the original page. No recursive
+   * autoattachment, debugger waiting, detached adoption or caller target URL. */
+  public async enableWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_DISCOVERY_INPUT");
+    }
+    this.#workerEvent = event;
+    const reply = await this.#request({ id: this.#nextId, method: "Target.setAutoAttach",
+      params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId: this.#sessionId });
+    if (!diagnosticExact(reply, [])) { this.#fail("reply"); throw failureError("reply"); }
+    this.#workerDiscoverySettled = true; return reply;
+  }
+  public selectWorkerSession(sessionId: string): void {
+    if (this.#failure !== null || !this.#workerDiscoverySettled || this.#selectedWorkerSession !== null ||
+        !this.#workerSessions.has(sessionId) || this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_SELECTION"); }
+    this.#selectedWorkerSession = sessionId;
+  }
+  public enableWorkerRuntime(): Promise<Reply> {
+    return this.#request({ id: this.#nextId, method: "Runtime.enable", params: {}, sessionId: this.#workerSession() });
+  }
+  public enableWorkerDebugger(): Promise<Reply> {
+    return this.#request({ id: this.#nextId, method: "Debugger.enable",
+      params: { maxScriptsCacheSize: DIAGNOSTIC_SOURCE_FRAME_BYTES }, sessionId: this.#workerSession() });
+  }
+  public getWorkerScriptSource(scriptId: string): Promise<Reply> {
+    if (!diagnosticToken(scriptId)) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#workerSession() });
+  }
+  /** The caller must first admit the selected worker's complete source and
+   * original context. This primitive never accepts an expression or options. */
+  public observeWorkerState(uniqueContextId: string): Promise<Reply> {
+    return this.#request({ id: this.#nextId, method: "Runtime.evaluate",
+      params: diagnosticWorkerEvaluationParams(uniqueContextId), sessionId: this.#workerSession() });
+  }
+  #workerSession(): string {
+    if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||
+        !this.#workerSessions.has(this.#selectedWorkerSession)) { throw new Error("PCB_DIAGNOSTIC_PIPE_NO_WORKER"); }
+    return this.#selectedWorkerSession;
   }
   #sessionRequest(method: "Page.enable" | "Page.getFrameTree" | "Runtime.enable"): Promise<Reply> {
     if (this.#sessionId === null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_NO_SESSION")); }
@@ -229,8 +242,26 @@ export class CurrentPcbDiagnosticPipe {
     this.#eventCount += 1; this.#eventBytes += bytes;
     if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES ||
         typeof method !== "string" || !record(params) || !diagnosticExact(value, sessionId === undefined ? ["method", "params"] : ["method", "params", "sessionId"]) ||
-        (sessionId !== undefined && (this.#sessionId === null || sessionId !== this.#sessionId))) { this.#fail("reply"); return; }
-    try { this.#event(sessionId === undefined ? { method, params } : { method, params, sessionId }); }
+        (sessionId !== undefined && (this.#sessionId === null ||
+          sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId))))) { this.#fail("reply"); return; }
+    try {
+      const event = sessionId === undefined ? { method, params } : { method, params, sessionId };
+      if (sessionId === this.#sessionId && method === "Target.attachedToTarget") {
+        const child = params["targetInfo"], childSession = params["sessionId"];
+        if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) ||
+            !record(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) ||
+            !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId ||
+            this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) ||
+            this.#workerSessions.size >= 16) { this.#fail("reply"); return; }
+        this.#workerSessions.set(childSession, child["targetId"]);
+        this.#workerEvent(event);
+      } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
+        if (this.#workerEvent === null) { this.#fail("reply"); return; }
+        this.#workerEvent(event);
+      } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && this.#workerEvent !== null) {
+        this.#workerEvent(event);
+      } else { this.#event(event); }
+    }
     catch { this.#fail("reply"); }
   }
 

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a53a2b3b34b5b874ae937cd53c33c17823ed7fd40155b4a106ad111139f1eed5";
+const __easyedaBundlePairId = "eb09296f09296c4e012872989f8033add5a722403e6fb9fcb691c8fc35131e26";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -7382,8 +7382,8 @@ var capitalizeFirstCharacter, error28;
 var init_lt = __esm({
   "node_modules/zod/v4/locales/lt.js"() {
     init_util();
-    capitalizeFirstCharacter = (text37) => {
-      return text37.charAt(0).toUpperCase() + text37.slice(1);
+    capitalizeFirstCharacter = (text38) => {
+      return text38.charAt(0).toUpperCase() + text38.slice(1);
     };
     error28 = () => {
       const Sizable = {
@@ -11001,10 +11001,10 @@ function _property(property, schema2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _mime(types11, params) {
+function _mime(types12, params) {
   return new $ZodCheckMimeType({
     check: "mime_type",
-    mime: types11,
+    mime: types12,
     ...normalizeParams(params)
   });
 }
@@ -14185,7 +14185,7 @@ var init_schemas2 = __esm({
       inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
       inst.min = (size3, params) => inst.check(_minSize(size3, params));
       inst.max = (size3, params) => inst.check(_maxSize(size3, params));
-      inst.mime = (types11, params) => inst.check(_mime(Array.isArray(types11) ? types11 : [types11], params));
+      inst.mime = (types12, params) => inst.check(_mime(Array.isArray(types12) ? types12 : [types12], params));
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18634,9 +18634,9 @@ var init_types = __esm({
         return this._def.options;
       }
     };
-    ZodUnion2.create = (types11, params) => {
+    ZodUnion2.create = (types12, params) => {
       return new ZodUnion2({
-        options: types11,
+        options: types12,
         typeName: ZodFirstPartyTypeKind2.ZodUnion,
         ...processCreateParams(params)
       });
@@ -22526,15 +22526,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
-    const types11 = options.reduce((types12, x) => {
+    const types12 = options.reduce((types13, x) => {
       const type2 = primitiveMappings[x._def.typeName];
-      return type2 && !types12.includes(type2) ? [...types12, type2] : types12;
+      return type2 && !types13.includes(type2) ? [...types13, type2] : types13;
     }, []);
     return {
-      type: types11.length > 1 ? types11 : types11[0]
+      type: types12.length > 1 ? types12 : types12[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types11 = options.reduce((acc, x) => {
+    const types12 = options.reduce((acc, x) => {
       const type2 = typeof x._def.value;
       switch (type2) {
         case "string":
@@ -22553,8 +22553,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types11.length === options.length) {
-      const uniqueTypes = types11.filter((x, i2, a) => a.indexOf(x) === i2);
+    if (types12.length === options.length) {
+      const uniqueTypes = types12.filter((x, i2, a) => a.indexOf(x) === i2);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -25717,37 +25717,37 @@ var require_dataType = __commonJS({
       DataType2[DataType2["Wrong"] = 1] = "Wrong";
     })(DataType || (exports2.DataType = DataType = {}));
     function getSchemaTypes(schema2) {
-      const types11 = getJSONTypes(schema2.type);
-      const hasNull = types11.includes("null");
+      const types12 = getJSONTypes(schema2.type);
+      const hasNull = types12.includes("null");
       if (hasNull) {
         if (schema2.nullable === false)
           throw new Error("type: null contradicts nullable: false");
       } else {
-        if (!types11.length && schema2.nullable !== void 0) {
+        if (!types12.length && schema2.nullable !== void 0) {
           throw new Error('"nullable" cannot be used without "type"');
         }
         if (schema2.nullable === true)
-          types11.push("null");
+          types12.push("null");
       }
-      return types11;
+      return types12;
     }
     exports2.getSchemaTypes = getSchemaTypes;
     function getJSONTypes(ts) {
-      const types11 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-      if (types11.every(rules_1.isJSONType))
-        return types11;
-      throw new Error("type must be JSONType or JSONType[]: " + types11.join(","));
+      const types12 = Array.isArray(ts) ? ts : ts ? [ts] : [];
+      if (types12.every(rules_1.isJSONType))
+        return types12;
+      throw new Error("type must be JSONType or JSONType[]: " + types12.join(","));
     }
     exports2.getJSONTypes = getJSONTypes;
-    function coerceAndCheckDataType(it, types11) {
+    function coerceAndCheckDataType(it, types12) {
       const { gen, data: data9, opts } = it;
-      const coerceTo = coerceToTypes(types11, opts.coerceTypes);
-      const checkTypes = types11.length > 0 && !(coerceTo.length === 0 && types11.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types11[0]));
+      const coerceTo = coerceToTypes(types12, opts.coerceTypes);
+      const checkTypes = types12.length > 0 && !(coerceTo.length === 0 && types12.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types12[0]));
       if (checkTypes) {
-        const wrongType = checkDataTypes(types11, data9, opts.strictNumbers, DataType.Wrong);
+        const wrongType = checkDataTypes(types12, data9, opts.strictNumbers, DataType.Wrong);
         gen.if(wrongType, () => {
           if (coerceTo.length)
-            coerceData(it, types11, coerceTo);
+            coerceData(it, types12, coerceTo);
           else
             reportTypeError(it);
         });
@@ -25756,15 +25756,15 @@ var require_dataType = __commonJS({
     }
     exports2.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
-    function coerceToTypes(types11, coerceTypes) {
-      return coerceTypes ? types11.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+    function coerceToTypes(types12, coerceTypes) {
+      return coerceTypes ? types12.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
     }
-    function coerceData(it, types11, coerceTo) {
+    function coerceData(it, types12, coerceTo) {
       const { gen, data: data9, opts } = it;
       const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data9}`);
       const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
       if (opts.coerceTypes === "array") {
-        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types11, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
+        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data9}) && ${data9}.length == 1`, () => gen.assign(data9, (0, codegen_1._)`${data9}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data9}`).if(checkDataTypes(types12, data9, opts.strictNumbers), () => gen.assign(coerced, data9)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
       for (const t of coerceTo) {
@@ -25840,19 +25840,19 @@ var require_dataType = __commonJS({
         return checkDataType(dataTypes[0], data9, strictNums, correct);
       }
       let cond;
-      const types11 = (0, util_1.toHash)(dataTypes);
-      if (types11.array && types11.object) {
+      const types12 = (0, util_1.toHash)(dataTypes);
+      if (types12.array && types12.object) {
         const notObj = (0, codegen_1._)`typeof ${data9} != "object"`;
-        cond = types11.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
-        delete types11.null;
-        delete types11.array;
-        delete types11.object;
+        cond = types12.null ? notObj : (0, codegen_1._)`!${data9} || ${notObj}`;
+        delete types12.null;
+        delete types12.array;
+        delete types12.object;
       } else {
         cond = codegen_1.nil;
       }
-      if (types11.number)
-        delete types11.integer;
-      for (const t in types11)
+      if (types12.number)
+        delete types12.integer;
+      for (const t in types12)
         cond = (0, codegen_1.and)(cond, checkDataType(t, data9, strictNums, correct));
       return cond;
     }
@@ -26259,7 +26259,7 @@ var require_subschema = __commonJS({
 var require_fast_deep_equal = __commonJS({
   "node_modules/fast-deep-equal/index.js"(exports2, module) {
     "use strict";
-    module.exports = function equal7(a, b) {
+    module.exports = function equal8(a, b) {
       if (a === b) return true;
       if (a && b && typeof a == "object" && typeof b == "object") {
         if (a.constructor !== b.constructor) return false;
@@ -26268,7 +26268,7 @@ var require_fast_deep_equal = __commonJS({
           length = a.length;
           if (length != b.length) return false;
           for (i2 = length; i2-- !== 0; )
-            if (!equal7(a[i2], b[i2])) return false;
+            if (!equal8(a[i2], b[i2])) return false;
           return true;
         }
         if (a.constructor === RegExp) return a.source === b.source && a.flags === b.flags;
@@ -26281,7 +26281,7 @@ var require_fast_deep_equal = __commonJS({
           if (!Object.prototype.hasOwnProperty.call(b, keys2[i2])) return false;
         for (i2 = length; i2-- !== 0; ) {
           var key = keys2[i2];
-          if (!equal7(a[key], b[key])) return false;
+          if (!equal8(a[key], b[key])) return false;
         }
         return true;
       }
@@ -26385,7 +26385,7 @@ var require_resolve = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getSchemaRefs = exports2.resolveUrl = exports2.normalizeId = exports2._getFullPath = exports2.getFullPath = exports2.inlineRef = void 0;
     var util_1 = require_util();
-    var equal7 = require_fast_deep_equal();
+    var equal8 = require_fast_deep_equal();
     var traverse = require_json_schema_traverse();
     var SIMPLE_INLINED = /* @__PURE__ */ new Set([
       "type",
@@ -26523,7 +26523,7 @@ var require_resolve = __commonJS({
       });
       return localRefs;
       function checkAmbiguosRef(sch1, sch2, ref3) {
-        if (sch2 !== void 0 && !equal7(sch1, sch2))
+        if (sch2 !== void 0 && !equal8(sch1, sch2))
           throw ambiguos(ref3);
       }
       function ambiguos(ref3) {
@@ -26657,9 +26657,9 @@ var require_validate = __commonJS({
     function typeAndKeywords(it, errsCount) {
       if (it.opts.jtd)
         return schemaKeywords(it, [], false, errsCount);
-      const types11 = (0, dataType_1.getSchemaTypes)(it.schema);
-      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types11);
-      schemaKeywords(it, types11, !checkedTypes, errsCount);
+      const types12 = (0, dataType_1.getSchemaTypes)(it.schema);
+      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types12);
+      schemaKeywords(it, types12, !checkedTypes, errsCount);
     }
     function checkRefsAndKeywords(it) {
       const { schema: schema2, errSchemaPath, opts, self } = it;
@@ -26709,7 +26709,7 @@ var require_validate = __commonJS({
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
-    function schemaKeywords(it, types11, typeErrors, errsCount) {
+    function schemaKeywords(it, types12, typeErrors, errsCount) {
       const { gen, schema: schema2, data: data9, allErrors, opts, self } = it;
       const { RULES } = self;
       if (schema2.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema2, RULES))) {
@@ -26717,7 +26717,7 @@ var require_validate = __commonJS({
         return;
       }
       if (!opts.jtd)
-        checkStrictTypes(it, types11);
+        checkStrictTypes(it, types12);
       gen.block(() => {
         for (const group of RULES.rules)
           groupKeywords(group);
@@ -26729,7 +26729,7 @@ var require_validate = __commonJS({
         if (group.type) {
           gen.if((0, dataType_2.checkDataType)(group.type, data9, opts.strictNumbers));
           iterateKeywords(it, group);
-          if (types11.length === 1 && types11[0] === group.type && typeErrors) {
+          if (types12.length === 1 && types12[0] === group.type && typeErrors) {
             gen.else();
             (0, dataType_2.reportTypeError)(it);
           }
@@ -26753,27 +26753,27 @@ var require_validate = __commonJS({
         }
       });
     }
-    function checkStrictTypes(it, types11) {
+    function checkStrictTypes(it, types12) {
       if (it.schemaEnv.meta || !it.opts.strictTypes)
         return;
-      checkContextTypes(it, types11);
+      checkContextTypes(it, types12);
       if (!it.opts.allowUnionTypes)
-        checkMultipleTypes(it, types11);
+        checkMultipleTypes(it, types12);
       checkKeywordTypes(it, it.dataTypes);
     }
-    function checkContextTypes(it, types11) {
-      if (!types11.length)
+    function checkContextTypes(it, types12) {
+      if (!types12.length)
         return;
       if (!it.dataTypes.length) {
-        it.dataTypes = types11;
+        it.dataTypes = types12;
         return;
       }
-      types11.forEach((t) => {
+      types12.forEach((t) => {
         if (!includesType(it.dataTypes, t)) {
           strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
-      narrowSchemaTypes(it, types11);
+      narrowSchemaTypes(it, types12);
     }
     function checkMultipleTypes(it, ts) {
       if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -28142,7 +28142,7 @@ var require_fast_uri = __commonJS({
       target9.fragment = relative11.fragment;
       return target9;
     }
-    function equal7(uriA, uriB, options) {
+    function equal8(uriA, uriB, options) {
       const normalizedA = normalizeComparableURI(uriA, options);
       const normalizedB = normalizeComparableURI(uriB, options);
       return normalizedA !== void 0 && normalizedB !== void 0 && normalizedA === normalizedB;
@@ -28427,7 +28427,7 @@ var require_fast_uri = __commonJS({
       normalize,
       resolve: resolve26,
       resolveComponent,
-      equal: equal7,
+      equal: equal8,
       serialize,
       parse: parse6
     };
@@ -28840,7 +28840,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text37, msg) => text37 + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text38, msg) => text38 + separator + msg);
       }
       $dataMetaSchema(metaSchema3, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -29517,9 +29517,9 @@ var require_equal = __commonJS({
   "node_modules/ajv/dist/runtime/equal.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    var equal7 = require_fast_deep_equal();
-    equal7.code = 'require("ajv/dist/runtime/equal").default';
-    exports2.default = equal7;
+    var equal8 = require_fast_deep_equal();
+    equal8.code = 'require("ajv/dist/runtime/equal").default';
+    exports2.default = equal8;
   }
 });
 
@@ -34630,17 +34630,17 @@ function validateSchematicPrimitiveStates(value2, input) {
   if (rows2.length !== wanted.length || rows2.some((row7, index) => row7.primitiveId !== wanted[index])) {
     throw new Error("Primitive observation differs from the exact ordered selectors.");
   }
-  const text37 = rows2.filter((row7) => row7.modelType === "Text").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
+  const text38 = rows2.filter((row7) => row7.modelType === "Text").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
   const groups2 = rows2.filter((row7) => row7.modelType === "NetGroup").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
-  schematicTextStatesSchema.parse(text37);
+  schematicTextStatesSchema.parse(text38);
   schematicNetGroupStatesSchema.parse(groups2);
-  const allIds = [...text37.map((row7) => row7.primitiveId), ...groups2.flatMap((row7) => [
+  const allIds = [...text38.map((row7) => row7.primitiveId), ...groups2.flatMap((row7) => [
     row7.primitiveId,
     ...row7.lines.map((line6) => line6.primitiveId),
     ...row7.names.map((name6) => name6.primitiveId),
     ...row7.customAttributeIds
   ])];
-  const characters = text37.reduce((sum, row7) => sum + row7.value.length + (row7.color?.length ?? 0) + (row7.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row7) => sum + row7.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row7.lines.reduce((count2, line6) => count2 + (line6.color?.length ?? 0), 0), 0);
+  const characters = text38.reduce((sum, row7) => sum + row7.value.length + (row7.color?.length ?? 0) + (row7.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row7) => sum + row7.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row7.lines.reduce((count2, line6) => count2 + (line6.color?.length ?? 0), 0), 0);
   if (new Set(allIds).size !== allIds.length || characters > 262144) {
     throw new Error("Primitive observation has aliased identities or exceeds the combined string bound.");
   }
@@ -35490,10 +35490,10 @@ function upstreamFailureCategory(normalized2) {
   let value2 = normalized2.structuredContent;
   if (!isRecord(value2)) {
     const textItem = normalized2.content.find((item2) => isRecord(item2) && item2["type"] === "text");
-    const text37 = isRecord(textItem) ? textItem["text"] : void 0;
-    if (typeof text37 === "string" && text37.length <= 16384) {
+    const text38 = isRecord(textItem) ? textItem["text"] : void 0;
+    if (typeof text38 === "string" && text38.length <= 16384) {
       try {
-        value2 = JSON.parse(text37);
+        value2 = JSON.parse(text38);
       } catch {
       }
     }
@@ -35547,12 +35547,12 @@ function extractToolPayload(result) {
     const textItem = normalized2.content.find(
       (item2) => isRecord(item2) && item2["type"] === "text"
     );
-    const text37 = isRecord(textItem) ? textItem["text"] : void 0;
-    if (typeof text37 === "string") {
+    const text38 = isRecord(textItem) ? textItem["text"] : void 0;
+    if (typeof text38 === "string") {
       try {
-        value2 = JSON.parse(text37);
+        value2 = JSON.parse(text38);
       } catch {
-        value2 = { text: text37 };
+        value2 = { text: text38 };
       }
     }
   }
@@ -35643,32 +35643,32 @@ function filterTools(tools, options = {}) {
   });
 }
 function normalizeEasyedaProjectPath(value2) {
-  let text37 = stringValue(value2).trim();
-  if (!text37) {
+  let text38 = stringValue(value2).trim();
+  if (!text38) {
     throw new Error("EasyEDA project path is required.");
   }
-  if (/^file:\/\//iu.test(text37)) {
+  if (/^file:\/\//iu.test(text38)) {
     try {
-      text37 = decodeURIComponent(text37.replace(/^file:\/+/iu, "/"));
+      text38 = decodeURIComponent(text38.replace(/^file:\/+/iu, "/"));
     } catch {
       throw new Error("EasyEDA project file URI contains invalid escaping.");
     }
   }
-  text37 = text37.replaceAll("\\", "/");
-  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/u.exec(text37);
+  text38 = text38.replaceAll("\\", "/");
+  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/u.exec(text38);
   if (uriDrive?.[1] !== void 0 && uriDrive[2] !== void 0) {
-    text37 = `${uriDrive[1]}:/${uriDrive[2]}`;
+    text38 = `${uriDrive[1]}:/${uriDrive[2]}`;
   }
-  const drive = /^([a-zA-Z]):\/(.*)$/u.exec(text37);
+  const drive = /^([a-zA-Z]):\/(.*)$/u.exec(text38);
   if (drive?.[1] !== void 0 && drive[2] !== void 0) {
-    text37 = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
+    text38 = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
   }
-  if (!isAbsolute3(text37)) {
+  if (!isAbsolute3(text38)) {
     throw new Error(
       "EasyEDA project path must be an absolute POSIX or Windows path."
     );
   }
-  const normalized2 = resolve3(text37);
+  const normalized2 = resolve3(text38);
   if (!/\.eprj2$/iu.test(normalized2)) {
     throw new Error("EasyEDA project path must identify an .eprj2 database.");
   }
@@ -37344,9 +37344,9 @@ function assertReservationIdentity(reservation) {
     throw new Error("A valid evidence reservation is required.");
   }
 }
-function isReservationMarker(text37, reservation) {
+function isReservationMarker(text38, reservation) {
   try {
-    const parsed2 = JSON.parse(text37);
+    const parsed2 = JSON.parse(text38);
     return isRecord(parsed2) && parsed2["schema"] === "easyeda-pro-control.evidence-reservation.v1" && parsed2["token"] === reservation.token && parsed2["createdAt"] === reservation.createdAt;
   } catch {
     return false;
@@ -37397,8 +37397,8 @@ async function releaseEvidenceReservation(reservation) {
     let file3;
     try {
       file3 = await openSafeManagedFile(path6, "Evidence reservation");
-      const text37 = await readOpenManagedText(file3, "Evidence reservation");
-      if (!isReservationMarker(text37, reservation)) {
+      const text38 = await readOpenManagedText(file3, "Evidence reservation");
+      if (!isReservationMarker(text38, reservation)) {
         throw new Error(
           "A finalized or changed evidence file cannot be released as a reservation."
         );
@@ -37428,7 +37428,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
   assertReservationIdentity(reservation);
   assertManagedJsonByteLimit(Buffer.byteLength(resultText), "Evidence result");
   assertManagedJsonByteLimit(Buffer.byteLength(receiptText), "Evidence receipt");
-  const replaceReservation = async (path6, text37) => {
+  const replaceReservation = async (path6, text38) => {
     const current10 = await openSafeManagedFile(path6, "Evidence reservation");
     let temporary;
     let failure2;
@@ -37439,7 +37439,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
         current10,
         "Evidence reservation"
       );
-      if (existing !== text37) {
+      if (existing !== text38) {
         if (!isReservationMarker(existing, reservation)) {
           throw new Error(
             "Evidence reservation identity changed before final publication."
@@ -37450,7 +37450,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
           temporaryPath,
           "Evidence publication temporary"
         );
-        await temporary.handle.writeFile(text37, "utf8");
+        await temporary.handle.writeFile(text38, "utf8");
         await temporary.handle.sync();
         if (current10.directory.info.dev !== temporary.directory.info.dev || current10.directory.info.ino !== temporary.directory.info.ino) {
           throw new Error(
@@ -38061,13 +38061,13 @@ async function createOperation(operation) {
   }
   const path6 = operationPath(operationId11);
   const sealed3 = sealOperation(operation);
-  const text37 = Buffer.from(`${JSON.stringify(sealed3, null, 2)}
+  const text38 = Buffer.from(`${JSON.stringify(sealed3, null, 2)}
 `);
-  assertManagedJsonByteLimit(text37.length, "Operation journal");
+  assertManagedJsonByteLimit(text38.length, "Operation journal");
   await publishManagedBytesExclusive(
     path6,
     "Operation journal",
-    text37,
+    text38,
     false
   );
   Object.assign(operation, sealed3);
@@ -38227,16 +38227,16 @@ async function writePhaseArtifact(operationId11, sequence, phase5, value2) {
     directory4,
     `${sequence.toString().padStart(2, "0")}-${safePhase}.json`
   );
-  const text37 = `${JSON.stringify(value2)}
+  const text38 = `${JSON.stringify(value2)}
 `;
-  assertManagedJsonByteLimit(Buffer.byteLength(text37), "Operation phase artifact");
+  assertManagedJsonByteLimit(Buffer.byteLength(text38), "Operation phase artifact");
   await publishManagedBytesExclusive(
     path6,
     "Operation phase artifact",
-    Buffer.from(text37),
+    Buffer.from(text38),
     false
   );
-  return { path: path6, sha256: sha256Text(text37), bytes: Buffer.byteLength(text37) };
+  return { path: path6, sha256: sha256Text(text38), bytes: Buffer.byteLength(text38) };
 }
 async function listOperationIds() {
   const directory4 = await openSafeManagedDirectory(OPERATIONS_DIR);
@@ -38322,7 +38322,7 @@ function forgetOperationProjection(cache, operationId11) {
 }
 function retainOperationProjection(cache, operationId11, bytesSha256, value2) {
   forgetOperationProjection(cache, operationId11);
-  let copy2;
+  let copy3;
   let cacheBytes;
   try {
     const encoded = projectionCacheEncoding(value2);
@@ -38333,14 +38333,14 @@ function retainOperationProjection(cache, operationId11, bytesSha256, value2) {
     if (cacheBytes > MAX_OPERATION_PROJECTION_BYTES) {
       return;
     }
-    copy2 = structuredClone(value2);
+    copy3 = structuredClone(value2);
   } catch {
     return;
   }
   if (cache.entries.size >= MAX_OPERATION_CACHE_ENTRIES || cache.bytes + cacheBytes > MAX_OPERATION_PROJECTION_CACHE_BYTES) {
     return;
   }
-  cache.entries.set(operationId11, { bytesSha256, cacheBytes, value: copy2 });
+  cache.entries.set(operationId11, { bytesSha256, cacheBytes, value: copy3 });
   cache.bytes += cacheBytes;
 }
 async function verifiedOperationProjection(operationId11, cache) {
@@ -38486,12 +38486,12 @@ async function readExactUtf8Artifact(descriptor10) {
     if (bytes2.length !== expectedBytes || sha256 !== expectedSha256) {
       throw new Error(`${label} raw bytes failed the expected SHA-256 or length.`);
     }
-    const text37 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+    const text38 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
     const final = await opened.handle.stat();
     assertFileStayedUnchanged(after, final, label);
     assertManagedFileAuthority(final, label);
-    return Object.freeze({ path: opened.absolute, bytes: bytes2.length, sha256, text: text37 });
+    return Object.freeze({ path: opened.absolute, bytes: bytes2.length, sha256, text: text38 });
   } finally {
     await closeManagedFile(opened);
   }
@@ -38624,14 +38624,14 @@ function readPrivateRecordTextSync(path6, label) {
     if (!sameIdentity2(opened, identityOf(pathInformation))) {
       throw new Error(`${label} changed before descriptor open.`);
     }
-    const text37 = readFileSync2(descriptor10, "utf8");
+    const text38 = readFileSync2(descriptor10, "utf8");
     const after = fstatSync(descriptor10, { bigint: true });
     const currentPath = lstatSync(path6, { bigint: true });
     assertPrivateLeaseFile(after, label);
     assertPrivateLeaseFile(currentPath, label);
     assertStablePrivateLeaseFile(opened, after, label);
     assertStablePrivateLeaseFile(after, currentPath, label);
-    return { identity: identityOf(after), text: text37 };
+    return { identity: identityOf(after), text: text38 };
   } finally {
     closeSync(descriptor10);
   }
@@ -38656,7 +38656,7 @@ async function readPrivateRecordText(path6, label) {
     if (!sameIdentity2(opened, identityOf(pathInformation))) {
       throw new Error(`${label} changed before descriptor open.`);
     }
-    const text37 = await handle.readFile("utf8");
+    const text38 = await handle.readFile("utf8");
     const [after, currentPath] = await Promise.all([
       handle.stat({ bigint: true }),
       lstat4(path6, { bigint: true })
@@ -38665,7 +38665,7 @@ async function readPrivateRecordText(path6, label) {
     assertPrivateLeaseFile(currentPath, label);
     assertStablePrivateLeaseFile(opened, after, label);
     assertStablePrivateLeaseFile(after, currentPath, label);
-    result = { identity: identityOf(after), text: text37 };
+    result = { identity: identityOf(after), text: text38 };
   } catch (error52) {
     operationFailure = error52;
   }
@@ -38855,8 +38855,8 @@ async function syncControlRoot(root) {
   await root.assertCurrent();
   await root.handle.sync();
 }
-function decodeLease(text37) {
-  const value2 = JSON.parse(text37);
+function decodeLease(text38) {
+  const value2 = JSON.parse(text38);
   if (!isRecord2(value2) || value2["schema"] !== "easyeda-pro-control.facade-lease.v1" || typeof value2["pid"] !== "number" || !Number.isInteger(value2["pid"]) || value2["pid"] <= 0 || typeof value2["token"] !== "string" || value2["token"].length < 16 || !(value2["pidStartTime"] === void 0 || typeof value2["pidStartTime"] === "string" && /^\d+$/u.test(value2["pidStartTime"])) || !(value2["childPid"] === void 0 && value2["childStartTime"] === void 0 || typeof value2["childPid"] === "number" && Number.isInteger(value2["childPid"]) && value2["childPid"] > 0 && (value2["childStartTime"] === void 0 || typeof value2["childStartTime"] === "string" && /^\d+$/u.test(value2["childStartTime"])))) {
     throw new Error(
       "The EasyEDA facade lease is corrupt; refusing to remove it automatically."
@@ -53746,7 +53746,7 @@ function buildGroupSource(compiled2, before) {
   if (verb === "delete" && selectorReferences.length > 0) {
     return unsupported2("delete group with net-to-net rule references requires an explicit rule reassignment");
   }
-  const setMember = (net3, nextName2, positive2) => {
+  const setMember = (net3, nextName2, positive3) => {
     if (typeof net3 !== "string" || net3.length === 0 || net3.toUpperCase() !== net3) {
       throw new Error("Group membership needs an exact uppercase native net name.");
     }
@@ -53759,7 +53759,7 @@ function buildGroupSource(compiled2, before) {
     if (nextName2 !== null && old !== null && old !== name6 && old !== nextName2) {
       throw new Error("A net belongs to another group; explicit removal is required.");
     }
-    records2.set(id13, { ...object4, body: { ...object4.body, [membership]: nextName2, ...positive2 === void 0 ? {} : { isPositiveNet: positive2 } } });
+    records2.set(id13, { ...object4, body: { ...object4.body, [membership]: nextName2, ...positive3 === void 0 ? {} : { isPositiveNet: positive3 } } });
   };
   if (verb === "create") {
     records2.set(groupId, { id: groupId, type: "RULE_SELECTOR", body: { ruleOrder: 4, ruleKeyValue: {}, copperValue: {}, innerPlaneValue: {} } });
@@ -53823,9 +53823,9 @@ function buildGroupSource(compiled2, before) {
       setMember(net3, verb === "add-nets" ? name6 : null);
     }
   } else if (verb === "set-positive" || verb === "set-negative") {
-    const positive2 = verb === "set-positive";
-    const previous = members.filter((member4) => member4.body["isPositiveNet"] === positive2);
-    const other = members.filter((member4) => member4.body["isPositiveNet"] !== positive2);
+    const positive3 = verb === "set-positive";
+    const previous = members.filter((member4) => member4.body["isPositiveNet"] === positive3);
+    const other = members.filter((member4) => member4.body["isPositiveNet"] !== positive3);
     const otherMember = other[0];
     if (previous.length !== 1 || other.length !== 1 || otherMember === void 0 || nativeNetName(otherMember) === values2[1]) {
       throw new Error("Differential pair endpoint invariant failed.");
@@ -53833,7 +53833,7 @@ function buildGroupSource(compiled2, before) {
     for (const member4 of previous) {
       setMember(nativeNetName(member4), null, false);
     }
-    setMember(values2[1], name6, positive2);
+    setMember(values2[1], name6, positive3);
   } else {
     return unsupported2("unreviewed group operation");
   }
@@ -57873,9 +57873,9 @@ function decodeModelTransform(value2) {
   if (typeof value2 !== "string" || value2.length === 0 || value2.length > 4096) {
     throw new Error("Model transform baseline must be a bounded native string.");
   }
-  const text37 = value2.trim();
-  if (text37.startsWith("v2:")) {
-    const values3 = JSON.parse(text37.slice(3));
+  const text38 = value2.trim();
+  if (text38.startsWith("v2:")) {
+    const values3 = JSON.parse(text38.slice(3));
     if (!Array.isArray(values3) || values3.length !== 12 || values3.some((entry) => typeof entry !== "number" || !Number.isFinite(entry))) {
       throw new Error("Native v2 model transform requires exactly twelve finite numbers.");
     }
@@ -57886,7 +57886,7 @@ function decodeModelTransform(value2) {
       translationMil: { x: numbers[9], y: numbers[10], z: numbers[11] }
     });
   }
-  const fields26 = text37.split(",");
+  const fields26 = text38.split(",");
   if (fields26.length !== 9 || fields26.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
     throw new Error("Native legacy model transform requires exactly nine numeric fields.");
   }
@@ -62838,7 +62838,7 @@ function parseClosedSymbolTerminalEnvelope(value2) {
 function journalData(input) {
   let bytes2 = 0, nodes = 0;
   const seen = /* @__PURE__ */ new Set();
-  function copy2(value2, depth) {
+  function copy3(value2, depth) {
     nodes += 1;
     need(nodes <= 1e6 && depth <= 128, "Terminal journal data bound refused.");
     if (value2 === null || typeof value2 === "boolean") {
@@ -62857,7 +62857,7 @@ function journalData(input) {
     seen.add(value2);
     try {
       if (Array.isArray(value2)) {
-        return array2(value2, value2.length).map((entry) => copy2(entry, depth + 1));
+        return array2(value2, value2.length).map((entry) => copy3(entry, depth + 1));
       }
       need(Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null, "Terminal journal prototype refused.");
       const output = {};
@@ -62867,14 +62867,14 @@ function journalData(input) {
         need(bytes2 <= 67108864, "Terminal journal text bound refused.");
         const field11 = Object.getOwnPropertyDescriptor(value2, key);
         need(field11 !== void 0 && Object.hasOwn(field11, "value"), "Terminal journal own data required.");
-        Object.defineProperty(output, key, { value: copy2(field11.value, depth + 1), enumerable: true, writable: true, configurable: true });
+        Object.defineProperty(output, key, { value: copy3(field11.value, depth + 1), enumerable: true, writable: true, configurable: true });
       }
       return output;
     } finally {
       seen.delete(value2);
     }
   }
-  const result = copy2(input, 0);
+  const result = copy3(input, 0);
   need(isRecord(result), "Terminal stored journal missing.");
   return result;
 }
@@ -63104,7 +63104,7 @@ function parseClosedSymbolAgedTerminalEnvelope(value2) {
 function journalData2(input) {
   let bytes2 = 0, nodes = 0;
   const seen = /* @__PURE__ */ new Set();
-  function copy2(value2, depth) {
+  function copy3(value2, depth) {
     nodes += 1;
     need2(nodes <= 1e6 && depth <= 128, "Terminal journal data bound refused.");
     if (value2 === null || typeof value2 === "boolean") {
@@ -63123,7 +63123,7 @@ function journalData2(input) {
     seen.add(value2);
     try {
       if (Array.isArray(value2)) {
-        return array3(value2, value2.length).map((entry) => copy2(entry, depth + 1));
+        return array3(value2, value2.length).map((entry) => copy3(entry, depth + 1));
       }
       need2(Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null, "Terminal journal prototype refused.");
       const output = {};
@@ -63133,14 +63133,14 @@ function journalData2(input) {
         need2(bytes2 <= 67108864, "Terminal journal text bound refused.");
         const field11 = Object.getOwnPropertyDescriptor(value2, key);
         need2(field11 !== void 0 && Object.hasOwn(field11, "value"), "Terminal journal own data required.");
-        Object.defineProperty(output, key, { value: copy2(field11.value, depth + 1), enumerable: true, writable: true, configurable: true });
+        Object.defineProperty(output, key, { value: copy3(field11.value, depth + 1), enumerable: true, writable: true, configurable: true });
       }
       return output;
     } finally {
       seen.delete(value2);
     }
   }
-  const result = copy2(input, 0);
+  const result = copy3(input, 0);
   need2(isRecord(result), "Terminal stored journal missing.");
   return result;
 }
@@ -66052,21 +66052,21 @@ async function inspectRecordedClosedCopy(input) {
   requireValue4(event3 !== void 0, "Recorded copy result is absent; no remaining action is authorized.");
   const data9 = exact5(event3.data, ["copyReceipt", "sqlDigests"]);
   const directoryPath = operationPath(operationId11).slice(0, -5);
-  const copy2 = copyReceipt(data9["copyReceipt"], initial.journal.plan.projectPath, directoryPath);
+  const copy3 = copyReceipt(data9["copyReceipt"], initial.journal.plan.projectPath, directoryPath);
   const expected3 = exact5(data9["sqlDigests"], ["checkpointSha256", "schemaSha256", "logicalSha256"]);
   for (const name6 of ["checkpointSha256", "schemaSha256", "logicalSha256"]) {
     text10(expected3[name6], HASH7);
   }
-  requireValue4(expected3["checkpointSha256"] === copy2.sha256, "Recorded copy SQL digest binding refused.");
+  requireValue4(expected3["checkpointSha256"] === copy3.sha256, "Recorded copy SQL digest binding refused.");
   const directory4 = await root.openDirectory(directoryPath, false);
   try {
-    const bound3 = `/proc/self/fd/${directory4.handle.fd}/${basename7(copy2.artifact)}`;
-    await assertArtifact(bound3, copy2.artifactIdentity);
-    await assertArtifact(copy2.artifact, copy2.artifactIdentity);
-    const inventory2 = await readExactSqlInventory({ checkpointPath: copy2.artifact, expectedSha256: copy2.sha256, runtime });
+    const bound3 = `/proc/self/fd/${directory4.handle.fd}/${basename7(copy3.artifact)}`;
+    await assertArtifact(bound3, copy3.artifactIdentity);
+    await assertArtifact(copy3.artifact, copy3.artifactIdentity);
+    const inventory2 = await readExactSqlInventory({ checkpointPath: copy3.artifact, expectedSha256: copy3.sha256, runtime });
     requireValue4(inventory2.checkpointSha256 === expected3["checkpointSha256"] && inventory2.schemaSha256 === expected3["schemaSha256"] && inventory2.logicalSha256 === expected3["logicalSha256"], "Recorded copy SQL inventory digests changed.");
-    await assertArtifact(bound3, copy2.artifactIdentity);
-    await assertArtifact(copy2.artifact, copy2.artifactIdentity);
+    await assertArtifact(bound3, copy3.artifactIdentity);
+    await assertArtifact(copy3.artifact, copy3.artifactIdentity);
     await root.assertCurrent();
     const current10 = await root.openDirectory(directoryPath, false);
     try {
@@ -66076,15 +66076,15 @@ async function inspectRecordedClosedCopy(input) {
     }
     const final = await loadClosedSymbolHistoricalPhaseJournal(operationId11);
     requireValue4(canonicalJson(final.journal) === canonicalJson(initial.journal), "Recorded copy journal changed during inspection.");
-    await assertArtifact(bound3, copy2.artifactIdentity);
-    await assertArtifact(copy2.artifact, copy2.artifactIdentity);
+    await assertArtifact(bound3, copy3.artifactIdentity);
+    await assertArtifact(copy3.artifact, copy3.artifactIdentity);
     return Object.freeze({ inventory: inventory2, evidence: Object.freeze({
       profile: "easyeda-pro-control.recorded-closed-copy-evidence.v1",
       operationId: operationId11,
       phase: phase5,
       closedPlanSha256: initial.journal.closedPlanSha256,
       phaseDataSha256: event3.dataSha256,
-      copyReceiptSha256: copy2.receiptSha256,
+      copyReceiptSha256: copy3.receiptSha256,
       checkpointSha256: inventory2.checkpointSha256,
       schemaSha256: inventory2.schemaSha256,
       logicalSha256: inventory2.logicalSha256,
@@ -67944,17 +67944,17 @@ async function prefix3(operationId11) {
     result !== void 0 && ["beforeWriteBaselineVerified", "openingEffectsVerified", "writerReady", "executionAuthorized"].every((key) => result[key] === false),
     "Pre-relaunch abandonment closed-copy result flags differ."
   );
-  const checkpointReceipt2 = sealed(result["checkpoint"], "receiptSha256"), copy2 = sealed(result["copy"], "receiptSha256");
+  const checkpointReceipt2 = sealed(result["checkpoint"], "receiptSha256"), copy3 = sealed(result["copy"], "receiptSha256");
   const prepared = bag4(result["preparation"]);
   const preparedTarget = bag4(prepared["target"]), sql3 = bag4(result["sql"]), targetEvidence2 = bag4(result["targetEvidence"]);
   const rawPath = external_exports.string().parse(target9["rawWindowsPath"]), source5 = normalizeEasyedaProjectPath(rawPath);
   need7(
-    target9["projectUuid"] === sha256Text(rawPath) && checkpointReceipt2["source"] === source5 && copy2["source"] === source5 && checkpointReceipt2["schema"] === "easyeda-pro-control.checkpoint.v2" && copy2["schema"] === "easyeda-pro-control.closed-file-byte-copy.v1" && checkpointReceipt2["sourceSha256"] === copy2["sha256"] && sql3["checkpointSha256"] === copy2["sha256"] && copy2["sourceEqualsArtifactBytes"] === true && copy2["sourceProjectGenerationBindingVerified"] === false && copy2["executionAuthorized"] === false && preparedTarget["projectUuid"] === target9["projectUuid"] && preparedTarget["branchUuid"] === target9["branchUuid"] && targetEvidence2["projectUuid"] === target9["projectUuid"] && targetEvidence2["branchUuid"] === target9["branchUuid"] && targetEvidence2["documentUuid"] === target9["documentUuid"] && targetEvidence2["docType"] === "PCB" && targetEvidence2["ownerUuid"] === preparedTarget["ownerUuid"],
+    target9["projectUuid"] === sha256Text(rawPath) && checkpointReceipt2["source"] === source5 && copy3["source"] === source5 && checkpointReceipt2["schema"] === "easyeda-pro-control.checkpoint.v2" && copy3["schema"] === "easyeda-pro-control.closed-file-byte-copy.v1" && checkpointReceipt2["sourceSha256"] === copy3["sha256"] && sql3["checkpointSha256"] === copy3["sha256"] && copy3["sourceEqualsArtifactBytes"] === true && copy3["sourceProjectGenerationBindingVerified"] === false && copy3["executionAuthorized"] === false && preparedTarget["projectUuid"] === target9["projectUuid"] && preparedTarget["branchUuid"] === target9["branchUuid"] && targetEvidence2["projectUuid"] === target9["projectUuid"] && targetEvidence2["branchUuid"] === target9["branchUuid"] && targetEvidence2["documentUuid"] === target9["documentUuid"] && targetEvidence2["docType"] === "PCB" && targetEvidence2["ownerUuid"] === preparedTarget["ownerUuid"],
     "Pre-relaunch abandonment closed-copy lineage differs."
   );
   hash16.parse(sql3["schemaSha256"]);
   hash16.parse(sql3["logicalSha256"]);
-  const rawCopy = descriptor5.parse({ path: copy2["artifact"], bytes: copy2["bytes"], sha256: copy2["sha256"] });
+  const rawCopy = descriptor5.parse({ path: copy3["artifact"], bytes: copy3["bytes"], sha256: copy3["sha256"] });
   need7(
     /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename10(rawCopy.path)) && rawCopy.path === join19(operationPath(operationId11).slice(0, -5), basename10(rawCopy.path)),
     "Pre-relaunch abandonment raw copy escaped its operation."
@@ -68163,7 +68163,7 @@ function ownBoundedData(input) {
   let nodes = 0;
   let bytes2 = 0;
   const seen = /* @__PURE__ */ new Set();
-  function copy2(value2, depth) {
+  function copy3(value2, depth) {
     nodes += 1;
     eligible(nodes <= 25e4 && depth <= 64, "closure-input-complexity");
     if (value2 === null || typeof value2 === "boolean") {
@@ -68188,7 +68188,7 @@ function ownBoundedData(input) {
         for (let index = 0; index < value2.length; index += 1) {
           const property = Object.getOwnPropertyDescriptor(value2, String(index));
           requireEvidence(property !== void 0 && Object.hasOwn(property, "value"), "closure-array-data");
-          result2.push(copy2(property.value, depth + 1));
+          result2.push(copy3(property.value, depth + 1));
         }
         return Object.freeze(result2);
       }
@@ -68199,14 +68199,14 @@ function ownBoundedData(input) {
         eligible(bytes2 <= CLOSURE_LIMITS.inputBytes, "closure-input-bytes");
         const property = Object.getOwnPropertyDescriptor(value2, key);
         requireEvidence(property !== void 0 && Object.hasOwn(property, "value"), "closure-own-data");
-        Object.defineProperty(result, key, { value: copy2(property.value, depth + 1), enumerable: true });
+        Object.defineProperty(result, key, { value: copy3(property.value, depth + 1), enumerable: true });
       }
       return Object.freeze(result);
     } finally {
       seen.delete(value2);
     }
   }
-  const output = copy2(input, 0);
+  const output = copy3(input, 0);
   eligible(Buffer.byteLength(JSON.stringify(output)) <= CLOSURE_LIMITS.inputBytes, "closure-input-encoding");
   return output;
 }
@@ -68283,11 +68283,11 @@ function deriveClosedSymbolTerminalClosure(input) {
     const index = [8, 24, 40][ordinal];
     requireEvidence(index !== void 0, "closure-copy-index");
     const intent = bag5(bag5(events[index])["data"]), result = bag5(bag5(events[index + 1])["data"]);
-    const checkpoint = bag5(intent["checkpoint"]), copy2 = bag5(result["copyReceipt"]), generation5 = envelope4.body.generations[ordinal];
+    const checkpoint = bag5(intent["checkpoint"]), copy3 = bag5(result["copyReceipt"]), generation5 = envelope4.body.generations[ordinal];
     const checkpointBody = Object.fromEntries(Object.entries(checkpoint).filter(([key]) => key !== "receiptSha256"));
-    const copyBody = Object.fromEntries(Object.entries(copy2).filter(([key]) => key !== "receiptSha256"));
-    requireEvidence(generation5 !== void 0 && checkpoint["receiptSha256"] === sha256Json(checkpointBody) && copy2["receiptSha256"] === sha256Json(copyBody) && sha256Json(checkpoint) === generation5.checkpointReceiptSha256 && sha256Json(copy2) === generation5.copyReceiptSha256, "closure-receipt-binding");
-    requireEvidence(copy2["artifact"] === generation5.copyArtifact.path && copy2["bytes"] === generation5.copyArtifact.bytes && copy2["sha256"] === generation5.copyArtifact.sha256, "closure-copy-descriptor");
+    const copyBody = Object.fromEntries(Object.entries(copy3).filter(([key]) => key !== "receiptSha256"));
+    requireEvidence(generation5 !== void 0 && checkpoint["receiptSha256"] === sha256Json(checkpointBody) && copy3["receiptSha256"] === sha256Json(copyBody) && sha256Json(checkpoint) === generation5.checkpointReceiptSha256 && sha256Json(copy3) === generation5.copyReceiptSha256, "closure-receipt-binding");
+    requireEvidence(copy3["artifact"] === generation5.copyArtifact.path && copy3["bytes"] === generation5.copyArtifact.bytes && copy3["sha256"] === generation5.copyArtifact.sha256, "closure-copy-descriptor");
     add3(
       `copy:${String(ordinal)}`,
       generation5.copyArtifact.path,
@@ -68296,7 +68296,7 @@ function deriveClosedSymbolTerminalClosure(input) {
       generation5.copyArtifact.sha256,
       null,
       true,
-      identity19(copy2["artifactIdentity"], ["device", "inode", "size", "mtimeNs", "ctimeNs", "birthtimeNs", "mode", "uid", "gid", "links"])
+      identity19(copy3["artifactIdentity"], ["device", "inode", "size", "mtimeNs", "ctimeNs", "birthtimeNs", "mode", "uid", "gid", "links"])
     );
     const path6 = text12(checkpoint["checkpoint"]);
     const receiptPath = text12(checkpoint["receiptPath"]);
@@ -68415,10 +68415,10 @@ async function captureClosedSymbolJournalBytes(input) {
       position += read2.bytesRead;
     }
     let raw;
-    let text37;
+    let text38;
     try {
-      text37 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
-      raw = JSON.parse(text37);
+      text38 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+      raw = JSON.parse(text38);
     } catch {
       throw new ClosureEvidenceChangedError("closure-journal-json-invalid");
     }
@@ -68432,7 +68432,7 @@ async function captureClosedSymbolJournalBytes(input) {
       }
     }
     requireEvidence(sha256Json(raw) === journalSemanticSha256, "closure-journal-semantic-changed");
-    if (text37 !== `${JSON.stringify(raw, null, 2)}
+    if (text38 !== `${JSON.stringify(raw, null, 2)}
 `) {
       throw new ClosureIneligibleError("closure-journal-producer-encoding");
     }
@@ -68536,12 +68536,12 @@ function utcCalendar(value2) {
 }
 function validateClockControlScope(input) {
   const value2 = exact6(input, ["createdAtLiteral", "referenceUtcMs"]);
-  const text37 = value2["createdAtLiteral"];
-  if (typeof text37 !== "string" || !/^(?:19[7-9]\d|[2-9]\d{3})-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(text37)) {
+  const text38 = value2["createdAtLiteral"];
+  if (typeof text38 !== "string" || !/^(?:19[7-9]\d|[2-9]\d{3})-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(text38)) {
     bad();
   }
-  calendar([...text37.split(/[- :]/u).map(Number), 0]);
-  return Object.freeze({ createdAtLiteral: text37, referenceUtcMs: integer3(value2["referenceUtcMs"], 0, 253402214399999) });
+  calendar([...text38.split(/[- :]/u).map(Number), 0]);
+  return Object.freeze({ createdAtLiteral: text38, referenceUtcMs: integer3(value2["referenceUtcMs"], 0, 253402214399999) });
 }
 function controlInputs(scope6) {
   return {
@@ -69050,11 +69050,11 @@ function deriveClosedSymbolAgedTerminalClosure(input) {
     const index = [8, 24, 40][ordinal];
     requireEvidence(index !== void 0, "closure-copy-index");
     const intent = bag6(bag6(events[index])["data"]), result = bag6(bag6(events[index + 1])["data"]);
-    const checkpoint = bag6(intent["checkpoint"]), copy2 = bag6(result["copyReceipt"]), generation5 = envelope4.body.generations[ordinal];
+    const checkpoint = bag6(intent["checkpoint"]), copy3 = bag6(result["copyReceipt"]), generation5 = envelope4.body.generations[ordinal];
     const checkpointBody = Object.fromEntries(Object.entries(checkpoint).filter(([key]) => key !== "receiptSha256"));
-    const copyBody = Object.fromEntries(Object.entries(copy2).filter(([key]) => key !== "receiptSha256"));
-    requireEvidence(generation5 !== void 0 && checkpoint["receiptSha256"] === sha256Json(checkpointBody) && copy2["receiptSha256"] === sha256Json(copyBody) && sha256Json(checkpoint) === generation5.checkpointReceiptSha256 && sha256Json(copy2) === generation5.copyReceiptSha256, "closure-receipt-binding");
-    requireEvidence(copy2["artifact"] === generation5.copyArtifact.path && copy2["bytes"] === generation5.copyArtifact.bytes && copy2["sha256"] === generation5.copyArtifact.sha256, "closure-copy-descriptor");
+    const copyBody = Object.fromEntries(Object.entries(copy3).filter(([key]) => key !== "receiptSha256"));
+    requireEvidence(generation5 !== void 0 && checkpoint["receiptSha256"] === sha256Json(checkpointBody) && copy3["receiptSha256"] === sha256Json(copyBody) && sha256Json(checkpoint) === generation5.checkpointReceiptSha256 && sha256Json(copy3) === generation5.copyReceiptSha256, "closure-receipt-binding");
+    requireEvidence(copy3["artifact"] === generation5.copyArtifact.path && copy3["bytes"] === generation5.copyArtifact.bytes && copy3["sha256"] === generation5.copyArtifact.sha256, "closure-copy-descriptor");
     add3(
       `copy:${String(ordinal)}`,
       generation5.copyArtifact.path,
@@ -69063,7 +69063,7 @@ function deriveClosedSymbolAgedTerminalClosure(input) {
       generation5.copyArtifact.sha256,
       null,
       true,
-      identity21(copy2["artifactIdentity"], ["device", "inode", "size", "mtimeNs", "ctimeNs", "birthtimeNs", "mode", "uid", "gid", "links"])
+      identity21(copy3["artifactIdentity"], ["device", "inode", "size", "mtimeNs", "ctimeNs", "birthtimeNs", "mode", "uid", "gid", "links"])
     );
     const path6 = text13(checkpoint["checkpoint"]);
     const receiptPath = text13(checkpoint["receiptPath"]);
@@ -69502,7 +69502,7 @@ function snapshotRequest(input) {
     if (!isBag(value2)) {
       bad2();
     }
-    const copy2 = {};
+    const copy3 = {};
     for (const key of Reflect.ownKeys(value2)) {
       if (typeof key !== "string" || key.length > 128) {
         bad2();
@@ -69511,9 +69511,9 @@ function snapshotRequest(input) {
       if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
         bad2();
       }
-      Object.defineProperty(copy2, key, { value: visit(descriptor10.value, depth + 1), enumerable: true });
+      Object.defineProperty(copy3, key, { value: visit(descriptor10.value, depth + 1), enumerable: true });
     }
-    return Object.freeze(copy2);
+    return Object.freeze(copy3);
   }
   const result = visit(input, 0);
   if (!isBag(result)) {
@@ -71602,17 +71602,17 @@ async function readWitnessClockArtifact(operationId11, descriptor10, expectedSha
 }
 function bindClosedSqlCopy(input) {
   need13(Object.hasOwn(PHASES, input.phase));
-  const selected3 = PHASES[input.phase], { copy: copy2, inventory: inventory2, journal } = input;
-  assertIssuedClosedFileCopy(copy2);
+  const selected3 = PHASES[input.phase], { copy: copy3, inventory: inventory2, journal } = input;
+  assertIssuedClosedFileCopy(copy3);
   need13(readerCompletion(inventory2).exitCode === 0);
-  need13(copy2.source === journal.plan.projectPath && dirname15(copy2.artifact) === operationPath(journal.operationId).slice(0, -5) && inventory2.checkpointSha256 === copy2.sha256);
+  need13(copy3.source === journal.plan.projectPath && dirname15(copy3.artifact) === operationPath(journal.operationId).slice(0, -5) && inventory2.checkpointSha256 === copy3.sha256);
   const intent = input.events.find((event3) => event3.step === input.phase && event3.kind === "intent");
   const result = input.events.find((event3) => event3.step === input.phase && event3.kind === "result");
   const generation5 = result?.generation;
   need13(result !== void 0 && intent !== void 0 && isRecord(result.data) && isRecord(intent.data) && generation5 !== void 0 && generation5 !== null && "captureSha256" in generation5 && generation5.ordinal === selected3.ordinal);
-  need13(canonicalJson(result.data) === canonicalJson({ copyReceipt: copy2, sqlDigests: sqlDigests(inventory2) }) && canonicalJson(intent.generation) === canonicalJson(generation5));
+  need13(canonicalJson(result.data) === canonicalJson({ copyReceipt: copy3, sqlDigests: sqlDigests(inventory2) }) && canonicalJson(intent.generation) === canonicalJson(generation5));
   const storedProof = intent.data["proof"];
-  need13(isRecord(storedProof) && storedProof["proofSha256"] === copy2.closureProofSha256 && storedProof["operationId"] === journal.operationId && storedProof["phase"] === selected3.close && storedProof["challengeAttempt"] === 1 && storedProof["jobId"] === generation5.jobId && storedProof["helperInstance"] === generation5.helperInstance && storedProof["bridgeSessionSha256"] === generation5.sessionSha256 && storedProof["runtimeIdentitySha256"] === generation5.runtimeSha256 && intent.data["source"] === journal.plan.projectPath && canonicalJson(intent.data["generation"]) === canonicalJson(generation5));
+  need13(isRecord(storedProof) && storedProof["proofSha256"] === copy3.closureProofSha256 && storedProof["operationId"] === journal.operationId && storedProof["phase"] === selected3.close && storedProof["challengeAttempt"] === 1 && storedProof["jobId"] === generation5.jobId && storedProof["helperInstance"] === generation5.helperInstance && storedProof["bridgeSessionSha256"] === generation5.sessionSha256 && storedProof["runtimeIdentitySha256"] === generation5.runtimeSha256 && intent.data["source"] === journal.plan.projectPath && canonicalJson(intent.data["generation"]) === canonicalJson(generation5));
   if (input.proof !== void 0) {
     need13(canonicalJson(input.proof) === canonicalJson(storedProof));
   }
@@ -72284,8 +72284,8 @@ async function row(tableValue, name6, value2) {
 }
 async function recordedLockedBaseline(journal, event3, inventory2) {
   need14(readerCompletion(inventory2).exitCode === 0 && event3.sequence === 10 && event3.step === "baseline-copy" && event3.kind === "result" && isRecord(event3.data));
-  const copy2 = event3.data["copyReceipt"];
-  need14(isRecord(copy2) && copy2["source"] === journal.plan.projectPath && copy2["sha256"] === inventory2.checkpointSha256);
+  const copy3 = event3.data["copyReceipt"];
+  need14(isRecord(copy3) && copy3["source"] === journal.plan.projectPath && copy3["sha256"] === inventory2.checkpointSha256);
   need14(canonicalJson(event3.data["sqlDigests"]) === canonicalJson({ checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 }) && canonicalJson(inventory2.schema) === canonicalJson(nativeProjectSymbolSqlSchema(journal.plan.branchUuid).entries));
   const projects = table(inventory2, "projects");
   const branches = table(inventory2, "branches");
@@ -73468,9 +73468,9 @@ function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
   if (scope6 === void 0) {
     return;
   }
-  const { types: types11 } = scope6.headers;
-  need18(!types11.has(atom.id) || types11.get(atom.id) === atom.type, "canvas-segments atom type changed");
-  types11.set(atom.id, atom.type);
+  const { types: types12 } = scope6.headers;
+  need18(!types12.has(atom.id) || types12.get(atom.id) === atom.type, "canvas-segments atom type changed");
+  types12.set(atom.id, atom.type);
   if (!IGNORED.has(atom.type)) {
     need18(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
     let stream = scope6.streams.get(chunkIndex);
@@ -74154,7 +74154,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     return value2;
   };
   const artifactHash = (sequence) => hash23(journal.artifacts[sequence - 1]?.sha256);
-  const copy2 = (sequence, inventory2) => {
+  const copy3 = (sequence, inventory2) => {
     const data9 = bag7(event3(sequence).data), receipt2 = bag7(data9["copyReceipt"]);
     same25(data9, { copyReceipt: receipt2, sqlDigests: digests(inventory2) }, "complete copy-result SQL binding differs");
     need19(
@@ -74165,7 +74165,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     need19(hash23(receiptSha256) === sha256Json(body5), "copy receipt digest differs");
     return Object.freeze({ receiptSha256: hash23(receiptSha256) });
   };
-  const baselineCopy = copy2(10, baselineInventory), editCopy = copy2(26, editInventory), verificationCopy = copy2(42, verificationInventory);
+  const baselineCopy = copy3(10, baselineInventory), editCopy = copy3(26, editInventory), verificationCopy = copy3(42, verificationInventory);
   need19(
     witness.projectUuid === journal.plan.projectUuid && witness.branchUuid === journal.plan.branchUuid && !Object.hasOwn(witness, "agedHead"),
     "first historical profile requires the exact locked witness"
@@ -74792,23 +74792,23 @@ var init_closed_symbol_copy = __esm({
         const requestSha256 = sha256Json(request13);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "intent", generation: generation5, requestSha256, data: request13 });
         await current10();
-        const copy2 = await copyClosedProjectBytes({
+        const copy3 = await copyClosedProjectBytes({
           closureProof: proof,
           source: journal.plan.projectPath,
           expectedSourceSha256: checkpoint.sourceSha256,
           artifactDirectory: operationPath(operationId11).slice(0, -5)
         });
-        this.copies.set(key, copy2);
+        this.copies.set(key, copy3);
         await current10();
-        const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+        const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
         requireValue9(lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs, "Closed symbol copy source lineage changed after checkpoint.");
-        const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
+        const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: this.runtime });
         await appendClosedSymbolEvent(journal, {
           step: phase5,
           kind: "result",
           generation: generation5,
           requestSha256,
-          data: { copyReceipt: copy2, sqlDigests: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 } }
+          data: { copyReceipt: copy3, sqlDigests: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 } }
         });
         await current10();
         const final = await loadClosedSymbolJournal(operationId11);
@@ -74820,7 +74820,7 @@ var init_closed_symbol_copy = __esm({
         );
         requireValue9(canonicalJson(final.journal) === canonicalJson(journal), "Closed symbol copy journal advanced or changed.");
         Object.assign(journalInput, journal);
-        return Object.freeze({ copy: copy2, checkpoint, inventory: inventory2, executionAuthorized: false, completionProved: false, sourceProjectGenerationBindingVerified: false });
+        return Object.freeze({ copy: copy3, checkpoint, inventory: inventory2, executionAuthorized: false, completionProved: false, sourceProjectGenerationBindingVerified: false });
       }
     };
   }
@@ -74969,7 +74969,7 @@ var init_closed_symbol_relaunch = __esm({
       async launch(input) {
         requireValue11(Object.hasOwn(PHASES5, input.phase), "Closed symbol relaunch phase refused.");
         const callerText = canonicalJson(input), operationId11 = input.journal.operationId, phase5 = input.phase, selected3 = PHASES5[phase5];
-        const copy2 = input.copy, proof = input.proof, retained2 = structuredClone(input);
+        const copy3 = input.copy, proof = input.proof, retained2 = structuredClone(input);
         const key = `${operationId11}:${phase5}`;
         let used3 = attempts.get(this.runtime);
         if (used3 === void 0) {
@@ -74978,11 +74978,11 @@ var init_closed_symbol_relaunch = __esm({
         }
         requireValue11(!used3.has(key), "Closed symbol relaunch attempt already consumed.");
         used3.add(key);
-        assertIssuedClosedFileCopy(copy2);
+        assertIssuedClosedFileCopy(copy3);
         const { journal, events } = await loadClosedSymbolJournal(operationId11);
         const unchanged5 = () => {
           requireValue11(
-            canonicalJson(input) === callerText && input.copy === copy2 && input.proof === proof,
+            canonicalJson(input) === callerText && input.copy === copy3 && input.proof === proof,
             "Closed symbol relaunch caller changed."
           );
         };
@@ -74993,14 +74993,14 @@ var init_closed_symbol_relaunch = __esm({
         );
         const last = events.at(-1), prior = events.find((event3) => event3.step === selected3.copy && event3.kind === "result");
         requireValue11(
-          last?.step === selected3.predecessor && last.kind === "result" && prior !== void 0 && prior.generation !== null && prior.generation.ordinal === selected3.ordinal - 1 && isRecord(prior.data) && canonicalJson(prior.data["copyReceipt"]) === canonicalJson(copy2),
+          last?.step === selected3.predecessor && last.kind === "result" && prior !== void 0 && prior.generation !== null && prior.generation.ordinal === selected3.ordinal - 1 && isRecord(prior.data) && canonicalJson(prior.data["copyReceipt"]) === canonicalJson(copy3),
           "Closed symbol relaunch lacks its exact previous copy."
         );
         const priorGeneration = prior.generation;
         const copyIntent = events.find((event3) => event3.step === selected3.copy && event3.kind === "intent");
         requireValue11(isRecord(copyIntent?.data) && canonicalJson(copyIntent.data["checkpoint"]) === canonicalJson(retained2.checkpoint) && canonicalJson(copyIntent.data["proof"]) === canonicalJson(proof), "Closed symbol relaunch copy intent differs.");
         requireValue11(
-          proof["operationId"] === operationId11 && proof["phase"] === selected3.close && proof["challengeAttempt"] === 1 && proof["jobId"] === priorGeneration.jobId && proof["helperInstance"] === priorGeneration.helperInstance && copy2.closureProofSha256 === proof.proofSha256 && copy2.source === journal.plan.projectPath && retained2.checkpoint.source === copy2.source && retained2.checkpoint.sourceSha256 === copy2.sha256,
+          proof["operationId"] === operationId11 && proof["phase"] === selected3.close && proof["challengeAttempt"] === 1 && proof["jobId"] === priorGeneration.jobId && proof["helperInstance"] === priorGeneration.helperInstance && copy3.closureProofSha256 === proof.proofSha256 && copy3.source === journal.plan.projectPath && retained2.checkpoint.source === copy3.source && retained2.checkpoint.sourceSha256 === copy3.sha256,
           "Closed symbol relaunch proof/source binding differs."
         );
         const scopeReader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
@@ -75039,7 +75039,7 @@ var init_closed_symbol_relaunch = __esm({
         });
         await current10();
         requireValue11(
-          verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === retained2.checkpoint.receiptPath && verified.checkpoint === retained2.checkpoint.checkpoint && verified.checkpointSha256 === retained2.checkpoint.checkpointSha256 && verified.sourceDumpSha256 === retained2.checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === retained2.checkpoint.checkpointDumpSha256,
+          verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy3.source && verified.sourceSha256 === copy3.sha256 && verified.receiptPath === retained2.checkpoint.receiptPath && verified.checkpoint === retained2.checkpoint.checkpoint && verified.checkpointSha256 === retained2.checkpoint.checkpointSha256 && verified.sourceDumpSha256 === retained2.checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === retained2.checkpoint.checkpointDumpSha256,
           "Closed symbol relaunch checkpoint changed."
         );
         const request13 = {
@@ -75047,7 +75047,7 @@ var init_closed_symbol_relaunch = __esm({
           operationId: operationId11,
           phase: phase5,
           closedPlanSha256: journal.closedPlanSha256,
-          priorCopySha256: copy2.receiptSha256,
+          priorCopySha256: copy3.receiptSha256,
           priorProofSha256: proof.proofSha256,
           checkpoint: retained2.checkpoint
         };
@@ -75749,14 +75749,14 @@ async function row2(owner, column, value2) {
   need20(selected3 !== void 0, "Witness baseline row is not unique.");
   return selected3;
 }
-async function lockedWitnessBaseline(journal, events, copy2, inventory2) {
-  assertIssuedClosedFileCopy(copy2);
+async function lockedWitnessBaseline(journal, events, copy3, inventory2) {
+  assertIssuedClosedFileCopy(copy3);
   need20(
-    readerCompletion(inventory2).exitCode === 0 && inventory2.checkpointSha256 === copy2.sha256 && copy2.source === journal.plan.projectPath,
+    readerCompletion(inventory2).exitCode === 0 && inventory2.checkpointSha256 === copy3.sha256 && copy3.source === journal.plan.projectPath,
     "Witness needs its original completed baseline copy and SQL reader."
   );
   const baseline2 = events.find((event3) => event3.step === "baseline-copy" && event3.kind === "result");
-  need20(isRecord(baseline2?.data) && canonicalJson(baseline2.data["copyReceipt"]) === canonicalJson(copy2) && canonicalJson(baseline2.data["sqlDigests"]) === canonicalJson({
+  need20(isRecord(baseline2?.data) && canonicalJson(baseline2.data["copyReceipt"]) === canonicalJson(copy3) && canonicalJson(baseline2.data["sqlDigests"]) === canonicalJson({
     checkpointSha256: inventory2.checkpointSha256,
     schemaSha256: inventory2.schemaSha256,
     logicalSha256: inventory2.logicalSha256
@@ -75781,7 +75781,7 @@ async function lockedWitnessBaseline(journal, events, copy2, inventory2) {
   );
   const createdAtLiteral = text20(cell2(history, selected3, "created_at"));
   need20(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral), "Witness baseline date literal refused.");
-  return Object.freeze({ createdAtLiteral, copyReceiptSha256: copy2.receiptSha256, logicalSha256: inventory2.logicalSha256 });
+  return Object.freeze({ createdAtLiteral, copyReceiptSha256: copy3.receiptSha256, logicalSha256: inventory2.logicalSha256 });
 }
 var init_closed_symbol_witness_baseline = __esm({
   "server/src/closed-symbol-witness-baseline.ts"() {
@@ -75834,14 +75834,14 @@ async function row3(owner, column, value2) {
   need21(selected3 !== void 0, "Witness baseline row is not unique.");
   return selected3;
 }
-async function mainReferenceBaseline(journal, events, copy2, inventory2) {
-  assertIssuedClosedFileCopy(copy2);
+async function mainReferenceBaseline(journal, events, copy3, inventory2) {
+  assertIssuedClosedFileCopy(copy3);
   need21(
-    readerCompletion(inventory2).exitCode === 0 && inventory2.checkpointSha256 === copy2.sha256 && copy2.source === journal.plan.projectPath,
+    readerCompletion(inventory2).exitCode === 0 && inventory2.checkpointSha256 === copy3.sha256 && copy3.source === journal.plan.projectPath,
     "Witness needs its original completed baseline copy and SQL reader."
   );
   const baseline2 = events.find((event3) => event3.step === "baseline-copy" && event3.kind === "result");
-  need21(isRecord(baseline2?.data) && canonicalJson(baseline2.data["copyReceipt"]) === canonicalJson(copy2) && canonicalJson(baseline2.data["sqlDigests"]) === canonicalJson({
+  need21(isRecord(baseline2?.data) && canonicalJson(baseline2.data["copyReceipt"]) === canonicalJson(copy3) && canonicalJson(baseline2.data["sqlDigests"]) === canonicalJson({
     checkpointSha256: inventory2.checkpointSha256,
     schemaSha256: inventory2.schemaSha256,
     logicalSha256: inventory2.logicalSha256
@@ -75866,7 +75866,7 @@ async function mainReferenceBaseline(journal, events, copy2, inventory2) {
   );
   const createdAtLiteral = text21(cell3(history, selected3, "created_at"));
   need21(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral), "Witness baseline date literal refused.");
-  return Object.freeze({ createdAtLiteral, historyUuid: head2, copyReceiptSha256: copy2.receiptSha256, logicalSha256: inventory2.logicalSha256 });
+  return Object.freeze({ createdAtLiteral, historyUuid: head2, copyReceiptSha256: copy3.receiptSha256, logicalSha256: inventory2.logicalSha256 });
 }
 var init_closed_symbol_main_reference_baseline = __esm({
   "server/src/closed-symbol-main-reference-baseline.ts"() {
@@ -76047,9 +76047,9 @@ function need22(condition) {
     throw new Error("Current aged SQL reference program refused.");
   }
 }
-function replaceOnce(text37, before, after) {
-  need22(before.length > 0 && text37.split(before).length === 2);
-  return text37.replace(before, after);
+function replaceOnce(text38, before, after) {
+  need22(before.length > 0 && text38.split(before).length === 2);
+  return text38.replace(before, after);
 }
 function buildCurrentAgedSqlReferenceProgram(input) {
   const request13 = validateMainReferenceRequest(input);
@@ -76746,12 +76746,12 @@ var init_closed_symbol_main_reference = __esm({
         }
         need26(!used3.has(operationId11), "Main reference attempt already consumed; inspect retained intent/result instead of retrying.");
         used3.add(operationId11);
-        const copy2 = input.baselineCopy, inventory2 = input.baselineInventory, proof = input.baselineProof;
-        const copyText = canonicalJson(copy2), proofText = canonicalJson(proof);
+        const copy3 = input.baselineCopy, inventory2 = input.baselineInventory, proof = input.baselineProof;
+        const copyText = canonicalJson(copy3), proofText = canonicalJson(proof);
         const scopeReader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
         need26(typeof scopeReader === "function", "Main reference cannot observe the outer scope.");
         const unchanged5 = () => {
-          need26(canonicalJson(input.journal) === callerText && input.baselineCopy === copy2 && input.baselineInventory === inventory2 && input.baselineProof === proof && canonicalJson(copy2) === copyText && canonicalJson(proof) === proofText && readerCompletion(inventory2).exitCode === 0, "Main reference original caller or baseline changed.");
+          need26(canonicalJson(input.journal) === callerText && input.baselineCopy === copy3 && input.baselineInventory === inventory2 && input.baselineProof === proof && canonicalJson(copy3) === copyText && canonicalJson(proof) === proofText && readerCompletion(inventory2).exitCode === 0, "Main reference original caller or baseline changed.");
           need26(
             this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(this.engine.upstream) === void 0,
             "Main reference must run outside an authenticated generation."
@@ -76767,7 +76767,7 @@ var init_closed_symbol_main_reference = __esm({
         const { events, journal } = loaded;
         const copyIntent = events.find((event3) => event3.step === "baseline-copy" && event3.kind === "intent"), last = events.at(-1);
         need26(
-          canonicalJson(journal) === callerText && journal.sequence === 10 && !journal.hardStop && !journal.orphanedCallPossible && last?.step === "baseline-copy" && last.kind === "result" && last.generation?.ordinal === 0 && isRecord(copyIntent?.data) && canonicalJson(copyIntent.data["proof"]) === proofText && proof["operationId"] === operationId11 && proof["phase"] === "closed-baseline" && proof["challengeAttempt"] === 1 && proof.proofSha256 === copy2.closureProofSha256 && proof["jobId"] === last.generation.jobId && proof["helperInstance"] === last.generation.helperInstance,
+          canonicalJson(journal) === callerText && journal.sequence === 10 && !journal.hardStop && !journal.orphanedCallPossible && last?.step === "baseline-copy" && last.kind === "result" && last.generation?.ordinal === 0 && isRecord(copyIntent?.data) && canonicalJson(copyIntent.data["proof"]) === proofText && proof["operationId"] === operationId11 && proof["phase"] === "closed-baseline" && proof["challengeAttempt"] === 1 && proof.proofSha256 === copy3.closureProofSha256 && proof["jobId"] === last.generation.jobId && proof["helperInstance"] === last.generation.helperInstance,
           "Main reference requires its original closed baseline immediately before edit launch."
         );
         need26(journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256, "Main reference native source profile differs.");
@@ -76776,7 +76776,7 @@ var init_closed_symbol_main_reference = __esm({
         await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId11);
         await current10();
-        const baseline2 = await mainReferenceBaseline(journal, events, copy2, inventory2);
+        const baseline2 = await mainReferenceBaseline(journal, events, copy3, inventory2);
         await current10();
         const baselineClock = await windowsClockObservationForResult(proof, "termination");
         await current10();
@@ -76789,7 +76789,7 @@ var init_closed_symbol_main_reference = __esm({
           nonce: randomBytes9(32).toString("hex"),
           operationId: operationId11,
           closedPlanSha256: journal.closedPlanSha256,
-          baselineCopyReceiptSha256: copy2.receiptSha256,
+          baselineCopyReceiptSha256: copy3.receiptSha256,
           baselineLogicalSha256: inventory2.logicalSha256,
           baselineClosureClockSha256: sha256Json(baselineClock),
           nativePinsSha256: journal.plan.nativePinsSha256,
@@ -76859,7 +76859,7 @@ var init_closed_symbol_main_reference = __esm({
           observation: observation2,
           intentArtifact,
           resultArtifact,
-          baselineCopyReceiptSha256: copy2.receiptSha256,
+          baselineCopyReceiptSha256: copy3.receiptSha256,
           baselineLogicalSha256: inventory2.logicalSha256,
           operationSha256: sha256Json(journal.plan.operation),
           appClockDirectlyObserved: false,
@@ -77066,13 +77066,13 @@ var init_closed_symbol_witness = __esm({
         }
         need28(!used3.has(operationId11), "Closed symbol witness attempt already consumed.");
         used3.add(operationId11);
-        const copy2 = input.baselineCopy, inventory2 = input.baselineInventory, referenceInput = input.mainReference;
+        const copy3 = input.baselineCopy, inventory2 = input.baselineInventory, referenceInput = input.mainReference;
         const reference3 = referenceInput === void 0 ? void 0 : assertOriginalMainReference(referenceInput, this.engine, operationId11);
-        const copyText = canonicalJson(copy2);
+        const copyText = canonicalJson(copy3);
         const { journal, events } = await loadClosedSymbolJournal(operationId11);
         const unchanged5 = () => {
           need28(
-            canonicalJson(input.journal) === callerText && input.baselineCopy === copy2 && input.baselineInventory === inventory2 && canonicalJson(copy2) === copyText && readerCompletion(inventory2).exitCode === 0 && input.mainReference === referenceInput,
+            canonicalJson(input.journal) === callerText && input.baselineCopy === copy3 && input.baselineInventory === inventory2 && canonicalJson(copy3) === copyText && readerCompletion(inventory2).exitCode === 0 && input.mainReference === referenceInput,
             "Witness caller or baseline changed."
           );
           if (reference3 !== void 0) {
@@ -77087,10 +77087,10 @@ var init_closed_symbol_witness = __esm({
         const capture3 = this.admission.originalCapture(operationId11, "edit-admission"), launch = this.relaunch.originalLaunch(operationId11, "edit-launch");
         need28(capture3 !== void 0 && launch !== void 0 && sha256Json(capture3) === generation5.captureSha256 && isRecord(admission?.data) && canonicalJson(admission.data["capture"]) === canonicalJson(capture3), "Witness lacks original admission and launch receipts.");
         const captureText = canonicalJson(capture3), launchText = canonicalJson(launch);
-        const baseline2 = reference3 === void 0 ? await lockedWitnessBaseline(journal, events, copy2, inventory2) : await mainReferenceBaseline(journal, events, copy2, inventory2);
+        const baseline2 = reference3 === void 0 ? await lockedWitnessBaseline(journal, events, copy3, inventory2) : await mainReferenceBaseline(journal, events, copy3, inventory2);
         unchanged5();
         if (reference3 !== void 0) {
-          need28("historyUuid" in baseline2 && reference3.request.historyUuid === baseline2.historyUuid && reference3.request.createdAtLiteral === baseline2.createdAtLiteral && reference3.request.closedPlanSha256 === journal.closedPlanSha256 && reference3.request.nativePinsSha256 === journal.plan.nativePinsSha256 && reference3.baselineCopyReceiptSha256 === copy2.receiptSha256 && reference3.request.baselineCopyReceiptSha256 === copy2.receiptSha256 && reference3.baselineLogicalSha256 === inventory2.logicalSha256 && reference3.request.baselineLogicalSha256 === inventory2.logicalSha256 && reference3.operationSha256 === sha256Json(journal.plan.operation), "Witness main reference selects another baseline or operation.");
+          need28("historyUuid" in baseline2 && reference3.request.historyUuid === baseline2.historyUuid && reference3.request.createdAtLiteral === baseline2.createdAtLiteral && reference3.request.closedPlanSha256 === journal.closedPlanSha256 && reference3.request.nativePinsSha256 === journal.plan.nativePinsSha256 && reference3.baselineCopyReceiptSha256 === copy3.receiptSha256 && reference3.request.baselineCopyReceiptSha256 === copy3.receiptSha256 && reference3.baselineLogicalSha256 === inventory2.logicalSha256 && reference3.request.baselineLogicalSha256 === inventory2.logicalSha256 && reference3.operationSha256 === sha256Json(journal.plan.operation), "Witness main reference selects another baseline or operation.");
           need28(await revalidateOriginalMainReference(reference3, this.engine, operationId11) === reference3, "Witness historical main reference differs.");
           unchanged5();
         }
@@ -77206,7 +77206,7 @@ var init_closed_symbol_witness = __esm({
             ...reference3 === void 0 ? {} : { mainReference: reference3 },
             codeSha256: sha256Text(code),
             qualificationPath,
-            baselineCopyReceiptSha256: copy2.receiptSha256,
+            baselineCopyReceiptSha256: copy3.receiptSha256,
             baselineLogicalSha256: inventory2.logicalSha256,
             operationSha256: sha256Json(journal.plan.operation),
             launchClock: launchClock.observation,
@@ -77370,7 +77370,7 @@ var init_closed_symbol_witness = __esm({
             artifactSha256,
             clockArtifact,
             clockArtifactSha256: clockArtifact.sha256,
-            baselineCopyReceiptSha256: copy2.receiptSha256,
+            baselineCopyReceiptSha256: copy3.receiptSha256,
             baselineLogicalSha256: inventory2.logicalSha256,
             operationSha256: sha256Json(journal.plan.operation),
             executionAuthorized: false,
@@ -77469,20 +77469,20 @@ async function selectBaselineHeadData(plan2, inventory2) {
   need29(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral), "Automatic baseline date literal refused.");
   return Object.freeze({ headEligibility: headEligibility4, historyUuid, createdAtLiteral });
 }
-async function selectOriginalBaselineHead(journal, events, copy2, inventory2) {
+async function selectOriginalBaselineHead(journal, events, copy3, inventory2) {
   const before = canonicalJson({ journal, events });
   function original2() {
-    assertIssuedClosedFileCopy(copy2);
+    assertIssuedClosedFileCopy(copy3);
     const completion2 = readerCompletion(inventory2), last = events.at(-1);
     need29(
-      completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256 && copy2.source === journal.plan.projectPath,
+      completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256 && copy3.source === journal.plan.projectPath,
       "Automatic selection requires its original completed baseline copy and SQL reader."
     );
     need29(
       journal.sequence === 10 && journal.state === "closed-session-recording" && journal.artifacts.length === 10 && !journal.hardStop && !journal.orphanedCallPossible && !journal.saved && !journal.reopened && !journal.mutationMayHaveOccurred && events.length === 10 && last?.sequence === 10 && last.step === "baseline-copy" && last.kind === "result" && last.generationOrdinal === 0 && last.generation?.ordinal === 0 && last.operationId === journal.operationId && last.closedPlanSha256 === journal.closedPlanSha256 && last.markerSha256 === journal.markerSha256,
       "Automatic selection requires the exact completed phase-10 baseline."
     );
-    need29(isRecord(last.data) && canonicalJson(last.data["copyReceipt"]) === canonicalJson(copy2) && canonicalJson(last.data["sqlDigests"]) === canonicalJson({
+    need29(isRecord(last.data) && canonicalJson(last.data["copyReceipt"]) === canonicalJson(copy3) && canonicalJson(last.data["sqlDigests"]) === canonicalJson({
       checkpointSha256: inventory2.checkpointSha256,
       schemaSha256: inventory2.schemaSha256,
       logicalSha256: inventory2.logicalSha256
@@ -77872,7 +77872,7 @@ var init_closed_symbol_sql_comparison = __esm({
       async prepareForWrite(input) {
         const operationId11 = input.journal.operationId;
         const callerText = canonicalJson(input.journal), generationText = canonicalJson(input.generation);
-        const copy2 = input.baselineCopy, inventory2 = input.baselineInventory, witnessResult = input.witnessResult;
+        const copy3 = input.baselineCopy, inventory2 = input.baselineInventory, witnessResult = input.witnessResult;
         this.consume(operationId11, "prepare");
         const witness = assertOriginalClosedSymbolWitness(witnessResult, this.engine, operationId11), witnessText = canonicalJson(witness);
         const scopeReader = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding;
@@ -77881,7 +77881,7 @@ var init_closed_symbol_sql_comparison = __esm({
         need31(scope6 !== void 0, "Closed SQL preparation requires its active authenticated scope.");
         const scopeText = canonicalJson(scope6);
         const current10 = () => {
-          need31(input.baselineCopy === copy2 && input.baselineInventory === inventory2 && input.witnessResult === witnessResult && canonicalJson(input.journal) === callerText && canonicalJson(input.generation) === generationText, "Closed SQL preparation caller changed.");
+          need31(input.baselineCopy === copy3 && input.baselineInventory === inventory2 && input.witnessResult === witnessResult && canonicalJson(input.journal) === callerText && canonicalJson(input.generation) === generationText, "Closed SQL preparation caller changed.");
           need31(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(this.engine.upstream)) === scopeText, "Closed SQL preparation scope changed.");
           need31(canonicalJson(assertOriginalClosedSymbolWitness(witnessResult, this.engine, operationId11)) === witnessText, "Closed SQL original witness changed.");
         };
@@ -77893,15 +77893,15 @@ var init_closed_symbol_sql_comparison = __esm({
           last?.step === "edit-witness" && last.kind === "result" && canonicalJson(last.generation) === generationText && canonicalJson(witness.generation) === generationText && witness.generation.ordinal === 1 && artifact2?.sha256 === witness.artifactSha256,
           "Closed SQL preparation lacks its original witness result."
         );
-        const baseline2 = bindClosedSqlCopy({ journal, events, phase: "baseline-copy", copy: copy2, inventory: inventory2 });
-        need31(witness.baselineCopyReceiptSha256 === copy2.receiptSha256 && witness.baselineLogicalSha256 === inventory2.logicalSha256 && witness.operationSha256 === sha256Json(journal.plan.operation) && witness.witness.projectUuid === journal.plan.projectUuid && witness.witness.branchUuid === journal.plan.branchUuid, "Closed SQL witness baseline/operation binding differs.");
+        const baseline2 = bindClosedSqlCopy({ journal, events, phase: "baseline-copy", copy: copy3, inventory: inventory2 });
+        need31(witness.baselineCopyReceiptSha256 === copy3.receiptSha256 && witness.baselineLogicalSha256 === inventory2.logicalSha256 && witness.operationSha256 === sha256Json(journal.plan.operation) && witness.witness.projectUuid === journal.plan.projectUuid && witness.witness.branchUuid === journal.plan.branchUuid, "Closed SQL witness baseline/operation binding differs.");
         await readWitnessClockArtifact(operationId11, witness.clockArtifact, witness.clockArtifactSha256);
         current10();
         await this.engine.assertBridgeDispatchAllowed();
         current10();
         await this.engine.assertRecoveryOperationIsolated(operationId11);
         current10();
-        const reread = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
+        const reread = await readClosedCopySqlInventory({ copy: copy3, runtime: this.runtime });
         current10();
         await compareCompleteClosedSql(inventory2, reread);
         current10();
@@ -77911,7 +77911,7 @@ var init_closed_symbol_sql_comparison = __esm({
           profile: "private.closed-symbol-prepared-sql.v1",
           operationId: operationId11,
           closedPlanSha256: journal.closedPlanSha256,
-          baselineCopyReceiptSha256: copy2.receiptSha256,
+          baselineCopyReceiptSha256: copy3.receiptSha256,
           baselineSqlSha256: inventory2.logicalSha256,
           baselineArtifactSha256: baseline2.resultArtifactSha256,
           witnessArtifactSha256: witness.artifactSha256,
@@ -77930,7 +77930,7 @@ var init_closed_symbol_sql_comparison = __esm({
         const slot = {
           descriptor: descriptor10,
           text: canonicalJson(descriptor10),
-          baselineCopy: copy2,
+          baselineCopy: copy3,
           baselineInventory: inventory2,
           witnessResult,
           witnessText,
@@ -77957,7 +77957,7 @@ var init_closed_symbol_sql_comparison = __esm({
       async compare(input, phase5, reference3, originalWriteResult) {
         const operationId11 = input.journal.operationId;
         const callerText = canonicalJson(input.journal);
-        const copy2 = input.copy, inventory2 = input.inventory, proof = input.proof;
+        const copy3 = input.copy, inventory2 = input.inventory, proof = input.proof;
         const preparation3 = this.prepared.get(operationId11);
         need31(preparation3 !== void 0 && preparation3.ready && canonicalJson(preparation3.descriptor) === preparation3.text, "Closed SQL comparison requires its original successful preparation.");
         const prior = this.comparisons.get(`${operationId11}:edit-sql-compare`);
@@ -77976,7 +77976,7 @@ var init_closed_symbol_sql_comparison = __esm({
         const unchanged5 = () => {
           const descriptor10 = Object.getOwnPropertyDescriptor(input, phase5 === "edit-sql-compare" ? "preparation" : "originalEditComparison");
           need31(
-            input.copy === copy2 && input.inventory === inventory2 && input.proof === proof && canonicalJson(input.journal) === callerText,
+            input.copy === copy3 && input.inventory === inventory2 && input.proof === proof && canonicalJson(input.journal) === callerText,
             "Closed SQL comparison caller changed."
           );
           need31(
@@ -77998,7 +77998,7 @@ var init_closed_symbol_sql_comparison = __esm({
         unchanged5();
         need31(canonicalJson(journal) === callerText && !journal.hardStop && !journal.orphanedCallPossible && journal.closedPlanSha256 === preparation3.descriptor.closedPlanSha256 && sha256Json(journal.plan.operation) === preparation3.descriptor.operationSha256, "Closed SQL comparison journal/operation changed.");
         const copyPhase = phase5 === "edit-sql-compare" ? "edit-copy" : "verify-copy";
-        const bound3 = bindClosedSqlCopy({ journal, events, phase: copyPhase, copy: copy2, inventory: inventory2, proof });
+        const bound3 = bindClosedSqlCopy({ journal, events, phase: copyPhase, copy: copy3, inventory: inventory2, proof });
         const last = events.at(-1);
         need31(last?.step === copyPhase && last.kind === "result", "Closed SQL comparison is not immediately after its original copy.");
         const baseline2 = bindClosedSqlCopy({ journal, events, phase: "baseline-copy", copy: preparation3.baselineCopy, inventory: preparation3.baselineInventory });
@@ -78058,7 +78058,7 @@ var init_closed_symbol_sql_comparison = __esm({
         await current10();
         await this.engine.assertRecoveryOperationIsolated(operationId11);
         await current10();
-        const reread = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
+        const reread = await readClosedCopySqlInventory({ copy: copy3, runtime: this.runtime });
         await current10();
         await compareCompleteClosedSql(inventory2, reread);
         await current10();
@@ -78083,7 +78083,7 @@ var init_closed_symbol_sql_comparison = __esm({
           originalWriteResultArtifactSha256: writeResult?.artifactSha256 ?? null,
           clockRelation,
           terminationObservation,
-          copyReceiptSha256: copy2.receiptSha256,
+          copyReceiptSha256: copy3.receiptSha256,
           copyArtifactSha256: bound3.resultArtifactSha256,
           sqlDigests: sqlDigests(inventory2),
           originalEditComparisonSha256: phase5 === "verify-sql-compare" ? prior?.result.resultSha256 : null
@@ -78103,19 +78103,19 @@ var init_closed_symbol_sql_comparison = __esm({
           operationId: operationId11,
           phase: phase5,
           preparedSqlPlanSha256: preparation3.descriptor.preparedSqlPlanSha256,
-          copyReceiptSha256: copy2.receiptSha256,
+          copyReceiptSha256: copy3.receiptSha256,
           comparison: comparison3,
           producerBindingVerified: false,
           executionAuthorized: false,
           completionProved: false
         };
         const result = Object.freeze({ ...body4, resultSha256: sha256Json(body4) });
-        const slot = { result, text: canonicalJson(result), preparation: preparation3, copy: copy2, inventory: inventory2, ready: false, artifactSha256: void 0 };
+        const slot = { result, text: canonicalJson(result), preparation: preparation3, copy: copy3, inventory: inventory2, ready: false, artifactSha256: void 0 };
         this.comparisons.set(`${operationId11}:${phase5}`, slot);
         await appendClosedSymbolEvent(journal, { step: phase5, kind: "result", generation: bound3.generation, requestSha256, data: result });
         slot.artifactSha256 = journal.artifacts.at(-1)?.sha256;
         await current10();
-        const finalCopy = await readClosedCopySqlInventory({ copy: copy2, runtime: this.runtime });
+        const finalCopy = await readClosedCopySqlInventory({ copy: copy3, runtime: this.runtime });
         await current10();
         await compareCompleteClosedSql(inventory2, finalCopy);
         await current10();
@@ -78132,7 +78132,7 @@ var init_closed_symbol_sql_comparison = __esm({
           comparison: result,
           comparisonArtifactSha256: slot.artifactSha256,
           preparation: preparation3.descriptor,
-          copy: copy2,
+          copy: copy3,
           inventory: inventory2
         });
         issuedComparisons.set(result, { engine: this.engine, operationId: operationId11, phase: phase5, result, text: slot.text, source: source5, runtime: this.runtime });
@@ -79106,7 +79106,7 @@ var init_closed_symbol_coordinator = __esm({
           ...mainReference === void 0 ? {} : { mainReference }
         });
         assertFullStageOriginals(bindings2, this.engine, value2.operationId);
-        const text37 = fullEvidenceText(value2, bindings2);
+        const text38 = fullEvidenceText(value2, bindings2);
         const current10 = () => {
           this.outside();
           need35(
@@ -79118,7 +79118,7 @@ var init_closed_symbol_coordinator = __esm({
           }
         };
         current10();
-        fullEvidenceOwners.set(value2, { engine: this.engine, operationId: value2.operationId, value: value2, bindings: bindings2, text: text37, current: current10, headEligibility: headEligibility4 });
+        fullEvidenceOwners.set(value2, { engine: this.engine, operationId: value2.operationId, value: value2, bindings: bindings2, text: text38, current: current10, headEligibility: headEligibility4 });
         return value2;
       }
       /** Original internal objects, including successful stages before a later error.
@@ -79431,12 +79431,12 @@ var init_closed_symbol_coordinator = __esm({
           previous.admission !== void 0 && previous.proof !== void 0 && previous.copy !== void 0,
           "Coordinator subsequent launch lacks original preceding evidence."
         );
-        const { admission, proof, copy: copy2 } = previous;
+        const { admission, proof, copy: copy3 } = previous;
         const gateway = await this.waitForDisconnectedSession(admission, proof, current10);
         current10();
         this.outside();
         assertCurrentClosedSessionCopyAuthority(proof);
-        slot.launch = await this.relaunch.launch({ journal, phase: `${phase5}-launch`, proof, copy: copy2.copy, checkpoint: copy2.checkpoint });
+        slot.launch = await this.relaunch.launch({ journal, phase: `${phase5}-launch`, proof, copy: copy3.copy, checkpoint: copy3.checkpoint });
         this.lastSuccessfulStage = `${phase5}-launch`;
         current10();
         this.outside();
@@ -79748,18 +79748,18 @@ async function artifactJson(descriptor10) {
   const raw = await readExactUtf8Artifact(descriptor10);
   return JSON.parse(raw.text);
 }
-async function checkpointArtifact(checkpoint, copy2, source5, runtime) {
+async function checkpointArtifact(checkpoint, copy3, source5, runtime) {
   const path6 = text23(checkpoint["checkpoint"]), receiptPath = text23(checkpoint["receiptPath"]);
   const directory4 = join33(controlDataDirectory(), "checkpoints");
   need36(dirname17(path6) === directory4 && dirname17(receiptPath) === directory4 && path6.endsWith(".eprj2") && receiptPath.endsWith(".json") && checkpoint["source"] === source5 && checkpoint["schema"] === "easyeda-pro-control.checkpoint.v2", "Terminal checkpoint paths or source binding differ.");
   selfHash(checkpoint, "receiptSha256");
   same26(checkpoint["quickCheck"], { sourceBefore: "ok", sourceAfter: "ok", checkpoint: "ok" }, "checkpoint quick checks");
   need36(
-    checkpoint["sourceSha256"] === copy2["sha256"] && checkpoint["sourceDumpSha256"] === checkpoint["checkpointDumpSha256"],
+    checkpoint["sourceSha256"] === copy3["sha256"] && checkpoint["sourceDumpSha256"] === checkpoint["checkpointDumpSha256"],
     "Terminal checkpoint source/hash relation differs."
   );
   const expected3 = bag8(checkpoint["checkpointIdentity"]), lineage = bag8(checkpoint["sourceIdentity"]);
-  const sourceIdentity = bag8(copy2["sourceIdentity"]), stat3 = bag8(checkpoint["sourceStatAfter"]);
+  const sourceIdentity = bag8(copy3["sourceIdentity"]), stat3 = bag8(checkpoint["sourceStatAfter"]);
   need36(
     lineage["dev"] === sourceIdentity["device"] && lineage["ino"] === sourceIdentity["inode"] && lineage["birthtimeNs"] === sourceIdentity["birthtimeNs"] && lineage["ctimeNs"] === sourceIdentity["ctimeNs"] && stat3["size"] === sourceIdentity["size"] && stat3["mtimeNs"] === sourceIdentity["mtimeNs"] && stat3["ctimeNs"] === sourceIdentity["ctimeNs"],
     "Terminal checkpoint and raw-copy source lineage differ."
@@ -79917,7 +79917,7 @@ async function replayRecordedLifecycle(input) {
     const copyIntent = phaseData(events, copyIntentIndex);
     const proof = bag8(copyIntent["proof"]);
     const copyResult = phaseData(events, copyResultIndex);
-    const copy2 = bag8(copyResult["copyReceipt"]);
+    const copy3 = bag8(copyResult["copyReceipt"]);
     const checkpoint = bag8(copyIntent["checkpoint"]);
     same26(closeData["capture"], capture3, "close capture");
     same26(closeData["launch"], launch, "close launch");
@@ -79981,10 +79981,10 @@ async function replayRecordedLifecycle(input) {
     same26(copyIntent, { proof, checkpoint, source: journal.plan.projectPath, generation: generation5 }, "copy intent");
     const inventory2 = inventories[ordinal];
     need36(
-      copy2["closureProofSha256"] === proof["proofSha256"] && copy2["source"] === journal.plan.projectPath && copy2["sha256"] === inventory2.checkpointSha256,
+      copy3["closureProofSha256"] === proof["proofSha256"] && copy3["source"] === journal.plan.projectPath && copy3["sha256"] === inventory2.checkpointSha256,
       "Terminal copy/proof relation differs."
     );
-    same26(copyResult, { copyReceipt: copy2, sqlDigests: inventoryDigests(inventory2) }, "copy result");
+    same26(copyResult, { copyReceipt: copy3, sqlDigests: inventoryDigests(inventory2) }, "copy result");
     const windowDescriptor = input.windows[ordinal];
     const windowName = ["baseline", "edit", "verify"][ordinal];
     need36(
@@ -80004,9 +80004,9 @@ async function replayRecordedLifecycle(input) {
     );
     need36(selectClosedSymbolApplicationWindow(windows, generation5.rootPid) === closeIntent["windowHandle"], "Terminal window selection and close binding differ.");
     startup(journal, events, ordinal);
-    await checkpointArtifact(checkpoint, copy2, journal.plan.projectPath, input.runtime);
+    await checkpointArtifact(checkpoint, copy3, journal.plan.projectPath, input.runtime);
     current10();
-    const artifact2 = text23(copy2["artifact"]), bytes2 = copy2["bytes"];
+    const artifact2 = text23(copy3["artifact"]), bytes2 = copy3["bytes"];
     need36(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && bytes2 > 0 && bytes2 <= 268435456 && dirname17(artifact2) === operationPath(journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]+\.eprj2$/u.test(basename16(artifact2)), "Terminal copy artifact is invalid.");
     result.push({
       generation: generation5,
@@ -80016,7 +80016,7 @@ async function replayRecordedLifecycle(input) {
       closeReceipt,
       proof,
       checkpoint,
-      copy: copy2,
+      copy: copy3,
       inventory: inventory2,
       nativeSource: source5,
       terminal: {
@@ -80027,7 +80027,7 @@ async function replayRecordedLifecycle(input) {
         closeReceiptSha256: sha256Json(closeReceipt),
         terminationProofSha256: sha256Json(proof),
         checkpointReceiptSha256: sha256Json(checkpoint),
-        copyReceiptSha256: sha256Json(copy2),
+        copyReceiptSha256: sha256Json(copy3),
         copyArtifact: { path: artifact2, bytes: bytes2, sha256: inventory2.checkpointSha256 },
         sqlDigests: inventoryDigests(inventory2)
       }
@@ -80303,8 +80303,8 @@ async function reconstructRecordedSavedRead(input) {
   );
   const bytes2 = Buffer.from(encoded, "base64");
   need37(bytes2.length === size3 && bytes2.toString("base64") === encoded, "Terminal saved-read base64/byte count differs.");
-  const text37 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
-  const rawSha256 = sha256Text(text37);
+  const text38 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+  const rawSha256 = sha256Text(text38);
   same27(envelope4, {
     profile: "private.closed-symbol-saved-read-raw.v1",
     operationId: journal.operationId,
@@ -80315,7 +80315,7 @@ async function reconstructRecordedSavedRead(input) {
     rawReturnBase64: encoded
   }, "saved-read raw envelope");
   same27(result, { rawArtifact, rawReturnSha256: rawSha256, rawReturnBytes: size3, sourceSha256: source5.sourceSha256 }, "saved-read result descriptor");
-  const observation2 = bag9(extractToolPayload(JSON.parse(text37)));
+  const observation2 = bag9(extractToolPayload(JSON.parse(text38)));
   need37(Reflect.ownKeys(observation2).length === 9 && observation2["profile"] === "private.saved-symbol-content-observation.v1" && observation2["projectUuid"] === source5.projectUuid && observation2["targetUuid"] === source5.targetUuid && observation2["maximumTicket"] === source5.maximumTicket && typeof observation2["workerClient"] === "string" && /^[a-f0-9]{16}$/u.test(observation2["workerClient"]) && typeof observation2["content"] === "string" && Buffer.byteLength(observation2["content"]) <= 65536 && observation2["executionAuthorized"] === false && observation2["producerBindingVerified"] === false && observation2["completionProved"] === false, "Terminal saved-read observation scope differs.");
   const relation = Object.freeze({
     ...verifySavedSymbolContent(input.projection, observation2),
@@ -80712,7 +80712,7 @@ var init_closed_symbol_terminal = __esm({
         await owned2();
         const root = await controlRootCapability(false);
         current10();
-        const { checkpoint, copy: copy2 } = original2.verification.copy;
+        const { checkpoint, copy: copy3 } = original2.verification.copy;
         const verifyCurrentSource = async () => {
           current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
@@ -80722,7 +80722,7 @@ var init_closed_symbol_terminal = __esm({
           });
           current10();
           need38(
-            verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
+            verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy3.source && verified.sourceSha256 === copy3.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
             "Terminal current source/checkpoint differs."
           );
         };
@@ -81177,8 +81177,8 @@ async function row5(tableValue, name6, value2) {
 }
 async function recordedUnlockedBaseline(journal, event3, inventory2) {
   need40(readerCompletion(inventory2).exitCode === 0 && event3.sequence === 10 && event3.step === "baseline-copy" && event3.kind === "result" && isRecord(event3.data));
-  const copy2 = event3.data["copyReceipt"];
-  need40(isRecord(copy2) && copy2["source"] === journal.plan.projectPath && copy2["sha256"] === inventory2.checkpointSha256);
+  const copy3 = event3.data["copyReceipt"];
+  need40(isRecord(copy3) && copy3["source"] === journal.plan.projectPath && copy3["sha256"] === inventory2.checkpointSha256);
   need40(canonicalJson(event3.data["sqlDigests"]) === canonicalJson({ checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 }) && canonicalJson(inventory2.schema) === canonicalJson(nativeProjectSymbolSqlSchema(journal.plan.branchUuid).entries));
   const projects = table6(inventory2, "projects");
   const branches = table6(inventory2, "branches");
@@ -81304,8 +81304,8 @@ async function reconstructRecordedMainReference(input) {
   need41(copyRequest["source"] === journal.plan.projectPath);
   const copyData2 = exact14(copyEvent.data, ["copyReceipt", "sqlDigests"]);
   need41(isRecord(copyData2["copyReceipt"]));
-  const copy2 = copyData2["copyReceipt"];
-  hash27(copy2["receiptSha256"]);
+  const copy3 = copyData2["copyReceipt"];
+  hash27(copy3["receiptSha256"]);
   const baseline2 = await recordedUnlockedBaseline(journal, copyEvent, baselineInventory);
   unchanged5();
   const intentRaw = await readExactUtf8Artifact(intentArtifact);
@@ -81313,7 +81313,7 @@ async function reconstructRecordedMainReference(input) {
   const intent = exact14(JSON.parse(intentRaw.text), ["profile", "request", "resultPath", "commandSha256", "mainSha256", "sourcePins", "runtimePinsSha256", "baselineClock", "helperIdentity", "stdinProfile", "stdinSha256", "windowsSideEffects", "executionAuthorized"]);
   need41(intent["profile"] === "private.main-reference-intent.v3");
   const termination = validateRecordedBaselineTerminationEvidence({ journal, generation: generation5, capture: admitted["capture"], bridgeDispatch: admissionRequest["bridgeDispatch"], terminationClock: intent["baselineClock"], closedProof: copyRequest["proof"], source: nativeSource });
-  need41(copy2["closureProofSha256"] === termination.proof["proofSha256"]);
+  need41(copy3["closureProofSha256"] === termination.proof["proofSha256"]);
   const close = exact14(closeIntent.data, ["intent", "capture", "launch"]);
   same31(close["capture"], admitted["capture"]);
   same31(close["launch"], launchBody);
@@ -81353,7 +81353,7 @@ async function reconstructRecordedMainReference(input) {
     nonce: request13.nonce,
     operationId: journal.operationId,
     closedPlanSha256: journal.closedPlanSha256,
-    baselineCopyReceiptSha256: copy2["receiptSha256"],
+    baselineCopyReceiptSha256: copy3["receiptSha256"],
     baselineLogicalSha256: baselineInventory.logicalSha256,
     baselineClosureClockSha256: sha256Json(intent["baselineClock"]),
     nativePinsSha256: journal.plan.nativePinsSha256,
@@ -81399,7 +81399,7 @@ async function reconstructRecordedMainReference(input) {
     observation: observation2,
     intentArtifact,
     resultArtifact,
-    baselineCopyReceiptSha256: hash27(copy2["receiptSha256"]),
+    baselineCopyReceiptSha256: hash27(copy3["receiptSha256"]),
     baselineLogicalSha256: baselineInventory.logicalSha256,
     operationSha256: sha256Json(journal.plan.operation),
     appClockDirectlyObserved: false,
@@ -81918,7 +81918,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     return value2;
   };
   const artifactHash = (sequence) => hash29(journal.artifacts[sequence - 1]?.sha256);
-  const copy2 = (sequence, inventory2) => {
+  const copy3 = (sequence, inventory2) => {
     const data9 = bag11(event3(sequence).data), receipt2 = bag11(data9["copyReceipt"]);
     same32(data9, { copyReceipt: receipt2, sqlDigests: digests2(inventory2) }, "complete copy-result SQL binding differs");
     need44(
@@ -81929,7 +81929,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     need44(hash29(receiptSha256) === sha256Json(body5), "copy receipt digest differs");
     return Object.freeze({ receiptSha256: hash29(receiptSha256) });
   };
-  const baselineCopy = copy2(10, baselineInventory), editCopy = copy2(26, editInventory), verificationCopy = copy2(42, verificationInventory);
+  const baselineCopy = copy3(10, baselineInventory), editCopy = copy3(26, editInventory), verificationCopy = copy3(42, verificationInventory);
   need44(
     witness.projectUuid === journal.plan.projectUuid && witness.branchUuid === journal.plan.branchUuid && Object.hasOwn(witness, "agedHead") && witness.agedHead !== void 0,
     "aged historical profile requires its exact aged witness"
@@ -82437,7 +82437,7 @@ var init_closed_symbol_aged_terminal = __esm({
         await owned2();
         const root = await controlRootCapability(false);
         current10();
-        const { checkpoint, copy: copy2 } = original2.verification.copy;
+        const { checkpoint, copy: copy3 } = original2.verification.copy;
         const verifyCurrentSource = async () => {
           current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
@@ -82447,7 +82447,7 @@ var init_closed_symbol_aged_terminal = __esm({
           });
           current10();
           need45(
-            verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy2.source && verified.sourceSha256 === copy2.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
+            verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === copy3.source && verified.sourceSha256 === copy3.sha256 && verified.receiptPath === checkpoint.receiptPath && verified.checkpoint === checkpoint.checkpoint && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256,
             "Terminal current source/checkpoint differs."
           );
         };
@@ -88639,7 +88639,7 @@ var init_design_execution = __esm({
         if (descriptor10 === void 0) {
           return void 0;
         }
-        let text37 = "";
+        let text38 = "";
         let offset7 = 0;
         while (offset7 < descriptor10.bytes) {
           let length = Math.min(256 * 1024, descriptor10.bytes - offset7);
@@ -88651,13 +88651,13 @@ var init_design_execution = __esm({
           if (chunk.size !== descriptor10.bytes || chunk.offset !== offset7 || chunk.bytesRead < 1 || Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead) {
             throw new Error("Retained design phase changed or its UTF-8 chunk boundary is unsupported.");
           }
-          text37 += chunk.text;
+          text38 += chunk.text;
           offset7 += chunk.bytesRead;
         }
-        if (sha256Text(text37) !== descriptor10.sha256) {
+        if (sha256Text(text38) !== descriptor10.sha256) {
           throw new Error("Retained design phase hash changed.");
         }
-        const value2 = JSON.parse(text37);
+        const value2 = JSON.parse(text38);
         return value2;
       }
       static async libraryPersistence(journal, input) {
@@ -90715,7 +90715,7 @@ async function readBoundedLibraryRecoveryArtifact(descriptor10, read2, maxBytes)
   if (!Number.isSafeInteger(descriptor10.bytes) || descriptor10.bytes < 1 || descriptor10.bytes > maxBytes) {
     throw new Error("Library recovery artifact exceeds its reviewed bound.");
   }
-  let offset7 = 0, text37 = "";
+  let offset7 = 0, text38 = "";
   while (offset7 < descriptor10.bytes) {
     let length = Math.min(256 * 1024, descriptor10.bytes - offset7), page;
     for (let retry = 0; retry < 4; retry += 1) {
@@ -90732,13 +90732,13 @@ async function readBoundedLibraryRecoveryArtifact(descriptor10, read2, maxBytes)
     if (page === void 0 || page.bytesRead < 1) {
       throw new Error("Library recovery artifact UTF-8 is invalid.");
     }
-    text37 += page.text;
+    text38 += page.text;
     offset7 += page.bytesRead;
   }
-  if (sha256Text(text37) !== descriptor10.sha256) {
+  if (sha256Text(text38) !== descriptor10.sha256) {
     throw new Error("Library recovery artifact hash mismatch.");
   }
-  return JSON.parse(text37);
+  return JSON.parse(text38);
 }
 function uniqueLibraryRecoveryArtifact(artifacts, phase5) {
   const matches = artifacts.filter((entry) => new RegExp(`^[0-9]+-${phase5}\\.json$`, "u").test(basename21(entry.path)));
@@ -94441,6 +94441,9 @@ function validateChain(operation) {
   }
   requireValue14(records2["frames-intent.json"] === void 0 || records2["browser-result.json"] !== void 0, "FRAMES_CHAIN");
   requireValue14(records2["script-intent.json"] === void 0 || records2["frames-result.json"] !== void 0, "SCRIPT_CHAIN");
+  requireValue14(records2["workers-intent.json"] === void 0 || records2["frames-result.json"] !== void 0, "WORKERS_CHAIN");
+  requireValue14(records2["worker-script-intent.json"] === void 0 || records2["workers-result.json"] !== void 0, "WORKER_SCRIPT_CHAIN");
+  requireValue14(records2["worker-state-intent.json"] === void 0 || records2["worker-script-result.json"] !== void 0, "WORKER_STATE_CHAIN");
   requireValue14(binding9 === void 0 || intent !== void 0 && binding9.intentSha256 === sha256Json(intent), "BINDING_CHAIN");
   requireValue14(close === void 0 || binding9 !== void 0 && close.bindingSha256 === sha256Json(binding9), "CLOSE_CHAIN");
   requireValue14(acknowledgment === void 0 || close !== void 0 && acknowledgment.closeIntentSha256 === sha256Json(close), "CLOSE_ACK_CHAIN");
@@ -94608,11 +94611,15 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
     diagnosticLifecycleNoProcessReleaseProofSchema = external_exports.object({
       launchRequestOutcome: external_exports.enum(["not-issued", "native-refused"]),
       creationState: external_exports.enum(["not-entered", "returned-false"]),
+      createProcessError: external_exports.number().int().min(0).max(4294967295).refine((value2) => !Object.is(value2, -0)).optional(),
       processCreated: external_exports.literal(false),
       released: external_exports.literal(true)
     }).strict().refine(
       (value2) => value2.launchRequestOutcome !== "not-issued" || value2.creationState === "not-entered",
       "An unissued native request cannot have entered CreateProcess."
+    ).refine(
+      (value2) => value2.createProcessError === void 0 || value2.creationState === "returned-false",
+      "Only a failed CreateProcess can carry its captured numeric error."
     );
     noProcessIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-no-process-release-intent.v1"),
@@ -94626,7 +94633,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema,
       proof: diagnosticLifecycleNoProcessReleaseProofSchema
     }).strict();
-    diagnosticObservationStageSchema = external_exports.enum(["browser", "frames", "script"]);
+    diagnosticObservationStageSchema = external_exports.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state"]);
     observationIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"),
       ...base3,
@@ -94636,10 +94643,10 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       frameId: external_exports.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
       family: external_exports.enum(["ui", "pcb", "public-api"]).optional()
     }).strict().refine((value2) => {
-      if (value2.stage === "browser") {
+      if (value2.stage === "browser" || value2.stage === "workers" || value2.stage === "worker-state") {
         return value2.targetId === void 0 && value2.frameId === void 0 && value2.family === void 0;
       }
-      if (value2.stage === "frames") {
+      if (value2.stage === "frames" || value2.stage === "worker-script") {
         return value2.targetId !== void 0 && value2.frameId === void 0 && value2.family === void 0;
       }
       return value2.targetId === void 0 && value2.frameId !== void 0 && value2.family !== void 0;
@@ -94669,7 +94676,13 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       "frames-intent.json": observationIntentSchema,
       "frames-result.json": observationResultSchema,
       "script-intent.json": observationIntentSchema,
-      "script-result.json": observationResultSchema
+      "script-result.json": observationResultSchema,
+      "workers-intent.json": observationIntentSchema,
+      "workers-result.json": observationResultSchema,
+      "worker-script-intent.json": observationIntentSchema,
+      "worker-script-result.json": observationResultSchema,
+      "worker-state-intent.json": observationIntentSchema,
+      "worker-state-result.json": observationResultSchema
     };
     launchLease = null;
   }
@@ -96291,6 +96304,9 @@ function queryCurrentPcbDiagnosticValidation(input = {}) {
       "browser-observation",
       "inspect-frames",
       "inspect-script",
+      "inspect-workers",
+      "inspect-worker-script",
+      "observe-worker-state",
       "observe-window",
       "normal-close",
       "observe-termination",
@@ -96304,6 +96320,8 @@ function queryCurrentPcbDiagnosticValidation(input = {}) {
       "One original helper owns a contained application and pipe. No TCP debugger listener is intentionally requested; socket absence is not verified. Ordinary and replacement launches are excluded until original termination, helper closure and durable settlement.",
       "One browser observation, one attachment to a target from its retained inventory, and one pinned UI/PCB/public-API script observation are available. Target and frame IDs are selectors within original retained observations, never owner-recreation tokens. No caller URL, executable, source hash, CDP method, expression or command is accepted.",
       "Only bounded identity summaries and event counts are returned. Source identity does not prove the project worker, compiler owner, complete drawing state, authenticated bridge, startup safety, writer authority or saved verification. This tool never navigates a project or dispatches CAD edits or Save.",
+      "After frame inspection, one fixed parent-scoped worker-only autoattachment may observe at most sixteen direct children without pausing them. A single retained worker can be selected for exact context and project-worker source admission, followed by one compiled descriptor-only state read with side-effect checking. No caller expression, script hash, context ID or arbitrary worker attachment is accepted.",
+      "Worker state exposes bounded opaque identities, booleans, collection cardinalities and timer-presence markers, not queue values or design content. It does not establish renderer/compiler association, complete membership, latent callbacks, queue completion or writer eligibility. Start Page normally has no project worker; connected qualification still needs a separately reviewed disposable opening path. This route does not supply one.",
       "Every effectful stage is consumed once, including uncertain replies. Inspect retained outcomes instead of replaying. Settle-records publishes only absent exact original in-memory records; corrupt records are never replaced and JSON cannot recreate ownership after restart.",
       "Normal close requires the original observed window. No Save/Discard choice, force termination or process discovery is offered. Cleanup remains local to the original owner and does not require bridge authentication or full startup re-admission. Unlaunched cleanup requires original never-dispatched state and native empty-Job proof; a factory failure without a returned owner remains unresolved.",
       "cleanup-no-process requires the original launch intent and healthy retained helper after a settled rootless refusal. Native proof must show either no native launch request issued or an exact refused request with CreateProcess not entered or returning false with no process created. Helper closure and terminal publication must complete; missing replies, timeouts, lost owners, post-create states and corrupt journals cannot use this route. It is distinct from never calling the launch method and never authorizes replay."
@@ -96336,13 +96354,16 @@ var init_current_pcb_diagnostic_validation = __esm({
         confirmDiagnosticLaunch: external_exports.literal(true),
         acceptExistingProfileEffects: external_exports.literal(true)
       }).strict(),
-      external_exports.object({ action: external_exports.literal("inspect"), operationId, observation: external_exports.enum(["browser", "frames", "script"]).optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect"), operationId, observation: external_exports.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state"]).optional() }).strict(),
       external_exports.object({ action: external_exports.literal("settle-records"), operationId, expectedIntentSha256: digest5 }).strict(),
       external_exports.object({ action: external_exports.literal("cleanup-unlaunched"), operationId, expectedIntentSha256: digest5 }).strict(),
       external_exports.object({ action: external_exports.literal("cleanup-no-process"), operationId, expectedIntentSha256: digest5 }).strict(),
       external_exports.object({ action: external_exports.literal("browser-observation"), ...bound }).strict(),
       external_exports.object({ action: external_exports.literal("inspect-frames"), ...bound, targetId: token2 }).strict(),
       external_exports.object({ action: external_exports.literal("inspect-script"), ...bound, frameId: token2, family: external_exports.enum(["ui", "pcb", "public-api"]) }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect-workers"), ...bound }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect-worker-script"), ...bound, targetId: token2 }).strict(),
+      external_exports.object({ action: external_exports.literal("observe-worker-state"), ...bound }).strict(),
       external_exports.object({ action: external_exports.literal("observe-window"), ...bound }).strict(),
       external_exports.object({ action: external_exports.literal("normal-close"), ...bound, hwnd: external_exports.string().regex(/^[1-9]\d{0,18}$/u), confirmNormalClose: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("observe-termination"), ...bound }).strict(),
@@ -100109,20 +100130,20 @@ async function checkpointReceipt(path6, expected3) {
   return descriptor10;
 }
 async function snapshot7(operationId11, result, source5) {
-  const checkpoint = checkpointSchema6.parse(sealed2(result["checkpoint"], "receiptSha256")), copy2 = copySchema.parse(sealed2(result["copy"], "receiptSha256")), sql3 = bag13(result["sql"]);
+  const checkpoint = checkpointSchema6.parse(sealed2(result["checkpoint"], "receiptSha256")), copy3 = copySchema.parse(sealed2(result["copy"], "receiptSha256")), sql3 = bag13(result["sql"]);
   need46(
-    checkpoint.source === source5 && copy2.source === source5 && checkpoint.sourceSha256 === copy2.sha256 && sql3["checkpointSha256"] === copy2.sha256 && checkpoint.sourceDumpSha256 === checkpoint.checkpointDumpSha256 && checkpoint.sourceStatAfter.size === String(copy2.bytes) && copy2.sourceIdentity.size === String(copy2.bytes) && checkpoint.sourceStatAfter.mtimeNs === copy2.sourceIdentity.mtimeNs && checkpoint.sourceStatAfter.ctimeNs === copy2.sourceIdentity.ctimeNs,
+    checkpoint.source === source5 && copy3.source === source5 && checkpoint.sourceSha256 === copy3.sha256 && sql3["checkpointSha256"] === copy3.sha256 && checkpoint.sourceDumpSha256 === checkpoint.checkpointDumpSha256 && checkpoint.sourceStatAfter.size === String(copy3.bytes) && copy3.sourceIdentity.size === String(copy3.bytes) && checkpoint.sourceStatAfter.mtimeNs === copy3.sourceIdentity.mtimeNs && checkpoint.sourceStatAfter.ctimeNs === copy3.sourceIdentity.ctimeNs,
     "snapshot source or raw-copy binding differs"
   );
   hash32.parse(sql3["schemaSha256"]);
   hash32.parse(sql3["logicalSha256"]);
-  const raw = descriptorSchema.parse({ path: copy2.artifact, bytes: copy2.bytes, sha256: copy2.sha256 });
+  const raw = descriptorSchema.parse({ path: copy3.artifact, bytes: copy3.bytes, sha256: copy3.sha256 });
   need46(
     /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename24(raw.path)) && raw.path === join53(operationPath(operationId11).slice(0, -5), basename24(raw.path)),
     "raw copy escaped its operation"
   );
   const rawStat = await lstat33(raw.path, { bigint: true });
-  const rawIdentity = bag13(copy2.artifactIdentity);
+  const rawIdentity = bag13(copy3.artifactIdentity);
   for (const [key, value2] of Object.entries({
     device: rawStat.dev,
     inode: rawStat.ino,
@@ -100151,12 +100172,12 @@ async function snapshot7(operationId11, result, source5) {
   await verifyExactManagedArtifact(raw);
   await verifyExactManagedArtifact(checkpointArtifact2);
   const sourceIdentity = bag13(checkpoint.sourceIdentity);
-  const copySourceIdentity = bag13(copy2.sourceIdentity);
+  const copySourceIdentity = bag13(copy3.sourceIdentity);
   need46(
     sourceIdentity["dev"] === copySourceIdentity["device"] && sourceIdentity["ino"] === copySourceIdentity["inode"] && sourceIdentity["birthtimeNs"] === copySourceIdentity["birthtimeNs"] && sourceIdentity["ctimeNs"] === copySourceIdentity["ctimeNs"],
     "snapshot source identity projections differ"
   );
-  return { raw, checkpoint: checkpointArtifact2, receipt: receipt2, copy: copy2, checkpointReceipt: checkpoint, result };
+  return { raw, checkpoint: checkpointArtifact2, receipt: receipt2, copy: copy3, checkpointReceipt: checkpoint, result };
 }
 async function exactDirectory(operationId11, names2) {
   const root = await controlRootCapability(false);
@@ -100332,10 +100353,10 @@ async function sqlComparison(before, after) {
   }
   const schemaEqual = canonicalJson(before.schema) === canonicalJson(after.schema);
   const propertiesEqual = canonicalJson(before.properties) === canonicalJson(after.properties);
-  const equal7 = before.profile === after.profile && schemaEqual && propertiesEqual && tables.every((table14) => table14.equal);
-  need46(equal7 === (before.logicalSha256 === after.logicalSha256), "SQL equality and commitments disagree");
+  const equal8 = before.profile === after.profile && schemaEqual && propertiesEqual && tables.every((table14) => table14.equal);
+  need46(equal8 === (before.logicalSha256 === after.logicalSha256), "SQL equality and commitments disagree");
   return {
-    exactLogicalSqlUnchanged: equal7,
+    exactLogicalSqlUnchanged: equal8,
     schemaEqual,
     propertiesEqual,
     beforeLogicalSha256: before.logicalSha256,
@@ -100987,7 +101008,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-board/project-board-validate for raw board UUID/title/order/ticket metadata without editor tabs; no child membership or public item parity. Query project-pcb/project-pcb-validate for one loaded project's PCB metadata without editor tabs; no canvas or saved-state/rename authority. Query project-schematic/project-schematic-validate for one or all loaded schematic containers or sheets with complete observed parent membership and no editor tabs; no canvas, saved-source membership or writer authority. Query project-pcb-preflight/project-pcb-preflight-validate for complete native PCB peer/title availability and client/clock observations, without rename authority. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Query disposable-pcb-rename/disposable-pcb-rename-validate for the separate original-owner disposable PCB title-only lifecycle, with whole-SQL effect and reopened metadata verification; installed195000 passed one complete disposable title-only lifecycle. No complete canvas read, ordinary-project support or current-invocation admission follows from that historical result. Query disposable-schematic-rename/disposable-schematic-rename-validate for the separate original-owner disposable SCH container title-only lifecycle, requiring an original aged unlocked-head clock reference, whole-SQL effect and reopened metadata plus complete child-roster verification. Installed143713 passed the disposable title-only lifecycle; this does not validate later generations or the new ordinary-purpose composition. Query project-schematic-operation/project-schematic-operation-validate for the separate ordinary-project title-only lifecycle with sealed pre-navigation startup and original ownership. Legacy confirmDisposableProject:true is optional at open for old journals; omission stays omitted and false refuses. Installed203733 passed this ordinary-purpose lifecycle on a disposable fixture with batching, complete closed SQL, fresh metadata/peer/child-roster and both AST readback, final normal closure and unchanged full SQL. This historical result grants no current-invocation authority or other-history qualification. The disposable route remains disposable-only. No complete canvas/connectivity read or generic schematic writer is enabled. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Query pcb-diagnostic-validation/pcb-diagnostic-validation-validate for a separate original-owner native diagnostic launcher and bounded browser/frame/pinned-script observations. It is validation-only, not project-free or isolated, and grants no worker/compiler, startup, design execution or saved-state authority. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, historical-abandonment, disposable-project-open or ordinary-launch schemas; validate refinements. Query project-board/project-board-validate for raw board UUID/title/order/ticket metadata without editor tabs; no child membership or public item parity. Query project-pcb/project-pcb-validate for one loaded project's PCB metadata without editor tabs; no canvas or saved-state/rename authority. Query project-schematic/project-schematic-validate for one or all loaded schematic containers or sheets with complete observed parent membership and no editor tabs; no canvas, saved-source membership or writer authority. Query project-pcb-preflight/project-pcb-preflight-validate for complete native PCB peer/title availability and client/clock observations, without rename authority. Query project-symbol-preflight for no-editor symbol comparison; supplied expectations are not provenance. Prepare name/description from a hash-bound managed checkpoint with project-symbol-prepare. Query project-symbol-operation/project-symbol-operation-validate for the separate unused project-local symbol forward-only lifecycle and its exact acknowledgements. Complete history must be META-only or satisfy the bounded canvas-segments profile; ordinary purpose reserves exactly one write with no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Query disposable-symbol-copy/disposable-symbol-copy-validate for the separate original-owner disposable-only symbol copy lifecycle; no ordinary-project or generic lib_Symbol.copy support. Query disposable-pcb-rename/disposable-pcb-rename-validate for the separate original-owner disposable PCB title-only lifecycle, with whole-SQL effect and reopened metadata verification; installed195000 passed one complete disposable title-only lifecycle. No complete canvas read, ordinary-project support or current-invocation admission follows from that historical result. Query disposable-schematic-rename/disposable-schematic-rename-validate for the separate original-owner disposable SCH container title-only lifecycle, requiring an original aged unlocked-head clock reference, whole-SQL effect and reopened metadata plus complete child-roster verification. Installed143713 passed the disposable title-only lifecycle; this does not validate later generations or the new ordinary-purpose composition. Query project-schematic-operation/project-schematic-operation-validate for the separate ordinary-project title-only lifecycle with sealed pre-navigation startup and original ownership. Legacy confirmDisposableProject:true is optional at open for old journals; omission stays omitted and false refuses. Installed203733 passed this ordinary-purpose lifecycle on a disposable fixture with batching, complete closed SQL, fresh metadata/peer/child-roster and both AST readback, final normal closure and unchanged full SQL. This historical result grants no current-invocation authority or other-history qualification. The disposable route remains disposable-only. No complete canvas/connectivity read or generic schematic writer is enabled. Compare completed disposable baseline/final snapshots with baseline-analyze; query baseline-analysis first. Query pcb-diagnostic-validation/pcb-diagnostic-validation-validate for a separate original-owner native diagnostic launcher and bounded browser/frame/pinned-script observations plus parent-scoped direct-worker discovery, exact worker-source admission and one fixed side-effect-checked state sample. It is validation-only, not project-free or isolated, and grants no compiler, queue-completion, startup, design execution or saved-state authority. Entirely offline: no bridge calls, app launch, design changes, journal writes or execution authority. Preparation and historical equality do not prove current state or qualify startup effects. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -107041,11 +107062,11 @@ function auditPcbRoutes(source5, inventory2, input) {
   };
   const differentialPairs = selectedPairs.map((selected3) => {
     const members = netObjects.filter((entry) => entry.body["differentialName"] === selected3);
-    const positive2 = members.filter((entry) => entry.body["isPositiveNet"] === true);
+    const positive3 = members.filter((entry) => entry.body["isPositiveNet"] === true);
     const negative = members.filter((entry) => entry.body["isPositiveNet"] === false);
     const selectedRule = rule(source5, "DIFFER_ENTAIL", selector3(source5, "DIFF_PAIR", selected3)["DIFFER_ENTAIL"]);
     const result = compare(selected3, members.map((entry) => netName(entry)), selectedRule, selectedRule?.context["differPairLenTolerMax"], true);
-    if (positive2.length !== 1 || negative.length !== 1 || members.length !== 2) {
+    if (positive3.length !== 1 || negative.length !== 1 || members.length !== 2) {
       result.status = "indeterminate";
       result.findings.push(note("pair-membership-invalid", members.map((entry) => entry.id), "A differential pair requires exactly one positive and one negative net."));
     }
@@ -107211,8 +107232,8 @@ var init_route_audit_execution = __esm({
 });
 
 // server/src/transaction-error-output.ts
-function printableInstruction(text37) {
-  for (const character of text37) {
+function printableInstruction(text38) {
+  for (const character of text38) {
     const code = character.codePointAt(0) ?? 0;
     if (code === 127 || code < 32 && ![9, 10, 13].includes(code)) {
       return false;
@@ -107521,8 +107542,8 @@ function closedSymbolFailureDiagnosticText(value2) {
     }
     mismatchPaths.push(path6);
   }
-  const text37 = JSON.stringify({ profile: PROFILE17, stage, lastSuccessfulStage, errorCode: errorCode6, messageSha256, mismatchPaths });
-  return Buffer.byteLength(text37) <= 2048 ? [{ type: "text", text: text37 }] : [];
+  const text38 = JSON.stringify({ profile: PROFILE17, stage, lastSuccessfulStage, errorCode: errorCode6, messageSha256, mismatchPaths });
+  return Buffer.byteLength(text38) <= 2048 ? [{ type: "text", text: text38 }] : [];
 }
 var PROFILE17, STAGES2, SUCCESSFUL, CODES2, SAFE_CODES, PATHS;
 var init_closed_symbol_failure_diagnostic = __esm({
@@ -107634,7 +107655,7 @@ function parseClosedSymbolDisposableInput(input) {
 function boundedOwnData(input) {
   let nodes = 0, textBytes = 0;
   const visited = /* @__PURE__ */ new Set();
-  function text37(value2) {
+  function text38(value2) {
     if (value2.length > MAX_RESPONSE_BYTES2 || !value2.isWellFormed()) {
       throw new Error("Disposable response string refused.");
     }
@@ -107649,7 +107670,7 @@ function boundedOwnData(input) {
       throw new Error("Disposable response structure refused.");
     }
     if (typeof value2 === "string") {
-      text37(value2);
+      text38(value2);
       return;
     }
     if (value2 === null || typeof value2 === "boolean") {
@@ -107671,7 +107692,7 @@ function boundedOwnData(input) {
       if (typeof key !== "string" || descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
         throw new Error("Disposable response accessors or hidden fields refused.");
       }
-      text37(key);
+      text38(key);
       visit(descriptor10.value, depth + 1);
     }
   }
@@ -111412,7 +111433,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes19, createHash: createHash57 } = __require("crypto");
+    var { randomBytes: randomBytes19, createHash: createHash59 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -112080,7 +112101,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest11 = createHash57("sha1").update(key + GUID).digest("base64");
+        const digest11 = createHash59("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest11) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -112449,7 +112470,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash57 } = __require("crypto");
+    var { createHash: createHash59 } = __require("crypto");
     var extension3 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -112756,7 +112777,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest11 = createHash57("sha1").update(key + GUID).digest("base64");
+        const digest11 = createHash59("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -113087,8 +113108,8 @@ async function establishedServerSocketInode(socket) {
   const tables = ["/proc/net/tcp", "/proc/net/tcp6"];
   const matches = [];
   for (const table14 of tables) {
-    const text37 = await readFile6(table14, "utf8");
-    for (const line6 of text37.split(/\r?\n/u).slice(1)) {
+    const text38 = await readFile6(table14, "utf8");
+    for (const line6 of text38.split(/\r?\n/u).slice(1)) {
       const fields26 = line6.trim().split(/\s+/u);
       if (fields26.length >= 10 && fields26[1] === expectedLocal && fields26[2] === expectedRemote && fields26[3] === "01" && fields26[9] !== void 0) {
         matches.push(fields26[9]);
@@ -113216,8 +113237,8 @@ function dispatchLeaseTranscript(gatewayInstanceId, leaseId, sessionId, sessionS
     begunAtEpochMs
   ]);
 }
-function parseClientHello(text37) {
-  const value2 = JSON.parse(text37);
+function parseClientHello(text38) {
+  const value2 = JSON.parse(text38);
   if (!isRecord4(value2) || !exactKeys2(value2, ["clientNonce", "protocol", "type"]) || value2["type"] !== "auth.client_hello" || value2["protocol"] !== BRIDGE_AUTHENTICATION_PROTOCOL || !validNonce(value2["clientNonce"])) {
     throw new Error("The first frame is not a strict bridge client hello.");
   }
@@ -113227,8 +113248,8 @@ function parseClientHello(text37) {
     type: "auth.client_hello"
   };
 }
-function parseClientProof(text37) {
-  const value2 = JSON.parse(text37);
+function parseClientProof(text38) {
+  const value2 = JSON.parse(text38);
   if (!isRecord4(value2) || !exactKeys2(value2, [
     "clientNonce",
     "clientProof",
@@ -113803,17 +113824,17 @@ var init_authenticated_bridge_gateway = __esm({
         if (bytes2.byteLength === 0 || bytes2.byteLength > maximumBytes2) {
           throw new Error("Bridge frame exceeds its phase-specific size limit.");
         }
-        const text37 = strictUtf8(bytes2);
+        const text38 = strictUtf8(bytes2);
         if (context3.phase === "awaiting-client-hello") {
-          this.#handleClientHello(context3, text37);
+          this.#handleClientHello(context3, text38);
           return;
         }
         if (context3.phase === "awaiting-client-proof") {
-          this.#handleClientProof(context3, text37);
+          this.#handleClientProof(context3, text38);
           return;
         }
         if (context3.phase === "awaiting-upstream-handshake") {
-          this.#forwardUpstreamHandshake(context3, text37);
+          this.#forwardUpstreamHandshake(context3, text38);
           return;
         }
         if (context3.phase === "connecting-backend" || context3.phase === "awaiting-upstream-hello") {
@@ -113826,8 +113847,8 @@ var init_authenticated_bridge_gateway = __esm({
           context3.backend.send(bytes2, { binary: false });
         }
       }
-      #handleClientHello(context3, text37) {
-        const message = parseClientHello(text37);
+      #handleClientHello(context3, text38) {
+        const message = parseClientHello(text38);
         this.#pruneReplayCache();
         if (this.#replayCache.has(message.clientNonce)) {
           throw new Error("Bridge client nonce replay rejected.");
@@ -113862,8 +113883,8 @@ var init_authenticated_bridge_gateway = __esm({
           })
         );
       }
-      #handleClientProof(context3, text37) {
-        const message = parseClientProof(text37);
+      #handleClientProof(context3, text38) {
+        const message = parseClientProof(text38);
         if (context3.clientNonce === null || context3.serverNonce === null || message.clientNonce !== context3.clientNonce || message.serverNonce !== context3.serverNonce) {
           throw new Error("Bridge proof does not match the live challenge.");
         }
@@ -113989,8 +114010,8 @@ var init_authenticated_bridge_gateway = __esm({
           })
         );
       }
-      #forwardUpstreamHandshake(context3, text37) {
-        const value2 = JSON.parse(text37);
+      #forwardUpstreamHandshake(context3, text38) {
+        const value2 = JSON.parse(text38);
         if (!isRecord4(value2) || value2["type"] !== "handshake" || Object.hasOwn(value2, "sessionToken") || context3.backend?.readyState !== wrapper_default.OPEN) {
           throw new Error("The first authenticated application frame is not a handshake.");
         }
@@ -114745,10 +114766,10 @@ function getOptions(opts) {
   return options;
 }
 function pushComment(options, array4) {
-  return function(block, text37, start, end, startLoc, endLoc) {
+  return function(block, text38, start, end, startLoc, endLoc) {
     var comment = {
       type: block ? "Block" : "Line",
-      value: text37,
+      value: text38,
       start,
       end
     };
@@ -120547,20 +120568,20 @@ function executionSourceFor(cwd, path6, source5) {
   let bytes2 = source5;
   let transform2 = "none";
   if (relativePath === "dist/utils/logger.js") {
-    const text37 = source5.toString("utf8");
-    const first = text37.indexOf(PINO_WORKER_OPTION);
-    if (first === -1 || first !== text37.lastIndexOf(PINO_WORKER_OPTION)) {
+    const text38 = source5.toString("utf8");
+    const first = text38.indexOf(PINO_WORKER_OPTION);
+    if (first === -1 || first !== text38.lastIndexOf(PINO_WORKER_OPTION)) {
       throw new Error(
         "The reviewed upstream logger no longer has its exact worker-transport option; refusing an unreviewed execution transform."
       );
     }
-    const construction = text37.indexOf(PINO_LOGGER_CONSTRUCTION);
-    if (construction === -1 || construction !== text37.lastIndexOf(PINO_LOGGER_CONSTRUCTION)) {
+    const construction = text38.indexOf(PINO_LOGGER_CONSTRUCTION);
+    if (construction === -1 || construction !== text38.lastIndexOf(PINO_LOGGER_CONSTRUCTION)) {
       throw new Error(
         "The reviewed upstream logger no longer has its exact logger construction; refusing an unreviewed execution transform."
       );
     }
-    bytes2 = Buffer.from(text37.replace(PINO_WORKER_OPTION, "").replace(
+    bytes2 = Buffer.from(text38.replace(PINO_WORKER_OPTION, "").replace(
       PINO_LOGGER_CONSTRUCTION,
       "pino(pinoOpts, pino.destination({ dest: 2, sync: true }))"
     ), "utf8");
@@ -124880,7 +124901,212 @@ var init_editor_shell_runtime = __esm({
   }
 });
 
+// server/src/current-pcb-diagnostic-json.ts
+function framingError() {
+  return new Error("PCB_DIAGNOSTIC_PIPE_FRAMING");
+}
+function decodeCurrentPcbDiagnosticJson(bytes2) {
+  const text38 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
+  const nesting = [];
+  for (let offset7 = 0; offset7 < text38.length; offset7 += 1) {
+    const character = text38[offset7];
+    if (character === "{" || character === "[") {
+      if (nesting.length >= 64) {
+        throw framingError();
+      }
+      nesting.push(character === "{" ? /* @__PURE__ */ new Set() : null);
+    } else if (character === "}" || character === "]") {
+      nesting.pop();
+    } else if (character === '"') {
+      const start = offset7;
+      offset7 += 1;
+      while (offset7 < text38.length && text38[offset7] !== '"') {
+        if (text38[offset7] === "\\") {
+          offset7 += 1;
+        }
+        offset7 += 1;
+      }
+      let following = offset7 + 1;
+      while (following < text38.length && [" ", "	", "\n", "\r"].includes(text38[following] ?? "")) {
+        following += 1;
+      }
+      if (text38[following] === ":") {
+        const keys2 = nesting.at(-1);
+        const key = JSON.parse(text38.slice(start, offset7 + 1));
+        if (keys2 === null || keys2 === void 0 || typeof key !== "string" || keys2.has(key)) {
+          throw framingError();
+        }
+        keys2.add(key);
+      }
+    }
+  }
+  const parsed2 = JSON.parse(text38, (_key, value2) => {
+    if (typeof value2 === "number" && !Number.isFinite(value2)) {
+      throw framingError();
+    }
+    return value2;
+  });
+  return parsed2;
+}
+var init_current_pcb_diagnostic_json = __esm({
+  "server/src/current-pcb-diagnostic-json.ts"() {
+  }
+});
+
+// server/src/current-pcb-diagnostic-worker-program.ts
+import { createHash as createHash45 } from "node:crypto";
+import { types as types6 } from "node:util";
+function refuse2() {
+  throw new Error("PCB_DIAGNOSTIC_WORKER_REPLY");
+}
+function ownRecord(value2, expected3) {
+  if (value2 === null || typeof value2 !== "object" || types6.isProxy(value2) || Array.isArray(value2)) {
+    return refuse2();
+  }
+  const prototype = Object.getPrototypeOf(value2);
+  if (prototype !== Object.prototype && prototype !== null) {
+    return refuse2();
+  }
+  const keys2 = Reflect.ownKeys(value2);
+  if (keys2.length !== expected3.length || keys2.some((key) => typeof key !== "string" || !expected3.includes(key))) {
+    return refuse2();
+  }
+  const copy3 = {};
+  for (const key of expected3) {
+    const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
+    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
+      return refuse2();
+    }
+    copy3[key] = descriptor10.value;
+  }
+  return copy3;
+}
+function decodeCurrentPcbDiagnosticWorkerReply(input) {
+  const reply = ownRecord(input, ["result"]), result = ownRecord(reply["result"], ["type", "value"]);
+  const raw = result["value"];
+  if (result["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_WORKER_RESULT_BYTES) {
+    return refuse2();
+  }
+  try {
+    const state2 = stateSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
+    return freezeDeep({ ...state2, ...LIMITS });
+  } catch {
+    return refuse2();
+  }
+}
+var SET_FIELDS, MAP_FIELDS, WATCH_GROUPS, WATCH_KINDS, FLAG_FIELDS, TIMER_FIELDS, OPTIONAL_FLAGS, MAX_COUNT, CURRENT_PCB_DIAGNOSTIC_WORKER_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256, countSchema, watcherKindsSchema, stateSchema, LIMITS;
+var init_current_pcb_diagnostic_worker_program = __esm({
+  "server/src/current-pcb-diagnostic-worker-program.ts"() {
+    init_zod();
+    init_current_pcb_diagnostic_json();
+    init_sqlite_inventory_core();
+    SET_FIELDS = [
+      "task1",
+      "task2",
+      "task3",
+      "cachePromise",
+      "publishTask",
+      "rollbackPromise",
+      "syncPendingNodeUuids",
+      "confirmedEmptyNodeUuids",
+      "warnedEmptyNodeUuids"
+    ];
+    MAP_FIELDS = ["bufferUploadData", "bufferUploadCache", "selectWatch", "historyErrorNodes"];
+    WATCH_GROUPS = ["watcherAddSet", "watcherDeleteSet", "watcherUpdateSet"];
+    WATCH_KINDS = ["footprint", "symbol", "device", "board", "sch", "sheet", "pcb", "panel", "simulation"];
+    FLAG_FIELDS = [
+      "isReady",
+      "isTemporary",
+      "isHistoryBack",
+      "_isV2Format",
+      "isOpening",
+      "isEstablished",
+      "isApplyShot",
+      "isUploadingCloud",
+      "pendingSyncCloud",
+      "isBatchUpload",
+      "debugOpen"
+    ];
+    TIMER_FIELDS = ["projectTimer", "publishTimer", "orderTimer"];
+    OPTIONAL_FLAGS = ["isSyncing", "notSyncCloud"];
+    MAX_COUNT = 65536;
+    CURRENT_PCB_DIAGNOSTIC_WORKER_RESULT_BYTES = 16384;
+    CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION = `(()=>{
+"use strict";
+const bad=()=>{throw new Error("PCB_DIAGNOSTIC_WORKER_STATE");};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const count=n=>{if(!Number.isSafeInteger(n)||n<0||n>${MAX_COUNT})bad();return n;};
+const id=(v,re)=>{if(typeof v!=="string"||v.length>128||!re.test(v))bad();return v;};
+const prototype=(o,name)=>{const p=Object.getPrototypeOf(object(o));if(p===null)bad();const c=own(p,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"prototype")!==p)bad();return p;};
+const project=object(own(globalThis,"PROJECT")),lp=prototype(project,"Lg"),gp=prototype(lp,"Gd");
+if(Object.getPrototypeOf(gp)!==Object.prototype)bad();
+const consistency=object(own(project,"consistencyManager"));prototype(consistency,"ja");
+const size=(value,kind)=>{object(value);const p=kind==="set"?Set.prototype:Map.prototype;if(Object.getPrototypeOf(value)!==p||Reflect.ownKeys(value).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();return count(Reflect.apply(d.get,value,[]));};
+const keys=value=>{plain(value);const names=Reflect.ownKeys(value);if(names.some(k=>typeof k!=="string"))bad();return count(names.length);};
+const identity={projectUuid:id(own(project,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(project,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
+const flags={},optionalFlags={},setSizes={},mapSizes={},watcherMapSizes={},timers={};
+for(const key of ${JSON.stringify(FLAG_FIELDS)}){const value=own(project,key);if(typeof value!=="boolean")bad();flags[key]=value;}
+for(const key of ${JSON.stringify(OPTIONAL_FLAGS)}){const d=Object.getOwnPropertyDescriptor(project,key);if(!d){optionalFlags[key]="absent";continue;}const value=own(project,key);if(value!==undefined&&typeof value!=="boolean")bad();optionalFlags[key]=value===undefined?"undefined":value?"true":"false";}
+for(const key of ${JSON.stringify(SET_FIELDS)})setSizes[key]=size(own(project,key),"set");
+for(const key of ${JSON.stringify(MAP_FIELDS)})mapSizes[key]=size(own(project,key),"map");
+for(const group of ${JSON.stringify(WATCH_GROUPS)}){const holder=plain(own(project,group)),names=Reflect.ownKeys(holder),expected=${JSON.stringify(WATCH_KINDS)};if(names.length!==expected.length||names.some(k=>!expected.includes(k)))bad();const result={};for(const key of expected)result[key]=size(own(holder,key),"map");watcherMapSizes[group]=result;}
+for(const key of ${JSON.stringify(TIMER_FIELDS)}){const value=own(project,key);if(value!==null&&value!==undefined&&(typeof value!=="number"||!Number.isSafeInteger(value)||value<0))bad();timers[key]=value===null?"null":value===undefined?"undefined":"present";}
+const dictionaryOwnKeyCounts={uniqueIds:keys(own(consistency,"uniqueIds")),orderCache:keys(own(project,"orderCache"))};
+if(own(globalThis,"PROJECT")!==project||own(project,"consistencyManager")!==consistency)bad();
+return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-worker-state.v1",identity,flags,optionalFlags,setSizes,mapSizes,watcherMapSizes,timers,dictionaryOwnKeyCounts});
+})()`;
+    CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256 = createHash45("sha256").update(CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION, "utf8").digest("hex");
+    countSchema = external_exports.number().int().min(0).max(MAX_COUNT).refine((value2) => !Object.is(value2, -0));
+    watcherKindsSchema = external_exports.record(external_exports.enum(WATCH_KINDS), countSchema);
+    stateSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-worker-state.v1"),
+      identity: external_exports.object({
+        projectUuid: external_exports.string().regex(/^(?:[a-f\d]{32}|[a-f\d]{64})$/u),
+        branchUuid: external_exports.string().regex(/^[a-f\d]{32}$/u),
+        windowTabId: external_exports.string().regex(/^[A-Za-z\d_-]{1,128}$/u)
+      }).strict(),
+      flags: external_exports.record(external_exports.enum(FLAG_FIELDS), external_exports.boolean()),
+      optionalFlags: external_exports.record(external_exports.enum(OPTIONAL_FLAGS), external_exports.enum(["absent", "undefined", "true", "false"])),
+      setSizes: external_exports.record(external_exports.enum(SET_FIELDS), countSchema),
+      mapSizes: external_exports.record(external_exports.enum(MAP_FIELDS), countSchema),
+      watcherMapSizes: external_exports.record(external_exports.enum(WATCH_GROUPS), watcherKindsSchema),
+      timers: external_exports.record(external_exports.enum(TIMER_FIELDS), external_exports.enum(["null", "undefined", "present"])),
+      dictionaryOwnKeyCounts: external_exports.object({ uniqueIds: countSchema, orderCache: countSchema }).strict()
+    }).strict();
+    LIMITS = Object.freeze({
+      completeQueueMembershipVerified: false,
+      latentCallbacksObserved: false,
+      projectWorkerAssociationVerified: false,
+      compilerOwnerVerified: false,
+      queueCompletionVerified: false,
+      executionAuthorized: false,
+      continuousObservation: false,
+      nativeIntrinsicsVerified: false
+    });
+  }
+});
+
 // server/src/current-pcb-diagnostic-protocol.ts
+function diagnosticWorkerEvaluationParams(uniqueContextId) {
+  if (!diagnosticToken(uniqueContextId)) {
+    return fail11();
+  }
+  return Object.freeze({
+    expression: CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION,
+    uniqueContextId,
+    returnByValue: true,
+    throwOnSideEffect: true,
+    silent: true,
+    awaitPromise: false,
+    includeCommandLineAPI: false,
+    allowUnsafeEvalBlockedByCSP: false,
+    timeout: 1e3,
+    userGesture: false,
+    generatePreview: false
+  });
+}
 function diagnosticToken(value2) {
   return typeof value2 === "string" && /^[A-Za-z\d_.:-]{1,128}$/u.test(value2);
 }
@@ -124891,7 +125117,7 @@ function diagnosticExact(value2, keys2) {
   return Object.keys(value2).toSorted().join(",") === keys2.toSorted().join(",");
 }
 function diagnosticNativeRequest(chunk) {
-  if (chunk.length > 1024 || chunk.at(-1) !== 0) {
+  if (chunk.length > 8192 || chunk.at(-1) !== 0) {
     return fail11();
   }
   const raw = JSON.parse(chunk.subarray(0, -1).toString("utf8"));
@@ -124899,6 +125125,9 @@ function diagnosticNativeRequest(chunk) {
     return fail11();
   }
   const id13 = raw["id"], method6 = raw["method"], params = raw["params"], sessionId = raw["sessionId"];
+  if (method6 !== "Runtime.evaluate" && chunk.length > 1024) {
+    return fail11();
+  }
   let command;
   let request13;
   if (method6 === "Browser.getVersion" || method6 === "Target.getTargets") {
@@ -124935,6 +125164,22 @@ function diagnosticNativeRequest(chunk) {
       }
       command = { id: id13, method: method6, params: { scriptId: params["scriptId"] }, sessionId };
       request13 = { action: "send", requestId: id13, method: method6, sessionId, scriptId: params["scriptId"] };
+    } else if (method6 === "Target.setAutoAttach") {
+      if (JSON.stringify(params) !== JSON.stringify(DIAGNOSTIC_WORKER_ATTACH_PARAMS)) {
+        return fail11();
+      }
+      command = { id: id13, method: method6, params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId };
+      request13 = { action: "send", requestId: id13, method: method6, sessionId };
+    } else if (method6 === "Runtime.evaluate") {
+      if (!diagnosticToken(params["uniqueContextId"])) {
+        return fail11();
+      }
+      const fixed = diagnosticWorkerEvaluationParams(params["uniqueContextId"]);
+      if (JSON.stringify(params) !== JSON.stringify(fixed)) {
+        return fail11();
+      }
+      command = { id: id13, method: method6, params: fixed, sessionId };
+      request13 = { action: "send", requestId: id13, method: method6, sessionId, uniqueContextId: params["uniqueContextId"] };
     } else {
       return fail11();
     }
@@ -124947,9 +125192,16 @@ function diagnosticNativeRequest(chunk) {
 function fail11() {
   throw new Error("PCB_DIAGNOSTIC_OUTBOUND_FRAME");
 }
-var DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_SOURCE_BYTES, DIAGNOSTIC_SESSION_BYTES;
+var DIAGNOSTIC_WORKER_ATTACH_PARAMS, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_SOURCE_BYTES, DIAGNOSTIC_SESSION_BYTES;
 var init_current_pcb_diagnostic_protocol = __esm({
   "server/src/current-pcb-diagnostic-protocol.ts"() {
+    init_current_pcb_diagnostic_worker_program();
+    DIAGNOSTIC_WORKER_ATTACH_PARAMS = Object.freeze({
+      autoAttach: true,
+      waitForDebuggerOnStart: false,
+      flatten: true,
+      filter: Object.freeze([Object.freeze({ type: "worker", exclude: false }), Object.freeze({ exclude: true })])
+    });
     DIAGNOSTIC_SOURCE_FRAME_BYTES = 33554432;
     DIAGNOSTIC_SOURCE_BYTES = 20 * 1024 * 1024;
     DIAGNOSTIC_SESSION_BYTES = 64 * 1024 * 1024;
@@ -124963,53 +125215,12 @@ function record7(value2) {
 function failureError(code) {
   return new Error(`PCB_DIAGNOSTIC_PIPE_${code.toUpperCase()}`);
 }
-function decodeCurrentPcbDiagnosticJson(bytes2) {
-  const text37 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes2);
-  const nesting = [];
-  for (let offset7 = 0; offset7 < text37.length; offset7 += 1) {
-    const character = text37[offset7];
-    if (character === "{" || character === "[") {
-      if (nesting.length >= 64) {
-        throw failureError("framing");
-      }
-      nesting.push(character === "{" ? /* @__PURE__ */ new Set() : null);
-    } else if (character === "}" || character === "]") {
-      nesting.pop();
-    } else if (character === '"') {
-      const start = offset7;
-      offset7 += 1;
-      while (offset7 < text37.length && text37[offset7] !== '"') {
-        if (text37[offset7] === "\\") {
-          offset7 += 1;
-        }
-        offset7 += 1;
-      }
-      let following = offset7 + 1;
-      while (following < text37.length && [" ", "	", "\n", "\r"].includes(text37[following] ?? "")) {
-        following += 1;
-      }
-      if (text37[following] === ":") {
-        const keys2 = nesting.at(-1);
-        const key = JSON.parse(text37.slice(start, offset7 + 1));
-        if (keys2 === null || keys2 === void 0 || typeof key !== "string" || keys2.has(key)) {
-          throw failureError("framing");
-        }
-        keys2.add(key);
-      }
-    }
-  }
-  const parsed2 = JSON.parse(text37, (_key, value2) => {
-    if (typeof value2 === "number" && !Number.isFinite(value2)) {
-      throw failureError("framing");
-    }
-    return value2;
-  });
-  return parsed2;
-}
 var MAX_FRAME_BYTES, MAX_CHUNK_BYTES2, MAX_REQUESTS, DEADLINE_MS, CurrentPcbDiagnosticPipe;
 var init_current_pcb_diagnostic_pipe = __esm({
   "server/src/current-pcb-diagnostic-pipe.ts"() {
     init_current_pcb_diagnostic_protocol();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_diagnostic_json();
     MAX_FRAME_BYTES = 1024 * 1024;
     MAX_CHUNK_BYTES2 = MAX_FRAME_BYTES + 1;
     MAX_REQUESTS = 32;
@@ -125032,6 +125243,10 @@ var init_current_pcb_diagnostic_pipe = __esm({
       #event = null;
       #eventCount = 0;
       #eventBytes = 0;
+      #workerEvent = null;
+      #workerSessions = /* @__PURE__ */ new Map();
+      #workerDiscoverySettled = false;
+      #selectedWorkerSession = null;
       constructor(input, output) {
         this.#input = input;
         this.#output = output;
@@ -125095,6 +125310,65 @@ var init_current_pcb_diagnostic_pipe = __esm({
           return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT"));
         }
         return this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#sessionId });
+      }
+      /** One fixed direct-child discovery on the original page. No recursive
+       * autoattachment, debugger waiting, detached adoption or caller target URL. */
+      async enableWorkerDiscovery(event3) {
+        if (this.#sessionId === null || this.#workerEvent !== null || this.#pending !== null) {
+          throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_DISCOVERY_INPUT");
+        }
+        this.#workerEvent = event3;
+        const reply = await this.#request({
+          id: this.#nextId,
+          method: "Target.setAutoAttach",
+          params: DIAGNOSTIC_WORKER_ATTACH_PARAMS,
+          sessionId: this.#sessionId
+        });
+        if (!diagnosticExact(reply, [])) {
+          this.#fail("reply");
+          throw failureError("reply");
+        }
+        this.#workerDiscoverySettled = true;
+        return reply;
+      }
+      selectWorkerSession(sessionId) {
+        if (this.#failure !== null || !this.#workerDiscoverySettled || this.#selectedWorkerSession !== null || !this.#workerSessions.has(sessionId) || this.#pending !== null) {
+          throw new Error("PCB_DIAGNOSTIC_PIPE_WORKER_SELECTION");
+        }
+        this.#selectedWorkerSession = sessionId;
+      }
+      enableWorkerRuntime() {
+        return this.#request({ id: this.#nextId, method: "Runtime.enable", params: {}, sessionId: this.#workerSession() });
+      }
+      enableWorkerDebugger() {
+        return this.#request({
+          id: this.#nextId,
+          method: "Debugger.enable",
+          params: { maxScriptsCacheSize: DIAGNOSTIC_SOURCE_FRAME_BYTES },
+          sessionId: this.#workerSession()
+        });
+      }
+      getWorkerScriptSource(scriptId) {
+        if (!diagnosticToken(scriptId)) {
+          return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT"));
+        }
+        return this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#workerSession() });
+      }
+      /** The caller must first admit the selected worker's complete source and
+       * original context. This primitive never accepts an expression or options. */
+      observeWorkerState(uniqueContextId) {
+        return this.#request({
+          id: this.#nextId,
+          method: "Runtime.evaluate",
+          params: diagnosticWorkerEvaluationParams(uniqueContextId),
+          sessionId: this.#workerSession()
+        });
+      }
+      #workerSession() {
+        if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null || !this.#workerSessions.has(this.#selectedWorkerSession)) {
+          throw new Error("PCB_DIAGNOSTIC_PIPE_NO_WORKER");
+        }
+        return this.#selectedWorkerSession;
       }
       #sessionRequest(method6) {
         if (this.#sessionId === null) {
@@ -125241,12 +125515,31 @@ var init_current_pcb_diagnostic_pipe = __esm({
         const method6 = value2["method"], params = value2["params"], sessionId = value2["sessionId"];
         this.#eventCount += 1;
         this.#eventBytes += bytes2;
-        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES || typeof method6 !== "string" || !record7(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"]) || sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId)) {
+        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES || typeof method6 !== "string" || !record7(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"]) || sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
           this.#fail("reply");
           return;
         }
         try {
-          this.#event(sessionId === void 0 ? { method: method6, params } : { method: method6, params, sessionId });
+          const event3 = sessionId === void 0 ? { method: method6, params } : { method: method6, params, sessionId };
+          if (sessionId === this.#sessionId && method6 === "Target.attachedToTarget") {
+            const child = params["targetInfo"], childSession = params["sessionId"];
+            if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) || !record7(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) || !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId || this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) || this.#workerSessions.size >= 16) {
+              this.#fail("reply");
+              return;
+            }
+            this.#workerSessions.set(childSession, child["targetId"]);
+            this.#workerEvent(event3);
+          } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
+            if (this.#workerEvent === null) {
+              this.#fail("reply");
+              return;
+            }
+            this.#workerEvent(event3);
+          } else if (sessionId === this.#sessionId && method6 === "Target.detachedFromTarget" && this.#workerEvent !== null) {
+            this.#workerEvent(event3);
+          } else {
+            this.#event(event3);
+          }
         } catch {
           this.#fail("reply");
         }
@@ -125315,8 +125608,8 @@ var init_current_pcb_diagnostic_pipe = __esm({
 });
 
 // server/src/current-pcb-diagnostic-context.ts
-import { createHash as createHash45 } from "node:crypto";
-function refuse2() {
+import { createHash as createHash46 } from "node:crypto";
+function refuse3() {
   throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY");
 }
 function text26(value2, maximum5 = 8192) {
@@ -125333,7 +125626,7 @@ function clone2(value2) {
 }
 function diagnosticBoundedObservation(value2) {
   if (Buffer.byteLength(JSON.stringify(value2), "utf8") > 128 * 1024) {
-    return refuse2();
+    return refuse3();
   }
   return Object.freeze(value2);
 }
@@ -125351,20 +125644,20 @@ function frameSummary(value2) {
 }
 function validateDiagnosticFrameExpectation(value2) {
   if (!diagnosticExact(value2, ["targetId", "frameId", "frameUrl", "scriptUrl", "scriptSha256", "scriptBytes"]) || !diagnosticToken(value2.targetId) || !diagnosticToken(value2.frameId) || !text26(value2.frameUrl) || value2.frameUrl.length === 0 || !text26(value2.scriptUrl) || value2.scriptUrl.length === 0 || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer9(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse2();
+    return refuse3();
   }
   return Object.freeze({ ...value2 });
 }
 function diagnosticTargetInventory(reply) {
   const rows2 = reply["targetInfos"];
   if (!diagnosticExact(reply, ["targetInfos"]) || !Array.isArray(rows2) || rows2.length > 256) {
-    return refuse2();
+    return refuse3();
   }
   const ids2 = /* @__PURE__ */ new Set();
   const result = [];
   for (const item2 of rows2) {
     if (!diagnosticRecord2(item2) || !diagnosticToken(item2["targetId"]) || ids2.has(item2["targetId"]) || !text26(item2["type"], 64) || !text26(item2["url"]) || typeof item2["attached"] !== "boolean") {
-      return refuse2();
+      return refuse3();
     }
     ids2.add(item2["targetId"]);
     result.push(clone2(item2));
@@ -125374,13 +125667,13 @@ function diagnosticTargetInventory(reply) {
 function target7(reply, targetId2, attached) {
   const found = diagnosticTargetInventory(reply).find((item2) => item2["targetId"] === targetId2);
   if (found?.["type"] !== "page" || found["attached"] !== attached) {
-    return refuse2();
+    return refuse3();
   }
-  return found ?? refuse2();
+  return found ?? refuse3();
 }
 function frames(reply) {
   if (!diagnosticExact(reply, ["frameTree"]) || !diagnosticRecord2(reply["frameTree"])) {
-    return refuse2();
+    return refuse3();
   }
   const pending = [{ node: reply["frameTree"], parent: null, depth: 0 }];
   const ids2 = /* @__PURE__ */ new Set();
@@ -125388,21 +125681,21 @@ function frames(reply) {
   while (pending.length > 0) {
     const current10 = pending.pop();
     if (current10 === void 0) {
-      return refuse2();
+      return refuse3();
     }
     const children2 = current10.node["childFrames"], item2 = current10.node["frame"];
     if (current10.depth > 16 || !diagnosticRecord2(item2) || !diagnosticToken(item2["id"]) || ids2.has(item2["id"]) || ids2.size >= 128 || !diagnosticToken(item2["loaderId"]) || !text26(item2["url"]) || !text26(item2["securityOrigin"]) || (current10.parent === null ? item2["parentId"] !== void 0 : item2["parentId"] !== current10.parent)) {
-      return refuse2();
+      return refuse3();
     }
     ids2.add(item2["id"]);
     result.push(clone2(item2));
     if (children2 !== void 0) {
       if (!Array.isArray(children2) || children2.length > 128) {
-        return refuse2();
+        return refuse3();
       }
       for (const child of children2) {
         if (!diagnosticRecord2(child)) {
-          return refuse2();
+          return refuse3();
         }
         pending.push({ node: child, parent: item2["id"], depth: current10.depth + 1 });
       }
@@ -125412,7 +125705,7 @@ function frames(reply) {
 }
 function validateDiagnosticScriptProfile(value2) {
   if (!diagnosticExact(value2, ["family", "relativePath", "scriptSha256", "scriptBytes"]) || !["ui", "pcb", "public-api"].includes(value2.family) || !text26(value2.relativePath, 512) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(value2.relativePath) || value2.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer9(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse2();
+    return refuse3();
   }
   return Object.freeze({ ...value2 });
 }
@@ -125447,7 +125740,7 @@ var init_current_pcb_diagnostic_context = __esm({
       constructor(expected3) {
         if (typeof expected3 === "string") {
           if (!diagnosticToken(expected3)) {
-            refuse2();
+            refuse3();
           }
           this.#targetId = expected3;
           this.#expected = null;
@@ -125624,7 +125917,7 @@ var init_current_pcb_diagnostic_context = __esm({
         if (profile === null) {
           return this.#refuse();
         }
-        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || scriptSource.length > DIAGNOSTIC_SOURCE_BYTES || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== profile.scriptBytes || createHash45("sha256").update(scriptSource, "utf8").digest("hex") !== profile.scriptSha256) {
+        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || scriptSource.length > DIAGNOSTIC_SOURCE_BYTES || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== profile.scriptBytes || createHash46("sha256").update(scriptSource, "utf8").digest("hex") !== profile.scriptSha256) {
           return this.#refuse();
         }
         if (this.#profile !== null && this.#frame !== null) {
@@ -125678,38 +125971,311 @@ var init_current_pcb_diagnostic_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse2();
+        return refuse3();
+      }
+    };
+  }
+});
+
+// server/src/current-pcb-diagnostic-worker-context.ts
+import { createHash as createHash47 } from "node:crypto";
+function refuse4() {
+  throw new Error("PCB_DIAGNOSTIC_WORKER_IDENTITY");
+}
+function text27(value2, maximum5 = 8192) {
+  return typeof value2 === "string" && value2.length <= maximum5 && value2.isWellFormed() && !value2.includes("\0");
+}
+function positive2(value2) {
+  return typeof value2 === "number" && Number.isSafeInteger(value2) && value2 > 0;
+}
+function equal7(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+function copy(value2) {
+  return Object.freeze(structuredClone(value2));
+}
+function sourceUrl(value2, profile) {
+  if (!text27(value2) || value2.includes("\\") || /[\s?#@]/u.test(value2) || !/^[A-Za-z][A-Za-z\d+.-]*:\/\//u.test(value2) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value2)) {
+    return false;
+  }
+  try {
+    const url2 = new URL(value2);
+    return url2.username === "" && url2.password === "" && url2.search === "" && url2.hash === "" && url2.pathname.endsWith(`/${profile.relativePath}`);
+  } catch {
+    return false;
+  }
+}
+var CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT, claims2, CurrentPcbDiagnosticWorkerContext;
+var init_current_pcb_diagnostic_worker_context = __esm({
+  "server/src/current-pcb-diagnostic-worker-context.ts"() {
+    init_current_pcb_diagnostic_context();
+    init_current_pcb_diagnostic_protocol();
+    init_current_pcb_diagnostic_worker_program();
+    CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT = Object.freeze({
+      relativePath: "pro-mgr/3.2.184.355087e9/js/project-worker.js",
+      scriptBytes: 2181284,
+      scriptSha256: "b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928"
+    });
+    claims2 = Object.freeze({
+      projectWorkerAssociationVerified: false,
+      compilerOwnerVerified: false,
+      queueCompletionVerified: false,
+      executionAuthorized: false,
+      continuousObservation: false
+    });
+    CurrentPcbDiagnosticWorkerContext = class {
+      #parentTargetId;
+      #parentSessionId;
+      #profile;
+      #children = /* @__PURE__ */ new Map();
+      #contexts = /* @__PURE__ */ new Map();
+      #scripts = /* @__PURE__ */ new Map();
+      #eventKinds = /* @__PURE__ */ new Set();
+      #parent = null;
+      #selected = null;
+      #admitted = null;
+      #inventorySealed = false;
+      #failed = false;
+      #eventCount = 0;
+      /** Optional profile is an offline comparison seam. The public owner must use
+       * the default compiled profile, never caller URL/hash/size expectations. */
+      constructor(parentTargetId, parentSessionId, profile = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
+        if (!diagnosticToken(parentTargetId) || !diagnosticToken(parentSessionId) || !diagnosticExact(profile, ["relativePath", "scriptSha256", "scriptBytes"]) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(profile.relativePath) || profile.relativePath.length > 512 || profile.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(profile.scriptSha256) || !positive2(profile.scriptBytes) || profile.scriptBytes > 4 * 1024 * 1024) {
+          refuse4();
+        }
+        this.#parentTargetId = parentTargetId;
+        this.#parentSessionId = parentSessionId;
+        this.#profile = Object.freeze({ ...profile });
+      }
+      observeEvent(event3) {
+        try {
+          this.#acceptEvent(event3);
+        } catch {
+          this.#failed = true;
+          throw new Error("PCB_DIAGNOSTIC_WORKER_INVALIDATED");
+        }
+      }
+      #acceptEvent(event3) {
+        this.assertCurrent();
+        if (this.#eventCount >= 4096) {
+          this.#refuse();
+        }
+        this.#eventCount += 1;
+        this.#eventKinds.add(event3.method);
+        const params = event3.params;
+        if (event3.sessionId === this.#parentSessionId) {
+          if (event3.method !== "Target.attachedToTarget" || this.#inventorySealed || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) || !diagnosticToken(params["sessionId"]) || params["sessionId"] === this.#parentSessionId || params["waitingForDebugger"] !== false || !diagnosticRecord2(params["targetInfo"])) {
+            this.#refuse();
+          }
+          const sessionId = params["sessionId"], target9 = params["targetInfo"];
+          if (target9["type"] !== "worker" || target9["attached"] !== true || !diagnosticToken(target9["targetId"]) || target9["targetId"] === this.#parentTargetId || !text27(target9["url"]) || !text27(target9["title"]) || this.#children.size >= 16 || this.#children.has(target9["targetId"]) || [...this.#children.values()].some((child) => child.sessionId === sessionId)) {
+            this.#refuse();
+          }
+          this.#children.set(target9["targetId"], Object.freeze({ sessionId, target: copy(target9) }));
+          return;
+        }
+        const selected3 = this.#selected;
+        if (selected3 === null || event3.sessionId !== selected3.sessionId) {
+          this.#refuse();
+        }
+        if (event3.method === "Runtime.executionContextCreated") {
+          const context3 = params["context"];
+          if (!diagnosticExact(params, ["context"]) || !diagnosticRecord2(context3) || !diagnosticExact(context3, ["id", "origin", "name", "uniqueId"]) || !positive2(context3["id"]) || !diagnosticToken(context3["uniqueId"]) || context3["origin"] !== selected3.target["url"] || context3["name"] !== selected3.target["title"] || this.#contexts.size > 0) {
+            this.#refuse();
+          }
+          this.#contexts.set(context3["id"], copy(context3));
+          return;
+        }
+        if (event3.method === "Debugger.scriptParsed") {
+          if (!diagnosticToken(params["scriptId"]) || !positive2(params["executionContextId"]) || !text27(params["url"]) || this.#scripts.has(params["scriptId"]) || this.#scripts.size >= 4096) {
+            this.#refuse();
+          }
+          this.#scripts.set(params["scriptId"], copy(params));
+          if (this.#admitted !== null) {
+            this.#selectedScript();
+          }
+          return;
+        }
+        if (["Runtime.consoleAPICalled", "Runtime.exceptionThrown", "Runtime.exceptionRevoked", "Runtime.inspectRequested"].includes(event3.method)) {
+          return;
+        }
+        this.#refuse();
+      }
+      #targets(reply) {
+        this.assertCurrent();
+        try {
+          const targets = diagnosticTargetInventory(reply);
+          const parent = targets.find((row7) => row7["targetId"] === this.#parentTargetId);
+          if (parent?.["type"] !== "page" || parent["attached"] !== true || this.#parent !== null && !equal7(this.#parent, parent)) {
+            this.#refuse();
+          }
+          this.#parent ??= copy(parent);
+          for (const [targetId2, child] of this.#children) {
+            if (!equal7(targets.find((row7) => row7["targetId"] === targetId2), child.target)) {
+              this.#refuse();
+            }
+          }
+        } catch {
+          this.#refuse();
+        }
+      }
+      /** Call only after the original autoattach ACK settles. Child events arriving
+       * after this bounded sample invalidate it rather than silently expanding it. */
+      finishInventory(targetReply) {
+        this.#targets(targetReply);
+        if (this.#inventorySealed) {
+          return this.#refuse();
+        }
+        this.#inventorySealed = true;
+        return diagnosticBoundedObservation({
+          schema: "easyeda-pro-control.pcb-diagnostic-worker-inventory.v1",
+          parentTargetId: this.#parentTargetId,
+          parentSessionId: this.#parentSessionId,
+          workers: [...this.#children].map(([targetId2, child]) => ({ targetId: targetId2, sessionId: child.sessionId, type: "worker" })),
+          parentAttachmentObserved: true,
+          completeWorkerInventoryVerified: false,
+          ...claims2
+        });
+      }
+      selectWorker(targetId2) {
+        this.assertCurrent();
+        const child = this.#children.get(targetId2);
+        if (!this.#inventorySealed || this.#selected !== null || child === void 0) {
+          return this.#refuse();
+        }
+        this.#selected = child;
+        return Object.freeze({ sessionId: child.sessionId });
+      }
+      #selectedScript() {
+        this.assertCurrent();
+        const child = this.#selected, context3 = [...this.#contexts.values()][0];
+        if (child === null || this.#contexts.size !== 1 || context3 === void 0) {
+          return this.#refuse();
+        }
+        const matching = [...this.#scripts.values()].filter((script2) => script2["executionContextId"] === context3["id"] && sourceUrl(script2["url"], this.#profile));
+        const script = matching[0];
+        if (matching.length !== 1 || script === void 0 || script["hasSourceURL"] === true || script["isLiveEdit"] === true || script["scriptLanguage"] !== void 0 && script["scriptLanguage"] !== "JavaScript") {
+          return this.#refuse();
+        }
+        const selected3 = { ...child, context: context3, script };
+        if (this.#admitted !== null && !equal7(this.#admitted, selected3)) {
+          return this.#refuse();
+        }
+        return selected3;
+      }
+      script() {
+        const selected3 = this.#selectedScript();
+        if (!diagnosticToken(selected3.script["scriptId"])) {
+          return this.#refuse();
+        }
+        return Object.freeze({ scriptId: selected3.script["scriptId"] });
+      }
+      finishSource(source5, targetReply) {
+        this.#targets(targetReply);
+        if (this.#admitted !== null) {
+          return this.#refuse();
+        }
+        const selected3 = this.#selectedScript(), value2 = source5["scriptSource"];
+        if (!diagnosticExact(source5, ["scriptSource"]) || typeof value2 !== "string" || !value2.isWellFormed() || Buffer.byteLength(value2, "utf8") !== this.#profile.scriptBytes || createHash47("sha256").update(value2, "utf8").digest("hex") !== this.#profile.scriptSha256) {
+          return this.#refuse();
+        }
+        this.#admitted = selected3;
+        return diagnosticBoundedObservation({
+          schema: "easyeda-pro-control.pcb-diagnostic-worker-source.v1",
+          ...this.#identity(),
+          relativePath: this.#profile.relativePath,
+          sourceSha256: this.#profile.scriptSha256,
+          sourceBytes: this.#profile.scriptBytes,
+          sourceVerified: true,
+          ...claims2
+        });
+      }
+      evaluationContext() {
+        if (this.#admitted === null) {
+          return this.#refuse();
+        }
+        const selected3 = this.#selectedScript(), uniqueId = selected3.context["uniqueId"];
+        if (!diagnosticToken(uniqueId)) {
+          return this.#refuse();
+        }
+        return uniqueId;
+      }
+      observeTargets(reply) {
+        this.#targets(reply);
+      }
+      finishState(reply, targetReply) {
+        this.evaluationContext();
+        this.#targets(targetReply);
+        try {
+          const state2 = decodeCurrentPcbDiagnosticWorkerReply(reply);
+          if (this.#selected?.target["title"] !== `project_${state2.identity.projectUuid}_${state2.identity.windowTabId}`) {
+            this.#refuse();
+          }
+          return diagnosticBoundedObservation({
+            schema: "easyeda-pro-control.pcb-diagnostic-worker-observation.v1",
+            ...this.#identity(),
+            expressionSha256: CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256,
+            state: state2,
+            eventCount: this.#eventCount,
+            eventKinds: [...this.#eventKinds].toSorted(),
+            sourceVerified: true,
+            ...claims2
+          });
+        } catch {
+          return this.#refuse();
+        }
+      }
+      #identity() {
+        const selected3 = this.#selectedScript();
+        return {
+          parentTargetId: this.#parentTargetId,
+          parentSessionId: this.#parentSessionId,
+          targetId: selected3.target["targetId"],
+          sessionId: selected3.sessionId,
+          contextId: selected3.context["id"],
+          uniqueContextId: selected3.context["uniqueId"],
+          scriptId: selected3.script["scriptId"]
+        };
+      }
+      assertCurrent() {
+        if (this.#failed) {
+          this.#refuse();
+        }
+      }
+      #refuse() {
+        this.#failed = true;
+        return refuse4();
       }
     };
   }
 });
 
 // server/src/current-pcb-diagnostic-installation.ts
-import { createHash as createHash46 } from "node:crypto";
+import { createHash as createHash48 } from "node:crypto";
 import { constants as constants26 } from "node:fs";
 import { lstat as lstat40, open as open38, realpath as realpath24 } from "node:fs/promises";
 import path5 from "node:path";
-function refuse3() {
+function refuse5() {
   throw new Error("PCB_DIAGNOSTIC_INSTALLATION_REFUSED");
 }
 function windowsPath3(host) {
   if (!/^\/mnt\/[a-z]\//u.test(host) || path5.posix.normalize(host) !== host) {
-    refuse3();
+    refuse5();
   }
   const components = host.slice(7).split("/");
   if (components.some((value2) => value2.length === 0 || value2.length > 120 || value2.trim() !== value2 || value2.endsWith(".") || // oxlint-disable-next-line no-control-regex -- Native command/path tokens exclude every control character explicitly.
   /[<>:"\\|?*\u0000-\u001F\u007F]/u.test(value2) || /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/iu.test(value2))) {
-    refuse3();
+    refuse5();
   }
   const result = `${host[5]?.toUpperCase()}:\\${components.join("\\")}`;
   if (result.length > 240) {
-    refuse3();
+    refuse5();
   }
   return result;
 }
 function createCurrentPcbDiagnosticInstallationPlan(options) {
   if (!/^[a-f\d]{64}$/u.test(options.powershellSha256) || !Number.isSafeInteger(options.powershellBytes) || options.powershellBytes < 1 || options.powershellBytes > 16777216) {
-    refuse3();
+    refuse5();
   }
   const paths = Object.freeze(deriveWindowsRuntimePaths({ ...options, powershellExecutable: POWERSHELL2 }));
   const files = ORDINARY_LAUNCH_PROFILE.installedFiles.map((pin4) => Object.freeze({
@@ -125726,27 +126292,27 @@ function same43(left, right) {
 }
 async function verifyCurrentPcbDiagnosticPowerShell(hostPath, expected3) {
   if (path5.posix.resolve(hostPath) !== hostPath || await realpath24(hostPath) !== hostPath || !Number.isSafeInteger(expected3.bytes) || expected3.bytes < 1 || expected3.bytes > 16777216 || !/^[a-f\d]{64}$/u.test(expected3.sha256)) {
-    refuse3();
+    refuse5();
   }
   const handle = await open38(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
   try {
     const before = await handle.stat({ bigint: true });
     if (!before.isFile() || before.nlink < 1n || before.size !== BigInt(expected3.bytes)) {
-      refuse3();
+      refuse5();
     }
-    const buffer = Buffer.alloc(65536), hash45 = createHash46("sha256");
+    const buffer = Buffer.alloc(65536), hash45 = createHash48("sha256");
     let total = 0;
     while (total < expected3.bytes) {
       const result = await handle.read(buffer, 0, Math.min(buffer.length, expected3.bytes - total), total);
       if (result.bytesRead === 0) {
-        refuse3();
+        refuse5();
       }
       total += result.bytesRead;
       hash45.update(buffer.subarray(0, result.bytesRead));
     }
     const eof = await handle.read(buffer, 0, 1, total);
     if (eof.bytesRead !== 0 || hash45.digest("hex") !== expected3.sha256 || !same43(before, await handle.stat({ bigint: true })) || !same43(before, await lstat40(hostPath, { bigint: true })) || await realpath24(hostPath) !== hostPath) {
-      refuse3();
+      refuse5();
     }
   } finally {
     await handle.close();
@@ -125779,7 +126345,7 @@ var init_current_pcb_diagnostic_installation = __esm({
 
 // server/src/current-pcb-diagnostic-owner.ts
 import { spawn as spawn9 } from "node:child_process";
-import { createHash as createHash47, randomBytes as randomBytes12 } from "node:crypto";
+import { createHash as createHash49, randomBytes as randomBytes12 } from "node:crypto";
 import { lstat as lstat41, readFile as readFile8, realpath as realpath25 } from "node:fs/promises";
 import process19 from "node:process";
 import { PassThrough as PassThrough2, Writable as Writable2 } from "node:stream";
@@ -125802,10 +126368,11 @@ function binding2(value2) {
   return Object.freeze({ helperInstance, jobId, rootPid, rootCreated });
 }
 function noProcessState(value2, released) {
-  if (!exact18(value2, released ? ["released", "creationState", "processCreated"] : ["creationState", "processCreated"]) || value2["processCreated"] !== false || released && value2["released"] !== true || value2["creationState"] !== "not-entered" && value2["creationState"] !== "returned-false") {
+  const code = value2["createProcessError"], hasError = Object.hasOwn(value2, "createProcessError");
+  if (!exact18(value2, [...released ? ["released"] : [], "creationState", "processCreated", ...hasError ? ["createProcessError"] : []]) || value2["processCreated"] !== false || released && value2["released"] !== true || value2["creationState"] !== "not-entered" && value2["creationState"] !== "returned-false" || hasError && (value2["creationState"] !== "returned-false" || typeof code !== "number" || !Number.isSafeInteger(code) || code < 0 || code > 4294967295 || Object.is(code, -0))) {
     throw error51("NO_PROCESS_PROOF");
   }
-  return value2["creationState"];
+  return Object.freeze({ creationState: value2["creationState"], ...hasError && typeof code === "number" ? { createProcessError: code } : {} });
 }
 async function startCurrentPcbDiagnosticOwner(options) {
   const sealedOptions = Object.freeze({ ...options });
@@ -125823,7 +126390,7 @@ async function startCurrentPcbDiagnosticOwner(options) {
   const before = await lstat41(helperPath);
   const verify = async () => {
     const first = await lstat41(helperPath);
-    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size > 65536 || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath25(helperPath) !== helperPath || createHash47("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
+    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size > 65536 || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath25(helperPath) !== helperPath || createHash49("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
       throw error51("HELPER_SOURCE");
     }
     const after = await lstat41(helperPath);
@@ -125863,8 +126430,9 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_diagnostic_pipe();
     init_current_pcb_diagnostic_protocol();
     init_current_pcb_diagnostic_context();
+    init_current_pcb_diagnostic_worker_context();
     init_current_pcb_diagnostic_installation();
-    HELPER_SHA256 = "c4ca248d6a4346a0fd38ef5befbbb65a75d24255bc5bfca8c9e20f1c00d15547";
+    HELPER_SHA256 = "8060c09d393064992c5640829c6ac565660263d888cd24503ff6c3dddbcd4c58";
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -125888,7 +126456,8 @@ var init_current_pcb_diagnostic_owner = __esm({
       #launchSettled = false;
       #launchRequestIssued = false;
       #nativeLaunchRefused = false;
-      #noProcessCreationState = null;
+      #noProcessProof = null;
+      #nativeLaunchError = null;
       #closeConsumed = false;
       #releaseConsumed = false;
       #released = false;
@@ -125900,6 +126469,11 @@ var init_current_pcb_diagnostic_owner = __esm({
       #scriptConsumed = false;
       #browserTargets = null;
       #stagedContext = null;
+      #stagedAttachment = null;
+      #workerContext = null;
+      #workersConsumed = false;
+      #workerScriptConsumed = false;
+      #workerStateConsumed = false;
       constructor(child, verify, installation = null, verifyInstallation = () => Promise.resolve()) {
         this.#child = child;
         this.#verify = verify;
@@ -125943,6 +126517,8 @@ var init_current_pcb_diagnostic_owner = __esm({
           frameWorkerVerified: false,
           executionAuthorized: false,
           browserObservationConsumed: this.#browserObservationConsumed,
+          nativeLaunchError: this.#nativeLaunchError,
+          createProcessError: this.#noProcessProof?.createProcessError ?? null,
           frameInspectionConsumed: this.#framesConsumed,
           scriptInspectionConsumed: this.#scriptConsumed,
           diagnosticFailure: this.#pipe.status().failure
@@ -126000,7 +126576,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           if (!exact18(observed2, ["helperInstance", "jobId", "rootPid", "rootCreated"]) || observed2["rootCreated"] !== "0" || typeof observed2["helperInstance"] !== "string" || !/^[a-f\d]{32}$/u.test(observed2["helperInstance"]) || typeof observed2["jobId"] !== "string" || !/^[a-f\d]{32}$/u.test(observed2["jobId"])) {
             throw error51("NO_PROCESS_IDENTITY");
           }
-          this.#noProcessCreationState = noProcessState(await this.#request({ action: "no-process-proof" }), false);
+          this.#noProcessProof = noProcessState(await this.#request({ action: "no-process-proof" }), false);
         }
       }
       getVersion() {
@@ -126095,6 +126671,94 @@ var init_current_pcb_diagnostic_owner = __esm({
           this.#busy = false;
         }
       }
+      /** Fixed parent-only child reporting. The optional profile is an internal
+       * synthetic-test seam, never part of the public lifecycle request. */
+      async inspectWorkers(profile) {
+        const attachment = this.#stagedAttachment;
+        if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed) {
+          throw error51("WORKER_INSPECTION_UNAVAILABLE");
+        }
+        this.#enter(true);
+        this.#workersConsumed = true;
+        try {
+          const context3 = new CurrentPcbDiagnosticWorkerContext(attachment.targetId, attachment.sessionId, profile);
+          this.#workerContext = context3;
+          await this.#observeParent();
+          const reply = await this.#transfer(() => this.#pipe.enableWorkerDiscovery((event3) => {
+            context3.observeEvent(event3);
+          }));
+          if (!exact18(reply, [])) {
+            throw error51("WORKER_DISCOVERY_REPLY");
+          }
+          const targets = await this.#observeParent();
+          return context3.finishInventory(targets);
+        } catch (caughtError) {
+          this.#input.emit("error", error51("WORKER_INSPECTION_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      async inspectWorkerScript(targetId2) {
+        const context3 = this.#workerContext;
+        if (this.#workerScriptConsumed || context3 === null || !this.#workersConsumed) {
+          throw error51("WORKER_SCRIPT_UNAVAILABLE");
+        }
+        this.#enter(true);
+        this.#workerScriptConsumed = true;
+        try {
+          context3.observeTargets(await this.#observeParent());
+          const selected3 = context3.selectWorker(targetId2);
+          this.#pipe.selectWorkerSession(selected3.sessionId);
+          const runtime = await this.#transfer(() => this.#pipe.enableWorkerRuntime());
+          if (!exact18(runtime, [])) {
+            throw error51("WORKER_RUNTIME_REPLY");
+          }
+          const debuggerReply = await this.#transfer(() => this.#pipe.enableWorkerDebugger());
+          if (!exact18(debuggerReply, ["debuggerId"]) || typeof debuggerReply["debuggerId"] !== "string") {
+            throw error51("WORKER_DEBUGGER_REPLY");
+          }
+          const source5 = await this.#transfer(() => this.#pipe.getWorkerScriptSource(context3.script().scriptId));
+          return context3.finishSource(source5, await this.#observeParent());
+        } catch (caughtError) {
+          this.#input.emit("error", error51("WORKER_SOURCE_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      /** One fixed side-effect-checked sample. No caller code or context selector. */
+      async observeWorkerState() {
+        const context3 = this.#workerContext;
+        if (this.#workerStateConsumed || context3 === null || !this.#workerScriptConsumed) {
+          throw error51("WORKER_STATE_UNAVAILABLE");
+        }
+        this.#enter(true);
+        this.#workerStateConsumed = true;
+        try {
+          context3.observeTargets(await this.#observeParent());
+          const reply = await this.#transfer(() => this.#pipe.observeWorkerState(context3.evaluationContext()));
+          return context3.finishState(reply, await this.#observeParent());
+        } catch (caughtError) {
+          this.#input.emit("error", error51("WORKER_STATE_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      async #observeParent() {
+        const context3 = this.#stagedContext;
+        if (context3 === null) {
+          throw error51("WORKER_PARENT_UNAVAILABLE");
+        }
+        context3.assertCurrent();
+        const targets = await this.#transfer(() => this.#pipe.getTargets());
+        context3.observeTarget(targets);
+        context3.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
+        context3.assertCurrent();
+        this.#workerContext?.assertCurrent();
+        return targets;
+      }
       async #attach(context3, targetId2) {
         let sessionId = null;
         await this.#transfer(async () => {
@@ -126107,6 +126771,9 @@ var init_current_pcb_diagnostic_owner = __esm({
           throw error51("ATTACH_REPLY");
         }
         context3.bindSession(sessionId);
+        if (context3 === this.#stagedContext) {
+          this.#stagedAttachment = Object.freeze({ targetId: targetId2, sessionId });
+        }
       }
       async #inspectScript(context3) {
         const runtime = await this.#transfer(() => this.#pipe.enableRuntime());
@@ -126230,18 +126897,18 @@ var init_current_pcb_diagnostic_owner = __esm({
           await this.#verify();
           this.#available();
           this.#releaseConsumed = true;
-          const creationState = noProcessState(await this.#request({ action: "release-no-process" }), true);
-          if (launchRequestOutcome === "not-issued" ? creationState !== "not-entered" : creationState !== this.#noProcessCreationState) {
+          const proof = noProcessState(await this.#request({ action: "release-no-process" }), true);
+          if (launchRequestOutcome === "not-issued" ? proof.creationState !== "not-entered" : JSON.stringify(proof) !== JSON.stringify(this.#noProcessProof)) {
             throw error51("NO_PROCESS_PROOF_CHANGED");
           }
           await this.#finishRelease();
-          return Object.freeze({ launchRequestOutcome, creationState, processCreated: false, released: true });
+          return Object.freeze({ launchRequestOutcome, ...proof, processCreated: false, released: true });
         } finally {
           this.#busy = false;
         }
       }
       #noProcessCleanupAvailable() {
-        return this.#launchConsumed && this.#launchSettled && !this.#launchSucceeded && this.#binding === null && !this.#busy && this.#pending === null && this.#failure === null && !this.#releaseConsumed && !this.#released && !this.#childClosed && this.#child.exitCode === null && this.#child.signalCode === null && (!this.#launchRequestIssued || this.#nativeLaunchRefused && this.#noProcessCreationState !== null);
+        return this.#launchConsumed && this.#launchSettled && !this.#launchSucceeded && this.#binding === null && !this.#busy && this.#pending === null && this.#failure === null && !this.#releaseConsumed && !this.#released && !this.#childClosed && this.#child.exitCode === null && this.#child.signalCode === null && (!this.#launchRequestIssued || this.#nativeLaunchRefused && this.#noProcessProof !== null);
       }
       async #release(unlaunched) {
         if (this.#releaseConsumed) {
@@ -126417,6 +127084,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           if (reply["ok"] === false) {
             if (pending.launch) {
               this.#nativeLaunchRefused = true;
+              this.#nativeLaunchError = typeof reply["error"] === "string" ? reply["error"] : null;
             }
             pending.reject(error51("NATIVE_REFUSAL"));
           } else if (record8(reply["result"])) {
@@ -126569,10 +127237,10 @@ function describe4(operationId11, operation) {
     noProcessReleaseAttemptConsumed: records2?.["no-process-release-intent.json"] !== void 0,
     noProcessReleaseProof: records2?.["no-process-released.json"]?.proof,
     ...binding9 === void 0 ? {} : { binding: binding9.binding, bindingSha256: sha256Json(binding9), launchAcknowledged: binding9.launchAcknowledged },
-    ...claims2
+    ...claims3
   };
 }
-var methods6, claims2, CurrentPcbDiagnosticLifecycle;
+var methods6, claims3, CurrentPcbDiagnosticLifecycle;
 var init_current_pcb_diagnostic_lifecycle = __esm({
   "server/src/current-pcb-diagnostic-lifecycle.ts"() {
     init_core3();
@@ -126593,9 +127261,12 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       "releaseNoProcess",
       "browserObservation",
       "inspectFrames",
-      "inspectScript"
+      "inspectScript",
+      "inspectWorkers",
+      "inspectWorkerScript",
+      "observeWorkerState"
     ];
-    claims2 = Object.freeze({
+    claims3 = Object.freeze({
       bridgeAuthentication: false,
       frameWorkerVerified: false,
       startupQualified: false,
@@ -126637,8 +127308,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           const original2 = this.#retained?.operationId === request13.operationId;
           const pendingIntent = this.#attempt?.operationId === request13.operationId ? this.#attempt : null;
           const noProcessCleanupAvailable = original2 && this.#retained !== null && this.#lease !== null && !this.#noProcessInvoked && this.#retained.methods.status.call(this.#retained.owner).noProcessCleanupAvailable;
-          const selectedStage = request13.observation ?? ["script", "frames", "browser"].find((stage) => operation?.records[`${stage}-result.json`] !== void 0 || original2 && this.#pending.has(`${stage}-result.json`));
-          const observations = ["browser", "frames", "script"].map((stage) => {
+          const native = original2 && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
+          const selectedStage = request13.observation ?? diagnosticObservationStageSchema.options.toReversed().find((stage) => operation?.records[`${stage}-result.json`] !== void 0 || original2 && this.#pending.has(`${stage}-result.json`));
+          const observations = diagnosticObservationStageSchema.options.map((stage) => {
             const record10 = operation?.records[`${stage}-result.json`];
             const pending = original2 ? this.#pending.get(`${stage}-result.json`) : void 0;
             const retained2 = pending === void 0 ? void 0 : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending));
@@ -126655,6 +127327,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             busy: this.#busy,
             observations,
             noProcessCleanupAvailable,
+            ...native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError },
             ...pendingIntent === null ? {} : {
               intentSha256: pendingIntent.intentSha256,
               publicationSettlementAvailable: this.#lease !== null,
@@ -126719,9 +127392,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         await this.#publish(operationId11, name6, record10);
       }
       #retainRecord(name6, record10) {
-        const original2 = this.#pending.get(name6), text37 = canonicalJson(record10);
-        requireValue16(original2 === void 0 || original2 === text37, "PUBLICATION_PLAN_CHANGED");
-        this.#pending.set(name6, text37);
+        const original2 = this.#pending.get(name6), text38 = canonicalJson(record10);
+        requireValue16(original2 === void 0 || original2 === text38, "PUBLICATION_PLAN_CHANGED");
+        this.#pending.set(name6, text38);
       }
       #assertAttempt(operationId11, intentSha256) {
         this.#options.assertLocalAllowed();
@@ -126737,7 +127410,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
        * complete record must match exactly. No helper/native operation is called. */
       async #settleRecords(operationId11, intentSha256) {
         this.#assertAttempt(operationId11, intentSha256);
-        for (const [name6, text37] of this.#pending) {
+        for (const [name6, text38] of this.#pending) {
           const operations2 = await readCurrentPcbDiagnosticLifecycles();
           this.#assertAttempt(operationId11, intentSha256);
           const operation2 = operations2.find((value2) => value2.operationId === operationId11);
@@ -126745,18 +127418,18 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           requireValue16(Object.keys(operation2.records).every((key) => [...this.#pending].some(([known, value2]) => known === key && canonicalJson(operation2.records[known]) === value2)), "JOURNAL_CHANGED");
           const existing = operation2.records[name6];
           if (existing === void 0) {
-            const parsed2 = diagnosticLifecycleRecordSchemas[name6].parse(JSON.parse(text37));
+            const parsed2 = diagnosticLifecycleRecordSchemas[name6].parse(JSON.parse(text38));
             await this.#publish(operationId11, name6, parsed2);
             this.#assertAttempt(operationId11, intentSha256);
           } else {
-            requireValue16(canonicalJson(existing) === text37, "JOURNAL_CHANGED");
+            requireValue16(canonicalJson(existing) === text38, "JOURNAL_CHANGED");
           }
         }
         const operations = await readCurrentPcbDiagnosticLifecycles();
         this.#assertAttempt(operationId11, intentSha256);
         const operation = operations.find((value2) => value2.operationId === operationId11);
         requireValue16(operation !== void 0, "RESERVATION_MISSING");
-        requireValue16(Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name6, text37]) => canonicalJson(operation.records[name6]) === text37), "JOURNAL_CHANGED");
+        requireValue16(Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name6, text38]) => canonicalJson(operation.records[name6]) === text38), "JOURNAL_CHANGED");
         if (operation.records["released.json"] !== void 0 || operation.records["not-dispatched.json"] !== void 0 || operation.records["no-process-released.json"] !== void 0) {
           this.#releaseLease();
         }
@@ -126843,7 +127516,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         const operations = await readCurrentPcbDiagnosticLifecycles();
         healthy();
         const operation = operations.find((value2) => value2.operationId === operationId11);
-        requireValue16(operation !== void 0 && Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name6, text37]) => canonicalJson(operation.records[name6]) === text37), "PUBLICATION_UNSETTLED");
+        requireValue16(operation !== void 0 && Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name6, text38]) => canonicalJson(operation.records[name6]) === text38), "PUBLICATION_UNSETTLED");
         this.#noProcessInvoked = true;
         const proof = diagnosticLifecycleNoProcessReleaseProofSchema.parse(await retained2.methods.releaseNoProcess.call(retained2.owner));
         this.#assertOwner(retained2);
@@ -126909,7 +127582,10 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           releaseNoProcess: owner.releaseNoProcess,
           browserObservation: owner.browserObservation,
           inspectFrames: owner.inspectFrames,
-          inspectScript: owner.inspectScript
+          inspectScript: owner.inspectScript,
+          inspectWorkers: owner.inspectWorkers,
+          inspectWorkerScript: owner.inspectWorkerScript,
+          observeWorkerState: owner.observeWorkerState
         });
         const retained2 = {
           operationId: request13.operationId,
@@ -126982,7 +127658,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#assertOwner(retained2);
         await assertSnapshot(operations);
         this.#assertOwner(retained2);
-        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script") {
+        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script" || request13.action === "inspect-workers" || request13.action === "inspect-worker-script" || request13.action === "observe-worker-state") {
           return this.#observe(request13, operation, operations, retained2);
         }
         if (request13.action === "observe-window") {
@@ -127062,10 +127738,22 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (request13.action === "inspect-script") {
           stage = "script";
         }
+        if (request13.action === "inspect-workers") {
+          stage = "workers";
+        }
+        if (request13.action === "inspect-worker-script") {
+          stage = "worker-script";
+        }
+        if (request13.action === "observe-worker-state") {
+          stage = "worker-state";
+        }
         requireValue16(operation.records["binding.json"]?.launchAcknowledged === true && retained2.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === void 0 && operation.records["terminated.json"] === void 0, "OBSERVATION_UNAVAILABLE");
         requireValue16(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === void 0, "OBSERVATION_CONSUMED");
         requireValue16(stage !== "frames" || operation.records["browser-result.json"] !== void 0, "BROWSER_OBSERVATION_REQUIRED");
         requireValue16(stage !== "script" || operation.records["frames-result.json"] !== void 0, "FRAME_OBSERVATION_REQUIRED");
+        requireValue16(stage !== "workers" || operation.records["frames-result.json"] !== void 0, "FRAME_OBSERVATION_REQUIRED");
+        requireValue16(stage !== "worker-script" || operation.records["workers-result.json"] !== void 0, "WORKER_OBSERVATION_REQUIRED");
+        requireValue16(stage !== "worker-state" || operation.records["worker-script-result.json"] !== void 0, "WORKER_SOURCE_REQUIRED");
         await this.#installation(retained2);
         await assertSnapshot(operations);
         this.#assertOwner(retained2);
@@ -127075,7 +127763,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           bindingSha256: request13.expectedBindingSha256,
           stage,
-          ...request13.action === "inspect-frames" ? { targetId: request13.targetId } : {},
+          ...request13.action === "inspect-frames" || request13.action === "inspect-worker-script" ? { targetId: request13.targetId } : {},
           ...request13.action === "inspect-script" ? { frameId: request13.frameId, family: request13.family } : {}
         };
         this.#observationConsumed.add(stage);
@@ -127089,8 +127777,14 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           result = await retained2.methods.browserObservation.call(retained2.owner);
         } else if (request13.action === "inspect-frames") {
           result = await retained2.methods.inspectFrames.call(retained2.owner, request13.targetId);
-        } else {
+        } else if (request13.action === "inspect-script") {
           result = await retained2.methods.inspectScript.call(retained2.owner, request13.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request13.family]);
+        } else if (request13.action === "inspect-workers") {
+          result = await retained2.methods.inspectWorkers.call(retained2.owner);
+        } else if (request13.action === "inspect-worker-script") {
+          result = await retained2.methods.inspectWorkerScript.call(retained2.owner, request13.targetId);
+        } else {
+          result = await retained2.methods.observeWorkerState.call(retained2.owner);
         }
         this.#observations.set(stage, result);
         requireValue16(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "OBSERVATION_BOUND");
@@ -127116,7 +127810,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       async #release(operation, operations, retained2) {
         const termination = operation.records["terminated.json"];
         requireValue16(termination !== void 0 && !this.#releaseInvoked, "RELEASE_UNAVAILABLE");
-        requireValue16([...this.#pending].every(([name6, text37]) => canonicalJson(operation.records[name6]) === text37), "PUBLICATION_UNSETTLED");
+        requireValue16([...this.#pending].every(([name6, text38]) => canonicalJson(operation.records[name6]) === text38), "PUBLICATION_UNSETTLED");
         const original2 = this.#pending.get("release-intent.json");
         requireValue16(!this.#releaseAttempted || original2 !== void 0 && canonicalJson(operation.records["release-intent.json"]) === original2, "RELEASE_INTENT_UNSETTLED");
         const intent = original2 === void 0 ? {
@@ -127369,13 +128063,13 @@ var init_current_schematic_stored_header = __esm({
 });
 
 // server/src/current-schematic-child-roster-contract.ts
-import { types as types6 } from "node:util";
+import { types as types7 } from "node:util";
 function need47(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic child data: ${message}`);
   }
 }
-function copy(value2, budget3, depth = 0) {
+function copy2(value2, budget3, depth = 0) {
   budget3.nodes += 1;
   need47(depth <= 10 && budget3.nodes <= 32768, "bound exceeded");
   if (value2 === null || typeof value2 === "boolean") {
@@ -127390,7 +128084,7 @@ function copy(value2, budget3, depth = 0) {
     need47(budget3.bytes <= MAX_BYTES8, "bound exceeded");
     return value2;
   }
-  need47(value2 !== null && typeof value2 === "object" && !types6.isProxy(value2), "plain own data required");
+  need47(value2 !== null && typeof value2 === "object" && !types7.isProxy(value2), "plain own data required");
   const array4 = Array.isArray(value2), prototype = Object.getPrototypeOf(value2);
   need47(array4 ? prototype === Array.prototype : prototype === Object.prototype || prototype === null, "prototype differs");
   const keys2 = Reflect.ownKeys(value2);
@@ -127402,7 +128096,7 @@ function copy(value2, budget3, depth = 0) {
     for (let index = 0; index < descriptor10.value; index += 1) {
       const entry = Object.getOwnPropertyDescriptor(value2, String(index));
       need47(entry !== void 0 && Object.hasOwn(entry, "value"), "array accessor refused");
-      result2.push(copy(entry.value, budget3, depth + 1));
+      result2.push(copy2(entry.value, budget3, depth + 1));
     }
     return result2;
   }
@@ -127413,17 +128107,17 @@ function copy(value2, budget3, depth = 0) {
     need47(budget3.bytes <= MAX_BYTES8, "bound exceeded");
     const entry = Object.getOwnPropertyDescriptor(value2, key);
     need47(entry !== void 0 && Object.hasOwn(entry, "value"), "accessor refused");
-    Object.defineProperty(result, key, { enumerable: true, value: copy(entry.value, budget3, depth + 1) });
+    Object.defineProperty(result, key, { enumerable: true, value: copy2(entry.value, budget3, depth + 1) });
   }
   return result;
 }
 function parseCurrentSchematicChildObservation(raw) {
-  const result = observationSchema4.parse(copy(raw, { nodes: 0, bytes: 0 }));
+  const result = observationSchema4.parse(copy2(raw, { nodes: 0, bytes: 0 }));
   need47(Buffer.byteLength(JSON.stringify(result)) <= MAX_BYTES8, "encoded bound exceeded");
   return freezeDeep(result);
 }
 function copyCurrentSchematicChildTransport(raw) {
-  return copy(raw, { nodes: 0, bytes: 0 });
+  return copy2(raw, { nodes: 0, bytes: 0 });
 }
 var CURRENT_SCHEMATIC_CHILD_MAX_COUNT, MAX_BYTES8, id11, title9, childTitle, finite7, integer11, version4, time5, currentSchematicChildStoredHeaderSchema, currentSchematicChildKvSchema, childAstSchema, currentSchematicChildAstSchema, emptyPending, inactiveCbb, sampleSchema, observationSchema4, CURRENT_SCHEMATIC_CHILD_LIMITATIONS;
 var init_current_schematic_child_roster_contract = __esm({
@@ -127546,7 +128240,7 @@ function nativeTitle(value2) {
   need48(/^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"), "title is outside the locale-invariant ASCII subset");
   return value2.toLowerCase();
 }
-function text27(value2) {
+function text28(value2) {
   need48(value2.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need48(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -127561,11 +128255,11 @@ function structure(before, target9) {
   const tables = before.tables.filter((table15) => table15.name === "project_structures");
   const table14 = tables[0];
   need48(tables.length === 1 && table14 !== void 0, "SQL table identity differs");
-  const rows2 = table14.rows.filter((row7) => text27(field3(table14, row7, "branch_uuid")) === target9.branchUuid);
+  const rows2 = table14.rows.filter((row7) => text28(field3(table14, row7, "branch_uuid")) === target9.branchUuid);
   const first = rows2[0];
   need48(first !== void 0, "selected structure is missing");
-  const encoded = text27(field3(table14, first, "structure"));
-  need48(rows2.every((row7) => text27(field3(table14, row7, "project_uuid")) === target9.projectUuid && text27(field3(table14, row7, "structure")) === encoded), "selected structures disagree");
+  const encoded = text28(field3(table14, first, "structure"));
+  need48(rows2.every((row7) => text28(field3(table14, row7, "project_uuid")) === target9.projectUuid && text28(field3(table14, row7, "structure")) === encoded), "selected structures disagree");
   const tree = JSON.parse(encoded);
   need48(isRecord(tree) && isRecord(tree["schematics"]) && isRecord(tree["owner"]) && tree["owner"]["uuid"] === target9.ownerUuid, "schematic structure or owner differs");
   return tree["schematics"];
@@ -127894,7 +128588,7 @@ function meta3(document3) {
   need50(entries6.length === 1 && entry?.id === "META" && entry.type === "META", "unique ordinary metadata required");
   return entry.body;
 }
-function text28(cell11) {
+function text29(cell11) {
   need50(cell11.kind === "text", "SQL TEXT required");
   const bytes2 = Buffer.from(cell11.hex, "hex"), result = bytes2.toString("utf8");
   need50(Buffer.from(result).equals(bytes2), "exact UTF8 required");
@@ -127910,11 +128604,11 @@ function sheetTree(before, metadata10) {
   const table14 = tables[0];
   need50(tables.length === 1 && table14 !== void 0, "unique structure required");
   const { target: target9 } = metadata10.request;
-  const rows2 = table14.rows.filter((row8) => text28(field4(table14, row8, "branch_uuid")) === target9.branchUuid);
+  const rows2 = table14.rows.filter((row8) => text29(field4(table14, row8, "branch_uuid")) === target9.branchUuid);
   const row7 = rows2[0];
   need50(row7 !== void 0, "selected structure missing");
-  const encoded = text28(field4(table14, row7, "structure"));
-  need50(rows2.every((entry) => text28(field4(table14, entry, "project_uuid")) === target9.projectUuid && text28(field4(table14, entry, "structure")) === encoded), "structure copies differ");
+  const encoded = text29(field4(table14, row7, "structure"));
+  need50(rows2.every((entry) => text29(field4(table14, entry, "project_uuid")) === target9.projectUuid && text29(field4(table14, entry, "structure")) === encoded), "structure copies differ");
   const tree = JSON.parse(encoded);
   need50(
     isRecord(tree) && isRecord(tree["sheets"]) && isRecord(tree["blockSymbols"]) && Object.keys(tree["blockSymbols"]).length === 0,
@@ -128563,7 +129257,7 @@ var init_current_symbol_closed_target_runtime = __esm({
 });
 
 // server/src/current-symbol-copy-preparation.ts
-import { createHash as createHash48 } from "node:crypto";
+import { createHash as createHash50 } from "node:crypto";
 import { constants as constants27 } from "node:fs";
 import { lstat as lstat42, open as open39 } from "node:fs/promises";
 import { basename as basename28, dirname as dirname26, isAbsolute as isAbsolute26, join as join63, relative as relative9, resolve as resolve21, sep as sep7 } from "node:path";
@@ -128622,7 +129316,7 @@ async function noSidecars3(path6) {
   }
 }
 async function verifyBytes2(file3, size3, expectedHash) {
-  const digest11 = createHash48("sha256");
+  const digest11 = createHash50("sha256");
   let bytes2 = 0;
   for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
     need51(Buffer.isBuffer(chunk));
@@ -129138,7 +129832,7 @@ function need53(condition, message) {
     throw new Error(message);
   }
 }
-function text29(value2, maximum5 = 128) {
+function text30(value2, maximum5 = 128) {
   need53(value2.kind === "text" && value2.hex.length <= maximum5 * 2, "Startup SQL requires bounded TEXT.");
   const bytes2 = Buffer.from(value2.hex, "hex"), decoded = bytes2.toString("utf8");
   need53(Buffer.from(decoded).equals(bytes2), "Startup SQL TEXT is not exact UTF8.");
@@ -129159,7 +129853,7 @@ function cell6(owner, row7, name6) {
   return value2;
 }
 function unique3(owner, name6, expected3) {
-  const rows2 = owner.rows.filter((entry) => text29(cell6(owner, entry, name6)) === expected3);
+  const rows2 = owner.rows.filter((entry) => text30(cell6(owner, entry, name6)) === expected3);
   need53(rows2.length === 1 && rows2[0] !== void 0, "Startup SQL identity is not unique.");
   return rows2[0];
 }
@@ -129193,27 +129887,27 @@ async function selectCurrentStartupSql(input) {
   need53(projects.rows.length === 1, "Startup SQL requires exactly one project.");
   const branch = unique3(branches, "uuid", branchUuid2), project3 = unique3(projects, "uuid", projectUuid4);
   need53(
-    text29(cell6(projects, project3, "branch_uuid")) === branchUuid2 && text29(cell6(projects, project3, "owner_uuid")) === ownerUuid && text29(cell6(branches, branch, "project_uuid")) === projectUuid4 && text29(cell6(branches, branch, "history_uuid")) === headHistoryUuid && integer13(cell6(branches, branch, "delete_status")) === 0n && integer13(cell6(branches, branch, "node")) === 0n,
+    text30(cell6(projects, project3, "branch_uuid")) === branchUuid2 && text30(cell6(projects, project3, "owner_uuid")) === ownerUuid && text30(cell6(branches, branch, "project_uuid")) === projectUuid4 && text30(cell6(branches, branch, "history_uuid")) === headHistoryUuid && integer13(cell6(branches, branch, "delete_status")) === 0n && integer13(cell6(branches, branch, "node")) === 0n,
     "Startup SQL project, default branch, owner or head differs."
   );
   const parent = cell6(branches, branch, "parent_uuid");
   if (parent.kind !== "null") {
-    const parentUuid = text29(parent);
+    const parentUuid = text30(parent);
     need53(UUID4.test(parentUuid) && parentUuid !== branchUuid2, "Startup SQL branch parent differs.");
     const start = unique3(branches, "uuid", parentUuid);
     need53(
-      text29(cell6(branches, start, "name")) === "start" && text29(cell6(branches, start, "project_uuid")) === projectUuid4 && integer13(cell6(branches, start, "node")) === 1n && integer13(cell6(branches, start, "delete_status")) === 0n && cell6(branches, start, "parent_uuid").kind === "null" && cell6(branches, start, "history_uuid").kind === "null",
+      text30(cell6(branches, start, "name")) === "start" && text30(cell6(branches, start, "project_uuid")) === projectUuid4 && integer13(cell6(branches, start, "node")) === 1n && integer13(cell6(branches, start, "delete_status")) === 0n && cell6(branches, start, "parent_uuid").kind === "null" && cell6(branches, start, "history_uuid").kind === "null",
       "Startup SQL permits only the terminal empty start-node parent."
     );
   }
   const versions = table7(inventory2, "db_versions");
   const version7 = unique3(versions, "key", "sqlite");
-  const databaseVersion = text29(cell6(versions, version7, "value"));
+  const databaseVersion = text30(cell6(versions, version7, "value"));
   need53(databaseVersion.length > 0, "Startup SQL database version is empty.");
   const histories = table7(inventory2, `project_history_${branchUuid2}`), indexed = /* @__PURE__ */ new Map();
   need53(histories.rows.length === historyRowCount, "Startup SQL complete history row count differs.");
   for (const [index, row7] of histories.rows.entries()) {
-    const uuid12 = text29(cell6(histories, row7, "uuid"));
+    const uuid12 = text30(cell6(histories, row7, "uuid"));
     need53(UUID4.test(uuid12) && !indexed.has(uuid12), "Startup SQL history UUID is invalid or duplicated.");
     rowId(histories, row7);
     indexed.set(uuid12, row7);
@@ -129236,19 +129930,19 @@ async function selectCurrentStartupSql(input) {
     seen.add(next);
     selected3.push(row7);
     const prior = cell6(histories, row7, "parent");
-    next = prior.kind === "null" ? null : text29(prior);
+    next = prior.kind === "null" ? null : text30(prior);
   }
   need53(selected3.length === histories.rows.length, "Startup SQL linked history differs from the complete native ID range.");
   const data9 = table7(inventory2, "history_data");
   const chunkIndex = await indexHistoryChunkUuids(data9);
   let chunks = 0;
   for (const row7 of selected3.toReversed()) {
-    const historyUuid = text29(cell6(histories, row7, "uuid")), num = integer13(cell6(histories, row7, "num"));
+    const historyUuid = text30(cell6(histories, row7, "uuid")), num = integer13(cell6(histories, row7, "num"));
     need53(num >= 0n && num <= 1024n && chunks + Number(num) + 1 <= MAX_HISTORY, "Startup SQL history chunk count is outside the bound.");
     for (let ordinal = 0; ordinal <= Number(num); ordinal += 1) {
       const chunk = chunkIndex.get(ordinal === 0 ? historyUuid : `${historyUuid}-${ordinal}`);
       need53(
-        chunk !== void 0 && chunk !== null && text29(cell6(data9, chunk, "history_uuid")) === historyUuid,
+        chunk !== void 0 && chunk !== null && text30(cell6(data9, chunk, "history_uuid")) === historyUuid,
         "Startup SQL history chunk selection is missing, duplicated or foreign."
       );
       rowId(data9, chunk);
@@ -129807,7 +130501,7 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
   need56(!consumed.has(owner), "Current inverse baseline copy attempt already consumed.");
   consumed.add(owner);
   const { snapshot: snapshot8, originalSnapshot: snapshotSource } = original2.result;
-  const { checkpoint, copy: copy2 } = snapshot8, { inventory: inventory2 } = snapshotSource;
+  const { checkpoint, copy: copy3 } = snapshot8, { inventory: inventory2 } = snapshotSource;
   const preparation3 = original2.preparation.checkpointPreparation, source5 = original2.source;
   const current10 = async () => {
     need56(await revalidateCurrentSymbolInverseBaselineOwner(owner, engine2) === original2, "Inverse baseline owner changed.");
@@ -129839,7 +130533,7 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
   });
   const startupPremises = await assessCurrentStartupPremises({
     inventory: inventory2,
-    sourceSha256: copy2.sha256,
+    sourceSha256: copy3.sha256,
     checkpointSha256: checkpoint.checkpointSha256,
     history,
     target: preparation3.target,
@@ -129854,7 +130548,7 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
     profile: "private.current-symbol-baseline-copy.v1",
     owner,
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     inventory: inventory2,
     preparation: preparation3,
     startupPremises,
@@ -129868,10 +130562,10 @@ async function prepareCurrentSymbolInverseBaselineCopy(engine2, owner) {
   issued6.set(result, { engine: engine2, text: canonicalJson(result), closedLaunch: snapshotSource.launch, closedSession: snapshotSource.capture.bridgeSession });
   return result;
 }
-function copyLineage(checkpoint, copy2) {
-  const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+function copyLineage(checkpoint, copy3) {
+  const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
   need56(
-    copy2.source === checkpoint.source && copy2.sha256 === checkpoint.sourceSha256 && String(copy2.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
+    copy3.source === checkpoint.source && copy3.sha256 === checkpoint.sourceSha256 && String(copy3.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
     "Current symbol baseline copy source lineage changed after checkpoint."
   );
 }
@@ -129949,19 +130643,19 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     checkpoint.sourceIdentity.dev === openingIdentity.dev && checkpoint.sourceIdentity.ino === openingIdentity.ino && checkpoint.sourceIdentity.birthtimeNs === openingIdentity.birthtimeNs,
     "Current symbol baseline source lineage changed since its original opening checkpoint."
   );
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
-  need56(inventory2.checkpointSha256 === copy2.sha256, "Current symbol baseline inventory does not bind its raw copy.");
+  need56(inventory2.checkpointSha256 === copy3.sha256, "Current symbol baseline inventory does not bind its raw copy.");
   const target9 = previous.checkpointPreparation.target;
   need56(
     target9.projectUuid === source5.target.projectUuid && target9.branchUuid === source5.target.branchUuid && target9.symbolUuid !== source5.target.documentUuid && previous.openingOperationId === owner.openingOperationId,
@@ -129993,7 +130687,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   });
   const startupPremises = await assessCurrentStartupPremises({
     inventory: inventory2,
-    sourceSha256: copy2.sha256,
+    sourceSha256: copy3.sha256,
     checkpointSha256: checkpoint.checkpointSha256,
     history,
     target: target9,
@@ -130004,7 +130698,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   let result;
   const common5 = {
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     inventory: inventory2,
     targetEvidence: targetEvidence2,
     startupPremises,
@@ -130022,7 +130716,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     const initial = previous.checkpointPreparation;
     const sourceDocument = history.documents.find((value2) => value2.uuid === target9.symbolUuid);
     need56(
-      preparation3.ownerUuid === target9.ownerUuid && preparation3.beforeCheckpointSha256 === copy2.sha256 && preparation3.beforeRecordsSha256 === history.semanticSha256 && canonicalJson(preparation3.sourceMetadata) === canonicalJson(initial.sourceMetadata) && sourceDocument?.semanticSha256 === initial.sourceDocumentSemanticSha256 && sha256Json(sourceDocument.metadata) === initial.sourceDocumentHeaderSha256 && sourceDocument.documentRecordHistory?.chainSha256 === initial.sourceDocumentRecordsSha256,
+      preparation3.ownerUuid === target9.ownerUuid && preparation3.beforeCheckpointSha256 === copy3.sha256 && preparation3.beforeRecordsSha256 === history.semanticSha256 && canonicalJson(preparation3.sourceMetadata) === canonicalJson(initial.sourceMetadata) && sourceDocument?.semanticSha256 === initial.sourceDocumentSemanticSha256 && sha256Json(sourceDocument.metadata) === initial.sourceDocumentHeaderSha256 && sourceDocument.documentRecordHistory?.chainSha256 === initial.sourceDocumentRecordsSha256,
       "Copy baseline source metadata or complete source document changed since original preparation."
     );
     result = Object.freeze({ ...common5, profile: "private.current-symbol-copy-baseline-copy.v1", owner, preparation: preparation3 });
@@ -130246,21 +130940,21 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
   await current10();
   const oldIdentity = baseline2.checkpoint.sourceIdentity;
   need56(checkpoint.sourceIdentity.dev === oldIdentity.dev && checkpoint.sourceIdentity.ino === oldIdentity.ino && checkpoint.sourceIdentity.birthtimeNs === oldIdentity.birthtimeNs, "Current symbol finish source lineage changed.");
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
   const completion2 = readerCompletion(inventory2);
   need56(
-    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
+    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256,
     "Current symbol finish SQL reader did not complete for its original raw copy."
   );
   const target9 = baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? { ...baseline2.preparation.source, ownerUuid: baseline2.preparation.ownerUuid } : baseline2.preparation.target;
@@ -130280,14 +130974,14 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
   need56(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "Current symbol finish checkpoint receipt changed.");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, policy2);
   await current10();
-  need56(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === copy2.sha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol finish source or checkpoint changed during capture.");
+  need56(verified.ok && !verified.sourceChanged && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && verified.source === sourcePath && verified.checkpoint === checkpoint.checkpoint && verified.sourceSha256 === copy3.sha256 && verified.checkpointSha256 === checkpoint.checkpointSha256, "Current symbol finish source or checkpoint changed during capture.");
   const result = Object.freeze({
     ...predecessor === void 0 ? { profile: baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? "private.current-symbol-copy-finish-snapshot.v1" : "private.current-symbol-finish-snapshot.v1" } : {
       profile: baseline2.profile === "private.current-symbol-copy-baseline-copy.v1" ? "private.current-symbol-copy-verification-snapshot.v1" : "private.current-symbol-verification-snapshot.v1",
       posteditCopyReceiptSha256: predecessor.copy.receiptSha256
     },
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     sql: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 },
     native: {
       projectUuid: history.projectUuid,
@@ -130463,7 +131157,7 @@ var init_current_symbol_cache_journal = __esm({
 });
 
 // server/src/current-symbol-preopen-source.ts
-import { createHash as createHash49 } from "node:crypto";
+import { createHash as createHash51 } from "node:crypto";
 import { constants as constants28 } from "node:fs";
 import { lstat as lstat44, open as open40 } from "node:fs/promises";
 import { basename as basename29, dirname as dirname27, isAbsolute as isAbsolute27, resolve as resolve22 } from "node:path";
@@ -130532,12 +131226,12 @@ async function noSidecars4(path6, current10) {
     need58(absent4, "Current preopen source has a SQLite sidecar.");
   }
 }
-function matchesBaseline(stat3, copy2) {
-  const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
-  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES9 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
+function matchesBaseline(stat3, copy3) {
+  const checkpoint = copy3.checkpoint.sourceIdentity, raw = copy3.copy.sourceIdentity;
+  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES9 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash41(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES2)), digest11 = createHash49("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES2)), digest11 = createHash51("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -130553,19 +131247,19 @@ async function hash41(file3, bytes2, current10) {
   need58(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest11.digest("hex");
 }
-async function verifyCurrentSymbolPreopenSource(engine2, copy2) {
+async function verifyCurrentSymbolPreopenSource(engine2, copy3) {
   const current10 = () => {
-    assertOriginalCurrentSymbolBaselineCopy(copy2, engine2);
+    assertOriginalCurrentSymbolBaselineCopy(copy3, engine2);
   };
-  const observed2 = await verifySource(copy2, current10);
+  const observed2 = await verifySource(copy3, current10);
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
-async function verifyCurrentSymbolCopyPreopenSource(engine2, copy2) {
+async function verifyCurrentSymbolCopyPreopenSource(engine2, copy3) {
   const current10 = () => {
-    assertOriginalCurrentSymbolCopyBaselineCopy(copy2, engine2);
+    assertOriginalCurrentSymbolCopyBaselineCopy(copy3, engine2);
   };
-  const observed2 = await verifySource(copy2, current10);
+  const observed2 = await verifySource(copy3, current10);
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
@@ -130587,11 +131281,11 @@ async function verifyCurrentSymbolCopyPosteditPreopenSource(engine2, snapshot8) 
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-symbol-postedit-preopen-source.v1", sourceMatchesClosedPosteditSnapshot: true });
 }
-async function verifySource(copy2, current10) {
+async function verifySource(copy3, current10) {
   current10();
-  const { source: source5, sourceSha256 } = copy2.checkpoint;
+  const { source: source5, sourceSha256 } = copy3.checkpoint;
   need58(
-    process.platform === "linux" && source5.length <= 4096 && isAbsolute27(source5) && resolve22(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
+    process.platform === "linux" && source5.length <= 4096 && isAbsolute27(source5) && resolve22(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
   const parent = await directory(dirname27(source5), current10);
@@ -130606,7 +131300,7 @@ async function verifySource(copy2, current10) {
     current10();
     const before = await lstat44(path6, { bigint: true });
     current10();
-    need58(matchesBaseline(before, copy2), "Current preopen source differs from the original baseline identity or size.");
+    need58(matchesBaseline(before, copy3), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open40(path6, constants28.O_RDONLY | constants28.O_NOFOLLOW | constants28.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
@@ -130639,7 +131333,7 @@ async function verifySource(copy2, current10) {
       source: source5,
       sourceSha256,
       bytes: Number(before.size),
-      sourceIdentity: Object.freeze({ ...copy2.copy.sourceIdentity }),
+      sourceIdentity: Object.freeze({ ...copy3.copy.sourceIdentity }),
       sidecarsObservedAbsent: true,
       ongoingSourceContinuity: false,
       startupQualified: false,
@@ -130705,9 +131399,9 @@ function textCell(table14, row7, column, maximum5) {
   const index = table14.columns.findIndex((value2) => value2["name"] === column);
   const cell11 = row7.cells[index];
   need59(index !== -1 && cell11?.kind === "text" && cell11.hex.length <= maximum5 * 8, "Selected project actor requires bounded SQL TEXT.");
-  const bytes2 = Buffer.from(cell11.hex, "hex"), text37 = bytes2.toString("utf8");
-  need59(text37.length <= maximum5 && Buffer.from(text37).equals(bytes2), "Selected project actor text is not exact bounded UTF8.");
-  return text37;
+  const bytes2 = Buffer.from(cell11.hex, "hex"), text38 = bytes2.toString("utf8");
+  need59(text38.length <= maximum5 && Buffer.from(text38).equals(bytes2), "Selected project actor text is not exact bounded UTF8.");
+  return text38;
 }
 function projectActor(before, uuid12) {
   const completion2 = readerCompletion(before);
@@ -130865,12 +131559,12 @@ function data3(value2, depth = 0) {
   const keys2 = Reflect.ownKeys(value2);
   need60(keys2.length <= 16);
   fields14(value2, Object.keys(value2));
-  const copy2 = {};
+  const copy3 = {};
   for (const key of keys2) {
     need60(typeof key === "string");
-    Object.defineProperty(copy2, key, { value: data3(value2[key], depth + 1), enumerable: true });
+    Object.defineProperty(copy3, key, { value: data3(value2[key], depth + 1), enumerable: true });
   }
-  return Object.freeze(copy2);
+  return Object.freeze(copy3);
 }
 function documentSample(value2) {
   fields14(value2, [
@@ -130882,12 +131576,12 @@ function documentSample(value2) {
     "rendererTimezoneOffsetMinutes",
     "notifyTabId"
   ]);
-  const copy2 = Object.freeze({ ...value2 });
-  for (const time18 of [copy2.rendererBeforeMs, copy2.serverTimeMs, copy2.rendererAfterMs]) {
+  const copy3 = Object.freeze({ ...value2 });
+  for (const time18 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need60(Number.isSafeInteger(time18) && time18 >= 0 && time18 <= 864e13 && !Object.is(time18, -0));
   }
-  need60(copy2.rendererBeforeMs <= copy2.serverTimeMs && copy2.serverTimeMs <= copy2.rendererAfterMs && copy2.rendererAfterMs - copy2.rendererBeforeMs <= COLLECTION_MS && new Date(copy2.rendererBeforeMs).toISOString() === copy2.rendererBeforeIso && new Date(copy2.rendererAfterMs).toISOString() === copy2.rendererAfterIso && Number.isSafeInteger(copy2.rendererTimezoneOffsetMinutes) && Math.abs(copy2.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy2.rendererTimezoneOffsetMinutes, -0) && typeof copy2.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy2.notifyTabId));
-  return copy2;
+  need60(copy3.rendererBeforeMs <= copy3.serverTimeMs && copy3.serverTimeMs <= copy3.rendererAfterMs && copy3.rendererAfterMs - copy3.rendererBeforeMs <= COLLECTION_MS && new Date(copy3.rendererBeforeMs).toISOString() === copy3.rendererBeforeIso && new Date(copy3.rendererAfterMs).toISOString() === copy3.rendererAfterIso && Number.isSafeInteger(copy3.rendererTimezoneOffsetMinutes) && Math.abs(copy3.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy3.rendererTimezoneOffsetMinutes, -0) && typeof copy3.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy3.notifyTabId));
+  return copy3;
 }
 async function issued7(value2, phase5) {
   const token3 = await assertIssuedWindowsClockObservation(value2);
@@ -131020,7 +131714,7 @@ async function prepareCurrentSymbolTransactionClock(input) {
     documentWindow,
     collectionMaximumMs: COLLECTION_MS,
     ...ASSUMPTIONS,
-    ...LIMITS
+    ...LIMITS2
   });
   plans4.set(plan2, { dispatchOwner: owner, launch, capture: capture3, before, armed, documentBefore: document3, actorPlan, stage: "armed" });
   return plan2;
@@ -131094,7 +131788,7 @@ async function verifyCurrentSymbolTransactionClock(plan2, input) {
     originalWindowsObservationsRetained: true,
     fullActorSqlEffect,
     ...ASSUMPTIONS,
-    ...LIMITS
+    ...LIMITS2
   });
   prepared.completed = Object.freeze({ after: afterInventory, afterText: canonicalJson(afterInventory), comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -131113,7 +131807,7 @@ async function decodeCompletedCurrentSymbolTransactionHistory(plan2, dispatchOwn
   );
   return Object.freeze({ ...decoded, comparison: completed5.comparison });
 }
-var EPOCH_TICKS7, COLLECTION_MS, WINDOW_MS, LIMITS, ASSUMPTIONS, plans4;
+var EPOCH_TICKS7, COLLECTION_MS, WINDOW_MS, LIMITS2, ASSUMPTIONS, plans4;
 var init_current_symbol_transaction_clock = __esm({
   "server/src/current-symbol-transaction-clock.ts"() {
     init_core3();
@@ -131124,7 +131818,7 @@ var init_current_symbol_transaction_clock = __esm({
     EPOCH_TICKS7 = 621355968000000000n;
     COLLECTION_MS = 1e4;
     WINDOW_MS = 6e4;
-    LIMITS = Object.freeze({
+    LIMITS2 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       sourceOwnershipVerified: false,
@@ -131168,7 +131862,7 @@ function cell7(owner, selected3, name6) {
   need61(value2 !== void 0);
   return value2;
 }
-function text30(value2) {
+function text31(value2) {
   need61(value2.kind === "text" && value2.hex.length <= 512);
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need61(bytes2.toString("hex") === value2.hex && Buffer.from(result).equals(bytes2));
@@ -131182,7 +131876,7 @@ async function row6(owner, uuid12) {
     }
     const candidate = owner.rows[index];
     need61(candidate !== void 0);
-    if (text30(cell7(owner, candidate, "uuid")) === uuid12) {
+    if (text31(cell7(owner, candidate, "uuid")) === uuid12) {
       need61(selected3 === void 0);
       selected3 = candidate;
     }
@@ -131195,13 +131889,13 @@ async function selectCurrentUnlockedSqlHead(inventory2, target9) {
   need61(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && canonicalJson(inventory2.schema) === canonicalJson(nativeProjectSymbolSqlSchema(target9.branchUuid).entries));
   const branches = table8(inventory2, "branches"), projects = table8(inventory2, "projects");
   const branch = await row6(branches, target9.branchUuid), project3 = await row6(projects, target9.projectUuid);
-  need61(projects.rows.length === 1 && text30(cell7(projects, project3, "branch_uuid")) === target9.branchUuid && text30(cell7(projects, project3, "owner_uuid")) === target9.ownerUuid && text30(cell7(branches, branch, "project_uuid")) === target9.projectUuid);
-  const historyUuid = text30(cell7(branches, branch, "history_uuid"));
+  need61(projects.rows.length === 1 && text31(cell7(projects, project3, "branch_uuid")) === target9.branchUuid && text31(cell7(projects, project3, "owner_uuid")) === target9.ownerUuid && text31(cell7(branches, branch, "project_uuid")) === target9.projectUuid);
+  const historyUuid = text31(cell7(branches, branch, "history_uuid"));
   need61(/^[a-f0-9]{32}$/u.test(historyUuid));
   const history = table8(inventory2, `project_history_${target9.branchUuid}`), selected3 = await row6(history, historyUuid);
   const locked = cell7(history, selected3, "is_lock");
   need61(locked.kind === "integer" && locked.decimal === "0");
-  const createdAtLiteral = text30(cell7(history, selected3, "created_at"));
+  const createdAtLiteral = text31(cell7(history, selected3, "created_at"));
   validateClockControlScope({ createdAtLiteral, referenceUtcMs: 0 });
   return Object.freeze({ historyUuid, createdAtLiteral });
 }
@@ -131450,9 +132144,9 @@ var init_current_aged_sql_reference = __esm({
         const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained2));
         await current10();
         need63(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
-        const text37 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
-        need63(text37.text === returned.stdout);
-        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text37.text), invocation);
+        const text38 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
+        need63(text38.text === returned.stdout);
+        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text38.text), invocation);
         const reference3 = observation2["reference"];
         need63(isRecord(reference3));
         const controlsAfter = validateClockControls(
@@ -131809,15 +132503,15 @@ function data4(value2, depth = 0) {
   if (Object.getPrototypeOf(value2) !== Object.prototype && Object.getPrototypeOf(value2) !== null || Reflect.ownKeys(value2).length > 16) {
     throw new Error("CURRENT_SAVED_SYMBOL_INPUT");
   }
-  const copy2 = {};
+  const copy3 = {};
   for (const key of Reflect.ownKeys(value2)) {
     const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
     if (typeof key !== "string" || descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       throw new Error("CURRENT_SAVED_SYMBOL_INPUT");
     }
-    Object.defineProperty(copy2, key, { value: data4(descriptor10.value, depth + 1), enumerable: true });
+    Object.defineProperty(copy3, key, { value: data4(descriptor10.value, depth + 1), enumerable: true });
   }
-  return copy2;
+  return copy3;
 }
 function request4(value2) {
   const selected3 = currentSavedSymbolReadRequestSchema.parse(data4(value2));
@@ -133063,21 +133757,21 @@ var init_current_symbol_writer_runtime = __esm({
           capture: slot.source.original.capture,
           launch: slot.source.original.launch
         });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need69(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37, "Current symbol writer marked journal changed.");
-        slot.journalText = text37;
+        need69(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38, "Current symbol writer marked journal changed.");
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need69(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37, "Current symbol writer cleared journal changed.");
-        slot.journalText = text37;
+        need69(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38, "Current symbol writer cleared journal changed.");
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -134259,21 +134953,21 @@ var init_current_symbol_verification_runtime = __esm({
         const lease = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.();
         need72(lease !== void 0 && slot.capture !== void 0 && slot.launch !== void 0);
         assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: lease, capture: slot.capture, launch: slot.launch });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need72(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need72(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need72(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need72(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -135253,9 +135947,9 @@ var init_current_copy_aged_sql_reference = __esm({
         const resultArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-result", retained2));
         await current10();
         need74(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
-        const text37 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
-        need74(text37.text === returned.stdout);
-        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text37.text), invocation);
+        const text38 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
+        need74(text38.text === returned.stdout);
+        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text38.text), invocation);
         const reference3 = observation2["reference"];
         need74(isRecord(reference3));
         const controlsAfter = validateClockControls(
@@ -135717,18 +136411,18 @@ async function revalidateBaselineOwner2(owner, engine2) {
     await revalidateCurrentSymbolBaselineOwner(owner, engine2);
   }
 }
-function assertBaselineCopy(copy2, engine2) {
-  if (copy2.profile === "private.current-symbol-copy-baseline-copy.v1") {
-    assertOriginalCurrentSymbolCopyBaselineCopy(copy2, engine2);
+function assertBaselineCopy(copy3, engine2) {
+  if (copy3.profile === "private.current-symbol-copy-baseline-copy.v1") {
+    assertOriginalCurrentSymbolCopyBaselineCopy(copy3, engine2);
   } else {
-    assertOriginalCurrentSymbolBaselineCopy(copy2, engine2);
+    assertOriginalCurrentSymbolBaselineCopy(copy3, engine2);
   }
 }
-async function revalidateBaselineCopy2(engine2, copy2, proof) {
-  await (copy2.profile === "private.current-symbol-copy-baseline-copy.v1" ? revalidateCurrentSymbolCopyBaselineCopy(engine2, copy2, proof) : revalidateCurrentSymbolBaselineCopy(engine2, copy2, proof));
+async function revalidateBaselineCopy2(engine2, copy3, proof) {
+  await (copy3.profile === "private.current-symbol-copy-baseline-copy.v1" ? revalidateCurrentSymbolCopyBaselineCopy(engine2, copy3, proof) : revalidateCurrentSymbolBaselineCopy(engine2, copy3, proof));
 }
-function preopenSource(engine2, copy2) {
-  return copy2.profile === "private.current-symbol-copy-baseline-copy.v1" ? verifyCurrentSymbolCopyPreopenSource(engine2, copy2) : verifyCurrentSymbolPreopenSource(engine2, copy2);
+function preopenSource(engine2, copy3) {
+  return copy3.profile === "private.current-symbol-copy-baseline-copy.v1" ? verifyCurrentSymbolCopyPreopenSource(engine2, copy3) : verifyCurrentSymbolPreopenSource(engine2, copy3);
 }
 function assertCurrentProjectOnlySymbolCopyGeneration(value2, engine2, scopeText) {
   need77(value2 !== null && typeof value2 === "object", "Current copy project-only original generation is missing.");
@@ -135997,12 +136691,12 @@ var init_current_symbol_baseline_runtime = __esm({
       /** Register the original inverse slot before transferring its predecessor's
        * held closure. No new capture, reservation reuse or copied JSON owner occurs.
        */
-      async adoptInverse(owner, copy2, reference3) {
+      async adoptInverse(owner, copy3, reference3) {
         need77(!this.busy && !this.slots.has(owner.operationId), "Inverse baseline adoption is already consumed.");
         const original2 = assertCurrentSymbolInverseBaselineOwner(owner, this.engine), source5 = original2.source;
-        need77(source5.runtime === this.runtime && !currentSymbolInverseOwnershipTransferred(owner, this.engine) && copy2.owner === owner && canonicalJson(this.sqlRuntime) === canonicalJson(original2.result.writer.sqlRuntime), "Inverse baseline original runtime differs.");
-        assertOriginalCurrentSymbolBaselineCopy(copy2, this.engine);
-        assertOriginalCurrentAgedSqlReference(reference3, this.engine, copy2);
+        need77(source5.runtime === this.runtime && !currentSymbolInverseOwnershipTransferred(owner, this.engine) && copy3.owner === owner && canonicalJson(this.sqlRuntime) === canonicalJson(original2.result.writer.sqlRuntime), "Inverse baseline original runtime differs.");
+        assertOriginalCurrentSymbolBaselineCopy(copy3, this.engine);
+        assertOriginalCurrentAgedSqlReference(reference3, this.engine, copy3);
         const purpose = source5.purpose ?? "disposable-validation";
         need77(purpose === "disposable-validation" || purpose === "ordinary-symbol-metadata", "Symbol inverse cannot consume another operation purpose.");
         const plan2 = {
@@ -136057,7 +136751,7 @@ var init_current_symbol_baseline_runtime = __esm({
           created: false,
           capture: original2.result.originalSnapshot.capture,
           proof: original2.result.originalSnapshot.proof,
-          copy: copy2,
+          copy: copy3,
           closeAttempted: true,
           copyAttempted: true,
           baselineCaptured: true,
@@ -136667,7 +137361,7 @@ var init_current_symbol_baseline_runtime = __esm({
         );
         this.busy = true;
         slot.relaunchAttempted = true;
-        const { copy: copy2, proof, capture: capture3 } = slot;
+        const { copy: copy3, proof, capture: capture3 } = slot;
         try {
           this.outsideScope(slot);
           await this.unchanged(slot);
@@ -136696,7 +137390,7 @@ var init_current_symbol_baseline_runtime = __esm({
               this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method6, index) => method6 === methods20[index]) && (scopeText === void 0 ? scope6 === void 0 : scope6 !== void 0 && canonicalJson(scope6) === scopeText) && this.slots.get(operationId11) === slot && slot.source === source5 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source5.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText && canonicalJson({ target: source5.target, expectedFingerprint: source5.expectedFingerprint, preNavigationCheckpoint: source5.preNavigationCheckpoint }) === sourceText,
               "Current symbol relaunch infrastructure, capture or ended scope changed."
             );
-            assertBaselineCopy(copy2, this.engine);
+            assertBaselineCopy(copy3, this.engine);
             const lifecycle = lifecycleReader.call(upstream2);
             need77(isRecord(lifecycle) && lifecycle["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && lifecycle["gatewayInstanceId"] === priorSession.gatewayInstanceId && canonicalJson(lifecycle["publicEndpoint"]) === endpointText && Array.isArray(lifecycle["recentClosedSessions"]), "Current symbol relaunch gateway changed.");
             const closed = lifecycle["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === priorSession.sessionId);
@@ -136740,16 +137434,16 @@ var init_current_symbol_baseline_runtime = __esm({
           };
           previous();
           if (slot.clockReferenceAttempted) {
-            if (copy2.profile === "private.current-symbol-copy-baseline-copy.v1") {
+            if (copy3.profile === "private.current-symbol-copy-baseline-copy.v1") {
               need77(slot.copyClockReference !== void 0 && slot.clockReference === void 0, "Copy relaunch lost its original copy clock reference.");
-              await revalidateOriginalCurrentCopyAgedSqlReference(slot.copyClockReference, this.engine, copy2);
+              await revalidateOriginalCurrentCopyAgedSqlReference(slot.copyClockReference, this.engine, copy3);
             } else {
               need77(slot.clockReference !== void 0 && slot.copyClockReference === void 0, "Current symbol relaunch lost its optional original clock reference.");
-              await revalidateOriginalCurrentAgedSqlReference(slot.clockReference, this.engine, copy2);
+              await revalidateOriginalCurrentAgedSqlReference(slot.clockReference, this.engine, copy3);
             }
             previous();
           }
-          await revalidateBaselineCopy2(this.engine, copy2, proof);
+          await revalidateBaselineCopy2(this.engine, copy3, proof);
           previous();
           slot.terminationClock = await windowsClockObservationForResult(proof, "termination");
           previous();
@@ -136758,13 +137452,13 @@ var init_current_symbol_baseline_runtime = __esm({
           slot.journal.hardStop = true;
           slot.journal.nextSafeAction = "Retain this one launch result; never repeat launch after an uncertain return.";
           await _CurrentSymbolBaselineCoordinator.record(slot, "relaunch-intent", {
-            copyReceiptSha256: copy2.copy.receiptSha256,
-            checkpoint: copy2.checkpoint,
+            copyReceiptSha256: copy3.copy.receiptSha256,
+            checkpoint: copy3.checkpoint,
             proof,
             terminationClock: slot.terminationClock
           });
           previous();
-          await revalidateBaselineCopy2(this.engine, copy2, proof);
+          await revalidateBaselineCopy2(this.engine, copy3, proof);
           previous();
           await this.unchanged(slot);
           previous();
@@ -137187,11 +137881,11 @@ var init_current_symbol_baseline_runtime = __esm({
         }
         this.busy = true;
         slot.projectOpenAttempted = true;
-        const { source: source5, copy: copy2, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
+        const { source: source5, copy: copy3, sessionCurrent, admissionCapture, admissionClock, launch } = slot;
         try {
           const current10 = async (scopeText) => {
             sessionCurrent(scopeText);
-            assertBaselineCopy(copy2, this.engine);
+            assertBaselineCopy(copy3, this.engine);
             const persisted = await loadOperation(operationId11);
             sessionCurrent(scopeText);
             need77(
@@ -137212,8 +137906,8 @@ var init_current_symbol_baseline_runtime = __esm({
           await original2();
           if (supportedStartup) {
             const history = await readNativeHistoryCheckpoint({
-              checkpointPath: copy2.checkpoint.checkpoint,
-              expectedSha256: copy2.checkpoint.checkpointSha256,
+              checkpointPath: copy3.checkpoint.checkpoint,
+              expectedSha256: copy3.checkpoint.checkpointSha256,
               projectUuid: source5.target.projectUuid,
               libraryAtomHeaders: "preserve"
             });
@@ -137227,7 +137921,7 @@ var init_current_symbol_baseline_runtime = __esm({
           await this.engine.assertBridgeAndRecoveryAdmission(operationId11);
           await current10();
           validateSdkLocalRuntimeFingerprint(source5.expectedFingerprint);
-          const target9 = { ...source5.target, expectedSourceSha256: copy2.checkpoint.sourceSha256 };
+          const target9 = { ...source5.target, expectedSourceSha256: copy3.checkpoint.sourceSha256 };
           const code = buildCurrentProjectOnlyOpenProgram(target9), scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need77(typeof scope6 === "function", "Current project-only opening lacks its owned scope.");
           let completed5 = false;
@@ -137247,7 +137941,7 @@ var init_current_symbol_baseline_runtime = __esm({
             assertSubset(fingerprint, source5.expectedFingerprint, "Current project-only runtime");
             await verifyCurrentProjectOnlyOpenImplementation(fingerprint.installedBundles.assetsRoot);
             await original2(scopeText);
-            slot.preopenSource = await preopenSource(this.engine, copy2);
+            slot.preopenSource = await preopenSource(this.engine, copy3);
             await original2(scopeText);
             slot.journal.projectOpenAttempted = true;
             slot.journal.state = "project-only-dispatching";
@@ -137258,7 +137952,7 @@ var init_current_symbol_baseline_runtime = __esm({
               target: target9,
               programSha256: sha256Json({ code }),
               source: slot.preopenSource,
-              startupPremises: copy2.startupPremises,
+              startupPremises: copy3.startupPremises,
               runtimeFingerprintSha256: sha256Json(fingerprint),
               projectOpeningMode: slot.journal.projectOpeningMode,
               unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
@@ -137297,7 +137991,7 @@ var init_current_symbol_baseline_runtime = __esm({
                 await original2(scopeText);
                 await this.engine.assertRecoveryOperationIsolated(operationId11);
                 await current10(scopeText);
-                slot.preopenSource = await preopenSource(this.engine, copy2);
+                slot.preopenSource = await preopenSource(this.engine, copy3);
                 await original2(scopeText);
               },
               async (raw) => {
@@ -137352,7 +138046,7 @@ var init_current_symbol_baseline_runtime = __esm({
             runtimeFingerprintSha256: sha256Json(initial),
             projectOpeningMode: slot.journal.projectOpeningMode,
             unqualifiedSchematicStartupEffectsAccepted: observeSchematicEffects,
-            startupPremises: copy2.startupPremises,
+            startupPremises: copy3.startupPremises,
             startupQualified: false,
             persistenceVerified: false,
             executionAuthorized: false
@@ -137368,9 +138062,9 @@ var init_current_symbol_baseline_runtime = __esm({
         }
       }
       issueProjectOnlyGeneration(slot) {
-        const { source: source5, copy: copy2, sessionCurrent, admissionCapture: capture3, admissionClock: captureClock3, launch, launchClock } = slot;
+        const { source: source5, copy: copy3, sessionCurrent, admissionCapture: capture3, admissionClock: captureClock3, launch, launchClock } = slot;
         need77(
-          source5 !== void 0 && copy2 !== void 0 && sessionCurrent !== void 0 && capture3 !== void 0 && captureClock3 !== void 0 && launch !== void 0 && launchClock !== void 0 && slot.projectOnlyGeneration === void 0,
+          source5 !== void 0 && copy3 !== void 0 && sessionCurrent !== void 0 && capture3 !== void 0 && captureClock3 !== void 0 && launch !== void 0 && launchClock !== void 0 && slot.projectOnlyGeneration === void 0,
           "Current project-only generation lacks its original settled replacement bindings."
         );
         const token3 = slot.purpose === "disposable-symbol-copy" ? Object.freeze({ profile: "private.current-project-only-symbol-copy-generation.v1", operationId: slot.owner.operationId }) : Object.freeze({ profile: "private.current-project-only-symbol-generation.v1", operationId: slot.owner.operationId });
@@ -137385,11 +138079,11 @@ var init_current_symbol_baseline_runtime = __esm({
         const journalText = slot.journalText;
         const current10 = (scopeText) => {
           need77(
-            this.slots.get(token3.operationId) === slot && slot.projectOnlyGeneration === token3 && canonicalJson(token3) === tokenText && slot.owner.operationId === token3.operationId && slot.source === source5 && slot.copy === copy2 && slot.sessionCurrent === sessionCurrent && slot.originalPreparation === originalPreparation && canonicalJson(originalPreparation) === slot.originalPreparationText && slot.admissionCapture === capture3 && slot.admissionClock === captureClock3 && slot.launch === launch && slot.launchClock === launchClock && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && slot.projectOpened && slot.admissionProved && slot.cachesObserved && slot.captureReleased && !slot.finishing && !slot.finishCloseAttempted && !slot.finishReleaseAttempted && !slot.finishCaptureReleased && !slot.finished && (slot.writerTransfer === void 0 ? slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText : slot.journal.plan.profile === (slot.purpose === "disposable-symbol-copy" ? "easyeda-pro-control.current-symbol-copy-writer.v1" : "easyeda-pro-control.current-symbol-writer.v1")),
+            this.slots.get(token3.operationId) === slot && slot.projectOnlyGeneration === token3 && canonicalJson(token3) === tokenText && slot.owner.operationId === token3.operationId && slot.source === source5 && slot.copy === copy3 && slot.sessionCurrent === sessionCurrent && slot.originalPreparation === originalPreparation && canonicalJson(originalPreparation) === slot.originalPreparationText && slot.admissionCapture === capture3 && slot.admissionClock === captureClock3 && slot.launch === launch && slot.launchClock === launchClock && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && slot.projectOpened && slot.admissionProved && slot.cachesObserved && slot.captureReleased && !slot.finishing && !slot.finishCloseAttempted && !slot.finishReleaseAttempted && !slot.finishCaptureReleased && !slot.finished && (slot.writerTransfer === void 0 ? slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText : slot.journal.plan.profile === (slot.purpose === "disposable-symbol-copy" ? "easyeda-pro-control.current-symbol-copy-writer.v1" : "easyeda-pro-control.current-symbol-writer.v1")),
             "Current project-only original generation was changed, stopped or retired."
           );
           sessionCurrent(scopeText);
-          assertBaselineCopy(copy2, this.engine);
+          assertBaselineCopy(copy3, this.engine);
           need77(
             assertCurrentIssuedWindowsClockObservation(launchClock) === launchClock && assertCurrentIssuedWindowsClockObservation(captureClock3) === captureClock3,
             "Current project-only generation lost its original Windows clock owners."
@@ -137429,11 +138123,11 @@ var init_current_symbol_baseline_runtime = __esm({
           let retired = false;
           const transferredCurrent = (scopeText) => {
             need77(
-              !retired && this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.admissionCapture === capture3 && slot.launch === launch && slot.copy === copy2 && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText,
+              !retired && this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.admissionCapture === capture3 && slot.launch === launch && slot.copy === copy3 && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText,
               "Current symbol writer transfer changed or retired."
             );
             currentLaunch(scopeText);
-            assertBaselineCopy(copy2, this.engine);
+            assertBaselineCopy(copy3, this.engine);
           };
           const lifetime = Object.freeze({
             journal: slot.journal,
@@ -137457,10 +138151,10 @@ var init_current_symbol_baseline_runtime = __esm({
         };
         if (token3.profile === "private.current-project-only-symbol-copy-generation.v1") {
           need77(
-            copy2.profile === "private.current-symbol-copy-baseline-copy.v1" && originalPreparation.profile === "private.current-owned-symbol-copy-preparation.v1",
+            copy3.profile === "private.current-symbol-copy-baseline-copy.v1" && originalPreparation.profile === "private.current-owned-symbol-copy-preparation.v1",
             "Copy generation requires its original copy baseline and preparation."
           );
-          const value3 = Object.freeze({ ...common5, baseline: copy2, originalPreparation });
+          const value3 = Object.freeze({ ...common5, baseline: copy3, originalPreparation });
           const transfer2 = () => {
             need77(slot.purpose === "disposable-symbol-copy", "Copy transfer requires its exact original operation purpose.");
             const owner = Object.freeze({ profile: "private.current-symbol-copy-writer-owner.v1", operationId: token3.operationId });
@@ -137473,10 +138167,10 @@ var init_current_symbol_baseline_runtime = __esm({
           return;
         }
         need77(
-          copy2.profile === "private.current-symbol-baseline-copy.v1" && originalPreparation.profile !== "private.current-owned-symbol-copy-preparation.v1",
+          copy3.profile === "private.current-symbol-baseline-copy.v1" && originalPreparation.profile !== "private.current-owned-symbol-copy-preparation.v1",
           "Metadata generation cannot consume a copy baseline or preparation."
         );
-        const value2 = Object.freeze({ ...common5, baseline: copy2, originalPreparation });
+        const value2 = Object.freeze({ ...common5, baseline: copy3, originalPreparation });
         const transfer = () => {
           const owner = Object.freeze({ profile: "private.current-symbol-writer-owner.v1", operationId: token3.operationId });
           const transferred = Object.freeze({ generation: token3, original: value2, ...transferLifetime(owner) });
@@ -138262,11 +138956,11 @@ var init_current_symbol_inverse_runtime = __esm({
           const owner = await prepareCurrentSymbolInverseOwner(this.engine, result);
           this.owner = owner;
           const original2 = assertCurrentSymbolInverseBaselineOwner(owner, this.engine);
-          const copy2 = await prepareCurrentSymbolInverseBaselineCopy(this.engine, owner);
-          const reference3 = await new CurrentAgedSqlReferenceStage(this.engine).runOnce({ baseline: copy2, proof: original2.result.originalSnapshot.proof });
+          const copy3 = await prepareCurrentSymbolInverseBaselineCopy(this.engine, owner);
+          const reference3 = await new CurrentAgedSqlReferenceStage(this.engine).runOnce({ baseline: copy3, proof: original2.result.originalSnapshot.proof });
           const baseline2 = new CurrentSymbolBaselineCoordinator(this.engine, original2.source.runtime, original2.result.writer.sqlRuntime);
           this.baseline = baseline2;
-          await baseline2.adoptInverse(owner, copy2, reference3);
+          await baseline2.adoptInverse(owner, copy3, reference3);
           this.prepared = true;
           return await this.inspect(owner.operationId);
         } catch (error52) {
@@ -138901,13 +139595,13 @@ function dataFields(value2, names2) {
   if (names2 !== void 0) {
     need80(keys2.length === names2.length, "input keys are missing");
   }
-  const copy2 = {};
+  const copy3 = {};
   for (const key of keys2) {
     const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
     need80(typeof key === "string" && descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value"), "input accessors refused");
-    Object.defineProperty(copy2, key, { value: descriptor10.value, enumerable: true });
+    Object.defineProperty(copy3, key, { value: descriptor10.value, enumerable: true });
   }
-  return copy2;
+  return copy3;
 }
 function captureWitness(value2) {
   const fields26 = dataFields(value2);
@@ -138917,7 +139611,7 @@ function captureWitness(value2) {
   }
   return Object.freeze(result);
 }
-function text31(value2) {
+function text32(value2) {
   need80(value2?.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need80(Buffer.from(result).equals(bytes2), "SQL TEXT is not exact UTF8");
@@ -138938,7 +139632,7 @@ function field5(owner, row7, name6) {
   return value2;
 }
 function unique4(owner, name6, expected3) {
-  const matches = owner.rows.filter((row7) => text31(field5(owner, row7, name6)) === expected3);
+  const matches = owner.rows.filter((row7) => text32(field5(owner, row7, name6)) === expected3);
   need80(matches.length === 1 && matches[0] !== void 0, "required identity is not unique");
   return matches[0];
 }
@@ -138999,7 +139693,7 @@ function headEligibility(head2, owner, witness) {
     return "locked";
   }
   const age = witness.agedHead;
-  need80(age !== void 0 && age.createdAtLiteral === text31(field5(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
+  need80(age !== void 0 && age.createdAtLiteral === text32(field5(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
   const adjusted = age.nativeParsedLocalMs - age.nativeTimezoneOffsetMinutes * 6e4;
   need80(Number.isSafeInteger(adjusted) && witness.backendClockMinMs - adjusted >= 61e3, "head is not aged throughout the selection window");
   return "aged-unlocked";
@@ -139009,19 +139703,19 @@ function branchParent(before, branch, witness) {
   if (parent.kind === "null") {
     return;
   }
-  const uuid12 = text31(parent);
+  const uuid12 = text32(parent);
   need80(UUID5.test(uuid12) && uuid12 !== witness.branchUuid, "branch parent identity refused");
   const start = unique4(branches, "uuid", uuid12);
-  need80(text31(field5(branches, start, "name")) === "start" && integer16(field5(branches, start, "node")) === 1n && integer16(field5(branches, start, "delete_status")) === 0n && text31(field5(branches, start, "project_uuid")) === witness.projectUuid && field5(branches, start, "parent_uuid").kind === "null" && field5(branches, start, "history_uuid").kind === "null", "branch parent is not the terminal empty start node");
+  need80(text32(field5(branches, start, "name")) === "start" && integer16(field5(branches, start, "node")) === 1n && integer16(field5(branches, start, "delete_status")) === 0n && text32(field5(branches, start, "project_uuid")) === witness.projectUuid && field5(branches, start, "parent_uuid").kind === "null" && field5(branches, start, "history_uuid").kind === "null", "branch parent is not the terminal empty start node");
 }
 function actor(before, uuid12) {
   const users = table9(before, "users");
   need80(users.rows.length <= 4096, "project user bound exceeded");
-  const matches = users.rows.filter((row8) => text31(field5(users, row8, "uuid")) === uuid12);
+  const matches = users.rows.filter((row8) => text32(field5(users, row8, "uuid")) === uuid12);
   need80(matches.length <= 1, "project actor is ambiguous");
   const row7 = matches[0];
-  const username = row7 === void 0 ? "" : text31(field5(users, row7, "username"));
-  const nickname = row7 === void 0 ? "" : text31(field5(users, row7, "nickname"));
+  const username = row7 === void 0 ? "" : text32(field5(users, row7, "username"));
+  const nickname = row7 === void 0 ? "" : text32(field5(users, row7, "nickname"));
   need80(username.length <= ACTOR_NAME_MAX_CODE_UNITS && nickname.length <= ACTOR_NAME_MAX_CODE_UNITS, "project actor name bound exceeded");
   return { username, nickname };
 }
@@ -139077,14 +139771,14 @@ function sqlBudget(prepared, plaintextBytes) {
 async function prepareCurrentSymbolCopySqlPlan(input) {
   const fields26 = dataFields(input, ["before", "copyPlan", "witness"]);
   const before = input.before;
-  const copy2 = input.copyPlan;
-  need80(fields26["before"] === before && fields26["copyPlan"] === copy2, "input identity changed during capture");
+  const copy3 = input.copyPlan;
+  need80(fields26["before"] === before && fields26["copyPlan"] === copy3, "input identity changed during capture");
   const witness = captureWitness(fields26["witness"]);
-  assertCurrentSymbolCopyPlanInventory(copy2, before);
+  assertCurrentSymbolCopyPlanInventory(copy3, before);
   supported2(before, witness.branchUuid);
   const completion2 = readerCompletion(before);
   need80(
-    witness.projectUuid === copy2.source.projectUuid && witness.branchUuid === copy2.source.branchUuid && witness.preDispatchMaxTicket === copy2.maximumTicket,
+    witness.projectUuid === copy3.source.projectUuid && witness.branchUuid === copy3.source.branchUuid && witness.preDispatchMaxTicket === copy3.maximumTicket,
     "witness differs from the original source plan"
   );
   const projects = table9(before, "projects");
@@ -139092,27 +139786,27 @@ async function prepareCurrentSymbolCopySqlPlan(input) {
   const project3 = unique4(projects, "uuid", witness.projectUuid);
   const branch = unique4(branches, "uuid", witness.branchUuid);
   branchParent(before, branch, witness);
-  const history = table9(before, `project_history_${witness.branchUuid}`), oldHead = text31(field5(branches, branch, "history_uuid"));
+  const history = table9(before, `project_history_${witness.branchUuid}`), oldHead = text32(field5(branches, branch, "history_uuid"));
   const eligibility = headEligibility(unique4(history, "uuid", oldHead), history, witness);
   const data9 = table9(before, "history_data");
   const structureTable = table9(before, "project_structures");
   const dataAllocation = sequenceAllocation(before, data9), structureAllocation = sequenceAllocation(before, structureTable);
-  const structures = structureTable.rows.filter((row7) => text31(field5(structureTable, row7, "branch_uuid")) === witness.branchUuid);
+  const structures = structureTable.rows.filter((row7) => text32(field5(structureTable, row7, "branch_uuid")) === witness.branchUuid);
   const first = structures[0];
   need80(first !== void 0, "baseline structure rows are missing");
-  const structureText = text31(field5(structureTable, first, "structure")), structureTicket = integer16(field5(structureTable, first, "ticket"));
+  const structureText = text32(field5(structureTable, first, "structure")), structureTicket = integer16(field5(structureTable, first, "ticket"));
   const structure4 = JSON.parse(structureText);
   need80(
     isRecord(structure4) && JSON.stringify(structure4) === structureText && Object.keys(structure4).length === 7 && ["boards", "schematics", "sheets", "pcbs", "panels", "blockSymbols", "owner"].every((name6) => isRecord(structure4[name6])),
     "baseline structure is not an exact minified native-shaped tree"
   );
-  need80(structureTicket >= 0n && structureTicket <= BigInt(copy2.maximumTicket), "baseline structure ticket refused");
+  need80(structureTicket >= 0n && structureTicket <= BigInt(copy3.maximumTicket), "baseline structure ticket refused");
   for (const row7 of structures) {
-    need80(text31(field5(structureTable, row7, "project_uuid")) === witness.projectUuid && integer16(field5(structureTable, row7, "ticket")) === structureTicket && text31(field5(structureTable, row7, "structure")) === structureText, "baseline structure multiplicity is ambiguous");
+    need80(text32(field5(structureTable, row7, "project_uuid")) === witness.projectUuid && integer16(field5(structureTable, row7, "ticket")) === structureTicket && text32(field5(structureTable, row7, "structure")) === structureText, "baseline structure multiplicity is ambiguous");
   }
   const prepared = {
     before,
-    copy: copy2,
+    copy: copy3,
     witness,
     project: project3,
     branch,
@@ -139131,23 +139825,23 @@ async function prepareCurrentSymbolCopySqlPlan(input) {
   };
   const maximumRaw = [
     editRow(prepared, witness.backendClockMaxMs),
-    headerRow(witness, "0".repeat(16), copy2.metadataTicket, witness.documentClockMaxMs),
-    `${JSON.stringify({ type: "META", ticket: copy2.metadataTicket, id: "META" })}||${JSON.stringify(copy2.destinationMetadata)}`,
-    headerRow(witness, "0".repeat(16), copy2.canvasHeaderTicket, witness.documentClockMaxMs),
-    ...currentSymbolCopySourceRows(copy2)
+    headerRow(witness, "0".repeat(16), copy3.metadataTicket, witness.documentClockMaxMs),
+    `${JSON.stringify({ type: "META", ticket: copy3.metadataTicket, id: "META" })}||${JSON.stringify(copy3.destinationMetadata)}`,
+    headerRow(witness, "0".repeat(16), copy3.canvasHeaderTicket, witness.documentClockMaxMs),
+    ...currentSymbolCopySourceRows(copy3)
   ].join("|\n");
   const maximumPlaintextBytes = Buffer.byteLength(maximumRaw);
   const capacity = sqlBudget(prepared, maximumPlaintextBytes);
   const decoded = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: witness.projectUuid, branchUuid: witness.branchUuid });
-  need80(decoded.maximumTicket === copy2.maximumTicket && decoded.history.plaintextBytes + maximumPlaintextBytes <= 8388608, "complete raw-history capacity exceeded");
-  assertCurrentSymbolCopyPlanInventory(copy2, before);
+  need80(decoded.maximumTicket === copy3.maximumTicket && decoded.history.plaintextBytes + maximumPlaintextBytes <= 8388608, "complete raw-history capacity exceeded");
+  assertCurrentSymbolCopyPlanInventory(copy3, before);
   need80(readerCompletion(before) === completion2, "original reader changed during preparation");
   const plan2 = Object.freeze({
     profile: "private.current-symbol-copy-sql-plan.v1",
     beforeSqlSha256: before.logicalSha256,
-    sourceUuid: copy2.source.symbolUuid,
-    expectedTicket: copy2.canvasHeaderTicket,
-    metadataTicket: copy2.metadataTicket,
+    sourceUuid: copy3.source.symbolUuid,
+    expectedTicket: copy3.canvasHeaderTicket,
+    metadataTicket: copy3.metadataTicket,
     expectedStructureRequests: 2,
     headEligibility: eligibility,
     maximumPlaintextBytes,
@@ -139215,8 +139909,8 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
   const prepared = plans5.get(plan2);
   need80(prepared !== void 0, "original prepared plan required");
   const returnedUuid = external_exports.string().regex(/^[a-f0-9]{16}$/u).parse(dataFields(result, ["returnedUuid"])["returnedUuid"]);
-  const { before, copy: copy2, witness, history, data: data9, structureTable } = prepared;
-  assertCurrentSymbolCopyPlanInventory(copy2, before);
+  const { before, copy: copy3, witness, history, data: data9, structureTable } = prepared;
+  assertCurrentSymbolCopyPlanInventory(copy3, before);
   supported2(after, witness.branchUuid);
   const completion2 = readerCompletion(after);
   need80(canonicalJson(before.properties) === canonicalJson(after.properties), "persisted SQL properties changed");
@@ -139224,9 +139918,9 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
   const afterData = table9(after, "history_data");
   const head2 = newRow2(afterHistory, prepared.historyId);
   const chunk = newRow2(afterData, prepared.chunkId);
-  const headUuid = text31(field5(afterHistory, head2, "uuid")), key = text31(field5(afterHistory, head2, "key"));
-  need80(UUID_V42.test(headUuid) && UUID5.test(key) && !history.rows.some((row7) => text31(field5(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text31(field5(data9, row7, "uuid")).split("-")[0] === headUuid || text31(field5(data9, row7, "history_uuid")) === headUuid), "history UUID/key invalid or colliding");
-  const encoded = text31(field5(afterData, chunk, "dataStr"));
+  const headUuid = text32(field5(afterHistory, head2, "uuid")), key = text32(field5(afterHistory, head2, "key"));
+  need80(UUID_V42.test(headUuid) && UUID5.test(key) && !history.rows.some((row7) => text32(field5(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text32(field5(data9, row7, "uuid")).split("-")[0] === headUuid || text32(field5(data9, row7, "history_uuid")) === headUuid), "history UUID/key invalid or colliding");
+  const encoded = text32(field5(afterData, chunk, "dataStr"));
   need80(encoded.length <= plan2.maximumCiphertextBase64Bytes, "history encoding exceeds reserved capacity");
   const plaintext = await decodeNativeHistoryChunk({ historyUuid: headUuid, keyHex: key, dataBase64: encoded });
   const lines3 = plaintext.split("|\n");
@@ -139234,16 +139928,16 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
   const edit = generatedTime(rowTime(lines3[0]), witness.backendClockMinMs, witness.backendClockMaxMs);
   const first = generatedTime(rowTime(lines3[1]), witness.documentClockMinMs, witness.documentClockMaxMs);
   const second = generatedTime(rowTime(lines3[3]), first, witness.documentClockMaxMs);
-  need80(lines3[0] === editRow(prepared, edit) && lines3[1] === headerRow(witness, returnedUuid, copy2.metadataTicket, first) && lines3[3] === headerRow(witness, returnedUuid, copy2.canvasHeaderTicket, second), "exact actor/client/clock headers differ");
-  const append = await verifyCurrentSymbolCopyAppend(copy2, { targetUuid: returnedUuid, chunk: plaintext });
-  const headTime = sqlTime(text31(field5(afterHistory, head2, "created_at")), witness);
-  const chunkTime = sqlTime(text31(field5(afterData, chunk, "created_at")), witness);
+  need80(lines3[0] === editRow(prepared, edit) && lines3[1] === headerRow(witness, returnedUuid, copy3.metadataTicket, first) && lines3[3] === headerRow(witness, returnedUuid, copy3.canvasHeaderTicket, second), "exact actor/client/clock headers differ");
+  const append = await verifyCurrentSymbolCopyAppend(copy3, { targetUuid: returnedUuid, chunk: plaintext });
+  const headTime = sqlTime(text32(field5(afterHistory, head2, "created_at")), witness);
+  const chunkTime = sqlTime(text32(field5(afterData, chunk, "created_at")), witness);
   const projects = table9(before, "projects");
   const branches = table9(before, "branches");
   const sequence = table9(before, "sqlite_sequence");
   const afterProjects = table9(after, "projects");
   const projectAfter = unique4(afterProjects, "uuid", witness.projectUuid);
-  const projectTime = sqlTime(text31(field5(afterProjects, projectAfter, "updated_at")), witness, true);
+  const projectTime = sqlTime(text32(field5(afterProjects, projectAfter, "updated_at")), witness, true);
   const expected3 = /* @__PURE__ */ new Map([
     [history.name, [...history.rows, insert(
       history,
@@ -139266,10 +139960,10 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
     ["projects", [patch2(projects, prepared.project, { updated_at: projectTime, modifier_uuid: witness.backendActorUuid })]],
     ["branches", branches.rows.map((row7) => row7 === prepared.branch ? patch2(branches, row7, { history_uuid: headUuid }) : row7)],
     ["project_structures", [
-      ...structureTable.rows.map((row7) => prepared.structures.includes(row7) ? patch2(structureTable, row7, { ticket: BigInt(copy2.canvasHeaderTicket) }) : row7),
+      ...structureTable.rows.map((row7) => prepared.structures.includes(row7) ? patch2(structureTable, row7, { ticket: BigInt(copy3.canvasHeaderTicket) }) : row7),
       insert(structureTable, prepared.structureId, {
         id: prepared.structureId,
-        ticket: BigInt(copy2.canvasHeaderTicket),
+        ticket: BigInt(copy3.canvasHeaderTicket),
         project_uuid: witness.projectUuid,
         branch_uuid: witness.branchUuid,
         structure: prepared.structureText
@@ -139290,7 +139984,7 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
     await yieldProofEventLoop();
   }
   need80(plans5.get(plan2) === prepared && readerCompletion(after) === completion2, "original proof inputs changed");
-  assertCurrentSymbolCopyPlanInventory(copy2, before);
+  assertCurrentSymbolCopyPlanInventory(copy3, before);
   const effect = Object.freeze({
     profile: "private.current-symbol-copy-full-sql-effect.v1",
     exactLogicalSqlEffect: true,
@@ -139314,7 +140008,7 @@ async function verifyCurrentSymbolCopySqlEffect(plan2, after, result) {
     persistentUploadReplayExcluded: false,
     reopened: false
   });
-  completedEffects.set(effect, Object.freeze({ plan: plan2, after, source: Object.freeze({ copyPlan: copy2, append }) }));
+  completedEffects.set(effect, Object.freeze({ plan: plan2, after, source: Object.freeze({ copyPlan: copy3, append }) }));
   return effect;
 }
 function completedCurrentSymbolCopySqlSource(plan2, originalEffect, exactAfter) {
@@ -139396,12 +140090,12 @@ function data5(value2, depth = 0) {
   const keys2 = Reflect.ownKeys(value2);
   need81(keys2.length <= 16);
   fields16(value2, Object.keys(value2));
-  const copy2 = {};
+  const copy3 = {};
   for (const key of keys2) {
     need81(typeof key === "string");
-    Object.defineProperty(copy2, key, { value: data5(value2[key], depth + 1), enumerable: true });
+    Object.defineProperty(copy3, key, { value: data5(value2[key], depth + 1), enumerable: true });
   }
-  return Object.freeze(copy2);
+  return Object.freeze(copy3);
 }
 function documentSample2(value2) {
   fields16(value2, [
@@ -139413,12 +140107,12 @@ function documentSample2(value2) {
     "rendererTimezoneOffsetMinutes",
     "notifyTabId"
   ]);
-  const copy2 = Object.freeze({ ...value2 });
-  for (const time18 of [copy2.rendererBeforeMs, copy2.serverTimeMs, copy2.rendererAfterMs]) {
+  const copy3 = Object.freeze({ ...value2 });
+  for (const time18 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need81(Number.isSafeInteger(time18) && time18 >= 0 && time18 <= 864e13 && !Object.is(time18, -0));
   }
-  need81(copy2.rendererBeforeMs <= copy2.serverTimeMs && copy2.serverTimeMs <= copy2.rendererAfterMs && copy2.rendererAfterMs - copy2.rendererBeforeMs <= COLLECTION_MS2 && new Date(copy2.rendererBeforeMs).toISOString() === copy2.rendererBeforeIso && new Date(copy2.rendererAfterMs).toISOString() === copy2.rendererAfterIso && Number.isSafeInteger(copy2.rendererTimezoneOffsetMinutes) && Math.abs(copy2.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy2.rendererTimezoneOffsetMinutes, -0) && typeof copy2.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy2.notifyTabId));
-  return copy2;
+  need81(copy3.rendererBeforeMs <= copy3.serverTimeMs && copy3.serverTimeMs <= copy3.rendererAfterMs && copy3.rendererAfterMs - copy3.rendererBeforeMs <= COLLECTION_MS2 && new Date(copy3.rendererBeforeMs).toISOString() === copy3.rendererBeforeIso && new Date(copy3.rendererAfterMs).toISOString() === copy3.rendererAfterIso && Number.isSafeInteger(copy3.rendererTimezoneOffsetMinutes) && Math.abs(copy3.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy3.rendererTimezoneOffsetMinutes, -0) && typeof copy3.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy3.notifyTabId));
+  return copy3;
 }
 async function issued15(value2, phase5) {
   const token3 = await assertIssuedWindowsClockObservation(value2);
@@ -139551,7 +140245,7 @@ async function prepareCurrentSymbolCopyClock(input) {
     documentWindow,
     collectionMaximumMs: COLLECTION_MS2,
     ...ASSUMPTIONS2,
-    ...LIMITS2
+    ...LIMITS3
   });
   plans6.set(plan2, { dispatchOwner: owner, launch, capture: capture3, before, armed, documentBefore: document3, sqlPlan, copyPlan, expectedActor: startupActor, stage: "armed" });
   return plan2;
@@ -139633,7 +140327,7 @@ async function verifyCurrentSymbolCopyClock(plan2, input) {
     originalWindowsObservationsRetained: true,
     fullActorSqlEffect,
     ...ASSUMPTIONS2,
-    ...LIMITS2
+    ...LIMITS3
   });
   prepared.completed = Object.freeze({ after: afterInventory, afterText: canonicalJson(afterInventory), comparison: comparison3, comparisonText: canonicalJson(comparison3), sqlEffect });
   return comparison3;
@@ -139652,7 +140346,7 @@ function completedCurrentSymbolCopyClockSource(plan2, dispatchOwner, after) {
   );
   return Object.freeze({ ...decoded, comparison: completed5.comparison, expectedActor: prepared.expectedActor });
 }
-var EPOCH_TICKS11, COLLECTION_MS2, WINDOW_MS2, LIMITS2, ASSUMPTIONS2, plans6;
+var EPOCH_TICKS11, COLLECTION_MS2, WINDOW_MS2, LIMITS3, ASSUMPTIONS2, plans6;
 var init_current_symbol_copy_clock = __esm({
   "server/src/current-symbol-copy-clock.ts"() {
     init_core3();
@@ -139665,7 +140359,7 @@ var init_current_symbol_copy_clock = __esm({
     EPOCH_TICKS11 = 621355968000000000n;
     COLLECTION_MS2 = 1e4;
     WINDOW_MS2 = 6e4;
-    LIMITS2 = Object.freeze({
+    LIMITS3 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       sourceOwnershipVerified: false,
@@ -139715,15 +140409,15 @@ function data6(value2, depth = 0) {
   if (Object.getPrototypeOf(value2) !== Object.prototype && Object.getPrototypeOf(value2) !== null || Reflect.ownKeys(value2).length > 16) {
     throw new Error("CURRENT_SYMBOL_COPY_SAVED_INPUT");
   }
-  const copy2 = {};
+  const copy3 = {};
   for (const key of Reflect.ownKeys(value2)) {
     const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
     if (typeof key !== "string" || descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       throw new Error("CURRENT_SYMBOL_COPY_SAVED_INPUT");
     }
-    Object.defineProperty(copy2, key, { value: data6(descriptor10.value, depth + 1), enumerable: true });
+    Object.defineProperty(copy3, key, { value: data6(descriptor10.value, depth + 1), enumerable: true });
   }
-  return copy2;
+  return copy3;
 }
 function request6(original2, input) {
   const selected3 = currentSymbolCopySavedReadRequestSchema.parse(data6(input));
@@ -140338,15 +141032,15 @@ function data7(value2, depth = 0) {
   if (Object.getPrototypeOf(value2) !== Object.prototype && Object.getPrototypeOf(value2) !== null || Reflect.ownKeys(value2).length > 16) {
     throw new Error("CURRENT_SYMBOL_COPY_SOURCE_INPUT");
   }
-  const copy2 = {};
+  const copy3 = {};
   for (const key of Reflect.ownKeys(value2)) {
     const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
     if (typeof key !== "string" || descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       throw new Error("CURRENT_SYMBOL_COPY_SOURCE_INPUT");
     }
-    Object.defineProperty(copy2, key, { value: data7(descriptor10.value, depth + 1), enumerable: true });
+    Object.defineProperty(copy3, key, { value: data7(descriptor10.value, depth + 1), enumerable: true });
   }
-  return copy2;
+  return copy3;
 }
 function request8(original2, input) {
   const selected3 = currentSymbolCopySourceReadRequestSchema.parse(data7(input));
@@ -140640,21 +141334,21 @@ var init_current_symbol_copy_writer_runtime = __esm({
           capture: slot.source.original.capture,
           launch: slot.source.original.launch
         });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const disk = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need83(canonicalJson(disk) === text37 && canonicalJson(slot.journal) === text37, "Current copy writer marked journal changed.");
-        slot.journalText = text37;
+        need83(canonicalJson(disk) === text38 && canonicalJson(slot.journal) === text38, "Current copy writer marked journal changed.");
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const disk = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need83(canonicalJson(disk) === text37 && canonicalJson(slot.journal) === text37, "Current copy writer cleared journal changed.");
-        slot.journalText = text37;
+        need83(canonicalJson(disk) === text38 && canonicalJson(slot.journal) === text38, "Current copy writer cleared journal changed.");
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -141703,21 +142397,21 @@ var init_current_symbol_copy_verification_runtime = __esm({
         const lease = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.();
         need86(lease !== void 0 && slot.capture !== void 0 && slot.launch !== void 0);
         assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: lease, capture: slot.capture, launch: slot.launch });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need86(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need86(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need86(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need86(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -145653,7 +146347,7 @@ var init_current_pcb_stored_header = __esm({
 // server/src/current-pcb-rename-owner-baseline.ts
 import { lstat as lstat46 } from "node:fs/promises";
 import { join as join68 } from "node:path";
-import { types as types7 } from "node:util";
+import { types as types8 } from "node:util";
 function need88(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB baseline: ${message}`);
@@ -145669,7 +146363,7 @@ function certifyFrozenBaselineData(input) {
       need88(Number.isFinite(value2), "frozen baseline data must be finite JSON");
       return;
     }
-    need88(typeof value2 === "object" && !types7.isProxy(value2), "frozen baseline data must be plain own data");
+    need88(typeof value2 === "object" && !types8.isProxy(value2), "frozen baseline data must be plain own data");
     if (completed5.has(value2)) {
       return;
     }
@@ -145724,10 +146418,10 @@ function closure2(input, original2) {
     "closure differs from the original PCB operation, capture, launch or session"
   );
 }
-function copyLineage2(checkpoint, copy2) {
-  const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+function copyLineage2(checkpoint, copy3) {
+  const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
   need88(
-    copy2.source === checkpoint.source && copy2.sha256 === checkpoint.sourceSha256 && String(copy2.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
+    copy3.source === checkpoint.source && copy3.sha256 === checkpoint.sourceSha256 && String(copy3.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
     "raw source identity differs from its checkpoint"
   );
 }
@@ -145823,21 +146517,21 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
   await current10();
   const identity32 = source5.preNavigationCheckpoint.checkpoint.sourceIdentity;
   need88(checkpoint.sourceIdentity.dev === identity32.dev && checkpoint.sourceIdentity.ino === identity32.ino && checkpoint.sourceIdentity.birthtimeNs === identity32.birthtimeNs, "source was replaced after original opening");
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: input.proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(input.owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage2(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage2(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
   const completion2 = readerCompletion(inventory2);
   need88(
-    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
+    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256,
     "complete SQL reader did not finish for its original raw copy"
   );
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: rename3.target.projectUuid, branchUuid: rename3.target.branchUuid });
@@ -145860,7 +146554,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     owner: input.owner,
     intent: rename3,
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     inventory: inventory2,
     history,
     targetMetadata,
@@ -146072,9 +146766,9 @@ var init_current_pcb_aged_sql_reference = __esm({
           await current10();
           const selected3 = await loadOperation(journalOperationId);
           unchanged5();
-          const text38 = canonicalJson(selected3);
-          need89(selected3.operationId === journalOperationId && selected3["orphanedCallPossible"] === false && (journalText === void 0 || text38 === journalText), "Current scratch selected journal changed at its admission boundary.");
-          journalText ??= text38;
+          const text39 = canonicalJson(selected3);
+          need89(selected3.operationId === journalOperationId && selected3["orphanedCallPossible"] === false && (journalText === void 0 || text39 === journalText), "Current scratch selected journal changed at its admission boundary.");
+          journalText ??= text39;
           await admission.call(engine2, journalOperationId);
           unchanged5();
           await revalidateCurrentPcbRenameOpeningEvidence(baseline2.owner, engine2);
@@ -146154,9 +146848,9 @@ var init_current_pcb_aged_sql_reference = __esm({
         await boundary();
         unchanged5();
         need89(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
-        const text37 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
-        need89(text37.text === returned.stdout);
-        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text37.text), invocation);
+        const text38 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
+        need89(text38.text === returned.stdout);
+        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text38.text), invocation);
         const reference3 = observation2["reference"];
         need89(isRecord(reference3));
         const controlsAfter = validateClockControls(
@@ -146790,10 +147484,10 @@ function closure3(input, phase5) {
     "original operation, capture, launch or close evidence differs"
   );
 }
-function copyLineage3(checkpoint, copy2) {
-  const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+function copyLineage3(checkpoint, copy3) {
+  const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
   need91(
-    copy2.source === checkpoint.source && copy2.sha256 === checkpoint.sourceSha256 && String(copy2.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
+    copy3.source === checkpoint.source && copy3.sha256 === checkpoint.sourceSha256 && String(copy3.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
     "raw source identity differs from checkpoint"
   );
 }
@@ -146937,21 +147631,21 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
     checkpoint.sourceIdentity.dev === old.dev && checkpoint.sourceIdentity.ino === old.ino && checkpoint.sourceIdentity.birthtimeNs === old.birthtimeNs,
     "source replaced since original baseline"
   );
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage3(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage3(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
   const completion2 = readerCompletion(inventory2);
   need91(
-    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
+    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256,
     "original complete raw SQL reader did not finish"
   );
   const target9 = baseline2.intent.target;
@@ -146966,7 +147660,7 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
     profile: "private.current-pcb-rename-snapshot.v1",
     phase: phase5,
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     sql: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 },
     native: {
       projectUuid: history.projectUuid,
@@ -147010,7 +147704,7 @@ var init_current_pcb_rename_snapshot = __esm({
 });
 
 // server/src/current-pcb-rename-preopen-source.ts
-import { createHash as createHash50 } from "node:crypto";
+import { createHash as createHash52 } from "node:crypto";
 import { constants as constants29 } from "node:fs";
 import { lstat as lstat48, open as open41 } from "node:fs/promises";
 import { basename as basename30, dirname as dirname28, isAbsolute as isAbsolute28, resolve as resolve23 } from "node:path";
@@ -147079,12 +147773,12 @@ async function noSidecars5(path6, current10) {
     need92(absent4, "Current preopen source has a SQLite sidecar.");
   }
 }
-function matchesBaseline2(stat3, copy2) {
-  const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
-  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES12 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
+function matchesBaseline2(stat3, copy3) {
+  const checkpoint = copy3.checkpoint.sourceIdentity, raw = copy3.copy.sourceIdentity;
+  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES12 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash43(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES3)), digest11 = createHash50("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES3)), digest11 = createHash52("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -147100,11 +147794,11 @@ async function hash43(file3, bytes2, current10) {
   need92(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest11.digest("hex");
 }
-async function verifyCurrentPcbRenamePreopenSource(engine2, copy2) {
+async function verifyCurrentPcbRenamePreopenSource(engine2, copy3) {
   const current10 = () => {
-    assertOriginalCurrentPcbRenameBaseline(copy2, engine2);
+    assertOriginalCurrentPcbRenameBaseline(copy3, engine2);
   };
-  const observed2 = await verifySource2(copy2, current10);
+  const observed2 = await verifySource2(copy3, current10);
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-pcb-rename-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
@@ -147117,11 +147811,11 @@ async function verifyCurrentPcbRenamePosteditPreopenSource(engine2, snapshot8) {
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-pcb-rename-postedit-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
-async function verifySource2(copy2, current10) {
+async function verifySource2(copy3, current10) {
   current10();
-  const { source: source5, sourceSha256 } = copy2.checkpoint;
+  const { source: source5, sourceSha256 } = copy3.checkpoint;
   need92(
-    process.platform === "linux" && source5.length <= 4096 && isAbsolute28(source5) && resolve23(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
+    process.platform === "linux" && source5.length <= 4096 && isAbsolute28(source5) && resolve23(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
   const parent = await directory2(dirname28(source5), current10);
@@ -147136,7 +147830,7 @@ async function verifySource2(copy2, current10) {
     current10();
     const before = await lstat48(path6, { bigint: true });
     current10();
-    need92(matchesBaseline2(before, copy2), "Current preopen source differs from the original baseline identity or size.");
+    need92(matchesBaseline2(before, copy3), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open41(path6, constants29.O_RDONLY | constants29.O_NOFOLLOW | constants29.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
@@ -147169,7 +147863,7 @@ async function verifySource2(copy2, current10) {
       source: source5,
       sourceSha256,
       bytes: Number(before.size),
-      sourceIdentity: Object.freeze({ ...copy2.copy.sourceIdentity }),
+      sourceIdentity: Object.freeze({ ...copy3.copy.sourceIdentity }),
       sidecarsObservedAbsent: true,
       ongoingSourceContinuity: false,
       startupQualified: false,
@@ -147712,11 +148406,11 @@ var init_current_pcb_rename_generation_runtime = __esm({
               async () => {
                 slot.current(scopeText);
                 assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: dispatch, capture: capture3, launch });
-                const text37 = canonicalJson(slot.journal);
+                const text38 = canonicalJson(slot.journal);
                 const persisted2 = await loadOperation(operationId11);
                 slot.current(scopeText);
-                need93(canonicalJson(persisted2) === text37 && canonicalJson(slot.journal) === text37, "tracked mark changed");
-                slot.journalText = text37;
+                need93(canonicalJson(persisted2) === text38 && canonicalJson(slot.journal) === text38, "tracked mark changed");
+                slot.journalText = text38;
                 marked = structuredClone(slot.journal);
                 const clock7 = await this.engine.clockObservationForTrackedDispatch(slot.journal, phase5);
                 if (open43) {
@@ -147814,10 +148508,10 @@ var init_current_pcb_rename_generation_runtime = __esm({
           projectOpenObservation: slot.openObservation,
           preopenSource: slot.preopen
         });
-        const journalText = slot.journalText, text37 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
+        const journalText = slot.journalText, text38 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
         const current10 = (scopeText) => {
           slot.current(scopeText);
-          need93(slot.generation === token3 && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text37, "generation changed, stopped or retired");
+          need93(slot.generation === token3 && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text38, "generation changed, stopped or retired");
           assertCurrentIssuedWindowsClockObservation(value2.launchClock);
           assertCurrentIssuedWindowsClockObservation(value2.captureClock);
         };
@@ -147828,7 +148522,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
           const originalCurrent = slot.current;
           const transferredCurrent = (scopeText) => {
             need93(
-              this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.generation === token3 && !slot.writerOwnershipInvalidated && !slot.retired && slot.current === originalCurrent && slot.capture === value2.capture && slot.launch === value2.launch && slot.closed.baseline === value2.baseline && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text37,
+              this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.generation === token3 && !slot.writerOwnershipInvalidated && !slot.retired && slot.current === originalCurrent && slot.capture === value2.capture && slot.launch === value2.launch && slot.closed.baseline === value2.baseline && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text38,
               "PCB writer original ownership changed or was invalidated"
             );
             originalCurrent(scopeText);
@@ -148150,7 +148844,7 @@ function nativeTitle2(value2) {
   need94(/^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"), "title is outside the locale-invariant ASCII subset");
   return value2.toLowerCase();
 }
-function text32(value2) {
+function text33(value2) {
   need94(value2.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need94(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -148165,11 +148859,11 @@ function structure2(before, branchUuid2) {
   const tables = before.tables.filter((table15) => table15.name === "project_structures");
   const table14 = tables[0];
   need94(tables.length === 1 && table14 !== void 0, "SQL table identity differs");
-  const rows2 = table14.rows.filter((row7) => text32(field6(table14, row7, "branch_uuid")) === branchUuid2);
+  const rows2 = table14.rows.filter((row7) => text33(field6(table14, row7, "branch_uuid")) === branchUuid2);
   const first = rows2[0];
   need94(first !== void 0, "selected structure is missing");
-  const encoded = text32(field6(table14, first, "structure"));
-  need94(rows2.every((row7) => text32(field6(table14, row7, "structure")) === encoded), "selected structures disagree");
+  const encoded = text33(field6(table14, first, "structure"));
+  need94(rows2.every((row7) => text33(field6(table14, row7, "structure")) === encoded), "selected structures disagree");
   const tree = JSON.parse(encoded);
   need94(isRecord(tree) && isRecord(tree["pcbs"]), "PCB structure is missing");
   return tree["pcbs"];
@@ -148936,7 +149630,7 @@ var init_current_pcb_aged_sql_issuer = __esm({
 });
 
 // server/src/current-pcb-rename-history.ts
-import { createHash as createHash51 } from "node:crypto";
+import { createHash as createHash53 } from "node:crypto";
 function need97(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB rename history: ${message}`);
@@ -148958,7 +149652,7 @@ function exactUtf8(value2) {
   need97(Buffer.byteLength(value2, "utf8") <= MAX_RECORD_BYTES2 && Buffer.from(value2, "utf8").toString("utf8") === value2, "record UTF8 or byte bound differs");
 }
 function digest7(value2) {
-  return createHash51("sha256").update(value2, "utf8").digest("hex");
+  return createHash53("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentPcbRenameHistory(input) {
   const raw = fields17(input, [
@@ -149026,7 +149720,7 @@ ${recordsText}`;
     recordsSha256: digest7(recordsText),
     chunkText,
     chunkSha256: digest7(chunkText),
-    ...LIMITS3
+    ...LIMITS4
   });
   projections.add(projection9);
   return projection9;
@@ -149038,10 +149732,10 @@ function verifyCurrentPcbRenameHistory(projection9, observedChunk) {
     profile: "private.current-pcb-rename-history-comparison.v1",
     exactAppendedChunk: true,
     chunkSha256: projection9.chunkSha256,
-    ...LIMITS3
+    ...LIMITS4
   });
 }
-var MAX_RECORD_BYTES2, MAX_WINDOW_MS, identifier19, integer19, time9, title11, metaSchema, windowSchema2, actorSchema5, inputSchema, LIMITS3, projections;
+var MAX_RECORD_BYTES2, MAX_WINDOW_MS, identifier19, integer19, time9, title11, metaSchema, windowSchema2, actorSchema5, inputSchema, LIMITS4, projections;
 var init_current_pcb_rename_history = __esm({
   "server/src/current-pcb-rename-history.ts"() {
     init_zod();
@@ -149073,7 +149767,7 @@ var init_current_pcb_rename_history = __esm({
       backendClock: windowSchema2,
       backendActor: actorSchema5
     }).strict();
-    LIMITS3 = Object.freeze({
+    LIMITS4 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -149088,7 +149782,7 @@ var init_current_pcb_rename_history = __esm({
 });
 
 // server/src/current-pcb-rename-structure.ts
-import { createHash as createHash52 } from "node:crypto";
+import { createHash as createHash54 } from "node:crypto";
 function need98(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB rename structure: ${message}`);
@@ -149107,13 +149801,13 @@ function dataFields2(value2, names2) {
   return result;
 }
 function digest8(value2) {
-  return createHash52("sha256").update(value2, "utf8").digest("hex");
+  return createHash54("sha256").update(value2, "utf8").digest("hex");
 }
-function parseStructure(text37) {
-  need98(Buffer.byteLength(text37, "utf8") <= MAX_TEXT_BYTES && Buffer.from(text37, "utf8").toString("utf8") === text37, "structure byte bound or UTF8 differs");
-  const value2 = JSON.parse(text37);
+function parseStructure(text38) {
+  need98(Buffer.byteLength(text38, "utf8") <= MAX_TEXT_BYTES && Buffer.from(text38, "utf8").toString("utf8") === text38, "structure byte bound or UTF8 differs");
+  const value2 = JSON.parse(text38);
   const parsed2 = structureSchema2.parse(value2);
-  need98(JSON.stringify(parsed2) === text37, "structure is not exact native-shaped serialization");
+  need98(JSON.stringify(parsed2) === text38, "structure is not exact native-shaped serialization");
   return parsed2;
 }
 function verifyCollection(collection, known) {
@@ -149242,7 +149936,7 @@ function fields18(value2, names2) {
   }
   return result;
 }
-function text33(value2) {
+function text34(value2) {
   need99(value2?.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need99(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -149263,7 +149957,7 @@ function field7(owner, row7, name6) {
   return value2;
 }
 function unique5(owner, name6, value2) {
-  const matches = owner.rows.filter((row7) => text33(field7(owner, row7, name6)) === value2);
+  const matches = owner.rows.filter((row7) => text34(field7(owner, row7, name6)) === value2);
   need99(matches.length === 1 && matches[0] !== void 0, "required row identity is not unique");
   return matches[0];
 }
@@ -149289,20 +149983,20 @@ async function prepareCurrentPcbRenameStructureSql(input) {
   const completion2 = readerCompletion(before);
   const branches = table10(before, "branches"), projects = table10(before, "projects");
   const branch = unique5(branches, "uuid", request13.branchUuid), project3 = unique5(projects, "uuid", request13.projectUuid);
-  need99(text33(field7(projects, project3, "branch_uuid")) === request13.branchUuid && text33(field7(branches, branch, "project_uuid")) === request13.projectUuid && integer21(field7(branches, branch, "node")) === 0n && integer21(field7(branches, branch, "delete_status")) === 0n, "selected project/branch association differs");
+  need99(text34(field7(projects, project3, "branch_uuid")) === request13.branchUuid && text34(field7(branches, branch, "project_uuid")) === request13.projectUuid && integer21(field7(branches, branch, "node")) === 0n && integer21(field7(branches, branch, "delete_status")) === 0n, "selected project/branch association differs");
   const tree = JSON.parse(projection9.beforeStructureText);
-  need99(record4(tree) && record4(tree["owner"]) && tree["owner"]["uuid"] === text33(field7(projects, project3, "owner_uuid")), "structure owner differs");
+  need99(record4(tree) && record4(tree["owner"]) && tree["owner"]["uuid"] === text34(field7(projects, project3, "owner_uuid")), "structure owner differs");
   const identities4 = /* @__PURE__ */ new Set(), structures = table10(before, "project_structures");
   const selected3 = /* @__PURE__ */ new Set();
   for (const row7 of structures.rows) {
     const id13 = integer21(field7(structures, row7, "id"));
     need99(id13 > 0n && id13 <= BigInt(Number.MAX_SAFE_INTEGER) && integer21(row7.rowid) === id13 && !identities4.has(id13.toString()), "structure row identity differs");
     identities4.add(id13.toString());
-    if (text33(field7(structures, row7, "branch_uuid")) === request13.branchUuid) {
+    if (text34(field7(structures, row7, "branch_uuid")) === request13.branchUuid) {
       const priorTicket = integer21(field7(structures, row7, "ticket"));
-      need99(text33(field7(structures, row7, "project_uuid")) === request13.projectUuid, "matching branch crosses project identity");
+      need99(text34(field7(structures, row7, "project_uuid")) === request13.projectUuid, "matching branch crosses project identity");
       need99(priorTicket >= 0n && priorTicket < BigInt(request13.ticket), "every matching branch row must have a lower ticket");
-      need99(text33(field7(structures, row7, "structure")) === projection9.beforeStructureText, "matching branch structure bytes differ");
+      need99(text34(field7(structures, row7, "structure")) === projection9.beforeStructureText, "matching branch structure bytes differ");
       selected3.add(row7);
     }
     await yieldProofEventLoop();
@@ -149409,7 +150103,7 @@ function captureWitness2(value2) {
   }
   return Object.freeze(result);
 }
-function text34(value2) {
+function text35(value2) {
   need100(value2?.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need100(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -149430,7 +150124,7 @@ function field8(owner, row7, name6) {
   return value2;
 }
 function unique6(owner, name6, expected3) {
-  const matches = owner.rows.filter((row7) => text34(field8(owner, row7, name6)) === expected3);
+  const matches = owner.rows.filter((row7) => text35(field8(owner, row7, name6)) === expected3);
   need100(matches.length === 1 && matches[0] !== void 0, "required row identity is not unique");
   return matches[0];
 }
@@ -149484,7 +150178,7 @@ function headEligibility2(head2, owner, witness) {
     return "locked";
   }
   const age = witness.agedHead;
-  need100(age !== void 0 && age.createdAtLiteral === text34(field8(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs2(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
+  need100(age !== void 0 && age.createdAtLiteral === text35(field8(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs2(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
   const adjusted = age.nativeParsedLocalMs - age.nativeTimezoneOffsetMinutes * 6e4;
   need100(Number.isSafeInteger(adjusted) && witness.backendClockMinMs - adjusted >= 61e3, "head is not aged throughout the selection window");
   return "aged-unlocked";
@@ -149494,18 +150188,18 @@ function branchParent2(before, branch, witness) {
   if (parent.kind === "null") {
     return;
   }
-  const uuid12 = text34(parent);
+  const uuid12 = text35(parent);
   need100(UUID6.test(uuid12) && uuid12 !== witness.branchUuid, "branch parent identity refused");
   const start = unique6(branches, "uuid", uuid12);
-  need100(text34(field8(branches, start, "name")) === "start" && integer22(field8(branches, start, "node")) === 1n && integer22(field8(branches, start, "delete_status")) === 0n && text34(field8(branches, start, "project_uuid")) === witness.projectUuid && field8(branches, start, "parent_uuid").kind === "null" && field8(branches, start, "history_uuid").kind === "null", "branch parent is not the empty terminal start node");
+  need100(text35(field8(branches, start, "name")) === "start" && integer22(field8(branches, start, "node")) === 1n && integer22(field8(branches, start, "delete_status")) === 0n && text35(field8(branches, start, "project_uuid")) === witness.projectUuid && field8(branches, start, "parent_uuid").kind === "null" && field8(branches, start, "history_uuid").kind === "null", "branch parent is not the empty terminal start node");
 }
 function actor2(before, uuid12) {
   const users = table11(before, "users");
   need100(users.rows.length <= 4096, "project user bound exceeded");
-  const matches = users.rows.filter((row8) => text34(field8(users, row8, "uuid")) === uuid12);
+  const matches = users.rows.filter((row8) => text35(field8(users, row8, "uuid")) === uuid12);
   need100(matches.length <= 1, "project actor is ambiguous");
   const row7 = matches[0];
-  return { username: row7 === void 0 ? "" : text34(field8(users, row7, "username")), nickname: row7 === void 0 ? "" : text34(field8(users, row7, "nickname")) };
+  return { username: row7 === void 0 ? "" : text35(field8(users, row7, "username")), nickname: row7 === void 0 ? "" : text35(field8(users, row7, "nickname")) };
 }
 function originalHistory(history) {
   need100(history !== null && typeof history === "object", "original history projection required");
@@ -149636,13 +150330,13 @@ async function prepareCurrentPcbRenameSql(input) {
   need100(projects.rows.length === 1, "native all-project bookkeeping requires one project row");
   const branch = unique6(branches, "uuid", witness.branchUuid), project3 = unique6(projects, "uuid", witness.projectUuid);
   branchParent2(before, branch, witness);
-  const history = table11(before, `project_history_${witness.branchUuid}`), oldHead = text34(field8(branches, branch, "history_uuid"));
+  const history = table11(before, `project_history_${witness.branchUuid}`), oldHead = text35(field8(branches, branch, "history_uuid"));
   const eligibility = headEligibility2(unique6(history, "uuid", oldHead), history, witness);
   const data9 = table11(before, "history_data"), sequenceTable = table11(before, "sqlite_sequence");
   const sequence = unique6(sequenceTable, "name", "history_data");
   const sequenceValue = integer22(field8(sequenceTable, sequence, "seq"));
   need100(sequenceValue >= maximumId2(data9) && sequenceValue < BigInt(Number.MAX_SAFE_INTEGER), "AUTOINCREMENT capacity exhausted");
-  const structureTable = table11(before, "project_structures"), structures = structureTable.rows.filter((row7) => text34(field8(structureTable, row7, "branch_uuid")) === witness.branchUuid);
+  const structureTable = table11(before, "project_structures"), structures = structureTable.rows.filter((row7) => text35(field8(structureTable, row7, "branch_uuid")) === witness.branchUuid);
   need100(structures.length === structurePlan.updatedStructureRows, "structure relation changed");
   const prepared = {
     before,
@@ -149748,17 +150442,17 @@ async function verifyCurrentPcbRenameSql(plan2, after) {
   need100(canonicalJson(before.properties) === canonicalJson(after.properties), "persisted SQL properties changed");
   const afterData = table11(after, "history_data"), afterHistory = table11(after, history.name);
   const chunk = newRow3(afterData, prepared.chunkId), head2 = newRow3(afterHistory, prepared.historyId);
-  const headUuid = text34(field8(afterHistory, head2, "uuid")), key = text34(field8(afterHistory, head2, "key"));
-  need100(UUID_V43.test(headUuid) && UUID6.test(key) && !history.rows.some((row7) => text34(field8(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text34(field8(data9, row7, "uuid")).split("-")[0] === headUuid || text34(field8(data9, row7, "history_uuid")) === headUuid), "new history UUID/key invalid or colliding");
-  const encoded = text34(field8(afterData, chunk, "dataStr"));
+  const headUuid = text35(field8(afterHistory, head2, "uuid")), key = text35(field8(afterHistory, head2, "key"));
+  need100(UUID_V43.test(headUuid) && UUID6.test(key) && !history.rows.some((row7) => text35(field8(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text35(field8(data9, row7, "uuid")).split("-")[0] === headUuid || text35(field8(data9, row7, "history_uuid")) === headUuid), "new history UUID/key invalid or colliding");
+  const encoded = text35(field8(afterData, chunk, "dataStr"));
   need100(encoded.length <= plan2.maximumCiphertextBase64Bytes, "history encoding exceeds reserved capacity");
   const plaintext = await decodeNativeHistoryChunk({ historyUuid: headUuid, keyHex: key, dataBase64: encoded });
   need100(Buffer.byteLength(plaintext) <= plan2.maximumPlaintextBytes, "history plaintext exceeds reserved capacity");
   verifyCurrentPcbRenameHistory(historyProjection, plaintext);
-  const chunkTime = sqlTime2(text34(field8(afterData, chunk, "created_at")), witness), headTime = sqlTime2(text34(field8(afterHistory, head2, "created_at")), witness);
+  const chunkTime = sqlTime2(text35(field8(afterData, chunk, "created_at")), witness), headTime = sqlTime2(text35(field8(afterHistory, head2, "created_at")), witness);
   const branches = table11(before, "branches"), projects = table11(before, "projects"), sequence = table11(before, "sqlite_sequence");
   const afterProjects = table11(after, "projects"), projectAfter = unique6(afterProjects, "uuid", witness.projectUuid);
-  const projectTime = sqlTime2(text34(field8(afterProjects, projectAfter, "updated_at")), witness, true);
+  const projectTime = sqlTime2(text35(field8(afterProjects, projectAfter, "updated_at")), witness, true);
   const expected3 = /* @__PURE__ */ new Map([
     [history.name, [...history.rows, insert2(
       history,
@@ -149897,7 +150591,7 @@ function data8(value2, names2) {
   }
   return result;
 }
-function text35(value2) {
+function text36(value2) {
   need101(value2.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need101(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -149943,22 +150637,22 @@ async function maximumHeader(decoded, uuid12) {
   return maximum5;
 }
 function structure3(before, branchUuid2) {
-  const owner = table12(before, "project_structures"), rows2 = owner.rows.filter((row7) => text35(field9(owner, row7, "branch_uuid")) === branchUuid2);
+  const owner = table12(before, "project_structures"), rows2 = owner.rows.filter((row7) => text36(field9(owner, row7, "branch_uuid")) === branchUuid2);
   const first = rows2[0];
   need101(first !== void 0, "selected structure is missing");
-  const result = text35(field9(owner, first, "structure"));
-  need101(rows2.every((row7) => text35(field9(owner, row7, "structure")) === result), "selected structures disagree");
+  const result = text36(field9(owner, first, "structure"));
+  need101(rows2.every((row7) => text36(field9(owner, row7, "structure")) === result), "selected structures disagree");
   return result;
 }
 function actor3(before, uuid12) {
   const users = table12(before, "users");
   need101(users.rows.length <= 4096, "user inventory exceeds bound");
-  const rows2 = users.rows.filter((row7) => text35(field9(users, row7, "uuid")) === uuid12), selected3 = rows2[0];
+  const rows2 = users.rows.filter((row7) => text36(field9(users, row7, "uuid")) === uuid12), selected3 = rows2[0];
   need101(rows2.length <= 1, "backend actor is ambiguous");
   return Object.freeze({
     uuid: uuid12,
-    username: selected3 === void 0 ? "" : text35(field9(users, selected3, "username")),
-    nickname: selected3 === void 0 ? "" : text35(field9(users, selected3, "nickname"))
+    username: selected3 === void 0 ? "" : text36(field9(users, selected3, "username")),
+    nickname: selected3 === void 0 ? "" : text36(field9(users, selected3, "nickname"))
   });
 }
 function peers(decoded, structureText, targetUuid, desiredTitle) {
@@ -150623,12 +151317,12 @@ function fields20(value2, required2, optional3 = []) {
 }
 function documentSample3(value2) {
   fields20(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
-  const copy2 = Object.freeze({ ...value2 });
-  for (const time18 of [copy2.rendererBeforeMs, copy2.serverTimeMs, copy2.rendererAfterMs]) {
+  const copy3 = Object.freeze({ ...value2 });
+  for (const time18 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need105(Number.isSafeInteger(time18) && time18 >= 0 && time18 <= 864e13 && !Object.is(time18, -0));
   }
-  need105(copy2.rendererBeforeMs <= copy2.serverTimeMs && copy2.serverTimeMs <= copy2.rendererAfterMs && copy2.rendererAfterMs - copy2.rendererBeforeMs <= COLLECTION_MS3 && new Date(copy2.rendererBeforeMs).toISOString() === copy2.rendererBeforeIso && new Date(copy2.rendererAfterMs).toISOString() === copy2.rendererAfterIso && Number.isSafeInteger(copy2.rendererTimezoneOffsetMinutes) && Math.abs(copy2.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy2.rendererTimezoneOffsetMinutes, -0) && typeof copy2.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy2.notifyTabId));
-  return copy2;
+  need105(copy3.rendererBeforeMs <= copy3.serverTimeMs && copy3.serverTimeMs <= copy3.rendererAfterMs && copy3.rendererAfterMs - copy3.rendererBeforeMs <= COLLECTION_MS3 && new Date(copy3.rendererBeforeMs).toISOString() === copy3.rendererBeforeIso && new Date(copy3.rendererAfterMs).toISOString() === copy3.rendererAfterIso && Number.isSafeInteger(copy3.rendererTimezoneOffsetMinutes) && Math.abs(copy3.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy3.rendererTimezoneOffsetMinutes, -0) && typeof copy3.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy3.notifyTabId));
+  return copy3;
 }
 function exactUtcTicks3(value2) {
   need105(typeof value2 === "string");
@@ -150766,7 +151460,7 @@ async function prepareCurrentPcbRenameClock(input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS3,
-    ...LIMITS4
+    ...LIMITS5
   });
   plans9.set(plan2, Object.freeze({
     engine: engine2,
@@ -150882,7 +151576,7 @@ async function verifyCurrentPcbRenameClockEffect(plan2, input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS3,
-    ...LIMITS4
+    ...LIMITS5
   });
   lifecycle.completed = Object.freeze({ after, afterText: canonicalJson(after), effect, comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -150902,7 +151596,7 @@ function completedCurrentPcbRenameClockSource(plan2, engine2, dispatchOwner, aft
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS4, ASSUMPTIONS3, attempts22, owners5, plans9, lifecycles;
+var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS5, ASSUMPTIONS3, attempts22, owners5, plans9, lifecycles;
 var init_current_pcb_rename_clock = __esm({
   "server/src/current-pcb-rename-clock.ts"() {
     init_core3();
@@ -150917,7 +151611,7 @@ var init_current_pcb_rename_clock = __esm({
     COLLECTION_MS3 = 1e4;
     EPOCH_TICKS13 = 621355968000000000n;
     WINDOW_MS3 = 6e4;
-    LIMITS4 = Object.freeze({
+    LIMITS5 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       startupQualified: false,
@@ -151260,21 +151954,21 @@ var init_current_pcb_rename_writer_runtime = __esm({
           capture: slot.source.original.capture,
           launch: slot.source.original.launch
         });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const disk = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need106(canonicalJson(disk) === text37 && canonicalJson(slot.journal) === text37, "Current PCB rename writer marked journal changed.");
-        slot.journalText = text37;
+        need106(canonicalJson(disk) === text38 && canonicalJson(slot.journal) === text38, "Current PCB rename writer marked journal changed.");
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const disk = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need106(canonicalJson(disk) === text37 && canonicalJson(slot.journal) === text37, "Current PCB rename writer cleared journal changed.");
-        slot.journalText = text37;
+        need106(canonicalJson(disk) === text38 && canonicalJson(slot.journal) === text38, "Current PCB rename writer cleared journal changed.");
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -152265,21 +152959,21 @@ var init_current_pcb_rename_verification_runtime = __esm({
         const lease = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.();
         need109(lease !== void 0 && slot.capture !== void 0 && slot.launch !== void 0);
         assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: lease, capture: slot.capture, launch: slot.launch });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need109(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need109(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need109(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need109(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -153407,7 +154101,7 @@ var init_current_pcb_rename_operation_runtime = __esm({
 // server/src/current-schematic-rename-owner-baseline.ts
 import { lstat as lstat49 } from "node:fs/promises";
 import { join as join71 } from "node:path";
-import { types as types8 } from "node:util";
+import { types as types9 } from "node:util";
 function need111(condition, message) {
   if (!condition) {
     throw new Error(`Current SCH baseline: ${message}`);
@@ -153423,7 +154117,7 @@ function certifyFrozenBaselineData2(input) {
       need111(Number.isFinite(value2), "frozen baseline data must be finite JSON");
       return;
     }
-    need111(typeof value2 === "object" && !types8.isProxy(value2), "frozen baseline data must be plain own data");
+    need111(typeof value2 === "object" && !types9.isProxy(value2), "frozen baseline data must be plain own data");
     if (completed5.has(value2)) {
       return;
     }
@@ -153478,10 +154172,10 @@ function closure4(input, original2) {
     "closure differs from the original SCH operation, capture, launch or session"
   );
 }
-function copyLineage4(checkpoint, copy2) {
-  const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+function copyLineage4(checkpoint, copy3) {
+  const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
   need111(
-    copy2.source === checkpoint.source && copy2.sha256 === checkpoint.sourceSha256 && String(copy2.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
+    copy3.source === checkpoint.source && copy3.sha256 === checkpoint.sourceSha256 && String(copy3.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
     "raw source identity differs from its checkpoint"
   );
 }
@@ -153579,21 +154273,21 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
   await current10();
   const identity32 = source5.preNavigationCheckpoint.checkpoint.sourceIdentity;
   need111(checkpoint.sourceIdentity.dev === identity32.dev && checkpoint.sourceIdentity.ino === identity32.ino && checkpoint.sourceIdentity.birthtimeNs === identity32.birthtimeNs, "source was replaced after original opening");
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: input.proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(input.owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage4(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage4(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
   const completion2 = readerCompletion(inventory2);
   need111(
-    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
+    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256,
     "complete SQL reader did not finish for its original raw copy"
   );
   const decoded = await decodeCurrentSymbolPreEditHistory(inventory2, { projectUuid: rename3.target.projectUuid, branchUuid: rename3.target.branchUuid });
@@ -153626,7 +154320,7 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
     owner: input.owner,
     intent: rename3,
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     inventory: inventory2,
     metadata: metadata10,
     children: children2,
@@ -153844,9 +154538,9 @@ var init_current_schematic_aged_sql_reference = __esm({
           await current10();
           const selected3 = await loadOperation(journalOperationId);
           unchanged5();
-          const text38 = canonicalJson(selected3);
-          need112(selected3.operationId === journalOperationId && selected3["orphanedCallPossible"] === false && (journalText === void 0 || text38 === journalText), "Current scratch selected journal changed at its admission boundary.");
-          journalText ??= text38;
+          const text39 = canonicalJson(selected3);
+          need112(selected3.operationId === journalOperationId && selected3["orphanedCallPossible"] === false && (journalText === void 0 || text39 === journalText), "Current scratch selected journal changed at its admission boundary.");
+          journalText ??= text39;
           await admission.call(engine2, journalOperationId);
           unchanged5();
           await revalidateCurrentSchematicRenameOpeningEvidence(baseline2.owner, engine2);
@@ -153926,9 +154620,9 @@ var init_current_schematic_aged_sql_reference = __esm({
         await boundary();
         unchanged5();
         need112(resultArtifact.path === resultPath && resultArtifact.bytes <= 196608);
-        const text37 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
-        need112(text37.text === returned.stdout);
-        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text37.text), invocation);
+        const text38 = successfulRetainedMainReferenceText(retained2, invocation.requestSha256, intentArtifact.sha256);
+        need112(text38.text === returned.stdout);
+        const observation2 = validateMainReferenceTransportV3Result(JSON.parse(text38.text), invocation);
         const reference3 = observation2["reference"];
         need112(isRecord(reference3));
         const controlsAfter = validateClockControls(
@@ -154566,10 +155260,10 @@ function closure5(input, phase5) {
     "original operation, capture, launch or close evidence differs"
   );
 }
-function copyLineage5(checkpoint, copy2) {
-  const lineage = checkpoint.sourceIdentity, source5 = copy2.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
+function copyLineage5(checkpoint, copy3) {
+  const lineage = checkpoint.sourceIdentity, source5 = copy3.sourceIdentity, stat3 = checkpoint["sourceStatAfter"];
   need114(
-    copy2.source === checkpoint.source && copy2.sha256 === checkpoint.sourceSha256 && String(copy2.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
+    copy3.source === checkpoint.source && copy3.sha256 === checkpoint.sourceSha256 && String(copy3.bytes) === source5.size && lineage.dev === source5.device && lineage.ino === source5.inode && lineage.birthtimeNs === source5.birthtimeNs && lineage.ctimeNs === source5.ctimeNs && isRecord(stat3) && stat3["size"] === source5.size && stat3["mtimeNs"] === source5.mtimeNs && stat3["ctimeNs"] === source5.ctimeNs,
     "raw source identity differs from checkpoint"
   );
 }
@@ -154713,21 +155407,21 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
     checkpoint.sourceIdentity.dev === old.dev && checkpoint.sourceIdentity.ino === old.ino && checkpoint.sourceIdentity.birthtimeNs === old.birthtimeNs,
     "source replaced since original baseline"
   );
-  const copy2 = await copyClosedProjectBytes({
+  const copy3 = await copyClosedProjectBytes({
     closureProof: proof,
     source: sourcePath,
     expectedSourceSha256: checkpoint.sourceSha256,
     artifactDirectory: operationPath(baseline2.owner.operationId).slice(0, -5)
   });
-  retain3({ kind: "copy", value: copy2 });
+  retain3({ kind: "copy", value: copy3 });
   await current10();
-  copyLineage5(checkpoint, copy2);
-  const inventory2 = await readClosedCopySqlInventory({ copy: copy2, runtime: input.runtime });
+  copyLineage5(checkpoint, copy3);
+  const inventory2 = await readClosedCopySqlInventory({ copy: copy3, runtime: input.runtime });
   retain3({ kind: "inventory", value: inventory2 });
   await current10();
   const completion2 = readerCompletion(inventory2);
   need114(
-    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy2.sha256,
+    completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null && inventory2.checkpointSha256 === copy3.sha256,
     "original complete raw SQL reader did not finish"
   );
   const target9 = baseline2.intent.target;
@@ -154746,7 +155440,7 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
     profile: "private.current-schematic-rename-snapshot.v1",
     phase: phase5,
     checkpoint,
-    copy: copy2,
+    copy: copy3,
     sql: { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 },
     native: {
       projectUuid: history.projectUuid,
@@ -154792,7 +155486,7 @@ var init_current_schematic_rename_snapshot = __esm({
 });
 
 // server/src/current-schematic-rename-preopen-source.ts
-import { createHash as createHash53 } from "node:crypto";
+import { createHash as createHash55 } from "node:crypto";
 import { constants as constants30 } from "node:fs";
 import { lstat as lstat51, open as open42 } from "node:fs/promises";
 import { basename as basename31, dirname as dirname29, isAbsolute as isAbsolute29, resolve as resolve24 } from "node:path";
@@ -154861,12 +155555,12 @@ async function noSidecars6(path6, current10) {
     need115(absent4, "Current preopen source has a SQLite sidecar.");
   }
 }
-function matchesBaseline3(stat3, copy2) {
-  const checkpoint = copy2.checkpoint.sourceIdentity, raw = copy2.copy.sourceIdentity;
-  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES14 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy2.copy.bytes;
+function matchesBaseline3(stat3, copy3) {
+  const checkpoint = copy3.checkpoint.sourceIdentity, raw = copy3.copy.sourceIdentity;
+  return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES14 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash44(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES4)), digest11 = createHash53("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES4)), digest11 = createHash55("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -154882,11 +155576,11 @@ async function hash44(file3, bytes2, current10) {
   need115(eof.bytesRead === 0, "Current preopen source grew during its bounded read.");
   return digest11.digest("hex");
 }
-async function verifyCurrentSchematicRenamePreopenSource(engine2, copy2) {
+async function verifyCurrentSchematicRenamePreopenSource(engine2, copy3) {
   const current10 = () => {
-    assertOriginalCurrentSchematicRenameBaseline(copy2, engine2);
+    assertOriginalCurrentSchematicRenameBaseline(copy3, engine2);
   };
-  const observed2 = await verifySource3(copy2, current10);
+  const observed2 = await verifySource3(copy3, current10);
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-schematic-rename-preopen-source.v1", sourceMatchesClosedBaseline: true });
 }
@@ -154899,11 +155593,11 @@ async function verifyCurrentSchematicRenamePosteditPreopenSource(engine2, snapsh
   current10();
   return Object.freeze({ ...observed2, profile: "private.current-schematic-rename-postedit-preopen-source.v1", sourceMatchesClosedPostedit: true });
 }
-async function verifySource3(copy2, current10) {
+async function verifySource3(copy3, current10) {
   current10();
-  const { source: source5, sourceSha256 } = copy2.checkpoint;
+  const { source: source5, sourceSha256 } = copy3.checkpoint;
   need115(
-    process.platform === "linux" && source5.length <= 4096 && isAbsolute29(source5) && resolve24(source5) === source5 && source5.endsWith(".eprj2") && copy2.copy.source === source5 && copy2.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
+    process.platform === "linux" && source5.length <= 4096 && isAbsolute29(source5) && resolve24(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
   const parent = await directory3(dirname29(source5), current10);
@@ -154918,7 +155612,7 @@ async function verifySource3(copy2, current10) {
     current10();
     const before = await lstat51(path6, { bigint: true });
     current10();
-    need115(matchesBaseline3(before, copy2), "Current preopen source differs from the original baseline identity or size.");
+    need115(matchesBaseline3(before, copy3), "Current preopen source differs from the original baseline identity or size.");
     file3 = await open42(path6, constants30.O_RDONLY | constants30.O_NOFOLLOW | constants30.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
@@ -154951,7 +155645,7 @@ async function verifySource3(copy2, current10) {
       source: source5,
       sourceSha256,
       bytes: Number(before.size),
-      sourceIdentity: Object.freeze({ ...copy2.copy.sourceIdentity }),
+      sourceIdentity: Object.freeze({ ...copy3.copy.sourceIdentity }),
       sidecarsObservedAbsent: true,
       ongoingSourceContinuity: false,
       startupQualified: false,
@@ -155503,11 +156197,11 @@ var init_current_schematic_rename_generation_runtime = __esm({
               async () => {
                 slot.current(scopeText);
                 assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: dispatch, capture: capture3, launch });
-                const text37 = canonicalJson(slot.journal);
+                const text38 = canonicalJson(slot.journal);
                 const persisted2 = await loadOperation(operationId11);
                 slot.current(scopeText);
-                need116(canonicalJson(persisted2) === text37 && canonicalJson(slot.journal) === text37, "tracked mark changed");
-                slot.journalText = text37;
+                need116(canonicalJson(persisted2) === text38 && canonicalJson(slot.journal) === text38, "tracked mark changed");
+                slot.journalText = text38;
                 marked = structuredClone(slot.journal);
                 const clock7 = await this.engine.clockObservationForTrackedDispatch(slot.journal, phase5);
                 if (open43) {
@@ -155605,10 +156299,10 @@ var init_current_schematic_rename_generation_runtime = __esm({
           projectOpenObservation: slot.openObservation,
           preopenSource: slot.preopen
         });
-        const journalText = slot.journalText, text37 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
+        const journalText = slot.journalText, text38 = canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } });
         const current10 = (scopeText) => {
           slot.current(scopeText);
-          need116(slot.generation === token3 && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text37, "generation changed, stopped or retired");
+          need116(slot.generation === token3 && slot.writerTransfer === void 0 && !slot.finishing && !slot.closeAttempted && !slot.retired && slot.journal.state === "project-only-opened" && !slot.journal.orphanedCallPossible && slot.journalText === journalText && canonicalJson(slot.journal) === journalText && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text38, "generation changed, stopped or retired");
           assertCurrentIssuedWindowsClockObservation(value2.launchClock);
           assertCurrentIssuedWindowsClockObservation(value2.captureClock);
         };
@@ -155619,7 +156313,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
           const originalCurrent = slot.current;
           const transferredCurrent = (scopeText) => {
             need116(
-              this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.generation === token3 && !slot.writerOwnershipInvalidated && !slot.retired && slot.current === originalCurrent && slot.capture === value2.capture && slot.launch === value2.launch && slot.closed.baseline === value2.baseline && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text37,
+              this.slots.get(token3.operationId) === slot && slot.writerTransfer === owner && slot.generation === token3 && !slot.writerOwnershipInvalidated && !slot.retired && slot.current === originalCurrent && slot.capture === value2.capture && slot.launch === value2.launch && slot.closed.baseline === value2.baseline && canonicalJson({ ...value2, source: { ...value2.source, engine: null, runtime: null } }) === text38,
               "SCH writer original ownership changed or was invalidated"
             );
             originalCurrent(scopeText);
@@ -156066,7 +156760,7 @@ var init_current_schematic_child_observation = __esm({
 });
 
 // server/src/current-schematic-rename-observation.ts
-import { types as types9 } from "node:util";
+import { types as types10 } from "node:util";
 function need117(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic observation: ${message}`);
@@ -156083,7 +156777,7 @@ function copyData(value2, budget3, depth = 0) {
     need117(budget3.bytes <= CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, "data bound exceeded");
     return value2;
   }
-  need117(value2 !== null && typeof value2 === "object" && !types9.isProxy(value2), "plain own data required");
+  need117(value2 !== null && typeof value2 === "object" && !types10.isProxy(value2), "plain own data required");
   const array4 = Array.isArray(value2), prototype = Object.getPrototypeOf(value2);
   need117(array4 ? prototype === Array.prototype : prototype === Object.prototype || prototype === null, "data prototype differs");
   const keys2 = Reflect.ownKeys(value2);
@@ -156762,7 +157456,7 @@ var init_current_schematic_aged_sql_issuer = __esm({
 });
 
 // server/src/current-schematic-rename-history.ts
-import { createHash as createHash54 } from "node:crypto";
+import { createHash as createHash56 } from "node:crypto";
 function need120(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic rename history: ${message}`);
@@ -156784,7 +157478,7 @@ function exactUtf82(value2) {
   need120(Buffer.byteLength(value2, "utf8") <= MAX_RECORD_BYTES3 && Buffer.from(value2, "utf8").toString("utf8") === value2, "record UTF8 or byte bound differs");
 }
 function digest9(value2) {
-  return createHash54("sha256").update(value2, "utf8").digest("hex");
+  return createHash56("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentSchematicRenameHistory(input) {
   const raw = fields22(input, [
@@ -156852,7 +157546,7 @@ ${recordsText}`;
     recordsSha256: digest9(recordsText),
     chunkText,
     chunkSha256: digest9(chunkText),
-    ...LIMITS5
+    ...LIMITS6
   });
   projections4.add(projection9);
   return projection9;
@@ -156864,10 +157558,10 @@ function verifyCurrentSchematicRenameHistory(projection9, observedChunk) {
     profile: "private.current-schematic-rename-history-comparison.v1",
     exactAppendedChunk: true,
     chunkSha256: projection9.chunkSha256,
-    ...LIMITS5
+    ...LIMITS6
   });
 }
-var MAX_RECORD_BYTES3, MAX_WINDOW_MS2, identifier22, integer26, time14, title14, metaSchema2, windowSchema3, actorSchema6, inputSchema3, LIMITS5, projections4;
+var MAX_RECORD_BYTES3, MAX_WINDOW_MS2, identifier22, integer26, time14, title14, metaSchema2, windowSchema3, actorSchema6, inputSchema3, LIMITS6, projections4;
 var init_current_schematic_rename_history = __esm({
   "server/src/current-schematic-rename-history.ts"() {
     init_zod();
@@ -156893,7 +157587,7 @@ var init_current_schematic_rename_history = __esm({
       backendClock: windowSchema3,
       backendActor: actorSchema6
     }).strict();
-    LIMITS5 = Object.freeze({
+    LIMITS6 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -156909,7 +157603,7 @@ var init_current_schematic_rename_history = __esm({
 });
 
 // server/src/current-schematic-rename-structure.ts
-import { createHash as createHash55 } from "node:crypto";
+import { createHash as createHash57 } from "node:crypto";
 function need121(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic rename structure: ${message}`);
@@ -156928,13 +157622,13 @@ function fields23(value2, names2) {
   return result;
 }
 function digest10(value2) {
-  return createHash55("sha256").update(value2, "utf8").digest("hex");
+  return createHash57("sha256").update(value2, "utf8").digest("hex");
 }
-function parseStructure2(text37) {
-  need121(Buffer.byteLength(text37, "utf8") <= MAX_TEXT_BYTES2 && Buffer.from(text37, "utf8").toString("utf8") === text37, "structure byte bound or UTF8 differs");
-  const value2 = JSON.parse(text37);
+function parseStructure2(text38) {
+  need121(Buffer.byteLength(text38, "utf8") <= MAX_TEXT_BYTES2 && Buffer.from(text38, "utf8").toString("utf8") === text38, "structure byte bound or UTF8 differs");
+  const value2 = JSON.parse(text38);
   const parsed2 = structureSchema3.parse(value2);
-  need121(JSON.stringify(parsed2) === text37, "structure is not exact native-shaped serialization");
+  need121(JSON.stringify(parsed2) === text38, "structure is not exact native-shaped serialization");
   return parsed2;
 }
 function verifyCollection2(collection, known) {
@@ -156982,7 +157676,7 @@ function prepareCurrentSchematicRenameStructure(input) {
     afterStructureSha256: digest10(afterStructureText),
     documentCount,
     documentTime: captured.documentTime,
-    ...LIMITS6
+    ...LIMITS7
   });
   projections5.add(projection9);
   return projection9;
@@ -156994,10 +157688,10 @@ function verifyCurrentSchematicRenameStructure(projection9, observedText) {
     profile: "private.current-schematic-rename-structure-comparison.v1",
     exactStructureText: true,
     afterStructureSha256: projection9.afterStructureSha256,
-    ...LIMITS6
+    ...LIMITS7
   });
 }
-var MAX_MEMBERS2, MAX_TEXT_BYTES2, identifier23, ownerIdentifier2, integer27, time15, title15, boardReference2, version6, zIndex2, docType2, board5, schematic3, sheet2, pcb4, panel2, accountText2, structureSchema3, beforeSchema8, inputSchema4, LIMITS6, projections5;
+var MAX_MEMBERS2, MAX_TEXT_BYTES2, identifier23, ownerIdentifier2, integer27, time15, title15, boardReference2, version6, zIndex2, docType2, board5, schematic3, sheet2, pcb4, panel2, accountText2, structureSchema3, beforeSchema8, inputSchema4, LIMITS7, projections5;
 var init_current_schematic_rename_structure = __esm({
   "server/src/current-schematic-rename-structure.ts"() {
     init_zod();
@@ -157036,7 +157730,7 @@ var init_current_schematic_rename_structure = __esm({
       desiredTitle: title15,
       documentTime: time15
     }).strict();
-    LIMITS6 = Object.freeze({
+    LIMITS7 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -157097,7 +157791,7 @@ function captureWitness3(value2) {
   }
   return Object.freeze(result);
 }
-function text36(value2) {
+function text37(value2) {
   need122(value2?.kind === "text", "expected SQL TEXT");
   const bytes2 = Buffer.from(value2.hex, "hex"), result = bytes2.toString("utf8");
   need122(Buffer.from(result).equals(bytes2), "SQL text is not exact UTF8");
@@ -157118,7 +157812,7 @@ function field10(owner, row7, name6) {
   return value2;
 }
 function unique7(owner, name6, expected3) {
-  const matches = owner.rows.filter((row7) => text36(field10(owner, row7, name6)) === expected3);
+  const matches = owner.rows.filter((row7) => text37(field10(owner, row7, name6)) === expected3);
   need122(matches.length === 1 && matches[0] !== void 0, "required row identity is not unique");
   return matches[0];
 }
@@ -157172,7 +157866,7 @@ function headEligibility3(head2, owner, witness) {
     return "locked";
   }
   const age = witness.agedHead;
-  need122(age !== void 0 && age.createdAtLiteral === text36(field10(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs3(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
+  need122(age !== void 0 && age.createdAtLiteral === text37(field10(owner, head2, "created_at")) && age.nativeTimezoneOffsetMinutes === -witness.backendLocalOffsetMinutes && Math.abs(age.nativeParsedLocalMs - wallMs3(age.createdAtLiteral)) <= 840 * 6e4, "independently bound native head age required");
   const adjusted = age.nativeParsedLocalMs - age.nativeTimezoneOffsetMinutes * 6e4;
   need122(Number.isSafeInteger(adjusted) && witness.backendClockMinMs - adjusted >= 61e3, "head is not aged throughout the selection window");
   return "aged-unlocked";
@@ -157182,18 +157876,18 @@ function branchParent3(before, branch, witness) {
   if (parent.kind === "null") {
     return;
   }
-  const uuid12 = text36(parent);
+  const uuid12 = text37(parent);
   need122(UUID7.test(uuid12) && uuid12 !== witness.branchUuid, "branch parent identity refused");
   const start = unique7(branches, "uuid", uuid12);
-  need122(text36(field10(branches, start, "name")) === "start" && integer28(field10(branches, start, "node")) === 1n && integer28(field10(branches, start, "delete_status")) === 0n && text36(field10(branches, start, "project_uuid")) === witness.projectUuid && field10(branches, start, "parent_uuid").kind === "null" && field10(branches, start, "history_uuid").kind === "null", "branch parent is not the empty terminal start node");
+  need122(text37(field10(branches, start, "name")) === "start" && integer28(field10(branches, start, "node")) === 1n && integer28(field10(branches, start, "delete_status")) === 0n && text37(field10(branches, start, "project_uuid")) === witness.projectUuid && field10(branches, start, "parent_uuid").kind === "null" && field10(branches, start, "history_uuid").kind === "null", "branch parent is not the empty terminal start node");
 }
 function actor5(before, uuid12) {
   const users = table13(before, "users");
   need122(users.rows.length <= 4096, "project user bound exceeded");
-  const matches = users.rows.filter((row8) => text36(field10(users, row8, "uuid")) === uuid12);
+  const matches = users.rows.filter((row8) => text37(field10(users, row8, "uuid")) === uuid12);
   need122(matches.length <= 1, "project actor is ambiguous");
   const row7 = matches[0];
-  return { username: row7 === void 0 ? "" : text36(field10(users, row7, "username")), nickname: row7 === void 0 ? "" : text36(field10(users, row7, "nickname")) };
+  return { username: row7 === void 0 ? "" : text37(field10(users, row7, "username")), nickname: row7 === void 0 ? "" : text37(field10(users, row7, "nickname")) };
 }
 function originalHistory2(history) {
   need122(history !== null && typeof history === "object", "original history projection required");
@@ -157234,18 +157928,18 @@ async function structureRows(before, projection9, witness, ticket2) {
   verifyCurrentSchematicRenameStructure(projection9, descriptor10.value);
   const branches = table13(before, "branches"), projects = table13(before, "projects"), structures = table13(before, "project_structures");
   const branch = unique7(branches, "uuid", witness.branchUuid), project3 = unique7(projects, "uuid", witness.projectUuid);
-  need122(text36(field10(projects, project3, "branch_uuid")) === witness.branchUuid && text36(field10(branches, branch, "project_uuid")) === witness.projectUuid && integer28(field10(branches, branch, "node")) === 0n && integer28(field10(branches, branch, "delete_status")) === 0n, "project/branch association differs");
+  need122(text37(field10(projects, project3, "branch_uuid")) === witness.branchUuid && text37(field10(branches, branch, "project_uuid")) === witness.projectUuid && integer28(field10(branches, branch, "node")) === 0n && integer28(field10(branches, branch, "delete_status")) === 0n, "project/branch association differs");
   const tree = JSON.parse(projection9.beforeStructureText);
-  need122(isRecord(tree) && isRecord(tree["owner"]) && tree["owner"]["uuid"] === text36(field10(projects, project3, "owner_uuid")), "structure owner differs");
+  need122(isRecord(tree) && isRecord(tree["owner"]) && tree["owner"]["uuid"] === text37(field10(projects, project3, "owner_uuid")), "structure owner differs");
   const identities4 = /* @__PURE__ */ new Set(), selected3 = [];
   for (const row7 of structures.rows) {
     const id13 = integer28(field10(structures, row7, "id"));
     need122(id13 > 0n && id13 <= BigInt(Number.MAX_SAFE_INTEGER) && integer28(row7.rowid) === id13 && !identities4.has(id13.toString()), "structure row identity differs");
     identities4.add(id13.toString());
-    if (text36(field10(structures, row7, "branch_uuid")) === witness.branchUuid) {
+    if (text37(field10(structures, row7, "branch_uuid")) === witness.branchUuid) {
       const priorTicket = integer28(field10(structures, row7, "ticket"));
-      need122(text36(field10(structures, row7, "project_uuid")) === witness.projectUuid && priorTicket >= 0n && priorTicket < BigInt(ticket2), "every structure match needs a lower ticket and exact project");
-      need122(text36(field10(structures, row7, "structure")) === projection9.beforeStructureText, "matching branch structure bytes differ");
+      need122(text37(field10(structures, row7, "project_uuid")) === witness.projectUuid && priorTicket >= 0n && priorTicket < BigInt(ticket2), "every structure match needs a lower ticket and exact project");
+      need122(text37(field10(structures, row7, "structure")) === projection9.beforeStructureText, "matching branch structure bytes differ");
       selected3.push(row7);
     }
     await yieldProofEventLoop();
@@ -157383,14 +158077,14 @@ async function prepareCurrentSchematicRenameSql(input) {
   const meta5 = rows2[0];
   need122(rows2.length === 1 && meta5?.id === "META" && meta5.type === "META", "target metadata missing");
   const structures = table13(before, "project_structures");
-  const first = structures.rows.find((row7) => text36(field10(structures, row7, "branch_uuid")) === target9.branchUuid);
+  const first = structures.rows.find((row7) => text37(field10(structures, row7, "branch_uuid")) === target9.branchUuid);
   need122(first !== void 0, "selected structure missing");
   const intent = Object.freeze({
     before,
     metadata: metadata10,
     witness,
     beforeMetaText: JSON.stringify(meta5.body),
-    structureText: text36(field10(structures, first, "structure")),
+    structureText: text37(field10(structures, first, "structure")),
     backendActor: Object.freeze({ uuid: witness.backendActorUuid, ...actor5(before, witness.backendActorUuid) })
   });
   const reserved = await projectIntent(intent, witness.documentClockMaxMs, witness.backendClockMaxMs);
@@ -157439,7 +158133,7 @@ async function prepareBoundSql(input) {
   need122(projects.rows.length === 1, "native all-project bookkeeping requires one project row");
   const branch = unique7(branches, "uuid", witness.branchUuid), project3 = unique7(projects, "uuid", witness.projectUuid);
   branchParent3(before, branch, witness);
-  const history = table13(before, `project_history_${witness.branchUuid}`), oldHead = text36(field10(branches, branch, "history_uuid"));
+  const history = table13(before, `project_history_${witness.branchUuid}`), oldHead = text37(field10(branches, branch, "history_uuid"));
   const eligibility = headEligibility3(unique7(history, "uuid", oldHead), history, witness);
   const data9 = table13(before, "history_data"), sequenceTable = table13(before, "sqlite_sequence");
   const sequence = unique7(sequenceTable, "name", "history_data");
@@ -157550,17 +158244,17 @@ async function verifyCurrentSchematicRenameSql(plan2, after) {
   need122(canonicalJson(before.properties) === canonicalJson(after.properties), "persisted SQL properties changed");
   const afterData = table13(after, "history_data"), afterHistory = table13(after, history.name);
   const chunk = newRow4(afterData, prepared.chunkId), head2 = newRow4(afterHistory, prepared.historyId);
-  const headUuid = text36(field10(afterHistory, head2, "uuid")), key = text36(field10(afterHistory, head2, "key"));
-  need122(UUID_V44.test(headUuid) && UUID7.test(key) && !history.rows.some((row7) => text36(field10(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text36(field10(data9, row7, "uuid")).split("-")[0] === headUuid || text36(field10(data9, row7, "history_uuid")) === headUuid), "new history UUID/key invalid or colliding");
-  const encoded = text36(field10(afterData, chunk, "dataStr"));
+  const headUuid = text37(field10(afterHistory, head2, "uuid")), key = text37(field10(afterHistory, head2, "key"));
+  need122(UUID_V44.test(headUuid) && UUID7.test(key) && !history.rows.some((row7) => text37(field10(history, row7, "uuid")) === headUuid) && !data9.rows.some((row7) => text37(field10(data9, row7, "uuid")).split("-")[0] === headUuid || text37(field10(data9, row7, "history_uuid")) === headUuid), "new history UUID/key invalid or colliding");
+  const encoded = text37(field10(afterData, chunk, "dataStr"));
   need122(encoded.length <= plan2.maximumCiphertextBase64Bytes, "history encoding exceeds reserved capacity");
   const plaintext = await decodeNativeHistoryChunk({ historyUuid: headUuid, keyHex: key, dataBase64: encoded });
   need122(Buffer.byteLength(plaintext) <= plan2.maximumPlaintextBytes, "history plaintext exceeds reserved capacity");
   verifyCurrentSchematicRenameHistory(historyProjection, plaintext);
-  const chunkTime = sqlTime3(text36(field10(afterData, chunk, "created_at")), witness), headTime = sqlTime3(text36(field10(afterHistory, head2, "created_at")), witness);
+  const chunkTime = sqlTime3(text37(field10(afterData, chunk, "created_at")), witness), headTime = sqlTime3(text37(field10(afterHistory, head2, "created_at")), witness);
   const branches = table13(before, "branches"), projects = table13(before, "projects"), sequence = table13(before, "sqlite_sequence");
   const afterProjects = table13(after, "projects"), projectAfter = unique7(afterProjects, "uuid", witness.projectUuid);
-  const projectTime = sqlTime3(text36(field10(afterProjects, projectAfter, "updated_at")), witness, true);
+  const projectTime = sqlTime3(text37(field10(afterProjects, projectAfter, "updated_at")), witness, true);
   const expected3 = /* @__PURE__ */ new Map([
     [history.name, [...history.rows, insert3(
       history,
@@ -158212,14 +158906,14 @@ var init_current_schematic_rename_program = __esm({
 });
 
 // server/src/current-schematic-rename-clock.ts
-import { types as types10 } from "node:util";
+import { types as types11 } from "node:util";
 function need126(condition, message = "Current SCH rename clock refused.") {
   if (!condition) {
     throw new Error(message);
   }
 }
 function fields25(value2, required2, optional3 = []) {
-  need126(value2 !== null && typeof value2 === "object" && !types10.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
+  need126(value2 !== null && typeof value2 === "object" && !types11.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys2 = Reflect.ownKeys(value2);
   need126(keys2.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys2.includes(key)), "Clock input fields differ.");
   for (const key of keys2) {
@@ -158228,12 +158922,12 @@ function fields25(value2, required2, optional3 = []) {
 }
 function documentSample4(value2) {
   fields25(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
-  const copy2 = Object.freeze({ ...value2 });
-  for (const time18 of [copy2.rendererBeforeMs, copy2.serverTimeMs, copy2.rendererAfterMs]) {
+  const copy3 = Object.freeze({ ...value2 });
+  for (const time18 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need126(Number.isSafeInteger(time18) && time18 >= 0 && time18 <= 864e13 && !Object.is(time18, -0));
   }
-  need126(copy2.rendererBeforeMs <= copy2.serverTimeMs && copy2.serverTimeMs <= copy2.rendererAfterMs && copy2.rendererAfterMs - copy2.rendererBeforeMs <= COLLECTION_MS4 && new Date(copy2.rendererBeforeMs).toISOString() === copy2.rendererBeforeIso && new Date(copy2.rendererAfterMs).toISOString() === copy2.rendererAfterIso && Number.isSafeInteger(copy2.rendererTimezoneOffsetMinutes) && Math.abs(copy2.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy2.rendererTimezoneOffsetMinutes, -0) && typeof copy2.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy2.notifyTabId));
-  return copy2;
+  need126(copy3.rendererBeforeMs <= copy3.serverTimeMs && copy3.serverTimeMs <= copy3.rendererAfterMs && copy3.rendererAfterMs - copy3.rendererBeforeMs <= COLLECTION_MS4 && new Date(copy3.rendererBeforeMs).toISOString() === copy3.rendererBeforeIso && new Date(copy3.rendererAfterMs).toISOString() === copy3.rendererAfterIso && Number.isSafeInteger(copy3.rendererTimezoneOffsetMinutes) && Math.abs(copy3.rendererTimezoneOffsetMinutes) <= 840 && !Object.is(copy3.rendererTimezoneOffsetMinutes, -0) && typeof copy3.notifyTabId === "string" && /^[a-f0-9]{16}$/u.test(copy3.notifyTabId));
+  return copy3;
 }
 function exactUtcTicks4(value2) {
   need126(typeof value2 === "string");
@@ -158379,7 +159073,7 @@ async function prepareCurrentSchematicRenameClock(input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS4,
-    ...LIMITS7
+    ...LIMITS8
   });
   plans11.set(plan2, Object.freeze({
     engine: engine2,
@@ -158503,7 +159197,7 @@ async function verifyCurrentSchematicRenameClockEffect(plan2, input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS4,
-    ...LIMITS7
+    ...LIMITS8
   });
   lifecycle.completed = Object.freeze({ after, afterText: canonicalJson(after), effect, comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -158522,7 +159216,7 @@ function completedCurrentSchematicRenameClockSource(plan2, engine2, dispatchOwne
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS7, ASSUMPTIONS4, attempts27, owners6, plans11, lifecycles2;
+var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS8, ASSUMPTIONS4, attempts27, owners6, plans11, lifecycles2;
 var init_current_schematic_rename_clock = __esm({
   "server/src/current-schematic-rename-clock.ts"() {
     init_core3();
@@ -158537,7 +159231,7 @@ var init_current_schematic_rename_clock = __esm({
     COLLECTION_MS4 = 1e4;
     EPOCH_TICKS15 = 621355968000000000n;
     WINDOW_MS4 = 6e4;
-    LIMITS7 = Object.freeze({
+    LIMITS8 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       startupQualified: false,
@@ -158717,21 +159411,21 @@ async function acceptMark(collection, before, scopeText) {
     capture: source5.original.capture,
     launch: source5.original.launch
   });
-  const text37 = canonicalJson(source5.journal);
+  const text38 = canonicalJson(source5.journal);
   const disk = await loadOperation(collection.owner.operationId);
   current9(collection, scopeText);
-  need127(canonicalJson(disk) === text37 && canonicalJson(source5.journal) === text37, "Current SCH writer clock marked journal changed.");
-  collection.journalText = text37;
+  need127(canonicalJson(disk) === text38 && canonicalJson(source5.journal) === text38, "Current SCH writer clock marked journal changed.");
+  collection.journalText = text38;
   return structuredClone(source5.journal);
 }
 async function acceptClear(collection, marked, scopeText) {
   current9(collection, scopeText);
   assertCurrentSymbolCacheClear(marked, collection.source.journal, PHASE);
-  const text37 = canonicalJson(collection.source.journal);
+  const text38 = canonicalJson(collection.source.journal);
   const disk = await loadOperation(collection.owner.operationId);
   current9(collection, scopeText);
-  need127(canonicalJson(disk) === text37 && canonicalJson(collection.source.journal) === text37, "Current SCH writer clock cleared journal changed.");
-  collection.journalText = text37;
+  need127(canonicalJson(disk) === text38 && canonicalJson(collection.source.journal) === text38, "Current SCH writer clock cleared journal changed.");
+  collection.journalText = text38;
 }
 async function retainEngineFailure(collection, marked, scopeText) {
   current9(collection, scopeText);
@@ -159154,11 +159848,11 @@ var init_current_schematic_rename_writer_runtime = __esm({
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const disk = await loadOperation(slot.owner.operationId);
         this.current(slot, scopeText);
-        need128(canonicalJson(disk) === text37 && canonicalJson(slot.journal) === text37, "Current SCH rename writer cleared journal changed.");
-        slot.journalText = text37;
+        need128(canonicalJson(disk) === text38 && canonicalJson(slot.journal) === text38, "Current SCH rename writer cleared journal changed.");
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -160142,21 +160836,21 @@ var init_current_schematic_rename_verification_runtime = __esm({
         const lease = this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.();
         need131(lease !== void 0 && slot.capture !== void 0 && slot.launch !== void 0);
         assertCurrentSymbolCacheMark(before, slot.journal, { phase: phase5, bridgeDispatch: lease, capture: slot.capture, launch: slot.launch });
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need131(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need131(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
         return structuredClone(slot.journal);
       }
       async acceptClear(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
         assertCurrentSymbolCacheClear(marked, slot.journal, phase5);
-        const text37 = canonicalJson(slot.journal);
+        const text38 = canonicalJson(slot.journal);
         const saved = await loadOperation(slot.source.operationId);
         this.current(slot, scopeText);
-        need131(canonicalJson(saved) === text37 && canonicalJson(slot.journal) === text37);
-        slot.journalText = text37;
+        need131(canonicalJson(saved) === text38 && canonicalJson(slot.journal) === text38);
+        slot.journalText = text38;
       }
       async retainEngineFailure(slot, marked, phase5, scopeText) {
         this.current(slot, scopeText);
@@ -161540,8 +162234,8 @@ var init_current_project_only_symbol_runtime = __esm({
 function dataText(value2) {
   let bytes2 = 0, nodes = 0;
   const seen = /* @__PURE__ */ new Set();
-  function string5(text38) {
-    bytes2 += Buffer.byteLength(text38);
+  function string5(text39) {
+    bytes2 += Buffer.byteLength(text39);
     if (bytes2 > MAX_BYTES16) {
       throw new Error("Expected fingerprint exceeds its data bound.");
     }
@@ -161583,11 +162277,11 @@ function dataText(value2) {
     }
   }
   visit(value2, 0);
-  const text37 = JSON.stringify(value2);
-  if (Buffer.byteLength(text37) + 1 > MAX_BYTES16) {
+  const text38 = JSON.stringify(value2);
+  if (Buffer.byteLength(text38) + 1 > MAX_BYTES16) {
     throw new Error("Expected fingerprint plus artifact newline exceeds 256 KiB.");
   }
-  return text37;
+  return text38;
 }
 function freezeData(value2) {
   if (value2 !== null && typeof value2 === "object") {
@@ -162538,7 +163232,7 @@ var init_closed_symbol_operation_entry = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash56 } from "node:crypto";
+import { createHash as createHash58 } from "node:crypto";
 import {
   basename as basename32,
   dirname as dirname30,
@@ -162844,14 +163538,14 @@ function isJsonValue(value2) {
   return isRecord(value2) && Object.values(value2).every((item2) => isJsonValue(item2));
 }
 function jsonSafe(value2) {
-  const text37 = JSON.stringify(
+  const text38 = JSON.stringify(
     value2,
     (_key, item2) => typeof item2 === "bigint" ? item2.toString() : item2
   );
-  if (text37 === void 0) {
+  if (text38 === void 0) {
     return null;
   }
-  const parsed2 = JSON.parse(text37);
+  const parsed2 = JSON.parse(text38);
   if (!isJsonValue(parsed2)) {
     throw new TypeError("JSON serialization produced a non-JSON value.");
   }
@@ -164700,7 +165394,7 @@ var init_src = __esm({
       let original2;
       server.registerTool("easyeda_control_pcb_diagnostic_validation", {
         title: "Validate a contained native EasyEDA diagnostic session",
-        description: "Validation-only diagnostic startup and bounded browser/frame/pinned-script identity observations. Query offline pcb-diagnostic-validation/pcb-diagnostic-validation-validate first. Launch requires confirmValidationOnly:true, confirmDiagnosticLaunch:true and acceptExistingProfileEffects:true. Existing-profile startup may restore projects and persist data; isolation, project-free startup and connected qualification are unproved. One original helper/Job owns the pipe and each observation is consumed once. No caller executable, URL, source hash, CDP command, evaluation, project navigation, CAD edit or Save. Source identity does not prove the worker/compiler or authorize execution. inspect is local, retains bounded outcomes and accepts an optional observation selector; normal close, original termination, helper release and exact-record settlement require retained ownership. No force exit, Save/Discard choice or journal-derived owner recreation.",
+        description: "Validation-only diagnostic startup, bounded browser/frame/pinned-script identity observations, parent-scoped direct-worker discovery and one fixed side-effect-checked worker-state sample. Query offline pcb-diagnostic-validation/pcb-diagnostic-validation-validate first. Launch requires confirmValidationOnly:true, confirmDiagnosticLaunch:true and acceptExistingProfileEffects:true. Existing-profile startup may restore projects and persist data; isolation, project-free startup and connected qualification are unproved. One original helper/Job owns the pipe and each observation is consumed once. No caller executable, URL, source hash, CDP command, evaluation, project navigation, CAD edit or Save. Exact worker-source/context admission precedes the compiled state sample; it proves neither compiler ownership, complete queues, queue completion nor writer eligibility. Start Page normally has no project worker and this route supplies no project opener. inspect is local, retains bounded outcomes and accepts an optional observation selector; normal close, original termination, helper release and exact-record settlement require retained ownership. No force exit, Save/Discard choice or journal-derived owner recreation.",
         inputSchema: inputSchema5,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
@@ -165657,7 +166351,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash56("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash58("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);

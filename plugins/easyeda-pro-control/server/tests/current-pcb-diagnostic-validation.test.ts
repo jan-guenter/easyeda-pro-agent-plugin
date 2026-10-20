@@ -31,6 +31,14 @@ void test("diagnostic request grammar rejects arbitrary executables, hashes, CDP
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(inspect).success, true);
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...inspect, family: "worker" }).success, false);
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...inspect, frameId: "../other" }).success, false);
+  const worker = { action: "inspect-worker-script", operationId: "validation-test", expectedBindingSha256: "a".repeat(64), targetId: "worker-1" };
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(worker).success, true);
+  const state = { action: "observe-worker-state", operationId: "validation-test", expectedBindingSha256: "a".repeat(64) };
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(state).success, true);
+  for (const fields of [{ expression: "1+1" }, { uniqueContextId: "supplied-context" }, { sourceHash: "b".repeat(64) },
+    { method: "Runtime.evaluate" }, { targetId: "worker-1" }, { throwOnSideEffect: false }]) {
+    assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...state, ...fields }).success, false);
+  }
   const cleanup = { action: "cleanup-no-process", operationId: "validation-test", expectedIntentSha256: "a".repeat(64) };
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(cleanup).success, true);
   for (const fields of [{ pid: 123 }, { executable: "C:\\Other.exe" }, { processCreated: false }, { creationState: "not-entered" }]) {

@@ -13,15 +13,15 @@ import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current
 import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLifecycleSnapshot,
   assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
   diagnosticLifecycleDigestSchema, diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticLifecycleWindowSchema,
-  publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
+  diagnosticObservationStageSchema, publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticLaunchLease, DiagnosticLifecycleBinding, DiagnosticLifecycleOperation, DiagnosticLifecycleRecordName, DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 
 type CleanupRequest = Exclude<Request, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<Request, { action: "browser-observation" | "inspect-frames" | "inspect-script" }>;
-type ObservationStage = "browser" | "frames" | "script";
+type ObservationRequest = Extract<Request, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" }>;
+type ObservationStage = z.infer<typeof diagnosticObservationStageSchema>;
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
-  "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript"] as const;
+  "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]>;
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
   readonly assertAllowed: () => Promise<void>;
@@ -107,9 +107,10 @@ export class CurrentPcbDiagnosticLifecycle {
       const pendingIntent = this.#attempt?.operationId === request.operationId ? this.#attempt : null;
       const noProcessCleanupAvailable = original && this.#retained !== null && this.#lease !== null && !this.#noProcessInvoked &&
         this.#retained.methods.status.call(this.#retained.owner).noProcessCleanupAvailable;
-      const selectedStage = request.observation ?? (["script", "frames", "browser"] as const).find(stage =>
+      const native = original && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
+      const selectedStage = request.observation ?? diagnosticObservationStageSchema.options.toReversed().find(stage =>
         operation?.records[`${stage}-result.json`] !== undefined || original && this.#pending.has(`${stage}-result.json`));
-      const observations = (["browser", "frames", "script"] as const).map(stage => {
+      const observations = diagnosticObservationStageSchema.options.map(stage => {
         const record = operation?.records[`${stage}-result.json`];
         const pending = original ? this.#pending.get(`${stage}-result.json`) : undefined;
         const retained = pending === undefined ? undefined : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending) as unknown);
@@ -118,6 +119,7 @@ export class CurrentPcbDiagnosticLifecycle {
           result: stage === selectedStage ? (record ?? retained)?.result : undefined };
       });
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
+        ...(native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError }),
         ...(pendingIntent === null ? {} : { intentSha256: pendingIntent.intentSha256, publicationSettlementAvailable: this.#lease !== null,
           unlaunchedCleanupAvailable: !pendingIntent.launchInvoked && (!pendingIntent.allocationInvoked || this.#retained !== null) }),
         closeAttemptConsumed: operation?.records["close-intent.json"] !== undefined || original && this.#closeAttempted,
@@ -307,7 +309,8 @@ export class CurrentPcbDiagnosticLifecycle {
     const captured = Object.freeze({ launch: owner.launch, status: owner.status, observeApplicationWindow: owner.observeApplicationWindow,
       requestNormalClose: owner.requestNormalClose, observeTermination: owner.observeTermination, releaseClosed: owner.releaseClosed,
       releaseUnlaunched: owner.releaseUnlaunched, releaseNoProcess: owner.releaseNoProcess,
-      browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript });
+      browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript,
+      inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState });
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
       intentSha256: sha256Json(intent), binding: null };
     this.#retained = retained;
@@ -356,7 +359,8 @@ export class CurrentPcbDiagnosticLifecycle {
     // Handles. The native owner still checks its retained helper on cleanup.
     this.#assertOwner(retained);
     await assertSnapshot(operations); this.#assertOwner(retained);
-    if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script") {
+    if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
+        request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-window") {
@@ -406,16 +410,22 @@ export class CurrentPcbDiagnosticLifecycle {
     let stage: ObservationStage = "browser";
     if (request.action === "inspect-frames") { stage = "frames"; }
     if (request.action === "inspect-script") { stage = "script"; }
+    if (request.action === "inspect-workers") { stage = "workers"; }
+    if (request.action === "inspect-worker-script") { stage = "worker-script"; }
+    if (request.action === "observe-worker-state") { stage = "worker-state"; }
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
       operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "OBSERVATION_UNAVAILABLE");
     requireValue(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === undefined, "OBSERVATION_CONSUMED");
     requireValue(stage !== "frames" || operation.records["browser-result.json"] !== undefined, "BROWSER_OBSERVATION_REQUIRED");
     requireValue(stage !== "script" || operation.records["frames-result.json"] !== undefined, "FRAME_OBSERVATION_REQUIRED");
+    requireValue(stage !== "workers" || operation.records["frames-result.json"] !== undefined, "FRAME_OBSERVATION_REQUIRED");
+    requireValue(stage !== "worker-script" || operation.records["workers-result.json"] !== undefined, "WORKER_OBSERVATION_REQUIRED");
+    requireValue(stage !== "worker-state" || operation.records["worker-script-result.json"] !== undefined, "WORKER_SOURCE_REQUIRED");
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
     const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"]> = {
       schema: "easyeda-pro-control.pcb-diagnostic-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       bindingSha256: request.expectedBindingSha256, stage,
-      ...(request.action === "inspect-frames" ? { targetId: request.targetId } : {}),
+      ...(request.action === "inspect-frames" || request.action === "inspect-worker-script" ? { targetId: request.targetId } : {}),
       ...(request.action === "inspect-script" ? { frameId: request.frameId, family: request.family } : {}),
     };
     this.#observationConsumed.add(stage); await this.#record(request.operationId, `${stage}-intent.json`, intent);
@@ -425,7 +435,10 @@ export class CurrentPcbDiagnosticLifecycle {
     let result: Readonly<Record<string, unknown>>;
     if (request.action === "browser-observation") { result = await retained.methods.browserObservation.call(retained.owner); }
     else if (request.action === "inspect-frames") { result = await retained.methods.inspectFrames.call(retained.owner, request.targetId); }
-    else { result = await retained.methods.inspectScript.call(retained.owner, request.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family]); }
+    else if (request.action === "inspect-script") { result = await retained.methods.inspectScript.call(retained.owner, request.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family]); }
+    else if (request.action === "inspect-workers") { result = await retained.methods.inspectWorkers.call(retained.owner); }
+    else if (request.action === "inspect-worker-script") { result = await retained.methods.inspectWorkerScript.call(retained.owner, request.targetId); }
+    else { result = await retained.methods.observeWorkerState.call(retained.owner); }
     // Preserve the original observation before validation/publication can fail.
     this.#observations.set(stage, result);
     requireValue(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "OBSERVATION_BOUND");

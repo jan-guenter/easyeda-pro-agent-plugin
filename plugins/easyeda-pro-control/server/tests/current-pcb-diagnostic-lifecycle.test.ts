@@ -44,6 +44,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"),
       scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null,
+      nativeLaunchError: null, createProcessError: null,
       noProcessCleanupAvailable: state.rootless !== null && calls.includes("launch") && state.noProcessHealthy && !state.released,
       cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false }),
     launch: async () => {
@@ -83,6 +84,18 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     inspectScript: (frameId, profile) => {
       calls.push("script"); assert.equal(frameId, "frame-1"); assert.equal(profile.family, "pcb");
       return Promise.resolve({ sourceVerified: true, family: profile.family, executionAuthorized: false });
+    },
+    inspectWorkers: () => {
+      calls.push("workers");
+      return Promise.resolve({ workers: [{ targetId: "worker-1" }], executionAuthorized: false });
+    },
+    inspectWorkerScript: targetId => {
+      calls.push("worker-script"); assert.equal(targetId, "worker-1");
+      return Promise.resolve({ sourceVerified: true, executionAuthorized: false });
+    },
+    observeWorkerState: () => {
+      calls.push("worker-state");
+      return Promise.resolve({ queueCompletionVerified: false, executionAuthorized: false });
     },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
@@ -169,6 +182,49 @@ void test("observation publication failure retains its exact successful return w
   await value.request("inspect-frames", { targetId: "target-1" });
 });
 
+void test("worker stages require retained frame, child and source results and consume each original action once", async context => {
+  const id = "diagnostic-test-worker-stages", value = fixture(context, id);
+  await value.coordinator.run(launch(id));
+  await assert.rejects(value.request("inspect-workers"), /FRAME_OBSERVATION_REQUIRED/u);
+  await value.request("browser-observation");
+  await value.request("inspect-frames", { targetId: "target-1" });
+  await assert.rejects(value.request("inspect-worker-script", { targetId: "worker-1" }), /WORKER_OBSERVATION_REQUIRED/u);
+  await assert.rejects(value.request("observe-worker-state"), /WORKER_SOURCE_REQUIRED/u);
+  await value.request("inspect-workers");
+  await value.request("inspect-worker-script", { targetId: "worker-1" });
+  const result = await value.request("observe-worker-state");
+  assert.deepEqual(result["result"], { queueCompletionVerified: false, executionAuthorized: false });
+  for (const [action, extra] of [["inspect-workers", {}], ["inspect-worker-script", { targetId: "worker-1" }],
+    ["observe-worker-state", {}]] as const) {
+    await assert.rejects(value.request(action, extra), /OBSERVATION_CONSUMED/u);
+  }
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const records = operations.find(operation => operation.operationId === id)?.records;
+  assert.ok(records?.["worker-state-result.json"]);
+  const historical = await new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id, observation: "worker-state" });
+  assert.match(JSON.stringify(historical["observations"]), /queueCompletionVerified/u);
+  assert.deepEqual(value.calls.filter(call => call.startsWith("worker")), ["workers", "worker-script", "worker-state"]);
+});
+
+void test("worker result publication can settle without another evaluation", async context => {
+  const id = "diagnostic-test-worker-publication"; let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "worker-state-result.json" && fail) { fail = false; throw new Error("synthetic worker publication failure"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  await value.coordinator.run(launch(id));
+  await value.request("browser-observation");
+  await value.request("inspect-frames", { targetId: "target-1" });
+  await value.request("inspect-workers");
+  await value.request("inspect-worker-script", { targetId: "worker-1" });
+  await assert.rejects(value.request("observe-worker-state"), /worker publication failure/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: "worker-state" });
+  assert.match(JSON.stringify(inspected["observations"]), /queueCompletionVerified/u);
+  await assert.rejects(value.request("observe-worker-state"), /OBSERVATION_CONSUMED/u);
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  assert.equal(value.calls.filter(call => call === "worker-state").length, 1);
+});
+
 void test("original cleanup does not require startup admission after diagnostic launch", async context => {
   const id = "diagnostic-test-local-cleanup", value = fixture(context, id);
   await value.coordinator.run(launch(id)); value.state.failAllowed = true; value.state.failOther = true;
@@ -198,6 +254,14 @@ void test("settled rootless refusal releases only the original owner with a dist
     await assert.rejects(value.coordinator.run({ action: "cleanup-no-process", operationId: id, expectedIntentSha256: inspected["intentSha256"] }), /ORIGINAL_ATTEMPT_REQUIRED/u);
   }
   assert.equal(diagnosticLifecycleNoProcessReleaseProofSchema.safeParse({ launchRequestOutcome: "not-issued", creationState: "returned-false", processCreated: false, released: true }).success, false);
+  const failed = { launchRequestOutcome: "native-refused", creationState: "returned-false", processCreated: false, released: true };
+  for (const code of [0, 87, 4_294_967_295]) {
+    assert.equal(diagnosticLifecycleNoProcessReleaseProofSchema.safeParse({ ...failed, createProcessError: code }).success, true);
+  }
+  for (const code of [-1, -0, 4_294_967_296, "87", Number.NaN]) {
+    assert.equal(diagnosticLifecycleNoProcessReleaseProofSchema.safeParse({ ...failed, createProcessError: code }).success, false);
+  }
+  assert.equal(diagnosticLifecycleNoProcessReleaseProofSchema.safeParse({ ...failed, creationState: "not-entered", createProcessError: 87 }).success, false);
 });
 
 void test("rootless release publication settles exact terminal bytes without replaying native release", async context => {
