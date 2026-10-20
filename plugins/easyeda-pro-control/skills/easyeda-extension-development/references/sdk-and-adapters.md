@@ -356,8 +356,11 @@ handles, code and arbitrary scope enumeration are unavailable. The raw String
 subset is not whole-PCB membership, and local copper-worker reference equality
 is not a CDP/project-worker association or completion evidence. The census
 includes seventeen managers, board/panelization roots and three spatial-index
-branches, but not complete ownership, secondary indexes, active tools or
-geometry. Zero counts and absent/undefined owners are not empty-board proof.
+branches, plus selected interaction and secondary-index state in the same
+request. It observes the source-defined idle tool chain and empty smart-dimension
+command without assuming tools are null. It still excludes complete ownership,
+ratline/network secondary indexes, latent move callbacks and geometry.
+Zero counts and absent/undefined owners are not empty-board proof.
 Neither counts
 nor raw fields establish Save eligibility. This PCB-frame branch is not
 reachable through project-only opening alone. A separate one-shot `open-pcb`

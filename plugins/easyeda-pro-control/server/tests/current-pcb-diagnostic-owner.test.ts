@@ -328,6 +328,12 @@ void test("staged frame drift and navigation invalidate script observation witho
     await value.owner.inspectFrames("target-1");
     await assert.rejects(value.owner.inspectScript("frame-1", SCRIPT_PROFILE), /IDENTITY|PIPE_REPLY/u);
     assert.equal(value.child.stdin?.writableEnded, false); assert.notEqual(value.owner.status().diagnosticFailure, null);
+    if (scenario === "staged-navigation") {
+      const failure = value.owner.status().diagnosticFailureObservation;
+      assert.equal(failure?.reason, "event-callback"); assert.equal(failure?.eventKind, "Page.frameNavigated");
+      assert.equal(failure?.request?.method, "Debugger.getScriptSource");
+      assert.equal(failure?.dispatchAbsenceVerified, false);
+    }
     await assert.rejects(value.owner.inspectScript("frame-1", SCRIPT_PROFILE), /UNAVAILABLE/u); await close(value);
   }
 });
