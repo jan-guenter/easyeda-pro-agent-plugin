@@ -7,11 +7,12 @@ that original process. Separate branches support a one-shot disposable project
 opening followed by either direct-child worker inspection or a separately
 admitted disposable PCB-frame opening and model observation. An already admitted
 PCB frame can also supply model observation. None enables CAD editing.
-Installed081744 completed one original-owned native launch and normal closure,
-including root/whole-Job termination and helper release. Its first browser
-observation failed before any project opening. That result does not validate
-browser, frame, worker or model observation. Older snapshots may lack the tool
-or the additional model fields described below.
+Installed093241 completed original-owned native launch, browser/frame
+observations, complete UI-source admission and normal closure, including
+root/whole-Job termination and helper release. Its observed Start Page had an
+additional blank child that its opener did not support; no project opening was
+attempted. This does not validate project/PCB opening, worker or model samples.
+Older snapshots may lack the tool or the additional fields described below.
 
 Existing-profile startup can restore projects, run extensions, contact services,
 migrate data or persist preferences/cache. It is neither isolated nor guaranteed
@@ -117,8 +118,18 @@ Save. It performs no explicit Save or document-open call. A result
 `opened-prefix-observed` is only the public acknowledgment plus the operation's
 `loadProjectCompleted` prefix; it does not prove restoration completion.
 
-This project-only stage deliberately retains one frame: the original UI tree must
-contain one top-level frame. Only the selected project's same-document fragment
+This project-only stage retains the original top-level UI frame and optionally
+one pre-existing, unchanged ancillary child. The child must be `about:blank`
+and its actual DOM owner must satisfy the source-shaped hidden resize-sensor
+`OBJECT` contract. A URL alone or an iframe is not enough. Fixed owner/node
+reads recheck the original backend identity and complete attributes before and
+after project opening, before PCB opening, and during PCB observation.
+The returned `ancillaryFrame` evidence explicitly does not prove the direct
+DOM parent, private observer-registry ownership or continuous inactivity.
+Do not manufacture this shape, remove the child, navigate it or relax the
+check for an unsupported owner.
+
+Only the selected project's same-document fragment
 transition and the source-derived project-name window-title prefix are admitted.
 The original product/version title must match the retained target; arbitrary
 title changes are not accepted. Added/restored editor frames, a changed loader/default
@@ -164,10 +175,10 @@ does not establish this PCB-frame prerequisite.
 The fixed inspector path selects the original `pcb/saveCompiler` callback,
 checks its complete source/script location, and follows only its two bounded
 V8 scope links. It never calls the callback or Save handler, pauses a debugger,
-or accepts an object ID from the tool caller. Ten fixed commands read and
+or accepts an object ID from the tool caller. Eleven fixed commands read and
 release the private remote-object group. Effect checks remain enabled.
 
-The composite contains three separate samples from the same original handler
+The composite contains four separate samples from the same original handler
 scope and document identity:
 
 - `compilerState`: main compiler, at most128 loaded footprint participants,
@@ -178,9 +189,16 @@ scope and document identity:
 - `rawStrings`: at most16 root String-manager models, including text and raw
   identity, ordering, partition/group and base fields. Missing, undefined, null
   and zero remain distinct; models without a state watcher are not omitted.
+- `rootInventory`: counts and presence markers for seventeen model managers,
+  the board owner, panelization arrays and three spatial-index branches.
+  Populated collections are accepted within fixed bounds. Root-tree/Set
+  disagreements are reported, not silently corrected or treated as emptiness.
+  Absent or undefined owners are diagnostic abnormal states, not empty models.
 
 These samples are not atomic. The String manager is not the whole PCB, and an
-empty manager does not prove an empty board. Unsupported models or over-budget
+empty manager or zero root census does not prove an empty board. The census
+does not cover secondary indexes, active tools, geometry or complete ownership.
+Unsupported models or over-budget
 results refuse without truncation. The combined reply stays within128KiB.
 No queue payloads are returned. This is not a complete pending-producer inventory,
 queue barrier, saved-state comparison or writer/Save authority. The original
@@ -249,11 +267,17 @@ Browser discovery is bounded to 8 MiB. Attached transport allows 64 MiB total,
 only the script-source reply allows a 32 MiB encoded frame and 20 MiB decoded
 UTF-8 source. The larger source allowance covers the pinned UI asset, not
 arbitrary event or response expansion.
-The former complete worker path uses32 requests; opening adds8. The separate
-existing-PCB-source/model path uses29 total; the separate complete UI/project/
-PCB-opening/model path uses53. The fixed budget is not permission for extra
+The former complete worker path uses32 requests; opening adds8, and an admitted
+ancillary child adds6 to that project-only branch. The separate
+existing-PCB-source/model path uses30 total; the separate complete UI/project/
+PCB-opening/model path uses54, or64 with the five ancillary-owner checks,
+including release of the original object group.
+The fixed budget is not permission for extra
 CDP probes or repeated observations. Fixed opening programs allow65,536 outbound
 bytes and32,768 native input bytes; other limits are unchanged.
+The root census is bounded to8KiB,128trees,65,536 collection-entry visits,
+64levels and528,384 retained descriptors. It does not emit model keys or
+geometry. These are sampled observations, not a write-admission token.
 
 `sourceVerified:true` proves only the selected script's complete bytes in the
 observed target and its retained page or worker context. URL matching alone is insufficient.

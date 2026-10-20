@@ -4,6 +4,53 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020105401` batches Start Page ancillary-object
+admission, a populated PCB-root census and two String walker Proxy fixes.
+Four non-atomic diagnostic samples fit the unchanged64-request/64MiB/128KiB
+bounds, including original-group release and all five ancillary checks.
+No writer or SDK-method coverage added. Main/independent integration review
+found no blockers;66 integrated focused tests and18 native/protocol tests pass.
+Windows CompileOnly passed exact helper144881/e315c833 with emptyJob/pipes
+and processLaunchedfalse; receiptedf3b4e5 in
+`/root/.cache/easyeda-pcb-root-inventory-native-7HAV2Nsb/compile-only.json`.
+Dependency install/tree/signatures151/attestations40/audit pass; no
+vulnerabilities. Strict type-aware lint/types/build pass. Source529/b28057a3,
+runtime3/c51ddba3. Only facade projections/review time refreshed; external
+pins remain unchanged. Final frozen verification/CI/publication/install pending.
+Release evidence: `/root/.cache/easyeda-start-page-inventory-release-xu66hOr6`.
+Batch and backlog: `docs/current-pcb-start-page-inventory-batch-2026-10-20.md`.
+The actual loaded093241 remains separate and must not be hotpatched.
+
+### Completed093241 continuation
+
+093241 continuation on2026-10-20: automatic main Linux39405715451 PASSED on
+exact85efb3f; both post-main platforms are green. Fresh actual facade1037922/
+start46711201, parent1035796/start46705256, pinnedNode24.18.0/core0 admitted
+independently and by main. Source527/fda41348, runtime3/d3cbdcbe and manifest
+212df499 match the immutable installed093241 and main. Full comparison passes
+1,581files/42directories/32,756,692bytes/modes, inventory66fe440f.
+Independent proof2bb4c0d4:
+`/root/.cache/easyeda-093241-independent-admission-Ds2Ql8vg/proof.json`.
+
+NEW `diag-native-093241-20261020-01` completed original native launch,
+browser observation, frame inventory and complete UI source admission.
+Original EasyEDA51744/created134369659542521282, binding4525f030.
+The observed Start Page has root plus an about:blank child, while the current
+diagnostic opener admits only one frame. No project/PCB open was attempted;
+the child is not yet proved to be the source-defined placeholder. Root did
+not dispatch worker/model observations, CAD edits or explicit Save.
+Original hwnd91426242 received one normal-close; root/whole-Job termination
+and terminal `release-closed` were proved. No prompt choice or forced exit.
+Receipts: `/root/.cache/easyeda-093241-native-diagnostic-live-qnsTQLWw`.
+This qualifies browser/frame/UI-source observations and cleanup, not project/
+PCB/model or writer support. Existing-profile startup effects remain unqualified.
+Do not replay this terminal case.
+
+The subsequent105401 source batch is described above. No connected
+qualification of its ancillary/project/PCB/model path has occurred.
+
+### Delivered093241 checkpoint
+
 Delivered `0.3.0+codex.20261020093241` through protected PR85 on2026-10-20.
 Payload `b507384bdd3d51f27e0c4060d8de318043d9760e`, merged main
 `85efb3f561e395f6b7dde8e39b522cddba905732`; complete tree3c3d6418 and plugin
@@ -52,7 +99,7 @@ read occurred. Existing-profile startup effects are not guaranteed absent.
 Running081744 facade836356 was not killed, rebound or hotpatched. No more live
 calls on it after the official upgrade. A fresh Codex session must load/admit093241.
 
-Next work:
+Earlier next-work list, superseded by the current batch record:
 
 1. Check automatic main Linux CI and admit the actual fresh093241 host. Qualify
    one NEW original-owned browser/frame/source/disposable project/PCB/model/

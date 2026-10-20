@@ -149,6 +149,24 @@ void test("current STRING relation refuses getters, toJSON functions, cycles and
   assert.equal(calls, 0);
 });
 
+void test("current STRING relation rejects top-level, nested, array and revoked proxies without invoking traps", () => {
+  let calls = 0;
+  const trap = (): never => { calls += 1; throw new Error("Proxy trap invoked"); };
+  const handler = { get: trap, getPrototypeOf: trap, getOwnPropertyDescriptor: trap, ownKeys: trap };
+  const array = new Proxy([], handler), trapped = new Proxy({}, handler);
+  const revoked = Proxy.revocable({}, {}); revoked.revoke();
+  const original = source();
+  for (const value of [trapped, array, revoked.proxy]) {
+    assert.throws(() => correlateCurrentPcbStringSource(original, value, evidence()), /non-JSON value or cycle/u);
+    assert.throws(() => correlateCurrentPcbStringSource(original, target, value), /non-JSON value or cycle/u);
+    const nested = evidence(); nested.all["rows"] = value;
+    assert.throws(() => correlateCurrentPcbStringSource(original, target, nested), /non-JSON value or cycle/u);
+    const nestedRow = evidence(); nestedRow.all["rows"] = [value];
+    assert.throws(() => correlateCurrentPcbStringSource(original, target, nestedRow), /non-JSON value or cycle/u);
+  }
+  assert.equal(calls, 0);
+});
+
 void test("current STRING source and relation bound input depth, bytes and family size", () => {
   let nested: unknown = true; for (let index = 0; index < 34; index += 1) { nested = { nested }; }
   assert.throws(() => parseCurrentPcbStringSource(source({ future: nested }), documentUuid));

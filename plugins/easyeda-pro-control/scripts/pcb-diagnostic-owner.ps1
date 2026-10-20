@@ -974,6 +974,156 @@ const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-raw-str
 let bytes=0;for(let index=0;index<output.length;index++){const c=output.charCodeAt(index);if(c<128)bytes++;else if(c<2048)bytes+=2;else if(c>=55296&&c<=56319){bytes+=4;index++;}else bytes+=3;if(bytes>65536)bad();}
 return output;
 }";
+  const string ModelRootInventoryFunction=@"function(originalCallback){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE"");};
+const retained=[],collections=[];
+const budget={entries:0,trees:0};
+const remember=(o,k,m,v)=>{if(retained.length>=528384)bad();retained.push([o,k,m,v]);};
+const count=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>65536)bad();return v;};
+const spend=n=>{budget.entries+=count(n);if(budget.entries>65536)bad();};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const descriptor=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();return Object.getOwnPropertyDescriptor(o,k);};
+const own=(o,k)=>{const d=descriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();remember(o,k,""present"",d.value);return d.value;};
+const optional=(o,k)=>{const d=descriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||descriptor(p,k))bad();p=Object.getPrototypeOf(p);}remember(o,k,""absent"",undefined);return {marker:""absent"",value:undefined};}if(!Object.hasOwn(d,""value""))bad();const v=d.value;remember(o,k,""present"",v);return {marker:v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad();return v;};
+const collection=(o,p)=>{
+object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();
+const d=descriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();
+const n=count(Reflect.apply(d.get,o,[]));spend(n);collections.push([o,p,d.get,n]);return n;
+};
+const map=o=>collection(o,Map.prototype),set=o=>collection(o,Set.prototype);
+const array=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length""));spend(n);const keys=Reflect.ownKeys(o);if(keys.length!==n+1||keys[n]!==""length"")bad();for(let i=0;i<n;i++){if(keys[i]!==String(i))bad();const d=descriptor(o,String(i));if(!d||!Object.hasOwn(d,""value""))bad();}return n;};
+const iterate=(o,p,n,visit)=>{
+const iterator=Reflect.apply(own(p,p===Map.prototype?""entries"":""values""),o,[]),next=own(Object.getPrototypeOf(iterator),""next"");
+if(typeof next!==""function"")bad();
+for(let i=0;i<n;i++){const result=Reflect.apply(next,iterator,[]);if(own(result,""done"")!==false)bad();const v=own(result,""value"");if(p===Map.prototype){if(!Array.isArray(v)||v.length!==2)bad();visit(v[0],v[1]);}else visit(v);}
+if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();
+};
+const has=(o,v)=>Reflect.apply(own(Set.prototype,""has""),o,[v]);
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object""));
+const klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
+const envClass=klass(""x""),env=instance(own(envClass,""env""),envClass);
+const documentUuid=id(own(env,""_id""));if(own(env,""_doctype"")!==3)bad();
+const family=n=>{const c=klass(n),v=optional(c,""manager"");return {marker:v.marker,count:v.marker===""present""?map(own(instance(v.value,c),""map"")):null};};
+const families={tracks:family(""vn""),pads:family(""Jn""),vias:family(""Dn""),circles:family(""Xi""),
+radiusDimensions:family(""ol""),rectangles:family(""nn""),strings:family(""bo""),protractorDimensions:family(""_a""),
+lengthDimensions:family(""Aa""),smartDimensions:family(""GR""),components:family(""Ms""),polygons:family(""Fi""),
+images:family(""oa""),pictures:family(""c0""),copper:family(""Yo""),inner:family(""zo""),groups:family(""Mp"")};
+const boardClass=klass(""_s""),boardOwner=optional(boardClass,""instance"");
+let board={ownerMarker:boardOwner.marker,boardMarker:null,outlineCount:null,autoGenerate:null};
+if(boardOwner.marker===""present""){
+const owner=instance(boardOwner.value,boardClass),value=optional(owner,""_board"");if(value.marker===""present"")object(value.value);
+board={ownerMarker:""present"",boardMarker:value.marker,outlineCount:map(own(owner,""_outlineCollect"")),autoGenerate:flag(own(owner,""_autoGenerate""))};
+}
+const panelClass=klass(""ai""),panelOwner=optional(panelClass,""model"");
+let panelization={ownerMarker:panelOwner.marker,viewModelMatchesOwner:null,activation:null,counts:null};
+if(panelOwner.marker===""present""){
+const owner=instance(panelOwner.value,panelClass),view=instance(own(scope,""Si""),klass(""Jse"")),param=object(own(owner,""_param""));
+const borders=own(owner,""borderClosures"");if(array(borders)!==2)bad();
+const counts={items:array(own(owner,""items"")),outlines:array(own(owner,""outlines"")),slots:array(own(owner,""slots"")),
+originOutline:array(own(owner,""originOutline"")),holes:array(own(owner,""holes"")),positionHoles:array(own(owner,""positionHoles"")),
+stampGroups:array(own(owner,""stampGroups"")),marks:array(own(owner,""marks"")),vCutShapes:array(own(owner,""vCutShapes"")),
+closures:array(own(owner,""closures"")),borderClosuresFirst:array(own(borders,""0"")),borderClosuresSecond:array(own(borders,""1"")),
+borderClosuresOuterMost:array(own(owner,""borderClosures_outerMost""))};
+panelization={ownerMarker:""present"",viewModelMatchesOwner:own(view,""model"")===owner,
+activation:{on:flag(own(param,""on"")),success:flag(own(param,""success""))},counts};
+}
+const spatial=instance(own(scope,""Ht""),klass(""tV"")),treeSeen=new Set();
+const mdPrototype=own(klass(""Md""),""prototype""),f0Prototype=own(klass(""F0""),""prototype""),
+niPrototype=own(klass(""NI""),""prototype""),iyPrototype=own(klass(""iy""),""prototype"");
+const empty=()=>({outerKeyCount:0,nestedKeyCount:0,treeCount:0,itemCount:0,changeCount:0,deadCount:0,
+rootNodeCount:0,rootLeafCount:0,rootLeafWithoutItemCount:0,rootLeafWithoutItemOrDeadCount:0,
+itemWithoutRootLeafCount:0,itemWithoutRootLeafOrChangeCount:0,repeatedRootLeafCount:0});
+const inspectTree=(value,result)=>{
+object(value);const prototype=Object.getPrototypeOf(value),nodePrototype=prototype===mdPrototype?niPrototype:prototype===f0Prototype?iyPrototype:null;
+if(nodePrototype===null||treeSeen.has(value)||++budget.trees>128)bad();treeSeen.add(value);result.treeCount++;
+const items=own(value,""items""),changes=own(value,""changeList""),dead=own(value,""deadList"");
+const itemCount=set(items),changeCount=set(changes),deadCount=set(dead);
+result.itemCount+=itemCount;result.changeCount+=changeCount;result.deadCount+=deadCount;
+const root=object(own(value,""root"")),nodes=new Set(),leaves=new Set(),stack=[[root,null,0]];
+while(stack.length){
+const current=stack.pop(),node=current[0],parent=current[1],depth=current[2];
+if(depth>64||nodes.has(node)||Object.getPrototypeOf(node)!==nodePrototype||own(node,""parent"")!==parent)bad();
+nodes.add(node);spend(1);result.rootNodeCount++;
+const children=own(node,""childs""),n=array(children);
+for(let i=0;i<n;i++){
+const child=object(own(children,String(i))),childPrototype=Object.getPrototypeOf(child);
+if(childPrototype===niPrototype||childPrototype===iyPrototype){
+if(childPrototype!==nodePrototype)bad();stack.push([child,node,depth+1]);
+}else{
+result.rootLeafCount++;
+if(leaves.has(child)){result.repeatedRootLeafCount++;continue;}leaves.add(child);
+if(!has(items,child)){result.rootLeafWithoutItemCount++;if(!has(dead,child))result.rootLeafWithoutItemOrDeadCount++;}
+}
+}
+}
+iterate(items,Set.prototype,itemCount,item=>{object(item);if(!leaves.has(item)){result.itemWithoutRootLeafCount++;if(!has(changes,item))result.itemWithoutRootLeafOrChangeCount++;}});
+};
+const branch=(value,nested)=>{
+const result=empty(),n=map(value);result.outerKeyCount=n;
+iterate(value,Map.prototype,n,(_key,entry)=>{
+if(nested){const length=map(entry);result.nestedKeyCount+=length;iterate(entry,Map.prototype,length,(_layer,tree)=>inspectTree(tree,result));}
+else inspectTree(entry,result);
+});return result;
+};
+const spatialIndexes={typed:branch(own(spatial,""map""),true),other:branch(own(spatial,""otherMap""),false),ratline:branch(own(spatial,""ratlineMap""),false)};
+for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]===""absent""?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[3])bad();}
+for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-root-inventory.v1"",documentUuid,families,board,panelization,spatialIndexes,collectionEntries:budget.entries,treeCount:budget.trees});
+if(output.length>8192)bad();
+return output;
+}";
   public static string ModelProtocolMessage(int id,string method,string sessionId,string phase,
     string uniqueContextId,string objectId,string callbackObjectId) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
@@ -993,9 +1143,9 @@ return output;
       } else if(phase=="handler" && method=="Runtime.callFunctionOn") {
         if(!handle(objectId) || callbackObjectId!=null) throw Error("model-object");
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(ModelHandlerFunction)+",\"returnByValue\":false";
-      } else if((phase=="snapshot" || phase=="pending" || phase=="raw-strings") && method=="Runtime.callFunctionOn") {
+      } else if((phase=="snapshot" || phase=="pending" || phase=="raw-strings" || phase=="root-inventory") && method=="Runtime.callFunctionOn") {
         if(!handle(objectId) || !handle(callbackObjectId)) throw Error("model-object");
-        string program=phase=="snapshot"?ModelStateFunction:phase=="pending"?ModelPendingFunction:ModelRawStringsFunction;
+        string program=phase=="snapshot"?ModelStateFunction:phase=="pending"?ModelPendingFunction:phase=="raw-strings"?ModelRawStringsFunction:ModelRootInventoryFunction;
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(program)+
           ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"}]";
       } else if(phase=="release" && method=="Runtime.releaseObjectGroup") {
@@ -1042,14 +1192,15 @@ return output;
       byte[] source=Encoding.UTF8.GetBytes(WorkerExpression);
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
     }
-    string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,PcbOpeningFunction};
-    int[] lengths={15508,2204,1730,7741,10692,8313,13044};
+    string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,ModelRootInventoryFunction,PcbOpeningFunction};
+    int[] lengths={15508,2204,1730,7741,10692,8313,12838,13044};
     string[] digests={"55d5bccdd6e4a661a2f1dfac4c496e103a1df87211ad08e06b1d68083210db87",
       "f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e",
       "548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591",
       "67d4081399cdc22be17e2e1ddd0be234290092a2c5287f629fc2de9be16b85a5",
       "b99cbde9a9b72274458fea3b11dadd09f36b7e600cee3b67de2bdf632a921f68",
       "bd31d235e95935bebeff4400cb08219cc2419b7bd25cead9ead2aa459299a8f4",
+      "b7bbf6d7fee73c528d3100aeffe6bc358eabb5bace66a3270802fe1a745e5092",
       "62d282abfdea1db218ba057d5af99ca7b7198390454efdded7a72ab57d5568bf"};
     for(int i=0;i<programs.Length;i++) using(SHA256 hash=SHA256.Create()) {
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[i]);
@@ -1074,7 +1225,13 @@ return output;
     ModelProtocolMessage(4,"Runtime.callFunctionOn","s","snapshot",null,"object","callback");
     ModelProtocolMessage(5,"Runtime.callFunctionOn","s","pending",null,"object","callback");
     ModelProtocolMessage(6,"Runtime.callFunctionOn","s","raw-strings",null,"object","callback");
-    ModelProtocolMessage(7,"Runtime.releaseObjectGroup","s","release",null,null,null);
+    ModelProtocolMessage(7,"Runtime.callFunctionOn","s","root-inventory",null,"object","callback");
+    ModelProtocolMessage(8,"Runtime.releaseObjectGroup","s","release",null,null,null);
+    ModelProtocolMessage(64,"Runtime.callFunctionOn",new string('s',128),"root-inventory",null,new string('o',256),new string('c',256));
+    foreach(string invalid in new string[] { null,"","foreign/handle",new string('a',257) }) {
+      bool refused=false; try { ModelProtocolMessage(64,"Runtime.callFunctionOn","s","root-inventory",null,"object",invalid); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("root-inventory-callback-smoke");
+    }
     string worker=ProtocolMessage(32,"Runtime.evaluate",null,"worker-session",null,"unique-context");
     if(worker.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 || worker.IndexOf("\"awaitPromise\":false",StringComparison.Ordinal)<0) throw Error("worker-flags");
     string attach=ProtocolMessage(1,"Target.setAutoAttach",null,"parent-session",null,null);
@@ -1225,7 +1382,7 @@ try {
     if ($release -cne ('{"id":2,"method":"Runtime.releaseObjectGroup","params":{"objectGroup":"easyeda-pro-control-pcb-model-v1"},"sessionId":"s"}'+[char]0)) {throw 'pcb-diagnostic-bound-release'}
     $wrapper=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(3,'Runtime.evaluate','s','wrapper','c',$null,$null)
     if ($wrapper.IndexOf('"uniqueContextId":"c"',[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-bound-wrapper'}
-    foreach ($phase in @('snapshot','pending','raw-strings')) {
+    foreach ($phase in @('snapshot','pending','raw-strings','root-inventory')) {
       $sample=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(4,'Runtime.callFunctionOn','s',$phase,$null,'scope','callback')
       if ($sample.IndexOf('"objectId":"scope"',[StringComparison]::Ordinal) -lt 0 -or
           $sample.IndexOf('"arguments":[{"objectId":"callback"}]',[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-bound-snapshot'}
@@ -1308,6 +1465,7 @@ try {
               'snapshot' {$fields+=@('objectId','callbackObjectId')}
               'pending' {$fields+=@('objectId','callbackObjectId')}
               'raw-strings' {$fields+=@('objectId','callbackObjectId')}
+              'root-inventory' {$fields+=@('objectId','callbackObjectId')}
               'release' {}
               default {throw 'pcb-diagnostic-model-phase'}
             }

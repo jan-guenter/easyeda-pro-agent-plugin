@@ -152,16 +152,18 @@ const UI_PROFILE = { ...PROFILE, family: "ui", relativePath: "pro-ui/test-versio
 const OPEN_URL = `${UI_BASE}#id=${PROJECT_UUID}`;
 const OPEN_TARGET_REPLY = { targetInfos: [{ ...UI_TARGET, url: OPEN_URL, attached: true }] };
 const OPEN_FRAME_REPLY = { frameTree: { frame: { ...UI_FRAME, urlFragment: `#id=${PROJECT_UUID}` } } };
-function openingFixture(verifySource = true, initialFragment: "#" | "" = "#"): CurrentPcbDiagnosticContext {
+function openingFixture(verifySource = true, initialFragment: "#" | "" = "#",
+  childFrames: readonly { readonly frame: Readonly<Record<string, unknown>> }[] = []): CurrentPcbDiagnosticContext {
   const context = new CurrentPcbDiagnosticContext("target-1");
   const targetRow = { ...UI_TARGET, url: `${UI_BASE}${initialFragment}` };
   const { urlFragment: _fragment, ...baseFrame } = UI_FRAME;
   const frameRow = initialFragment === "#" ? UI_FRAME : baseFrame;
+  const frameTree = { frame: frameRow, ...(childFrames.length === 0 ? {} : { childFrames }) };
   context.selectTarget({ targetInfos: [targetRow] }); context.bindSession("session-1");
-  context.observeFrames({ frameTree: { frame: frameRow } }); context.selectFrame("frame-1", UI_PROFILE);
+  context.observeFrames({ frameTree }); context.selectFrame("frame-1", UI_PROFILE);
   context.observeEvent(event("Runtime.executionContextCreated", { context: UI_CONTEXT }));
   context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, url: `https://client/${UI_PROFILE.relativePath}` }));
-  if (verifySource) { context.finish({ scriptSource: SOURCE }, { targetInfos: [{ ...targetRow, attached: true }] }, { frameTree: { frame: frameRow } }); }
+  if (verifySource) { context.finish({ scriptSource: SOURCE }, { targetInfos: [{ ...targetRow, attached: true }] }, { frameTree }); }
   return context;
 }
 function within(context: CurrentPcbDiagnosticContext, change: Record<string, unknown> = {}): void {
@@ -336,4 +338,104 @@ void test("PCB admission refuses changed source and post-source context loss", (
   const lost = pcbOpeningFixture(); pcbSource(lost);
   assert.throws(() => { lost.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8 })); }, /INVALIDATED/u);
   assert.throws(() => { lost.completePcbOpening(); }, /IDENTITY/u);
+});
+const SENSOR_FRAME = { id: "sensor-frame", parentId: "frame-1", loaderId: "sensor-loader", url: "about:blank", securityOrigin: "://", mimeType: "text/html" };
+const SENSOR_STYLE = "display: block; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; border: none; padding: 0px; margin: 0px; opacity: 0; z-index: -1000; pointer-events: none;";
+const SENSOR_NODE = { nodeType: 1, nodeName: "OBJECT", localName: "object", backendNodeId: 91, frameId: "sensor-frame",
+  attributes: ["style", SENSOR_STYLE, "tabindex", "-1", "type", "text/html", "aria-hidden", "true", "data", "about:blank"] };
+const SENSOR_OPEN_REPLY = { frameTree: { ...OPEN_FRAME_REPLY.frameTree, childFrames: [{ frame: SENSOR_FRAME }] } };
+const SENSOR_PCB_REPLY = { frameTree: { ...PCB_FRAME_REPLY.frameTree, childFrames: [{ frame: SENSOR_FRAME }, { frame: PCB_CHILD }] } };
+function ancillaryFixture(proveOwner = true): CurrentPcbDiagnosticContext {
+  const context = openingFixture(true, "#", [{ frame: SENSOR_FRAME }]);
+  if (proveOwner) { context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE }); }
+  return context;
+}
+function ancillaryProject(): CurrentPcbDiagnosticContext {
+  const context = ancillaryFixture(); context.beginOpeningTransition(PROJECT_UUID); within(context);
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, SENSOR_OPEN_REPLY);
+  context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE });
+  return context;
+}
+void test("source-shaped original sensor survives project and separate PCB source without becoming editor authority", () => {
+  const context = ancillaryFixture(), selected = { sessionId: "session-1", uniqueContextId: UI_CONTEXT.uniqueId };
+  assert.equal(context.openingAncillaryFrame(), "sensor-frame"); assert.deepEqual(context.openingContext(), selected);
+  assert.deepEqual(context.ancillaryObservation(), {
+    schema: "easyeda-pro-control.pcb-diagnostic-ancillary-frame.v1",
+    frame: { id: "sensor-frame", loaderId: "sensor-loader", url: "about:blank", securityOrigin: "://", parentId: "frame-1" },
+    backendNodeId: 91, attributes: SENSOR_NODE.attributes, shape: "source-shaped-ui-resize-sensor-object",
+    domParentVerified: false, observerRegistryOwnershipVerified: false, continuousObservation: false, executionAuthorized: false,
+  });
+  context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE });
+  context.beginOpeningTransition(PROJECT_UUID); within(context);
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, SENSOR_OPEN_REPLY);
+  context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE });
+  context.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT); pcbChild(context);
+  context.observePcbOpeningFrames(PCB_TARGET_REPLY, SENSOR_PCB_REPLY);
+  context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE });
+  assert.equal(context.openingAncillaryFrame(), "sensor-frame");
+  context.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE }); context.pcbScript(PROFILE);
+  const proof = context.finishPcbOpening({ scriptSource: SOURCE }, PCB_TARGET_REPLY, SENSOR_PCB_REPLY);
+  assert.equal(proof["sourceVerified"], true); assert.equal(proof["startupQualified"], false);
+  assert.equal(proof["compilerOwnerVerified"], false); assert.equal(proof["executionAuthorized"], false);
+  context.completePcbOpening();
+  assert.deepEqual(context.modelContext(), { sessionId: "session-1", scriptId: "pcb-script", uniqueContextId: "pcb-context" });
+});
+void test("ancillary evidence is absent without a sensor and unavailable without its owner proof", () => {
+  assert.equal(openingFixture().ancillaryObservation(), null);
+  const context = ancillaryFixture(false);
+  assert.throws(() => context.ancillaryObservation(), /IDENTITY/u);
+  assert.throws(() => context.openingContext(), /IDENTITY/u);
+});
+void test("ancillary selection requires complete UI source and owner proof before opening with terminal refusal", () => {
+  const noSource = openingFixture(false, "#", [{ frame: SENSOR_FRAME }]);
+  assert.throws(() => noSource.openingAncillaryFrame(), /IDENTITY/u);
+  const noOwner = ancillaryFixture(false);
+  assert.equal(noOwner.openingAncillaryFrame(), "sensor-frame");
+  assert.throws(() => noOwner.beginOpeningTransition(PROJECT_UUID), /IDENTITY/u);
+  assert.throws(() => { noOwner.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE }); }, /IDENTITY/u);
+  for (const frame of [{ ...SENSOR_FRAME, url: "https://foreign/" }, { ...SENSOR_FRAME, securityOrigin: "https://client" },
+    { ...SENSOR_FRAME, urlFragment: "#" }]) {
+    const context = openingFixture(true, "#", [{ frame }]);
+    assert.throws(() => context.openingAncillaryFrame(), /IDENTITY/u);
+  }
+  const multiple = openingFixture(true, "#", [{ frame: SENSOR_FRAME }, { frame: { ...SENSOR_FRAME, id: "other-sensor" } }]);
+  assert.throws(() => multiple.openingAncillaryFrame(), /IDENTITY/u);
+});
+void test("ancillary reproof preserves exact backend attribute order and CSS representation", () => {
+  for (const node of [{ ...SENSOR_NODE, backendNodeId: 92 },
+    { ...SENSOR_NODE, attributes: [...SENSOR_NODE.attributes.slice(2), ...SENSOR_NODE.attributes.slice(0, 2)] },
+    { ...SENSOR_NODE, attributes: ["style", SENSOR_STYLE.replaceAll("0px", "0"), ...SENSOR_NODE.attributes.slice(2)] },
+    { ...SENSOR_NODE, nodeName: "IFRAME", localName: "iframe" }]) {
+    const context = ancillaryFixture();
+    assert.throws(() => { context.observeOpeningAncillaryOwner({ backendNodeId: node.backendNodeId }, { node }); }, /IDENTITY/u);
+    assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
+});
+void test("project and PCB inventories reject removed replaced or changed ancillary frame rows", () => {
+  for (const children of [[], [{ frame: { ...SENSOR_FRAME, id: "replacement" } }],
+    [{ frame: { ...SENSOR_FRAME, loaderId: "replacement-loader" } }], [{ frame: { ...SENSOR_FRAME, mimeType: "changed" } }]]) {
+    const project = ancillaryFixture(); project.beginOpeningTransition(PROJECT_UUID); within(project);
+    assert.throws(() => { project.finishOpeningTransition(OPEN_TARGET_REPLY,
+      { frameTree: { ...OPEN_FRAME_REPLY.frameTree, childFrames: children } }); }, /IDENTITY/u);
+    const pcb = ancillaryProject(); pcb.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT); pcbChild(pcb);
+    assert.throws(() => pcb.observePcbOpeningFrames(PCB_TARGET_REPLY,
+      { frameTree: { ...PCB_FRAME_REPLY.frameTree, childFrames: [...children, { frame: PCB_CHILD }] } }), /IDENTITY/u);
+  }
+});
+void test("sensor navigation attachment replacement detach and context loss stay terminal during PCB opening", () => {
+  for (const item of [
+    event("Page.frameAttached", { frameId: "sensor-frame", parentFrameId: "frame-1" }),
+    event("Page.frameNavigated", { frame: SENSOR_FRAME, type: "Navigation" }),
+    event("Page.frameStartedLoading", { frameId: "sensor-frame" }),
+    event("Page.navigatedWithinDocument", { frameId: "sensor-frame", url: "about:blank", navigationType: "fragment" }),
+    event("Page.frameDetached", { frameId: "sensor-frame", reason: "remove" }),
+    event("Runtime.executionContextDestroyed", { executionContextId: 9 }),
+  ]) {
+    const context = ancillaryProject();
+    context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 9, uniqueId: "sensor-context",
+      origin: "://", auxData: { ...UI_CONTEXT.auxData, frameId: "sensor-frame" } } }));
+    context.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT);
+    assert.throws(() => { context.observeEvent(item); }, /INVALIDATED/u);
+    assert.throws(() => context.pcbOpeningContext(), /IDENTITY/u);
+  }
 });

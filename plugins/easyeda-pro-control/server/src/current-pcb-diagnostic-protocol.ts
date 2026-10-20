@@ -10,12 +10,14 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "./current-pcb-diagnos
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "./current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "./current-pcb-diagnostic-raw-strings.ts";
+import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "./current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, currentPcbDiagnosticPcbOpeningArguments } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
-// The existing-PCB model path uses29; the complete project/PCB opening and
-// Model observation path uses53. Those branches are exclusive; no override.
+// The existing-PCB model path uses30; the complete project/PCB opening and
+// Model observation path uses54, or64 with the original ancillary OBJECT's
+// Five DOM reproofs. Those branches are exclusive; no override.
 export const DIAGNOSTIC_REQUEST_LIMIT = 64;
 export function diagnosticOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
   phase: CurrentPcbDiagnosticOpeningPhase): Readonly<{
@@ -96,7 +98,8 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     request = { ...base, modelPhase: "handler", objectId };
   } else if (method === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
-    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION)) {
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION ||
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION)) {
     const args = params["arguments"];
     if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["objectId"])) { return fail(); }
     const callbackObjectId = modelHandle(args[0]["objectId"]), objectId = modelHandle(params["objectId"]);
@@ -108,6 +111,9 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION) {
       command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...callParams }, sessionId };
       modelPhase = "raw-strings";
+    } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION) {
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...callParams }, sessionId };
+      modelPhase = "root-inventory";
     } else {
       command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
     }

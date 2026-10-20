@@ -8,6 +8,8 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTI
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "../src/current-pcb-diagnostic-model-runner.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
+import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
+// oxlint-disable-next-line import/max-dependencies -- The closed protocol parity test must compare every independently implemented fixed program.
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 type Row = Record<string, unknown>;
@@ -37,6 +39,8 @@ function modelCommands(): readonly Row[] {
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+    { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } },
   ];
   return commands.map((command, index) => ({ id: index + 1, method: command["method"], params: command["params"], sessionId: "original-page-session" }));
@@ -68,8 +72,8 @@ void test("fixed project opener flattens only sealed identifiers and path, with 
   assert.equal(diagnosticNativeRequest(wire(command))["targetRawWindowsPath"], selected.rawWindowsPath);
 });
 
-void test("all ten fixed model requests map to private phases without forwarding source or group selectors", () => {
-  const commands = modelCommands(), expected = ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "pending", "raw-strings", "release"];
+void test("all eleven fixed model requests map to private phases without forwarding source or group selectors", () => {
+  const commands = modelCommands(), expected = ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "pending", "raw-strings", "root-inventory", "release"];
   for (let index = 0; index < commands.length; index += 1) {
     const command = commands[index]; assert.ok(command !== undefined);
     const request = diagnosticNativeRequest(wire(command));
@@ -78,8 +82,8 @@ void test("all ten fixed model requests map to private phases without forwarding
     for (const field of ["params", "expression", "functionDeclaration", "objectGroup", "arguments", "timeout"]) {
       assert.equal(Object.hasOwn(request, field), false, field);
     }
-    if (index >= 6 && index <= 8) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
-    if (index === 9) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
+    if (index >= 6 && index <= 9) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
+    if (index === 10) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
   }
 });
 
@@ -116,7 +120,7 @@ void test("model protocol rejects every effect override, extra scope/call option
       assert.throws(() => diagnosticNativeRequest(wire(command)));
     }
   }
-  for (const index of [0, 3, 6, 7, 8]) {
+  for (const index of [0, 3, 6, 7, 8, 9]) {
     const original = originals[index]; assert.ok(original !== undefined);
     for (const [field, value] of Object.entries({ throwOnSideEffect: false, silent: false, awaitPromise: true,
       generatePreview: true, userGesture: true })) {
@@ -131,7 +135,9 @@ void test("model protocol rejects every effect override, extra scope/call option
     [6, "arguments", [{ value: "caller-data" }]], [6, "arguments", [{ objectId: "a" }, { objectId: "b" }]],
     [6, "arguments", [{ objectId: "x".repeat(257) }]], [7, "arguments", []], [8, "arguments", [{ value: "foreign" }]],
     [7, "functionDeclaration", "function(){}"], [8, "functionDeclaration", "function(){}"],
-    [9, "objectGroup", "foreign"], [9, "objectId", "extra"],
+    [9, "arguments", [{ value: "foreign" }]], [9, "functionDeclaration", "function(){}"],
+    [9, "arguments", [{ objectId: "a" }, { objectId: "b" }]],
+    [10, "objectGroup", "foreign"], [10, "objectId", "extra"],
   ] as const) {
     const original = originals[index]; assert.ok(original !== undefined);
     const command = structuredClone(original); params(command)[field] = value;
@@ -151,6 +157,20 @@ void test("adapter request and byte budgets are fixed and reject overflow withou
   assert.throws(() => diagnosticNativeRequest(Buffer.from(`${JSON.stringify(original)} \0`)));
 });
 
+void test("fixed root inventory stays within the existing command bound at maximum original handle widths", () => {
+  const original = modelCommands()[9]; assert.ok(original !== undefined);
+  const command = { ...original, id: 64, sessionId: "s".repeat(128),
+    params: { ...params(original), objectId: "o".repeat(256), arguments: [{ objectId: "c".repeat(256) }] } };
+  const encoded = wire(command);
+  assert.ok(encoded.length <= 65_536);
+  const request = diagnosticNativeRequest(encoded);
+  assert.equal(request["modelPhase"], "root-inventory");
+  assert.equal(request["requestId"], 64);
+  assert.equal(request["objectId"], "o".repeat(256));
+  assert.equal(request["callbackObjectId"], "c".repeat(256));
+  assert.equal(Object.hasOwn(request, "functionDeclaration"), false);
+});
+
 void test("native adapter embeds and private fields match TS programs without native execution", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   for (const [name, program] of Object.entries({
@@ -159,6 +179,7 @@ void test("native adapter embeds and private fields match TS programs without na
     ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
     ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
     ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
+    ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), program);
@@ -167,9 +188,11 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
   assert.ok(source.includes("$request.requestId -gt 64")); assert.ok(source.includes("id!=nextRequest || id>64"));
+  assert.ok(source.includes('if(received+count>64*1024*1024) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));
   const retained = source.indexOf("root=info.process; rootThread=info.thread; rootPid=info.processId;");
   const checked = source.indexOf("installation.AssertCreatedImage(root);"), resumed = source.indexOf("if(ResumeThread(rootThread)!=1)");

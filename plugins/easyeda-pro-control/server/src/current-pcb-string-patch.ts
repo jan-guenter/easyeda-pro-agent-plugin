@@ -1,5 +1,6 @@
 /** Pure supplied-data candidate only. No native observation, queue, dispatch,
  * persistence proof or token that an executor can consume. */
+import { types } from "node:util";
 import { z } from "zod";
 import { sha256Json, sha256Text } from "./core.ts";
 import { parseCurrentPcbStringSource } from "./current-pcb-string-source.ts";
@@ -41,12 +42,12 @@ function need(value: boolean, detail: string): asserts value {
 function round(value: number): number { return Math.round(value * 10_000 + 1e-10) / 10_000; }
 
 /** Bound and copy the two small supplied JSON records before schema parsing.
- * No accessor, prototype method, toJSON or numeric coercion is invoked. */
+ * No Proxy trap, accessor, prototype method, toJSON or numeric coercion is invoked. */
 function data(input: unknown, depth = 0): unknown {
   if (input === null || typeof input === "boolean") { return input; }
   if (typeof input === "string") { need(input.length <= 65_536, "string exceeds bound"); return input; }
   if (typeof input === "number") { need(Number.isFinite(input) && !Object.is(input, -0), "lossy number"); return input; }
-  need(input !== null && typeof input === "object" && depth < 2, "non-data or nested input");
+  need(input !== null && typeof input === "object" && !types.isProxy(input) && depth < 2, "non-data or nested input");
   const prototype: unknown = Object.getPrototypeOf(input);
   need(prototype === Object.prototype || prototype === null, "non-plain input");
   const keys = Reflect.ownKeys(input); need(keys.length <= 32, "field count exceeds bound");

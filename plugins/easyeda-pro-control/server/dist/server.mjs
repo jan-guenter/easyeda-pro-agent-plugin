@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "96bf31cef61d47f2ce6d74deba2057a85c66415f47d7756efc216b788d909017";
+const __easyedaBundlePairId = "a183e36c7dcb06fdaacb5f7f4955cfe9b3e3780793448fa07b0c5f06bb1c6afd";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -11001,10 +11001,10 @@ function _property(property, schema3, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _mime(types19, params) {
+function _mime(types20, params) {
   return new $ZodCheckMimeType({
     check: "mime_type",
-    mime: types19,
+    mime: types20,
     ...normalizeParams(params)
   });
 }
@@ -14185,7 +14185,7 @@ var init_schemas2 = __esm({
       inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
       inst.min = (size3, params) => inst.check(_minSize(size3, params));
       inst.max = (size3, params) => inst.check(_maxSize(size3, params));
-      inst.mime = (types19, params) => inst.check(_mime(Array.isArray(types19) ? types19 : [types19], params));
+      inst.mime = (types20, params) => inst.check(_mime(Array.isArray(types20) ? types20 : [types20], params));
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18634,9 +18634,9 @@ var init_types = __esm({
         return this._def.options;
       }
     };
-    ZodUnion2.create = (types19, params) => {
+    ZodUnion2.create = (types20, params) => {
       return new ZodUnion2({
-        options: types19,
+        options: types20,
         typeName: ZodFirstPartyTypeKind2.ZodUnion,
         ...processCreateParams(params)
       });
@@ -22526,15 +22526,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
-    const types19 = options.reduce((types20, x) => {
+    const types20 = options.reduce((types21, x) => {
       const type2 = primitiveMappings[x._def.typeName];
-      return type2 && !types20.includes(type2) ? [...types20, type2] : types20;
+      return type2 && !types21.includes(type2) ? [...types21, type2] : types21;
     }, []);
     return {
-      type: types19.length > 1 ? types19 : types19[0]
+      type: types20.length > 1 ? types20 : types20[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types19 = options.reduce((acc, x) => {
+    const types20 = options.reduce((acc, x) => {
       const type2 = typeof x._def.value;
       switch (type2) {
         case "string":
@@ -22553,8 +22553,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types19.length === options.length) {
-      const uniqueTypes = types19.filter((x, i2, a) => a.indexOf(x) === i2);
+    if (types20.length === options.length) {
+      const uniqueTypes = types20.filter((x, i2, a) => a.indexOf(x) === i2);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -25717,37 +25717,37 @@ var require_dataType = __commonJS({
       DataType2[DataType2["Wrong"] = 1] = "Wrong";
     })(DataType || (exports2.DataType = DataType = {}));
     function getSchemaTypes(schema3) {
-      const types19 = getJSONTypes(schema3.type);
-      const hasNull = types19.includes("null");
+      const types20 = getJSONTypes(schema3.type);
+      const hasNull = types20.includes("null");
       if (hasNull) {
         if (schema3.nullable === false)
           throw new Error("type: null contradicts nullable: false");
       } else {
-        if (!types19.length && schema3.nullable !== void 0) {
+        if (!types20.length && schema3.nullable !== void 0) {
           throw new Error('"nullable" cannot be used without "type"');
         }
         if (schema3.nullable === true)
-          types19.push("null");
+          types20.push("null");
       }
-      return types19;
+      return types20;
     }
     exports2.getSchemaTypes = getSchemaTypes;
     function getJSONTypes(ts) {
-      const types19 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-      if (types19.every(rules_1.isJSONType))
-        return types19;
-      throw new Error("type must be JSONType or JSONType[]: " + types19.join(","));
+      const types20 = Array.isArray(ts) ? ts : ts ? [ts] : [];
+      if (types20.every(rules_1.isJSONType))
+        return types20;
+      throw new Error("type must be JSONType or JSONType[]: " + types20.join(","));
     }
     exports2.getJSONTypes = getJSONTypes;
-    function coerceAndCheckDataType(it, types19) {
+    function coerceAndCheckDataType(it, types20) {
       const { gen, data: data10, opts } = it;
-      const coerceTo = coerceToTypes(types19, opts.coerceTypes);
-      const checkTypes = types19.length > 0 && !(coerceTo.length === 0 && types19.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types19[0]));
+      const coerceTo = coerceToTypes(types20, opts.coerceTypes);
+      const checkTypes = types20.length > 0 && !(coerceTo.length === 0 && types20.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types20[0]));
       if (checkTypes) {
-        const wrongType = checkDataTypes(types19, data10, opts.strictNumbers, DataType.Wrong);
+        const wrongType = checkDataTypes(types20, data10, opts.strictNumbers, DataType.Wrong);
         gen.if(wrongType, () => {
           if (coerceTo.length)
-            coerceData(it, types19, coerceTo);
+            coerceData(it, types20, coerceTo);
           else
             reportTypeError(it);
         });
@@ -25756,15 +25756,15 @@ var require_dataType = __commonJS({
     }
     exports2.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
-    function coerceToTypes(types19, coerceTypes) {
-      return coerceTypes ? types19.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+    function coerceToTypes(types20, coerceTypes) {
+      return coerceTypes ? types20.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
     }
-    function coerceData(it, types19, coerceTo) {
+    function coerceData(it, types20, coerceTo) {
       const { gen, data: data10, opts } = it;
       const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data10}`);
       const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
       if (opts.coerceTypes === "array") {
-        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data10}) && ${data10}.length == 1`, () => gen.assign(data10, (0, codegen_1._)`${data10}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data10}`).if(checkDataTypes(types19, data10, opts.strictNumbers), () => gen.assign(coerced, data10)));
+        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data10}) && ${data10}.length == 1`, () => gen.assign(data10, (0, codegen_1._)`${data10}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data10}`).if(checkDataTypes(types20, data10, opts.strictNumbers), () => gen.assign(coerced, data10)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
       for (const t of coerceTo) {
@@ -25840,19 +25840,19 @@ var require_dataType = __commonJS({
         return checkDataType(dataTypes[0], data10, strictNums, correct);
       }
       let cond;
-      const types19 = (0, util_1.toHash)(dataTypes);
-      if (types19.array && types19.object) {
+      const types20 = (0, util_1.toHash)(dataTypes);
+      if (types20.array && types20.object) {
         const notObj = (0, codegen_1._)`typeof ${data10} != "object"`;
-        cond = types19.null ? notObj : (0, codegen_1._)`!${data10} || ${notObj}`;
-        delete types19.null;
-        delete types19.array;
-        delete types19.object;
+        cond = types20.null ? notObj : (0, codegen_1._)`!${data10} || ${notObj}`;
+        delete types20.null;
+        delete types20.array;
+        delete types20.object;
       } else {
         cond = codegen_1.nil;
       }
-      if (types19.number)
-        delete types19.integer;
-      for (const t in types19)
+      if (types20.number)
+        delete types20.integer;
+      for (const t in types20)
         cond = (0, codegen_1.and)(cond, checkDataType(t, data10, strictNums, correct));
       return cond;
     }
@@ -26657,9 +26657,9 @@ var require_validate = __commonJS({
     function typeAndKeywords(it, errsCount) {
       if (it.opts.jtd)
         return schemaKeywords(it, [], false, errsCount);
-      const types19 = (0, dataType_1.getSchemaTypes)(it.schema);
-      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types19);
-      schemaKeywords(it, types19, !checkedTypes, errsCount);
+      const types20 = (0, dataType_1.getSchemaTypes)(it.schema);
+      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types20);
+      schemaKeywords(it, types20, !checkedTypes, errsCount);
     }
     function checkRefsAndKeywords(it) {
       const { schema: schema3, errSchemaPath, opts, self } = it;
@@ -26709,7 +26709,7 @@ var require_validate = __commonJS({
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
-    function schemaKeywords(it, types19, typeErrors, errsCount) {
+    function schemaKeywords(it, types20, typeErrors, errsCount) {
       const { gen, schema: schema3, data: data10, allErrors, opts, self } = it;
       const { RULES } = self;
       if (schema3.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema3, RULES))) {
@@ -26717,7 +26717,7 @@ var require_validate = __commonJS({
         return;
       }
       if (!opts.jtd)
-        checkStrictTypes(it, types19);
+        checkStrictTypes(it, types20);
       gen.block(() => {
         for (const group of RULES.rules)
           groupKeywords(group);
@@ -26729,7 +26729,7 @@ var require_validate = __commonJS({
         if (group.type) {
           gen.if((0, dataType_2.checkDataType)(group.type, data10, opts.strictNumbers));
           iterateKeywords(it, group);
-          if (types19.length === 1 && types19[0] === group.type && typeErrors) {
+          if (types20.length === 1 && types20[0] === group.type && typeErrors) {
             gen.else();
             (0, dataType_2.reportTypeError)(it);
           }
@@ -26753,27 +26753,27 @@ var require_validate = __commonJS({
         }
       });
     }
-    function checkStrictTypes(it, types19) {
+    function checkStrictTypes(it, types20) {
       if (it.schemaEnv.meta || !it.opts.strictTypes)
         return;
-      checkContextTypes(it, types19);
+      checkContextTypes(it, types20);
       if (!it.opts.allowUnionTypes)
-        checkMultipleTypes(it, types19);
+        checkMultipleTypes(it, types20);
       checkKeywordTypes(it, it.dataTypes);
     }
-    function checkContextTypes(it, types19) {
-      if (!types19.length)
+    function checkContextTypes(it, types20) {
+      if (!types20.length)
         return;
       if (!it.dataTypes.length) {
-        it.dataTypes = types19;
+        it.dataTypes = types20;
         return;
       }
-      types19.forEach((t) => {
+      types20.forEach((t) => {
         if (!includesType(it.dataTypes, t)) {
           strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
-      narrowSchemaTypes(it, types19);
+      narrowSchemaTypes(it, types20);
     }
     function checkMultipleTypes(it, ts) {
       if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -35422,15 +35422,15 @@ function reportsExplicitFailure(value2, depth = 0) {
   return Object.hasOwn(value2, "result") && reportsExplicitFailure(value2["result"], depth + 1);
 }
 function normalizeToolResult(result) {
-  const record13 = isRecord(result) ? result : {};
-  const structured = isRecord(record13["structuredContent"]) ? record13["structuredContent"] : {};
-  const content = isUnknownArray(record13["content"]) ? record13["content"] : [];
-  const hasEnvelope = isRecord(result) && (isRecord(record13["structuredContent"]) || content.length > 0);
-  const failed = !hasEnvelope || record13["isError"] === true || reportsExplicitFailure(structured);
+  const record14 = isRecord(result) ? result : {};
+  const structured = isRecord(record14["structuredContent"]) ? record14["structuredContent"] : {};
+  const content = isUnknownArray(record14["content"]) ? record14["content"] : [];
+  const hasEnvelope = isRecord(result) && (isRecord(record14["structuredContent"]) || content.length > 0);
+  const failed = !hasEnvelope || record14["isError"] === true || reportsExplicitFailure(structured);
   return {
     ok: !failed,
-    isError: record13["isError"] === true,
-    structuredContent: record13["structuredContent"],
+    isError: record14["isError"] === true,
+    structuredContent: record14["structuredContent"],
     content,
     raw: result
   };
@@ -35577,12 +35577,12 @@ function extractToolPayload(result) {
   return value2;
 }
 function classifyTool(tool) {
-  const record13 = isRecord(tool) ? tool : {};
-  const annotations = isRecord(record13["annotations"]) ? record13["annotations"] : {};
-  const schema3 = isRecord(record13["inputSchema"]) ? record13["inputSchema"] : {};
+  const record14 = isRecord(tool) ? tool : {};
+  const annotations = isRecord(record14["annotations"]) ? record14["annotations"] : {};
+  const schema3 = isRecord(record14["inputSchema"]) ? record14["inputSchema"] : {};
   const properties = isRecord(schema3["properties"]) ? schema3["properties"] : {};
   const hasConfirmWrite = Object.hasOwn(properties, "confirmWrite");
-  const name6 = stringValue(record13["name"]);
+  const name6 = stringValue(record14["name"]);
   const pinnedReadException = name6 === "easyeda_schematic_verify_write";
   const knownWriteName = !pinnedReadException && /(^|_)(add|apply|begin_transaction|commit|create|delete|export|import|modify|move|place|recover|rollback|route|save|set|sync|update|write)(_|$)/iu.test(
     name6
@@ -35835,21 +35835,21 @@ function manifestNonnegativeInteger(value2, pointer) {
   return Number(value2);
 }
 function assertFacadeManifest(value2, pointer) {
-  const record13 = manifestObject(value2, pointer, [
+  const record14 = manifestObject(value2, pointer, [
     "version",
     "operationSchema",
     "sha256",
     "fileCount",
     "files"
   ]);
-  manifestString(record13["version"], `${pointer}/version`);
-  manifestString(record13["operationSchema"], `${pointer}/operationSchema`);
-  manifestSha256(record13["sha256"], `${pointer}/sha256`);
+  manifestString(record14["version"], `${pointer}/version`);
+  manifestString(record14["operationSchema"], `${pointer}/operationSchema`);
+  manifestSha256(record14["sha256"], `${pointer}/sha256`);
   const fileCount = manifestPositiveInteger(
-    record13["fileCount"],
+    record14["fileCount"],
     `${pointer}/fileCount`
   );
-  const files = record13["files"];
+  const files = record14["files"];
   if (!Array.isArray(files) || files.length !== fileCount) {
     throw new Error(
       `Reviewed compatibility manifest ${pointer}/files must match fileCount.`
@@ -36399,11 +36399,11 @@ function checkpointPointer(checkpoint) {
   } : void 0;
 }
 function summarizeArtifact(artifact2) {
-  const record13 = isRecord(artifact2) ? artifact2 : {};
+  const record14 = isRecord(artifact2) ? artifact2 : {};
   return {
-    path: record13["path"],
-    sha256: record13["sha256"],
-    bytes: record13["bytes"]
+    path: record14["path"],
+    sha256: record14["sha256"],
+    bytes: record14["bytes"]
   };
 }
 function operationHasOrphanedCallRisk(operation) {
@@ -38839,17 +38839,17 @@ async function exactProcessIsAlive(pid2, startTime) {
   }
   return await linuxProcessStartTime(pid2) === startTime;
 }
-async function boundChildExited(record13) {
-  if (record13.childPid === void 0) {
+async function boundChildExited(record14) {
+  if (record14.childPid === void 0) {
     return true;
   }
   for (let attempt2 = 0; attempt2 < 8; attempt2 += 1) {
-    if (!await exactProcessIsAlive(record13.childPid, record13.childStartTime)) {
+    if (!await exactProcessIsAlive(record14.childPid, record14.childStartTime)) {
       return true;
     }
     await wait(125);
   }
-  return !await exactProcessIsAlive(record13.childPid, record13.childStartTime);
+  return !await exactProcessIsAlive(record14.childPid, record14.childStartTime);
 }
 async function syncControlRoot(root) {
   await root.assertCurrent();
@@ -38904,7 +38904,7 @@ async function parseCleanupLease(path6) {
 }
 async function acquireCleanupLease(root, cleanupPath, staleToken) {
   const token3 = randomUUID3();
-  const record13 = {
+  const record14 = {
     schema: "easyeda-pro-control.facade-lease-cleanup.v1",
     token: token3,
     pid: process6.pid,
@@ -38922,13 +38922,13 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       const identity32 = await writeNewPrivateRecord(
         handle2,
         cleanupPath,
-        record13,
+        record14,
         "EasyEDA facade cleanup lease"
       );
       await handle2.close();
       handle2 = void 0;
       await syncControlRoot(root);
-      return { identity: identity32, record: record13 };
+      return { identity: identity32, record: record14 };
     } catch (error52) {
       await retryHandleCloseAfterFailure(
         handle2,
@@ -39009,7 +39009,7 @@ async function acquireFacadeLeaseWithCapability(root) {
   const boundPath = root.childDescriptorPath(path6);
   const token3 = randomUUID3();
   const pidStartTime = await linuxProcessStartTime(process6.pid);
-  const record13 = {
+  const record14 = {
     schema: "easyeda-pro-control.facade-lease.v1",
     token: token3,
     pid: process6.pid,
@@ -39028,7 +39028,7 @@ async function acquireFacadeLeaseWithCapability(root) {
       ownedLeaseIdentity = await writeNewPrivateRecord(
         handle2,
         boundPath,
-        record13,
+        record14,
         "EasyEDA facade lease"
       );
       await handle2.close();
@@ -46329,7 +46329,7 @@ function nativeRootOrder(symbol4, partId2, attributes2, deviceAttributes) {
 }
 function storedTemplateBodies(sheet3, source5, model2) {
   const pins = new Set(model2.pins.map((pin4) => pin4.id));
-  const selected3 = (record13) => record13.id === model2.id || record13.body["parentId"] === model2.id || pins.has(String(record13.body["parentId"]));
+  const selected3 = (record14) => record14.id === model2.id || record14.body["parentId"] === model2.id || pins.has(String(record14.body["parentId"]));
   const prior = sheet3.records.filter(selected3);
   const current10 = source5.objects.filter(selected3);
   if (!same5(prior.map((item2) => item2.id).toSorted(), current10.map((item2) => item2.id).toSorted())) {
@@ -46544,7 +46544,7 @@ function planClone(input, current10, history, templateInput, allocate, historica
       }
     }
   }
-  const storedRootAttributes = component3.attributes.filter((attr) => records2.some((record13) => record13.id === attr.id));
+  const storedRootAttributes = component3.attributes.filter((attr) => records2.some((record14) => record14.id === attr.id));
   const reconstructionAttributes = [
     ...["Symbol", "Device"].flatMap((key) => storedRootAttributes.filter((attr) => attr.key === key)),
     ...storedRootAttributes.filter((attr) => !["Symbol", "Device"].includes(attr.key)).toSorted((a, b) => number8(a.body["zIndex"]) - number8(b.body["zIndex"]))
@@ -46647,17 +46647,17 @@ function alignSchematicNetFlagCloneLifecycle(descriptor10, actualSource, actualI
     if (matches.length !== 1 || attr === void 0 || field11.stored && attr.id !== field11.id) {
       fail4();
     }
-    const record13 = records2.get(attr.id);
-    if (field11.stored !== (record13 !== void 0)) {
+    const record14 = records2.get(attr.id);
+    if (field11.stored !== (record14 !== void 0)) {
       fail4();
     }
     if (Object.hasOwn(attr.body, "strikeout")) {
-      if (attr.body["strikeout"] !== false || record13 !== void 0 && record13.body["strikeout"] !== false) {
+      if (attr.body["strikeout"] !== false || record14 !== void 0 && record14.body["strikeout"] !== false) {
         fail4();
       }
       delete attr.body["strikeout"];
-      if (record13 !== void 0) {
-        delete record13.body["strikeout"];
+      if (record14 !== void 0) {
+        delete record14.body["strikeout"];
       }
       hydratedAttributes.push(attr.id);
     }
@@ -46673,13 +46673,13 @@ function alignSchematicNetFlagCloneLifecycle(descriptor10, actualSource, actualI
       fail4();
     }
     for (const field11 of changed) {
-      const attr = component3.attributes.find((entry) => entry.id === field11.id), record13 = records2.get(field11.id);
+      const attr = component3.attributes.find((entry) => entry.id === field11.id), record14 = records2.get(field11.id);
       const expected3 = descriptor10.component.attributes.find((entry) => entry.id === field11.id);
-      if (attr === void 0 || record13 === void 0 || expected3 === void 0 || record13.type !== "ATTR" || attr.key !== field11.key || attr.body["parentId"] !== component3.id || attr.body["zIndex"] !== field11.reconstructedZIndex || record13.body["zIndex"] !== field11.reconstructedZIndex || !same5({ ...attr, body: { ...attr.body, zIndex: field11.initialZIndex } }, expected3) || !same5({ ...record13.body, zIndex: field11.initialZIndex }, expected3.body)) {
+      if (attr === void 0 || record14 === void 0 || expected3 === void 0 || record14.type !== "ATTR" || attr.key !== field11.key || attr.body["parentId"] !== component3.id || attr.body["zIndex"] !== field11.reconstructedZIndex || record14.body["zIndex"] !== field11.reconstructedZIndex || !same5({ ...attr, body: { ...attr.body, zIndex: field11.initialZIndex } }, expected3) || !same5({ ...record14.body, zIndex: field11.initialZIndex }, expected3.body)) {
         fail4();
       }
       attr.body["zIndex"] = field11.initialZIndex;
-      record13.body["zIndex"] = field11.initialZIndex;
+      record14.body["zIndex"] = field11.initialZIndex;
       reorderedHiddenAttributes.push(field11);
     }
   }
@@ -47116,8 +47116,8 @@ function exactMembers(actual, expected3, label) {
   }
 }
 function stored(records2, id14, type2, value2) {
-  const record13 = records2.get(id14);
-  if (record13?.type !== type2 || !same6(record13.body, value2)) {
+  const record14 = records2.get(id14);
+  if (record14?.type !== type2 || !same6(record14.body, value2)) {
     refuse(`source record mismatch for ${type2}`);
   }
 }
@@ -47141,8 +47141,8 @@ function checkAttributes(records2, ownerId2, attributes2, sourceAttributes) {
     }
   }
   const captured = new Set(attributes2.map((item2) => item2.id));
-  for (const record13 of sourceAttributes) {
-    if (!captured.has(record13.id)) {
+  for (const record14 of sourceAttributes) {
+    if (!captured.has(record14.id)) {
       refuse("stored owner attribute omitted from native inventory");
     }
   }
@@ -48530,7 +48530,7 @@ function contextIdentity(context3) {
 function prepareEditorTabLookupScope(history, context3) {
   const { projectUuid: projectUuid4, uuid: uuid12 } = contextIdentity(context3);
   const members = history.documents.filter((document3) => {
-    const meta5 = document3.records.filter((record13) => record13.type === "META");
+    const meta5 = document3.records.filter((record14) => record14.type === "META");
     return !isNativeDocumentDeleted(document3) && ["SCH_PAGE", "SYMBOL", "PCB", "FOOTPRINT"].includes(document3.docType) && (document3.docType !== "SYMBOL" || meta5.length === 1 && meta5[0]?.body["docType"] === 2);
   }).map((document3) => ({ uuid: document3.uuid, documentType: { SCH_PAGE: 1, SYMBOL: 2, PCB: 3, FOOTPRINT: 4 }[document3.docType] }));
   const scope6 = scopeSchema.parse({
@@ -48962,8 +48962,8 @@ function derivePcbInheritedLines(source5, inventory2, history) {
       validatedFootprints.set(footprintUuid, templates);
     }
     usedFootprints.set(footprintUuid, footprint2.semanticSha256);
-    for (const record13 of templates) {
-      const primitiveId3 = identity9.parse(component3.id + identity9.parse(record13.id)), template = lineSchema2.parse(record13.body);
+    for (const record14 of templates) {
+      const primitiveId3 = identity9.parse(component3.id + identity9.parse(record14.id)), template = lineSchema2.parse(record14.body);
       if (sourceIds.has(primitiveId3) || generatedIds.has(primitiveId3) || members.length >= MAX_ITEMS) {
         throw new Error("PCB inherited Line generated identities collide or exceed their bound.");
       }
@@ -48989,7 +48989,7 @@ function derivePcbInheritedLines(source5, inventory2, history) {
         primitiveType: "Line",
         net: "",
         parentComponentPrimitiveId: component3.id,
-        sourceRecordId: record13.id,
+        sourceRecordId: record14.id,
         sourceType: "FOOTPRINT_LINE",
         sourceDocumentUuid: footprintUuid
       }));
@@ -53286,15 +53286,15 @@ function expectedRuleConfiguration(compiled2, before) {
       }
     }
   }
-  for (const record13 of before.objects.filter((entry) => entry.type === "RULE")) {
-    const id14 = JSON.parse(record13.id);
-    if (Array.isArray(id14) && families3.has(String(id14[1])) && !desired.has(record13.id)) {
-      records2.delete(record13.id);
+  for (const record14 of before.objects.filter((entry) => entry.type === "RULE")) {
+    const id14 = JSON.parse(record14.id);
+    if (Array.isArray(id14) && families3.has(String(id14[1])) && !desired.has(record14.id)) {
+      records2.delete(record14.id);
     }
   }
-  for (const record13 of [...records2.values()].filter((entry) => entry.type === "RULE_SELECTOR")) {
+  for (const record14 of [...records2.values()].filter((entry) => entry.type === "RULE_SELECTOR")) {
     for (const [field11, override] of [["ruleKeyValue", null], ["copperValue", "SAFE"], ["innerPlaneValue", "SAFE"]]) {
-      const values2 = record13.body[field11];
+      const values2 = record14.body[field11];
       if (!isRecord(values2)) {
         throw new Error("Unknown selector body.");
       }
@@ -53746,7 +53746,7 @@ function buildGroupSource(compiled2, before) {
   if (verb === "delete" && selectorReferences.length > 0) {
     return unsupported2("delete group with net-to-net rule references requires an explicit rule reassignment");
   }
-  const setMember = (net3, nextName2, positive3) => {
+  const setMember = (net3, nextName2, positive4) => {
     if (typeof net3 !== "string" || net3.length === 0 || net3.toUpperCase() !== net3) {
       throw new Error("Group membership needs an exact uppercase native net name.");
     }
@@ -53759,7 +53759,7 @@ function buildGroupSource(compiled2, before) {
     if (nextName2 !== null && old !== null && old !== name6 && old !== nextName2) {
       throw new Error("A net belongs to another group; explicit removal is required.");
     }
-    records2.set(id14, { ...object4, body: { ...object4.body, [membership]: nextName2, ...positive3 === void 0 ? {} : { isPositiveNet: positive3 } } });
+    records2.set(id14, { ...object4, body: { ...object4.body, [membership]: nextName2, ...positive4 === void 0 ? {} : { isPositiveNet: positive4 } } });
   };
   if (verb === "create") {
     records2.set(groupId2, { id: groupId2, type: "RULE_SELECTOR", body: { ruleOrder: 4, ruleKeyValue: {}, copperValue: {}, innerPlaneValue: {} } });
@@ -53823,9 +53823,9 @@ function buildGroupSource(compiled2, before) {
       setMember(net3, verb === "add-nets" ? name6 : null);
     }
   } else if (verb === "set-positive" || verb === "set-negative") {
-    const positive3 = verb === "set-positive";
-    const previous = members.filter((member4) => member4.body["isPositiveNet"] === positive3);
-    const other = members.filter((member4) => member4.body["isPositiveNet"] !== positive3);
+    const positive4 = verb === "set-positive";
+    const previous = members.filter((member4) => member4.body["isPositiveNet"] === positive4);
+    const other = members.filter((member4) => member4.body["isPositiveNet"] !== positive4);
     const otherMember = other[0];
     if (previous.length !== 1 || other.length !== 1 || otherMember === void 0 || nativeNetName(otherMember) === values2[1]) {
       throw new Error("Differential pair endpoint invariant failed.");
@@ -53833,7 +53833,7 @@ function buildGroupSource(compiled2, before) {
     for (const member4 of previous) {
       setMember(nativeNetName(member4), null, false);
     }
-    setMember(values2[1], name6, positive3);
+    setMember(values2[1], name6, positive4);
   } else {
     return unsupported2("unreviewed group operation");
   }
@@ -54177,17 +54177,17 @@ function buildInverseDesignOperation(operation, before, ids2 = {}) {
   function inverseField2(field11) {
     const raw = family2.fields[field11];
     if (raw === "$pourStyle") {
-      const style2 = targetBody["pourType"];
-      if (!isRecord(style2)) {
+      const style3 = targetBody["pourType"];
+      if (!isRecord(style3)) {
         unsupported2("inverse pour style is incomplete");
       }
-      if (style2["pourType"] === "SOLID") {
+      if (style3["pourType"] === "SOLID") {
         patch5["pourFillMethod"] = "solid";
-        patch5["optimizationFineness"] = style2["fineness"];
-      } else if (style2["pourType"] === "GRID_LINE" && [0, 45].includes(Number(style2["angle"]))) {
-        patch5["pourFillMethod"] = style2["angle"] === 45 ? "45grid" : "90grid";
-        patch5["gridLineWidth"] = style2["strokeWidth"];
-        patch5["gridSpacing"] = style2["strokeSpacing"];
+        patch5["optimizationFineness"] = style3["fineness"];
+      } else if (style3["pourType"] === "GRID_LINE" && [0, 45].includes(Number(style3["angle"]))) {
+        patch5["pourFillMethod"] = style3["angle"] === 45 ? "45grid" : "90grid";
+        patch5["gridLineWidth"] = style3["strokeWidth"];
+        patch5["gridSpacing"] = style3["strokeSpacing"];
       } else {
         unsupported2("inverse native pour style");
       }
@@ -54349,18 +54349,18 @@ var init_design_source_proof = __esm({
 function isDesignRuleAction(action) {
   return action.startsWith("pcb.rules.") || ["netclass", "equal-length", "differential-pair"].includes(action.split(".")[1] ?? "");
 }
-function values(record13, key) {
-  if (record13 === void 0) {
+function values(record14, key) {
+  if (record14 === void 0) {
     return {};
   }
-  const value2 = record13.body[key];
+  const value2 = record14.body[key];
   if (!isRecord(value2)) {
     throw new TypeError("Unknown native rule selector shape.");
   }
   return value2;
 }
-function assertDefaultFields(record13, fields26) {
-  const keys2 = values(record13, "ruleKeyValue");
+function assertDefaultFields(record14, fields26) {
+  const keys2 = values(record14, "ruleKeyValue");
   for (const field11 of fields26) {
     const value2 = keys2[field11];
     if (value2 !== void 0 && value2 !== null && value2 !== "default") {
@@ -54373,12 +54373,12 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
   if (!isDesignRuleAction(compiled2.action)) {
     throw new Error("Not a maintained public rule action.");
   }
-  const records2 = new Map(before.objects.map((record13) => [record13.id, record13]));
+  const records2 = new Map(before.objects.map((record14) => [record14.id, record14]));
   const family2 = compiled2.effect.family, verb = compiled2.action.split(".")[2];
   if (compiled2.action.startsWith("pcb.rules.") || family2 === "differential-pair") {
-    for (const record13 of before.objects.filter((entry) => entry.type === "NET" && entry.body["differentialName"] !== null && entry.body["differentialName"] !== void 0 && entry.body["differentialName"] !== "")) {
-      const group = record13.body["differentialName"];
-      const key = JSON.parse(record13.id);
+    for (const record14 of before.objects.filter((entry) => entry.type === "NET" && entry.body["differentialName"] !== null && entry.body["differentialName"] !== void 0 && entry.body["differentialName"] !== "")) {
+      const group = record14.body["differentialName"];
+      const key = JSON.parse(record14.id);
       if (typeof group !== "string" || !Array.isArray(key) || typeof key[1] !== "string") {
         throw new TypeError("Invalid pair-member source identity.");
       }
@@ -54403,7 +54403,7 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
     if (verb === "rename" && group !== void 0 && canonicalJson(group.body) !== canonicalJson({ ruleOrder: 4, ruleKeyValue: {}, copperValue: {}, innerPlaneValue: {} })) {
       throw new Error("Native group rename recreates its rule selector; configured groups need an explicit preserved-rule migration.");
     }
-    if (verb === "rename" && before.objects.some((record13) => record13.type === "RULE_SELECTOR" && record13 !== group && record13.id.includes(JSON.stringify([selector4, first.value])))) {
+    if (verb === "rename" && before.objects.some((record14) => record14.type === "RULE_SELECTOR" && record14 !== group && record14.id.includes(JSON.stringify([selector4, first.value])))) {
       throw new Error("Native group rename cannot preserve associated between-net selectors.");
     }
     let fields26 = ["DIFFER_ENTAIL"];
@@ -54415,10 +54415,10 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
     if (verb === "add-nets") {
       assertDefaultFields(group, fields26);
     }
-    for (const record13 of before.objects.filter((entry) => entry.type === "NET")) {
-      const next = expected3.objects.find((entry) => entry.id === record13.id);
-      if (record13.body[membership] === first.value || canonicalJson(record13) !== canonicalJson(next ?? null) || family2 === "differential-pair" && record13.body["differentialName"] !== null) {
-        const key = JSON.parse(record13.id);
+    for (const record14 of before.objects.filter((entry) => entry.type === "NET")) {
+      const next = expected3.objects.find((entry) => entry.id === record14.id);
+      if (record14.body[membership] === first.value || canonicalJson(record14) !== canonicalJson(next ?? null) || family2 === "differential-pair" && record14.body["differentialName"] !== null) {
+        const key = JSON.parse(record14.id);
         if (!Array.isArray(key) || typeof key[1] !== "string") {
           throw new TypeError("Invalid native net identity.");
         }
@@ -54426,24 +54426,24 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
       }
     }
     if (family2 === "differential-pair") {
-      for (const record13 of before.objects.filter((entry) => entry.type === "RULE_SELECTOR" && entry.id.startsWith('["RULE_SELECTOR",["DIFF_PAIR",'))) {
-        if (Object.keys(values(record13, "ruleKeyValue")).some((key) => key !== "DIFFER_ENTAIL") || Object.keys(values(record13, "copperValue")).length > 0 || Object.keys(values(record13, "innerPlaneValue")).length > 0) {
+      for (const record14 of before.objects.filter((entry) => entry.type === "RULE_SELECTOR" && entry.id.startsWith('["RULE_SELECTOR",["DIFF_PAIR",'))) {
+        if (Object.keys(values(record14, "ruleKeyValue")).some((key) => key !== "DIFFER_ENTAIL") || Object.keys(values(record14, "copperValue")).length > 0 || Object.keys(values(record14, "innerPlaneValue")).length > 0) {
           throw new Error("Native differential manager cannot preserve unknown pair-selector fields.");
         }
       }
     }
   }
   if (compiled2.action === "pcb.rules.net.replace") {
-    for (const record13 of expected3.objects.filter((entry) => entry.type === "RULE_SELECTOR")) {
-      const old = records2.get(record13.id);
-      if (canonicalJson(values(old, "ruleKeyValue")["DIFFER_ENTAIL"] ?? null) !== canonicalJson(values(record13, "ruleKeyValue")["DIFFER_ENTAIL"] ?? null)) {
+    for (const record14 of expected3.objects.filter((entry) => entry.type === "RULE_SELECTOR")) {
+      const old = records2.get(record14.id);
+      if (canonicalJson(values(old, "ruleKeyValue")["DIFFER_ENTAIL"] ?? null) !== canonicalJson(values(record14, "ruleKeyValue")["DIFFER_ENTAIL"] ?? null)) {
         throw new Error("Public net-rule overwrite does not set differential physics; use its dedicated rule path.");
       }
     }
   }
-  if (compiled2.action === "pcb.rules.configuration.replace" && before.objects.some((record13) => record13.type === "VIA")) {
-    const changedBlind = expected3.objects.some((record13) => record13.type === "RULE" && record13.id.startsWith('["RULE","BLIND",') && canonicalJson(record13) !== canonicalJson(records2.get(record13.id) ?? null));
-    const removedBlind = before.objects.some((record13) => record13.type === "RULE" && record13.id.startsWith('["RULE","BLIND",') && !expected3.objects.some((entry) => entry.id === record13.id));
+  if (compiled2.action === "pcb.rules.configuration.replace" && before.objects.some((record14) => record14.type === "VIA")) {
+    const changedBlind = expected3.objects.some((record14) => record14.type === "RULE" && record14.id.startsWith('["RULE","BLIND",') && canonicalJson(record14) !== canonicalJson(records2.get(record14.id) ?? null));
+    const removedBlind = before.objects.some((record14) => record14.type === "RULE" && record14.id.startsWith('["RULE","BLIND",') && !expected3.objects.some((entry) => entry.id === record14.id));
     if (changedBlind || removedBlind) {
       throw new Error("Native blind-via rule replacement can rewrite existing vias; separate geometry-aware migration is required.");
     }
@@ -54455,7 +54455,7 @@ function buildDesignRulePublicAdapter(operation, before) {
   if (before.document["docType"] !== "PCB" || before.document["editVersion"] !== "3.2.149.88089769") {
     throw new Error("Public rule adapter requires the reviewed PCB source profile.");
   }
-  if (before.objects.some((record13) => ["POURED", "LAYER_FILL", "TEARDROP", "PARTITION", "PANELIZE_STAMP"].includes(record13.type))) {
+  if (before.objects.some((record14) => ["POURED", "LAYER_FILL", "TEARDROP", "PARTITION", "PANELIZE_STAMP"].includes(record14.type))) {
     throw new Error("Clear derived copper before changing PCB rules; automatic recomputation is not permitted collateral.");
   }
   const pair2 = compiled2.effect.family === "differential-pair";
@@ -54904,7 +54904,7 @@ function buildSchematicNativeWireAdapter(input, sourceInput, nativeInput, flatGu
     throw new Error("Native wire subtree contains unsupported records or LINE count.");
   }
   for (const row7 of oldLines) {
-    if (!same8(Object.keys(row7.body).toSorted(), lineFields) || row7.body["lineGroup"] !== wireId || row7.body["fillColor"] !== null || row7.body["fillStyle"] !== null || row7.body["strokeStyle"] !== null && !sourceStyles.some((style2) => style2 === row7.body["strokeStyle"]) || row7.body["strokeColor"] !== null && typeof row7.body["strokeColor"] !== "string" || row7.body["strokeWidth"] !== null && (finite3(row7.body["strokeWidth"]) < 1 || finite3(row7.body["strokeWidth"]) > 10)) {
+    if (!same8(Object.keys(row7.body).toSorted(), lineFields) || row7.body["lineGroup"] !== wireId || row7.body["fillColor"] !== null || row7.body["fillStyle"] !== null || row7.body["strokeStyle"] !== null && !sourceStyles.some((style3) => style3 === row7.body["strokeStyle"]) || row7.body["strokeColor"] !== null && typeof row7.body["strokeColor"] !== "string" || row7.body["strokeWidth"] !== null && (finite3(row7.body["strokeWidth"]) < 1 || finite3(row7.body["strokeWidth"]) > 10)) {
       throw new Error("Native wire LINE source profile differs.");
     }
     cardinal([finite3(row7.body["startX"]), finite3(row7.body["startY"]), finite3(row7.body["endX"]), finite3(row7.body["endY"])]);
@@ -55871,7 +55871,7 @@ function exactAsset(history, id14, type2) {
   if (values2.length !== 1 || value2 === void 0) {
     throw new Error("Required project-library asset is missing or ambiguous.");
   }
-  if (new Set(value2.records.map((record13) => record13.id)).size !== value2.records.length) {
+  if (new Set(value2.records.map((record14) => record14.id)).size !== value2.records.length) {
     throw new Error("Duplicate library record identity.");
   }
   return value2;
@@ -55882,7 +55882,7 @@ function assets(input, history) {
     throw new Error("Component creation requires assets already present in the exact project checkpoint.");
   }
   const device = exactAsset(history, operation.properties.component.uuid, "DEVICE");
-  const meta5 = device.records.find((record13) => record13.id === "META" && record13.type === "META");
+  const meta5 = device.records.find((record14) => record14.id === "META" && record14.type === "META");
   const raw = meta5?.body["attributes"];
   if (!isRecord(raw) || Object.keys(raw).length > 4096 || Object.values(raw).some((value2) => typeof value2 !== "string" || value2.length > 65536)) {
     throw new Error("Project device attributes are not complete string properties.");
@@ -55906,12 +55906,12 @@ function assets(input, history) {
   if (footprintId !== void 0 && footprintId.length > 0) {
     exactAsset(history, footprintId, "FOOTPRINT");
   }
-  const parts = symbol4.records.filter((record13) => record13.type === "PART");
-  const part = parts.find((record13) => record13.body["title"] === operation.properties.subPartName);
+  const parts = symbol4.records.filter((record14) => record14.type === "PART");
+  const part = parts.find((record14) => record14.body["title"] === operation.properties.subPartName);
   if (parts.length !== 1 || part === void 0) {
     throw new Error("Component creation currently requires an exact single-part project symbol title.");
   }
-  if (symbol4.records.some((record13) => record13.type === "ATTR" && record13.body["key"] === "NO_CONNECT")) {
+  if (symbol4.records.some((record14) => record14.type === "ATTR" && record14.body["key"] === "NO_CONNECT")) {
     throw new Error("Symbol no-connect inheritance needs an explicit creation profile.");
   }
   return { device, symbol: symbol4, partId: part.id, attributes: attributes2 };
@@ -55949,7 +55949,7 @@ function symbolPinNumbers(library2) {
   return symbolPins(library2).map((value2) => value2.number);
 }
 function symbolPins(library2) {
-  const pins = library2.symbol.records.filter((record13) => record13.type === "PIN" && record13.body["partId"] === library2.partId);
+  const pins = library2.symbol.records.filter((record14) => record14.type === "PIN" && record14.body["partId"] === library2.partId);
   const numbers = /* @__PURE__ */ new Set(), suffixes = /* @__PURE__ */ new Set();
   if (pins.length === 0 || pins.length > 4096) {
     throw new Error("Project symbol requires a bounded pin inventory.");
@@ -55960,8 +55960,8 @@ function symbolPins(library2) {
       throw new Error("Project symbol pin has an unreviewed native body or identity.");
     }
     suffixes.add(suffix);
-    const attributes2 = library2.symbol.records.filter((record13) => record13.type === "ATTR" && record13.body["parentId"] === pin4.id);
-    const keys2 = attributes2.map((record13) => record13.body["key"]);
+    const attributes2 = library2.symbol.records.filter((record14) => record14.type === "ATTR" && record14.body["parentId"] === pin4.id);
+    const keys2 = attributes2.map((record14) => record14.body["key"]);
     if (new Set(keys2).size !== keys2.length || ["Pin Name", "Pin Number", "Pin Type"].some((key) => !keys2.includes(key))) {
       throw new Error("Project symbol pin attributes are missing or ambiguous.");
     }
@@ -55970,7 +55970,7 @@ function symbolPins(library2) {
         throw new Error("Project symbol pin attribute has an unreviewed native body.");
       }
     }
-    const number17 = attributes2.find((record13) => record13.body["key"] === "Pin Number")?.body["value"];
+    const number17 = attributes2.find((record14) => record14.body["key"] === "Pin Number")?.body["value"];
     if (typeof number17 !== "string" || !number17 || numbers.has(number17)) {
       throw new Error("Project symbol requires unique nonempty pin numbers.");
     }
@@ -55998,11 +55998,11 @@ function buildSchematicComponentCreate(input, before, nativeInput, history) {
   const createdId = randomBytes4(8).toString("hex");
   const uniqueId = `gge${randomBytes4(8).toString("hex")}`;
   const designator = nextDesignator(library2.attributes["Designator"], native);
-  const ids2 = new Set(before.objects.map((record13) => record13.id));
+  const ids2 = new Set(before.objects.map((record14) => record14.id));
   if (ids2.has(createdId) || native.components.some((model2) => model2.attributes.some((attribute3) => attribute3.key === "Unique ID" && attribute3.value === uniqueId))) {
     throw new Error("Generated component identity collision.");
   }
-  const zValues = before.objects.map((record13) => record13.body["zIndex"]).filter((value2) => value2 !== void 0);
+  const zValues = before.objects.map((record14) => record14.body["zIndex"]).filter((value2) => value2 !== void 0);
   if (zValues.some((value2) => typeof value2 !== "number" || !Number.isSafeInteger(value2))) {
     throw new Error("Invalid existing source z-order.");
   }
@@ -56702,9 +56702,9 @@ function number10(value2, field11) {
   }
   return value2;
 }
-function simplePad(record13) {
-  const body4 = record13.body, shape2 = body4["defaultPad"];
-  if (record13.type !== "PAD" || !isRecord(shape2) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape2["padType"])) || canonicalJson(body4["specialPad"]) !== "[]" || ![1, 2, 12].includes(number10(body4["layerId"], "layer")) || typeof body4["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body4["num"]) || body4["netName"] !== "" || body4["parentId"] !== void 0 && body4["parentId"] !== null && body4["parentId"] !== "") {
+function simplePad(record14) {
+  const body4 = record14.body, shape2 = body4["defaultPad"];
+  if (record14.type !== "PAD" || !isRecord(shape2) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape2["padType"])) || canonicalJson(body4["specialPad"]) !== "[]" || ![1, 2, 12].includes(number10(body4["layerId"], "layer")) || typeof body4["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body4["num"]) || body4["netName"] !== "" || body4["parentId"] !== void 0 && body4["parentId"] !== null && body4["parentId"] !== "") {
     throw new Error("Pad history requires a standalone, empty-net, canonical simple footprint pad.");
   }
   if (body4["layerId"] === 12 !== (body4["hole"] !== null)) {
@@ -56723,19 +56723,19 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     throw new Error("Pad property steps require modify.");
   }
   const targetId2 = "primitiveId" in operation.target ? operation.target.primitiveId : ids2.targetId;
-  const target9 = before.objects.find((record13) => record13.id === targetId2);
+  const target9 = before.objects.find((record14) => record14.id === targetId2);
   const unlockOnly = Object.keys(operation.patch).length === 1 && operation.patch.primitiveLock === false;
   if (targetId2 === void 0 || target9 === void 0 || target9.body["locked"] !== false && !(target9.body["locked"] === true && unlockOnly)) {
     throw new Error("Native pad target is absent or locked; unlock it separately.");
   }
   simplePad(target9);
   const expected3 = buildExpectedDesignSource({ ...operation, action: "pcb.pad.modify", target: { primitiveId: targetId2 } }, before, { targetId: targetId2 });
-  const desired = expected3.objects.find((record13) => record13.id === targetId2);
+  const desired = expected3.objects.find((record14) => record14.id === targetId2);
   if (desired === void 0) {
     throw new Error("Expected pad disappeared.");
   }
   simplePad(desired);
-  const canvas = before.objects.find((record13) => record13.id === "CANVAS" && record13.type === "CANVAS")?.body;
+  const canvas = before.objects.find((record14) => record14.id === "CANVAS" && record14.type === "CANVAS")?.body;
   let factor;
   if (canvas?.["unit"] === "mil") {
     factor = 1;
@@ -56860,7 +56860,7 @@ function buildFootprintPadHistoryExpression(input, before, scope6, ids2 = {}) {
       }
     } else {
       targetId2 = "primitiveId" in operation.target ? operation.target.primitiveId : ids2.targetId;
-      const target9 = before.objects.find((record13) => record13.id === targetId2);
+      const target9 = before.objects.find((record14) => record14.id === targetId2);
       if (target9 === void 0 || target9.body["locked"] !== false) {
         throw new Error("Footprint pad delete target is absent or locked.");
       }
@@ -56984,20 +56984,20 @@ function hiddenAttributes(source5, nativeInput) {
   const records2 = objectMap(source5.objects);
   const result = /* @__PURE__ */ new Map();
   for (const attribute3 of schematicNonDrawingStoredAttributes(native)) {
-    const record13 = records2.get(attribute3.id);
-    if (result.has(attribute3.id) || attribute3.sourceSha256 !== source5.sha256 || record13 === void 0 || record13.type !== "ATTR" || sha256Json(record13.body) !== attribute3.bodySha256) {
+    const record14 = records2.get(attribute3.id);
+    if (result.has(attribute3.id) || attribute3.sourceSha256 !== source5.sha256 || record14 === void 0 || record14.type !== "ATTR" || sha256Json(record14.body) !== attribute3.bodySha256) {
       throw new Error("Schematic attribute evidence does not identify an exact stored source record.");
     }
     result.set(attribute3.id, attribute3);
   }
   return result;
 }
-function matchesHiddenAttribute(record13, attribute3) {
-  return record13 !== void 0 && record13.id === attribute3.id && record13.type === "ATTR" && record13.body["parentId"] === attribute3.parentId && record13.body["key"] === attribute3.key && record13.body["x"] === null && record13.body["y"] === null && typeof record13.body["zIndex"] === "number" && Number.isSafeInteger(record13.body["zIndex"]) && record13.body["zIndex"] >= 0;
+function matchesHiddenAttribute(record14, attribute3) {
+  return record14 !== void 0 && record14.id === attribute3.id && record14.type === "ATTR" && record14.body["parentId"] === attribute3.parentId && record14.body["key"] === attribute3.key && record14.body["x"] === null && record14.body["y"] === null && typeof record14.body["zIndex"] === "number" && Number.isSafeInteger(record14.body["zIndex"]) && record14.body["zIndex"] >= 0;
 }
-function projectOrder(record13, projection9) {
-  const attribute3 = projection9.get(record13.id);
-  return attribute3 === void 0 ? record13 : { ...record13, body: { ...record13.body, zIndex: attribute3.zIndex } };
+function projectOrder(record14, projection9) {
+  const attribute3 = projection9.get(record14.id);
+  return attribute3 === void 0 ? record14 : { ...record14, body: { ...record14.body, zIndex: attribute3.zIndex } };
 }
 function orderDifferences(projection9, before, after, comparison3) {
   return [...projection9.values()].flatMap((attribute3) => {
@@ -57200,13 +57200,13 @@ function deriveDesignBaselineTargets(before, expectedAfter3) {
   }
   const prior = objectMap(before.objects);
   const next = objectMap(expectedAfter3.objects);
-  return [...prior.values()].flatMap((record13) => {
-    const after = next.get(record13.id);
-    if (after === void 0 || after.type !== record13.type) {
-      return [{ id: record13.id, fields: Object.keys(record13.body).toSorted() }];
+  return [...prior.values()].flatMap((record14) => {
+    const after = next.get(record14.id);
+    if (after === void 0 || after.type !== record14.type) {
+      return [{ id: record14.id, fields: Object.keys(record14.body).toSorted() }];
     }
-    const fields26 = changedFields(record13.body, after.body);
-    return fields26.length === 0 ? [] : [{ id: record13.id, fields: fields26 }];
+    const fields26 = changedFields(record14.body, after.body);
+    return fields26.length === 0 ? [] : [{ id: record14.id, fields: fields26 }];
   }).toSorted((left, right) => left.id.localeCompare(right.id));
 }
 function verifyDesignBaseline(input) {
@@ -57267,10 +57267,10 @@ function verifyChangedRecord(before, after, sourceBefore, sourceAfter) {
   }
 }
 function verifyTargetRecords(previous, current10, expectedBefore, expectedAfter3, projection9) {
-  const oldSource = objectMap(expectedBefore.objects.map((record13) => projectOrder(record13, projection9)));
-  const newSource = objectMap(expectedAfter3.objects.map((record13) => projectOrder(record13, projection9)));
-  const oldDurable = objectMap(previous.records.map((record13) => projectOrder(record13, projection9)));
-  const newDurable = objectMap(current10.records.map((record13) => projectOrder(record13, projection9)));
+  const oldSource = objectMap(expectedBefore.objects.map((record14) => projectOrder(record14, projection9)));
+  const newSource = objectMap(expectedAfter3.objects.map((record14) => projectOrder(record14, projection9)));
+  const oldDurable = objectMap(previous.records.map((record14) => projectOrder(record14, projection9)));
+  const newDurable = objectMap(current10.records.map((record14) => projectOrder(record14, projection9)));
   const changed = new Set([...oldSource.keys(), ...newSource.keys()].filter((id14) => {
     const before = oldSource.get(id14);
     const after = newSource.get(id14);
@@ -57399,7 +57399,7 @@ function projectFootprintPadHistory(input) {
   }
   const differences = [];
   const replacements = /* @__PURE__ */ new Map();
-  for (const live of input.source.objects.filter((record13) => record13.type === "PAD" && targetIds.has(record13.id))) {
+  for (const live of input.source.objects.filter((record14) => record14.type === "PAD" && targetIds.has(record14.id))) {
     const stored2 = document3.records.find((entry) => entry.id === live.id);
     if (stored2 === void 0 || stored2.type !== "PAD") {
       throw new Error("Footprint pad target is absent from durable baseline.");
@@ -57440,9 +57440,9 @@ function projectFootprintPadHistory(input) {
     if (entry.uuid !== document3.uuid) {
       return entry;
     }
-    const records2 = entry.records.map((record13) => {
-      const replacement = replacements.get(record13.id);
-      return replacement === void 0 ? record13 : { ...record13, body: replacement.body };
+    const records2 = entry.records.map((record14) => {
+      const replacement = replacements.get(record14.id);
+      return replacement === void 0 ? record14 : { ...record14, body: replacement.body };
     });
     return { ...entry, records: records2, semanticSha256: sha256Json({
       uuid: entry.uuid,
@@ -57676,7 +57676,7 @@ function materializedPartSymbolAttribute(before, expected3, after) {
   if (hasPartSymbolAttribute(before, part.id) || hasPartSymbolAttribute(expected3, part.id)) {
     return void 0;
   }
-  const delta = compareDocumentSources(expected3, after), record13 = delta.added[0];
+  const delta = compareDocumentSources(expected3, after), record14 = delta.added[0];
   const zIndex3 = Math.max(0, ...before.objects.filter((entry) => entry.body["partId"] === part.id).map((entry) => finite4(entry.body["zIndex"]))) + 1;
   const body4 = {
     x: null,
@@ -57698,10 +57698,10 @@ function materializedPartSymbolAttribute(before, expected3, after) {
     zIndex: zIndex3,
     partId: part.id
   };
-  if (delta.documentChanged || delta.changed.length > 0 || delta.removed.length > 0 || delta.added.length !== 1 || record13 === void 0 || record13.type !== "ATTR" || !/^[a-f0-9]{16}$/u.test(record13.id) || !Number.isSafeInteger(zIndex3) || !same11(record13.body, body4)) {
+  if (delta.documentChanged || delta.changed.length > 0 || delta.removed.length > 0 || delta.added.length !== 1 || record14 === void 0 || record14.type !== "ATTR" || !/^[a-f0-9]{16}$/u.test(record14.id) || !Number.isSafeInteger(zIndex3) || !same11(record14.body, body4)) {
     return void 0;
   }
-  return { kind: "native-part-symbol-attribute", partId: part.id, record: record13 };
+  return { kind: "native-part-symbol-attribute", partId: part.id, record: record14 };
 }
 function verifySymbolSourceEffect(input, before, after, ids2 = {}) {
   checked2(after);
@@ -57903,16 +57903,16 @@ function assertSource(source5) {
     throw new Error("Model transform requires the exact supported native source baseline.");
   }
   const records2 = /* @__PURE__ */ new Map();
-  for (const record13 of source5.objects) {
-    if (!record13.id || !record13.type || records2.has(record13.id)) {
+  for (const record14 of source5.objects) {
+    if (!record14.id || !record14.type || records2.has(record14.id)) {
       throw new Error("Model transform source has missing or duplicate identities.");
     }
-    records2.set(record13.id, record13);
+    records2.set(record14.id, record14);
   }
   return records2;
 }
-function assertUnlockedAncestry(record13, records2) {
-  let current10 = record13;
+function assertUnlockedAncestry(record14, records2) {
+  let current10 = record14;
   const seen = /* @__PURE__ */ new Set();
   while (current10 !== void 0) {
     if (seen.has(current10.id) || current10.body["locked"] === true || current10.body["locked"] !== void 0 && typeof current10.body["locked"] !== "boolean") {
@@ -57947,7 +57947,7 @@ function selectedAttribute(operation, source5) {
     if (parent !== "" && parent !== null && parent !== void 0) {
       throw new Error("Footprint model transform must be a document-level attribute.");
     }
-    const attributes2 = source5.objects.filter((record13) => record13.type === "ATTR");
+    const attributes2 = source5.objects.filter((record14) => record14.type === "ATTR");
     const names2 = /* @__PURE__ */ new Set();
     for (const item2 of attributes2) {
       const key = item2.body["key"], owner = item2.body["parentId"];
@@ -57958,11 +57958,11 @@ function selectedAttribute(operation, source5) {
         names2.add(key);
       }
     }
-    if (source5.objects.some((record13) => record13.type === "COMPONENT" || record13.type === "PAD_NET")) {
+    if (source5.objects.some((record14) => record14.type === "COMPONENT" || record14.type === "PAD_NET")) {
       throw new Error("Footprint model transform cannot contain placed PCB instances.");
     }
   }
-  const siblings = source5.objects.filter((record13) => record13.type === "ATTR" && record13.body["parentId"] === parent && record13.body["key"] === "3D Model Transform");
+  const siblings = source5.objects.filter((record14) => record14.type === "ATTR" && record14.body["parentId"] === parent && record14.body["key"] === "3D Model Transform");
   if (siblings.length !== 1 || siblings[0]?.id !== attribute3.id) {
     throw new Error("Model transform attribute identity is ambiguous.");
   }
@@ -57974,7 +57974,7 @@ function expectedModelTransformSource(input, before) {
   const operation = modelTransformOperationSchema.parse(input);
   const attribute3 = selectedAttribute(operation, before);
   const value2 = encodeModelTransform(operation.transform);
-  const objects = before.objects.map((record13) => record13.id === attribute3.id ? { id: record13.id, type: record13.type, body: { ...record13.body, value: value2 } } : record13);
+  const objects = before.objects.map((record14) => record14.id === attribute3.id ? { id: record14.id, type: record14.type, body: { ...record14.body, value: value2 } } : record14);
   const result = { schema: before.schema, document: before.document, objects };
   return { ...result, sha256: sha256Json(result) };
 }
@@ -58006,7 +58006,7 @@ function buildModelTransformAdapter(input, before, scopeInput) {
     return adapter;
   }
   const scope6 = footprintScopeSchema.parse(scopeInput);
-  const named = before.objects.find((record13) => record13.type === "ATTR" && record13.body["key"] === "Footprint");
+  const named = before.objects.find((record14) => record14.type === "ATTR" && record14.body["key"] === "Footprint");
   if (scope6.footprintUuid !== before.document["uuid"] || named?.body["value"] !== scope6.footprintName) {
     throw new Error("Model-transform source and checkpoint-bound footprint scope disagree.");
   }
@@ -58593,18 +58593,18 @@ function target3(history, source5) {
   }
   return result;
 }
-function parentKind(record13, source5, native) {
-  const id14 = record13.body["parentId"];
+function parentKind(record14, source5, native) {
+  const id14 = record14.body["parentId"];
   const parent = source5.objects.find((entry) => entry.id === id14);
   if (parent?.type === "WIRE") {
     return "wire";
   }
   const pins = native.components.flatMap((entry) => entry.pins).filter((entry) => entry.id === id14);
-  if (parent === void 0 && record13.body["key"] === "Pin Number" && pins.length === 1 && pins[0]?.attributes.some((entry) => entry.id === record13.id && entry.key === record13.body["key"] && equal3(entry.body, record13.body)) === true) {
+  if (parent === void 0 && record14.body["key"] === "Pin Number" && pins.length === 1 && pins[0]?.attributes.some((entry) => entry.id === record14.id && entry.key === record14.body["key"] && equal3(entry.body, record14.body)) === true) {
     return "pin";
   }
   const model2 = native.components.find((entry) => entry.id === id14);
-  if (parent?.type !== "COMPONENT" || model2 === void 0 || !["part", "sheet", "netflag", "netport"].includes(model2.kind) || !model2.attributes.some((entry) => entry.id === record13.id && entry.key === record13.body["key"] && equal3(entry.body, record13.body))) {
+  if (parent?.type !== "COMPONENT" || model2 === void 0 || !["part", "sheet", "netflag", "netport"].includes(model2.kind) || !model2.attributes.some((entry) => entry.id === record14.id && entry.key === record14.body["key"] && equal3(entry.body, record14.body))) {
     throw new Error("Schematic storage attribute has no exact supported source/native owner.");
   }
   return model2.kind;
@@ -58612,61 +58612,61 @@ function parentKind(record13, source5, native) {
 function projectAttributes(side, document3, source5, native, before, differences, history, newWireOrders = /* @__PURE__ */ new Map()) {
   const old = new Map(before.records.map((entry) => [entry.id, entry]));
   const sourceRecords = new Map(source5.objects.map((entry) => [entry.id, entry]));
-  return document3.records.map((record13) => {
-    const exported = sourceRecords.get(record13.id);
-    if (record13.type !== "ATTR" || exported === void 0 || equal3(record13.body, exported.body)) {
-      return record13;
+  return document3.records.map((record14) => {
+    const exported = sourceRecords.get(record14.id);
+    if (record14.type !== "ATTR" || exported === void 0 || equal3(record14.body, exported.body)) {
+      return record14;
     }
-    if (exported.type !== "ATTR" || typeof exported.body["parentId"] !== "string" || typeof exported.body["key"] !== "string" || record13.body["parentId"] !== exported.body["parentId"] || record13.body["key"] !== exported.body["key"]) {
+    if (exported.type !== "ATTR" || typeof exported.body["parentId"] !== "string" || typeof exported.body["key"] !== "string" || record14.body["parentId"] !== exported.body["parentId"] || record14.body["key"] !== exported.body["key"]) {
       throw new Error("Schematic stored attribute identity differs from source.");
     }
     const kind = parentKind(exported, source5, native);
-    const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(record13.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record13.body, exported.body, key)).toSorted();
+    const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(record14.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record14.body, exported.body, key)).toSorted();
     if (kind === "pin" && fields26.some((key) => key !== "strikeout")) {
       throw new Error("Pin attributes admit only the reviewed strikeout storage encoding.");
     }
     const styleFields = fields26.filter((key) => !["zIndex", "strikeout"].includes(key));
-    const libraryStyle = styleFields.length === 0 ? void 0 : schematicLibraryStyle(history, native, record13, exported, styleFields);
-    if (side === "after" && styleFields.some((key) => !fieldEqual(old.get(record13.id)?.body ?? {}, record13.body, key))) {
+    const libraryStyle = styleFields.length === 0 ? void 0 : schematicLibraryStyle(history, native, record14, exported, styleFields);
+    if (side === "after" && styleFields.some((key) => !fieldEqual(old.get(record14.id)?.body ?? {}, record14.body, key))) {
       throw new Error("Changed durable attribute style is neither retained nor the exact captured model style.");
     }
-    if (fields26.includes("strikeout") && !(!Object.hasOwn(record13.body, "strikeout") && exported.body["strikeout"] === false || record13.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
+    if (fields26.includes("strikeout") && !(!Object.hasOwn(record14.body, "strikeout") && exported.body["strikeout"] === false || record14.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
       throw new Error("Schematic strikeout difference is not the exact missing/false encoding.");
     }
     let hiddenNullOrder;
     if (fields26.includes("zIndex")) {
       const current10 = exported.body["zIndex"];
-      const stored2 = record13.body["zIndex"];
+      const stored2 = record14.body["zIndex"];
       const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
       if (stored2 === null && (kind === "part" && exported.body["key"] === "Unique ID" || kind === "netflag" && exported.body["key"] === "Relevance")) {
-        hiddenNullOrder = schematicHiddenNullOrder(history, document3, source5, native, record13);
+        hiddenNullOrder = schematicHiddenNullOrder(history, document3, source5, native, record14);
       }
       if (!uninitializedWireOrder && hiddenNullOrder === void 0 && (typeof stored2 !== "number" || !Number.isSafeInteger(stored2)) || typeof current10 !== "number" || !Number.isSafeInteger(current10) || current10 < 0) {
         throw new Error("Schematic attribute order is not an exact native integer.");
       }
-      const prior = old.get(record13.id);
-      const exactNewWireCreation = prior === void 0 && stored2 === 0 && newWireOrders.get(record13.id) === current10;
-      if (side === "after" && !exactNewWireCreation && (prior?.type !== "ATTR" || prior.body["parentId"] !== record13.body["parentId"] || prior.body["key"] !== record13.body["key"] || !fieldEqual(prior.body, record13.body, "zIndex"))) {
+      const prior = old.get(record14.id);
+      const exactNewWireCreation = prior === void 0 && stored2 === 0 && newWireOrders.get(record14.id) === current10;
+      if (side === "after" && !exactNewWireCreation && (prior?.type !== "ATTR" || prior.body["parentId"] !== record14.body["parentId"] || prior.body["key"] !== record14.body["key"] || !fieldEqual(prior.body, record14.body, "zIndex"))) {
         throw new Error("Changed durable attribute order is neither retained nor the exact captured model order.");
       }
     }
     differences.push({
       side,
-      id: record13.id,
+      id: record14.id,
       parentId: exported.body["parentId"],
       parentKind: kind,
       key: exported.body["key"],
       fields: fields26,
-      storedBodySha256: sha256Json(record13.body),
+      storedBodySha256: sha256Json(record14.body),
       sourceBodySha256: sha256Json(exported.body),
-      storedZIndex: record13.body["zIndex"],
+      storedZIndex: record14.body["zIndex"],
       sourceZIndex: exported.body["zIndex"],
-      storedStrikeoutPresent: Object.hasOwn(record13.body, "strikeout"),
+      storedStrikeoutPresent: Object.hasOwn(record14.body, "strikeout"),
       sourceStrikeoutPresent: Object.hasOwn(exported.body, "strikeout"),
       ...hiddenNullOrder === void 0 ? {} : { hiddenNullOrder },
       ...libraryStyle === void 0 ? {} : { libraryStyle }
     });
-    return { ...record13, body: structuredClone(exported.body) };
+    return { ...record14, body: structuredClone(exported.body) };
   });
 }
 function newWireCreationOrders(input, before, after, native) {
@@ -58767,19 +58767,19 @@ function verifySchematicStoragePersistence(input) {
   const previous = projectAttributes("before", before, input.expectedBefore, beforeNative, before, differences, input.before);
   const current10 = projectAttributes("after", after, input.expectedAfter, afterNative, before, differences, input.after, new Map(newWireOrders.map((entry) => [entry.relevanceId, entry.zIndex])));
   const frameOrderInitializations = [];
-  for (const [index, record13] of previous.entries()) {
-    const model2 = beforeNative.components.find((entry) => entry.id === record13.id);
-    const oldSource = input.expectedBefore.objects.find((entry) => entry.id === record13.id);
-    const nextSource = input.expectedAfter.objects.find((entry) => entry.id === record13.id);
-    const storedAfter = current10.find((entry) => entry.id === record13.id);
-    const eligible3 = record13.type === "COMPONENT" && model2?.kind === "sheet" && record13.body["zIndex"] === null;
+  for (const [index, record14] of previous.entries()) {
+    const model2 = beforeNative.components.find((entry) => entry.id === record14.id);
+    const oldSource = input.expectedBefore.objects.find((entry) => entry.id === record14.id);
+    const nextSource = input.expectedAfter.objects.find((entry) => entry.id === record14.id);
+    const storedAfter = current10.find((entry) => entry.id === record14.id);
+    const eligible3 = record14.type === "COMPONENT" && model2?.kind === "sheet" && record14.body["zIndex"] === null;
     let initializedOrder;
     if (eligible3) {
-      initializedOrder = oldSource?.body["zIndex"] === 0 ? 0 : initializedFrameRootOrder(before, input.expectedBefore, record13.id, after, input.expectedAfter);
+      initializedOrder = oldSource?.body["zIndex"] === 0 ? 0 : initializedFrameRootOrder(before, input.expectedBefore, record14.id, after, input.expectedAfter);
     }
-    if (initializedOrder !== void 0 && oldSource?.body["zIndex"] === initializedOrder && storedAfter?.type === "COMPONENT" && storedAfter.body["zIndex"] === initializedOrder && equal3(oldSource, nextSource) && equal3({ ...record13.body, zIndex: initializedOrder }, oldSource.body) && equal3(storedAfter.body, oldSource.body)) {
-      previous[index] = { ...record13, body: { ...record13.body, zIndex: initializedOrder } };
-      frameOrderInitializations.push({ id: record13.id, beforeBodySha256: sha256Json(record13.body), afterBodySha256: sha256Json(storedAfter.body) });
+    if (initializedOrder !== void 0 && oldSource?.body["zIndex"] === initializedOrder && storedAfter?.type === "COMPONENT" && storedAfter.body["zIndex"] === initializedOrder && equal3(oldSource, nextSource) && equal3({ ...record14.body, zIndex: initializedOrder }, oldSource.body) && equal3(storedAfter.body, oldSource.body)) {
+      previous[index] = { ...record14, body: { ...record14.body, zIndex: initializedOrder } };
+      frameOrderInitializations.push({ id: record14.id, beforeBodySha256: sha256Json(record14.body), afterBodySha256: sha256Json(storedAfter.body) });
     }
   }
   const oldCanvas = before.records.find((entry) => entry.id === "CANVAS");
@@ -58797,12 +58797,12 @@ function verifySchematicStoragePersistence(input) {
   }
   const comparisonBefore = replace(input.before, before, previous);
   const comparisonAfter = replace(input.after, after, current10);
-  for (const record13 of current10) {
-    const prior = previous.find((entry) => entry.id === record13.id);
-    const sourceBefore = input.expectedBefore.objects.find((entry) => entry.id === record13.id);
-    const sourceAfter = input.expectedAfter.objects.find((entry) => entry.id === record13.id);
-    if (equal3(sourceBefore, sourceAfter) && (prior === void 0 || !equal3(semantic(prior), semantic(record13)))) {
-      throw new Error(`Schematic storage changed an unrequested record: ${record13.id}/${record13.type}.`);
+  for (const record14 of current10) {
+    const prior = previous.find((entry) => entry.id === record14.id);
+    const sourceBefore = input.expectedBefore.objects.find((entry) => entry.id === record14.id);
+    const sourceAfter = input.expectedAfter.objects.find((entry) => entry.id === record14.id);
+    if (equal3(sourceBefore, sourceAfter) && (prior === void 0 || !equal3(semantic(prior), semantic(record14)))) {
+      throw new Error(`Schematic storage changed an unrequested record: ${record14.id}/${record14.type}.`);
     }
   }
   const comparison3 = verifyDesignPersistence({ before: comparisonBefore, after: comparisonAfter, expectedBefore: input.expectedBefore, expectedAfter: input.expectedAfter });
@@ -60582,7 +60582,7 @@ function snapshot5(before, records2) {
   return { ...value2, sha256: sha256Json(value2) };
 }
 function encodeSchematicLayoutSource(source5) {
-  const rows2 = [`{"type":"DOCHEAD"}||${JSON.stringify(source5.document)}`, ...source5.objects.map((record13, index) => `${JSON.stringify({ type: record13.type, id: record13.id, ticket: index + 1 })}||${JSON.stringify(record13.body)}`)];
+  const rows2 = [`{"type":"DOCHEAD"}||${JSON.stringify(source5.document)}`, ...source5.objects.map((record14, index) => `${JSON.stringify({ type: record14.type, id: record14.id, ticket: index + 1 })}||${JSON.stringify(record14.body)}`)];
   return `${rows2.join("|\n")}|
 `;
 }
@@ -60640,10 +60640,10 @@ function segments2(value2) {
   return result;
 }
 function owned(records2, id14) {
-  return [...records2.values()].filter((record13) => record13.id === id14 || record13.body["parentId"] === id14 || record13.body["lineGroup"] === id14);
+  return [...records2.values()].filter((record14) => record14.id === id14 || record14.body["parentId"] === id14 || record14.body["lineGroup"] === id14);
 }
 function protectedIds(source5, native) {
-  const locked = new Set(source5.objects.filter((record13) => record13.body["locked"] === true).map((record13) => record13.id));
+  const locked = new Set(source5.objects.filter((record14) => record14.body["locked"] === true).map((record14) => record14.id));
   for (const component3 of native.components) {
     if (component3.locked) {
       locked.add(component3.id);
@@ -60657,9 +60657,9 @@ function protectedIds(source5, native) {
   let changed = true;
   while (changed) {
     changed = false;
-    for (const record13 of source5.objects) {
-      if (!locked.has(record13.id) && [record13.body["parentId"], record13.body["lineGroup"], record13.body["groupId"]].some((parent) => typeof parent === "string" && locked.has(parent))) {
-        locked.add(record13.id);
+    for (const record14 of source5.objects) {
+      if (!locked.has(record14.id) && [record14.body["parentId"], record14.body["lineGroup"], record14.body["groupId"]].some((parent) => typeof parent === "string" && locked.has(parent))) {
+        locked.add(record14.id);
         changed = true;
       }
     }
@@ -60668,9 +60668,9 @@ function protectedIds(source5, native) {
 }
 function nextZ2(records2) {
   let result = 0;
-  for (const record13 of records2.values()) {
-    if (record13.body["zIndex"] !== void 0) {
-      const value2 = number14(record13.body["zIndex"]);
+  for (const record14 of records2.values()) {
+    if (record14.body["zIndex"] !== void 0) {
+      const value2 = number14(record14.body["zIndex"]);
       if (value2 < 0) {
         throw new Error("Layout z-order is negative.");
       }
@@ -60716,19 +60716,19 @@ function inverseDisplay(step, id14, body4) {
   const parsed2 = schematicLayoutStepSchema.safeParse({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id14 }, patch: patch5 });
   return parsed2.success ? parsed2.data : void 0;
 }
-function lineStyle(record13) {
-  return Object.fromEntries(Object.entries(record13.body).filter(([key]) => !["startX", "startY", "endX", "endY", "lineGroup"].includes(key)));
+function lineStyle(record14) {
+  return Object.fromEntries(Object.entries(record14.body).filter(([key]) => !["startX", "startY", "endX", "endY", "lineGroup"].includes(key)));
 }
 function replacementStyle(lines3) {
   const first = lines3[0];
   if (first === void 0) {
     throw new Error("Layout wire replacement requires at least one existing segment.");
   }
-  const style2 = lineStyle(first);
-  if (Object.keys(style2).some((key) => !["fillColor", "fillStyle", "strokeColor", "strokeWidth", "strokeStyle"].includes(key)) || style2["fillColor"] !== null || style2["fillStyle"] !== null || lines3.some((record13) => !same17(lineStyle(record13), style2))) {
+  const style3 = lineStyle(first);
+  if (Object.keys(style3).some((key) => !["fillColor", "fillStyle", "strokeColor", "strokeWidth", "strokeStyle"].includes(key)) || style3["fillColor"] !== null || style3["fillStyle"] !== null || lines3.some((record14) => !same17(lineStyle(record14), style3))) {
     throw new Error("Layout wire replacement requires a reviewed uniform segment style.");
   }
-  return style2;
+  return style3;
 }
 function onSegment2(point7, segment2) {
   return (point7[0] - segment2[0]) * (segment2[3] - segment2[1]) === (point7[1] - segment2[1]) * (segment2[2] - segment2[0]) && point7[0] >= Math.min(segment2[0], segment2[2]) && point7[0] <= Math.max(segment2[0], segment2[2]) && point7[1] >= Math.min(segment2[1], segment2[3]) && point7[1] <= Math.max(segment2[1], segment2[3]);
@@ -60830,9 +60830,9 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
   if (before.document["editVersion"] !== "3.2.149.88089769") {
     throw new Error("Layout requires the reviewed native schematic encoder.");
   }
-  const records2 = new Map(before.objects.map((record13) => [record13.id, structuredClone(record13)]));
+  const records2 = new Map(before.objects.map((record14) => [record14.id, structuredClone(record14)]));
   const locked = protectedIds(before, native);
-  const allocated = /* @__PURE__ */ new Map(), used3 = new Set(before.objects.map((record13) => record13.id));
+  const allocated = /* @__PURE__ */ new Map(), used3 = new Set(before.objects.map((record14) => record14.id));
   const created = /* @__PURE__ */ new Map();
   const createdWires = /* @__PURE__ */ new Map();
   const netFlags = [];
@@ -60866,26 +60866,26 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
         throw new Error("The exact net-flag template sheet is not in the retained evidence.");
       }
       const planned = historicalSource === void 0 ? planSchematicNetFlagClone(step, current10, evidence2.history, template, allocate) : planHistoricalSchematicNetFlagClone(step, current10, evidence2.history, template, allocate, historicalSource);
-      for (const record13 of planned.records) {
-        if (records2.has(record13.id)) {
+      for (const record14 of planned.records) {
+        if (records2.has(record14.id)) {
           throw new Error("Net-flag addition collides with an existing record.");
         }
-        records2.set(record13.id, structuredClone(record13));
+        records2.set(record14.id, structuredClone(record14));
       }
       native.components.push(planned.component);
       native.components.sort((a, b) => a.id.localeCompare(b.id));
       netFlags.push(planned.descriptor);
       inverseSteps = void 0;
     } else if (step.action === "sch.component.translate") {
-      const id14 = targetId2(step), record13 = records2.get(id14);
+      const id14 = targetId2(step), record14 = records2.get(id14);
       const component3 = native.components.find((model2) => model2.id === id14);
-      if (record13?.type !== "COMPONENT" || component3 === void 0 || !["part", "netport", "netflag"].includes(component3.kind) || component3.locked || component3.attributes.some((attribute3) => attribute3.body["locked"] === true) || component3.pins.some((pin4) => pin4.body["locked"] === true || pin4.noConnect?.body["locked"] === true || pin4.attributes.some((attribute3) => attribute3.body["locked"] === true))) {
+      if (record14?.type !== "COMPONENT" || component3 === void 0 || !["part", "netport", "netflag"].includes(component3.kind) || component3.locked || component3.attributes.some((attribute3) => attribute3.body["locked"] === true) || component3.pins.some((pin4) => pin4.body["locked"] === true || pin4.noConnect?.body["locked"] === true || pin4.attributes.some((attribute3) => attribute3.body["locked"] === true))) {
         throw new Error("Layout translation requires one unlocked part/netport/netflag and unlocked descendants, never a frame.");
       }
-      inverseSteps?.push({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id14 }, x: number14(record13.body["x"]), y: -number14(record13.body["y"]) });
-      const dx = step.x - number14(record13.body["x"]), dy = -step.y - number14(record13.body["y"]);
+      inverseSteps?.push({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id14 }, x: number14(record14.body["x"]), y: -number14(record14.body["y"]) });
+      const dx = step.x - number14(record14.body["x"]), dy = -step.y - number14(record14.body["y"]);
       component3.body = nativeBody(translated3(component3.body, dx, dy));
-      records2.set(id14, { ...record13, body: structuredClone(component3.body) });
+      records2.set(id14, { ...record14, body: structuredClone(component3.body) });
       const children2 = [...component3.attributes, ...component3.pins.flatMap((pin4) => pin4.attributes)];
       for (const attribute3 of children2) {
         attribute3.body = translateOwnedBody(records2, attribute3.id, attribute3.body, dx, dy);
@@ -60897,28 +60897,28 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
         }
       }
     } else if (step.action === "sch.attribute.display" || step.action === "sch.net-label.display" || step.action === "sch.text.display") {
-      const id14 = targetId2(step), record13 = records2.get(id14);
+      const id14 = targetId2(step), record14 = records2.get(id14);
       const requiredType = step.action === "sch.text.display" ? "TEXT" : "ATTR";
-      if (record13?.type !== requiredType || record13.body["key"] === "NO_CONNECT") {
+      if (record14?.type !== requiredType || record14.body["key"] === "NO_CONNECT") {
         throw new Error("Layout display needs a stored drawing attribute/text, not a no-connect marker.");
       }
-      if (step.action === "sch.net-label.display" && (record13.body["key"] !== "_NETLABEL_" || record13.body["parentId"] !== "$$root")) {
+      if (step.action === "sch.net-label.display" && (record14.body["key"] !== "_NETLABEL_" || record14.body["parentId"] !== "$$root")) {
         throw new Error("Layout net-label target is not a standalone label.");
       }
-      const reverse = inverseDisplay(step, id14, record13.body);
+      const reverse = inverseDisplay(step, id14, record14.body);
       if (reverse === void 0) {
         inverseSteps = void 0;
       } else {
         inverseSteps?.push(reverse);
       }
-      const body4 = display(record13.body, step.patch);
-      records2.set(id14, { ...record13, body: body4 });
+      const body4 = display(record14.body, step.patch);
+      records2.set(id14, { ...record14, body: body4 });
       const attributes2 = native.components.flatMap((component3) => [...component3.attributes, ...component3.pins.flatMap((pin4) => pin4.attributes)]);
       for (const attribute3 of attributes2.filter((entry) => entry.id === id14)) {
         attribute3.body = nativeBody(body4);
       }
     } else if (step.action === "sch.net-label.create") {
-      if (!native.components.some((component3) => component3.pins.some((pin4) => pin4.net === step.properties.net)) && !before.objects.some((record13) => record13.type === "ATTR" && ["_NETLABEL_", "NET", "Global Net Name"].includes(String(record13.body["key"])) && record13.body["value"] === step.properties.net)) {
+      if (!native.components.some((component3) => component3.pins.some((pin4) => pin4.net === step.properties.net)) && !before.objects.some((record14) => record14.type === "ATTR" && ["_NETLABEL_", "NET", "Global Net Name"].includes(String(record14.body["key"])) && record14.body["value"] === step.properties.net)) {
         throw new Error("Layout labels may name only an existing exact net.");
       }
       const id14 = allocate(step.id);
@@ -60946,8 +60946,8 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
         locked: false
       } });
     } else if (step.action === "sch.net-label.delete" || step.action === "sch.text.delete") {
-      const id14 = targetId2(step), record13 = records2.get(id14);
-      const matched = step.action === "sch.text.delete" ? record13?.type === "TEXT" : record13?.type === "ATTR" && record13.body["key"] === "_NETLABEL_" && record13.body["parentId"] === "$$root";
+      const id14 = targetId2(step), record14 = records2.get(id14);
+      const matched = step.action === "sch.text.delete" ? record14?.type === "TEXT" : record14?.type === "ATTR" && record14.body["key"] === "_NETLABEL_" && record14.body["parentId"] === "$$root";
       if (!matched) {
         throw new Error("Layout can delete only an exact standalone net label or selected text.");
       }
@@ -60958,19 +60958,19 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
       const id14 = creating ? allocate(step.id) : targetId2(step);
       const children2 = creating ? [] : owned(records2, id14);
       const group = records2.get(id14);
-      if (!creating && (group?.type !== "WIRE" || children2.some((record13) => !["WIRE", "LINE", "ATTR"].includes(record13.type) || locked.has(record13.id)))) {
+      if (!creating && (group?.type !== "WIRE" || children2.some((record14) => !["WIRE", "LINE", "ATTR"].includes(record14.type) || locked.has(record14.id)))) {
         throw new Error("Layout wire group is missing, locked or has unknown children.");
       }
       if (step.action === "sch.wire.delete") {
-        for (const record13 of children2) {
-          records2.delete(record13.id);
+        for (const record14 of children2) {
+          records2.delete(record14.id);
         }
         createdWires.delete(id14);
         inverseSteps = void 0;
       } else {
-        const oldLines = children2.filter((record13) => record13.type === "LINE").toSorted((a, b) => a.id.localeCompare(b.id));
+        const oldLines = children2.filter((record14) => record14.type === "LINE").toSorted((a, b) => a.id.localeCompare(b.id));
         const paths = segments2(creating ? step.properties.line : step.line);
-        let style2;
+        let style3;
         if (creating) {
           inverseSteps?.push({ id: `inverse:${step.id}`, action: "sch.wire.delete", target: { primitiveId: id14 } });
           created.set(step.id, id14);
@@ -60996,7 +60996,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
             zIndex: 0
           } });
           createdWires.set(id14, relevanceId);
-          style2 = {
+          style3 = {
             fillColor: null,
             fillStyle: null,
             strokeColor: step.properties.color,
@@ -61004,22 +61004,22 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence2, hist
             strokeStyle: step.properties.lineType === null ? null : STROKE2[step.properties.lineType]
           };
         } else {
-          style2 = replacementStyle(oldLines);
-          const reverse = { id: `inverse:${step.id}`, action: "sch.wire.replace", target: { primitiveId: id14 }, line: oldLines.map((record13) => [number14(record13.body["startX"]), -number14(record13.body["startY"]), number14(record13.body["endX"]), -number14(record13.body["endY"])]) };
+          style3 = replacementStyle(oldLines);
+          const reverse = { id: `inverse:${step.id}`, action: "sch.wire.replace", target: { primitiveId: id14 }, line: oldLines.map((record14) => [number14(record14.body["startX"]), -number14(record14.body["startY"]), number14(record14.body["endX"]), -number14(record14.body["endY"])]) };
           inverseSteps = oldLines.length === paths.length && inverseSteps !== void 0 ? [...inverseSteps, reverse] : void 0;
         }
-        for (const record13 of oldLines) {
-          records2.delete(record13.id);
+        for (const record14 of oldLines) {
+          records2.delete(record14.id);
         }
         for (const [index, segment2] of paths.entries()) {
           const lineId = oldLines[index]?.id ?? allocate(`${step.id}:segment:${index}`);
-          records2.set(lineId, { id: lineId, type: "LINE", body: { ...style2, startX: segment2[0], startY: segment2[1], endX: segment2[2], endY: segment2[3], lineGroup: id14 } });
+          records2.set(lineId, { id: lineId, type: "LINE", body: { ...style3, startX: segment2[0], startY: segment2[1], endX: segment2[2], endY: segment2[3], lineGroup: id14 } });
         }
       }
     }
     const next = snapshot5(before, records2);
     for (const id14 of locked) {
-      if (!same17({ record: before.objects.find((record13) => record13.id === id14) }, { record: records2.get(id14) })) {
+      if (!same17({ record: before.objects.find((record14) => record14.id === id14) }, { record: records2.get(id14) })) {
         throw new Error("Layout changed an initially locked record or its child.");
       }
     }
@@ -61241,7 +61241,7 @@ function retainedWireInitialOrders(expected3, input) {
   if (before === void 0 || after === void 0) {
     throw new Error("Retained wire materialization target is absent.");
   }
-  const records2 = new Map(before.records.map((record13) => [record13.id, record13]));
+  const records2 = new Map(before.records.map((record14) => [record14.id, record14]));
   const materializations = [];
   for (const order2 of expected3.retainedWireOrders.filter((entry) => "profile" in entry && ["full-import-unchanged-retained-wire", "full-import-unchanged-retained-multiple-net-wire"].includes(entry.profile))) {
     for (const { id: id14, key, beforeOrder: initialOrder, order: modelOrder } of retainedWireAttributeOrders(order2)) {
@@ -63281,7 +63281,7 @@ function assertProjectLibraryWriteTarget(input, history) {
     }
   }
   const name6 = operation.action === "library.footprint.create" ? operation.name : operation.patch.name;
-  if (name6 !== void 0 && history.documents.some((document3) => document3.docType === "FOOTPRINT" && !isNativeDocumentDeleted(document3) && document3.records.some((record13) => record13.type === "META" && record13.body["title"] === name6) && (operation.action === "library.footprint.create" || !("uuid" in operation.target) || document3.uuid !== operation.target.uuid))) {
+  if (name6 !== void 0 && history.documents.some((document3) => document3.docType === "FOOTPRINT" && !isNativeDocumentDeleted(document3) && document3.records.some((record14) => record14.type === "META" && record14.body["title"] === name6) && (operation.action === "library.footprint.create" || !("uuid" in operation.target) || document3.uuid !== operation.target.uuid))) {
     throw new Error("A project footprint with that exact name already exists.");
   }
 }
@@ -63309,12 +63309,12 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
   if (!same18(before.documents.filter((document3) => document3.uuid !== id14).map((document3) => documentValue(document3)), after.documents.filter((document3) => document3.uuid !== id14).map((document3) => documentValue(document3)))) {
     throw new Error("Library operation altered unrelated project records.");
   }
-  const meta5 = changed.records.find((record13) => record13.id === "META" && record13.type === "META");
+  const meta5 = changed.records.find((record14) => record14.id === "META" && record14.type === "META");
   if (meta5 === void 0) {
     throw new Error("Persisted library metadata missing.");
   }
   if (operation.action === "library.footprint.create") {
-    if (old !== void 0 || changed.records.some((record13) => !["META", "CANVAS"].includes(record13.type)) || meta5.body["title"] !== operation.name || operation.description !== void 0 && meta5.body["description"] !== operation.description) {
+    if (old !== void 0 || changed.records.some((record14) => !["META", "CANVAS"].includes(record14.type)) || meta5.body["title"] !== operation.name || operation.description !== void 0 && meta5.body["description"] !== operation.description) {
       throw new Error("New footprint is not the requested empty native asset.");
     }
   } else {
@@ -63918,7 +63918,7 @@ function verifyProjectSymbolMetadataEffect(input, before, after) {
     throw new Error("Symbol metadata edit changed unrelated project records.");
   }
   verifyHeader(old.metadata, changed.metadata);
-  const expected3 = { ...old, metadata: changed.metadata, records: old.records.map((record13) => record13.id === "META" && record13.type === "META" ? Object.assign(structuredClone(record13), { body: { ...record13.body, title: plan2.desiredTitle, description: plan2.desiredDescription } }) : record13) };
+  const expected3 = { ...old, metadata: changed.metadata, records: old.records.map((record14) => record14.id === "META" && record14.type === "META" ? Object.assign(structuredClone(record14), { body: { ...record14.body, title: plan2.desiredTitle, description: plan2.desiredDescription } }) : record14) };
   if (canonicalJson(recordProjection(expected3)) !== canonicalJson(recordProjection(changed))) {
     throw new Error("Symbol metadata edit changed geometry, bindings or unrequested metadata.");
   }
@@ -72841,10 +72841,10 @@ function supported(inventory2, branchUuid2) {
 }
 function ticketFromRaw(plaintext) {
   let maximum5 = 0;
-  for (const record13 of plaintext.split("|\n")) {
-    const end = record13.indexOf("||");
+  for (const record14 of plaintext.split("|\n")) {
+    const end = record14.indexOf("||");
     need17(end > 0, "Raw history record framing refused.");
-    const header = JSON.parse(record13.slice(0, end));
+    const header = JSON.parse(record14.slice(0, end));
     need17(isRecord(header), "Raw history header refused.");
     if (header["ticket"] !== void 0) {
       need17(typeof header["ticket"] === "number" && Number.isSafeInteger(header["ticket"]) && header["ticket"] >= 0, "Raw history ticket refused.");
@@ -73468,9 +73468,9 @@ function observeCanvasSegmentsAtom(scope6, atom, chunkIndex) {
   if (scope6 === void 0) {
     return;
   }
-  const { types: types19 } = scope6.headers;
-  need18(!types19.has(atom.id) || types19.get(atom.id) === atom.type, "canvas-segments atom type changed");
-  types19.set(atom.id, atom.type);
+  const { types: types20 } = scope6.headers;
+  need18(!types20.has(atom.id) || types20.get(atom.id) === atom.type, "canvas-segments atom type changed");
+  types20.set(atom.id, atom.type);
   if (!IGNORED.has(atom.type)) {
     need18(atom.raw === "" || atom.raw.startsWith("{") && atom.raw.endsWith("}"), "canvas body would be discarded by the native serializer");
     let stream = scope6.streams.get(chunkIndex);
@@ -74032,8 +74032,8 @@ function verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(raw, docum
     isCachePrefix || documentCache.rawPrefixOrderIndependent && prefix4 === rawContent.split("|\n", 3).join("|\n"),
     "native saved header differs or constrains canvas arrival order"
   );
-  const ids2 = records2.slice(3).map((record13) => {
-    const id14 = cached2.canvasOrder?.idsByLine.get(record13);
+  const ids2 = records2.slice(3).map((record14) => {
+    const id14 = cached2.canvasOrder?.idsByLine.get(record14);
     need18(id14 !== void 0, "native saved canvas line differs from complete raw history");
     return id14;
   });
@@ -75096,7 +75096,7 @@ function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   const documentUuid5 = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
   const library2 = [2, 4].includes(expectedContext.document.documentType);
   const asset = checkpoint.documents.find((document3) => document3.uuid === documentUuid5 && !isNativeDocumentDeleted(document3));
-  const meta5 = asset?.records.find((record13) => record13.id === "META" && record13.type === "META");
+  const meta5 = asset?.records.find((record14) => record14.id === "META" && record14.type === "META");
   const target9 = targetSchema3.parse({
     projectUuid: expectedContext.project.uuid ?? expectedContext.project.projectUuid,
     projectPath: normalizeEasyedaProjectPath(expectedContext.project.path),
@@ -76698,9 +76698,9 @@ function need26(value2, message) {
   }
 }
 function assertOriginalMainReference(value2, engine2, operationId11) {
-  const record13 = value2 !== null && typeof value2 === "object" ? originals2.get(value2) : void 0;
-  need26(record13 !== void 0 && record13.engine === engine2 && record13.operationId === operationId11 && record13.text === canonicalJson(value2), "Main reference was not issued for this original operation.");
-  return record13.result;
+  const record14 = value2 !== null && typeof value2 === "object" ? originals2.get(value2) : void 0;
+  need26(record14 !== void 0 && record14.engine === engine2 && record14.operationId === operationId11 && record14.text === canonicalJson(value2), "Main reference was not issued for this original operation.");
+  return record14.result;
 }
 async function revalidateOriginalMainReference(value2, engine2, operationId11) {
   const original2 = assertOriginalMainReference(value2, engine2, operationId11);
@@ -83094,8 +83094,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   }
   const changed = ["Symbol", "Footprint", "3D Model", "3D Model Title"].filter((key) => !Object.is(originalAttributes[key], attributes2[key]));
   for (const document3 of history.documents.filter((entry) => entry.docType === "SCH_PAGE" && !isNativeDocumentDeleted(entry))) {
-    for (const record13 of document3.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Device" && entry.body["value"] === deviceUuid)) {
-      const parent = record13.body["parentId"];
+    for (const record14 of document3.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Device" && entry.body["value"] === deviceUuid)) {
+      const parent = record14.body["parentId"];
       if (typeof parent !== "string" || changed.some((key) => !document3.records.some((entry) => entry.type === "ATTR" && entry.body["parentId"] === parent && entry.body["key"] === key && typeof entry.body["value"] === "string" && entry.body["value"].length > 0))) {
         throw new Error("An existing component inherits the changed association; explicit instance/ECO authority is required.");
       }
@@ -83186,7 +83186,7 @@ function prepareDeviceCreate(input, history, modelInput) {
   if (operation.libraryUuid !== history.projectUuid || history.projectOwnerUuid === void 0) {
     throw new Error("Device creation requires the exact current project collection and owner.");
   }
-  if (history.documents.some((entry) => entry.docType === "DEVICE" && !isNativeDocumentDeleted(entry) && entry.records.some((record13) => record13.type === "META" && typeof record13.body["title"] === "string" && record13.body["title"].trim().toLowerCase() === operation.name.trim().toLowerCase()))) {
+  if (history.documents.some((entry) => entry.docType === "DEVICE" && !isNativeDocumentDeleted(entry) && entry.records.some((record14) => record14.type === "META" && typeof record14.body["title"] === "string" && record14.body["title"].trim().toLowerCase() === operation.name.trim().toLowerCase()))) {
     throw new Error("A project device with the requested name already exists.");
   }
   const associations = [];
@@ -83309,7 +83309,7 @@ function documentPageRenameOperation(input) {
   return operation;
 }
 function metadata2(document3) {
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (entries6.length !== 1 || entries6[0]?.id !== "META" || entries6[0].type !== "META") {
     throw new Error("Page rename requires exactly one META record.");
   }
@@ -83513,7 +83513,7 @@ function verifyDocumentPageRenameEffect(input, before, after) {
   if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current10.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current10.metadata["version"] !== String(time18) || typeof current10.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current10.metadata["client"])) {
     throw new Error("Page rename changed unreviewed header fields.");
   }
-  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record13) => record13.id === "META" ? Object.assign(structuredClone(record13), { body: { ...record13.body, title: plan2.desiredTitle } }) : record13) };
+  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record14) => record14.id === "META" ? Object.assign(structuredClone(record14), { body: { ...record14.body, title: plan2.desiredTitle } }) : record14) };
   if (canonicalJson(projection(expected3)) !== canonicalJson(projection(current10))) {
     throw new Error("Page rename changed geometry, parent or unrequested metadata.");
   }
@@ -83578,7 +83578,7 @@ function documentPageCreateOperation(input) {
   return operation;
 }
 function metadata3(document3) {
-  const matches = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const matches = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (matches.length !== 1 || matches[0]?.id !== "META" || matches[0].type !== "META") {
     throw new Error("Page creation requires exactly one META record.");
   }
@@ -83848,7 +83848,7 @@ function projectSymbolCreateOperation(input) {
   return operation;
 }
 function metadata4(document3) {
-  const matches = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const matches = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (matches.length !== 1 || matches[0]?.id !== "META" || matches[0].type !== "META") {
     throw new Error("Symbol creation requires exactly one META record.");
   }
@@ -84098,7 +84098,7 @@ function documentContainerRenameOperation(input) {
   return operation;
 }
 function metadata5(document3) {
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (entries6.length !== 1 || entries6[0]?.id !== "META" || entries6[0].type !== "META") {
     throw new Error("Document rename requires exactly one META record.");
   }
@@ -84122,13 +84122,13 @@ function validateHistory4(history) {
       docType: document3.docType,
       metadata: document3.metadata,
       records: document3.records.map(({ id: id14, type: type2, body: body4 }) => ({ id: id14, type: type2, body: body4 }))
-    }) || new Set(document3.records.map((record13) => record13.id)).size !== document3.records.length) {
+    }) || new Set(document3.records.map((record14) => record14.id)).size !== document3.records.length) {
       throw new Error("Document rename checkpoint document integrity failed.");
     }
     known.add(document3.uuid);
     validateNativeDocumentRecordHistory(document3, history.checkpointSha256);
     validateHeaderHistory(document3, history);
-    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record13) => !Number.isSafeInteger(record13.ticket) || record13.ticket < 0 || record13.client !== null && typeof record13.client !== "string" || Object.hasOwn(record13, "firstTicket") !== Object.hasOwn(record13, "firstClient") || Object.hasOwn(record13, "firstTicket") && (document3.docType !== "SCH_PAGE" || record13.type !== "ATTR" || !Number.isSafeInteger(record13.firstTicket) || (record13.firstTicket ?? -1) < 0 || (record13.firstTicket ?? Infinity) > record13.ticket || record13.firstClient !== null && typeof record13.firstClient !== "string") || Object.keys(record13).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
+    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record14) => !Number.isSafeInteger(record14.ticket) || record14.ticket < 0 || record14.client !== null && typeof record14.client !== "string" || Object.hasOwn(record14, "firstTicket") !== Object.hasOwn(record14, "firstClient") || Object.hasOwn(record14, "firstTicket") && (document3.docType !== "SCH_PAGE" || record14.type !== "ATTR" || !Number.isSafeInteger(record14.firstTicket) || (record14.firstTicket ?? -1) < 0 || (record14.firstTicket ?? Infinity) > record14.ticket || record14.firstClient !== null && typeof record14.firstClient !== "string") || Object.keys(record14).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
       throw new Error("Document rename record envelope is unsupported.");
     }
     if (Object.hasOwn(document3, "atomHeaderHistory")) {
@@ -84265,12 +84265,12 @@ function verifyDocumentContainerRenameEffect(input, before, after) {
   if (changedKeys.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(current10.metadata, "user") || typeof time18 !== "number" || !Number.isSafeInteger(time18) || time18 < 0 || typeof old.metadata["updateTime"] === "number" && time18 < old.metadata["updateTime"] || current10.metadata["version"] !== String(time18) || typeof current10.metadata["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(current10.metadata["client"])) {
     throw new Error("Document rename changed unreviewed header fields.");
   }
-  const newMeta = current10.records.find((record13) => record13.id === "META"), oldMeta = old.records.find((record13) => record13.id === "META");
+  const newMeta = current10.records.find((record14) => record14.id === "META"), oldMeta = old.records.find((record14) => record14.id === "META");
   let maximumTicket = 0;
   for (const document3 of before.documents) {
     maximumTicket = Math.max(maximumTicket, nativeDocumentRecordHistoryProjection(document3).maximumTicket);
-    for (const record13 of document3.records) {
-      maximumTicket = Math.max(maximumTicket, record13.ticket);
+    for (const record14 of document3.records) {
+      maximumTicket = Math.max(maximumTicket, record14.ticket);
     }
     for (const header of document3.headerHistory?.headers ?? []) {
       maximumTicket = Math.max(maximumTicket, header.ticket);
@@ -84283,7 +84283,7 @@ function verifyDocumentContainerRenameEffect(input, before, after) {
   if (canonicalJson(nativeDocumentRecordHistoryProjection(current10)) !== canonicalJson(appendClosedContainerMetadataRecords(nativeDocumentRecordHistoryProjection(old), current10))) {
     throw new Error("Document rename raw record history is not exactly the pinned DOCHEAD and META suffix.");
   }
-  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record13) => record13.id === "META" ? expectedMeta : record13), documentRecordHistory: validateNativeDocumentRecordHistory(current10, after.checkpointSha256) };
+  const expected3 = { ...old, metadata: current10.metadata, records: old.records.map((record14) => record14.id === "META" ? expectedMeta : record14), documentRecordHistory: validateNativeDocumentRecordHistory(current10, after.checkpointSha256) };
   if (canonicalJson(projection4(expected3)) !== canonicalJson(projection4(current10))) {
     throw new Error("Document rename changed geometry or unrequested metadata.");
   }
@@ -84356,7 +84356,7 @@ function projectPcbCreateOperation(input) {
   return operation;
 }
 function metadata6(document3) {
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (entries6.length !== 1 || entries6[0]?.id !== "META" || entries6[0].type !== "META") {
     throw new Error("PCB creation requires exactly one META record per ordinary document.");
   }
@@ -84393,7 +84393,7 @@ function validateHistory5(history) {
       docType: document3.docType,
       metadata: document3.metadata,
       records: document3.records.map(({ id: id14, type: type2, body: body4 }) => ({ id: id14, type: type2, body: body4 }))
-    }) || new Set(document3.records.map((record13) => record13.id)).size !== document3.records.length) {
+    }) || new Set(document3.records.map((record14) => record14.id)).size !== document3.records.length) {
       throw new Error("PCB creation checkpoint document integrity failed.");
     }
     known.add(document3.uuid);
@@ -84404,7 +84404,7 @@ function validateHistory5(history) {
         throw new Error("PCB creation schematic header provenance is invalid.");
       }
     }
-    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record13) => !Number.isSafeInteger(record13.ticket) || record13.ticket < 0 || record13.client !== null && typeof record13.client !== "string" || Object.hasOwn(record13, "firstTicket") !== Object.hasOwn(record13, "firstClient") || Object.hasOwn(record13, "firstTicket") && (document3.docType !== "SCH_PAGE" || record13.type !== "ATTR" || !Number.isSafeInteger(record13.firstTicket) || (record13.firstTicket ?? -1) < 0 || (record13.firstTicket ?? Infinity) > record13.ticket || record13.firstClient !== null && typeof record13.firstClient !== "string") || Object.keys(record13).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
+    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record14) => !Number.isSafeInteger(record14.ticket) || record14.ticket < 0 || record14.client !== null && typeof record14.client !== "string" || Object.hasOwn(record14, "firstTicket") !== Object.hasOwn(record14, "firstClient") || Object.hasOwn(record14, "firstTicket") && (document3.docType !== "SCH_PAGE" || record14.type !== "ATTR" || !Number.isSafeInteger(record14.firstTicket) || (record14.firstTicket ?? -1) < 0 || (record14.firstTicket ?? Infinity) > record14.ticket || record14.firstClient !== null && typeof record14.firstClient !== "string") || Object.keys(record14).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
       throw new Error("PCB creation record envelope is unsupported.");
     }
     if (Object.hasOwn(document3, "atomHeaderHistory")) {
@@ -84520,8 +84520,8 @@ function verifyProjectPcbCreateEffect(input, before, after, returnedId) {
   let maximumTicket = 0;
   for (const document3 of before.documents) {
     maximumTicket = Math.max(maximumTicket, nativeDocumentRecordHistoryProjection(document3).maximumTicket);
-    for (const record13 of document3.records) {
-      maximumTicket = Math.max(maximumTicket, record13.ticket);
+    for (const record14 of document3.records) {
+      maximumTicket = Math.max(maximumTicket, record14.ticket);
     }
     for (const item2 of document3.headerHistory?.headers ?? []) {
       maximumTicket = Math.max(maximumTicket, item2.ticket);
@@ -84607,7 +84607,7 @@ function projectSchematicCreateOperation(input) {
   return operation;
 }
 function metadata7(document3) {
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (entries6.length !== 1 || entries6[0]?.id !== "META" || entries6[0].type !== "META") {
     throw new Error("schematic creation requires exactly one META record per ordinary document.");
   }
@@ -84635,14 +84635,14 @@ function exactDocument5(history, uuid12, type2) {
 }
 function assertOrdinaryPageReferences(documents, document3) {
   const referenceIndex = /* @__PURE__ */ new Map();
-  for (const record13 of document3.records) {
-    if (record13.type === "ATTR" && record13.body["key"] === "Symbol") {
-      const parent = identifier13.parse(record13.body["parentId"]), references = referenceIndex.get(parent) ?? [];
-      references.push(record13);
+  for (const record14 of document3.records) {
+    if (record14.type === "ATTR" && record14.body["key"] === "Symbol") {
+      const parent = identifier13.parse(record14.body["parentId"]), references = referenceIndex.get(parent) ?? [];
+      references.push(record14);
       referenceIndex.set(parent, references);
     }
   }
-  for (const component3 of document3.records.filter((record13) => record13.type === "COMPONENT")) {
+  for (const component3 of document3.records.filter((record14) => record14.type === "COMPONENT")) {
     const references = referenceIndex.get(component3.id) ?? [];
     const symbolId = identifier13.parse(references[0]?.body["value"]);
     if (references.length !== 1) {
@@ -84658,7 +84658,7 @@ function assertOrdinaryPageReferences(documents, document3) {
       throw new Error("Schematic creation excludes block-symbol and contradictory or unsupported inline component attributes.");
     }
   }
-  if (document3.records.some((record13) => ["BLOCK_SYMBOL", "INSTANCE"].includes(record13.type))) {
+  if (document3.records.some((record14) => ["BLOCK_SYMBOL", "INSTANCE"].includes(record14.type))) {
     throw new Error("Schematic creation excludes hierarchy records.");
   }
 }
@@ -84674,7 +84674,7 @@ function validateHistory6(history) {
       docType: document3.docType,
       metadata: document3.metadata,
       records: document3.records.map(({ id: id14, type: type2, body: body4 }) => ({ id: id14, type: type2, body: body4 }))
-    }) || new Set(document3.records.map((record13) => record13.id)).size !== document3.records.length) {
+    }) || new Set(document3.records.map((record14) => record14.id)).size !== document3.records.length) {
       throw new Error("schematic creation checkpoint document integrity failed.");
     }
     known.add(document3.uuid);
@@ -84685,7 +84685,7 @@ function validateHistory6(history) {
         throw new Error("schematic creation schematic header provenance is invalid.");
       }
     }
-    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record13) => !Number.isSafeInteger(record13.ticket) || record13.ticket < 0 || record13.client !== null && typeof record13.client !== "string" || Object.hasOwn(record13, "firstTicket") !== Object.hasOwn(record13, "firstClient") || Object.hasOwn(record13, "firstTicket") && (document3.docType !== "SCH_PAGE" || record13.type !== "ATTR" || !Number.isSafeInteger(record13.firstTicket) || (record13.firstTicket ?? -1) < 0 || (record13.firstTicket ?? Infinity) > record13.ticket || record13.firstClient !== null && typeof record13.firstClient !== "string") || Object.keys(record13).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
+    if (Object.keys(document3).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) || document3.records.some((record14) => !Number.isSafeInteger(record14.ticket) || record14.ticket < 0 || record14.client !== null && typeof record14.client !== "string" || Object.hasOwn(record14, "firstTicket") !== Object.hasOwn(record14, "firstClient") || Object.hasOwn(record14, "firstTicket") && (document3.docType !== "SCH_PAGE" || record14.type !== "ATTR" || !Number.isSafeInteger(record14.firstTicket) || (record14.firstTicket ?? -1) < 0 || (record14.firstTicket ?? Infinity) > record14.ticket || record14.firstClient !== null && typeof record14.firstClient !== "string") || Object.keys(record14).some((key) => !["id", "type", "ticket", "client", "firstTicket", "firstClient", "body"].includes(key)))) {
       throw new Error("schematic creation record envelope is unsupported.");
     }
     if (Object.hasOwn(document3, "atomHeaderHistory")) {
@@ -84802,8 +84802,8 @@ function verifyProjectSchematicCreateEffect(input, before, after, returnedId) {
   let maximumTicket = 0;
   for (const document3 of before.documents) {
     maximumTicket = Math.max(maximumTicket, nativeDocumentRecordHistoryProjection(document3).maximumTicket);
-    for (const record13 of document3.records) {
-      maximumTicket = Math.max(maximumTicket, record13.ticket);
+    for (const record14 of document3.records) {
+      maximumTicket = Math.max(maximumTicket, record14.ticket);
     }
     for (const item2 of document3.headerHistory?.headers ?? []) {
       maximumTicket = Math.max(maximumTicket, item2.ticket);
@@ -85269,12 +85269,12 @@ var init_stack_persistence = __esm({
 });
 
 // server/src/rule-persistence.ts
-function defaultNetSelector(record13) {
-  if (record13.type !== "RULE_SELECTOR") {
+function defaultNetSelector(record14) {
+  if (record14.type !== "RULE_SELECTOR") {
     return void 0;
   }
-  const key = JSON.parse(record13.id);
-  if (!Array.isArray(key) || key[0] !== record13.type || key.length !== 2) {
+  const key = JSON.parse(record14.id);
+  if (!Array.isArray(key) || key[0] !== record14.type || key.length !== 2) {
     return void 0;
   }
   const selector4 = key[1];
@@ -85282,7 +85282,7 @@ function defaultNetSelector(record13) {
     return void 0;
   }
   const ordinaryDefault = { ruleOrder: 4, ruleKeyValue: {}, copperValue: {}, innerPlaneValue: {} };
-  if (canonicalJson(record13.body) !== canonicalJson(ordinaryDefault)) {
+  if (canonicalJson(record14.body) !== canonicalJson(ordinaryDefault)) {
     return void 0;
   }
   return selector4[1];
@@ -85299,20 +85299,20 @@ function verifyRulePersistence(input, operation, createdIds) {
     throw new Error("Rule persistence requires an actual public-rule action.");
   }
   const full = compiled2.some((entry) => entry.action.startsWith("pcb.rules.") || entry.effect.family === "differential-pair");
-  const beforeSource = new Map(input.expectedBefore.objects.map((record13) => [record13.id, record13]));
-  const afterSource = new Map(input.expectedAfter.objects.map((record13) => [record13.id, record13]));
+  const beforeSource = new Map(input.expectedBefore.objects.map((record14) => [record14.id, record14]));
+  const afterSource = new Map(input.expectedAfter.objects.map((record14) => [record14.id, record14]));
   const targetUuid = input.expectedBefore.document["uuid"];
   const before = input.before.documents.find((document3) => document3.uuid === targetUuid);
   const after = input.after.documents.find((document3) => document3.uuid === targetUuid);
   if (before === void 0 || after === void 0) {
     throw new Error("Missing complete rule checkpoint target.");
   }
-  const durableIds = new Set(before.records.map((record13) => record13.id));
-  const durable = new Map(before.records.map((record13) => [record13.id, record13]));
+  const durableIds = new Set(before.records.map((record14) => record14.id));
+  const durable = new Map(before.records.map((record14) => [record14.id, record14]));
   const materialized = [];
   const additions = after.records.filter((entry) => !durableIds.has(entry.id) && beforeSource.has(entry.id) && afterSource.has(entry.id) && canonicalJson(beforeSource.get(entry.id)) === canonicalJson(afterSource.get(entry.id)));
-  for (const record13 of additions) {
-    const next = afterSource.get(record13.id);
+  for (const record14 of additions) {
+    const next = afterSource.get(record14.id);
     if (next === void 0) {
       throw new Error("Source-bound rule addition disappeared.");
     }
@@ -85321,14 +85321,14 @@ function verifyRulePersistence(input, operation, createdIds) {
     const newNet = afterSource.get(netId), oldNet = beforeSource.get(netId), persistedNet = durable.get(netId);
     const eligible3 = name6 !== void 0 && persistedNet?.type === "NET" && oldNet?.type === "NET" && newNet?.type === "NET" && canonicalJson(persistedNet.body) === canonicalJson(oldNet.body) && (full || canonicalJson(oldNet) !== canonicalJson(newNet));
     if (eligible3) {
-      if (record13.type !== next.type || canonicalJson(record13.body) !== canonicalJson(next.body)) {
+      if (record14.type !== next.type || canonicalJson(record14.body) !== canonicalJson(next.body)) {
         throw new Error("Materialized rule record differs from its complete unchanged source.");
       }
-      materialized.push(record13.id);
+      materialized.push(record14.id);
     }
   }
   const absent4 = new Set(materialized);
-  const projected4 = { schema: input.expectedBefore.schema, document: input.expectedBefore.document, objects: input.expectedBefore.objects.filter((record13) => !absent4.has(record13.id)) };
+  const projected4 = { schema: input.expectedBefore.schema, document: input.expectedBefore.document, objects: input.expectedBefore.objects.filter((record14) => !absent4.has(record14.id)) };
   const persistence = verifyDesignPersistence({ ...input, expectedBefore: { ...projected4, sha256: sha256Json(projected4) } });
   return { ...persistence, ruleNativeStorage: { schema: "easyeda-pro-control.rule-materialization.v1", beforeSourceSha256: input.expectedBefore.sha256, afterSourceSha256: input.expectedAfter.sha256, materializedIds: materialized.toSorted(), ruleActions: compiled2.map((entry) => entry.action), policy: "exact-empty-default-selector-for-an-already-persisted-nonempty-net-and-reviewed-public-upload-path" } };
 }
@@ -85566,7 +85566,7 @@ function verifyCopperLifecycleEquivalence(reference3, observed2) {
       if (oldRecord.type !== "POURED") {
         return invalid("non-derived record changed.");
       }
-      const parents = [...oldRecords.values()].filter((record13) => record13.type === "POUR" && id14 === JSON.stringify(["POURED", record13.id]));
+      const parents = [...oldRecords.values()].filter((record14) => record14.type === "POUR" && id14 === JSON.stringify(["POURED", record14.id]));
       if (parents.length !== 1) {
         return invalid("derived parent identity is not exact.");
       }
@@ -85621,14 +85621,14 @@ function verifyCopperClearPersistence(input, operation) {
     throw new Error("Copper clear persistence requires its exact authorized export delta.");
   }
   const id14 = JSON.stringify(["POURED", parent.id]);
-  const storedBefore = input.before.documents.find((document3) => document3.uuid === input.expectedBefore.document["uuid"])?.records.find((record13) => record13.id === id14);
+  const storedBefore = input.before.documents.find((document3) => document3.uuid === input.expectedBefore.document["uuid"])?.records.find((record14) => record14.id === id14);
   if (storedBefore?.type !== "POURED" || Object.keys(storedBefore.body).length !== 1 || !Array.isArray(storedBefore.body["pourFill"]) || storedBefore.body["pourFill"].length === 0) {
     throw new Error("Copper clear requires the exact nonempty durable target record.");
   }
   const priorBase = {
     schema: input.expectedBefore.schema,
     document: input.expectedBefore.document,
-    objects: input.expectedBefore.objects.map((record13) => record13.id === id14 ? { id: id14, type: "POURED", body: storedBefore.body } : record13)
+    objects: input.expectedBefore.objects.map((record14) => record14.id === id14 ? { id: id14, type: "POURED", body: storedBefore.body } : record14)
   };
   const prior = { ...priorBase, sha256: sha256Json(priorBase) };
   const beforeReload = verifyCopperLifecycleEquivalence(prior, input.expectedBefore);
@@ -85661,7 +85661,7 @@ function expectedNativeEmptyNetDefault(source5) {
     throw new Error("Invalid native empty-net source commitment.");
   }
   const id14 = '["RULE_SELECTOR",["NET",""]]';
-  const target9 = source5.objects.find((record13) => record13.id === id14);
+  const target9 = source5.objects.find((record14) => record14.id === id14);
   if (target9 === void 0) {
     throw new Error("Missing reviewed native empty-net selector baseline.");
   }
@@ -85677,7 +85677,7 @@ function expectedNativeEmptyNetDefault(source5) {
     throw new Error("Native empty-net correction would alter unreviewed overrides.");
   }
   const changed = { ...target9, body: { ...target9.body, ruleKeyValue: expectedKeys } };
-  const value2 = { schema: source5.schema, document: source5.document, objects: source5.objects.map((record13) => record13 === target9 ? changed : record13) };
+  const value2 = { schema: source5.schema, document: source5.document, objects: source5.objects.map((record14) => record14 === target9 ? changed : record14) };
   return { ...value2, sha256: sha256Json(value2) };
 }
 var init_native_empty_net_default = __esm({
@@ -85697,19 +85697,19 @@ function footprint(source5, checkpoint) {
 function exportOnlySelector(before, after, checkpoint) {
   const document3 = footprint(before, checkpoint);
   deriveDesignBaselineTargets(before, after);
-  const previous = before.objects.find((record13) => record13.id === SELECTOR);
-  const next = after.objects.find((record13) => record13.id === SELECTOR);
+  const previous = before.objects.find((record14) => record14.id === SELECTOR);
+  const next = after.objects.find((record14) => record14.id === SELECTOR);
   if (previous === void 0 && next === void 0) {
     return false;
   }
-  const expected3 = expectedNativeEmptyNetDefault(before).objects.find((record13) => record13.id === SELECTOR);
+  const expected3 = expectedNativeEmptyNetDefault(before).objects.find((record14) => record14.id === SELECTOR);
   if (canonicalJson(next) !== canonicalJson(expected3) && canonicalJson(next) !== canonicalJson(previous)) {
     throw new Error("Unreviewed footprint empty-net selector effect.");
   }
-  return document3.records.every((record13) => record13.id !== SELECTOR);
+  return document3.records.every((record14) => record14.id !== SELECTOR);
 }
 function omit2(source5, ids2) {
-  const base7 = { schema: source5.schema, document: source5.document, objects: source5.objects.filter((record13) => !ids2.has(record13.id)) };
+  const base7 = { schema: source5.schema, document: source5.document, objects: source5.objects.filter((record14) => !ids2.has(record14.id)) };
   return { ...base7, sha256: sha256Json(base7) };
 }
 function deriveFootprintBaselineTargets(before, after, checkpoint) {
@@ -85734,18 +85734,18 @@ function verifyFootprintEmptyNetPersistence(input) {
   const beforeOmit = /* @__PURE__ */ new Set();
   const afterOmit = /* @__PURE__ */ new Set();
   if (sourceOnly) {
-    if (after.records.some((record13) => record13.id === SELECTOR)) {
+    if (after.records.some((record14) => record14.id === SELECTOR)) {
       throw new Error("Export-only footprint selector unexpectedly persisted.");
     }
     beforeOmit.add(SELECTOR);
     afterOmit.add(SELECTOR);
   }
-  const oldNet = before.records.find((record13) => record13.id === NET);
-  const newNet = after.records.find((record13) => record13.id === NET);
+  const oldNet = before.records.find((record14) => record14.id === NET);
+  const newNet = after.records.find((record14) => record14.id === NET);
   let materialized = false;
   if (oldNet === void 0 && newNet !== void 0) {
-    const oldSource = input.expectedBefore.objects.find((record13) => record13.id === NET);
-    const newSource = input.expectedAfter.objects.find((record13) => record13.id === NET);
+    const oldSource = input.expectedBefore.objects.find((record14) => record14.id === NET);
+    const newSource = input.expectedAfter.objects.find((record14) => record14.id === NET);
     const expected3 = { id: NET, type: "NET", body: DEFAULT_NET };
     if (canonicalJson(oldSource) !== canonicalJson(expected3) || canonicalJson(newSource) !== canonicalJson(expected3) || newNet.type !== "NET" || canonicalJson(newNet.body) !== canonicalJson(DEFAULT_NET)) {
       throw new Error("Unreviewed footprint empty-net materialization.");
@@ -85753,7 +85753,7 @@ function verifyFootprintEmptyNetPersistence(input) {
     beforeOmit.add(NET);
     materialized = true;
   }
-  const padTargets = deriveDesignBaselineTargets(input.expectedBefore, input.expectedAfter).filter((target9) => input.expectedBefore.objects.some((record13) => record13.id === target9.id && record13.type === "PAD"));
+  const padTargets = deriveDesignBaselineTargets(input.expectedBefore, input.expectedAfter).filter((target9) => input.expectedBefore.objects.some((record14) => record14.id === target9.id && record14.type === "PAD"));
   const padProjection = projectFootprintPadHistory({ checkpoint: input.before, source: input.expectedBefore, targets: padTargets });
   let history = padProjection.checkpoint;
   let userStamp = null;
@@ -85857,36 +85857,36 @@ function target4(history, source5) {
   }
   return document3;
 }
-function convertedRecord(record13, after, input, partId2) {
-  const next = after.records.find((entry) => entry.id === record13.id);
-  const source5 = input.expectedBefore.objects.find((entry) => entry.id === record13.id);
-  const sourceAfter = input.expectedAfter.objects.find((entry) => entry.id === record13.id);
-  if (!["ATTR", "PIN"].includes(record13.type) || next === void 0 || source5 === void 0 || sourceAfter === void 0 || next.type !== record13.type || source5.type !== record13.type || sourceAfter.type !== record13.type || record13.body["partId"] !== partId2) {
-    return { record: record13 };
+function convertedRecord(record14, after, input, partId2) {
+  const next = after.records.find((entry) => entry.id === record14.id);
+  const source5 = input.expectedBefore.objects.find((entry) => entry.id === record14.id);
+  const sourceAfter = input.expectedAfter.objects.find((entry) => entry.id === record14.id);
+  if (!["ATTR", "PIN"].includes(record14.type) || next === void 0 || source5 === void 0 || sourceAfter === void 0 || next.type !== record14.type || source5.type !== record14.type || sourceAfter.type !== record14.type || record14.body["partId"] !== partId2) {
+    return { record: record14 };
   }
-  let body4 = { ...record13.body };
+  let body4 = { ...record14.body };
   const fields26 = [];
-  for (const [field11, legacy] of [["groupId", ""], ...record13.type === "ATTR" ? [["version", "2.0"]] : []]) {
+  for (const [field11, legacy] of [["groupId", ""], ...record14.type === "ATTR" ? [["version", "2.0"]] : []]) {
     if (field11 !== void 0 && body4[field11] === legacy && !Object.hasOwn(next.body, field11) && !Object.hasOwn(source5.body, field11) && !Object.hasOwn(sourceAfter.body, field11)) {
       body4 = Object.fromEntries(Object.entries(body4).filter(([key]) => key !== field11));
       fields26.push(field11);
     }
   }
-  if (record13.type === "ATTR" && body4["parentId"] === "" && source5.body["parentId"] === partId2 && sourceAfter.body["parentId"] === partId2 && next.body["parentId"] === partId2) {
+  if (record14.type === "ATTR" && body4["parentId"] === "" && source5.body["parentId"] === partId2 && sourceAfter.body["parentId"] === partId2 && next.body["parentId"] === partId2) {
     body4["parentId"] = partId2;
     fields26.push("parentId");
   }
   if (fields26.length === 0) {
-    return { record: record13 };
+    return { record: record14 };
   }
   if (!equal5(body4, source5.body)) {
     throw new Error("Symbol legacy conversion disagrees with the complete captured model.");
   }
-  return { record: { ...record13, body: body4 }, effect: {
-    id: record13.id,
-    type: record13.type,
+  return { record: { ...record14, body: body4 }, effect: {
+    id: record14.id,
+    type: record14.type,
     fields: fields26.toSorted(),
-    beforeBodySha256: sha256Json(record13.body),
+    beforeBodySha256: sha256Json(record14.body),
     afterBodySha256: sha256Json(body4)
   } };
 }
@@ -85923,7 +85923,7 @@ function verifySymbolPersistence(input) {
     throw new Error("Symbol storage conversion requires one exact PART.");
   }
   const partId2 = parts[0].id;
-  const converted = before.records.map((record13) => convertedRecord(record13, after, input, partId2));
+  const converted = before.records.map((record14) => convertedRecord(record14, after, input, partId2));
   const { metadata: metadata10, evidence: userStamp } = insertedUserStamp(before, after, input.before);
   const records2 = converted.map((entry) => entry.record);
   const replacement = { ...before, metadata: metadata10, records: records2, semanticSha256: sha256Json({
@@ -86189,12 +86189,12 @@ function deriveSchematicLayoutPageLoadScope(context3, history) {
   }
   const documents = history.documents.filter((document3) => !isNativeDocumentDeleted(document3));
   const active2 = documents.find((document3) => document3.uuid === activePageUuid && document3.docType === "SCH_PAGE");
-  const meta5 = active2?.records.filter((record13) => record13.id === "META" && record13.type === "META");
+  const meta5 = active2?.records.filter((record14) => record14.id === "META" && record14.type === "META");
   const schematicUuid = meta5?.length === 1 ? meta5[0]?.body["schematic"] : void 0;
   if (typeof schematicUuid !== "string" || !documents.some((document3) => document3.uuid === schematicUuid && document3.docType === "SCH") || context3.schematic?.uuid !== void 0 && context3.schematic.uuid !== schematicUuid || context3.schematic?.documentUuid !== void 0 && context3.schematic.documentUuid !== schematicUuid) {
     throw new Error("Schematic page loading container is not checkpoint-bound.");
   }
-  const pageUuids = documents.filter((document3) => document3.docType === "SCH_PAGE" && document3.records.some((record13) => record13.id === "META" && record13.type === "META" && record13.body["schematic"] === schematicUuid)).map((document3) => document3.uuid).toSorted();
+  const pageUuids = documents.filter((document3) => document3.docType === "SCH_PAGE" && document3.records.some((record14) => record14.id === "META" && record14.type === "META" && record14.body["schematic"] === schematicUuid)).map((document3) => document3.uuid).toSorted();
   const scope6 = scopeSchema2.parse({
     projectUuid: projectUuid4,
     projectPath: normalizeEasyedaProjectPath(context3.project.path),
@@ -86603,28 +86603,28 @@ async function materialization(input) {
   if (target9?.docType !== "SCH_PAGE") {
     throw new Error("Flat display materialization requires its saved ordinary page.");
   }
-  const durable = new Map(target9.records.map((record13) => [record13.id, record13]));
-  const exported = new Map(source5.objects.map((record13) => [record13.id, record13]));
+  const durable = new Map(target9.records.map((record14) => [record14.id, record14]));
+  const exported = new Map(source5.objects.map((record14) => [record14.id, record14]));
   const meta5 = durable.get("META");
-  if (meta5?.type !== "META" || target9.records.filter((record13) => record13.type === "META").length !== 1 || source5.objects.some((record13) => record13.type === "META" && record13.id !== "META") || exported.has("META") && !same38(exported.get("META"), { id: meta5.id, type: meta5.type, body: meta5.body }) || target9.records.some((record13) => record13.id !== "META" && !exported.has(record13.id)) || source5.objects.some((record13) => !durable.has(record13.id) && record13.id !== "CANVAS")) {
+  if (meta5?.type !== "META" || target9.records.filter((record14) => record14.type === "META").length !== 1 || source5.objects.some((record14) => record14.type === "META" && record14.id !== "META") || exported.has("META") && !same38(exported.get("META"), { id: meta5.id, type: meta5.type, body: meta5.body }) || target9.records.some((record14) => record14.id !== "META" && !exported.has(record14.id)) || source5.objects.some((record14) => !durable.has(record14.id) && record14.id !== "CANVAS")) {
     throw new Error("Flat display requires complete stored/source target record membership except its exact durable META and default CANVAS.");
   }
   const canvas = exported.get("CANVAS");
   if (!durable.has("CANVAS") && canvas !== void 0 && (canvas.type !== "CANVAS" || !same38(canvas.body, { originX: 0, originY: 0 }))) {
     throw new Error("Flat display source-only CANVAS is not the exact native default origin.");
   }
-  for (const record13 of target9.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
-    const current10 = exported.get(record13.id);
-    if (current10?.body["zIndex"] !== null && (nativeComponents.get(record13.id)?.kind !== "sheet" || current10?.type !== "COMPONENT" || current10.body["zIndex"] !== 0 || !same38(current10.body, { ...record13.body, zIndex: 0 }))) {
+  for (const record14 of target9.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
+    const current10 = exported.get(record14.id);
+    if (current10?.body["zIndex"] !== null && (nativeComponents.get(record14.id)?.kind !== "sheet" || current10?.type !== "COMPONENT" || current10.body["zIndex"] !== 0 || !same38(current10.body, { ...record14.body, zIndex: 0 }))) {
       throw new Error("Flat display admits only the exact null-to-zero native drawing-frame initialization.");
     }
   }
   await yieldProofEventLoop();
   const coordinates4 = projectSchematicCoordinateCheckpoint(history, source5, native);
-  const rows2 = source5.objects.map((record13) => ({
-    ...structuredClone(record13),
-    ticket: durable.get(record13.id)?.ticket ?? 0,
-    client: durable.get(record13.id)?.client ?? null
+  const rows2 = source5.objects.map((record14) => ({
+    ...structuredClone(record14),
+    ticket: durable.get(record14.id)?.ticket ?? 0,
+    client: durable.get(record14.id)?.client ?? null
   }));
   if (!exported.has("META")) {
     rows2.push(structuredClone(meta5));
@@ -86761,12 +86761,12 @@ function flatEvidenceState(evidence2, context3, nativeInput) {
     throw new Error("Flat display excludes hierarchical, variant and grouped project records.");
   }
   const schematic4 = alive.find((document3) => document3.uuid === scope6.schematicUuid && document3.docType === "SCH");
-  const parentMeta = schematic4?.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const parentMeta = schematic4?.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (parentMeta?.length !== 1 || parentMeta[0]?.id !== "META" || parentMeta[0].type !== "META" || parentMeta[0].body["source"] !== "" || Object.hasOwn(parentMeta[0].body, "blockSymbolUuid")) {
     throw new Error("Flat display requires an ordinary non-inherited schematic parent.");
   }
   const savedPage = alive.find((document3) => document3.uuid === scope6.activePageUuid && document3.docType === "SCH_PAGE");
-  const pageMeta2 = savedPage?.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const pageMeta2 = savedPage?.records.filter((record14) => record14.id === "META" || record14.type === "META");
   if (pageMeta2?.length !== 1 || pageMeta2[0]?.id !== "META" || pageMeta2[0].type !== "META" || pageMeta2[0].body["source"] !== "" || pageMeta2[0].body["schematic"] !== scope6.schematicUuid || Object.hasOwn(pageMeta2[0].body, "blockSymbolUuid")) {
     throw new Error("Flat display requires an ordinary non-inherited saved page.");
   }
@@ -90564,8 +90564,8 @@ function deviceTransformInheritedInstances(history, deviceUuid) {
   const result = [];
   for (const document3 of history.documents.filter((entry) => !isNativeDocumentDeleted(entry))) {
     const components = document3.records.filter((entry) => entry.type === "COMPONENT");
-    for (const record13 of document3.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Device" && entry.body["value"] === deviceUuid)) {
-      if (!components.some((component3) => component3.id === record13.body["parentId"])) {
+    for (const record14 of document3.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Device" && entry.body["value"] === deviceUuid)) {
+      if (!components.some((component3) => component3.id === record14.body["parentId"])) {
         throw new Error("Device transform has an unresolved instance parent.");
       }
     }
@@ -91107,7 +91107,7 @@ function prepareDocumentClose(input, history, context3) {
       throw new Error("Clean close target or active document is not a supported exact checkpoint member.");
     }
     if (entry.docType === "SYMBOL") {
-      const meta5 = entry.records.filter((record13) => record13.id === "META" || record13.type === "META");
+      const meta5 = entry.records.filter((record14) => record14.id === "META" || record14.type === "META");
       if (meta5.length !== 1 || meta5[0]?.id !== "META" || meta5[0].type !== "META" || meta5[0].body["docType"] !== 2) {
         throw new Error("Clean close supports ordinary type-2 symbols only, not CBB or derived symbol families.");
       }
@@ -95575,8 +95575,8 @@ async function readRecord(directory4, name6) {
 }
 function validateChain(operation) {
   const records2 = operation.records;
-  for (const record13 of Object.values(records2)) {
-    requireValue14(record13.operationId === operation.operationId, "RECORD_OPERATION");
+  for (const record14 of Object.values(records2)) {
+    requireValue14(record14.operationId === operation.operationId, "RECORD_OPERATION");
   }
   const binding9 = records2["binding.json"], close = records2["close-intent.json"], intent = records2["intent.json"];
   const acknowledgment = records2["close-acknowledged.json"], termination = records2["terminated.json"];
@@ -95631,9 +95631,9 @@ async function readCurrentPcbDiagnosticLifecycles() {
       const slot = await root.openDirectory(join50(parent.absolute, entry.name), false);
       try {
         const records2 = {};
-        for (const record13 of await entries5(slot, Object.keys(diagnosticLifecycleRecordSchemas).length)) {
-          requireValue14(record13.isFile() && recordName(record13.name), "UNKNOWN_RECORD");
-          const name6 = record13.name;
+        for (const record14 of await entries5(slot, Object.keys(diagnosticLifecycleRecordSchemas).length)) {
+          requireValue14(record14.isFile() && recordName(record14.name), "UNKNOWN_RECORD");
+          const name6 = record14.name;
           Object.defineProperty(records2, name6, { enumerable: true, value: diagnosticLifecycleRecordSchemas[name6].parse(await readRecord(slot, name6)) });
         }
         const operation = { operationId: entry.name, records: records2 };
@@ -95665,9 +95665,9 @@ async function reserveCurrentPcbDiagnosticLifecycle(operationId11) {
     await parent.handle.close();
   }
 }
-async function publishCurrentPcbDiagnosticLifecycleRecord(operationId11, name6, record13) {
+async function publishCurrentPcbDiagnosticLifecycleRecord(operationId11, name6, record14) {
   diagnosticLifecycleIdSchema.parse(operationId11);
-  const parsed2 = diagnosticLifecycleRecordSchemas[name6].parse(record13);
+  const parsed2 = diagnosticLifecycleRecordSchemas[name6].parse(record14);
   requireValue14(parsed2.operationId === operationId11, "PUBLICATION_OPERATION");
   const bytes2 = Buffer.from(`${JSON.stringify(parsed2)}
 `);
@@ -96760,7 +96760,7 @@ async function inventory() {
       const slot = await root.openDirectory(join52(parent.absolute, entry.name), false);
       try {
         const records2 = await boundedEntries(slot, 8);
-        requireValue15(records2.every((record13) => record13.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record13.name)), "Ordinary launch journal contains unknown records.");
+        requireValue15(records2.every((record14) => record14.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record14.name)), "Ordinary launch journal contains unknown records.");
         const intentRaw = await readRecord2(slot, "intent.json"), launchedRaw = await readRecord2(slot, "launched.json"), terminatedRaw = await readRecord2(slot, "terminated.json");
         const refusedRaw = await readRecord2(slot, "not-dispatched.json");
         const abandonedRaw = await readRecord2(slot, "abandonment.json");
@@ -96803,8 +96803,8 @@ async function inventory() {
     await parent.handle.close();
   }
 }
-async function publish(operationId11, name6, record13) {
-  const bytes2 = Buffer.from(`${JSON.stringify(record13)}
+async function publish(operationId11, name6, record14) {
+  const bytes2 = Buffer.from(`${JSON.stringify(record14)}
 `);
   requireValue15(bytes2.length <= MAX_RECORD_BYTES, "Ordinary launch receipt exceeds its bound.");
   await publishManagedAttachmentExclusive(
@@ -97544,9 +97544,9 @@ function queryCurrentPcbDiagnosticValidation(input = {}) {
       "Only bounded identity summaries and event counts are returned. Source identity does not prove the project worker, compiler owner, complete drawing state, authenticated bridge, startup safety, writer authority or saved verification. No CAD edits or explicit Save are dispatched.",
       "After frame inspection, one fixed parent-scoped worker-only autoattachment may observe at most sixteen direct children without pausing them. A single retained worker can be selected for exact context and project-worker source admission, followed by one compiled descriptor-only state read with side-effect checking. No caller expression, script hash, context ID or arbitrary worker attachment is accepted.",
       "Worker state exposes bounded opaque identities, booleans, collection cardinalities and timer-presence markers, not queue values or design content. It does not establish renderer/compiler association, complete membership, latent callbacks, queue completion or writer eligibility. Start Page normally has no project worker.",
-      "observe-model-state requires a separately retained, source-qualified existing PCB frame or the accepted original PCB-opening observation. Fixed reads report bounded main compiler counters, raw-string summaries, loaded custom-footprint participants and pending-producer state without Save or a writer. They do not bind the project worker, prove pending-producer completion or establish complete design content. The UI project-only opener does not create this PCB-frame authority.",
+      "observe-model-state requires a separately retained, source-qualified existing PCB frame or the accepted original PCB-opening observation. Four fixed samples report bounded compiler counters, raw Strings, pending producers and model/board/panelization/spatial-root counts without Save or a writer. They are non-atomic and omit secondary indexes, active tools and complete geometry/ownership. Zero counts or absent owners do not prove an empty PCB. They do not bind the project worker, prove queue completion or establish complete design content. The UI project-only opener does not create this PCB-frame authority.",
       "open-project is a single diagnostic disposable opening after exact UI source admission and before worker discovery. A managed checkpoint binds the original file hash, default branch and existing PCB membership; exact registered path and an empty editor are rechecked before the fixed public project-open service. Opening can migrate the file, replay caches, restore tabs, change shared metadata and automatically Save. It is not isolated or startup-qualified. A prefix event is not restoration completion, persistence or writer authority. Any uncertain attempt is consumed; only original-owner observation and cleanup remain.",
-      "The project opener supports only the retained single top-level UI frame, exact selected-project same-document URL transition and source-derived project title transition. Restored schematic/PCB child frames, full navigation, context loss or any other title drift are refused after a possibly effective opening. Worker-only opening does not authorize drawing-frame creation or model observation.",
+      "The project opener supports the retained top-level UI frame and at most one unchanged, source-shaped ancillary OBJECT resize-sensor child, proved by fixed DOM-owner reads. A blank URL alone is insufficient. This structural evidence does not prove direct DOM-parent or private observer-registry ownership. Only the exact selected-project same-document URL and source-derived title transitions are admitted; restored editor frames, full navigation, context loss or other title drift refuse. Worker-only opening does not authorize drawing-frame creation or model observation.",
       "After an accepted original disposable project opening, open-pcb may dispatch one fixed document-open call for that same sealed target. It accepts no new path, document, frame or code. A separate observe-pcb-opening stage must prove one exact child, original DOM ownership, readiness and separately pinned PCB source before model inspection. Both stages are consumed once, exclude worker inspection and preserve cleanup after failure. An open acknowledgment alone is not readiness, persistence or writer authority.",
       "Every effectful stage is consumed once, including uncertain replies. Inspect retained outcomes instead of replaying. Settle-records publishes only absent exact original in-memory records; corrupt records are never replaced and JSON cannot recreate ownership after restart.",
       "Normal close requires the original observed window. No Save/Discard choice, force termination or process discovery is offered. Cleanup remains local to the original owner and does not require bridge authentication or full startup re-admission. Unlaunched cleanup requires original never-dispatched state and native empty-Job proof; a factory failure without a returned owner remains unresolved.",
@@ -102022,13 +102022,13 @@ function maskRelativePointer(root, pointer) {
 function targetComponentInvariantHash(payload, plan2) {
   const records2 = structuredClone(payload?.byPrimitiveId ?? {});
   for (const change of plan2.targetChanges) {
-    const record13 = records2[change.primitiveId];
-    if (!record13 || typeof record13 !== "object") {
+    const record14 = records2[change.primitiveId];
+    if (!record14 || typeof record14 !== "object") {
       throw new Error(
         `Exact component snapshot omitted declared target ${change.primitiveId}.`
       );
     }
-    maskRelativePointer(record13, change.pointer);
+    maskRelativePointer(record14, change.pointer);
   }
   return sha256Json(records2);
 }
@@ -107163,11 +107163,11 @@ function auditPcbRoutes(source5, inventory2, input) {
   };
   const differentialPairs = selectedPairs.map((selected3) => {
     const members = netObjects.filter((entry) => entry.body["differentialName"] === selected3);
-    const positive3 = members.filter((entry) => entry.body["isPositiveNet"] === true);
+    const positive4 = members.filter((entry) => entry.body["isPositiveNet"] === true);
     const negative = members.filter((entry) => entry.body["isPositiveNet"] === false);
     const selectedRule = rule(source5, "DIFFER_ENTAIL", selector3(source5, "DIFF_PAIR", selected3)["DIFFER_ENTAIL"]);
     const result = compare(selected3, members.map((entry) => netName(entry)), selectedRule, selectedRule?.context["differPairLenTolerMax"], true);
-    if (positive3.length !== 1 || negative.length !== 1 || members.length !== 2) {
+    if (positive4.length !== 1 || negative.length !== 1 || members.length !== 2) {
       result.status = "indeterminate";
       result.findings.push(note("pair-membership-invalid", members.map((entry) => entry.id), "A differential pair requires exactly one positive and one negative net."));
     }
@@ -108530,7 +108530,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     dispatched: false
   };
   const update = dependencies3.update ?? updateOperation, write = dependencies3.write ?? writePhaseArtifact;
-  const record13 = async (phase5, value2) => {
+  const record14 = async (phase5, value2) => {
     journal["sequence"] = Number(journal["sequence"]) + 1;
     const descriptor10 = await write(journal.operationId, Number(journal["sequence"]), phase5, value2);
     (journal.artifacts ??= []).push(descriptor10);
@@ -108540,7 +108540,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
   journal[slot] = attempt2;
   journal["hardStop"] = true;
   journal["nextSafeAction"] = "Await the one discard-close click, then prove native process exit and reconcile saved state. Do not retry, save or repeat the original mutation.";
-  await record13(`${phasePrefix}-intent`, attempt2);
+  await record14(`${phasePrefix}-intent`, attempt2);
   try {
     const result = await controller.runRecoveryCloseClick({
       windowHandle: request13.windowHandle,
@@ -108552,12 +108552,12 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
       expectedBounds: capture3.bounds
     });
     journal[slot] = { ...attempt2, state: "click-returned", dispatched: true, resultSha256: sha256Json(result) };
-    await record13(`${phasePrefix}-result`, { result, savedStateVerified: false, recovered: false });
+    await record14(`${phasePrefix}-result`, { result, savedStateVerified: false, recovered: false });
     return { schema: attempt2.schema, operationId: journal.operationId, state: journal["state"], discardClickReturned: true, recovered: false, savedStateVerified: false, durableChanged: saved.durableChanged, currentCheckpoint: saved.currentCheckpoint, nextSafeAction: journal["nextSafeAction"] };
   } catch (error52) {
     const dispatched = error52 instanceof Error && "dispatched" in error52 && error52.dispatched === false ? false : "unknown";
     journal[slot] = { ...attempt2, state: "click-failed", dispatched };
-    await record13(`${phasePrefix}-failure`, { dispatched, error: "native-discard-close-failed", recovered: false });
+    await record14(`${phasePrefix}-failure`, { dispatched, error: "native-discard-close-failed", recovered: false });
     throw transactionError(error52, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
@@ -111534,7 +111534,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes19, createHash: createHash64 } = __require("crypto");
+    var { randomBytes: randomBytes19, createHash: createHash65 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -112202,7 +112202,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest11 = createHash64("sha1").update(key + GUID).digest("base64");
+        const digest11 = createHash65("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest11) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -112571,7 +112571,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash64 } = __require("crypto");
+    var { createHash: createHash65 } = __require("crypto");
     var extension3 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -112878,7 +112878,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest11 = createHash64("sha1").update(key + GUID).digest("base64");
+        const digest11 = createHash65("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -113282,8 +113282,8 @@ function assertCompatibleUpstreamHello(value2, maximumPayloadBytes) {
     );
   }
 }
-function exactKeys2(record13, expected3) {
-  const actual = Object.keys(record13).toSorted();
+function exactKeys2(record14, expected3) {
+  const actual = Object.keys(record14).toSorted();
   return JSON.stringify(actual) === JSON.stringify([...expected3].toSorted());
 }
 function assertBase64UrlSecret(value2, label) {
@@ -125373,7 +125373,7 @@ async function projectedPeers(decoded, tree, target9, desiredTitle) {
   const sourcePeers = [];
   const desired = nativeTitle(desiredTitle);
   for (const document3 of documents) {
-    const metadata10 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+    const metadata10 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
     const meta5 = metadata10[0];
     const clock7 = raw.get(document3.uuid), header = currentSchematicStoredHeaderSchema.parse(document3.metadata);
     need48(metadata10.length === 1 && meta5?.id === "META" && meta5.type === "META" && clock7 !== void 0 && clock7.dataTicket >= 0 && header.uuid === document3.uuid && clock7.updateTime === header.updateTime && clock7.version === header.version, "ordinary schematic source/header projection differs");
@@ -125544,8 +125544,8 @@ function selectCurrentSymbolStartupExpectation(history) {
       const parts = symbol4.records.filter((entry) => entry.type === "PART");
       const part = parts[0];
       need49(parts.length === 1 && part !== void 0 && partId.safeParse(part.id).success && component3.body["partId"] === part.id);
-      for (const record13 of symbol4.records) {
-        const membership = record13.body["partId"];
+      for (const record14 of symbol4.records) {
+        const membership = record14.body["partId"];
         need49(membership === void 0 || membership === "" || membership === part.id);
       }
       const deviceId = reference2(page.records, component3.id, "Device", false);
@@ -127231,20 +127231,281 @@ return output;
   }
 });
 
-// server/src/current-pcb-diagnostic-model-runner.ts
+// server/src/current-pcb-diagnostic-root-inventory.ts
+import { createHash as createHash50 } from "node:crypto";
 import { types as types13 } from "node:util";
 function refuse8() {
+  throw new Error("PCB_DIAGNOSTIC_ROOT_INVENTORY_REPLY");
+}
+function record10(input, fields26) {
+  if (input === null || typeof input !== "object" || types13.isProxy(input) || Array.isArray(input)) {
+    return refuse8();
+  }
+  const keys2 = Reflect.ownKeys(input), prototype = Object.getPrototypeOf(input);
+  if (prototype !== Object.prototype && prototype !== null || keys2.length !== fields26.length || keys2.some((key) => typeof key !== "string" || !fields26.includes(key))) {
+    return refuse8();
+  }
+  const result = {};
+  for (const key of fields26) {
+    const descriptor10 = Object.getOwnPropertyDescriptor(input, key);
+    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
+      return refuse8();
+    }
+    result[key] = descriptor10.value;
+  }
+  return result;
+}
+function decodeCurrentPcbDiagnosticRootInventoryReply(input) {
+  const reply = record10(input, ["result"]), result = record10(reply["result"], ["type", "value"]);
+  const raw = result["value"];
+  if (result["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES) {
+    return refuse8();
+  }
+  try {
+    const parsed2 = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8"));
+    return freezeDeep({ ...stateSchema3.parse(parsed2), ...LIMITS6 });
+  } catch {
+    return refuse8();
+  }
+}
+var MAX_ENTRIES5, MAX_TREES, MAX_DEPTH, MAX_RETAINED_DESCRIPTORS, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256, countSchema4, markerSchema3, ownerSchema, familiesSchema, boardSchema, panelCountsSchema, panelSchema, treeSchema, stateSchema3, LIMITS6;
+var init_current_pcb_diagnostic_root_inventory = __esm({
+  "server/src/current-pcb-diagnostic-root-inventory.ts"() {
+    init_zod();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_diagnostic_model_program();
+    init_sqlite_inventory_core();
+    MAX_ENTRIES5 = 65536;
+    MAX_TREES = 128;
+    MAX_DEPTH = 64;
+    MAX_RETAINED_DESCRIPTORS = MAX_ENTRIES5 * 8 + 4096;
+    CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES = 8192;
+    CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION = `function(originalCallback){
+"use strict";
+const bad=()=>{throw new Error("PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE");};
+const retained=[],collections=[];
+const budget={entries:0,trees:0};
+const remember=(o,k,m,v)=>{if(retained.length>=${MAX_RETAINED_DESCRIPTORS})bad();retained.push([o,k,m,v]);};
+const count=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>${MAX_ENTRIES5})bad();return v;};
+const spend=n=>{budget.entries+=count(n);if(budget.entries>${MAX_ENTRIES5})bad();};
+const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
+const descriptor=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return Object.getOwnPropertyDescriptor(o,k);};
+const own=(o,k)=>{const d=descriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();remember(o,k,"present",d.value);return d.value;};
+const optional=(o,k)=>{const d=descriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||descriptor(p,k))bad();p=Object.getPrototypeOf(p);}remember(o,k,"absent",undefined);return {marker:"absent",value:undefined};}if(!Object.hasOwn(d,"value"))bad();const v=d.value;remember(o,k,"present",v);return {marker:v===undefined?"undefined":v===null?"null":"present",value:v};};
+const flag=v=>{if(typeof v!=="boolean")bad();return v;};
+const id=v=>{if(typeof v!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad();return v;};
+const collection=(o,p)=>{
+object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();
+const d=descriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();
+const n=count(Reflect.apply(d.get,o,[]));spend(n);collections.push([o,p,d.get,n]);return n;
+};
+const map=o=>collection(o,Map.prototype),set=o=>collection(o,Set.prototype);
+const array=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,"length"));spend(n);const keys=Reflect.ownKeys(o);if(keys.length!==n+1||keys[n]!=="length")bad();for(let i=0;i<n;i++){if(keys[i]!==String(i))bad();const d=descriptor(o,String(i));if(!d||!Object.hasOwn(d,"value"))bad();}return n;};
+const iterate=(o,p,n,visit)=>{
+const iterator=Reflect.apply(own(p,p===Map.prototype?"entries":"values"),o,[]),next=own(Object.getPrototypeOf(iterator),"next");
+if(typeof next!=="function")bad();
+for(let i=0;i<n;i++){const result=Reflect.apply(next,iterator,[]);if(own(result,"done")!==false)bad();const v=own(result,"value");if(p===Map.prototype){if(!Array.isArray(v)||v.length!==2)bad();visit(v[0],v[1]);}else visit(v);}
+if(own(Reflect.apply(next,iterator,[]),"done")!==true)bad();
+};
+const has=(o,v)=>Reflect.apply(own(Set.prototype,"has"),o,[v]);
+if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
+const scope=object(own(this,"object"));
+const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad();return o;};
+const envClass=klass("x"),env=instance(own(envClass,"env"),envClass);
+const documentUuid=id(own(env,"_id"));if(own(env,"_doctype")!==3)bad();
+const family=n=>{const c=klass(n),v=optional(c,"manager");return {marker:v.marker,count:v.marker==="present"?map(own(instance(v.value,c),"map")):null};};
+const families={tracks:family("vn"),pads:family("Jn"),vias:family("Dn"),circles:family("Xi"),
+radiusDimensions:family("ol"),rectangles:family("nn"),strings:family("bo"),protractorDimensions:family("_a"),
+lengthDimensions:family("Aa"),smartDimensions:family("GR"),components:family("Ms"),polygons:family("Fi"),
+images:family("oa"),pictures:family("c0"),copper:family("Yo"),inner:family("zo"),groups:family("Mp")};
+const boardClass=klass("_s"),boardOwner=optional(boardClass,"instance");
+let board={ownerMarker:boardOwner.marker,boardMarker:null,outlineCount:null,autoGenerate:null};
+if(boardOwner.marker==="present"){
+const owner=instance(boardOwner.value,boardClass),value=optional(owner,"_board");if(value.marker==="present")object(value.value);
+board={ownerMarker:"present",boardMarker:value.marker,outlineCount:map(own(owner,"_outlineCollect")),autoGenerate:flag(own(owner,"_autoGenerate"))};
+}
+const panelClass=klass("ai"),panelOwner=optional(panelClass,"model");
+let panelization={ownerMarker:panelOwner.marker,viewModelMatchesOwner:null,activation:null,counts:null};
+if(panelOwner.marker==="present"){
+const owner=instance(panelOwner.value,panelClass),view=instance(own(scope,"Si"),klass("Jse")),param=object(own(owner,"_param"));
+const borders=own(owner,"borderClosures");if(array(borders)!==2)bad();
+const counts={items:array(own(owner,"items")),outlines:array(own(owner,"outlines")),slots:array(own(owner,"slots")),
+originOutline:array(own(owner,"originOutline")),holes:array(own(owner,"holes")),positionHoles:array(own(owner,"positionHoles")),
+stampGroups:array(own(owner,"stampGroups")),marks:array(own(owner,"marks")),vCutShapes:array(own(owner,"vCutShapes")),
+closures:array(own(owner,"closures")),borderClosuresFirst:array(own(borders,"0")),borderClosuresSecond:array(own(borders,"1")),
+borderClosuresOuterMost:array(own(owner,"borderClosures_outerMost"))};
+panelization={ownerMarker:"present",viewModelMatchesOwner:own(view,"model")===owner,
+activation:{on:flag(own(param,"on")),success:flag(own(param,"success"))},counts};
+}
+const spatial=instance(own(scope,"Ht"),klass("tV")),treeSeen=new Set();
+const mdPrototype=own(klass("Md"),"prototype"),f0Prototype=own(klass("F0"),"prototype"),
+niPrototype=own(klass("NI"),"prototype"),iyPrototype=own(klass("iy"),"prototype");
+const empty=()=>({outerKeyCount:0,nestedKeyCount:0,treeCount:0,itemCount:0,changeCount:0,deadCount:0,
+rootNodeCount:0,rootLeafCount:0,rootLeafWithoutItemCount:0,rootLeafWithoutItemOrDeadCount:0,
+itemWithoutRootLeafCount:0,itemWithoutRootLeafOrChangeCount:0,repeatedRootLeafCount:0});
+const inspectTree=(value,result)=>{
+object(value);const prototype=Object.getPrototypeOf(value),nodePrototype=prototype===mdPrototype?niPrototype:prototype===f0Prototype?iyPrototype:null;
+if(nodePrototype===null||treeSeen.has(value)||++budget.trees>${MAX_TREES})bad();treeSeen.add(value);result.treeCount++;
+const items=own(value,"items"),changes=own(value,"changeList"),dead=own(value,"deadList");
+const itemCount=set(items),changeCount=set(changes),deadCount=set(dead);
+result.itemCount+=itemCount;result.changeCount+=changeCount;result.deadCount+=deadCount;
+const root=object(own(value,"root")),nodes=new Set(),leaves=new Set(),stack=[[root,null,0]];
+while(stack.length){
+const current=stack.pop(),node=current[0],parent=current[1],depth=current[2];
+if(depth>${MAX_DEPTH}||nodes.has(node)||Object.getPrototypeOf(node)!==nodePrototype||own(node,"parent")!==parent)bad();
+nodes.add(node);spend(1);result.rootNodeCount++;
+const children=own(node,"childs"),n=array(children);
+for(let i=0;i<n;i++){
+const child=object(own(children,String(i))),childPrototype=Object.getPrototypeOf(child);
+if(childPrototype===niPrototype||childPrototype===iyPrototype){
+if(childPrototype!==nodePrototype)bad();stack.push([child,node,depth+1]);
+}else{
+result.rootLeafCount++;
+if(leaves.has(child)){result.repeatedRootLeafCount++;continue;}leaves.add(child);
+if(!has(items,child)){result.rootLeafWithoutItemCount++;if(!has(dead,child))result.rootLeafWithoutItemOrDeadCount++;}
+}
+}
+}
+iterate(items,Set.prototype,itemCount,item=>{object(item);if(!leaves.has(item)){result.itemWithoutRootLeafCount++;if(!has(changes,item))result.itemWithoutRootLeafOrChangeCount++;}});
+};
+const branch=(value,nested)=>{
+const result=empty(),n=map(value);result.outerKeyCount=n;
+iterate(value,Map.prototype,n,(_key,entry)=>{
+if(nested){const length=map(entry);result.nestedKeyCount+=length;iterate(entry,Map.prototype,length,(_layer,tree)=>inspectTree(tree,result));}
+else inspectTree(entry,result);
+});return result;
+};
+const spatialIndexes={typed:branch(own(spatial,"map"),true),other:branch(own(spatial,"otherMap"),false),ratline:branch(own(spatial,"ratlineMap"),false)};
+for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]==="absent"?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[3])bad();}
+for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
+if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
+const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-root-inventory.v1",documentUuid,families,board,panelization,spatialIndexes,collectionEntries:budget.entries,treeCount:budget.trees});
+if(output.length>${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES})bad();
+return output;
+}`;
+    CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256 = createHash50("sha256").update(CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION).digest("hex");
+    countSchema4 = external_exports.number().int().min(0).max(MAX_ENTRIES5).refine((value2) => !Object.is(value2, -0));
+    markerSchema3 = external_exports.enum(["absent", "undefined", "null", "present"]);
+    ownerSchema = external_exports.object({ marker: markerSchema3, count: countSchema4.nullable() }).strict().refine((value2) => value2.marker === "present" === (value2.count !== null));
+    familiesSchema = external_exports.object({
+      tracks: ownerSchema,
+      pads: ownerSchema,
+      vias: ownerSchema,
+      circles: ownerSchema,
+      radiusDimensions: ownerSchema,
+      rectangles: ownerSchema,
+      strings: ownerSchema,
+      protractorDimensions: ownerSchema,
+      lengthDimensions: ownerSchema,
+      smartDimensions: ownerSchema,
+      components: ownerSchema,
+      polygons: ownerSchema,
+      images: ownerSchema,
+      pictures: ownerSchema,
+      copper: ownerSchema,
+      inner: ownerSchema,
+      groups: ownerSchema
+    }).strict();
+    boardSchema = external_exports.object({
+      ownerMarker: markerSchema3,
+      boardMarker: markerSchema3.nullable(),
+      outlineCount: countSchema4.nullable(),
+      autoGenerate: external_exports.boolean().nullable()
+    }).strict().refine((value2) => value2.ownerMarker === "present" ? value2.boardMarker !== null && value2.outlineCount !== null && value2.autoGenerate !== null : value2.boardMarker === null && value2.outlineCount === null && value2.autoGenerate === null);
+    panelCountsSchema = external_exports.object({
+      items: countSchema4,
+      outlines: countSchema4,
+      slots: countSchema4,
+      originOutline: countSchema4,
+      holes: countSchema4,
+      positionHoles: countSchema4,
+      stampGroups: countSchema4,
+      marks: countSchema4,
+      vCutShapes: countSchema4,
+      closures: countSchema4,
+      borderClosuresFirst: countSchema4,
+      borderClosuresSecond: countSchema4,
+      borderClosuresOuterMost: countSchema4
+    }).strict();
+    panelSchema = external_exports.object({
+      ownerMarker: markerSchema3,
+      viewModelMatchesOwner: external_exports.boolean().nullable(),
+      activation: external_exports.object({ on: external_exports.boolean(), success: external_exports.boolean() }).strict().nullable(),
+      counts: panelCountsSchema.nullable()
+    }).strict().refine((value2) => value2.ownerMarker === "present" ? value2.viewModelMatchesOwner !== null && value2.activation !== null && value2.counts !== null : value2.viewModelMatchesOwner === null && value2.activation === null && value2.counts === null);
+    treeSchema = external_exports.object({
+      outerKeyCount: countSchema4,
+      nestedKeyCount: countSchema4,
+      treeCount: countSchema4.max(MAX_TREES),
+      itemCount: countSchema4,
+      changeCount: countSchema4,
+      deadCount: countSchema4,
+      rootNodeCount: countSchema4,
+      rootLeafCount: countSchema4,
+      rootLeafWithoutItemCount: countSchema4,
+      rootLeafWithoutItemOrDeadCount: countSchema4,
+      itemWithoutRootLeafCount: countSchema4,
+      itemWithoutRootLeafOrChangeCount: countSchema4,
+      repeatedRootLeafCount: countSchema4
+    }).strict().refine((value2) => value2.rootNodeCount >= value2.treeCount && value2.repeatedRootLeafCount <= value2.rootLeafCount && value2.rootLeafWithoutItemCount <= value2.rootLeafCount - value2.repeatedRootLeafCount && value2.rootLeafWithoutItemOrDeadCount <= value2.rootLeafWithoutItemCount && value2.itemWithoutRootLeafCount <= value2.itemCount && value2.itemWithoutRootLeafOrChangeCount <= value2.itemWithoutRootLeafCount && (value2.treeCount !== 0 || value2.itemCount + value2.changeCount + value2.deadCount + value2.rootNodeCount + value2.rootLeafCount + value2.itemWithoutRootLeafCount + value2.rootLeafWithoutItemCount === 0));
+    stateSchema3 = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-root-inventory.v1"),
+      documentUuid: external_exports.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
+      families: familiesSchema,
+      board: boardSchema,
+      panelization: panelSchema,
+      spatialIndexes: external_exports.object({ typed: treeSchema, other: treeSchema, ratline: treeSchema }).strict(),
+      collectionEntries: countSchema4,
+      treeCount: countSchema4.max(MAX_TREES)
+    }).strict().refine((value2) => {
+      const { typed, other, ratline } = value2.spatialIndexes;
+      if (typed.treeCount !== typed.nestedKeyCount || other.nestedKeyCount !== 0 || ratline.nestedKeyCount !== 0 || other.treeCount !== other.outerKeyCount || ratline.treeCount !== ratline.outerKeyCount || value2.treeCount !== typed.treeCount + other.treeCount + ratline.treeCount) {
+        return false;
+      }
+      let entries6 = Object.values(value2.families).reduce((sum, owner) => sum + (owner.count ?? 0), 0);
+      entries6 += value2.board.outlineCount ?? 0;
+      if (value2.panelization.counts !== null) {
+        entries6 += 2 + Object.values(value2.panelization.counts).reduce((sum, count2) => sum + count2, 0);
+      }
+      for (const branch of [typed, other, ratline]) {
+        entries6 += branch.outerKeyCount + branch.nestedKeyCount + branch.itemCount + branch.changeCount + branch.deadCount + 2 * branch.rootNodeCount - branch.treeCount + branch.rootLeafCount;
+      }
+      return entries6 === value2.collectionEntries;
+    });
+    LIMITS6 = Object.freeze({
+      completeModelMembershipVerified: false,
+      emptyRootPcbVerified: false,
+      completeLiveBaselineVerified: false,
+      sourceOwnershipVerified: false,
+      secondaryIndexesCovered: false,
+      activeToolsCovered: false,
+      geometryVerified: false,
+      queueCompletionVerified: false,
+      persistenceVerified: false,
+      saveAuthorized: false,
+      writerSupported: false,
+      executionAuthorized: false,
+      continuousObservation: false,
+      nativeIntrinsicsVerified: false
+    });
+  }
+});
+
+// server/src/current-pcb-diagnostic-model-runner.ts
+import { types as types14 } from "node:util";
+function refuse9() {
   throw new Error("PCB_DIAGNOSTIC_MODEL_OBSERVATION");
 }
 function handle(value2) {
   if (!/^[A-Za-z\d_.:-]{1,256}$/u.test(value2)) {
-    return refuse8();
+    return refuse9();
   }
   return value2;
 }
 function emptyReply(value2) {
-  if (value2 === null || typeof value2 !== "object" || types13.isProxy(value2) || Array.isArray(value2) || Object.getPrototypeOf(value2) !== Object.prototype && Object.getPrototypeOf(value2) !== null || Reflect.ownKeys(value2).length > 0) {
-    refuse8();
+  if (value2 === null || typeof value2 !== "object" || types14.isProxy(value2) || Array.isArray(value2) || Object.getPrototypeOf(value2) !== Object.prototype && Object.getPrototypeOf(value2) !== null || Reflect.ownKeys(value2).length > 0) {
+    refuse9();
   }
 }
 var CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP, OBSERVATION_BYTES, EFFECT_FLAGS, CurrentPcbDiagnosticModelRunner;
@@ -127255,6 +127516,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
     init_current_pcb_diagnostic_model_scope();
     init_current_pcb_diagnostic_pending_program();
     init_current_pcb_diagnostic_raw_strings();
+    init_current_pcb_diagnostic_root_inventory();
     init_sqlite_inventory_core();
     CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP = "easyeda-pro-control-pcb-model-v1";
     OBSERVATION_BYTES = 131072;
@@ -127292,7 +127554,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
       }
       async observe() {
         if (this.#consumed) {
-          return refuse8();
+          return refuse9();
         }
         this.#consumed = true;
         let started = false;
@@ -127360,8 +127622,19 @@ var init_current_pcb_diagnostic_model_runner = __esm({
               arguments: [{ objectId: wrapper }]
             }
           }));
-          if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid) {
-            return refuse8();
+          const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(await this.#request({
+            modelPhase: "root-inventory",
+            method: "Runtime.callFunctionOn",
+            params: {
+              ...EFFECT_FLAGS,
+              objectId: handlerScope,
+              functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
+              returnByValue: true,
+              arguments: [{ objectId: wrapper }]
+            }
+          }));
+          if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid || compilerState.main.uuid !== rootInventory.documentUuid) {
+            return refuse9();
           }
           const observation2 = freezeDeep({
             schema: "easyeda-pro-control.pcb-diagnostic-model-observation.v1",
@@ -127369,6 +127642,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
             compilerState,
             pendingProducers,
             rawStrings,
+            rootInventory,
             atomicSnapshotVerified: false,
             continuousObservation: false,
             completeModelMembershipVerified: false,
@@ -127378,7 +127652,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
             executionAuthorized: false
           });
           if (Buffer.byteLength(canonicalJson(observation2), "utf8") > OBSERVATION_BYTES) {
-            return refuse8();
+            return refuse9();
           }
           return observation2;
         } finally {
@@ -127396,8 +127670,8 @@ var init_current_pcb_diagnostic_model_runner = __esm({
 });
 
 // server/src/current-pcb-diagnostic-pcb-opening.ts
-import { createHash as createHash50 } from "node:crypto";
-import { types as types14 } from "node:util";
+import { createHash as createHash51 } from "node:crypto";
+import { types as types15 } from "node:util";
 function currentPcbDiagnosticPcbOpeningArguments(input, phase5) {
   const target9 = currentDisposableOpenSealedTargetSchema.parse(input);
   if (!target9.rawWindowsPath.isWellFormed()) {
@@ -127405,22 +127679,22 @@ function currentPcbDiagnosticPcbOpeningArguments(input, phase5) {
   }
   return freezeDeep([{ value: target9 }, { value: phaseSchema3.parse(phase5) }]);
 }
-function refuse9() {
+function refuse10() {
   throw new Error("PCB_DIAGNOSTIC_PCB_OPENING_REPLY");
 }
 function ownRecord3(input, fields26) {
-  if (input === null || typeof input !== "object" || types14.isProxy(input) || Array.isArray(input)) {
-    return refuse9();
+  if (input === null || typeof input !== "object" || types15.isProxy(input) || Array.isArray(input)) {
+    return refuse10();
   }
   const keys2 = Reflect.ownKeys(input), prototype = Object.getPrototypeOf(input);
   if (prototype !== Object.prototype && prototype !== null || keys2.length !== fields26.length || keys2.some((key) => typeof key !== "string" || !fields26.includes(key))) {
-    return refuse9();
+    return refuse10();
   }
   const copy3 = {};
   for (const key of fields26) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
-      return refuse9();
+      return refuse10();
     }
     copy3[key] = descriptor10.value;
   }
@@ -127431,22 +127705,22 @@ function decodeCurrentPcbDiagnosticPcbOpeningReply(input, target9, phase5) {
   const raw = result["value"];
   currentPcbDiagnosticPcbOpeningArguments(target9, phase5);
   if (result["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw) > CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES) {
-    return refuse9();
+    return refuse10();
   }
   try {
     const observed2 = resultSchema4.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw)));
     if (observed2.phase !== phase5 || observed2.projectUuid !== target9.projectUuid || observed2.branchUuid !== target9.branchUuid || observed2.documentUuid !== target9.documentUuid || observed2.tabId !== `${target9.documentUuid}@${target9.projectUuid}` || observed2.ok !== (observed2.failure === null) || observed2.nativeWorkMayRemain !== observed2.dispatchAttempted || observed2.dispatchAttempted && phase5 !== "open-document" || observed2.frameObserved && phase5 !== "observe" || observed2.publicResult !== null && observed2.publicResult !== observed2.tabId || !observed2.dispatchAttempted && observed2.publicResult !== null || !observed2.ok && observed2.status !== "refused") {
-      return refuse9();
+      return refuse10();
     }
     if (observed2.ok && (observed2.windowTabId === null || phase5 === "preflight" && observed2.status !== "ready" || phase5 === "open-document" && (observed2.status !== "opened" || !observed2.dispatchAttempted || observed2.publicResult !== observed2.tabId) || phase5 === "observe" && (observed2.status !== "frame-observed" || !observed2.frameObserved))) {
-      return refuse9();
+      return refuse10();
     }
-    return freezeDeep({ ...observed2, ...LIMITS6 });
+    return freezeDeep({ ...observed2, ...LIMITS7 });
   } catch {
-    return refuse9();
+    return refuse10();
   }
 }
-var CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES, phaseSchema3, stages4, codes5, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256, id12, tab3, resultSchema4, LIMITS6;
+var CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES, phaseSchema3, stages4, codes5, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256, id12, tab3, resultSchema4, LIMITS7;
 var init_current_pcb_diagnostic_pcb_opening = __esm({
   "server/src/current-pcb-diagnostic-pcb-opening.ts"() {
     init_zod();
@@ -127541,7 +127815,7 @@ if(publicResult!==target.documentUuid+"@"+target.projectUuid)publicResult=null;
 if(typeof windowTabId!=="string"||!/^[A-Za-z0-9_-]{1,128}$/.test(windowTabId))windowTabId=null;
 return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pcb-opening.v1",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,tabId:target.documentUuid+"@"+target.projectUuid,...outcome,dispatchAttempted,publicResult,nativeWorkMayRemain:dispatchAttempted,frameObserved,windowTabId});
 }`;
-    CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256 = createHash50("sha256").update(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION).digest("hex");
+    CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256 = createHash51("sha256").update(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION).digest("hex");
     id12 = external_exports.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u);
     tab3 = external_exports.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})@[a-f\d]{64}$/u);
     resultSchema4 = external_exports.object({
@@ -127560,7 +127834,7 @@ return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pcb-opening.v1
       frameObserved: external_exports.boolean(),
       windowTabId: external_exports.string().regex(/^[A-Za-z\d_-]{1,128}$/u).nullable()
     }).strict();
-    LIMITS6 = Object.freeze({
+    LIMITS7 = Object.freeze({
       frameSourceVerified: false,
       restorationCompletionVerified: false,
       startupQualified: false,
@@ -127663,7 +127937,7 @@ function modelWire(id14, method6, params, sessionId) {
     const objectId = modelHandle(params["objectId"]);
     command = { id: id14, method: method6, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, returnByValue: false }, sessionId };
     request13 = { ...base7, modelPhase: "handler", objectId };
-  } else if (method6 === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION || params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION || params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION)) {
+  } else if (method6 === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION || params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION || params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION || params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION)) {
     const args = params["arguments"];
     if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord2(args[0]) || !diagnosticExact(args[0], ["objectId"])) {
       return fail11();
@@ -127677,6 +127951,9 @@ function modelWire(id14, method6, params, sessionId) {
     } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION) {
       command = { id: id14, method: method6, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...callParams }, sessionId };
       modelPhase = "raw-strings";
+    } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION) {
+      command = { id: id14, method: method6, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...callParams }, sessionId };
+      modelPhase = "root-inventory";
     } else {
       command = { id: id14, method: method6, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
     }
@@ -127835,6 +128112,7 @@ var init_current_pcb_diagnostic_protocol = __esm({
     init_current_pcb_diagnostic_model_runner();
     init_current_pcb_diagnostic_pending_program();
     init_current_pcb_diagnostic_raw_strings();
+    init_current_pcb_diagnostic_root_inventory();
     init_current_pcb_diagnostic_pcb_opening();
     DIAGNOSTIC_REQUEST_LIMIT = 64;
     DIAGNOSTIC_WORKER_ATTACH_PARAMS = Object.freeze({
@@ -127850,7 +128128,7 @@ var init_current_pcb_diagnostic_protocol = __esm({
 });
 
 // server/src/current-pcb-diagnostic-pipe.ts
-function record10(value2) {
+function record11(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2);
 }
 function failureError(code) {
@@ -128178,7 +128456,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           this.#fail("framing");
           return;
         }
-        if (!record10(decoded)) {
+        if (!record11(decoded)) {
           this.#fail("reply");
           return;
         }
@@ -128201,7 +128479,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           return;
         }
         const result = decoded["result"];
-        if (!record10(result)) {
+        if (!record11(result)) {
           this.#fail("reply");
           return;
         }
@@ -128211,7 +128489,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         const method6 = value2["method"], params = value2["params"], sessionId = value2["sessionId"];
         this.#eventCount += 1;
         this.#eventBytes += bytes2;
-        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES || typeof method6 !== "string" || !record10(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"]) || sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
+        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES || typeof method6 !== "string" || !record11(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"]) || sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
           this.#fail("reply");
           return;
         }
@@ -128219,7 +128497,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           const event3 = sessionId === void 0 ? { method: method6, params } : { method: method6, params, sessionId };
           if (sessionId === this.#sessionId && method6 === "Target.attachedToTarget") {
             const child = params["targetInfo"], childSession = params["sessionId"];
-            if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) || !record10(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) || !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId || this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) || this.#workerSessions.size >= 16) {
+            if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) || !record11(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) || !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId || this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) || this.#workerSessions.size >= 16) {
               this.#fail("reply");
               return;
             }
@@ -128303,9 +128581,74 @@ var init_current_pcb_diagnostic_pipe = __esm({
   }
 });
 
+// server/src/current-pcb-diagnostic-ancillary.ts
+function refuse11() {
+  throw new Error("PCB_DIAGNOSTIC_ANCILLARY_OWNER");
+}
+function positive2(value2) {
+  return typeof value2 === "number" && Number.isSafeInteger(value2) && value2 > 0 && value2 <= 2147483647;
+}
+function style2(value2) {
+  const declarations = value2.split(";"), seen = /* @__PURE__ */ new Set();
+  if (declarations.at(-1)?.trim() === "") {
+    declarations.pop();
+  }
+  if (declarations.length !== Object.keys(STYLE).length) {
+    refuse11();
+  }
+  for (const declaration of declarations) {
+    const fields26 = declaration.trim().split(":");
+    const content = fields26[1]?.trim(), name6 = fields26[0]?.trim();
+    if (fields26.length !== 2 || name6 === void 0 || content === void 0 || seen.has(name6) || !Object.hasOwn(STYLE, name6) || STYLE[name6]?.includes(content) !== true) {
+      refuse11();
+    }
+    seen.add(name6);
+  }
+}
+function diagnosticAncillaryOwner(frameId, ownerReply, describeReply) {
+  const backend = ownerReply["backendNodeId"], node = describeReply["node"];
+  if (!positive2(backend) || !diagnosticExact(ownerReply, ownerReply["nodeId"] === void 0 ? ["backendNodeId"] : ["backendNodeId", "nodeId"]) || ownerReply["nodeId"] !== void 0 && !positive2(ownerReply["nodeId"]) || !diagnosticExact(describeReply, ["node"]) || !diagnosticRecord2(node) || node["backendNodeId"] !== backend || node["nodeType"] !== 1 || node["nodeName"] !== "OBJECT" || node["localName"] !== "object" || node["frameId"] !== frameId || !Array.isArray(node["attributes"]) || node["attributes"].length !== 10) {
+    return refuse11();
+  }
+  const attributes2 = /* @__PURE__ */ new Map(), copied = [], raw = node["attributes"];
+  for (let index = 0; index < raw.length; index += 2) {
+    const key = raw[index], value2 = raw[index + 1];
+    if (typeof key !== "string" || typeof value2 !== "string" || key.length > 32 || value2.length > 1024 || !value2.isWellFormed() || value2.includes("\0") || attributes2.has(key)) {
+      return refuse11();
+    }
+    attributes2.set(key, value2);
+    copied.push(key, value2);
+  }
+  if (attributes2.get("tabindex") !== "-1" || attributes2.get("type") !== "text/html" || attributes2.get("aria-hidden") !== "true" || attributes2.get("data") !== "about:blank" || !attributes2.has("style")) {
+    return refuse11();
+  }
+  style2(attributes2.get("style") ?? "");
+  return Object.freeze({ backendNodeId: backend, attributes: Object.freeze(copied) });
+}
+var STYLE;
+var init_current_pcb_diagnostic_ancillary = __esm({
+  "server/src/current-pcb-diagnostic-ancillary.ts"() {
+    init_current_pcb_diagnostic_protocol();
+    STYLE = Object.freeze({
+      display: ["block"],
+      position: ["absolute"],
+      top: ["0", "0px"],
+      left: ["0", "0px"],
+      width: ["100%"],
+      height: ["100%"],
+      border: ["none", "0px none", "0px"],
+      padding: ["0", "0px"],
+      margin: ["0", "0px"],
+      opacity: ["0"],
+      "z-index": ["-1000"],
+      "pointer-events": ["none"]
+    });
+  }
+});
+
 // server/src/current-pcb-diagnostic-context.ts
-import { createHash as createHash51 } from "node:crypto";
-function refuse10() {
+import { createHash as createHash52 } from "node:crypto";
+function refuse12() {
   throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY");
 }
 function text28(value2, maximum5 = 8192) {
@@ -128322,7 +128665,7 @@ function clone2(value2) {
 }
 function diagnosticBoundedObservation(value2) {
   if (Buffer.byteLength(JSON.stringify(value2), "utf8") > 128 * 1024) {
-    return refuse10();
+    return refuse12();
   }
   return Object.freeze(value2);
 }
@@ -128340,20 +128683,20 @@ function frameSummary(value2) {
 }
 function validateDiagnosticFrameExpectation(value2) {
   if (!diagnosticExact(value2, ["targetId", "frameId", "frameUrl", "scriptUrl", "scriptSha256", "scriptBytes"]) || !diagnosticToken(value2.targetId) || !diagnosticToken(value2.frameId) || !text28(value2.frameUrl) || value2.frameUrl.length === 0 || !text28(value2.scriptUrl) || value2.scriptUrl.length === 0 || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer13(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse10();
+    return refuse12();
   }
   return Object.freeze({ ...value2 });
 }
 function diagnosticTargetInventory(reply) {
   const rows2 = reply["targetInfos"];
   if (!diagnosticExact(reply, ["targetInfos"]) || !Array.isArray(rows2) || rows2.length > 256) {
-    return refuse10();
+    return refuse12();
   }
   const ids2 = /* @__PURE__ */ new Set();
   const result = [];
   for (const item2 of rows2) {
     if (!diagnosticRecord2(item2) || !diagnosticToken(item2["targetId"]) || ids2.has(item2["targetId"]) || !text28(item2["type"], 64) || !text28(item2["url"]) || typeof item2["attached"] !== "boolean") {
-      return refuse10();
+      return refuse12();
     }
     ids2.add(item2["targetId"]);
     result.push(clone2(item2));
@@ -128363,13 +128706,13 @@ function diagnosticTargetInventory(reply) {
 function target7(reply, targetId2, attached) {
   const found = diagnosticTargetInventory(reply).find((item2) => item2["targetId"] === targetId2);
   if (found?.["type"] !== "page" || found["attached"] !== attached) {
-    return refuse10();
+    return refuse12();
   }
-  return found ?? refuse10();
+  return found ?? refuse12();
 }
 function frames(reply) {
   if (!diagnosticExact(reply, ["frameTree"]) || !diagnosticRecord2(reply["frameTree"])) {
-    return refuse10();
+    return refuse12();
   }
   const pending = [{ node: reply["frameTree"], parent: null, depth: 0 }];
   const ids2 = /* @__PURE__ */ new Set();
@@ -128377,21 +128720,21 @@ function frames(reply) {
   while (pending.length > 0) {
     const current10 = pending.pop();
     if (current10 === void 0) {
-      return refuse10();
+      return refuse12();
     }
     const children2 = current10.node["childFrames"], item2 = current10.node["frame"];
     if (current10.depth > 16 || !diagnosticRecord2(item2) || !diagnosticToken(item2["id"]) || ids2.has(item2["id"]) || ids2.size >= 128 || !diagnosticToken(item2["loaderId"]) || !text28(item2["url"]) || !text28(item2["securityOrigin"]) || (current10.parent === null ? item2["parentId"] !== void 0 : item2["parentId"] !== current10.parent)) {
-      return refuse10();
+      return refuse12();
     }
     ids2.add(item2["id"]);
     result.push(clone2(item2));
     if (children2 !== void 0) {
       if (!Array.isArray(children2) || children2.length > 128) {
-        return refuse10();
+        return refuse12();
       }
       for (const child of children2) {
         if (!diagnosticRecord2(child)) {
-          return refuse10();
+          return refuse12();
         }
         pending.push({ node: child, parent: item2["id"], depth: current10.depth + 1 });
       }
@@ -128401,7 +128744,7 @@ function frames(reply) {
 }
 function validateDiagnosticScriptProfile(value2) {
   if (!diagnosticExact(value2, ["family", "relativePath", "scriptSha256", "scriptBytes"]) || !["ui", "pcb", "public-api"].includes(value2.family) || !text28(value2.relativePath, 512) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(value2.relativePath) || value2.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer13(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse10();
+    return refuse12();
   }
   return Object.freeze({ ...value2 });
 }
@@ -128419,7 +128762,7 @@ function scriptUrlMatches(value2, profile) {
 function startPageBase(frame) {
   const fragment = frame["urlFragment"], url2 = frame["url"];
   if (!text28(url2) || !/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/u.test(url2) || fragment !== void 0 && fragment !== "#" || frame["parentId"] !== void 0 || frame["securityOrigin"] !== "https://client") {
-    return refuse10();
+    return refuse12();
   }
   return url2;
 }
@@ -128427,6 +128770,7 @@ var CurrentPcbDiagnosticContext;
 var init_current_pcb_diagnostic_context = __esm({
   "server/src/current-pcb-diagnostic-context.ts"() {
     init_current_pcb_diagnostic_protocol();
+    init_current_pcb_diagnostic_ancillary();
     CurrentPcbDiagnosticContext = class {
       #expected;
       #targetId;
@@ -128444,10 +128788,12 @@ var init_current_pcb_diagnostic_context = __esm({
       #openingConsumed = false;
       #opening = null;
       #pcbOpening = null;
+      #ancillaryFrame = null;
+      #ancillaryOwner = null;
       constructor(expected3) {
         if (typeof expected3 === "string") {
           if (!diagnosticToken(expected3)) {
-            refuse10();
+            refuse12();
           }
           this.#targetId = expected3;
           this.#expected = null;
@@ -128639,7 +128985,7 @@ var init_current_pcb_diagnostic_context = __esm({
         if (profile === null) {
           return this.#refuse();
         }
-        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || scriptSource.length > DIAGNOSTIC_SOURCE_BYTES || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== profile.scriptBytes || createHash51("sha256").update(scriptSource, "utf8").digest("hex") !== profile.scriptSha256) {
+        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || scriptSource.length > DIAGNOSTIC_SOURCE_BYTES || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== profile.scriptBytes || createHash52("sha256").update(scriptSource, "utf8").digest("hex") !== profile.scriptSha256) {
           return this.#refuse();
         }
         const contextId = selected3.context["id"], uniqueContextId = selected3.context["uniqueId"];
@@ -128694,13 +129040,86 @@ var init_current_pcb_diagnostic_context = __esm({
       /** An internal selector for the one fixed opening function, not generic eval
        * authority. Exact source admission must precede this call. The caller still
        * owns checkpoint reproof, durable intent and one-shot request consumption. */
-      openingContext() {
+      #uiSourceContext() {
         this.assertCurrent();
         const selected3 = this.script(), source5 = this.#sourceIdentity;
-        if (this.#expected !== null || this.#profile?.family !== "ui" || this.#frame === null || this.#frames?.length !== 1 || this.#frame["parentId"] !== void 0 || this.#frames[0]?.["id"] !== this.#frame["id"] || source5 === null || this.#sessionId === null || selected3.scriptId !== source5.scriptId || selected3.context["id"] !== source5.contextId || selected3.context["uniqueId"] !== source5.uniqueContextId) {
+        if (this.#expected !== null || this.#profile?.family !== "ui" || this.#frame === null || this.#frames === null || this.#frame["parentId"] !== void 0 || this.#frames[0]?.["id"] !== this.#frame["id"] || source5 === null || this.#sessionId === null || selected3.scriptId !== source5.scriptId || selected3.context["id"] !== source5.contextId || selected3.context["uniqueId"] !== source5.uniqueContextId) {
           return this.#refuse();
         }
         return Object.freeze({ sessionId: this.#sessionId, uniqueContextId: source5.uniqueContextId });
+      }
+      /** Derive only the optional original blank child. This selector grants no
+       * opening: the original CDP DOM-owner replies must establish its closed
+       * source-shaped OBJECT contract first. Never infer an iframe from its URL. */
+      openingAncillaryFrame() {
+        this.#uiSourceContext();
+        if (this.#frames === null || this.#frame === null) {
+          return this.#refuse();
+        }
+        if (this.#pcbOpening !== null) {
+          if (this.#ancillaryFrame !== null && !this.#frames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
+            return this.#refuse();
+          }
+          return this.#ancillaryFrame === null ? null : String(this.#ancillaryFrame["id"]);
+        }
+        const other = this.#frames.filter((row7) => row7["id"] !== this.#frame?.["id"]);
+        if (other.length === 0) {
+          if (this.#ancillaryFrame !== null || this.#ancillaryOwner !== null) {
+            return this.#refuse();
+          }
+          return null;
+        }
+        const child = other[0];
+        if (other.length !== 1 || child === void 0 || child["parentId"] !== this.#frame["id"] || child["url"] !== "about:blank" || child["urlFragment"] !== void 0 || child["securityOrigin"] !== "://" || this.#ancillaryFrame !== null && !equal6(child, this.#ancillaryFrame)) {
+          return this.#refuse();
+        }
+        this.#ancillaryFrame = child;
+        return String(child["id"]);
+      }
+      observeOpeningAncillaryOwner(ownerReply, describeReply) {
+        try {
+          const frameId = this.openingAncillaryFrame();
+          if (frameId === null) {
+            this.#refuse();
+          }
+          const proof = diagnosticAncillaryOwner(frameId, ownerReply, describeReply);
+          if (this.#ancillaryOwner !== null && !equal6(this.#ancillaryOwner, proof)) {
+            this.#refuse();
+          }
+          this.#ancillaryOwner = proof;
+        } catch {
+          this.#refuse();
+        }
+      }
+      /** Retained structural evidence only. The two fixed DOM calls cannot prove
+       * the direct DOM parent, private observer registry or future inactivity. */
+      ancillaryObservation() {
+        const frameId = this.openingAncillaryFrame();
+        if (frameId === null) {
+          return null;
+        }
+        if (this.#ancillaryFrame === null || this.#ancillaryOwner === null) {
+          return this.#refuse();
+        }
+        return diagnosticBoundedObservation({
+          schema: "easyeda-pro-control.pcb-diagnostic-ancillary-frame.v1",
+          frame: frameSummary(this.#ancillaryFrame),
+          backendNodeId: this.#ancillaryOwner.backendNodeId,
+          attributes: this.#ancillaryOwner.attributes,
+          shape: "source-shaped-ui-resize-sensor-object",
+          domParentVerified: false,
+          observerRegistryOwnershipVerified: false,
+          continuousObservation: false,
+          executionAuthorized: false
+        });
+      }
+      openingContext() {
+        const selected3 = this.#uiSourceContext();
+        const ancillary = this.openingAncillaryFrame();
+        if (this.#frames?.length !== (ancillary === null ? 1 : 2) || ancillary !== null && this.#ancillaryOwner === null) {
+          return this.#refuse();
+        }
+        return selected3;
       }
       /** Fixed model observer only, after the existing PCB frame's complete source
        * was admitted. UI opening and model inspection are intentionally disjoint;
@@ -128765,7 +129184,7 @@ var init_current_pcb_diagnostic_context = __esm({
           }
           const currentFrames = frames(frameReply), currentTarget = target7(targetReply, this.#targetId, true);
           const currentFrame = currentFrames[0];
-          if (currentFrames.length !== 1 || currentFrame === void 0) {
+          if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === void 0 || this.#ancillaryFrame !== null && !currentFrames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
             this.#refuse();
           }
           const { urlFragment: currentFragment, ...currentFields } = currentFrame;
@@ -128787,8 +129206,8 @@ var init_current_pcb_diagnostic_context = __esm({
           this.#refuse();
         }
       }
-      /** Separate document-opening branch. The project-only transition above stays
-       * single-frame. Only this one-shot branch can provisionally observe a child. */
+      /** Separate document-opening branch. The original source-shaped ancillary
+       * child stays unchanged. Only this one-shot branch can add an editor child. */
       beginPcbOpeningTransition(projectUuid4, documentUuid5) {
         const selected3 = this.openingContext();
         if (this.#pcbOpening !== null || !this.#openingConsumed || this.#opening !== null || this.#frame === null || this.#sourceIdentity === null || this.#target === null || !/^[a-f\d]{64}$/u.test(projectUuid4) || !/^(?:[a-f\d]{16}|[a-f\d]{32})$/u.test(documentUuid5) || this.#frame["urlFragment"] !== `#id=${projectUuid4}`) {
@@ -128841,7 +129260,7 @@ var init_current_pcb_diagnostic_context = __esm({
           return true;
         }
         if (event3.method === "Page.frameAttached") {
-          if (pcb5.child !== null || pcb5.childId !== null || !diagnosticToken(params["frameId"]) || params["frameId"] === pcb5.originalRoot["id"] || params["parentFrameId"] !== pcb5.originalRoot["id"] || !diagnosticExact(params, params["stack"] === void 0 ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) {
+          if (pcb5.child !== null || pcb5.childId !== null || !diagnosticToken(params["frameId"]) || params["frameId"] === pcb5.originalRoot["id"] || params["frameId"] === this.#ancillaryFrame?.["id"] || params["parentFrameId"] !== pcb5.originalRoot["id"] || !diagnosticExact(params, params["stack"] === void 0 ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) {
             this.#refuse();
           }
           pcb5.childId = params["frameId"];
@@ -128884,7 +129303,7 @@ var init_current_pcb_diagnostic_context = __esm({
         this.pcbOpeningContext();
         try {
           const currentFrames = frames(frameReply), currentTarget = target7(targetReply, this.#targetId, true), pcb5 = this.#pcbOpening;
-          if (pcb5 === null || pcb5.childId === null || pcb5.childLoaderId === null || pcb5.child !== null || pcb5.fragmentEvents === 0 || pcb5.navigationCount === 0 || this.#target === null || currentFrames.length !== 2) {
+          if (pcb5 === null || pcb5.childId === null || pcb5.childLoaderId === null || pcb5.child !== null || pcb5.fragmentEvents === 0 || pcb5.navigationCount === 0 || this.#target === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) || this.#ancillaryFrame !== null && !currentFrames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
             this.#refuse();
           }
           const root = currentFrames.find((frame) => frame["id"] === pcb5.originalRoot["id"]);
@@ -128947,7 +129366,7 @@ var init_current_pcb_diagnostic_context = __esm({
           return this.#refuse();
         }
         const scriptSource = source5["scriptSource"], selected3 = this.pcbScript(pcb5.profile);
-        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== pcb5.profile.scriptBytes || createHash51("sha256").update(scriptSource, "utf8").digest("hex") !== pcb5.profile.scriptSha256 || !integer13(selected3.context["id"]) || !diagnosticToken(selected3.context["uniqueId"])) {
+        if (!diagnosticExact(source5, ["scriptSource"]) || typeof scriptSource !== "string" || !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== pcb5.profile.scriptBytes || createHash52("sha256").update(scriptSource, "utf8").digest("hex") !== pcb5.profile.scriptSha256 || !integer13(selected3.context["id"]) || !diagnosticToken(selected3.context["uniqueId"])) {
           return this.#refuse();
         }
         pcb5.sourceIdentity = Object.freeze({ scriptId: selected3.scriptId, contextId: selected3.context["id"], uniqueContextId: selected3.context["uniqueId"] });
@@ -128995,21 +129414,21 @@ var init_current_pcb_diagnostic_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse10();
+        return refuse12();
       }
     };
   }
 });
 
 // server/src/current-pcb-diagnostic-worker-context.ts
-import { createHash as createHash52 } from "node:crypto";
-function refuse11() {
+import { createHash as createHash53 } from "node:crypto";
+function refuse13() {
   throw new Error("PCB_DIAGNOSTIC_WORKER_IDENTITY");
 }
 function text29(value2, maximum5 = 8192) {
   return typeof value2 === "string" && value2.length <= maximum5 && value2.isWellFormed() && !value2.includes("\0");
 }
-function positive2(value2) {
+function positive3(value2) {
   return typeof value2 === "number" && Number.isSafeInteger(value2) && value2 > 0;
 }
 function equal7(left, right) {
@@ -129064,8 +129483,8 @@ var init_current_pcb_diagnostic_worker_context = __esm({
       /** Optional profile is an offline comparison seam. The public owner must use
        * the default compiled profile, never caller URL/hash/size expectations. */
       constructor(parentTargetId, parentSessionId, profile = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
-        if (!diagnosticToken(parentTargetId) || !diagnosticToken(parentSessionId) || !diagnosticExact(profile, ["relativePath", "scriptSha256", "scriptBytes"]) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(profile.relativePath) || profile.relativePath.length > 512 || profile.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(profile.scriptSha256) || !positive2(profile.scriptBytes) || profile.scriptBytes > 4 * 1024 * 1024) {
-          refuse11();
+        if (!diagnosticToken(parentTargetId) || !diagnosticToken(parentSessionId) || !diagnosticExact(profile, ["relativePath", "scriptSha256", "scriptBytes"]) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(profile.relativePath) || profile.relativePath.length > 512 || profile.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(profile.scriptSha256) || !positive3(profile.scriptBytes) || profile.scriptBytes > 4 * 1024 * 1024) {
+          refuse13();
         }
         this.#parentTargetId = parentTargetId;
         this.#parentSessionId = parentSessionId;
@@ -129104,14 +129523,14 @@ var init_current_pcb_diagnostic_worker_context = __esm({
         }
         if (event3.method === "Runtime.executionContextCreated") {
           const context3 = params["context"];
-          if (!diagnosticExact(params, ["context"]) || !diagnosticRecord2(context3) || !diagnosticExact(context3, ["id", "origin", "name", "uniqueId"]) || !positive2(context3["id"]) || !diagnosticToken(context3["uniqueId"]) || context3["origin"] !== selected3.target["url"] || context3["name"] !== selected3.target["title"] || this.#contexts.size > 0) {
+          if (!diagnosticExact(params, ["context"]) || !diagnosticRecord2(context3) || !diagnosticExact(context3, ["id", "origin", "name", "uniqueId"]) || !positive3(context3["id"]) || !diagnosticToken(context3["uniqueId"]) || context3["origin"] !== selected3.target["url"] || context3["name"] !== selected3.target["title"] || this.#contexts.size > 0) {
             this.#refuse();
           }
           this.#contexts.set(context3["id"], copy2(context3));
           return;
         }
         if (event3.method === "Debugger.scriptParsed") {
-          if (!diagnosticToken(params["scriptId"]) || !positive2(params["executionContextId"]) || !text29(params["url"]) || this.#scripts.has(params["scriptId"]) || this.#scripts.size >= 4096) {
+          if (!diagnosticToken(params["scriptId"]) || !positive3(params["executionContextId"]) || !text29(params["url"]) || this.#scripts.has(params["scriptId"]) || this.#scripts.size >= 4096) {
             this.#refuse();
           }
           this.#scripts.set(params["scriptId"], copy2(params));
@@ -129200,7 +129619,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
           return this.#refuse();
         }
         const selected3 = this.#selectedScript(), value2 = source5["scriptSource"];
-        if (!diagnosticExact(source5, ["scriptSource"]) || typeof value2 !== "string" || !value2.isWellFormed() || Buffer.byteLength(value2, "utf8") !== this.#profile.scriptBytes || createHash52("sha256").update(value2, "utf8").digest("hex") !== this.#profile.scriptSha256) {
+        if (!diagnosticExact(source5, ["scriptSource"]) || typeof value2 !== "string" || !value2.isWellFormed() || Buffer.byteLength(value2, "utf8") !== this.#profile.scriptBytes || createHash53("sha256").update(value2, "utf8").digest("hex") !== this.#profile.scriptSha256) {
           return this.#refuse();
         }
         this.#admitted = selected3;
@@ -129268,38 +129687,38 @@ var init_current_pcb_diagnostic_worker_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse11();
+        return refuse13();
       }
     };
   }
 });
 
 // server/src/current-pcb-diagnostic-installation.ts
-import { createHash as createHash53 } from "node:crypto";
+import { createHash as createHash54 } from "node:crypto";
 import { constants as constants26 } from "node:fs";
 import { lstat as lstat40, open as open38, realpath as realpath24 } from "node:fs/promises";
 import path5 from "node:path";
-function refuse12() {
+function refuse14() {
   throw new Error("PCB_DIAGNOSTIC_INSTALLATION_REFUSED");
 }
 function windowsPath3(host) {
   if (!/^\/mnt\/[a-z]\//u.test(host) || path5.posix.normalize(host) !== host) {
-    refuse12();
+    refuse14();
   }
   const components = host.slice(7).split("/");
   if (components.some((value2) => value2.length === 0 || value2.length > 120 || value2.trim() !== value2 || value2.endsWith(".") || // oxlint-disable-next-line no-control-regex -- Native command/path tokens exclude every control character explicitly.
   /[<>:"\\|?*\u0000-\u001F\u007F]/u.test(value2) || /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/iu.test(value2))) {
-    refuse12();
+    refuse14();
   }
   const result = `${host[5]?.toUpperCase()}:\\${components.join("\\")}`;
   if (result.length > 240) {
-    refuse12();
+    refuse14();
   }
   return result;
 }
 function createCurrentPcbDiagnosticInstallationPlan(options) {
   if (!/^[a-f\d]{64}$/u.test(options.powershellSha256) || !Number.isSafeInteger(options.powershellBytes) || options.powershellBytes < 1 || options.powershellBytes > 16777216) {
-    refuse12();
+    refuse14();
   }
   const paths = Object.freeze(deriveWindowsRuntimePaths({ ...options, powershellExecutable: POWERSHELL2 }));
   const files = ORDINARY_LAUNCH_PROFILE.installedFiles.map((pin4) => Object.freeze({
@@ -129316,27 +129735,27 @@ function same43(left, right) {
 }
 async function verifyCurrentPcbDiagnosticPowerShell(hostPath, expected3) {
   if (path5.posix.resolve(hostPath) !== hostPath || await realpath24(hostPath) !== hostPath || !Number.isSafeInteger(expected3.bytes) || expected3.bytes < 1 || expected3.bytes > 16777216 || !/^[a-f\d]{64}$/u.test(expected3.sha256)) {
-    refuse12();
+    refuse14();
   }
   const handle2 = await open38(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
   try {
     const before = await handle2.stat({ bigint: true });
     if (!before.isFile() || before.nlink < 1n || before.size !== BigInt(expected3.bytes)) {
-      refuse12();
+      refuse14();
     }
-    const buffer = Buffer.alloc(65536), hash45 = createHash53("sha256");
+    const buffer = Buffer.alloc(65536), hash45 = createHash54("sha256");
     let total = 0;
     while (total < expected3.bytes) {
       const result = await handle2.read(buffer, 0, Math.min(buffer.length, expected3.bytes - total), total);
       if (result.bytesRead === 0) {
-        refuse12();
+        refuse14();
       }
       total += result.bytesRead;
       hash45.update(buffer.subarray(0, result.bytesRead));
     }
     const eof = await handle2.read(buffer, 0, 1, total);
     if (eof.bytesRead !== 0 || hash45.digest("hex") !== expected3.sha256 || !same43(before, await handle2.stat({ bigint: true })) || !same43(before, await lstat40(hostPath, { bigint: true })) || await realpath24(hostPath) !== hostPath) {
-      refuse12();
+      refuse14();
     }
   } finally {
     await handle2.close();
@@ -129369,13 +129788,13 @@ var init_current_pcb_diagnostic_installation = __esm({
 
 // server/src/current-pcb-diagnostic-owner.ts
 import { spawn as spawn9 } from "node:child_process";
-import { createHash as createHash54, randomBytes as randomBytes12 } from "node:crypto";
+import { createHash as createHash55, randomBytes as randomBytes12 } from "node:crypto";
 import { lstat as lstat41, readFile as readFile8, realpath as realpath25 } from "node:fs/promises";
 import process19 from "node:process";
 import { PassThrough as PassThrough2, Writable as Writable2 } from "node:stream";
 import { setTimeout as delay2 } from "node:timers/promises";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
-function record11(value2) {
+function record12(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2);
 }
 function exact18(value2, fields26) {
@@ -129414,7 +129833,7 @@ async function startCurrentPcbDiagnosticOwner(options) {
   const before = await lstat41(helperPath);
   const verify = async () => {
     const first = await lstat41(helperPath);
-    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size !== HELPER_BYTES || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath25(helperPath) !== helperPath || createHash54("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
+    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size !== HELPER_BYTES || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath25(helperPath) !== helperPath || createHash55("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
       throw error51("HELPER_SOURCE");
     }
     const after = await lstat41(helperPath);
@@ -129460,8 +129879,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_diagnostic_opening();
     init_current_pcb_diagnostic_model_runner();
     init_current_pcb_diagnostic_pcb_opening();
-    HELPER_SHA256 = "6c7872630490658868170a1403a8087bc6ed4b1aeb7a68ecdf207a5caa1a3080";
-    HELPER_BYTES = 130792;
+    HELPER_SHA256 = "e315c83350188bdcd4a6de4221098e2539c073b4378fa9d134329db5da838a1f";
+    HELPER_BYTES = 144881;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -129736,6 +130155,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           await this.#verifyInstallation();
           await this.#verify();
           this.#available();
+          await this.#observeOpeningAncillary();
           const selected3 = context3.openingContext();
           await this.#observeParent();
           context3.openingContext();
@@ -129758,6 +130178,8 @@ var init_current_pcb_diagnostic_owner = __esm({
           await this.#verify();
           this.#available();
           await this.#observeParent();
+          context3.openingContext();
+          await this.#observeOpeningAncillary();
           context3.openingContext();
           const titleProof = preflight.observation;
           if (titleProof === null) {
@@ -129787,11 +130209,15 @@ var init_current_pcb_diagnostic_owner = __esm({
           context3.openingContext();
           const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
           context3.finishOpeningTransition(targets, frameTree);
+          await this.#observeOpeningAncillary();
+          context3.openingContext();
           await this.#verifyInstallation();
           await this.#verify();
           this.#available();
           context3.openingContext();
-          return result;
+          const ancillaryFrame = context3.ancillaryObservation();
+          this.#projectOpeningResult = ancillaryFrame === null ? result : Object.freeze({ ...result, ancillaryFrame });
+          return this.#projectOpeningResult;
         } catch (caughtError) {
           this.#input.emit("error", error51("PROJECT_OPENING_FAILED"));
           throw caughtError;
@@ -129836,6 +130262,8 @@ var init_current_pcb_diagnostic_owner = __esm({
           this.#available();
           await this.#observeParent();
           context3.openingContext();
+          await this.#observeOpeningAncillary();
+          context3.openingContext();
           const opening = context3.beginPcbOpeningTransition(target9.projectUuid, target9.documentUuid);
           const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
             await this.#transfer(() => this.#pipe.observePcbOpening(opening.uniqueContextId, target9, "open-document")),
@@ -129878,6 +130306,8 @@ var init_current_pcb_diagnostic_owner = __esm({
           const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
           context3.pcbOpeningContext();
           const child = context3.observePcbOpeningFrames(targets, frameTree);
+          await this.#observeOpeningAncillary();
+          context3.pcbOpeningContext();
           const frameOwner = await this.#transfer(() => this.#pipe.getFrameOwner(child.frameId));
           context3.pcbOpeningContext();
           const backend = frameOwner["backendNodeId"];
@@ -129915,7 +130345,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           context3.pcbScript(profile);
           context3.completePcbOpening();
           context3.modelContext();
-          const result = diagnosticBoundedObservation({ ...proof, openingObservation: observed2 });
+          const result = diagnosticBoundedObservation({ ...proof, openingObservation: observed2, ancillaryFrame: context3.ancillaryObservation() });
           this.#pcbSourceQualified = true;
           return result;
         } catch (caughtError) {
@@ -130055,6 +130485,29 @@ var init_current_pcb_diagnostic_owner = __esm({
         context3.assertCurrent();
         this.#workerContext?.assertCurrent();
         return targets;
+      }
+      /** Five bounded samples at original project/PCB boundaries. The native
+       * protocol already supports these two fixed DOM reads. No caller selector,
+       * source execution, editor-frame exception or native registry claim follows. */
+      async #observeOpeningAncillary() {
+        const context3 = this.#stagedContext;
+        if (context3 === null) {
+          throw error51("ANCILLARY_UNAVAILABLE");
+        }
+        const frameId = context3.openingAncillaryFrame();
+        if (frameId === null) {
+          return;
+        }
+        const owner = await this.#transfer(() => this.#pipe.getFrameOwner(frameId));
+        if (context3.openingAncillaryFrame() !== frameId) {
+          throw error51("ANCILLARY_CHANGED");
+        }
+        const backend = owner["backendNodeId"];
+        if (typeof backend !== "number" || !Number.isSafeInteger(backend) || backend < 1 || backend > 2147483647) {
+          throw error51("ANCILLARY_BACKEND");
+        }
+        const node = await this.#transfer(() => this.#pipe.describeFrameOwner(backend));
+        context3.observeOpeningAncillaryOwner(owner, node);
       }
       async #attach(context3, targetId2) {
         let sessionId = null;
@@ -130392,7 +130845,7 @@ var init_current_pcb_diagnostic_owner = __esm({
               this.#nativeLaunchError = typeof reply["error"] === "string" ? reply["error"] : null;
             }
             pending.reject(error51("NATIVE_REFUSAL"));
-          } else if (record11(reply["result"])) {
+          } else if (record12(reply["result"])) {
             pending.resolve(reply["result"]);
           } else {
             pending.reject(error51("HELPER_REPLY"));
@@ -130430,7 +130883,7 @@ var init_current_pcb_diagnostic_owner = __esm({
         try {
           const raw = decodeCurrentPcbDiagnosticJson(this.#buffer.subarray(0, newline));
           const pending = this.#pending;
-          if (!record11(raw) || pending === null || pending.reply !== null || raw["id"] !== pending.id || (raw["ok"] === true ? !exact18(raw, ["id", "ok", "result"]) || !record11(raw["result"]) : raw["ok"] !== false || !exact18(raw, ["id", "ok", "error"]) || typeof raw["error"] !== "string" || !/^pcb-diagnostic-[a-z-]{1,80}$/u.test(raw["error"]))) {
+          if (!record12(raw) || pending === null || pending.reply !== null || raw["id"] !== pending.id || (raw["ok"] === true ? !exact18(raw, ["id", "ok", "result"]) || !record12(raw["result"]) : raw["ok"] !== false || !exact18(raw, ["id", "ok", "error"]) || typeof raw["error"] !== "string" || !/^pcb-diagnostic-[a-z-]{1,80}$/u.test(raw["error"]))) {
             this.#fail("HELPER_REPLY");
             return;
           }
@@ -130637,15 +131090,15 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           const native = original2 && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
           const selectedStage = request13.observation ?? diagnosticObservationStageSchema.options.toReversed().find((stage) => operation?.records[`${stage}-result.json`] !== void 0 || original2 && this.#pending.has(`${stage}-result.json`));
           const observations = diagnosticObservationStageSchema.options.map((stage) => {
-            const record13 = operation?.records[`${stage}-result.json`];
+            const record14 = operation?.records[`${stage}-result.json`];
             const pending = original2 ? this.#pending.get(`${stage}-result.json`) : void 0;
             const retained2 = pending === void 0 ? void 0 : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending));
             return {
               stage,
               consumed: operation?.records[`${stage}-intent.json`] !== void 0 || original2 && this.#observationConsumed.has(stage),
               resultRetained: original2 && this.#observations.has(stage),
-              published: record13 !== void 0,
-              result: stage === selectedStage ? (record13 ?? retained2)?.result : void 0
+              published: record14 !== void 0,
+              result: stage === selectedStage ? (record14 ?? retained2)?.result : void 0
             };
           });
           const openingPending = original2 ? this.#pending.get("project-opening-result.json") : void 0;
@@ -130739,12 +131192,12 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         await assertNoUnresolvedOrdinaryLaunches();
         await this.#options.assertOtherLaunchesSettled();
       }
-      async #record(operationId11, name6, record13) {
-        this.#retainRecord(name6, record13);
-        await this.#publish(operationId11, name6, record13);
+      async #record(operationId11, name6, record14) {
+        this.#retainRecord(name6, record14);
+        await this.#publish(operationId11, name6, record14);
       }
-      #retainRecord(name6, record13) {
-        const original2 = this.#pending.get(name6), text38 = canonicalJson(record13);
+      #retainRecord(name6, record14) {
+        const original2 = this.#pending.get(name6), text38 = canonicalJson(record14);
         requireValue16(original2 === void 0 || original2 === text38, "PUBLICATION_PLAN_CHANGED");
         this.#pending.set(name6, text38);
       }
@@ -130826,7 +131279,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           const status2 = retained2.methods.status.call(retained2.owner);
           requireValue16(status2.released && status2.helperClosed && status2.failure === null && !status2.launchConsumed && status2.binding === null, "UNLAUNCHED_RELEASE_UNCONFIRMED");
         }
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-not-dispatched.v1",
           operationId: operationId11,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -130834,7 +131287,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           nativeLaunchInvoked: false,
           helperReleased: retained2 !== null
         };
-        await this.#record(operationId11, "not-dispatched.json", record13);
+        await this.#record(operationId11, "not-dispatched.json", record14);
         this.#releaseLease();
         const operations = await readCurrentPcbDiagnosticLifecycles();
         return describe4(operationId11, operations.find((value2) => value2.operationId === operationId11));
@@ -130874,18 +131327,18 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#assertOwner(retained2);
         const status2 = retained2.methods.status.call(retained2.owner);
         requireValue16(status2.released && status2.helperClosed && status2.failure === null && status2.binding === null, "NO_PROCESS_RELEASE_UNCONFIRMED");
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-no-process-released.v1",
           operationId: operationId11,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           noProcessReleaseIntentSha256: sha256Json(intent),
           proof
         };
-        this.#retainRecord("no-process-released.json", record13);
+        this.#retainRecord("no-process-released.json", record14);
         await assertSnapshot(operations);
         this.#assertOwner(retained2);
-        await this.#publish(operationId11, "no-process-released.json", record13);
-        const completed5 = { ...operation, records: { ...operation.records, "no-process-released.json": record13 } };
+        await this.#publish(operationId11, "no-process-released.json", record14);
+        const completed5 = { ...operation, records: { ...operation.records, "no-process-released.json": record14 } };
         await assertSnapshot(operations.map((value2) => value2.operationId === operationId11 ? completed5 : value2));
         this.#assertOwner(retained2);
         this.#releaseLease();
@@ -130978,7 +131431,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           }
         }
         if (retained2.binding !== null) {
-          const record13 = {
+          const record14 = {
             schema: "easyeda-pro-control.pcb-diagnostic-launch-binding.v1",
             operationId: request13.operationId,
             createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -130989,8 +131442,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           try {
             await assertSnapshot(expected3);
             this.#assertOwner(retained2);
-            await this.#record(request13.operationId, "binding.json", record13);
-            const updated = { operationId: request13.operationId, records: { "intent.json": intent, "binding.json": record13 } };
+            await this.#record(request13.operationId, "binding.json", record14);
+            const updated = { operationId: request13.operationId, records: { "intent.json": intent, "binding.json": record14 } };
             await assertSnapshot(expected3.map((value2) => value2.operationId === request13.operationId ? updated : value2));
           } catch (error52) {
             if (failure2 !== void 0) {
@@ -131046,7 +131499,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (!terminated) {
           return { ...describe4(request13.operationId, operation), terminationObserved: false };
         }
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-terminated.v1",
           operationId: request13.operationId,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -131054,9 +131507,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           originalRootExited: true,
           originalJobEmpty: true
         };
-        await this.#record(request13.operationId, "terminated.json", record13);
+        await this.#record(request13.operationId, "terminated.json", record14);
         this.#assertOwner(retained2);
-        return describe4(request13.operationId, { ...operation, records: { ...operation.records, "terminated.json": record13 } });
+        return describe4(request13.operationId, { ...operation, records: { ...operation.records, "terminated.json": record14 } });
       }
       async #close(request13, operation, operations, retained2) {
         requireValue16(!this.#closeAttempted && operation.records["close-intent.json"] === void 0 && operation.records["terminated.json"] === void 0, "CLOSE_CONSUMED");
@@ -131181,7 +131634,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         }
         this.#observations.set(stage, result);
         requireValue16(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "OBSERVATION_BOUND");
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-observation-result.v1",
           operationId: request13.operationId,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -131190,15 +131643,15 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           result: structuredClone(result),
           executionAuthorized: false
         };
-        this.#retainRecord(`${stage}-result.json`, record13);
+        this.#retainRecord(`${stage}-result.json`, record14);
         this.#assertOwner(retained2);
         await assertSnapshot(expected3);
         this.#assertOwner(retained2);
-        await this.#publish(request13.operationId, `${stage}-result.json`, record13);
-        const completed5 = { ...updated, records: { ...updated.records, [`${stage}-result.json`]: record13 } };
+        await this.#publish(request13.operationId, `${stage}-result.json`, record14);
+        const completed5 = { ...updated, records: { ...updated.records, [`${stage}-result.json`]: record14 } };
         await assertSnapshot(expected3.map((value2) => value2.operationId === request13.operationId ? completed5 : value2));
         this.#assertOwner(retained2);
-        return { ...describe4(request13.operationId, operation), stage, result: record13.result };
+        return { ...describe4(request13.operationId, operation), stage, result: record14.result };
       }
       async #openProject(request13, operation, operations, retained2) {
         requireValue16(!this.#openingAttempted && operation.records["project-opening-intent.json"] === void 0, "PROJECT_OPENING_CONSUMED");
@@ -131256,7 +131709,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#openingResult = result;
         requireValue16(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "PROJECT_OPENING_BOUND");
         requireValue16(!result.ok || reverified, "PROJECT_REVERIFICATION_REQUIRED");
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-project-opening-result.v1",
           operationId: request13.operationId,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -131264,15 +131717,15 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           result: structuredClone(result),
           executionAuthorized: false
         };
-        this.#retainRecord("project-opening-result.json", record13);
+        this.#retainRecord("project-opening-result.json", record14);
         this.#assertOwner(retained2);
         await assertSnapshot(expected3);
         this.#assertOwner(retained2);
-        await this.#publish(request13.operationId, "project-opening-result.json", record13);
-        const completed5 = { ...updated, records: { ...updated.records, "project-opening-result.json": record13 } };
+        await this.#publish(request13.operationId, "project-opening-result.json", record14);
+        const completed5 = { ...updated, records: { ...updated.records, "project-opening-result.json": record14 } };
         await assertSnapshot(expected3.map((value2) => value2.operationId === request13.operationId ? completed5 : value2));
         this.#assertOwner(retained2);
-        return { ...describe4(request13.operationId, completed5), projectOpeningResultRetained: true, result: record13.result, preparationCheckpoint };
+        return { ...describe4(request13.operationId, completed5), projectOpeningResultRetained: true, result: record14.result, preparationCheckpoint };
       }
       #originalProjectOpening(operation) {
         const intent = operation.records["project-opening-intent.json"], opened = operation.records["project-opening-result.json"];
@@ -131320,7 +131773,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#pcbOpeningResult = result;
         requireValue16(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "PCB_OPENING_BOUND");
         requireValue16(!result.dispatchAttempted || reverified, "PCB_REVERIFICATION_REQUIRED");
-        const record13 = {
+        const record14 = {
           schema: "easyeda-pro-control.pcb-diagnostic-pcb-open-result.v1",
           operationId: request13.operationId,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -131328,15 +131781,15 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           result: structuredClone(result),
           executionAuthorized: false
         };
-        this.#retainRecord("pcb-open-result.json", record13);
+        this.#retainRecord("pcb-open-result.json", record14);
         this.#assertOwner(retained2);
         await assertSnapshot(expected3);
         this.#assertOwner(retained2);
-        await this.#publish(request13.operationId, "pcb-open-result.json", record13);
-        const completed5 = { ...updated, records: { ...updated.records, "pcb-open-result.json": record13 } };
+        await this.#publish(request13.operationId, "pcb-open-result.json", record14);
+        const completed5 = { ...updated, records: { ...updated.records, "pcb-open-result.json": record14 } };
         await assertSnapshot(expected3.map((value2) => value2.operationId === request13.operationId ? completed5 : value2));
         this.#assertOwner(retained2);
-        return { ...describe4(request13.operationId, completed5), pcbOpeningResultRetained: true, result: record13.result };
+        return { ...describe4(request13.operationId, completed5), pcbOpeningResultRetained: true, result: record14.result };
       }
       async #release(operation, operations, retained2) {
         const termination = operation.records["terminated.json"];
@@ -131749,7 +132202,7 @@ var init_current_symbol_closed_target_runtime = __esm({
 });
 
 // server/src/current-symbol-copy-preparation.ts
-import { createHash as createHash55 } from "node:crypto";
+import { createHash as createHash56 } from "node:crypto";
 import { constants as constants27 } from "node:fs";
 import { lstat as lstat42, open as open39 } from "node:fs/promises";
 import { basename as basename28, dirname as dirname26, isAbsolute as isAbsolute26, join as join63, relative as relative9, resolve as resolve21, sep as sep7 } from "node:path";
@@ -131808,7 +132261,7 @@ async function noSidecars3(path6) {
   }
 }
 async function verifyBytes2(file3, size3, expectedHash) {
-  const digest11 = createHash55("sha256");
+  const digest11 = createHash56("sha256");
   let bytes2 = 0;
   for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
     need51(Buffer.isBuffer(chunk));
@@ -132487,7 +132940,7 @@ async function assessCurrentStartupPremises(input) {
   if (matches.length !== 1 || pcb5?.docType !== "PCB" || isNativeDocumentDeleted(pcb5)) {
     throw new Error("Current startup baseline requires its exact undeleted PCB.");
   }
-  const metadata10 = pcb5.records.filter((record13) => record13.id === "META" || record13.type === "META");
+  const metadata10 = pcb5.records.filter((record14) => record14.id === "META" || record14.type === "META");
   const meta5 = metadata10[0];
   const counted = metadata10.length === 1 && meta5?.id === "META" && meta5.type === "META" && typeof meta5.body["title"] === "string";
   const activePages = input.history.documents.filter((document3) => document3.docType === "SCH_PAGE" && !isNativeDocumentDeleted(document3)).length;
@@ -132652,17 +133105,17 @@ function drawingPart(document3, rows2) {
   let numberingBudget = rows2.length;
   for (const row7 of rows2) {
     const records2 = parseNativeRecords(row7);
-    const record13 = records2[0];
+    const record14 = records2[0];
     need55(
-      records2.length === 1 && record13 !== void 0 && typeof record13.header["type"] === "string" && TYPES2.has(record13.header["type"]),
+      records2.length === 1 && record14 !== void 0 && typeof record14.header["type"] === "string" && TYPES2.has(record14.header["type"]),
       "unsupported canvas record or asset dependency"
     );
-    if (record13.header["type"] === "ELE_PLACEHOLDER") {
-      const step = currentSymbolCopyPlaceholderStep(record13.body);
+    if (record14.header["type"] === "ELE_PLACEHOLDER") {
+      const step = currentSymbolCopyPlaceholderStep(record14.body);
       need55(step <= Number.MAX_SAFE_INTEGER - numberingBudget, "placeholder numbering exceeds exact integer capacity");
       numberingBudget += step;
-    } else if (record13.body !== null) {
-      const body4 = record13.body, type2 = record13.header["type"];
+    } else if (record14.body !== null) {
+      const body4 = record14.body, type2 = record14.header["type"];
       need55(type2 === "PART" || type2 === "CANVAS" || body4["partId"] === part.id, "drawing membership differs from the sole part");
       need55(body4["partId"] === void 0 || body4["partId"] === "" || body4["partId"] === part.id, "foreign part reference");
       if (type2 === "ATTR" && body4["parentId"] !== void 0) {
@@ -132723,12 +133176,12 @@ async function prepareCurrentSymbolCopyPlan(before, sourceInput) {
       strings.push(value2);
     }
     let current10;
-    for (const record13 of records2) {
-      if (record13.header["type"] === "DOCHEAD") {
-        const uuid12 = record13.body?.["uuid"];
-        current10 = record13.body?.["docType"] === "SYMBOL" && typeof uuid12 === "string" ? uuid12 : void 0;
-      } else if (current10 !== void 0 && record13.header["type"] !== "EDIT_HEAD") {
-        const ticket2 = record13.header["ticket"];
+    for (const record14 of records2) {
+      if (record14.header["type"] === "DOCHEAD") {
+        const uuid12 = record14.body?.["uuid"];
+        current10 = record14.body?.["docType"] === "SYMBOL" && typeof uuid12 === "string" ? uuid12 : void 0;
+      } else if (current10 !== void 0 && record14.header["type"] !== "EDIT_HEAD") {
+        const ticket2 = record14.header["ticket"];
         need55(typeof ticket2 === "number" && Number.isSafeInteger(ticket2), "raw symbol atom ticket is absent");
         atomTickets.set(current10, Math.max(atomTickets.get(current10) ?? 0, ticket2));
       }
@@ -133649,7 +134102,7 @@ var init_current_symbol_cache_journal = __esm({
 });
 
 // server/src/current-symbol-preopen-source.ts
-import { createHash as createHash56 } from "node:crypto";
+import { createHash as createHash57 } from "node:crypto";
 import { constants as constants28 } from "node:fs";
 import { lstat as lstat44, open as open40 } from "node:fs/promises";
 import { basename as basename29, dirname as dirname27, isAbsolute as isAbsolute27, resolve as resolve22 } from "node:path";
@@ -133723,7 +134176,7 @@ function matchesBaseline(stat3, copy3) {
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES9 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash41(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES2)), digest11 = createHash56("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES2)), digest11 = createHash57("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -134206,7 +134659,7 @@ async function prepareCurrentSymbolTransactionClock(input) {
     documentWindow,
     collectionMaximumMs: COLLECTION_MS,
     ...ASSUMPTIONS,
-    ...LIMITS7
+    ...LIMITS8
   });
   plans4.set(plan2, { dispatchOwner: owner, launch, capture: capture3, before, armed, documentBefore: document3, actorPlan, stage: "armed" });
   return plan2;
@@ -134280,7 +134733,7 @@ async function verifyCurrentSymbolTransactionClock(plan2, input) {
     originalWindowsObservationsRetained: true,
     fullActorSqlEffect,
     ...ASSUMPTIONS,
-    ...LIMITS7
+    ...LIMITS8
   });
   prepared.completed = Object.freeze({ after: afterInventory, afterText: canonicalJson(afterInventory), comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -134299,7 +134752,7 @@ async function decodeCompletedCurrentSymbolTransactionHistory(plan2, dispatchOwn
   );
   return Object.freeze({ ...decoded, comparison: completed5.comparison });
 }
-var EPOCH_TICKS7, COLLECTION_MS, WINDOW_MS, LIMITS7, ASSUMPTIONS, plans4;
+var EPOCH_TICKS7, COLLECTION_MS, WINDOW_MS, LIMITS8, ASSUMPTIONS, plans4;
 var init_current_symbol_transaction_clock = __esm({
   "server/src/current-symbol-transaction-clock.ts"() {
     init_core3();
@@ -134310,7 +134763,7 @@ var init_current_symbol_transaction_clock = __esm({
     EPOCH_TICKS7 = 621355968000000000n;
     COLLECTION_MS = 1e4;
     WINDOW_MS = 6e4;
-    LIMITS7 = Object.freeze({
+    LIMITS8 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       sourceOwnershipVerified: false,
@@ -135689,11 +136142,11 @@ async function hasCanvasOccurrences(chunks, targetUuid) {
       records2.pop();
     }
     for (const raw of records2) {
-      const record13 = parseNativeRecords(raw)[0];
-      need67(record13 !== void 0);
-      const type2 = record13.header["type"];
+      const record14 = parseNativeRecords(raw)[0];
+      need67(record14 !== void 0);
+      const type2 = record14.header["type"];
       if (type2 === "DOCHEAD") {
-        current10 = record13.body?.["uuid"];
+        current10 = record14.body?.["uuid"];
       } else if (type2 !== "EDIT_HEAD" && current10 === targetUuid && (typeof type2 !== "string" || !METADATA_ATOMS.has(type2))) {
         canvas = true;
       }
@@ -142737,7 +143190,7 @@ async function prepareCurrentSymbolCopyClock(input) {
     documentWindow,
     collectionMaximumMs: COLLECTION_MS2,
     ...ASSUMPTIONS2,
-    ...LIMITS8
+    ...LIMITS9
   });
   plans6.set(plan2, { dispatchOwner: owner, launch, capture: capture3, before, armed, documentBefore: document3, sqlPlan, copyPlan, expectedActor: startupActor, stage: "armed" });
   return plan2;
@@ -142819,7 +143272,7 @@ async function verifyCurrentSymbolCopyClock(plan2, input) {
     originalWindowsObservationsRetained: true,
     fullActorSqlEffect,
     ...ASSUMPTIONS2,
-    ...LIMITS8
+    ...LIMITS9
   });
   prepared.completed = Object.freeze({ after: afterInventory, afterText: canonicalJson(afterInventory), comparison: comparison3, comparisonText: canonicalJson(comparison3), sqlEffect });
   return comparison3;
@@ -142838,7 +143291,7 @@ function completedCurrentSymbolCopyClockSource(plan2, dispatchOwner, after) {
   );
   return Object.freeze({ ...decoded, comparison: completed5.comparison, expectedActor: prepared.expectedActor });
 }
-var EPOCH_TICKS11, COLLECTION_MS2, WINDOW_MS2, LIMITS8, ASSUMPTIONS2, plans6;
+var EPOCH_TICKS11, COLLECTION_MS2, WINDOW_MS2, LIMITS9, ASSUMPTIONS2, plans6;
 var init_current_symbol_copy_clock = __esm({
   "server/src/current-symbol-copy-clock.ts"() {
     init_core3();
@@ -142851,7 +143304,7 @@ var init_current_symbol_copy_clock = __esm({
     EPOCH_TICKS11 = 621355968000000000n;
     COLLECTION_MS2 = 1e4;
     WINDOW_MS2 = 6e4;
-    LIMITS8 = Object.freeze({
+    LIMITS9 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       sourceOwnershipVerified: false,
@@ -148839,7 +149292,7 @@ var init_current_pcb_stored_header = __esm({
 // server/src/current-pcb-rename-owner-baseline.ts
 import { lstat as lstat46 } from "node:fs/promises";
 import { join as join68 } from "node:path";
-import { types as types15 } from "node:util";
+import { types as types16 } from "node:util";
 function need88(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB baseline: ${message}`);
@@ -148855,7 +149308,7 @@ function certifyFrozenBaselineData(input) {
       need88(Number.isFinite(value2), "frozen baseline data must be finite JSON");
       return;
     }
-    need88(typeof value2 === "object" && !types15.isProxy(value2), "frozen baseline data must be plain own data");
+    need88(typeof value2 === "object" && !types16.isProxy(value2), "frozen baseline data must be plain own data");
     if (completed5.has(value2)) {
       return;
     }
@@ -149034,7 +149487,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
     history.projectUuid === rename3.target.projectUuid && history.branchUuid === rename3.target.branchUuid && history.projectOwnerUuid === rename3.target.ownerUuid && matches.length === 1 && document3?.docType === "PCB" && !isNativeDocumentDeleted(document3),
     "complete history differs from the original PCB/project/default-branch/owner"
   );
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META"), entry = entries6[0];
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META"), entry = entries6[0];
   need88(entries6.length === 1 && entry?.id === "META" && entry.type === "META", "unique ordinary PCB META is missing");
   const targetHeader = currentPcbStoredHeaderSchema.parse(document3.metadata), targetMetadata = metadataSchema8.parse(entry.body);
   need88(targetHeader.uuid === document3.uuid && JSON.stringify(targetMetadata) === JSON.stringify(entry.body) && targetMetadata.title !== rename3.desiredTitle, "PCB metadata/header is unsupported or desired title is unchanged");
@@ -150196,7 +150649,7 @@ var init_current_pcb_rename_snapshot = __esm({
 });
 
 // server/src/current-pcb-rename-preopen-source.ts
-import { createHash as createHash57 } from "node:crypto";
+import { createHash as createHash58 } from "node:crypto";
 import { constants as constants29 } from "node:fs";
 import { lstat as lstat48, open as open41 } from "node:fs/promises";
 import { basename as basename30, dirname as dirname28, isAbsolute as isAbsolute28, resolve as resolve23 } from "node:path";
@@ -150270,7 +150723,7 @@ function matchesBaseline2(stat3, copy3) {
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES12 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash43(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES3)), digest11 = createHash57("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES3)), digest11 = createHash58("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -151398,7 +151851,7 @@ async function projectedPeers2(decoded, tree, target9, desiredTitle) {
   need94(documents.length <= 4096 && documents.length === Object.keys(tree).length, "complete PCB peer membership differs");
   const raw = await rawPcbClocks(decoded, new Set(documents.map((document3) => document3.uuid))), result = [], sourcePeers = [];
   for (const document3 of documents) {
-    const metadata10 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META");
+    const metadata10 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META");
     const meta5 = metadata10[0];
     const clock7 = raw.get(document3.uuid), entry = tree[document3.uuid], header = currentPcbStoredHeaderSchema.parse(document3.metadata);
     need94(metadata10.length === 1 && meta5?.id === "META" && meta5.type === "META" && clock7 !== void 0 && clock7.dataTicket >= 0 && header.uuid === document3.uuid && clock7.updateTime === header.updateTime && clock7.version === header.version, "ordinary PCB source/header projection differs");
@@ -152122,7 +152575,7 @@ var init_current_pcb_aged_sql_issuer = __esm({
 });
 
 // server/src/current-pcb-rename-history.ts
-import { createHash as createHash58 } from "node:crypto";
+import { createHash as createHash59 } from "node:crypto";
 function need97(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB rename history: ${message}`);
@@ -152144,7 +152597,7 @@ function exactUtf8(value2) {
   need97(Buffer.byteLength(value2, "utf8") <= MAX_RECORD_BYTES2 && Buffer.from(value2, "utf8").toString("utf8") === value2, "record UTF8 or byte bound differs");
 }
 function digest7(value2) {
-  return createHash58("sha256").update(value2, "utf8").digest("hex");
+  return createHash59("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentPcbRenameHistory(input) {
   const raw = fields17(input, [
@@ -152212,7 +152665,7 @@ ${recordsText}`;
     recordsSha256: digest7(recordsText),
     chunkText,
     chunkSha256: digest7(chunkText),
-    ...LIMITS9
+    ...LIMITS10
   });
   projections.add(projection9);
   return projection9;
@@ -152224,10 +152677,10 @@ function verifyCurrentPcbRenameHistory(projection9, observedChunk) {
     profile: "private.current-pcb-rename-history-comparison.v1",
     exactAppendedChunk: true,
     chunkSha256: projection9.chunkSha256,
-    ...LIMITS9
+    ...LIMITS10
   });
 }
-var MAX_RECORD_BYTES2, MAX_WINDOW_MS, identifier20, integer20, time9, title12, metaSchema, windowSchema2, actorSchema5, inputSchema, LIMITS9, projections;
+var MAX_RECORD_BYTES2, MAX_WINDOW_MS, identifier20, integer20, time9, title12, metaSchema, windowSchema2, actorSchema5, inputSchema, LIMITS10, projections;
 var init_current_pcb_rename_history = __esm({
   "server/src/current-pcb-rename-history.ts"() {
     init_zod();
@@ -152259,7 +152712,7 @@ var init_current_pcb_rename_history = __esm({
       backendClock: windowSchema2,
       backendActor: actorSchema5
     }).strict();
-    LIMITS9 = Object.freeze({
+    LIMITS10 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -152274,7 +152727,7 @@ var init_current_pcb_rename_history = __esm({
 });
 
 // server/src/current-pcb-rename-structure.ts
-import { createHash as createHash59 } from "node:crypto";
+import { createHash as createHash60 } from "node:crypto";
 function need98(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB rename structure: ${message}`);
@@ -152293,7 +152746,7 @@ function dataFields2(value2, names2) {
   return result;
 }
 function digest8(value2) {
-  return createHash59("sha256").update(value2, "utf8").digest("hex");
+  return createHash60("sha256").update(value2, "utf8").digest("hex");
 }
 function parseStructure(text38) {
   need98(Buffer.byteLength(text38, "utf8") <= MAX_TEXT_BYTES && Buffer.from(text38, "utf8").toString("utf8") === text38, "structure byte bound or UTF8 differs");
@@ -153732,9 +154185,9 @@ async function verifyCurrentPcbRenameStoredEffect(preparation3, after, expectedD
   need104(lines3.length === 3, "native title change must append exactly three records");
   const records2 = lines3.map((line6) => {
     const values2 = parseNativeRecords(line6);
-    const record13 = values2[0];
-    need104(values2.length === 1 && record13 !== void 0, "native record framing differs");
-    return record13;
+    const record14 = values2[0];
+    need104(values2.length === 1 && record14 !== void 0, "native record framing differs");
+    return record14;
   });
   const edit = records2[0], header = records2[1], meta5 = records2[2];
   need104(
@@ -153952,7 +154405,7 @@ async function prepareCurrentPcbRenameClock(input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS3,
-    ...LIMITS10
+    ...LIMITS11
   });
   plans9.set(plan2, Object.freeze({
     engine: engine2,
@@ -154068,7 +154521,7 @@ async function verifyCurrentPcbRenameClockEffect(plan2, input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS3,
-    ...LIMITS10
+    ...LIMITS11
   });
   lifecycle.completed = Object.freeze({ after, afterText: canonicalJson(after), effect, comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -154088,7 +154541,7 @@ function completedCurrentPcbRenameClockSource(plan2, engine2, dispatchOwner, aft
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS10, ASSUMPTIONS3, attempts22, owners5, plans9, lifecycles;
+var COLLECTION_MS3, EPOCH_TICKS13, WINDOW_MS3, LIMITS11, ASSUMPTIONS3, attempts22, owners5, plans9, lifecycles;
 var init_current_pcb_rename_clock = __esm({
   "server/src/current-pcb-rename-clock.ts"() {
     init_core3();
@@ -154103,7 +154556,7 @@ var init_current_pcb_rename_clock = __esm({
     COLLECTION_MS3 = 1e4;
     EPOCH_TICKS13 = 621355968000000000n;
     WINDOW_MS3 = 6e4;
-    LIMITS10 = Object.freeze({
+    LIMITS11 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       startupQualified: false,
@@ -156593,7 +157046,7 @@ var init_current_pcb_rename_operation_runtime = __esm({
 // server/src/current-schematic-rename-owner-baseline.ts
 import { lstat as lstat49 } from "node:fs/promises";
 import { join as join71 } from "node:path";
-import { types as types16 } from "node:util";
+import { types as types17 } from "node:util";
 function need111(condition, message) {
   if (!condition) {
     throw new Error(`Current SCH baseline: ${message}`);
@@ -156609,7 +157062,7 @@ function certifyFrozenBaselineData2(input) {
       need111(Number.isFinite(value2), "frozen baseline data must be finite JSON");
       return;
     }
-    need111(typeof value2 === "object" && !types16.isProxy(value2), "frozen baseline data must be plain own data");
+    need111(typeof value2 === "object" && !types17.isProxy(value2), "frozen baseline data must be plain own data");
     if (completed5.has(value2)) {
       return;
     }
@@ -156790,7 +157243,7 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
     history.projectUuid === rename3.target.projectUuid && history.branchUuid === rename3.target.branchUuid && history.projectOwnerUuid === rename3.target.ownerUuid && matches.length === 1 && document3?.docType === "SCH" && !isNativeDocumentDeleted(document3),
     "complete history differs from the original SCH/project/default-branch/owner"
   );
-  const entries6 = document3.records.filter((record13) => record13.id === "META" || record13.type === "META"), entry = entries6[0];
+  const entries6 = document3.records.filter((record14) => record14.id === "META" || record14.type === "META"), entry = entries6[0];
   need111(entries6.length === 1 && entry?.id === "META" && entry.type === "META", "unique ordinary SCH META is missing");
   const targetHeader = currentSchematicStoredHeaderSchema.parse(document3.metadata), targetMetadata = metadataSchema11.parse(entry.body);
   need111(targetHeader.uuid === document3.uuid && JSON.stringify(targetMetadata) === JSON.stringify(entry.body) && targetMetadata.title !== rename3.desiredTitle, "SCH metadata/header is unsupported or desired title is unchanged");
@@ -157978,7 +158431,7 @@ var init_current_schematic_rename_snapshot = __esm({
 });
 
 // server/src/current-schematic-rename-preopen-source.ts
-import { createHash as createHash60 } from "node:crypto";
+import { createHash as createHash61 } from "node:crypto";
 import { constants as constants30 } from "node:fs";
 import { lstat as lstat51, open as open42 } from "node:fs/promises";
 import { basename as basename31, dirname as dirname29, isAbsolute as isAbsolute29, resolve as resolve24 } from "node:path";
@@ -158052,7 +158505,7 @@ function matchesBaseline3(stat3, copy3) {
   return stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES14 && stat3.dev.toString() === checkpoint.dev && stat3.ino.toString() === checkpoint.ino && stat3.birthtimeNs.toString() === checkpoint.birthtimeNs && stat3.ctimeNs.toString() === checkpoint.ctimeNs && stat3.dev.toString() === raw.device && stat3.ino.toString() === raw.inode && stat3.size.toString() === raw.size && stat3.mtimeNs.toString() === raw.mtimeNs && stat3.ctimeNs.toString() === raw.ctimeNs && stat3.birthtimeNs.toString() === raw.birthtimeNs && stat3.mode.toString() === raw.mode && stat3.uid.toString() === raw.uid && stat3.gid.toString() === raw.gid && stat3.nlink.toString() === raw.links && Number(stat3.size) === copy3.copy.bytes;
 }
 async function hash44(file3, bytes2, current10) {
-  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES4)), digest11 = createHash60("sha256");
+  const buffer = Buffer.alloc(Math.min(bytes2, CHUNK_BYTES4)), digest11 = createHash61("sha256");
   let position = 0;
   while (position < bytes2) {
     const read2 = await file3.read(buffer, 0, Math.min(buffer.length, bytes2 - position), position);
@@ -159252,7 +159705,7 @@ var init_current_schematic_child_observation = __esm({
 });
 
 // server/src/current-schematic-rename-observation.ts
-import { types as types17 } from "node:util";
+import { types as types18 } from "node:util";
 function need117(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic observation: ${message}`);
@@ -159269,7 +159722,7 @@ function copyData(value2, budget3, depth = 0) {
     need117(budget3.bytes <= CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, "data bound exceeded");
     return value2;
   }
-  need117(value2 !== null && typeof value2 === "object" && !types17.isProxy(value2), "plain own data required");
+  need117(value2 !== null && typeof value2 === "object" && !types18.isProxy(value2), "plain own data required");
   const array4 = Array.isArray(value2), prototype = Object.getPrototypeOf(value2);
   need117(array4 ? prototype === Array.prototype : prototype === Object.prototype || prototype === null, "data prototype differs");
   const keys2 = Reflect.ownKeys(value2);
@@ -159948,7 +160401,7 @@ var init_current_schematic_aged_sql_issuer = __esm({
 });
 
 // server/src/current-schematic-rename-history.ts
-import { createHash as createHash61 } from "node:crypto";
+import { createHash as createHash62 } from "node:crypto";
 function need120(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic rename history: ${message}`);
@@ -159970,7 +160423,7 @@ function exactUtf82(value2) {
   need120(Buffer.byteLength(value2, "utf8") <= MAX_RECORD_BYTES3 && Buffer.from(value2, "utf8").toString("utf8") === value2, "record UTF8 or byte bound differs");
 }
 function digest9(value2) {
-  return createHash61("sha256").update(value2, "utf8").digest("hex");
+  return createHash62("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentSchematicRenameHistory(input) {
   const raw = fields22(input, [
@@ -160038,7 +160491,7 @@ ${recordsText}`;
     recordsSha256: digest9(recordsText),
     chunkText,
     chunkSha256: digest9(chunkText),
-    ...LIMITS11
+    ...LIMITS12
   });
   projections4.add(projection9);
   return projection9;
@@ -160050,10 +160503,10 @@ function verifyCurrentSchematicRenameHistory(projection9, observedChunk) {
     profile: "private.current-schematic-rename-history-comparison.v1",
     exactAppendedChunk: true,
     chunkSha256: projection9.chunkSha256,
-    ...LIMITS11
+    ...LIMITS12
   });
 }
-var MAX_RECORD_BYTES3, MAX_WINDOW_MS2, identifier23, integer27, time14, title15, metaSchema2, windowSchema3, actorSchema6, inputSchema3, LIMITS11, projections4;
+var MAX_RECORD_BYTES3, MAX_WINDOW_MS2, identifier23, integer27, time14, title15, metaSchema2, windowSchema3, actorSchema6, inputSchema3, LIMITS12, projections4;
 var init_current_schematic_rename_history = __esm({
   "server/src/current-schematic-rename-history.ts"() {
     init_zod();
@@ -160079,7 +160532,7 @@ var init_current_schematic_rename_history = __esm({
       backendClock: windowSchema3,
       backendActor: actorSchema6
     }).strict();
-    LIMITS11 = Object.freeze({
+    LIMITS12 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -160095,7 +160548,7 @@ var init_current_schematic_rename_history = __esm({
 });
 
 // server/src/current-schematic-rename-structure.ts
-import { createHash as createHash62 } from "node:crypto";
+import { createHash as createHash63 } from "node:crypto";
 function need121(condition, message) {
   if (!condition) {
     throw new Error(`Current schematic rename structure: ${message}`);
@@ -160114,7 +160567,7 @@ function fields23(value2, names2) {
   return result;
 }
 function digest10(value2) {
-  return createHash62("sha256").update(value2, "utf8").digest("hex");
+  return createHash63("sha256").update(value2, "utf8").digest("hex");
 }
 function parseStructure2(text38) {
   need121(Buffer.byteLength(text38, "utf8") <= MAX_TEXT_BYTES2 && Buffer.from(text38, "utf8").toString("utf8") === text38, "structure byte bound or UTF8 differs");
@@ -160168,7 +160621,7 @@ function prepareCurrentSchematicRenameStructure(input) {
     afterStructureSha256: digest10(afterStructureText),
     documentCount,
     documentTime: captured.documentTime,
-    ...LIMITS12
+    ...LIMITS13
   });
   projections5.add(projection9);
   return projection9;
@@ -160180,10 +160633,10 @@ function verifyCurrentSchematicRenameStructure(projection9, observedText) {
     profile: "private.current-schematic-rename-structure-comparison.v1",
     exactStructureText: true,
     afterStructureSha256: projection9.afterStructureSha256,
-    ...LIMITS12
+    ...LIMITS13
   });
 }
-var MAX_MEMBERS2, MAX_TEXT_BYTES2, identifier24, ownerIdentifier2, integer28, time15, title16, boardReference2, version6, zIndex2, docType2, board5, schematic3, sheet2, pcb4, panel2, accountText2, structureSchema3, beforeSchema8, inputSchema4, LIMITS12, projections5;
+var MAX_MEMBERS2, MAX_TEXT_BYTES2, identifier24, ownerIdentifier2, integer28, time15, title16, boardReference2, version6, zIndex2, docType2, board5, schematic3, sheet2, pcb4, panel2, accountText2, structureSchema3, beforeSchema8, inputSchema4, LIMITS13, projections5;
 var init_current_schematic_rename_structure = __esm({
   "server/src/current-schematic-rename-structure.ts"() {
     init_zod();
@@ -160222,7 +160675,7 @@ var init_current_schematic_rename_structure = __esm({
       desiredTitle: title16,
       documentTime: time15
     }).strict();
-    LIMITS12 = Object.freeze({
+    LIMITS13 = Object.freeze({
       executionAuthorized: false,
       producerBindingVerified: false,
       completeHistoryVerified: false,
@@ -160906,9 +161359,9 @@ async function verifyCurrentSchematicRenameStoredEffect(preparation3, before, me
   need123(lines3.length === 3, "native title change must append exactly three records");
   const records2 = lines3.map((line6) => {
     const values2 = parseNativeRecords(line6);
-    const record13 = values2[0];
-    need123(values2.length === 1 && record13 !== void 0, "native record framing differs");
-    return record13;
+    const record14 = values2[0];
+    need123(values2.length === 1 && record14 !== void 0, "native record framing differs");
+    return record14;
   });
   const edit = records2[0], header = records2[1], meta5 = records2[2];
   need123(
@@ -161398,14 +161851,14 @@ var init_current_schematic_rename_program = __esm({
 });
 
 // server/src/current-schematic-rename-clock.ts
-import { types as types18 } from "node:util";
+import { types as types19 } from "node:util";
 function need126(condition, message = "Current SCH rename clock refused.") {
   if (!condition) {
     throw new Error(message);
   }
 }
 function fields25(value2, required2, optional3 = []) {
-  need126(value2 !== null && typeof value2 === "object" && !types18.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
+  need126(value2 !== null && typeof value2 === "object" && !types19.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys2 = Reflect.ownKeys(value2);
   need126(keys2.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys2.includes(key)), "Clock input fields differ.");
   for (const key of keys2) {
@@ -161565,7 +162018,7 @@ async function prepareCurrentSchematicRenameClock(input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS4,
-    ...LIMITS13
+    ...LIMITS14
   });
   plans11.set(plan2, Object.freeze({
     engine: engine2,
@@ -161689,7 +162142,7 @@ async function verifyCurrentSchematicRenameClockEffect(plan2, input) {
     originalWindowsObservationsRetained: true,
     originalStartupBound: true,
     ...ASSUMPTIONS4,
-    ...LIMITS13
+    ...LIMITS14
   });
   lifecycle.completed = Object.freeze({ after, afterText: canonicalJson(after), effect, comparison: comparison3, comparisonText: canonicalJson(comparison3) });
   return comparison3;
@@ -161708,7 +162161,7 @@ function completedCurrentSchematicRenameClockSource(plan2, engine2, dispatchOwne
     storedEffect: completed5.effect
   });
 }
-var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS13, ASSUMPTIONS4, attempts27, owners6, plans11, lifecycles2;
+var COLLECTION_MS4, EPOCH_TICKS15, WINDOW_MS4, LIMITS14, ASSUMPTIONS4, attempts27, owners6, plans11, lifecycles2;
 var init_current_schematic_rename_clock = __esm({
   "server/src/current-schematic-rename-clock.ts"() {
     init_core3();
@@ -161723,7 +162176,7 @@ var init_current_schematic_rename_clock = __esm({
     COLLECTION_MS4 = 1e4;
     EPOCH_TICKS15 = 621355968000000000n;
     WINDOW_MS4 = 6e4;
-    LIMITS13 = Object.freeze({
+    LIMITS14 = Object.freeze({
       dispatchOwnershipVerified: false,
       documentSampleProvenanceVerified: false,
       startupQualified: false,
@@ -161877,7 +162330,7 @@ async function unchanged4(collection, scopeText) {
     "Current SCH writer clock journal changed."
   );
 }
-async function record12(collection, phase5, value2, scopeText) {
+async function record13(collection, phase5, value2, scopeText) {
   await unchanged4(collection, scopeText);
   const journal = collection.source.journal;
   const sequence = journal.sequence + 1;
@@ -162007,7 +162460,7 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
       startup: originalStartup.expectation
     };
     const code = buildCurrentSchematicRenameWriterClockProgram(request13);
-    await record12(collection, "schematic-writer-n0-intent", { request: request13, codeSha256: sha256Text(code), replayAllowed: false, ...LIMITATIONS14 }, scopeText);
+    await record13(collection, "schematic-writer-n0-intent", { request: request13, codeSha256: sha256Text(code), replayAllowed: false, ...LIMITATIONS14 }, scopeText);
     const unmarked = structuredClone(source5.journal);
     let marked2;
     let dispatch;
@@ -162044,7 +162497,7 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
     });
     current9(collection, scopeText);
     assertUpstreamReplySettled(raw);
-    await record12(collection, "schematic-writer-n0-result", {
+    await record13(collection, "schematic-writer-n0-result", {
       raw,
       beforeClock: collection.beforeClock,
       armedClock: collection.armedClock,
@@ -162081,7 +162534,7 @@ async function collectCurrentSchematicRenameWriterClock(engine2, owner, startup2
   } catch (error52) {
     collection.failureObserved = true;
     try {
-      await record12(collection, "schematic-writer-n0-failure", currentSchematicRenameWriterClockEvidence(owner, engine2), scopeText);
+      await record13(collection, "schematic-writer-n0-failure", currentSchematicRenameWriterClockEvidence(owner, engine2), scopeText);
     } catch (retentionError) {
       throw new AggregateError([error52, retentionError], "SCH writer clock failed; original attempt and partial evidence remain retained.", { cause: retentionError });
     }
@@ -165724,7 +166177,7 @@ var init_closed_symbol_operation_entry = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash63 } from "node:crypto";
+import { createHash as createHash64 } from "node:crypto";
 import {
   basename as basename32,
   dirname as dirname30,
@@ -168843,7 +169296,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash63("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash64("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);

@@ -106,6 +106,20 @@ void test("current STRING patch refuses unsupported patch fields, text, numeric 
   assert.throws(() => candidate({ x: -0.00001 }), /lossy predicted encoding/u);
 });
 
+void test("current STRING patch rejects top-level, nested and revoked proxies without invoking traps", () => {
+  let calls = 0;
+  const trap = (): never => { calls += 1; throw new Error("Proxy trap invoked"); };
+  const trapped = new Proxy({}, { get: trap, getPrototypeOf: trap, getOwnPropertyDescriptor: trap, ownKeys: trap });
+  const revoked = Proxy.revocable({}, {}); revoked.revoke();
+  for (const value of [trapped, revoked.proxy]) {
+    assert.throws(() => planCurrentPcbStringPatch(source(), documentUuid, value, { text: "New" }), /non-data or nested input/u);
+    assert.throws(() => candidate(value), /non-data or nested input/u);
+    assert.throws(() => candidate({ text: "New" }, { position: value }), /non-data or nested input/u);
+    assert.throws(() => candidate({ text: value }), /non-data or nested input/u);
+  }
+  assert.equal(calls, 0);
+});
+
 void test("current STRING patch never treats matching caller data as verification or execution authority", () => {
   const result = candidate({ text: "New" });
   for (const field of ["completeSourceProvenanceVerified", "liveReceiverVerified", "parentOwnershipVerified",
