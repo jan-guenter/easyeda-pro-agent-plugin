@@ -9,7 +9,7 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Candidate `0.3.0+codex.20261020185144`, the [String lifecycle batch](docs/current-pcb-string-lifecycle-batch-2026-10-20.md),
+Published and installed `0.3.0+codex.20261020185144`, the [String lifecycle batch](docs/current-pcb-string-lifecycle-batch-2026-10-20.md),
 adds a separate, launch-sealed combined PCB/worker observation workflow,
 an opening-order correction, dormant native create/Save programs, bounded
 publication capture and exact supplied SQL/history comparisons. It is one

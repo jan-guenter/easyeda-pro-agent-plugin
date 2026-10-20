@@ -59,9 +59,38 @@ event order, capture bounds and exact SQL/history deltas. The actual Windows
 helper compiles in both fixed profiles with an empty Job and no application
 launch. These checks are not connected writer validation.
 
-Final frozen verification, exact-head protected CI, merge and official Git
-marketplace installation are recorded in the repository checkpoint once complete.
-No installed cache or live host is patched.
+The frozen local run completed 11,986 facade tests with one stale tool-count
+expectation, 11,981 passes and four platform skips. The corrected registration
+test passes, as do 424 bridge tests, strict targeted lint, package/MCP,
+repository/privacy and all seven skill checks. The original failure is retained.
+The final exact-head Linux build, all eight facade shards and aggregate gate
+passed in run39481300245. Windows run39481300218 also passed.
+
+[PR89](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/89) merged
+payload `bde209fe16dca8f2756184b66cc42052655fb8c0` as main
+`1cd7b5035217fde2c0fc76760ff5f09d83a769bf`. Both trees match exactly.
+The official Git marketplace upgraded the enabled plugin to
+`0.3.0+codex.20261020185144`. Its complete installed comparison passed all
+1,620 files, 42 directories, 33,440,744 bytes and committed modes.
+Inventory SHA256 is
+`f3bffd6386452fda4357ee7939e6680de0dc1bf7e6d7a83c37f37b40903a6adc`.
+
+The installed offline probe passed 26 restricted tools, 51 configured policies
+and 10 discovery/schema queries. Its own child exited normally after stdin EOF,
+with zero stderr and no sampled descendants or non-stdio sockets. This used a
+synthetic profile, not the live control directory. It proves neither continuous
+isolation nor connected execution. Main Windows run39482902763 passed;
+main Linux run39482902791 was still running at handoff.
+
+Private release evidence is retained at
+`/root/.cache/easyeda-string-lifecycle-release-2mMm3lmA`.
+Installed comparison receipt SHA256 is
+`2a74593fae22c7317fd1e6a6f45f2180b85e5e8856910ec1d149f3f8f1414550`;
+offline probe receipt SHA256 is
+`d74f16092313099b369d7f8f56e4c9132ce1451364e7a43b817e1bcabcbe636b`.
+The loaded host remains155927. No installed cache or live host was patched.
+A fresh Codex session must load185144 before connected use. These delivery notes
+are a local handoff after the immutable PR89 payload, not another plugin version.
 
 ## Open work and concrete omissions
 
