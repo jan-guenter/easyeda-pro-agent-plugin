@@ -20,7 +20,7 @@ export const CURRENT_PCB_STRING_DEFAULT_BASE_ID = "ecf7a782c8fad079e96715e80471d
 type Phase = "baseline" | "created" | "saved";
 function program(phase: Phase): string {
   const count = phase === "baseline" ? 0 : 1;
-  return `function(originalCallback){
+  return `function(originalCallback,constructors){
 ${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 const scope=object(own(this,"object")),klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
@@ -55,7 +55,7 @@ if(Reflect.apply(get,map,[baseId])!==base||Reflect.apply(get,stringMap,[primitiv
 textBaseManager={count:1,baseId,baseKey,last:"undefined"};
 }}
 if(${count}===1&&textBaseManager===null)bad();
-const emptyAssetsJson=(${CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION}).call(this,originalCallback);
+const emptyAssetsJson=(${CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION}).call(this,originalCallback,constructors);
 verify();if(base!==null&&(Reflect.apply(get,own(textBase,"map"),[baseId])!==base||Reflect.apply(get,stringMap,[primitiveId])!==model))bad();
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 return JSON.stringify({schema:"easyeda-pro-control.pcb-string-phase-assets.v1",phase:${JSON.stringify(phase)},documentUuid,primitiveId,textBaseManager,emptyAssetsJson});

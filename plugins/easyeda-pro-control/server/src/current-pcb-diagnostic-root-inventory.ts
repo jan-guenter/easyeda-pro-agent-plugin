@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT, currentPcbDiagnosticInteractionSchema } from "./current-pcb-diagnostic-interaction.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
@@ -16,12 +17,12 @@ const MAX_DEPTH = 64;
 const MAX_RETAINED_DESCRIPTORS = MAX_ENTRIES * 8 + 4096;
 export const CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES = 8192;
 
-/** Original Save-handler scope zero, original callback as the only argument.
+/** Original Save-handler scope zero, original callback and admitted constructor tuple.
  * Runtime.callFunctionOn must use throwOnSideEffect/silent/returnByValue true,
  * awaitPromise/generatePreview/userGesture false. No model getter or vendor
  * method is called. Nonempty supported collections remain diagnostic output.
  */
-export const CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION = `function(originalCallback){
+export const CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION = `function(originalCallback,constructors){
 "use strict";
 const bad=()=>{throw new Error("PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE");};
 const retained=[],collections=[];
@@ -51,6 +52,7 @@ if(own(Reflect.apply(next,iterator,[]),"done")!==true)bad();
 const has=(o,v)=>Reflect.apply(own(Set.prototype,"has"),o,[v]);
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 const scope=object(own(this,"object"));
+${CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS.diagnostic}
 const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
 const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad();return o;};
 const envClass=klass("x"),env=instance(own(envClass,"env"),envClass);
@@ -69,7 +71,7 @@ board={ownerMarker:"present",boardMarker:value.marker,outlineCount:map(own(owner
 const panelClass=klass("ai"),panelOwner=optional(panelClass,"model");
 let panelization={ownerMarker:panelOwner.marker,viewModelMatchesOwner:null,activation:null,counts:null};
 if(panelOwner.marker==="present"){
-const owner=instance(panelOwner.value,panelClass),view=instance(own(scope,"Si"),klass("Jse")),param=object(own(owner,"_param"));
+const owner=instance(panelOwner.value,panelClass),view=constructorInstance(own(scope,"Si"),"Jse"),param=object(own(owner,"_param"));
 const borders=own(owner,"borderClosures");if(array(borders)!==2)bad();
 const counts={items:array(own(owner,"items")),outlines:array(own(owner,"outlines")),slots:array(own(owner,"slots")),
 originOutline:array(own(owner,"originOutline")),holes:array(own(owner,"holes")),positionHoles:array(own(owner,"positionHoles")),
@@ -119,6 +121,7 @@ else inspectTree(entry,result);
 };
 const spatialIndexes={typed:branch(own(spatial,"map"),true),other:branch(own(spatial,"otherMap"),false),ratline:branch(own(spatial,"ratlineMap"),false)};
 ${CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT}
+verifyConstructorAssociations();
 for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]==="absent"?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[3])bad();}
 for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();

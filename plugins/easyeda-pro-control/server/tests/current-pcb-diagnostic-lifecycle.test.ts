@@ -86,7 +86,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
   });
   const stringPurpose = id.startsWith("string-precreate-");
   const owner: CurrentPcbStringPrecreateLifecycleOwner = {
-    status: () => ({ profile: stringPurpose ? "string-precreate90" : "diagnostic64", stringPrecreateConsumed: calls.includes("string-precreate"), helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
+    status: () => ({ profile: stringPurpose ? "string-precreate" : "diagnostic", stringPrecreateConsumed: calls.includes("string-precreate"), helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"),
       scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null, diagnosticFailureObservation: null,

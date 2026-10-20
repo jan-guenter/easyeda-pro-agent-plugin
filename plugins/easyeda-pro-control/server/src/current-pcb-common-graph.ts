@@ -19,9 +19,10 @@ export const CURRENT_PCB_COMMON_GRAPH_CLASSES = [
  * All runtime calls must retain throwOnSideEffect:true. Descriptor checks alone
  * cannot exclude Proxy traps or establish pristine intrinsics.
  */
-export const CURRENT_PCB_COMMON_GRAPH_PROGRAM = `
+function graphProgram(classNames: readonly string[]): string {
+  return `
 const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
-const graphClassNames=${JSON.stringify(CURRENT_PCB_COMMON_GRAPH_CLASSES)};
+const graphClassNames=${JSON.stringify(classNames)};
 const graphClasses=graphClassNames.map(n=>[n,own(klass(n),"prototype")]);
 const graphString=v=>{if(typeof v!=="string"||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
 const graphKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!=="string"))bad();return k;};
@@ -42,6 +43,13 @@ else{let className=p===null?"null":p===Object.prototype?"plain":null;if(classNam
 graphNodes[index]=node;return["ref",index];};
 const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){const present=Object.getOwnPropertyDescriptor(h[0],"toJSON")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
 `;
+}
+export const CURRENT_PCB_COMMON_GRAPH_PROGRAM = graphProgram(CURRENT_PCB_COMMON_GRAPH_CLASSES);
+/** Fixed plain-data specialization for document metadata. It does not depend
+ * On unrelated model classes being retained in V8's original lexical scope.
+ * Custom instances refuse; descriptor, collection and graph limits are shared.
+ */
+export const CURRENT_PCB_COMMON_PLAIN_GRAPH_PROGRAM = graphProgram([]);
 
 const indexSchema = z.number().int().min(0).max(4095).refine(value => !Object.is(value, -0));
 const stringSchema = z.string().max(4096).refine(value => value.isWellFormed());

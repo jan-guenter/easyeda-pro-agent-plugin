@@ -10,7 +10,7 @@ function sample(change = ""): ReturnType<typeof pcbStringReply> {
 }
 
 void test("empty producer observation retains source-defined notification and cluster flags", () => {
-  const state = decodeCurrentPcbStringEmptyProducers(sample());
+  const state = decodeCurrentPcbStringEmptyProducers(sample("delete scope.object.pP;"));
   assert.equal(state.model.last, "absent");
   assert.equal(state.model.lastRatline, "null");
   assert.equal(state.net.updateLeftTree, "absent");
@@ -26,7 +26,7 @@ void test("empty producer observation retains source-defined notification and cl
 void test("all additional ratline/network memberships reject nonempty state", () => {
   for (const field of [
     "MI.manager.map", "MI.manager.idMap", "jo.map", "jo.idMap", "ze.map", "ze.noneNetMap",
-    "ze.netLength", "ze.netModify", "pP.map", "h_.map", "aE.map",
+    "ze.netLength", "ze.netModify", "Xh.map", "h_.map", "aE.map",
   ]) {
     assert.throws(() => sample(`scope.object.${field}.set("private",{});`), /PCB_STRING_OBSERVATION_STATE/u, field);
   }

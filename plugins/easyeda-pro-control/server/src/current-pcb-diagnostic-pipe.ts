@@ -40,6 +40,7 @@ const REQUEST_METHODS = [
 const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "model-wrapper", "model-properties", "model-handler",
+  "model-constructors-diagnostic", "model-constructors-precreate",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
   ...CURRENT_PCB_STRING_PRECREATE_PHASES.map(phase => `string-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
@@ -223,6 +224,8 @@ class CurrentPcbFixedPipeCore {
   }
   public observeModel(command: CurrentPcbDiagnosticModelCommand): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null && !this.#stringPurpose) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
+    if (command.modelPhase === "constructors-diagnostic" && this.#stringPurpose ||
+        command.modelPhase === "constructors-precreate" && !this.#stringPurpose) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
     const { modelPhase: _modelPhase, ...wire } = command;
     return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId }, `model-${command.modelPhase}`);
   }

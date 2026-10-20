@@ -504,7 +504,7 @@ void test("fixed model observation stays in the source-admitted PCB session and 
   assert.equal(result.rootInventory.documentUuid, result.documentUuid); assert.equal(result.rootInventory.emptyRootPcbVerified, false);
   assert.equal(result.atomicSnapshotVerified, false);
   assert.equal(result.saveAuthorized, false); assert.equal(value.owner.status().modelObservationConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 30);
+  assert.equal(value.actions.filter(action => action === "send").length, 48);
   assert.ok(!JSON.stringify(result).includes("synthetic private"));
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -540,7 +540,7 @@ void test("disposable PCB opening admits original child DOM and source before it
   const model = await value.owner.observeModelState();
   assert.equal(model.documentUuid, OPEN_TARGET.documentUuid); assert.equal(model.executionAuthorized, false);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
-  assert.equal(value.actions.filter(action => action === "send").length, 54);
+  assert.equal(value.actions.filter(action => action === "send").length, 72);
   await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.resolve()), /PCB_OPENING_UNAVAILABLE/u);
   await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /PCB_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -560,14 +560,14 @@ void test("all fixed PCB phases carry the original maximum-width Unicode path wi
   assert.equal(value.owner.status().failure, null); await close(value);
 });
 
-void test("original source-shaped ancillary OBJECT is rechecked at five project/PCB boundaries within the64-command budget", async context => {
+void test("original source-shaped ancillary OBJECT and constructors fit the82-command budget", async context => {
   const value = await openingFixture(context, "opening-pcb-ancillary");
   await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
   await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
   await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
   const result = await value.owner.observeModelState();
   assert.equal(result.executionAuthorized, false);
-  assert.equal(value.actions.filter(action => action === "send").length, 64);
+  assert.equal(value.actions.filter(action => action === "send").length, 82);
   assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
   await close(value);
@@ -652,7 +652,7 @@ async function stringFixture(context: TestContext, scenario = "opening-pcb-strin
   return value;
 }
 
-void test("separate String purpose joins both original contexts and two baseline sweeps within exactly90requests", async context => {
+void test("separate String purpose joins both original contexts, constructors and two sweeps within exactly112requests", async context => {
   const value = await stringFixture(context);
   assert.equal(value.actions.filter(action => action === "send").length, 61);
   const result = await value.owner.observeStringPrecreate();
@@ -662,11 +662,11 @@ void test("separate String purpose joins both original contexts and two baseline
   assert.equal(result["projectWorkerAssociationVerified"], false); assert.equal(result["queueCompletionVerified"], false);
   assert.deepEqual(result["first"], result["second"]);
   assert.equal(value.owner.status().stringPrecreateConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 90);
+  assert.equal(value.actions.filter(action => action === "send").length, 112);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
-  assert.equal(value.actions.filter(action => action === "send").length, 90);
+  assert.equal(value.actions.filter(action => action === "send").length, 112);
   await close(value);
 });
 

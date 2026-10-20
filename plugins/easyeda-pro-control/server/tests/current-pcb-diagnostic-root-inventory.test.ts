@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../src/current-pcb-constructor-scope.ts";
 import {
   CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256,
@@ -49,8 +50,9 @@ for(const key of ["itemsCount","board","outlineCollect","getDefaultPanelize","si
 Object.defineProperty(p,key,{get(){getterReads++;throw new Error("GETTER");}});
 }}
 })();
-${CURRENT_PCB_DIAGNOSTIC_INTERACTION_SETUP}`;
-const EXPRESSION = `(${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+${CURRENT_PCB_DIAGNOSTIC_INTERACTION_SETUP}
+globalThis.rootConstructors=[class kde{},class Sfe{},...${JSON.stringify(CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic.slice(2))}.map(name=>scope.object[name])];`;
+const EXPRESSION = `(${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,rootConstructors)`;
 const reply = (value: unknown): unknown => ({ result: { type: "string", value } });
 
 function rawSample(change = ""): string {
@@ -71,6 +73,14 @@ function refused(change: string): void {
   assert.throws(() => runInContext(EXPRESSION, context, { timeout: 1000 }), /PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE/u, change);
   assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
 }
+
+void test("root census uses either fixed tuple map when all elided class bindings are absent", () => {
+  const remove = `for(const name of ${JSON.stringify(CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic)})delete scope.object[name];`;
+  assert.deepEqual(sample(remove), sample());
+  assert.deepEqual(sample(`${remove}rootConstructors=[...rootConstructors.slice(0,2),...Array(4).fill(class{}),...rootConstructors.slice(2)];`), sample());
+  refused("rootConstructors[3]=class Lpe{};");
+  refused("scope.object.$me.MAX_QUEUE_SIZE=21;");
+});
 
 void test("root census counts all fixed raw families without invoking getters or disclosing members", () => {
   const raw = rawSample(`for(const c of Object.values(state.families)){

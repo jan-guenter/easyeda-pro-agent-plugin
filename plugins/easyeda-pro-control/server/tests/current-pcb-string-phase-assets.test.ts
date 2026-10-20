@@ -113,7 +113,7 @@ void test("all fixed phase asset readers pass synthetic V8 side-effect checks an
     for (const phase of ["baseline", "created", "saved"] as const) {
       const context = fixture(phase);
       assert.notEqual(uniqueContextId, "");
-      const expression = `(${CURRENT_PCB_STRING_PHASE_ASSETS_FUNCTIONS[phase]}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+      const expression = `(${CURRENT_PCB_STRING_PHASE_ASSETS_FUNCTIONS[phase]}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,globalThis.producerConstructors)`;
       const parameters = { expression, uniqueContextId, returnByValue: true, throwOnSideEffect: true, silent: true,
         awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
         userGesture: false, generatePreview: false, timeout: 1000 };

@@ -11,6 +11,7 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_LOCATIONS, decodeCurrentPcbDiagnosticModel
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./helpers/current-pcb-diagnostic-model-replies.ts";
 import { CurrentPcbStringPrecreateRunner } from "../src/current-pcb-string-precreate-runner.ts";
 import type { CurrentPcbStringPrecreateTransport } from "../src/current-pcb-string-precreate-runner.ts";
+import { constructorReplies } from "./helpers/current-pcb-constructor-replies.ts";
 
 const SETUP = `(()=>{
 globalThis.vendorCalls=0;globalThis.getterReads=0;
@@ -193,17 +194,18 @@ function scopesReply(kind: "rpc-wrapper" | "save-handler", objectId: string): un
       objectId: index === 0 ? objectId : "global" }, writable: true, configurable: true, enumerable: true, isOwn: true,
   })) };
 }
-function runnerReplies(): readonly unknown[] {
+function runnerReplies(kind: "diagnostic" | "precreate" = "diagnostic"): readonly unknown[] {
   return [
     { result: { type: "function", className: "Function", description: "original wrapper", objectId: "wrapper" } },
     functionProperties("rpc-wrapper", "wrapper-scopes"), scopesReply("rpc-wrapper", "wrapper-scope"),
     { result: { type: "function", className: "AsyncFunction", description: "original handler", objectId: "handler" } },
     functionProperties("save-handler", "handler-scopes"), scopesReply("save-handler", "handler-scope"),
+    ...constructorReplies(kind, "pcb"),
     result(snapshot().raw), pendingModelReply(), rawStringsModelReply(), rootInventoryModelReply(), {},
   ];
 }
 
-void test("one-shot model runner emits eleven fixed commands and releases only its original group", async () => {
+void test("one-shot model runner emits29 fixed commands and releases only its original group", async () => {
   const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = runnerReplies();
   let guards = 0;
   const runner = new CurrentPcbDiagnosticModelRunner({
@@ -214,31 +216,33 @@ void test("one-shot model runner emits eleven fixed commands and releases only i
     },
   }, "pcb", "original-context");
   const state = await runner.observe();
-  assert.equal(state.compilerState.customFootprints.length, 1); assert.equal(guards, 21);
+  assert.equal(state.compilerState.customFootprints.length, 1); assert.equal(guards, 58);
   assert.equal(state.schema, "easyeda-pro-control.pcb-diagnostic-model-observation.v1");
   assert.equal(state.documentUuid, state.pendingProducers.documentUuid); assert.equal(state.documentUuid, state.rawStrings.documentUuid);
   assert.equal(state.documentUuid, state.rootInventory.documentUuid);
   assert.equal(state.rootInventory.emptyRootPcbVerified, false);
   assert.equal(state.atomicSnapshotVerified, false); assert.equal(state.executionAuthorized, false);
   assert.deepEqual(commands.map(command => command.modelPhase),
-    ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "pending", "raw-strings", "root-inventory", "release"]);
-  const first = commands[0], last = commands.at(-1), snapshotCommand = commands[6];
+    ["wrapper", "properties", "properties", "handler", "properties", "properties", "constructors-diagnostic", ...Array.from({ length: 17 }, () => "properties"),
+      "snapshot", "pending", "raw-strings", "root-inventory", "release"]);
+  const first = commands[0], last = commands.at(-1), snapshotCommand = commands[24];
   assert.ok(first?.modelPhase === "wrapper"); assert.equal(first.params.uniqueContextId, "original-context");
   assert.equal(first.params.objectGroup, CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP);
   assert.ok(snapshotCommand?.modelPhase === "snapshot"); assert.deepEqual(snapshotCommand.params.arguments, [{ objectId: "wrapper" }]);
   assert.equal(snapshotCommand.params.objectId, "handler-scope");
   assert.equal(Object.hasOwn(snapshotCommand.params, "timeout"), false);
-  for (const command of commands.slice(7, 10)) {
+  for (const command of commands.slice(25, 28)) {
     assert.ok(command.modelPhase === "pending" || command.modelPhase === "raw-strings" || command.modelPhase === "root-inventory");
-    assert.deepEqual(command.params.arguments, [{ objectId: "wrapper" }]); assert.equal(command.params.objectId, "handler-scope");
+    assert.deepEqual(command.params.arguments, command.modelPhase === "pending" || command.modelPhase === "root-inventory" ? [{ objectId: "wrapper" }, { objectId: "constructors" }] :
+      [{ objectId: "wrapper" }]); assert.equal(command.params.objectId, "handler-scope");
     assert.equal(command.params.throwOnSideEffect, true); assert.equal(command.params.awaitPromise, false);
   }
   assert.ok(last?.modelPhase === "release"); assert.equal(last.params.objectGroup, CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP);
-  await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u); assert.equal(commands.length, 11);
+  await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u); assert.equal(commands.length, 29);
 });
 
 void test("failed model reads cannot continue to a snapshot, retry, or publish before successful release", async () => {
-  for (const failure of ["handler", "pending", "raw-strings", "root-inventory", "release"] as const) {
+  for (const failure of ["handler", "constructors-diagnostic", "pending", "raw-strings", "root-inventory", "release"] as const) {
     const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = runnerReplies();
     const runner = new CurrentPcbDiagnosticModelRunner({
       assertCurrent: (): void => {
@@ -270,6 +274,40 @@ void test("failed model reads cannot continue to a snapshot, retry, or publish b
     assert.equal(caughtError.cause.message, "STALE_OWNER");
     assert.equal(caughtError.message, "PCB_DIAGNOSTIC_MODEL_OBSERVATION_FAILED_OWNER"); return true;
   }); assert.equal(requests, 0);
+});
+
+void test("constructor qualification failures withhold every observation and still release the original group once", async () => {
+  for (const index of [6, 7, 8, 23]) {
+    const phases: string[] = [], replies = [...runnerReplies()];
+    replies[index] = replyWithException();
+    const runner = new CurrentPcbDiagnosticModelRunner({
+      assertCurrent: (): void => {
+        // Synthetic owner stays current.
+      },
+      request: (command): Promise<unknown> => {
+        phases.push(command.modelPhase);
+        return Promise.resolve(command.modelPhase === "release" ? {} : replies[phases.length - 1]);
+      },
+    }, "pcb", "original-context");
+    await assert.rejects(runner.observe(), /OBSERVATION_FAILED_(?:CONSTRUCTORS_DIAGNOSTIC|PROPERTIES)/u);
+    assert.equal(phases.includes("snapshot"), false); assert.equal(phases.includes("pending"), false);
+    assert.equal(phases.filter(phase => phase === "release").length, 1);
+    await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u);
+  }
+});
+
+void test("successful group release cannot publish a model observation after original ownership changes", async () => {
+  const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = runnerReplies(); let current = true;
+  const runner = new CurrentPcbDiagnosticModelRunner({
+    assertCurrent: (): void => { if (!current) { throw new Error("STALE_OWNER_AFTER_RELEASE"); } },
+    request: (command): Promise<unknown> => {
+      commands.push(command); if (command.modelPhase === "release") { current = false; return Promise.resolve({}); }
+      return Promise.resolve(replies[commands.length - 1]);
+    },
+  }, "pcb", "original-context");
+  await assert.rejects(runner.observe(), /MODEL_OBSERVATION_FAILED_OWNER_FINAL/u);
+  assert.equal(commands.filter(command => command.modelPhase === "release").length, 1);
+  await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u);
 });
 
 function stringRunner(transport: CurrentPcbStringPrecreateTransport): CurrentPcbStringPrecreateRunner {
@@ -310,7 +348,7 @@ void test("both observation runners preserve primary and cleanup failures with b
 });
 
 void test("String sweep stops at its first malformed reply and reports that phase before releasing", async () => {
-  const phases: string[] = [], replies = runnerReplies();
+  const phases: string[] = [], replies = runnerReplies("precreate");
   const runner = stringRunner({
     assertCurrent: (): void => {
       // Synthetic owner remains current.
@@ -323,14 +361,15 @@ void test("String sweep stops at its first malformed reply and reports that phas
     },
   });
   await assert.rejects(runner.observe(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_SNAPSHOT/u);
-  assert.deepEqual(phases, ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "release"]);
+  assert.deepEqual(phases, ["wrapper", "properties", "properties", "handler", "properties", "properties", "constructors-precreate",
+    ...Array.from({ length: 21 }, () => "properties"), "snapshot", "release"]);
 });
 
 void test("composite model observation rejects mixed documents and malformed leaves without partial acceptance", async () => {
   for (const [index, replacement] of [
-    [7, pendingModelReply("f".repeat(32))], [8, rawStringsModelReply("f".repeat(32))],
-    [9, rootInventoryModelReply("f".repeat(32))],
-    [7, replyWithException()], [8, replyWithException()], [9, replyWithException()],
+    [25, pendingModelReply("f".repeat(32))], [26, rawStringsModelReply("f".repeat(32))],
+    [27, rootInventoryModelReply("f".repeat(32))],
+    [25, replyWithException()], [26, replyWithException()], [27, replyWithException()],
   ] as const) {
     const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = [...runnerReplies()];
     replies[index] = replacement;

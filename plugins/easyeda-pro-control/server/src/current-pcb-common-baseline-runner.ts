@@ -3,10 +3,15 @@
  * tool, native request budget, writer, FileSource or Save route uses it. */
 import { types } from "node:util";
 import { canonicalJson } from "./core.ts";
+import { CURRENT_PCB_COMMON_GRAPH_BYTES } from "./current-pcb-common-graph.ts";
+import { CURRENT_PCB_COMMON_METADATA_FUNCTION, decodeCurrentPcbCommonMetadata } from "./current-pcb-common-metadata.ts";
+import type { CurrentPcbCommonMetadata } from "./current-pcb-common-metadata.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION,
   CURRENT_PCB_COMMON_RULES_FUNCTION, decodeCurrentPcbCommonPreference, decodeCurrentPcbCommonPresentation,
   decodeCurrentPcbCommonRules } from "./current-pcb-common-state.ts";
 import type { CurrentPcbCommonPreference, CurrentPcbCommonPresentation, CurrentPcbCommonRules } from "./current-pcb-common-state.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS, decodeCurrentPcbConstructorBundle,
+  decodeCurrentPcbConstructorProperties, decodeCurrentPcbConstructorTuple } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION } from "./current-pcb-diagnostic-model-program.ts";
 import { decodeCurrentPcbDiagnosticModelFunction, decodeCurrentPcbDiagnosticModelScope,
   decodeCurrentPcbDiagnosticModelScopeList } from "./current-pcb-diagnostic-model-scope.ts";
@@ -14,14 +19,15 @@ import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION, decodeCurrentPcbStringEmptyAs
 import type { CurrentPcbStringEmptyAssets } from "./current-pcb-string-empty-assets.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-export const CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP = "easyeda-pro-control-pcb-common-baseline-v1";
-/** Six original-scope requests, four fixed readers and one private-group release. */
-export const CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT = 11;
-export const CURRENT_PCB_COMMON_BASELINE_MAX_BYTES = 1_597_440;
+export const CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP = "easyeda-pro-control-pcb-common-baseline-v2";
+/** Six scope + six constructor requests, five readers and one group release. */
+export const CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT = 18;
+export const CURRENT_PCB_COMMON_BASELINE_MAX_BYTES = 2_121_728;
 const EFFECTS = Object.freeze({ throwOnSideEffect: true, silent: true, awaitPromise: false,
   generatePreview: false, userGesture: false } as const);
-type SamplePhase = "presentation" | "rules" | "preference" | "assets";
-type Phase = SamplePhase | "owner" | "owner-final" | "wrapper" | "properties" | "handler" | "bounds" | "release";
+type CommonPhase = "presentation" | "rules" | "preference" | "assets";
+type SamplePhase = CommonPhase | "metadata";
+type Phase = SamplePhase | "owner" | "owner-final" | "wrapper" | "properties" | "handler" | "constructors" | "bounds" | "release";
 const PROGRAMS = Object.freeze({ presentation: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION,
   rules: CURRENT_PCB_COMMON_RULES_FUNCTION, preference: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION,
   assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION });
@@ -38,8 +44,17 @@ export type CurrentPcbCommonBaselineCommand =
   | Readonly<{ commonPhase: "handler"; method: "Runtime.callFunctionOn"; params: typeof EFFECTS & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION; returnByValue: false;
   }> }>
-  | Readonly<{ commonPhase: SamplePhase; method: "Runtime.callFunctionOn"; params: typeof EFFECTS & Readonly<{
-    objectId: string; functionDeclaration: string; returnByValue: true; arguments: readonly [Readonly<{ objectId: string }>];
+  | Readonly<{ commonPhase: "constructors"; method: "Runtime.callFunctionOn"; params: typeof EFFECTS & Readonly<{
+    objectId: string; functionDeclaration: typeof CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common; returnByValue: false;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ commonPhase: "metadata"; method: "Runtime.callFunctionOn"; params: typeof EFFECTS & Readonly<{
+    objectId: string; functionDeclaration: typeof CURRENT_PCB_COMMON_METADATA_FUNCTION; returnByValue: true;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ commonPhase: CommonPhase; method: "Runtime.callFunctionOn"; params: typeof EFFECTS & Readonly<{
+    objectId: string; functionDeclaration: string; returnByValue: true;
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ commonPhase: "release"; method: "Runtime.releaseObjectGroup"; params: Readonly<{
     objectGroup: typeof CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP;
@@ -52,12 +67,13 @@ export interface CurrentPcbCommonBaselineTransport {
   readonly assertCurrent: () => void;
 }
 export interface CurrentPcbCommonBaselineObservation {
-  readonly schema: "easyeda-pro-control.pcb-common-baseline-observation.v1";
+  readonly schema: "easyeda-pro-control.pcb-common-baseline-observation.v2";
   readonly documentUuid: string;
   readonly presentation: CurrentPcbCommonPresentation;
   readonly rules: CurrentPcbCommonRules;
   readonly preference: CurrentPcbCommonPreference;
   readonly assets: CurrentPcbStringEmptyAssets;
+  readonly metadata: CurrentPcbCommonMetadata;
   readonly atomicSnapshotVerified: false;
   readonly continuousObservation: false;
   readonly originalOwnerVerified: false;
@@ -66,6 +82,38 @@ export interface CurrentPcbCommonBaselineObservation {
   readonly queueCompletionVerified: false;
   readonly saveAuthorized: false;
   readonly executionAuthorized: false;
+}
+export interface CurrentPcbCommonRetainedReply { readonly result: Readonly<{ type: "string"; value: string }>; }
+export type CurrentPcbCommonBaselineReplies = Readonly<Record<SamplePhase, CurrentPcbCommonRetainedReply>>;
+const retainedReplies = new WeakMap<CurrentPcbCommonBaselineObservation, CurrentPcbCommonBaselineReplies>();
+
+/** Original runner issuance only, not current native ownership, freshness,
+ * interval completion or execution authority. No decoded-data reserialization. */
+export function requireOriginalCurrentPcbCommonBaselineReplies(observation: CurrentPcbCommonBaselineObservation): CurrentPcbCommonBaselineReplies {
+  const replies = retainedReplies.get(observation); if (replies === undefined) { return refuse(); } return replies;
+}
+function rawRecord(input: unknown, keys: readonly string[]): object {
+  if (input === null || typeof input !== "object" || types.isProxy(input) || Array.isArray(input)) { return refuse(); }
+  const actual = Reflect.ownKeys(input), prototype: unknown = Object.getPrototypeOf(input);
+  if (prototype !== Object.prototype && prototype !== null || actual.length !== keys.length ||
+      actual.some(key => typeof key !== "string" || !keys.includes(key))) { return refuse(); }
+  return input;
+}
+function rawValue(input: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(input, key);
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { return refuse(); }
+  return descriptor.value as unknown;
+}
+function retainReply(input: unknown): CurrentPcbCommonRetainedReply {
+  const wrapper = rawRecord(input, ["result"]);
+  const result = rawRecord(rawValue(wrapper, "result"), ["type", "value"]);
+  const type = rawValue(result, "type"), value = rawValue(result, "value");
+  if (type !== "string" || typeof value !== "string" || !value.isWellFormed() || Buffer.byteLength(value) > CURRENT_PCB_COMMON_GRAPH_BYTES) { return refuse(); }
+  // Both exact own-data envelopes are immutable before the next native await.
+  // Retain exact original text, not reconstructed decoded content.
+  Object.freeze(result); Object.freeze(wrapper);
+  if (rawValue(wrapper, "result") !== result || rawValue(result, "type") !== type || rawValue(result, "value") !== value) { return refuse(); }
+  return Object.freeze({ result: Object.freeze({ type, value }) });
 }
 function refuse(): never { throw new Error("PCB_COMMON_BASELINE_OBSERVATION"); }
 function handle(value: string): string {
@@ -100,10 +148,22 @@ export class CurrentPcbCommonBaselineRunner {
     return this.#request({ commonPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  #sample(phase: SamplePhase, scope: string, wrapper: string): Promise<unknown> {
+  #sample(phase: CommonPhase, scope: string, wrapper: string, bundle: string): Promise<unknown> {
     return this.#request({ commonPhase: phase, method: "Runtime.callFunctionOn",
       params: { ...EFFECTS, objectId: scope, functionDeclaration: PROGRAMS[phase], returnByValue: true,
-        arguments: [{ objectId: wrapper }] } });
+        arguments: [{ objectId: wrapper }, { objectId: bundle }] } });
+  }
+  async #constructors(scope: string, wrapper: string): Promise<string> {
+    const bundle = decodeCurrentPcbConstructorBundle(await this.#request({ commonPhase: "constructors", method: "Runtime.callFunctionOn",
+      params: { ...EFFECTS, objectId: scope, functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common,
+        returnByValue: false, arguments: [{ objectId: wrapper }] } }), "common");
+    const constructors = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "common"), prototypes = new Set<string>();
+    for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.common.entries()) {
+      const constructor = constructors[index]; if (constructor === undefined) { return refuse(); }
+      const result = decodeCurrentPcbConstructorProperties(await this.#properties(constructor), this.#script, name);
+      if (prototypes.has(result.prototypeId)) { return refuse(); } prototypes.add(result.prototypeId);
+    }
+    return bundle;
   }
   #documentMatches(value: { readonly documentUuid: string }): void {
     if (value.documentUuid !== this.#document) { refuse(); }
@@ -111,7 +171,8 @@ export class CurrentPcbCommonBaselineRunner {
   public async observe(): Promise<CurrentPcbCommonBaselineObservation> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;
-    let cleanupFailed = false, result: CurrentPcbCommonBaselineObservation | undefined, started = false;
+    let cleanupFailed = false, replies: CurrentPcbCommonBaselineReplies | undefined,
+      result: CurrentPcbCommonBaselineObservation | undefined, started = false;
     const failures: unknown[] = [];
     try {
       this.#transport.assertCurrent(); started = true;
@@ -129,15 +190,25 @@ export class CurrentPcbCommonBaselineRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#script, "save-handler");
       const scope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
-      const presentation = decodeCurrentPcbCommonPresentation(await this.#sample("presentation", scope, wrapper));
+      const bundle = await this.#constructors(scope, wrapper);
+      const presentationReply = retainReply(await this.#sample("presentation", scope, wrapper, bundle));
+      const presentation = decodeCurrentPcbCommonPresentation(presentationReply);
       this.#documentMatches(presentation);
-      const rules = decodeCurrentPcbCommonRules(await this.#sample("rules", scope, wrapper)); this.#documentMatches(rules);
-      const preference = decodeCurrentPcbCommonPreference(await this.#sample("preference", scope, wrapper)); this.#documentMatches(preference);
-      const assets = decodeCurrentPcbStringEmptyAssets(await this.#sample("assets", scope, wrapper)); this.#documentMatches(assets);
+      const rulesReply = retainReply(await this.#sample("rules", scope, wrapper, bundle));
+      const rules = decodeCurrentPcbCommonRules(rulesReply); this.#documentMatches(rules);
+      const preferenceReply = retainReply(await this.#sample("preference", scope, wrapper, bundle));
+      const preference = decodeCurrentPcbCommonPreference(preferenceReply); this.#documentMatches(preference);
+      const assetsReply = retainReply(await this.#sample("assets", scope, wrapper, bundle));
+      const assets = decodeCurrentPcbStringEmptyAssets(assetsReply); this.#documentMatches(assets);
+      const metadataReply = retainReply(await this.#request({ commonPhase: "metadata", method: "Runtime.callFunctionOn",
+        params: { ...EFFECTS, objectId: scope, functionDeclaration: CURRENT_PCB_COMMON_METADATA_FUNCTION, returnByValue: true,
+          arguments: [{ objectId: wrapper }] } }));
+      const metadata = decodeCurrentPcbCommonMetadata(metadataReply); this.#documentMatches(metadata);
+      replies = Object.freeze({ presentation: presentationReply, rules: rulesReply, preference: preferenceReply, assets: assetsReply, metadata: metadataReply });
       this.#phase = "bounds";
       const observation: CurrentPcbCommonBaselineObservation = freezeDeep({
-        schema: "easyeda-pro-control.pcb-common-baseline-observation.v1", documentUuid: this.#document,
-        presentation, rules, preference, assets, atomicSnapshotVerified: false, continuousObservation: false,
+        schema: "easyeda-pro-control.pcb-common-baseline-observation.v2", documentUuid: this.#document,
+        presentation, rules, preference, assets, metadata, atomicSnapshotVerified: false, continuousObservation: false,
         originalOwnerVerified: false, completeLiveBaselineVerified: false, storedSourceMatched: false,
         queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false,
       });
@@ -162,7 +233,8 @@ export class CurrentPcbCommonBaselineRunner {
       throw new AggregateError(failures, `PCB_COMMON_BASELINE_OBSERVATION_FAILED_${phase.toUpperCase()}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
         { cause: failures[0] });
     }
-    if (result === undefined) { return refuse(); }
+    if (result === undefined || replies === undefined) { return refuse(); }
+    retainedReplies.set(result, replies);
     return result;
   }
 }

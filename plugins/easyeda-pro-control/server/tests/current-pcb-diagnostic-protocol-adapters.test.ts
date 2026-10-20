@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Closed protocol parity compares every independently implemented fixed reader and constructor selector. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -9,8 +10,8 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "../src/current-pcb-di
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
-// oxlint-disable-next-line import/max-dependencies -- The closed protocol parity test must compare every independently implemented fixed program.
-import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../src/current-pcb-constructor-scope.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams, stringPrecreateNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
 type Row = Record<string, unknown>;
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
@@ -36,11 +37,11 @@ function modelCommands(): readonly Row[] {
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
-      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
-      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }] } },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } },
   ];
   return commands.map((command, index) => ({ id: index + 1, method: command["method"], params: command["params"], sessionId: "original-page-session" }));
@@ -84,6 +85,29 @@ void test("all eleven fixed model requests map to private phases without forward
     }
     if (index >= 6 && index <= 9) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
     if (index === 10) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
+  }
+});
+
+void test("constructor selection is purpose-pinned and pending requires exactly the qualified tuple handle", () => {
+  for (const kind of ["diagnostic", "precreate"] as const) {
+    const accepted = kind === "diagnostic" ? diagnosticNativeRequest : stringPrecreateNativeRequest;
+    const rejected = kind === "diagnostic" ? stringPrecreateNativeRequest : diagnosticNativeRequest;
+    const command = { id: 1, method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
+      functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS[kind], returnByValue: false,
+      arguments: [{ objectId: "wrapper" }] }, sessionId: "session" };
+    assert.deepEqual(accepted(wire(command)), { action: "send", requestId: 1, method: "Runtime.callFunctionOn",
+      sessionId: "session", modelPhase: `constructors-${kind}`, objectId: "scope", callbackObjectId: "wrapper" });
+    assert.throws(() => rejected(wire(command)), /OUTBOUND/u);
+    for (const changes of [{ returnByValue: true }, { throwOnSideEffect: false },
+      { arguments: [{ objectId: "wrapper" }, { objectId: "extra" }] }]) {
+      assert.throws(() => accepted(wire({ ...command, params: { ...command.params, ...changes } })), /OUTBOUND/u);
+    }
+  }
+  const pending = modelCommands()[7]; assert.ok(pending !== undefined);
+  assert.equal(diagnosticNativeRequest(wire(pending))["constructorObjectId"], "constructors");
+  for (const args of [[{ objectId: "wrapper" }], [{ objectId: "wrapper" }, { value: "constructors" }],
+    [{ objectId: "wrapper" }, { objectId: "constructors" }, { objectId: "extra" }]]) {
+    assert.throws(() => diagnosticNativeRequest(wire({ ...pending, params: { ...params(pending), arguments: args } })), /OUTBOUND/u);
   }
 });
 
@@ -136,7 +160,8 @@ void test("model protocol rejects every effect override, extra scope/call option
     [6, "arguments", [{ objectId: "x".repeat(257) }]], [7, "arguments", []], [8, "arguments", [{ value: "foreign" }]],
     [7, "functionDeclaration", "function(){}"], [8, "functionDeclaration", "function(){}"],
     [9, "arguments", [{ value: "foreign" }]], [9, "functionDeclaration", "function(){}"],
-    [9, "arguments", [{ objectId: "a" }, { objectId: "b" }]],
+    [9, "arguments", [{ objectId: "a" }]],
+    [9, "arguments", [{ objectId: "a" }, { objectId: "b" }, { objectId: "extra" }]],
     [10, "objectGroup", "foreign"], [10, "objectId", "extra"],
   ] as const) {
     const original = originals[index]; assert.ok(original !== undefined);
@@ -146,10 +171,10 @@ void test("model protocol rejects every effect override, extra scope/call option
 });
 
 void test("adapter request and byte budgets are fixed and reject overflow without a caller override", () => {
-  assert.equal(DIAGNOSTIC_REQUEST_LIMIT, 64);
+  assert.equal(DIAGNOSTIC_REQUEST_LIMIT, 82);
   const original = modelCommands()[0]; assert.ok(original !== undefined);
-  assert.equal(diagnosticNativeRequest(wire({ ...original, id: 64 }))["requestId"], 64);
-  for (const id of [0, -1, 65, 1.5, "64"]) {
+  assert.equal(diagnosticNativeRequest(wire({ ...original, id: 82 }))["requestId"], 82);
+  for (const id of [0, -1, 83, 1.5, "82"]) {
     assert.throws(() => diagnosticNativeRequest(wire({ ...original, id })));
   }
   assert.throws(() => diagnosticNativeRequest(Buffer.alloc(65_537)));
@@ -160,7 +185,7 @@ void test("adapter request and byte budgets are fixed and reject overflow withou
 void test("fixed root inventory stays within the existing command bound at maximum original handle widths", () => {
   const original = modelCommands()[9]; assert.ok(original !== undefined);
   const command = { ...original, id: 64, sessionId: "s".repeat(128),
-    params: { ...params(original), objectId: "o".repeat(256), arguments: [{ objectId: "c".repeat(256) }] } };
+    params: { ...params(original), objectId: "o".repeat(256), arguments: [{ objectId: "c".repeat(256) }, { objectId: "t".repeat(256) }] } };
   const encoded = wire(command);
   assert.ok(encoded.length <= 65_536);
   const request = diagnosticNativeRequest(encoded);
@@ -180,6 +205,8 @@ void test("native adapter embeds and private fields match TS programs without na
     ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
     ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
     ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
+    ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
+    ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), program);
@@ -187,15 +214,15 @@ void test("native adapter embeds and private fields match TS programs without na
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
-  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {90} else {64}"));
+  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {112} else {82}"));
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>RequestLimit"));
-  assert.ok(source.includes("int RequestLimit { get { return stringPrecreate?90:64; } }"));
+  assert.ok(source.includes("int RequestLimit { get { return stringPrecreate?112:82; } }"));
   assert.ok(source.includes('if(received+count>64*1024*1024) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
-  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
   assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));
-  assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
   assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));
   const retained = source.indexOf("root=info.process; rootThread=info.thread; rootPid=info.processId;");
   const checked = source.indexOf("installation.AssertCreatedImage(root);"), resumed = source.indexOf("if(ResumeThread(rootThread)!=1)");

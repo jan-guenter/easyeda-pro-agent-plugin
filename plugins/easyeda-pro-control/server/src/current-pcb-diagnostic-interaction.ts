@@ -16,7 +16,7 @@ const reference=(o,k)=>{const v=optional(o,k);if(v.marker==="present")object(v.v
 const timer=(o,k)=>{const v=optional(o,k);if(v.marker==="present"&&(typeof v.value!=="number"||!Number.isSafeInteger(v.value)||Object.is(v.value,-0)||v.value<0))bad();return v.marker;};
 const matching=(o,k,target)=>{const v=optional(o,k);if(v.marker!=="present")return v.marker;object(v.value);return v.value===target?"matching":"other";};
 const named=(name,type)=>instance(own(scope,name),klass(type));
-const selection=named("Fe","XU"),root=named("$0","Lpe"),rootNext=optional(root,"nextTool");
+const selection=named("Fe","XU"),root=constructorInstance(own(scope,"$0"),"Lpe"),rootNext=optional(root,"nextTool");
 let navigation=null;
 if(rootNext.marker==="present"){
 object(rootNext.value);
@@ -35,7 +35,7 @@ wheelTimer:timer(object(own(nav,"wheelData")),"clearTime"),nextMarker:next.marke
 }
 const button=optional(root,"mouseDownStatus");let mouseDownButton=null;
 if(button.marker==="present"){if(!Number.isSafeInteger(button.value)||Object.is(button.value,-0)||button.value<0||button.value>4)bad();mouseDownButton=button.value;}
-const sceneOwner=named("Pi","Kme"),scene=own(sceneOwner,"scene"),sceneCount=array(scene);if(sceneCount>8)bad();
+const sceneOwner=constructorInstance(own(scope,"Pi"),"Kme"),scene=own(sceneOwner,"scene"),sceneCount=array(scene);if(sceneCount>8)bad();
 const modes=[];for(let i=0;i<sceneCount;i++){const v=own(scene,String(i));if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<1||v>6)bad();modes.push(v);}
 const sceneState={modes,dropDrag:flag(own(sceneOwner,"_dropDrag")),historyToolCount:set(own(sceneOwner,"needHistoryTool"))};
 const selected={items:array(own(selection,"items")),selections:array(own(selection,"selections")),
@@ -45,7 +45,7 @@ drcItems:set(own(selection,"drcItems")),selectionOrder:map(own(selection,"select
 const selectionState={counts:selected,mouseLeftDown:flag(own(selection,"mouseLeftDown")),mouseLeftUp:flag(own(selection,"mouseLeftUp")),
 dragging:flag(own(selection,"dragging")),readyToCopyDragging:flag(own(selection,"readyToCopyDragging")),
 keepSelection:flag(own(selection,"keepSelection")),specialPaste:flag(own(selection,"isSpecialPaste")),dialog:reference(selection,"_dialog")};
-const control=named("Sr","fpe"),flipping=named("cm","P1e"),attributes=named("nu","mge"),type=optional(attributes,"_type");
+const control=constructorInstance(own(scope,"Sr"),"fpe"),flipping=constructorInstance(own(scope,"cm"),"P1e"),attributes=constructorInstance(own(scope,"nu"),"mge"),type=optional(attributes,"_type");
 if(type.marker==="present"&&typeof type.value!=="string")bad();
 const toolHistoryClass=klass("Cy"),toolHistory=optional(toolHistoryClass,"instance");let history=null;
 if(toolHistory.marker==="present"){
@@ -53,17 +53,17 @@ const owner=instance(toolHistory.value,toolHistoryClass),activeId=optional(owner
 if(activeId.marker==="present"&&typeof activeId.value!=="string")bad();
 history={activeTool:reference(owner,"activeToolHistory"),activeId:activeId.marker};
 }
-const smart=named("Us","tge"),command=instance(own(smart,"command"),klass("De"));
+const smart=constructorInstance(own(scope,"Us"),"tge"),command=instance(own(smart,"command"),klass("De"));
 const smartState={control:reference(smart,"_control"),dimension:reference(smart,"dimension"),
 start:reference(smart,"start"),end:reference(smart,"end"),startSpotCount:array(own(smart,"startSpots")),
 highlightSpotCount:array(own(smart,"highlightedSpots")),historyItemCount:set(own(smart,"_historyItems")),
 commandCount:array(own(command,"_commands")),waitingUploadCount:array(own(command,"waitingUploadStack")),
 commandIndexCount:map(own(command,"idMap")),commandFromOutside:flag(own(smart,"initCommandFromOutside"))};
-const turn=named("Xo","$me");
+const turn=constructorInstance(own(scope,"Xo"),"$me");
 const controllers={pointControl:reference(control,"control"),lockedLayerCount:set(own(control,"lockedLayers")),
 mouseMoveCheck:flag(own(control,"mouseMoveCheck")),mouseAltDown:flag(own(control,"mouseAltDown")),hasAlt:flag(own(control,"hasAlt")),
-layerTool:reference(named("dl","Spe"),"tool"),routeTool:reference(named("Yr","Ume"),"tool"),
-attributeTool:reference(named("ru","cge"),"tool"),flipMoveTool:reference(flipping,"moveTool"),flipping:flag(own(flipping,"_flipping")),
+layerTool:reference(constructorInstance(own(scope,"dl"),"Spe"),"tool"),routeTool:reference(constructorInstance(own(scope,"Yr"),"Ume"),"tool"),
+attributeTool:reference(constructorInstance(own(scope,"ru"),"cge"),"tool"),flipMoveTool:reference(flipping,"moveTool"),flipping:flag(own(flipping,"_flipping")),
 toolHistoryMarker:toolHistory.marker,toolHistory:history,attributeType:type.marker,attributesUnmounted:flag(own(attributes,"isUnmounted")),
 attributeTimer:timer(attributes,"_ui2PCBAboutAttrDataUpdateTimer"),smart:smartState,
 turn:{selectionRelation:matching(turn,"currTool",selection),itemCount:array(own(turn,"items")),queueCount:array(own(turn,"_flipQueue")),
@@ -79,14 +79,14 @@ return {keys:keys.length,members};
 };
 const innerClass=klass("zo"),innerOwner=optional(innerClass,"manager");let innerModels=null;
 if(innerOwner.marker==="present")innerModels=dictionarySets(own(instance(innerOwner.value,innerClass),"layerMapSet"));
-const innerView=named("Wn","Tfe"),innerViews=dictionarySets(own(innerView,"layerMapSet"));
+const innerView=constructorInstance(own(scope,"Wn"),"Tfe"),innerViews=dictionarySets(own(innerView,"layerMapSet"));
 const retainedClass=klass("Hb"),retainedOwner=optional(retainedClass,"manager");let retainedLines=null;
 if(retainedOwner.marker==="present"){
 const owner=instance(retainedOwner.value,retainedClass);retainedLines={mapCount:map(own(owner,"map")),updateCount:set(own(owner,"updateIds"))};
 }
 const secondary={partitions:optionalMap("Nn","items"),innerModelMarker:innerOwner.marker,innerModels,innerViews,
 innerViewManagerMatches:innerOwner.marker==="present"&&own(innerView,"mgr")===innerOwner.value,
-smartDimensionViews:map(own(named("Yh","Qme"),"map")),groupViews:map(own(named("Ft","jde"),"map")),
+smartDimensionViews:map(own(constructorInstance(own(scope,"Yh"),"Qme"),"map")),groupViews:map(own(constructorInstance(own(scope,"Ft"),"jde"),"map")),
 retainedLineMarker:retainedOwner.marker,retainedLines};
 return {schema:"easyeda-pro-control.pcb-diagnostic-interaction.v1",
 toolChain:{nextMarker:rootNext.marker,nextKind:rootNext.marker==="present"?(navigation===null?"other":"m0e"):null,

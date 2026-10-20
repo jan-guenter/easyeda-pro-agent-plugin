@@ -249,7 +249,7 @@ public sealed class EasyedaDiagnosticOwner {
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   readonly bool stringPrecreate;
-  int RequestLimit { get { return stringPrecreate?90:64; } }
+  int RequestLimit { get { return stringPrecreate?112:82; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -775,7 +775,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source,bool stringPurpose) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(id<1 || id>(stringPurpose?90:64) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+    if(id<1 || id>(stringPurpose?112:82) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
       !matches(path,@"\A[A-Za-z]:\\[^\x00-\x1F\x7F<>:""|?*/]+\.eprj2\z") ||
@@ -797,7 +797,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
     if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("opening-send-size");
     return message;
   }
-  const string ModelPendingFunction=@"function(originalCallback){
+  const string ModelPendingFunction=@"function(originalCallback,constructors){
 ""use strict"";
 let stage=""callback"",reason=""unexpected"";
 const bad=(r=""guard"")=>{reason=r;throw new Error(""PCB_DIAGNOSTIC_PENDING_STATE"");};
@@ -840,6 +840,17 @@ return callback;
 })())!==originalCallback)bad();
 stage=""scope"";
 const scope=object(own(this,""object"")),retained=[];
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![16,20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=constructorLength===20?[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""]:[""kde"",""Sfe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
 const klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
 const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad(""instance"");return o;};
 const keep=(o,k)=>{const v=optional(o,k);retained.push([o,k,v.marker,v.value]);return v;};
@@ -851,7 +862,7 @@ const owner=instance(v.value,c),data=keep(owner,""data"").value;return {marker:"
 stage=""copper-uploads"";const copperUploads=upload(""qI"");stage=""plane-uploads"";const planeUploads=upload(""e5"");
 stage=""board-upload"";const boardClass=klass(""pE""),boardOwner=keep(boardClass,""proxy"");
 const boardUpload={marker:boardOwner.marker,flag:boardOwner.marker===""present""?flag(own(instance(boardOwner.value,boardClass),""flag"")):null};
-stage=""commands"";const commands=instance(keep(scope,""Xe"").value,klass(""kde"")),undo=keep(commands,""undoCommand"").value,redo=keep(commands,""redoCommand"").value;
+stage=""commands"";const commands=constructorInstance(keep(scope,""Xe"").value,""kde""),undo=keep(commands,""undoCommand"").value,redo=keep(commands,""redoCommand"").value;
 const undoCount=arrayCount(undo),redoCount=arrayCount(redo);if(undoCount>50||redoCount>50)bad();
 const active=keep(commands,""stack"");if(active.marker!==""null""&&active.marker!==""present"")bad();
 let activeStack=null;
@@ -863,7 +874,7 @@ idMapCount:collection(keep(stack,""idMap"").value,Map.prototype),refreshService:
 needCheckFilterCommand:flag(own(stack,""needCheckFilterCommand"")),partitionNeedAskBeforeDelete:flag(own(stack,""_partitionNeedAskBeforeDelete"")),
 createPartitionFile:flag(own(stack,""createPartitionFile"")),sendCopperOrderChange:flag(own(stack,""sendCopperOrderChange""))};
 }
-stage=""teardrops"";const tears=instance(keep(scope,""Zec"").value,klass(""Sfe""));
+stage=""teardrops"";const tears=constructorInstance(keep(scope,""Zec"").value,""Sfe"");
 const teardrops={isMove:flag(own(tears,""isMove"")),suspend:flag(own(tears,""suspend"")),
 modifyCount:collection(keep(tears,""modify"").value,Set.prototype),taskCount:collection(keep(tears,""task"").value,Set.prototype),
 modifyTearsCount:collection(keep(tears,""modifyTears"").value,Set.prototype),timer:keep(tears,""timeoutId"").marker};
@@ -893,7 +904,7 @@ else association=""matched"";
 }
 }
 }
-stage=""reproof"";if(own(env,""_compiler"")!==compiler||own(env,""_id"")!==documentUuid||own(env,""_doctype"")!==3)bad();
+stage=""reproof"";verifyConstructorAssociations();if(own(env,""_compiler"")!==compiler||own(env,""_id"")!==documentUuid||own(env,""_doctype"")!==3)bad();
 for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
 if(((()=>{
 ""use strict"";
@@ -1000,7 +1011,7 @@ const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-raw-str
 let bytes=0;for(let index=0;index<output.length;index++){const c=output.charCodeAt(index);if(c<128)bytes++;else if(c<2048)bytes+=2;else if(c>=55296&&c<=56319){bytes+=4;index++;}else bytes+=3;if(bytes>65536)bad();}
 return output;
 }";
-  const string ModelRootInventoryFunction=@"function(originalCallback){
+  const string ModelRootInventoryFunction=@"function(originalCallback,constructors){
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE"");};
 const retained=[],collections=[];
@@ -1053,6 +1064,17 @@ if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
 })())!==originalCallback)bad();
 const scope=object(own(this,""object""));
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![16,20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=constructorLength===20?[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""]:[""kde"",""Sfe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
 const klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
 const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
 const envClass=klass(""x""),env=instance(own(envClass,""env""),envClass);
@@ -1071,7 +1093,7 @@ board={ownerMarker:""present"",boardMarker:value.marker,outlineCount:map(own(own
 const panelClass=klass(""ai""),panelOwner=optional(panelClass,""model"");
 let panelization={ownerMarker:panelOwner.marker,viewModelMatchesOwner:null,activation:null,counts:null};
 if(panelOwner.marker===""present""){
-const owner=instance(panelOwner.value,panelClass),view=instance(own(scope,""Si""),klass(""Jse"")),param=object(own(owner,""_param""));
+const owner=instance(panelOwner.value,panelClass),view=constructorInstance(own(scope,""Si""),""Jse""),param=object(own(owner,""_param""));
 const borders=own(owner,""borderClosures"");if(array(borders)!==2)bad();
 const counts={items:array(own(owner,""items"")),outlines:array(own(owner,""outlines"")),slots:array(own(owner,""slots"")),
 originOutline:array(own(owner,""originOutline"")),holes:array(own(owner,""holes"")),positionHoles:array(own(owner,""positionHoles"")),
@@ -1127,7 +1149,7 @@ const reference=(o,k)=>{const v=optional(o,k);if(v.marker===""present"")object(v
 const timer=(o,k)=>{const v=optional(o,k);if(v.marker===""present""&&(typeof v.value!==""number""||!Number.isSafeInteger(v.value)||Object.is(v.value,-0)||v.value<0))bad();return v.marker;};
 const matching=(o,k,target)=>{const v=optional(o,k);if(v.marker!==""present"")return v.marker;object(v.value);return v.value===target?""matching"":""other"";};
 const named=(name,type)=>instance(own(scope,name),klass(type));
-const selection=named(""Fe"",""XU""),root=named(""$0"",""Lpe""),rootNext=optional(root,""nextTool"");
+const selection=named(""Fe"",""XU""),root=constructorInstance(own(scope,""$0""),""Lpe""),rootNext=optional(root,""nextTool"");
 let navigation=null;
 if(rootNext.marker===""present""){
 object(rootNext.value);
@@ -1146,7 +1168,7 @@ wheelTimer:timer(object(own(nav,""wheelData"")),""clearTime""),nextMarker:next.m
 }
 const button=optional(root,""mouseDownStatus"");let mouseDownButton=null;
 if(button.marker===""present""){if(!Number.isSafeInteger(button.value)||Object.is(button.value,-0)||button.value<0||button.value>4)bad();mouseDownButton=button.value;}
-const sceneOwner=named(""Pi"",""Kme""),scene=own(sceneOwner,""scene""),sceneCount=array(scene);if(sceneCount>8)bad();
+const sceneOwner=constructorInstance(own(scope,""Pi""),""Kme""),scene=own(sceneOwner,""scene""),sceneCount=array(scene);if(sceneCount>8)bad();
 const modes=[];for(let i=0;i<sceneCount;i++){const v=own(scene,String(i));if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<1||v>6)bad();modes.push(v);}
 const sceneState={modes,dropDrag:flag(own(sceneOwner,""_dropDrag"")),historyToolCount:set(own(sceneOwner,""needHistoryTool""))};
 const selected={items:array(own(selection,""items"")),selections:array(own(selection,""selections"")),
@@ -1156,7 +1178,7 @@ drcItems:set(own(selection,""drcItems"")),selectionOrder:map(own(selection,""sel
 const selectionState={counts:selected,mouseLeftDown:flag(own(selection,""mouseLeftDown"")),mouseLeftUp:flag(own(selection,""mouseLeftUp"")),
 dragging:flag(own(selection,""dragging"")),readyToCopyDragging:flag(own(selection,""readyToCopyDragging"")),
 keepSelection:flag(own(selection,""keepSelection"")),specialPaste:flag(own(selection,""isSpecialPaste"")),dialog:reference(selection,""_dialog"")};
-const control=named(""Sr"",""fpe""),flipping=named(""cm"",""P1e""),attributes=named(""nu"",""mge""),type=optional(attributes,""_type"");
+const control=constructorInstance(own(scope,""Sr""),""fpe""),flipping=constructorInstance(own(scope,""cm""),""P1e""),attributes=constructorInstance(own(scope,""nu""),""mge""),type=optional(attributes,""_type"");
 if(type.marker===""present""&&typeof type.value!==""string"")bad();
 const toolHistoryClass=klass(""Cy""),toolHistory=optional(toolHistoryClass,""instance"");let history=null;
 if(toolHistory.marker===""present""){
@@ -1164,17 +1186,17 @@ const owner=instance(toolHistory.value,toolHistoryClass),activeId=optional(owner
 if(activeId.marker===""present""&&typeof activeId.value!==""string"")bad();
 history={activeTool:reference(owner,""activeToolHistory""),activeId:activeId.marker};
 }
-const smart=named(""Us"",""tge""),command=instance(own(smart,""command""),klass(""De""));
+const smart=constructorInstance(own(scope,""Us""),""tge""),command=instance(own(smart,""command""),klass(""De""));
 const smartState={control:reference(smart,""_control""),dimension:reference(smart,""dimension""),
 start:reference(smart,""start""),end:reference(smart,""end""),startSpotCount:array(own(smart,""startSpots"")),
 highlightSpotCount:array(own(smart,""highlightedSpots"")),historyItemCount:set(own(smart,""_historyItems"")),
 commandCount:array(own(command,""_commands"")),waitingUploadCount:array(own(command,""waitingUploadStack"")),
 commandIndexCount:map(own(command,""idMap"")),commandFromOutside:flag(own(smart,""initCommandFromOutside""))};
-const turn=named(""Xo"",""$me"");
+const turn=constructorInstance(own(scope,""Xo""),""$me"");
 const controllers={pointControl:reference(control,""control""),lockedLayerCount:set(own(control,""lockedLayers"")),
 mouseMoveCheck:flag(own(control,""mouseMoveCheck"")),mouseAltDown:flag(own(control,""mouseAltDown"")),hasAlt:flag(own(control,""hasAlt"")),
-layerTool:reference(named(""dl"",""Spe""),""tool""),routeTool:reference(named(""Yr"",""Ume""),""tool""),
-attributeTool:reference(named(""ru"",""cge""),""tool""),flipMoveTool:reference(flipping,""moveTool""),flipping:flag(own(flipping,""_flipping"")),
+layerTool:reference(constructorInstance(own(scope,""dl""),""Spe""),""tool""),routeTool:reference(constructorInstance(own(scope,""Yr""),""Ume""),""tool""),
+attributeTool:reference(constructorInstance(own(scope,""ru""),""cge""),""tool""),flipMoveTool:reference(flipping,""moveTool""),flipping:flag(own(flipping,""_flipping"")),
 toolHistoryMarker:toolHistory.marker,toolHistory:history,attributeType:type.marker,attributesUnmounted:flag(own(attributes,""isUnmounted"")),
 attributeTimer:timer(attributes,""_ui2PCBAboutAttrDataUpdateTimer""),smart:smartState,
 turn:{selectionRelation:matching(turn,""currTool"",selection),itemCount:array(own(turn,""items"")),queueCount:array(own(turn,""_flipQueue"")),
@@ -1190,14 +1212,14 @@ return {keys:keys.length,members};
 };
 const innerClass=klass(""zo""),innerOwner=optional(innerClass,""manager"");let innerModels=null;
 if(innerOwner.marker===""present"")innerModels=dictionarySets(own(instance(innerOwner.value,innerClass),""layerMapSet""));
-const innerView=named(""Wn"",""Tfe""),innerViews=dictionarySets(own(innerView,""layerMapSet""));
+const innerView=constructorInstance(own(scope,""Wn""),""Tfe""),innerViews=dictionarySets(own(innerView,""layerMapSet""));
 const retainedClass=klass(""Hb""),retainedOwner=optional(retainedClass,""manager"");let retainedLines=null;
 if(retainedOwner.marker===""present""){
 const owner=instance(retainedOwner.value,retainedClass);retainedLines={mapCount:map(own(owner,""map"")),updateCount:set(own(owner,""updateIds""))};
 }
 const secondary={partitions:optionalMap(""Nn"",""items""),innerModelMarker:innerOwner.marker,innerModels,innerViews,
 innerViewManagerMatches:innerOwner.marker===""present""&&own(innerView,""mgr"")===innerOwner.value,
-smartDimensionViews:map(own(named(""Yh"",""Qme""),""map"")),groupViews:map(own(named(""Ft"",""jde""),""map"")),
+smartDimensionViews:map(own(constructorInstance(own(scope,""Yh""),""Qme""),""map"")),groupViews:map(own(constructorInstance(own(scope,""Ft""),""jde""),""map"")),
 retainedLineMarker:retainedOwner.marker,retainedLines};
 return {schema:""easyeda-pro-control.pcb-diagnostic-interaction.v1"",
 toolChain:{nextMarker:rootNext.marker,nextKind:rootNext.marker===""present""?(navigation===null?""other"":""m0e""):null,
@@ -1205,6 +1227,7 @@ rightDownTimer:timer(root,""mouseRightDownTimer""),mouseDownMarker:button.marker
 scene:sceneState,selection:selectionState,controllers,secondary,collectionEntries:budget.entries-startEntries};
 })();
 
+verifyConstructorAssociations();
 for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]===""absent""?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[3])bad();}
 for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
 if(((()=>{
@@ -1389,7 +1412,7 @@ verify();
 return JSON.stringify({schema:""easyeda-pro-control.pcb-string-worker-association.v1"",identity:{projectUuid,branchUuid,windowTabId},
 bus,uploadMaps,taskSets,uniqueIdsKeys:membership.uniqueIdsKeys});
 })()";
-  const string StringEmptyProducersFunction=@"function(originalCallback){
+  const string StringEmptyProducersFunction=@"function(originalCallback,constructors){
 
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
@@ -1435,19 +1458,30 @@ if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
 })())!==originalCallback)bad();
 const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
 const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
 const ec=klass(""x""),env=instance(own(ec,""env""),ec),documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
 if(own(env,""_doctype"")!==3)bad();
 const emptyArray=o=>{if(arraySize(o)!==0)bad();return [];};
 const nullish=(o,k)=>{const m=marker(o,k);if(m===""present"")bad();return m;};
 const modelClass=klass(""MI""),models=instance(own(modelClass,""manager""),modelClass);
-const views=instance(own(scope,""jo""),klass(""mpe""));
+const views=constructorInstance(own(scope,""jo""),""mpe"");
 const model={netKeys:emptyMap(own(models,""map"")),idKeys:emptyMap(own(models,""idMap"")),
 lastRatline:nullish(models,""_lastRatline""),last:nullish(models,""_last"")};
 const view={netKeys:emptyMap(own(views,""map"")),idKeys:emptyMap(own(views,""idMap"")),
 highlightNets:emptySet(own(views,""highLightNets"")),clickHighlight:emptySet(own(views,""clickHighlightRatlines"")),
 hoverHighlight:emptySet(own(views,""hoverHighlightRatlines""))};
-const network=instance(own(scope,""ze""),klass(""Yde"")),updates=plain(own(network,""updateNets""));
+const network=constructorInstance(own(scope,""ze""),""Yde""),updates=plain(own(network,""updateNets""));
 if(keys(updates).length!==3)bad();
 const notification=instance(own(network,""debounce""),klass(""U5""));
 const net={keys:emptyMap(own(network,""map"")),noneKeys:emptyMap(own(network,""noneNetMap"")),
@@ -1460,11 +1494,11 @@ notification:{func:nullish(notification,""func""),animationFrame:nullish(notific
 lastTime:own(notification,""lastTime""),delay:own(notification,""delay"")}};
 if(net.viewGroupsMarker===""present"")net.viewGroups=emptyArray(own(network,""_viewGroupIds""));
 if(net.notification.lastTime!==-1||net.notification.delay!==0)bad();
-const clusters={networkKeys:emptyMap(own(klass(""pP""),""map"")),
-wireClusterKeys:emptyMap(own(instance(own(scope,""h_""),klass(""HSe"")),""map"")),
-jumpWireKeys:emptyMap(own(instance(own(scope,""aE""),klass(""USe"")),""map"")),
+const clusters={networkKeys:emptyMap(own(klass(""Xh""),""map"")),
+wireClusterKeys:emptyMap(own(constructorInstance(own(scope,""h_""),""HSe""),""map"")),
+jumpWireKeys:emptyMap(own(constructorInstance(own(scope,""aE""),""USe""),""map"")),
 useWireClusterCache:flag(own(klass(""h0""),""useWireClusterCache"")),emptyNetChange:flag(own(klass(""h0""),""emptyNetChange""))};
-verify();if(((()=>{
+verifyConstructorAssociations();verify();if(((()=>{
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
 const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
@@ -1490,14 +1524,127 @@ return callback;
 })())!==originalCallback)bad();
 return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v1"",documentUuid,model,view,net,clusters});
 }";
+  const string ModelDiagnosticConstructorsFunction=@"function(originalCallback){""use strict"";
+const bad=()=>{throw new Error(""PCB_CONSTRUCTOR_SCOPE"");};
+const held=[],own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();held.push([o,k,d.value]);return d.value;};
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=own(this,""object""),owners=[[""kde"",""Xe"",0,{}],[""Sfe"",""Zec"",0,{}],[""Jse"",""Si"",0,{}],[""Lpe"",""$0"",1,{}],[""Kme"",""Pi"",0,{}],[""fpe"",""Sr"",0,{}],[""P1e"",""cm"",0,{}],[""mge"",""nu"",0,{}],[""tge"",""Us"",0,{}],[""Sy"",""Xo"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],[""Spe"",""dl"",0,{}],[""Ume"",""Yr"",0,{}],[""cge"",""ru"",0,{}],[""Tfe"",""Wn"",0,{}],[""Qme"",""Yh"",0,{}],[""jde"",""Ft"",0,{}]],selected=[],instances=[];
+for(const [name,key,arity,statics] of owners){const o=own(scope,key);if(o===null||typeof o!==""object""||Array.isArray(o))bad();const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""length"")!==arity||own(c,""prototype"")!==p)bad();for(const key of Object.keys(statics))if(own(c,key)!==statics[key])bad();selected.push(c);instances.push([o,p]);}
+for(const [o,p] of instances)if(Object.getPrototypeOf(o)!==p)bad();
+for(const [o,k,v] of held){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,v))bad();}
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return selected;}";
+  const string ModelPrecreateConstructorsFunction=@"function(originalCallback){""use strict"";
+const bad=()=>{throw new Error(""PCB_CONSTRUCTOR_SCOPE"");};
+const held=[],own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();held.push([o,k,d.value]);return d.value;};
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=own(this,""object""),owners=[[""kde"",""Xe"",0,{}],[""Sfe"",""Zec"",0,{}],[""mpe"",""jo"",0,{}],[""Yde"",""ze"",0,{}],[""HSe"",""h_"",0,{}],[""USe"",""aE"",0,{}],[""Jse"",""Si"",0,{}],[""Lpe"",""$0"",1,{}],[""Kme"",""Pi"",0,{}],[""fpe"",""Sr"",0,{}],[""P1e"",""cm"",0,{}],[""mge"",""nu"",0,{}],[""tge"",""Us"",0,{}],[""Sy"",""Xo"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],[""Spe"",""dl"",0,{}],[""Ume"",""Yr"",0,{}],[""cge"",""ru"",0,{}],[""Tfe"",""Wn"",0,{}],[""Qme"",""Yh"",0,{}],[""jde"",""Ft"",0,{}]],selected=[],instances=[];
+for(const [name,key,arity,statics] of owners){const o=own(scope,key);if(o===null||typeof o!==""object""||Array.isArray(o))bad();const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""length"")!==arity||own(c,""prototype"")!==p)bad();for(const key of Object.keys(statics))if(own(c,key)!==statics[key])bad();selected.push(c);instances.push([o,p]);}
+for(const [o,p] of instances)if(Object.getPrototypeOf(o)!==p)bad();
+for(const [o,k,v] of held){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,v))bad();}
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return selected;}";
   public static string ModelProtocolMessage(int id,string method,string sessionId,string phase,
-    string uniqueContextId,string objectId,string callbackObjectId) {
-    return ModelProtocolMessageCore(id,method,sessionId,phase,uniqueContextId,objectId,callbackObjectId,false);
+    string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId) {
+    return ModelProtocolMessageCore(id,method,sessionId,phase,uniqueContextId,objectId,callbackObjectId,constructorObjectId,false);
   }
   static string ModelProtocolMessageCore(int id,string method,string sessionId,string phase,
-    string uniqueContextId,string objectId,string callbackObjectId,bool stringPurpose) {
+    string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId,bool stringPurpose) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>(stringPurpose?90:64) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
+    if(id<1 || id>(stringPurpose?112:82) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
+    if(phase!="pending" && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     const string group="easyeda-pro-control-pcb-model-v1";
     string parameters;
@@ -1513,11 +1660,17 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
       } else if(phase=="handler" && method=="Runtime.callFunctionOn") {
         if(!handle(objectId) || callbackObjectId!=null) throw Error("model-object");
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(ModelHandlerFunction)+",\"returnByValue\":false";
+      } else if((phase=="constructors-diagnostic" || phase=="constructors-precreate") && method=="Runtime.callFunctionOn") {
+        if(!handle(objectId) || !handle(callbackObjectId) || (phase=="constructors-precreate")!=stringPurpose) throw Error("model-constructors");
+        string program=stringPurpose?ModelPrecreateConstructorsFunction:ModelDiagnosticConstructorsFunction;
+        parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(program)+
+          ",\"returnByValue\":false,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"}]";
       } else if((phase=="snapshot" || phase=="pending" || phase=="raw-strings" || phase=="root-inventory") && method=="Runtime.callFunctionOn") {
-        if(!handle(objectId) || !handle(callbackObjectId)) throw Error("model-object");
+        if(!handle(objectId) || !handle(callbackObjectId) || ((phase=="pending" || phase=="root-inventory") && !handle(constructorObjectId))) throw Error("model-object");
         string program=phase=="snapshot"?ModelStateFunction:phase=="pending"?ModelPendingFunction:phase=="raw-strings"?ModelRawStringsFunction:ModelRootInventoryFunction;
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(program)+
-          ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"}]";
+          ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"}"+
+          (phase=="pending" || phase=="root-inventory"?",{\"objectId\":"+JsonString(constructorObjectId)+"}":"")+"]";
       } else if(phase=="release" && method=="Runtime.releaseObjectGroup") {
         if(objectId!=null || callbackObjectId!=null) throw Error("model-object");
         parameters="\"objectGroup\":"+JsonString(group);
@@ -1534,7 +1687,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
     return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);
   }
   static string ProtocolMessageCore(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId,bool stringPurpose) {
-    if(id<1 || id>(stringPurpose?90:64) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
+    if(id<1 || id>(stringPurpose?112:82) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
     string fields="";
     if(method=="Browser.getVersion" || method=="Target.getTargets") { if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields"); }
@@ -1566,38 +1719,48 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
     }
     string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,ModelRootInventoryFunction,PcbOpeningFunction};
-    int[] lengths={17003,2204,1730,7741,11209,8313,19842,13044};
+    int[] lengths={17003,2204,1730,7741,13632,8313,22587,13044};
     string[] digests={"186b6756f5a8b261ef225ac54202c4b9a9a8ccf65e9f30da537886779111d044",
       "f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e",
       "548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591",
       "67d4081399cdc22be17e2e1ddd0be234290092a2c5287f629fc2de9be16b85a5",
-      "243ebcbcd7b370cf07e2c5580c42de038c0c2e67cd694b229e66067879be7ba3",
+      "81bf061cc63d15e796778d92d457e6a0c24d5ca4ea1a873c1eb5540e59865f5e",
       "bd31d235e95935bebeff4400cb08219cc2419b7bd25cead9ead2aa459299a8f4",
-      "c17ab3b3da88f96407c4a0b980a1c6eef6f34f87fd3867643f26ca0f4912204a",
+      "75d3c48a376b86cca64f39fca738c6c8947869b2e560b20fefea3c637ab5a46e",
       "62d282abfdea1db218ba057d5af99ca7b7198390454efdded7a72ab57d5568bf"};
     for(int i=0;i<programs.Length;i++) using(SHA256 hash=SHA256.Create()) {
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[i]);
       if(bytes.Length!=lengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[i]) throw Error("fixed-program");
     }
+    string[] constructorPrograms={ModelDiagnosticConstructorsFunction,ModelPrecreateConstructorsFunction};
+    int[] constructorLengths={5863,5935};
+    string[] constructorDigests={"736b6b742a3e2c292957a17b892e520b0e929a43e1d8a29d7b6ccc0a910faf05",
+      "3f177da74b68a7668d7fad2bb62e54bc206e8ea525d20189f18d9b8d4f8d1a45"};
+    for(int i=0;i<constructorPrograms.Length;i++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(constructorPrograms[i]);
+      if(bytes.Length!=constructorLengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=constructorDigests[i]) throw Error("constructor-program");
+    }
     string[] stringPrograms={StringRendererAssociationFunction,StringWorkerAssociationExpression,StringEmptyProducersFunction};
-    int[] stringLengths={10446,4246,9630};
+    int[] stringLengths={10446,4246,11937};
     string[] stringDigests={"c18652b92e5cf0cfc512ec6c9eff73fd15fd7343cf22a52b18102f3c28861a0d",
       "b10ad5e9cd78f3bf0755af6a5c9cba6348d7642f275909933ffafc97da39f3b7",
-      "e3c0850e8981e6845474f14cb35722812bceb216c3f96253b29bc25088aba0d0"};
+      "98bc6cb2a30b50361e0911ec2dc6c4d2326f7e292768c34a9e3bd83452fbbad4"};
     for(int i=0;i<stringPrograms.Length;i++) using(SHA256 hash=SHA256.Create()) {
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(stringPrograms[i]);
       if(bytes.Length!=stringLengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=stringDigests[i]) throw Error("string-program");
     }
     foreach(string phase in new string[] {"renderer-association","empty-producers"}) {
-      string message=StringPrecreateProtocolMessage(89,"Runtime.callFunctionOn","page",phase,null,"scope","callback");
+      string message=StringPrecreateProtocolMessage(111,"Runtime.callFunctionOn","page",phase,null,"scope","callback",phase=="empty-producers"?"constructors":null);
+      string arguments="\"arguments\":[{\"objectId\":\"callback\"}"+(phase=="empty-producers"?",{\"objectId\":\"constructors\"}":"")+"]";
       if(message.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 ||
-        message.IndexOf("\"arguments\":[{\"objectId\":\"callback\"}]",StringComparison.Ordinal)<0) throw Error("string-scope-smoke");
+        message.IndexOf(arguments,StringComparison.Ordinal)<0) throw Error("string-scope-smoke");
     }
-    StringPrecreateProtocolMessage(90,"Runtime.evaluate","worker","worker-association","context",null,null);
-    bool diagnostic65Refused=false,string91Refused=false;
-    try { ProtocolMessage(65,"Browser.getVersion",null,null,null,null); } catch(InvalidOperationException) { diagnostic65Refused=true; }
-    try { StringPrecreateProtocolMessage(91,"Runtime.evaluate","worker","worker-association","context",null,null); } catch(InvalidOperationException) { string91Refused=true; }
-    if(!diagnostic65Refused || !string91Refused) throw Error("string-budget-smoke");
+    StringPrecreateProtocolMessage(112,"Runtime.evaluate","worker","worker-association","context",null,null,null);
+    ProtocolMessage(82,"Browser.getVersion",null,null,null,null);
+    bool diagnostic83Refused=false,string113Refused=false;
+    try { ProtocolMessage(83,"Browser.getVersion",null,null,null,null); } catch(InvalidOperationException) { diagnostic83Refused=true; }
+    try { StringPrecreateProtocolMessage(113,"Runtime.evaluate","worker","worker-association","context",null,null,null); } catch(InvalidOperationException) { string113Refused=true; }
+    if(!diagnostic83Refused || !string113Refused) throw Error("string-budget-smoke");
     string syntheticPath=@"C:\synthetic\fixture.eprj2",project;
     using(SHA256 hash=SHA256.Create()) project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(syntheticPath))).Replace("-","").ToLowerInvariant();
     foreach(string phase in new string[]{"preflight","open-project"}) {
@@ -1611,17 +1774,46 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
       if(opening.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 ||
         opening.IndexOf("\"throwOnSideEffect\":false",StringComparison.Ordinal)<0) throw Error("pcb-opening-flags");
     }
-    ModelProtocolMessage(1,"Runtime.evaluate","s","wrapper","c",null,null);
-    ModelProtocolMessage(2,"Runtime.getProperties","s","properties",null,"object",null);
-    ModelProtocolMessage(3,"Runtime.callFunctionOn","s","handler",null,"object",null);
-    ModelProtocolMessage(4,"Runtime.callFunctionOn","s","snapshot",null,"object","callback");
-    ModelProtocolMessage(5,"Runtime.callFunctionOn","s","pending",null,"object","callback");
-    ModelProtocolMessage(6,"Runtime.callFunctionOn","s","raw-strings",null,"object","callback");
-    ModelProtocolMessage(7,"Runtime.callFunctionOn","s","root-inventory",null,"object","callback");
-    ModelProtocolMessage(8,"Runtime.releaseObjectGroup","s","release",null,null,null);
-    ModelProtocolMessage(64,"Runtime.callFunctionOn",new string('s',128),"root-inventory",null,new string('o',256),new string('c',256));
+    ModelProtocolMessage(1,"Runtime.evaluate","s","wrapper","c",null,null,null);
+    ModelProtocolMessage(2,"Runtime.getProperties","s","properties",null,"object",null,null);
+    ModelProtocolMessage(3,"Runtime.callFunctionOn","s","handler",null,"object",null,null);
+    ModelProtocolMessage(4,"Runtime.callFunctionOn","s","snapshot",null,"object","callback",null);
+    string pending=ModelProtocolMessage(5,"Runtime.callFunctionOn","s","pending",null,"object","callback","constructors");
+    if(pending.IndexOf("\"arguments\":[{\"objectId\":\"callback\"},{\"objectId\":\"constructors\"}]",StringComparison.Ordinal)<0) throw Error("pending-constructors-smoke");
+    ModelProtocolMessage(6,"Runtime.callFunctionOn","s","raw-strings",null,"object","callback",null);
+    string rootInventory=ModelProtocolMessage(7,"Runtime.callFunctionOn","s","root-inventory",null,"object","callback","constructors");
+    if(rootInventory.IndexOf("\"arguments\":[{\"objectId\":\"callback\"},{\"objectId\":\"constructors\"}]",StringComparison.Ordinal)<0) throw Error("root-constructors-smoke");
+    ModelProtocolMessage(8,"Runtime.releaseObjectGroup","s","release",null,null,null,null);
+    ModelProtocolMessage(82,"Runtime.callFunctionOn",new string('s',128),"root-inventory",null,new string('o',256),new string('c',256),new string('b',256));
+    foreach(bool stringPurpose in new bool[] {false,true}) {
+      string phase=stringPurpose?"constructors-precreate":"constructors-diagnostic";
+      string message=ModelProtocolMessageCore(9,"Runtime.callFunctionOn","s",phase,null,"scope","callback",null,stringPurpose);
+      if(message.IndexOf("\"returnByValue\":false",StringComparison.Ordinal)<0 ||
+        message.IndexOf("\"arguments\":[{\"objectId\":\"callback\"}]",StringComparison.Ordinal)<0 ||
+        message.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0) throw Error("constructors-selector-smoke");
+      bool refused=false;
+      try { ModelProtocolMessageCore(9,"Runtime.callFunctionOn","s",phase,null,"scope","callback",null,!stringPurpose); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("constructors-purpose-smoke");
+    }
     foreach(string invalid in new string[] { null,"","foreign/handle",new string('a',257) }) {
-      bool refused=false; try { ModelProtocolMessage(64,"Runtime.callFunctionOn","s","root-inventory",null,"object",invalid); } catch(InvalidOperationException) { refused=true; }
+      bool pendingRefused=false,emptyRefused=false,rootRefused=false;
+      try { ModelProtocolMessage(10,"Runtime.callFunctionOn","s","pending",null,"scope","callback",invalid); } catch(InvalidOperationException) { pendingRefused=true; }
+      try { ModelProtocolMessage(10,"Runtime.callFunctionOn","s","root-inventory",null,"scope","callback",invalid); } catch(InvalidOperationException) { rootRefused=true; }
+      try { StringPrecreateProtocolMessage(10,"Runtime.callFunctionOn","s","empty-producers",null,"scope","callback",invalid); } catch(InvalidOperationException) { emptyRefused=true; }
+      if(!pendingRefused || !emptyRefused || !rootRefused) throw Error("constructors-required-smoke");
+    }
+    foreach(string phase in new string[] {"wrapper","properties","handler","constructors-diagnostic","snapshot","raw-strings","release"}) {
+      bool refused=false;
+      try { ModelProtocolMessage(10,"Runtime.callFunctionOn","s",phase,null,"scope","callback","extra"); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("constructors-extra-smoke");
+    }
+    foreach(string phase in new string[] {"renderer-association","worker-association"}) {
+      bool refused=false;
+      try { StringPrecreateProtocolMessage(10,phase=="worker-association"?"Runtime.evaluate":"Runtime.callFunctionOn","s",phase,null,"scope","callback","extra"); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("string-constructors-extra-smoke");
+    }
+    foreach(string invalid in new string[] { null,"","foreign/handle",new string('a',257) }) {
+      bool refused=false; try { ModelProtocolMessage(82,"Runtime.callFunctionOn","s","root-inventory",null,"object",invalid,"constructors"); } catch(InvalidOperationException) { refused=true; }
       if(!refused) throw Error("root-inventory-callback-smoke");
     }
     string worker=ProtocolMessage(32,"Runtime.evaluate",null,"worker-session",null,"unique-context");
@@ -1648,15 +1840,15 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
   public static string BoundProtocolMessage(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId) {
     return ProtocolMessage(id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId));
   }
-  public static string BoundModelProtocolMessage(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId) {
-    return ModelProtocolMessage(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId));
+  public static string BoundModelProtocolMessage(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId) {
+    return ModelProtocolMessage(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),OptionalText(constructorObjectId));
   }
   public static string DomProtocolMessage(int id,string method,string sessionId,object frameId,object backendNodeId) {
     return DomProtocolMessageCore(id,method,sessionId,frameId,backendNodeId,false);
   }
   static string DomProtocolMessageCore(int id,string method,string sessionId,object frameId,object backendNodeId,bool stringPurpose) {
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
-    if(id<1 || id>(stringPurpose?90:64) || !token(sessionId)) throw Error("dom-fields");
+    if(id<1 || id>(stringPurpose?112:82) || !token(sessionId)) throw Error("dom-fields");
     string parameters;
     if(method=="DOM.getFrameOwner") {
       string frame=OptionalText(frameId);
@@ -1685,14 +1877,15 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
   public void SendPcbOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
     SendMessage(id,OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));
   }
-  public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId) {
-    SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),stringPrecreate));
+  public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId) {
+    SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),OptionalText(constructorObjectId),stringPrecreate));
   }
   public static string StringPrecreateProtocolMessage(int id,string method,string sessionId,string phase,
-    object suppliedContext,object suppliedObject,object suppliedCallback) {
-    string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback);
+    object suppliedContext,object suppliedObject,object suppliedCallback,object suppliedConstructors) {
+    string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback),constructors=OptionalText(suppliedConstructors);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>90 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
+    if(id<1 || id>112 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
+    if(phase!="empty-producers" && constructors!=null) throw Error("string-scope");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     string parameters;
     if(phase=="worker-association" && method=="Runtime.evaluate") {
@@ -1700,19 +1893,20 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
       parameters=effects+",\"expression\":"+JsonString(StringWorkerAssociationExpression)+",\"uniqueContextId\":"+JsonString(context)+
         ",\"returnByValue\":true,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false,\"timeout\":1000";
     } else if((phase=="renderer-association" || phase=="empty-producers") && method=="Runtime.callFunctionOn") {
-      if(context!=null || !handle(scope) || !handle(callback)) throw Error("string-scope");
+      if(context!=null || !handle(scope) || !handle(callback) || (phase=="empty-producers" && !handle(constructors))) throw Error("string-scope");
       parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+
         JsonString(phase=="renderer-association"?StringRendererAssociationFunction:StringEmptyProducersFunction)+
-        ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callback)+"}]";
+        ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callback)+"}"+
+        (phase=="empty-producers"?",{\"objectId\":"+JsonString(constructors)+"}":"")+"]";
     } else throw Error("string-phase");
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+
       parameters+"},\"sessionId\":"+JsonString(sessionId)+"}\0";
     if(Encoding.UTF8.GetByteCount(message)>(method=="Runtime.callFunctionOn"?65536:8192)) throw Error("string-send-size");
     return message;
   }
-  public void SendStringPrecreate(int id,string method,string sessionId,string phase,object context,object scope,object callback) {
+  public void SendStringPrecreate(int id,string method,string sessionId,string phase,object context,object scope,object callback,object constructors) {
     if(!stringPrecreate) throw Error("string-purpose");
-    SendMessage(id,StringPrecreateProtocolMessage(id,method,sessionId,phase,context,scope,callback));
+    SendMessage(id,StringPrecreateProtocolMessage(id,method,sessionId,phase,context,scope,callback,constructors));
   }
   void SendMessage(int id,string message) {
     AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>RequestLimit) throw Error("discovery-request");
@@ -1799,14 +1993,16 @@ try {
     # Direct C# null literals cannot detect PowerShell's string coercion.
     $browser=[EasyedaDiagnosticOwner]::BoundProtocolMessage(1,'Browser.getVersion',$null,$null,$null,$null)
     if ($browser -cne ('{"id":1,"method":"Browser.getVersion"}'+[char]0)) {throw 'pcb-diagnostic-bound-browser'}
-    $release=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,$null,$null)
+    $release=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,$null,$null,$null)
     if ($release -cne ('{"id":2,"method":"Runtime.releaseObjectGroup","params":{"objectGroup":"easyeda-pro-control-pcb-model-v1"},"sessionId":"s"}'+[char]0)) {throw 'pcb-diagnostic-bound-release'}
-    $wrapper=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(3,'Runtime.evaluate','s','wrapper','c',$null,$null)
+    $wrapper=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(3,'Runtime.evaluate','s','wrapper','c',$null,$null,$null)
     if ($wrapper.IndexOf('"uniqueContextId":"c"',[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-bound-wrapper'}
     foreach ($phase in @('snapshot','pending','raw-strings','root-inventory')) {
-      $sample=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(4,'Runtime.callFunctionOn','s',$phase,$null,'scope','callback')
+      $constructors=if ($phase -ceq 'pending' -or $phase -ceq 'root-inventory') {'constructors'} else {$null}
+      $arguments='"arguments":[{"objectId":"callback"}'+$(if ($null -ne $constructors) {',{"objectId":"constructors"}'} else {''})+']'
+      $sample=[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(4,'Runtime.callFunctionOn','s',$phase,$null,'scope','callback',$constructors)
       if ($sample.IndexOf('"objectId":"scope"',[StringComparison]::Ordinal) -lt 0 -or
-          $sample.IndexOf('"arguments":[{"objectId":"callback"}]',[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-bound-snapshot'}
+          $sample.IndexOf($arguments,[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-bound-snapshot'}
     }
     foreach ($value in @('',7)) {
       $refused=$false
@@ -1819,9 +2015,18 @@ try {
       if (-not $refused) {throw 'pcb-diagnostic-bound-extra-field'}
     }
     $refused=$false
-    try {[void][EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,'',$null)}
+    try {[void][EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,'',$null,$null)}
     catch {if ($_.Exception.InnerException.Message -cne 'pcb-diagnostic-model-object') {throw};$refused=$true}
     if (-not $refused) {throw 'pcb-diagnostic-bound-model-extra-field'}
+    foreach ($value in @($null,'',7)) {
+      $refused=$false
+      try {[void][EasyedaDiagnosticOwner]::BoundModelProtocolMessage(4,'Runtime.callFunctionOn','s','pending',$null,'scope','callback',$value)}
+      catch {
+        $expected=if ($value -is [int]) {'pcb-diagnostic-optional-text-type'} else {'pcb-diagnostic-model-object'}
+        if ($_.Exception.InnerException.Message -cne $expected) {throw};$refused=$true
+      }
+      if (-not $refused) {throw 'pcb-diagnostic-bound-constructor-field'}
+    }
     $dom=[EasyedaDiagnosticOwner]::DomProtocolMessage(5,'DOM.getFrameOwner','s','original-frame',$null)
     if ($dom -cne ('{"id":5,"method":"DOM.getFrameOwner","params":{"frameId":"original-frame"},"sessionId":"s"}'+[char]0)) {throw 'pcb-diagnostic-bound-dom-frame'}
     $dom=[EasyedaDiagnosticOwner]::DomProtocolMessage(6,'DOM.describeNode','s',$null,1234)
@@ -1875,7 +2080,7 @@ try {
           $result=@{helperInstance=$owner.HelperInstance;jobId=$owner.JobId;rootPid=$owner.RootPid;rootCreated=$owner.RootCreated}
         }
         'send' {
-          $requestLimit=if ($StringPrecreate) {90} else {64}
+          $requestLimit=if ($StringPrecreate) {112} else {82}
           if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $requestLimit -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
           $fields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid')
           if ($null -ne $request.stringPhase) {
@@ -1884,7 +2089,7 @@ try {
             switch -CaseSensitive ($request.stringPhase) {
               'worker-association' {$fields+=@('uniqueContextId')}
               'renderer-association' {$fields+=@('objectId','callbackObjectId')}
-              'empty-producers' {$fields+=@('objectId','callbackObjectId')}
+              'empty-producers' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
               default {throw 'pcb-diagnostic-string-phase'}
             }
           } elseif ($null -ne $request.modelPhase) {
@@ -1893,10 +2098,12 @@ try {
               'wrapper' {$fields+=@('uniqueContextId')}
               'properties' {$fields+=@('objectId')}
               'handler' {$fields+=@('objectId')}
+              'constructors-diagnostic' {if ($StringPrecreate) {throw 'pcb-diagnostic-model-constructors'};$fields+=@('objectId','callbackObjectId')}
+              'constructors-precreate' {if (-not $StringPrecreate) {throw 'pcb-diagnostic-model-constructors'};$fields+=@('objectId','callbackObjectId')}
               'snapshot' {$fields+=@('objectId','callbackObjectId')}
-              'pending' {$fields+=@('objectId','callbackObjectId')}
+              'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
               'raw-strings' {$fields+=@('objectId','callbackObjectId')}
-              'root-inventory' {$fields+=@('objectId','callbackObjectId')}
+              'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
               'release' {}
               default {throw 'pcb-diagnostic-model-phase'}
             }
@@ -1920,11 +2127,11 @@ try {
             default {throw 'pcb-diagnostic-session-method'}
           }}
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
-          foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','objectId','callbackObjectId','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
+          foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','objectId','callbackObjectId','constructorObjectId','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
           if ($null -ne $request.stringPhase) {
-            $owner.SendStringPrecreate([int]$request.requestId,$request.method,$request.sessionId,$request.stringPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId)
+            $owner.SendStringPrecreate([int]$request.requestId,$request.method,$request.sessionId,$request.stringPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId,$request.constructorObjectId)
           } elseif ($null -ne $request.modelPhase) {
-            $owner.SendModel([int]$request.requestId,$request.method,$request.sessionId,$request.modelPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId)
+            $owner.SendModel([int]$request.requestId,$request.method,$request.sessionId,$request.modelPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId,$request.constructorObjectId)
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_COMMON_GRAPH_PROGRAM, currentPcbCommonGraphSchema, decodeCurrentPcbCommonGraph } from "./current-pcb-common-graph.ts";
 import type { CURRENT_PCB_COMMON_GRAPH_LIMITS } from "./current-pcb-common-graph.ts";
+import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 
 const RULE_FAMILIES = ["safeSpacings", "otherSpacings", "creepageSpacings", "trackPhysics", "netLengthPhysics",
   "netLengthTolerancePhysics", "differentialPhysics", "blindViaPhysics", "radiusPhysics", "innerPlanes", "copperPlanes",
@@ -34,6 +35,7 @@ const retained=[],absent=[];const own=(o,k)=>{if(o===null||(typeof o!=="object"&
 const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 const scope=object(own(this,"object")),klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
+${CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS.common}
 const instance=(o,n)=>{object(o);if(Object.getPrototypeOf(o)!==own(klass(n),"prototype"))bad();return o;};
 const env=instance(own(klass("x"),"env"),"x"),documentUuid=own(env,"_id");
 if(own(env,"_doctype")!==3||typeof documentUuid!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
@@ -42,14 +44,14 @@ const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDesc
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
 ${CURRENT_PCB_COMMON_GRAPH_PROGRAM}
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
 `;
 
 /** Includes all own fields of layer and physical-stack models. Custom disabled
  * layers remain present. Grid owner and attached native grid parameter scalars
  * are separate, preserving the getter's fallback inputs without invoking it.
  * PANELIZE is disabled but its entire parameter object is retained. */
-export const CURRENT_PCB_COMMON_PRESENTATION_FUNCTION = `function(originalCallback){${GUARDS}
+export const CURRENT_PCB_COMMON_PRESENTATION_FUNCTION = `function(originalCallback,constructors){${GUARDS}
 noOwnPublic(env,${JSON.stringify(CANVAS_PUBLIC_READS)});
 const canvas=pick(env,${JSON.stringify(CANVAS_FIELDS)});
 const grid=instance(own(klass("At"),"ins"),"At"),gridFields=${JSON.stringify(GRID_FIELDS)};
@@ -62,7 +64,7 @@ own(layers,"activeLayer");own(layers,"_deactiveAlpha");
 const panel=instance(own(klass("ai"),"model"),"ai"),panelParam=object(own(panel,"_param"));
 noOwnPublic(panel,["getDefaultPanelize"]);
 if(own(panelParam,"on")!==false||own(panelParam,"success")!==false)bad();
-const model=instance(own(scope,"Me"),"Yme"),silk=pick(model,${JSON.stringify(SILK_FIELDS)});
+const model=constructorInstance(own(scope,"Me"),"Yme"),silk=pick(model,${JSON.stringify(SILK_FIELDS)});
 noOwnPublic(model,${JSON.stringify(SILK_PUBLIC_READS)});
 const roots=[["canvas",graphValue(canvas)],["grid",graphValue(gridState)],["layers",graphValue(layers)],["filters",graphValue(filters)],["silk",graphValue(silk)],["panelize",graphValue(panelParam)]];
 return finish("easyeda-pro-control.pcb-common-presentation.v2",roots);
@@ -73,7 +75,7 @@ return finish("easyeda-pro-control.pcb-common-presentation.v2",roots);
  * through the complete rule manager. The first empty-board scope rejects every
  * NET, selector, EQLEN group/detail and cached selector, rather than dropping it.
  * Missing default rules are recorded as missing, never repaired. */
-export const CURRENT_PCB_COMMON_RULES_FUNCTION = `function(originalCallback){${GUARDS}
+export const CURRENT_PCB_COMMON_RULES_FUNCTION = `function(originalCallback,constructors){${GUARDS}
 const rules=instance(own(klass("te"),"manager"),"te");
 for(const name of ${JSON.stringify(RULE_FAMILIES)})graphCollection(own(rules,name),Map.prototype);
 graphCollection(own(rules,"defaultRuleMap"),Map.prototype);graphCollection(own(rules,"map"),Map.prototype);graphString(own(rules,"ruleTemplateName"));
@@ -88,13 +90,13 @@ return finish("easyeda-pro-control.pcb-common-rules.v2",[["rules",graphValue(rul
  * zero last-via values are kept as such. D5's fallback and rule selection are
  * deliberately not run, inferred or advertised as already encoded preference.
  */
-export const CURRENT_PCB_COMMON_PREFERENCE_FUNCTION = `function(originalCallback){${GUARDS}
-const config=instance(own(instance(own(scope,"ce"),"Nfe"),"pcbConfig"),"vfe"),model=instance(own(scope,"Me"),"Yme");
+export const CURRENT_PCB_COMMON_PREFERENCE_FUNCTION = `function(originalCallback,constructors){${GUARDS}
+const config=instance(own(constructorInstance(own(scope,"ce"),"Nfe"),"pcbConfig"),"vfe"),model=constructorInstance(own(scope,"Me"),"Yme");
 const route=instance(own(klass("nr"),"instance"),"nr"),params=instance(own(klass("pl"),"instance"),"pl");
 const panel=instance(own(klass("ha"),"instance"),"ha");if(own(panel,"wiringRouterParams")!==params)bad();
 noOwnPublic(config,${JSON.stringify(CONFIG_PUBLIC_READS)});noOwnPublic(model,${JSON.stringify(MODEL_PUBLIC_READS)});
 noOwnPublic(route,["mode","type"]);noOwnPublic(panel,${JSON.stringify(PANEL_PUBLIC_READS)});noOwnPublic(params,${JSON.stringify(OPTION_PUBLIC_CALLS)});
-const via=own(instance(own(scope,"rt"),"Epe"),"defaultVia");
+const via=own(constructorInstance(own(scope,"rt"),"Epe"),"defaultVia");
 const configValues=pick(config,${JSON.stringify(CONFIG_FIELDS)});
 configValues.layerPreference=optional(config,"_layerPhyPerferenceConfig");
 const modelValues=pick(model,${JSON.stringify(MODEL_FIELDS)}),viaValues=pick(via,${JSON.stringify(VIA_FIELDS)});
