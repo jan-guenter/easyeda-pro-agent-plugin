@@ -4,6 +4,55 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261020041000` through PR82 on2026-10-20: payload
+`7db022808b82ee26179d4c1f4e73505028c33560`, exact-tree merged main
+`03e9f679c68290ba807a288e5ae122ac57f50860`. Exact-head Linux39370355599
+and Windows39370355553 passed:11732facade passes/5skips/0failures,
+424bridge passes, native synthetic compile/emptyJob/pipes without app launch.
+Local required verify96886 PASSED11733facade/4skips/0failures and424bridge;
+logd04b6aad, frozen-input759bcdc0, repositoryb48084da, seven-skills33066965.
+Strict types/type-aware lint, package/MCP and all skills passed; no external-pin
+changes. Source517/da0b4f52, runtime3/c7131a75, manifest97096336.
+Merged-main CI39371695226/39371695308 PASSED all checks. Official named Git
+marketplace upgrade94117 completed without errors; list99334 confirms20041000
+installed/enabled from the GitHub marketplace and checkout exact merged main.
+Exact comparison39798 passed1558files/42directories/32,006,490bytes and modes;
+inventory4656dae6, plugin tree0c521549, receipt41b54e4a.
+Exact-main worktree `/root/.cache/easyeda-20041000-merged-main-YcCnTsP7/worktree`.
+Release evidence `/root/.cache/easyeda-sch-native-validation-release-vkUUx836`.
+Root and independent whole-script/final-pin review accepted probe830546d1;
+root approved pins4cbecc76. Sole offline execution77662 PASSED: actual configured
+ambientNode26 hands to pinnedNode24,25restricted/50configured tools/seven skills,
+31offline API queries. Original child596442/start44786049 closed/exited0 after
+EOF, no signals/retained handles/stderr. All3installed inventories stayed exact.
+Two samples had no children/nonstdio sockets; upstream sentinel stayed absent.
+This is not continuous isolation or connected native diagnostic validation.
+Evidence `/root/.cache/easyeda-diagnostic-release-offline-probe-G6whtKbl`,
+proof5222be62/responses58864f3a. CONSUMED: never rerun/import/syntax-check that probe.
+Keep the running old203733 host untouched. A fresh Codex session must load and
+admit20041000 before any further live calls. EasyEDA is CLOSED; no pending CAD
+actions. Ordinary SCH case below is terminal; never replay it or add Save.
+No production project or production record was accessed.
+
+Next work, in order:
+
+1. Admit the new host and qualify one retained diagnostic launch/browser/frame/
+   pinned-script/normal-close/termination/release lifecycle on the disposable scope.
+2. Implement actual PCB worker/compiler/model queues and Save participants, then
+   the one-shot String writer with full closed/reopened SQL effects.
+3. Qualify existing Image/Dimension/polygon-Pad readers on populated disposable data.
+4. Broader schematic/connectivity/structure, component libraries/3D, PCB placement/
+   routing/copper/rules/stackup, ECO/ERC/DRC/manufacturing/export remain backlog.
+5. Portable upstream bootstrap and additional independently admitted runtime tuples.
+
+Inventory remains774methods:450omitted/79implemented-but-blocked. These are not
+merely missing tests. Batch useful implementation work before another release.
+Details: `docs/current-schematic-native-diagnostics-2026-10-20.md` and the
+`current-pcb-diagnostic-validation.md` control-skill reference. The updated control
+and extension-development skills distinguish this validation workflow from writers.
+
+### Completed203733 continuation and20041000 release preparation (historical)
+
 Delivered `0.3.0+codex.20261019203733` on 2026-10-19 as one combined batch.
 PR81 payload `346d88e17b162edb4df7932a56450c4f8a491fdc` merged normally as
 main `a9c0a83dd4f57d0e49c1f2a913340717de757015`; complete trees match.
