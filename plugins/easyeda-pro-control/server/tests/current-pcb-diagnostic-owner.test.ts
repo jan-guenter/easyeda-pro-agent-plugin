@@ -121,6 +121,23 @@ void test("native unknown creation or nonzero failure output cannot be inferred 
     assert.equal(value.actions.length, before); assert.equal(value.child.stdin?.writableEnded, false);
   }
 });
+void test("native failed-creation error survives inspection and exact original cleanup without leaking exception text", async context => {
+  const value = fixture(context, "no-process-win32");
+  await assert.rejects(value.owner.launch(LAUNCH), /NATIVE_REFUSAL/u);
+  assert.equal(value.owner.status().nativeLaunchError, "pcb-diagnostic-post-create-failure");
+  assert.equal(value.owner.status().createProcessError, 87);
+  assert.deepEqual(await value.owner.releaseNoProcess(), { launchRequestOutcome: "native-refused",
+    creationState: "returned-false", createProcessError: 87, processCreated: false, released: true });
+});
+void test("invalid or changed native creation error cannot be accepted as cleanup proof", async context => {
+  const invalid = fixture(context, "no-process-win32-invalid");
+  await assert.rejects(invalid.owner.launch(LAUNCH), /NO_PROCESS_PROOF/u);
+  assert.equal(invalid.owner.status().noProcessCleanupAvailable, false);
+  const changed = fixture(context, "no-process-win32-changed");
+  await assert.rejects(changed.owner.launch(LAUNCH), /NATIVE_REFUSAL/u);
+  await assert.rejects(changed.owner.releaseNoProcess(), /NO_PROCESS_PROOF_CHANGED/u);
+  assert.equal(changed.child.stdin?.writableEnded, false);
+});
 void test("malformed or changed no-process release proof never ends stdin or permits retry", async context => {
   for (const scenario of ["no-process-release-malformed", "no-process-release-changed"]) {
     const value = fixture(context, scenario); await assert.rejects(value.owner.launch(LAUNCH), /NATIVE_REFUSAL/u);
@@ -254,6 +271,40 @@ void test("staged observation rejects changed discovery targets before attachmen
   assert.equal(value.actions.filter(action => action === "send").length, 3);
   assert.equal(value.child.stdin?.writableEnded, false); await close(value);
 });
+void test("parent-scoped worker observations finish within32fixed requests and preserve original closure", async context => {
+  const value = fixture(context, "staged-worker"); await value.owner.launch(LAUNCH);
+  await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
+  await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
+  const profile = { relativePath: "test/js/project-worker.js", scriptSha256: SCRIPT_PROFILE.scriptSha256, scriptBytes: SCRIPT_PROFILE.scriptBytes };
+  const workers = await value.owner.inspectWorkers(profile);
+  assert.deepEqual(workers["workers"], [{ targetId: "worker-1", sessionId: "worker-session-1", type: "worker" }]);
+  const source = await value.owner.inspectWorkerScript("worker-1"); assert.equal(source["sourceVerified"], true);
+  const state = await value.owner.observeWorkerState(); assert.equal(state["queueCompletionVerified"], false);
+  assert.equal(state["executionAuthorized"], false); assert.equal(state["compilerOwnerVerified"], false);
+  assert.equal(JSON.stringify(state).includes("file:///"), false);
+  assert.equal(value.actions.filter(action => action === "send").length, 32);
+  await assert.rejects(value.owner.inspectWorkers(profile), /UNAVAILABLE/u);
+  await assert.rejects(value.owner.inspectWorkerScript("worker-1"), /UNAVAILABLE/u);
+  await assert.rejects(value.owner.observeWorkerState(), /UNAVAILABLE/u);
+  await close(value);
+});
+void test("worker source, effect-check and context failures preserve original native cleanup", async context => {
+  for (const scenario of ["staged-worker-source-drift", "staged-worker-effect-refused", "staged-worker-context-lost"]) {
+    const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
+    await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
+    await value.owner.inspectWorkers({ relativePath: "test/js/project-worker.js",
+      scriptSha256: SCRIPT_PROFILE.scriptSha256, scriptBytes: SCRIPT_PROFILE.scriptBytes });
+    if (scenario === "staged-worker-source-drift") {
+      await assert.rejects(value.owner.inspectWorkerScript("worker-1"), /WORKER_IDENTITY/u);
+    } else {
+      await value.owner.inspectWorkerScript("worker-1");
+      await assert.rejects(value.owner.observeWorkerState(), /WORKER_|PIPE_REPLY/u);
+    }
+    assert.equal(value.child.stdin?.writableEnded, false);
+    assert.notEqual(value.owner.status().diagnosticFailure, null);
+    await close(value);
+  }
+});
 void test("staged frame drift and navigation invalidate script observation without losing original close", async context => {
   for (const scenario of ["staged-frame-changed", "staged-navigation"]) {
     const value = fixture(context, scenario); await value.owner.launch(LAUNCH); await value.owner.browserObservation();
@@ -325,5 +376,8 @@ void test("diagnostic native source preserves original handles, explicit inherit
   assert.ok(source.includes("if(JobCount()!=0 || JobCount()!=0) throw Error(\"no-process-job-not-empty\");"));
   assert.ok(source.includes("if(creationPhase==CreationPhase.Unknown || (creationPhase==CreationPhase.RootRetained && root==IntPtr.Zero)) return false;"));
   assert.ok(!source.includes("Process.GetProcessById")); assert.ok(!source.includes("TerminateProcess"));
-  assert.ok(!source.includes("--remote-debugging-port")); assert.ok(!source.includes("Runtime.evaluate"));
+  assert.ok(!source.includes("--remote-debugging-port"));
+  assert.ok(source.includes('const string WorkerExpression=@"'));
+  assert.ok(!source.includes("$request.expression"));
+  assert.ok(!source.includes("$request.params"));
 });

@@ -53,23 +53,28 @@ const notDispatchedSchema = z.object({ schema: z.literal("easyeda-pro-control.pc
 }).strict();
 export const diagnosticLifecycleNoProcessReleaseProofSchema = z.object({
   launchRequestOutcome: z.enum(["not-issued", "native-refused"]), creationState: z.enum(["not-entered", "returned-false"]),
+  createProcessError: z.number().int().min(0).max(4_294_967_295).refine(value => !Object.is(value, -0)).optional(),
   processCreated: z.literal(false), released: z.literal(true),
 }).strict().refine(value => value.launchRequestOutcome !== "not-issued" || value.creationState === "not-entered",
-  "An unissued native request cannot have entered CreateProcess.");
+  "An unissued native request cannot have entered CreateProcess.")
+  .refine(value => value.createProcessError === undefined || value.creationState === "returned-false",
+    "Only a failed CreateProcess can carry its captured numeric error.");
 const noProcessIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-no-process-release-intent.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, originalLaunchMethodInvoked: z.literal(true),
 }).strict();
 const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-no-process-released.v1"), ...base,
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
-export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script"]);
+export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state"]);
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
 }).strict().refine(value => {
-  if (value.stage === "browser") { return value.targetId === undefined && value.frameId === undefined && value.family === undefined; }
-  if (value.stage === "frames") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
+  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state") {
+    return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.stage === "frames" || value.stage === "worker-script") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
   return value.targetId === undefined && value.frameId !== undefined && value.family !== undefined;
 }, "Observation selectors must match the exact stage.");
 const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-result.v1"), ...base,
@@ -85,6 +90,9 @@ export const diagnosticLifecycleRecordSchemas = {
   "browser-intent.json": observationIntentSchema, "browser-result.json": observationResultSchema,
   "frames-intent.json": observationIntentSchema, "frames-result.json": observationResultSchema,
   "script-intent.json": observationIntentSchema, "script-result.json": observationResultSchema,
+  "workers-intent.json": observationIntentSchema, "workers-result.json": observationResultSchema,
+  "worker-script-intent.json": observationIntentSchema, "worker-script-result.json": observationResultSchema,
+  "worker-state-intent.json": observationIntentSchema, "worker-state-result.json": observationResultSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
 export interface DiagnosticLifecycleOperation { readonly operationId: string; readonly records: DiagnosticLifecycleRecords }
@@ -165,6 +173,9 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   }
   requireValue(records["frames-intent.json"] === undefined || records["browser-result.json"] !== undefined, "FRAMES_CHAIN");
   requireValue(records["script-intent.json"] === undefined || records["frames-result.json"] !== undefined, "SCRIPT_CHAIN");
+  requireValue(records["workers-intent.json"] === undefined || records["frames-result.json"] !== undefined, "WORKERS_CHAIN");
+  requireValue(records["worker-script-intent.json"] === undefined || records["workers-result.json"] !== undefined, "WORKER_SCRIPT_CHAIN");
+  requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   requireValue(binding === undefined || intent !== undefined && binding.intentSha256 === sha256Json(intent), "BINDING_CHAIN");
   requireValue(close === undefined || binding !== undefined && close.bindingSha256 === sha256Json(binding), "CLOSE_CHAIN");
   requireValue(acknowledgment === undefined || close !== undefined && acknowledgment.closeIntentSha256 === sha256Json(close), "CLOSE_ACK_CHAIN");

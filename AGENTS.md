@@ -4,6 +4,34 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Fresh20041000 continuation: actual facade601405/start44848567 and parent599503/
+start44813258 independently and root admitted. Complete1558file/42directory/
+32,006,490byte/mode inventory4656dae6, all517source/3runtime/manifest and five
+native diagnostic files/helper match. Proof6c639caa in
+`/root/.cache/easyeda-20041000-independent-admission-IvpfCQAG`.
+New diagnostic `diag-native-20041000-20261020-01` launch dispatched ONCE in
+functions4 and refused. Original inspect offered no-process cleanup; exact
+intent48e157ef cleanup completed terminal `no-process-released`. Native proof:
+launchRequestOutcome=native-refused, creationState=returned-false,
+processCreated=false, released=true. Windows CreateProcess failed; its numeric
+error was not retained by this version. Do not infer a particular cause.
+Never repeat this launch. No binding/application process was created.
+Evidence `/root/.cache/easyeda-20041000-native-diagnostic-live-zyzzRUPe`.
+Exact original envelopes00–04 retained; original cleanup/receipt settlement
+finished. No project navigation, CAD edit or Save. Source-only fixed worker-state
+reader, parent-scoped worker integration and native diagnostics are being batched
+on `feature/pcb-native-live-20261020`; no new version installed this continuation.
+Candidate `0.3.0+codex.20261020053706` batches actual parent-scoped worker
+discovery, exact worker source/context admission, fixed side-effect-checked state
+reading, native numeric-error retention and updated guidance. Integrated135
+diagnostic tests pass; strict targeted lint zero. Native helper8060c09d/48,607bytes
+compiled locally with empty Job/pipes/program parity, no application launch.
+Main and independent review accept the fixed native/TS program and unchanged
+ownership/cleanup guards. Dependency preparation94949 passed151signatures/
+40attestations/0vulnerabilities and exact sanitizer. Final full verification,
+protected publication and official installation are still pending.
+Release evidence `/root/.cache/easyeda-worker-diagnostic-release-0LVXl95L`.
+
 Delivered `0.3.0+codex.20261020041000` through PR82 on2026-10-20: payload
 `7db022808b82ee26179d4c1f4e73505028c33560`, exact-tree merged main
 `03e9f679c68290ba807a288e5ae122ac57f50860`. Exact-head Linux39370355599

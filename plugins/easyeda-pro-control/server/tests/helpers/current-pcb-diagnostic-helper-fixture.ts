@@ -6,11 +6,15 @@ import { createInterface } from "node:readline";
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
 const staged = scenario?.startsWith("staged") === true;
+const workerCase = scenario?.startsWith("staged-worker") === true;
 const identityCase = staged || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
 const noProcessCase = scenario?.startsWith("no-process-") === true;
-const creationState = scenario === "no-process-create-refused" ? "returned-false" : "not-entered";
+const creationState = scenario === "no-process-create-refused" || scenario?.startsWith("no-process-win32") === true ? "returned-false" : "not-entered";
 const target = { targetId: "target-1", type: "page", title: "synthetic", url: "file:///synthetic/ui.html" };
+const worker = { targetId: "worker-1", type: "worker", title: `project_${"a".repeat(64)}_window_1`,
+  url: "file:///synthetic/editor?entry=mgr-project-worker.js", attached: true };
 let attached = false;
+let workerAttached = false;
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let sent = Buffer.alloc(0), terminated = false;
@@ -42,11 +46,15 @@ lines.on("line", line => {
     assert.ok("method" in request && "requestId" in request);
     let payload: unknown = request["method"] === "Browser.getVersion" ? { product: "synthetic", protocolVersion: "1.3" } : { targetInfos: [] };
     const events: unknown[] = [];
-    if (identityCase) {
+    if ("sessionId" in request && request["sessionId"] === "worker-session-1") {
+      assert.equal(workerCase, true);
+      payload = workerResponse(request, events);
+    } else if (identityCase) {
       if (request["method"] === "Browser.getVersion") { payload = { product: "synthetic", protocolVersion: "1.3", revision: "synthetic-revision", userAgent: "synthetic-agent", jsVersion: "synthetic-js" }; }
       else if (request["method"] === "Target.getTargets") {
         targetReads += 1;
-        payload = { targetInfos: [{ ...target, attached, ...(scenario === "staged-target-changed" && targetReads > 1 ? { title: "changed" } : {}) }] };
+        payload = { targetInfos: [{ ...target, attached, ...(scenario === "staged-target-changed" && targetReads > 1 ? { title: "changed" } : {}) },
+          ...(workerAttached ? [worker] : [])] };
       }
       else if (request["method"] === "Target.attachToTarget") {
         assert.ok("targetId" in request);
@@ -55,7 +63,11 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if (request["method"] === "Page.enable") { payload = {}; }
+        if (request["method"] === "Target.setAutoAttach") {
+          assert.equal(workerCase, true); workerAttached = true; payload = {};
+          events.push({ method: "Target.attachedToTarget", sessionId: "session-1",
+            params: { sessionId: "worker-session-1", targetInfo: worker, waitingForDebugger: false } });
+        } else if (request["method"] === "Page.enable") { payload = {}; }
         else if (request["method"] === "Page.getFrameTree") {
           frameReads += 1;
           const frame = { id: "frame-1", loaderId: scenario === "staged-frame-changed" && frameReads > 2 ? "loader-2" : "loader-1",
@@ -102,8 +114,14 @@ lines.on("line", line => {
       process.stdout.write(`${JSON.stringify({ id: request["id"], ok: false, error: "pcb-diagnostic-no-process-proof-refused" })}\n`); return;
     }
     const release = request["action"] === "release-no-process";
+    let createProcessError = 87;
+    if (scenario === "no-process-win32-invalid") { createProcessError = -1; }
+    else if (release && scenario === "no-process-win32-changed") { createProcessError = 5; }
     result = { creationState: release && scenario === "no-process-release-changed" ? "returned-false" : creationState,
       processCreated: scenario === "no-process-proof-malformed" || release && scenario === "no-process-release-malformed",
+      ...(scenario?.startsWith("no-process-win32") === true ? {
+        createProcessError,
+      } : {}),
       ...(release ? { released: true } : {}) };
   }
   else if (request["action"] === "release") {
@@ -122,5 +140,49 @@ function sourcePayload(): string {
   if (scenario === "identity-large-source") { return "x".repeat(12 * 1024 * 1024); }
   if (scenario === "staged-large-source") { return "x".repeat(18 * 1024 * 1024); }
   return "const syntheticIdentity = true;\n";
+}
+function workerEvent(method: string, params: unknown): unknown { return { method, params, sessionId: "worker-session-1" }; }
+function workerResponse(request: object & Record<"method", unknown>, events: unknown[]): unknown {
+  if (request["method"] === "Runtime.enable") {
+    events.push(workerEvent("Runtime.executionContextCreated", { context: {
+      id: 8, uniqueId: "worker-context-1", origin: worker.url, name: worker.title,
+    } }));
+    return {};
+  }
+  if (request["method"] === "Debugger.enable") {
+    events.push(workerEvent("Debugger.scriptParsed", { scriptId: "worker-script-1", url: "file:///synthetic/test/js/project-worker.js",
+      executionContextId: 8, hasSourceURL: false, scriptLanguage: "JavaScript" }));
+    return { debuggerId: "worker-debugger-1" };
+  }
+  if (request["method"] === "Debugger.getScriptSource") {
+    assert.ok("scriptId" in request); assert.equal(request["scriptId"], "worker-script-1");
+    return { scriptSource: scenario === "staged-worker-source-drift" ? "changed" : sourcePayload() };
+  }
+  if (request["method"] === "Runtime.evaluate") {
+    assert.ok("uniqueContextId" in request); assert.equal(request["uniqueContextId"], "worker-context-1");
+    assert.equal(Object.hasOwn(request, "expression"), false);
+    if (scenario === "staged-worker-context-lost") {
+      events.push(workerEvent("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "worker-context-1" }));
+    }
+    return scenario === "staged-worker-effect-refused" ? { result: { type: "undefined" }, exceptionDetails: {} } : workerStateReply();
+  }
+  throw new Error("unexpected synthetic worker method");
+}
+function sizes(names: readonly string[]): Record<string, number> { return Object.fromEntries(names.map(name => [name, 0])); }
+function watchers(): Record<string, number> { return sizes(["footprint", "symbol", "device", "board", "sch", "sheet", "pcb", "panel", "simulation"]); }
+function workerStateReply(): unknown {
+  return { result: { type: "string", value: JSON.stringify({
+    schema: "easyeda-pro-control.pcb-diagnostic-worker-state.v1",
+    identity: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "window_1" },
+    flags: { isReady: true, isTemporary: false, isHistoryBack: false, _isV2Format: false, isOpening: false, isEstablished: true,
+      isApplyShot: false, isUploadingCloud: false, pendingSyncCloud: false, isBatchUpload: false, debugOpen: false },
+    optionalFlags: { isSyncing: "absent", notSyncCloud: "absent" },
+    setSizes: sizes(["task1", "task2", "task3", "cachePromise", "publishTask", "rollbackPromise", "syncPendingNodeUuids",
+      "confirmedEmptyNodeUuids", "warnedEmptyNodeUuids"]),
+    mapSizes: sizes(["bufferUploadData", "bufferUploadCache", "selectWatch", "historyErrorNodes"]),
+    watcherMapSizes: { watcherAddSet: watchers(), watcherDeleteSet: watchers(), watcherUpdateSet: watchers() },
+    timers: { projectTimer: "null", publishTimer: "null", orderTimer: "null" },
+    dictionaryOwnKeyCounts: { uniqueIds: 0, orderCache: 0 },
+  }) } };
 }
 // The fixture has no native handles. EOF naturally releases only this test peer.

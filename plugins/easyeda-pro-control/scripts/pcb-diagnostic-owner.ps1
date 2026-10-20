@@ -228,12 +228,13 @@ public sealed class EasyedaDiagnosticOwner {
   IntPtr job,root,rootThread,browserRead,browserWrite,parentRead,parentWrite;
   uint rootPid; long rootCreated; int nextRequest=1,received; bool launchAttempted,launchCompleted,closeAttempted,released,protocolFailed;
   enum CreationPhase { NotEntered, Unknown, ReturnedFalse, RootRetained }
-  CreationPhase creationPhase; bool launchSettled;
+  CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
   public string RootCreated { get { return rootCreated.ToString(CultureInfo.InvariantCulture); } }
+  public uint? CreateProcessError { get { return createProcessError; } }
   static Exception Error(string reason) { return new InvalidOperationException("pcb-diagnostic-"+reason); }
   static void Native(bool value) { if(!value) throw Error("native-call"); }
   public EasyedaDiagnosticOwner() { }
@@ -310,6 +311,9 @@ public sealed class EasyedaDiagnosticOwner {
         creationPhase=CreationPhase.Unknown;
         bool createdProcess=CreateProcess(installation.ExecutableNativePath,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080000,IntPtr.Zero,installation.ExecutableNativeDirectory,ref startup,out info);
         if(!createdProcess) {
+          // Capture immediately, before any other P/Invoke or cleanup can
+          // replace the thread's error. A code is diagnostic, never ownership.
+          createProcessError=unchecked((uint)Marshal.GetLastWin32Error());
           if(info.process==IntPtr.Zero && info.thread==IntPtr.Zero && info.processId==0 && info.threadId==0) creationPhase=CreationPhase.ReturnedFalse;
           throw Error("create-process-refused");
         }
@@ -323,8 +327,41 @@ public sealed class EasyedaDiagnosticOwner {
       } finally { if(initialized) DeleteProcThreadAttributeList(list); if(handles!=IntPtr.Zero) Marshal.FreeHGlobal(handles); if(jobs!=IntPtr.Zero) Marshal.FreeHGlobal(jobs); Marshal.FreeHGlobal(list); }
     } finally { launchSettled=true; }
   }
-  public void Send(int id,string method,string targetId,string sessionId,string scriptId) {
-    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>32) throw Error("discovery-request");
+  // Exact worker diagnostic program. Its complete UTF-8 bytes must match the
+  // separately reviewed TypeScript leaf. No protocol request supplies code.
+  const string WorkerExpression=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_WORKER_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const count=n=>{if(!Number.isSafeInteger(n)||n<0||n>65536)bad();return n;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const prototype=(o,name)=>{const p=Object.getPrototypeOf(object(o));if(p===null)bad();const c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return p;};
+const project=object(own(globalThis,""PROJECT"")),lp=prototype(project,""Lg""),gp=prototype(lp,""Gd"");
+if(Object.getPrototypeOf(gp)!==Object.prototype)bad();
+const consistency=object(own(project,""consistencyManager""));prototype(consistency,""ja"");
+const size=(value,kind)=>{object(value);const p=kind===""set""?Set.prototype:Map.prototype;if(Object.getPrototypeOf(value)!==p||Reflect.ownKeys(value).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,value,[]));};
+const keys=value=>{plain(value);const names=Reflect.ownKeys(value);if(names.some(k=>typeof k!==""string""))bad();return count(names.length);};
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+const flags={},optionalFlags={},setSizes={},mapSizes={},watcherMapSizes={},timers={};
+for(const key of [""isReady"",""isTemporary"",""isHistoryBack"",""_isV2Format"",""isOpening"",""isEstablished"",""isApplyShot"",""isUploadingCloud"",""pendingSyncCloud"",""isBatchUpload"",""debugOpen""]){const value=own(project,key);if(typeof value!==""boolean"")bad();flags[key]=value;}
+for(const key of [""isSyncing"",""notSyncCloud""]){const d=Object.getOwnPropertyDescriptor(project,key);if(!d){optionalFlags[key]=""absent"";continue;}const value=own(project,key);if(value!==undefined&&typeof value!==""boolean"")bad();optionalFlags[key]=value===undefined?""undefined"":value?""true"":""false"";}
+for(const key of [""task1"",""task2"",""task3"",""cachePromise"",""publishTask"",""rollbackPromise"",""syncPendingNodeUuids"",""confirmedEmptyNodeUuids"",""warnedEmptyNodeUuids""])setSizes[key]=size(own(project,key),""set"");
+for(const key of [""bufferUploadData"",""bufferUploadCache"",""selectWatch"",""historyErrorNodes""])mapSizes[key]=size(own(project,key),""map"");
+for(const group of [""watcherAddSet"",""watcherDeleteSet"",""watcherUpdateSet""]){const holder=plain(own(project,group)),names=Reflect.ownKeys(holder),expected=[""footprint"",""symbol"",""device"",""board"",""sch"",""sheet"",""pcb"",""panel"",""simulation""];if(names.length!==expected.length||names.some(k=>!expected.includes(k)))bad();const result={};for(const key of expected)result[key]=size(own(holder,key),""map"");watcherMapSizes[group]=result;}
+for(const key of [""projectTimer"",""publishTimer"",""orderTimer""]){const value=own(project,key);if(value!==null&&value!==undefined&&(typeof value!==""number""||!Number.isSafeInteger(value)||value<0))bad();timers[key]=value===null?""null"":value===undefined?""undefined"":""present"";}
+const dictionaryOwnKeyCounts={uniqueIds:keys(own(consistency,""uniqueIds"")),orderCache:keys(own(project,""orderCache""))};
+if(own(globalThis,""PROJECT"")!==project||own(project,""consistencyManager"")!==consistency)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-worker-state.v1"",identity,flags,optionalFlags,setSizes,mapSizes,watcherMapSizes,timers,dictionaryOwnKeyCounts});
+})()";
+  static string WorkerExpressionJson() {
+    return "\""+WorkerExpression.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\r","\\r").Replace("\n","\\n")+"\"";
+  }
+  // Pure fixed-command encoder, also used by no-process Windows CI. Native
+  // ownership, monotonic request IDs and pipe writes remain in Send.
+  public static string ProtocolMessage(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId) {
+    if(id<1 || id>32 || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
     string fields="";
     if(method=="Browser.getVersion" || method=="Target.getTargets") { if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields"); }
@@ -332,14 +369,46 @@ public sealed class EasyedaDiagnosticOwner {
     else {
       if(targetId!=null || !token(sessionId)) throw Error("session-fields");
       if(method=="Debugger.getScriptSource") { if(!token(scriptId)) throw Error("script-fields"); fields=",\"params\":{\"scriptId\":\""+scriptId+"\"}"; }
+      else if(method=="Runtime.evaluate") {
+        if(scriptId!=null || !token(uniqueContextId)) throw Error("worker-fields");
+        fields=",\"params\":{\"expression\":"+WorkerExpressionJson()+",\"uniqueContextId\":\""+uniqueContextId+"\",\"returnByValue\":true,\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false,\"timeout\":1000,\"userGesture\":false,\"generatePreview\":false}";
+      }
+      else if(method=="Target.setAutoAttach") {
+        if(scriptId!=null) throw Error("worker-fields");
+        fields=",\"params\":{\"autoAttach\":true,\"waitForDebuggerOnStart\":false,\"flatten\":true,\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]}";
+      }
       else {
         if(scriptId!=null || (method!="Page.enable" && method!="Page.getFrameTree" && method!="Runtime.enable" && method!="Debugger.enable")) throw Error("session-method");
         fields=method=="Debugger.enable"?",\"params\":{\"maxScriptsCacheSize\":33554432}":",\"params\":{}";
       }
       fields+=",\"sessionId\":\""+sessionId+"\"";
     }
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\""+method+"\""+fields+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>(method=="Runtime.evaluate"?8192:4096)) throw Error("send-size");
+    return message;
+  }
+  public static void VerifyProtocolSmoke() {
+    using(SHA256 hash=SHA256.Create()) {
+      byte[] source=Encoding.UTF8.GetBytes(WorkerExpression);
+      if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
+    }
+    string worker=ProtocolMessage(32,"Runtime.evaluate",null,"worker-session",null,"unique-context");
+    if(worker.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 || worker.IndexOf("\"awaitPromise\":false",StringComparison.Ordinal)<0) throw Error("worker-flags");
+    string attach=ProtocolMessage(1,"Target.setAutoAttach",null,"parent-session",null,null);
+    if(attach.IndexOf("\"waitForDebuggerOnStart\":false",StringComparison.Ordinal)<0 || attach.IndexOf("\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]",StringComparison.Ordinal)<0) throw Error("worker-filter");
+    foreach(string invalid in new string[] { null,"","quoted\"context","line\ncontext",new string('a',129) }) {
+      bool refused=false; try { ProtocolMessage(1,"Runtime.evaluate",null,"worker-session",null,invalid); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("worker-context-smoke");
+    }
+    foreach(string method in new string[] { "Browser.getVersion","Target.setAutoAttach","Runtime.enable","Runtime.callFunctionOn" }) {
+      bool refused=false; try { ProtocolMessage(1,method,null,"parent-session",null,"context"); } catch(InvalidOperationException) { refused=true; }
+      if(!refused) throw Error("worker-request-smoke");
+    }
+  }
+  public void Send(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId) {
+    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>32) throw Error("discovery-request");
+    byte[] bytes=Encoding.UTF8.GetBytes(ProtocolMessage(id,method,targetId,sessionId,scriptId,uniqueContextId));
     nextRequest++; // A failed write consumes its ID and the entire diagnostic channel.
-    byte[] bytes=Encoding.UTF8.GetBytes("{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\""+method+"\""+fields+"}\0");
     try { uint written; Native(WriteFile(parentWrite,bytes,(uint)bytes.Length,out written,IntPtr.Zero)); if(written!=bytes.Length) throw Error("partial-write"); AssertLive(); }
     catch { protocolFailed=true; throw; }
   }
@@ -416,6 +485,7 @@ try {
   $owner.Initialize()
   if ($CompileOnly) {
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
+    [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
     if (-not $owner.Terminated()) {throw 'pcb-diagnostic-compile-job-not-empty'}
     $owner.ReleaseUnlaunched()
     @{schema='easyeda-pro-control.pcb-diagnostic-compile.v1';compiled=$true;emptyJob=$true;pipesChecked=$true;processLaunched=$false} | ConvertTo-Json -Compress
@@ -463,16 +533,18 @@ try {
             'Browser.getVersion' {}
             'Target.getTargets' {}
             'Target.attachToTarget' {$fields+=@('targetId')}
+            'Target.setAutoAttach' {$fields+=@('sessionId')}
             'Page.enable' {$fields+=@('sessionId')}
             'Page.getFrameTree' {$fields+=@('sessionId')}
             'Runtime.enable' {$fields+=@('sessionId')}
+            'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
             default {throw 'pcb-diagnostic-session-method'}
           }
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
-          foreach ($field in @('targetId','sessionId','scriptId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
-          $owner.Send([int]$request.requestId,$request.method,$request.targetId,$request.sessionId,$request.scriptId); $result=@{written=$true}
+          foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
+          $owner.Send([int]$request.requestId,$request.method,$request.targetId,$request.sessionId,$request.scriptId,$request.uniqueContextId); $result=@{written=$true}
         }
         'poll' {if (-not $launched) {throw 'pcb-diagnostic-not-launched'}; $result=@{bytes=$owner.Poll()}}
         'window' {if (-not $launched) {throw 'pcb-diagnostic-not-launched'}; $result=@{hwnd=$owner.Window()}}
@@ -487,10 +559,12 @@ try {
         'no-process-proof' {
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,id') {throw 'pcb-diagnostic-no-process-fields'}
           $result=@{creationState=$owner.NoProcessCreationState();processCreated=$false}
+          if ($result.creationState -ceq 'returned-false' -and $null -ne $owner.CreateProcessError) {$result.createProcessError=$owner.CreateProcessError}
         }
         'release-no-process' {
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,id') {throw 'pcb-diagnostic-no-process-fields'}
           $state=$owner.ReleaseNoProcess(); $release=$true; $result=@{released=$true;creationState=$state;processCreated=$false}
+          if ($state -ceq 'returned-false' -and $null -ne $owner.CreateProcessError) {$result.createProcessError=$owner.CreateProcessError}
         }
         default {throw 'pcb-diagnostic-action'}
       }
@@ -500,7 +574,13 @@ try {
       # original helper. The facade can recover its binding using identity.
       if ($owner.RootPid -gt 0) {$launched=$true}
       $code='pcb-diagnostic-native-call'
-      if ($_.Exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$_.Exception.Message}
+      # PowerShell wraps C# method exceptions. Retain only our fixed label,
+      # never arbitrary OS text, paths or a stack trace from those wrappers.
+      $exception=$_.Exception
+      for ($depth=0;$depth -lt 4 -and $null -ne $exception;$depth++) {
+        if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
+        $exception=$exception.InnerException
+      }
       @{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress
     }
   }
