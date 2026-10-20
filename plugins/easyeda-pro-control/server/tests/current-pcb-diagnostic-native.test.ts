@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256 } from "../src/current-pcb-diagnostic-worker-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
+  CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 
@@ -17,7 +20,8 @@ void test("native helper embeds the complete fixed worker program with separate 
   assert.ok(source.includes(`source.Length!=3841`));
   assert.ok(source.includes(CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256));
   assert.ok(source.includes('Encoding.UTF8.GetByteCount(message)>(method=="Runtime.evaluate"?8192:4096)'));
-  assert.ok(source.includes("$line.Length -ge 4096"));
+  assert.ok(source.includes("$line.Length -ge 32768"));
+  assert.ok(source.includes("$request.method -cne 'Runtime.callFunctionOn') -and $line.Length -gt 4096"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::VerifyProtocolSmoke()"));
 });
 
@@ -25,7 +29,7 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
-  assert.ok(source.includes('if(id<1 || id>32 || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes('if(id<1 || id>64 || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
   assert.ok(source.includes('if(scriptId!=null || !token(uniqueContextId))'));
   assert.ok(source.includes(String.raw`\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]`));
   assert.ok(source.includes(String.raw`\"autoAttach\":true,\"waitForDebuggerOnStart\":false,\"flatten\":true`));
@@ -45,6 +49,25 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   } });
   assert.ok(Buffer.byteLength(message, "utf8") + 1 > 4096);
   assert.ok(Buffer.byteLength(message, "utf8") + 1 <= 8192);
+});
+
+void test("native opening and model programs are byte-exact fixed commands, not caller code", async () => {
+  const source = await readFile(sourcePath, "utf8");
+  for (const [name, expected] of Object.entries({ OpeningFunction: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION,
+    ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
+    ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION })) {
+    const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
+    assert.equal(encoded?.replaceAll('""', '"'), expected, name);
+    assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);
+  }
+  assert.ok(source.includes("new UTF8Encoding(false,true).GetBytes(path)"));
+  assert.ok(source.includes('if(observed!=project) throw Error("opening-project")'));
+  assert.ok(source.includes('if(Encoding.UTF8.GetByteCount(message)>65536)'));
+  assert.ok(source.includes('if(phase=="snapshot" && method=="Runtime.callFunctionOn")'));
+  assert.ok(source.includes('if(objectId!=null || callbackObjectId!=null)'));
+  for (const forbidden of ["$request.functionDeclaration", "$request.expression", "$request.objectGroup", "$request.arguments"]) {
+    assert.ok(!source.includes(forbidden), forbidden);
+  }
 });
 
 void test("native creation failure captures numeric error before cleanup while preserving unknown-creation refusal", async () => {

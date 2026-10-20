@@ -3,14 +3,51 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
+import { sha256Json, sha256Text } from "../src/core.ts";
+import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
+import type { CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertNoUnresolvedCurrentPcbDiagnosticLaunches,
-  diagnosticLifecycleNoProcessReleaseProofSchema,
+  diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas,
   publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle, withCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+
+const RAW_PATH = String.raw`C:\Fixtures\Diagnostic.eprj2`;
+type CurrentPcbDiagnosticModelState = Awaited<ReturnType<CurrentPcbDiagnosticLifecycleOwner["observeModelState"]>>;
+const OPEN_TARGET = { rawWindowsPath: RAW_PATH, projectUuid: sha256Text(RAW_PATH), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) };
+const OPEN_CHECKPOINT: CurrentDisposableOpenCheckpoint = {
+  profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1",
+  preparationCheckpoint: { path: "/fixture/backup.eprj2", bytes: 8192, sha256: "a".repeat(64) },
+  checkpoint: { schema: "easyeda-pro-control.checkpoint.v2", source: "/fixture/source.eprj2", checkpoint: "/fixture/backup.eprj2",
+    receiptPath: "/fixture/receipt.json", createdAt: "2026-01-01T00:00:00Z", sourceIdentity: { dev: "1", ino: "2", birthtimeNs: "3", ctimeNs: "4" },
+    checkpointIdentity: { dev: "1", ino: "5", birthtimeNs: "6", ctimeNs: "7" }, sourceSha256: "a".repeat(64), checkpointSha256: "a".repeat(64),
+    sourceDumpSha256: "a".repeat(64), checkpointDumpSha256: "a".repeat(64), receiptSha256: "a".repeat(64) },
+  targetEvidence: { projectUuid: OPEN_TARGET.projectUuid, branchUuid: "c".repeat(32), documentUuid: OPEN_TARGET.documentUuid,
+    docType: "PCB", sourceSha256: "a".repeat(64), checkpointSha256: "a".repeat(64), documentSemanticSha256: "d".repeat(64),
+    historySemanticSha256: "e".repeat(64), headHistoryUuid: "f".repeat(32) },
+};
+const OPEN_RESULT: CurrentPcbDiagnosticOpeningResult = { schema: "easyeda-pro-control.pcb-diagnostic-opening.v1", phase: "open-project",
+  projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, documentUuid: OPEN_TARGET.documentUuid,
+  ok: true, status: "opened-prefix-observed", failure: null, dispatchAttempted: true, publicResult: true,
+  prefixObserved: true, nativeWorkMayRemain: true,
+  observation: { projectPresent: true, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, windowTabId: "fixture-tab",
+    containerCount: 1, tabIds: [], activeTabId: "tab_page1" },
+  startupQualified: false, restorationCompletionVerified: false, persistenceVerified: false, compilerOwnerVerified: false,
+  queueCompletionVerified: false, executionAuthorized: false, nativeIntrinsicsVerified: false };
+const OPEN_INPUT = { target: OPEN_TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true };
+const MODEL_RESULT: CurrentPcbDiagnosticModelState = {
+  schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
+  main: { uuid: "a".repeat(32), uniqueId: "b".repeat(16), headType: "PCB", isProject: true, isInit: true, canSave: true, isInitIng: false,
+    pendCacheLength: 0, pendingDocumentKeyCount: 0, cacheKeyCount: 0, deleteCacheCount: 0, subscriptionCount: 0, pendTimer: "null",
+    pendPromise: "null", maxTicket: 0, pendingChange: false, localChange: false },
+  loadedFootprintCount: 0, customFootprints: [],
+  dynamicCopper: { openPcb: false, workerNameMarker: "absent", workerName: null, timer: "absent", bus: "absent" },
+  completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false, projectWorkerAssociationVerified: false,
+  queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false, continuousObservation: false, nativeIntrinsicsVerified: false,
+};
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -44,6 +81,8 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"),
       scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null,
+      projectOpeningConsumed: calls.includes("open-preflight"), projectOpeningResult: calls.includes("native-opening-reply") ? OPEN_RESULT : null,
+      modelObservationConsumed: calls.includes("model-state"),
       nativeLaunchError: null, createProcessError: null,
       noProcessCleanupAvailable: state.rootless !== null && calls.includes("launch") && state.noProcessHealthy && !state.released,
       cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false }),
@@ -82,7 +121,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     browserObservation: () => { calls.push("browser"); return Promise.resolve({ targets: [{ targetId: "target-1" }], executionAuthorized: false }); },
     inspectFrames: targetId => { calls.push("frames"); assert.equal(targetId, "target-1"); return Promise.resolve({ frames: [{ id: "frame-1" }], executionAuthorized: false }); },
     inspectScript: (frameId, profile) => {
-      calls.push("script"); assert.equal(frameId, "frame-1"); assert.equal(profile.family, "pcb");
+      calls.push("script"); assert.equal(frameId, "frame-1");
       return Promise.resolve({ sourceVerified: true, family: profile.family, executionAuthorized: false });
     },
     inspectWorkers: () => {
@@ -97,6 +136,18 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       calls.push("worker-state");
       return Promise.resolve({ queueCompletionVerified: false, executionAuthorized: false });
     },
+    observeModelState: () => {
+      calls.push("model-state");
+      return Promise.resolve(structuredClone(MODEL_RESULT));
+    },
+    openProject: async (target, reverify) => {
+      calls.push("open-preflight");
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intent = await readFile(join(directory(id), "project-opening-intent.json"), "utf8");
+      assert.match(intent, /diagnostic-project-opening-intent/u);
+      await reverify(); calls.push("open-dispatch", "native-opening-reply");
+      return structuredClone(OPEN_RESULT);
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
@@ -109,7 +160,16 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
   };
   const coordinator = new CurrentPcbDiagnosticLifecycle(options, {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
-    allocateOwner: (): Promise<CurrentPcbDiagnosticLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); }, ...dependencies,
+    allocateOwner: (): Promise<CurrentPcbDiagnosticLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); },
+    prepareCheckpoint: (target): Promise<CurrentDisposableOpenCheckpoint> => {
+      calls.push("prepare-checkpoint"); assert.deepEqual(target, OPEN_TARGET);
+      return Promise.resolve(structuredClone(OPEN_CHECKPOINT));
+    },
+    verifyCheckpoint: (prepared, target): Promise<void> => {
+      calls.push("verify-checkpoint"); assert.deepEqual(prepared, OPEN_CHECKPOINT); assert.deepEqual(target, OPEN_TARGET);
+      return Promise.resolve();
+    },
+    ...dependencies,
   });
   async function request(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
     const inspected = await coordinator.run({ action: "inspect", operationId: id });
@@ -133,6 +193,264 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
   });
   return { coordinator, owner, options, calls, state, request };
 }
+
+async function readyForOpening(id: string, value: ReturnType<typeof fixture>): Promise<void> {
+  await value.coordinator.run(launch(id));
+  await value.request("browser-observation");
+  await value.request("inspect-frames", { targetId: "target-1" });
+  await value.request("inspect-script", { frameId: "frame-1", family: "ui" });
+}
+
+void test("model observation requires original PCB source, preserves exact results and consumes once", async context => {
+  const id = "diagnostic-test-model-state", value = fixture(context, id);
+  await value.coordinator.run(launch(id));
+  await assert.rejects(value.request("observe-model-state"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  await value.request("browser-observation"); await value.request("inspect-frames", { targetId: "target-1" });
+  await value.request("inspect-script", { frameId: "frame-1", family: "pcb" });
+  const result = await value.request("observe-model-state");
+  assert.equal(result["stage"], "model-state"); assert.deepEqual(result["result"], MODEL_RESULT);
+  await assert.rejects(value.request("observe-model-state"), /OBSERVATION_CONSUMED/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: "model-state" });
+  assert.ok(Array.isArray(inspected["observations"]));
+  assert.deepEqual(inspected["observations"].find((item: { stage: string }) => item.stage === "model-state"),
+    { stage: "model-state", consumed: true, resultRetained: true, published: true, result: MODEL_RESULT });
+  const historical = await new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id, observation: "model-state" });
+  assert.equal(historical["designExecutionAuthorized"], false);
+  assert.equal(value.calls.filter(call => call === "model-state").length, 1);
+});
+
+void test("UI source and a completed UI opening cannot authorize PCB model observation", async context => {
+  const id = "diagnostic-test-model-ui", value = fixture(context, id);
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("observe-model-state"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("observe-model-state"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  assert.equal(value.calls.includes("model-state"), false);
+});
+
+void test("model observation retains exact outcome across journal drift without replaying its native read", async context => {
+  const id = "diagnostic-test-model-drift", value = fixture(context, id);
+  const intentPath = join(directory(id), "model-state-intent.json");
+  let originalIntent = "";
+  value.owner.observeModelState = async (): Promise<CurrentPcbDiagnosticModelState> => {
+    value.calls.push("model-state");
+    originalIntent = await readFile(intentPath, "utf8");
+    const changed = diagnosticLifecycleRecordSchemas["model-state-intent.json"].parse(JSON.parse(originalIntent) as unknown);
+    changed.createdAt = "2026-01-01T00:00:00.000Z";
+    await writeFile(intentPath, JSON.stringify(changed));
+    return structuredClone(MODEL_RESULT);
+  };
+  await value.coordinator.run(launch(id));
+  await value.request("browser-observation"); await value.request("inspect-frames", { targetId: "target-1" });
+  await value.request("inspect-script", { frameId: "frame-1", family: "pcb" });
+  try { await assert.rejects(value.request("observe-model-state"), /JOURNAL_CHANGED/u); }
+  finally { if (originalIntent !== "") { await writeFile(intentPath, originalIntent); } }
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: "model-state" });
+  assert.ok(Array.isArray(inspected["observations"]));
+  assert.deepEqual(inspected["observations"].find((item: { stage: string }) => item.stage === "model-state"),
+    { stage: "model-state", consumed: true, resultRetained: true, published: false, result: MODEL_RESULT });
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await assert.rejects(value.request("observe-model-state"), /OBSERVATION_CONSUMED/u);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(item => item.operationId === id);
+  assert.deepEqual(operation?.records["model-state-result.json"]?.result, MODEL_RESULT);
+  assert.equal(value.calls.filter(call => call === "model-state").length, 1);
+});
+
+void test("diagnostic opening checkpoints before durable dispatch and rechecks the same source immediately before opening", async context => {
+  const id = "diagnostic-test-project-opening", value = fixture(context, id);
+  await readyForOpening(id, value);
+  const result = await value.request("open-project", OPEN_INPUT);
+  assert.deepEqual(result["result"], OPEN_RESULT);
+  assert.deepEqual(result["preparationCheckpoint"], OPEN_CHECKPOINT.preparationCheckpoint);
+  assert.deepEqual(value.calls.filter(call => call.includes("checkpoint") || call.startsWith("open-")),
+    ["prepare-checkpoint", "verify-checkpoint", "open-preflight", "verify-checkpoint", "open-dispatch"]);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(item => item.operationId === id);
+  assert.ok(operation !== undefined);
+  const intent = operation.records["project-opening-intent.json"];
+  assert.ok(intent !== undefined);
+  assert.equal(intent.checkpointReceiptSha256, sha256Json(OPEN_CHECKPOINT.checkpoint));
+  assert.equal(intent.scriptResultSha256, sha256Json(operation.records["script-result.json"]));
+  assert.deepEqual(intent.target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(inspected["projectOpeningAttemptConsumed"], true);
+  assert.equal(inspected["projectOpeningResultRetained"], true);
+  assert.equal(inspected["projectOpeningResultPublished"], true);
+  assert.equal(inspected["projectOpeningState"], "opened-prefix-observed");
+  assert.equal(inspected["designExecutionAuthorized"], false);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  await value.request("inspect-workers");
+  assert.equal(value.calls.filter(call => call === "open-dispatch").length, 1);
+});
+
+void test("maximum-width Unicode opening paths roundtrip through the journal and allow release", async context => {
+  const id = "diagnostic-test-project-unicode", rawWindowsPath = `C:\\${"界".repeat(4087)}.eprj2`;
+  const target = { ...OPEN_TARGET, rawWindowsPath, projectUuid: sha256Text(rawWindowsPath) };
+  const prepared = { ...structuredClone(OPEN_CHECKPOINT),
+    targetEvidence: { ...OPEN_CHECKPOINT.targetEvidence, projectUuid: target.projectUuid },
+    preparationCheckpoint: { path: `/${"界".repeat(4089)}.eprj2`, bytes: 8192, sha256: "a".repeat(64) } };
+  const value = fixture(context, id, {
+    prepareCheckpoint: (actual): Promise<CurrentDisposableOpenCheckpoint> => {
+      assert.deepEqual(actual, target); return Promise.resolve(prepared);
+    },
+    verifyCheckpoint: (actual, actualTarget): Promise<void> => {
+      assert.deepEqual(actual, prepared); assert.deepEqual(actualTarget, target); return Promise.resolve();
+    },
+  });
+  value.owner.openProject = async (actual, reverify): Promise<CurrentPcbDiagnosticOpeningResult> => {
+    assert.deepEqual(actual, { ...target, branchUuid: prepared.targetEvidence.branchUuid });
+    await reverify(); return { ...OPEN_RESULT, projectUuid: target.projectUuid };
+  };
+  await readyForOpening(id, value);
+  await value.request("open-project", { ...OPEN_INPUT, target });
+  const bytes = await readFile(join(directory(id), "project-opening-intent.json"));
+  assert.ok(bytes.length > 8192 && bytes.length < 64 * 1024);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(item => item.operationId === id);
+  assert.equal(operation?.records["project-opening-intent.json"]?.target.rawWindowsPath, rawWindowsPath);
+  assert.equal(operation?.records["project-opening-intent.json"]?.preparationCheckpoint.path, prepared.preparationCheckpoint.path);
+  value.state.terminated = true; await value.request("observe-termination");
+  const released = await value.request("release-closed");
+  assert.equal(released["state"], "released");
+});
+
+void test("opening requires the original UI source and cannot begin after worker discovery", async context => {
+  const id = "diagnostic-test-project-prerequisites", value = fixture(context, id);
+  await value.coordinator.run(launch(id));
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /ORIGINAL_UI_SOURCE_REQUIRED/u);
+  await value.request("browser-observation"); await value.request("inspect-frames", { targetId: "target-1" });
+  await value.request("inspect-script", { frameId: "frame-1", family: "pcb" });
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /ORIGINAL_UI_SOURCE_REQUIRED/u);
+  await value.request("inspect-workers");
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_UNAVAILABLE/u);
+  assert.equal(value.calls.includes("prepare-checkpoint"), false);
+});
+
+void test("checkpoint preparation failure consumes opening without native preflight and permits original cleanup", async context => {
+  const id = "diagnostic-test-project-checkpoint-fail";
+  const value = fixture(context, id, { prepareCheckpoint: () => Promise.reject(new Error("synthetic checkpoint failure")) });
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /checkpoint failure/u);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(inspected["projectOpeningState"], "opening-unknown");
+  assert.equal(inspected["projectOpeningAttemptConsumed"], true);
+  assert.equal(value.calls.includes("open-preflight"), false);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+});
+
+void test("source recheck failure after preflight cannot dispatch or retry opening", async context => {
+  const id = "diagnostic-test-project-recheck"; let checked = 0;
+  const value = fixture(context, id, { verifyCheckpoint: () => {
+    checked += 1;
+    return checked === 2 ? Promise.reject(new Error("synthetic source changed")) : Promise.resolve();
+  } });
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /source changed/u);
+  assert.equal(value.calls.includes("open-preflight"), true);
+  assert.equal(value.calls.includes("open-dispatch"), false);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+});
+
+void test("opening intent publication failure consumes the attempt before native preflight", async context => {
+  const id = "diagnostic-test-project-intent"; let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "project-opening-intent.json" && fail) { fail = false; throw new Error("synthetic opening intent publication"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /opening intent publication/u);
+  assert.equal(value.calls.includes("open-preflight"), false);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+});
+
+void test("opening result publication failure retains and settles exact decoded outcome without dispatch replay", async context => {
+  const id = "diagnostic-test-project-result"; let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "project-opening-result.json" && fail) { fail = false; throw new Error("synthetic opening result publication"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /opening result publication/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.deepEqual(inspected["projectOpeningResult"], OPEN_RESULT);
+  assert.equal(inspected["projectOpeningResultRetained"], true);
+  assert.equal(inspected["projectOpeningResultPublished"], false);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await value.request("inspect-workers");
+  const historical = await new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id });
+  assert.equal(historical["projectOpeningState"], "opened-prefix-observed");
+  assert.equal(historical["projectOpeningResultRetained"], false);
+  await assert.rejects(new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "open-project", operationId: id,
+    expectedBindingSha256: inspected["bindingSha256"], ...OPEN_INPUT }), /ORIGINAL_OWNER_REQUIRED/u);
+  assert.equal(value.calls.filter(call => call === "open-dispatch").length, 1);
+});
+
+void test("opening uncertainty retains intent and allows cleanup but not worker discovery or replay", async context => {
+  const id = "diagnostic-test-project-uncertain", value = fixture(context, id);
+  value.owner.openProject = async (_target, reverify): Promise<never> => {
+    await reverify(); value.calls.push("open-dispatch"); throw new Error("synthetic lost opening reply");
+  };
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /lost opening reply/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(inspected["projectOpeningState"], "opening-unknown");
+  assert.equal(Object.hasOwn(inspected, "nativeOpeningReply"), false);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  assert.equal(value.calls.filter(call => call === "open-dispatch").length, 1);
+});
+
+void test("postcheck failure exposes the original native reply without accepting, publishing or replaying opening", async context => {
+  const id = "diagnostic-test-project-postcheck", value = fixture(context, id);
+  value.owner.openProject = async (_target, reverify): Promise<never> => {
+    value.calls.push("open-preflight"); await reverify(); value.calls.push("open-dispatch", "native-opening-reply");
+    throw new Error("synthetic postcheck refused");
+  };
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /postcheck refused/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.deepEqual(inspected["nativeOpeningReply"], OPEN_RESULT);
+  assert.equal(inspected["hostTransitionAccepted"], false);
+  assert.equal(inspected["projectOpeningState"], "opening-unknown");
+  assert.equal(inspected["projectOpeningResultRetained"], false);
+  assert.equal(inspected["projectOpeningResultPublished"], false);
+  assert.equal(Object.hasOwn(inspected, "projectOpeningResult"), false);
+  await assert.rejects(value.request("open-project", OPEN_INPUT), /PROJECT_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  assert.equal(operations.find(operation => operation.operationId === id)?.records["project-opening-result.json"], undefined);
+  const historical = await new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id });
+  assert.equal(historical["projectOpeningState"], "opening-unknown");
+  assert.equal(Object.hasOwn(historical, "nativeOpeningReply"), false);
+  assert.equal(value.calls.filter(call => call === "open-dispatch").length, 1);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+});
+
+void test("native preflight refusal is retained without pretending navigation or source recheck occurred", async context => {
+  const id = "diagnostic-test-project-refused", value = fixture(context, id);
+  const refused = { ...OPEN_RESULT, phase: "preflight", ok: false, status: "refused", failure: { stage: "registration-before", code: "OWNERS" },
+    dispatchAttempted: false, publicResult: null, prefixObserved: false, nativeWorkMayRemain: false, observation: null } as const;
+  value.owner.openProject = (): Promise<typeof refused> => Promise.resolve(refused);
+  await readyForOpening(id, value);
+  const result = await value.request("open-project", OPEN_INPUT);
+  assert.deepEqual(result["result"], refused);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(inspected["projectOpeningState"], "refused");
+  assert.equal(value.calls.filter(call => call === "verify-checkpoint").length, 1);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+});
 
 void test("private launch gate retains an original lexical lease and rejects JSON copies and competing callers", async () => {
   const original = acquireCurrentPcbDiagnosticLaunchExclusion();

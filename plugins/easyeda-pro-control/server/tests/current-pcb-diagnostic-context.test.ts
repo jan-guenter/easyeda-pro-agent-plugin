@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "../src/current-pcb-diagnostic-context.ts";
-import { diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 
 const SOURCE = "const syntheticIdentity = true;\n";
@@ -142,5 +142,96 @@ void test("fixed native command vocabulary has no generic methods or params", ()
     { id: 1, method: "Debugger.pause" }, { id: 1, method: "Target.attachToTarget", params: { targetId: "target-1", flatten: false } },
     { id: 1, method: "Page.enable", params: { evil: true }, sessionId: "session-1" },
     { id: 1, method: "Debugger.getScriptSource", params: { scriptId: "x\"" }, sessionId: "session-1" },
-    { id: 33, method: "Browser.getVersion" }]) { assert.throws(() => diagnosticNativeRequest(wire(value)), /OUTBOUND/u); }
+    { id: DIAGNOSTIC_REQUEST_LIMIT + 1, method: "Browser.getVersion" }]) { assert.throws(() => diagnosticNativeRequest(wire(value)), /OUTBOUND/u); }
+});
+const PROJECT_UUID = "a".repeat(64), UI_BASE = "https://client/editor?cll=warn";
+const UI_TARGET = { ...TARGET, url: `${UI_BASE}#` };
+const UI_FRAME = { ...FRAME, url: UI_BASE, urlFragment: "#", securityOrigin: "https://client" };
+const UI_CONTEXT = { ...CONTEXT, origin: "https://client" };
+const UI_PROFILE = { ...PROFILE, family: "ui", relativePath: "pro-ui/test-version/js/ui.js" } as const;
+const OPEN_URL = `${UI_BASE}#id=${PROJECT_UUID}`;
+const OPEN_TARGET_REPLY = { targetInfos: [{ ...UI_TARGET, url: OPEN_URL, attached: true }] };
+const OPEN_FRAME_REPLY = { frameTree: { frame: { ...UI_FRAME, urlFragment: `#id=${PROJECT_UUID}` } } };
+function openingFixture(verifySource = true, initialFragment: "#" | "" = "#"): CurrentPcbDiagnosticContext {
+  const context = new CurrentPcbDiagnosticContext("target-1");
+  const targetRow = { ...UI_TARGET, url: `${UI_BASE}${initialFragment}` };
+  const { urlFragment: _fragment, ...baseFrame } = UI_FRAME;
+  const frameRow = initialFragment === "#" ? UI_FRAME : baseFrame;
+  context.selectTarget({ targetInfos: [targetRow] }); context.bindSession("session-1");
+  context.observeFrames({ frameTree: { frame: frameRow } }); context.selectFrame("frame-1", UI_PROFILE);
+  context.observeEvent(event("Runtime.executionContextCreated", { context: UI_CONTEXT }));
+  context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, url: `https://client/${UI_PROFILE.relativePath}` }));
+  if (verifySource) { context.finish({ scriptSource: SOURCE }, { targetInfos: [{ ...targetRow, attached: true }] }, { frameTree: { frame: frameRow } }); }
+  return context;
+}
+function within(context: CurrentPcbDiagnosticContext, change: Record<string, unknown> = {}): void {
+  context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: OPEN_URL, navigationType: "fragment", ...change }));
+}
+void test("source-admitted UI allows exactly one selected worker-only same-document transition", () => {
+  for (const fragment of ["#", ""] as const) {
+    const context = openingFixture(true, fragment);
+    const selected = { sessionId: "session-1", uniqueContextId: CONTEXT.uniqueId };
+    assert.deepEqual(context.openingContext(), selected);
+    assert.deepEqual(context.beginOpeningTransition(PROJECT_UUID), selected);
+    within(context); context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY);
+    assert.deepEqual(context.openingContext(), selected);
+    context.observeTarget(OPEN_TARGET_REPLY); context.observeFrames(OPEN_FRAME_REPLY);
+    assert.throws(() => context.beginOpeningTransition(PROJECT_UUID), /IDENTITY/u);
+    assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
+});
+void test("opening selector requires source-proved top-level UI and never revives failed identity", () => {
+  for (const context of [openingFixture(false), fixture(), staged()]) {
+    assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+  assert.throws(() => { context.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 7 })); }, /INVALIDATED/u);
+  assert.throws(() => { context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY); }, /IDENTITY/u);
+  assert.throws(() => context.beginOpeningTransition(PROJECT_UUID), /IDENTITY/u);
+});
+void test("one-shot opening refuses absent navigation, replacement loader, title drift and restored child frames", () => {
+  const absent = openingFixture(); absent.beginOpeningTransition(PROJECT_UUID);
+  assert.throws(() => { absent.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY); }, /IDENTITY/u);
+  for (const frameTree of [
+    { frame: { ...OPEN_FRAME_REPLY.frameTree.frame, loaderId: "new-loader" } },
+    { frame: { ...OPEN_FRAME_REPLY.frameTree.frame, securityOrigin: "https://foreign" } },
+    { frame: { ...OPEN_FRAME_REPLY.frameTree.frame, url: OPEN_URL, urlFragment: undefined } },
+    { frame: OPEN_FRAME_REPLY.frameTree.frame, childFrames: [{ frame: { ...FRAME, id: "child", parentId: "frame-1" } }] },
+  ]) {
+    const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID); within(context);
+    assert.throws(() => { context.finishOpeningTransition(OPEN_TARGET_REPLY, { frameTree }); }, /IDENTITY/u);
+  }
+  const changedTitle = openingFixture(); changedTitle.beginOpeningTransition(PROJECT_UUID); within(changedTitle);
+  assert.throws(() => { changedTitle.finishOpeningTransition({ targetInfos: [{ ...UI_TARGET, url: OPEN_URL, attached: true, title: "changed" }] }, OPEN_FRAME_REPLY); }, /IDENTITY/u);
+});
+void test("armed opening admits no foreign frame, restored-tab URL, full navigation or unbounded event stream", () => {
+  for (const change of [{ frameId: "foreign" }, { url: `${UI_BASE}#id=${"b".repeat(64)}` },
+    { url: `${OPEN_URL},tab=*${"d".repeat(16)}@${PROJECT_UUID}` }, { url: `${UI_BASE}#` },
+    { navigationType: "other" }, { extra: true }]) {
+    const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+    assert.throws(() => { within(context, change); }, /INVALIDATED/u);
+  }
+  for (const method of ["Page.frameAttached", "Page.frameDetached", "Page.frameNavigated",
+    "Runtime.executionContextsCleared", "Target.detachedFromTarget", "Debugger.paused"]) {
+    const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+    assert.throws(() => { context.observeEvent(event(method, {})); }, /INVALIDATED/u);
+  }
+  const bounded = openingFixture(); bounded.beginOpeningTransition(PROJECT_UUID);
+  for (let i = 0; i < 8; i += 1) { within(bounded); }
+  assert.throws(() => { within(bounded); }, /INVALIDATED/u);
+});
+void test("unarmed and completed opening retain ordinary navigation invalidation", () => {
+  assert.throws(() => { within(openingFixture()); }, /INVALIDATED/u);
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID); within(context);
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY);
+  assert.throws(() => { within(context); }, /INVALIDATED/u);
+});
+void test("fixed model selector retains only an already source-qualified PCB frame", () => {
+  const context = staged(); finish(context);
+  assert.deepEqual(context.modelContext(), { sessionId: "session-1", scriptId: "script-1", uniqueContextId: CONTEXT.uniqueId });
+  for (const refused of [openingFixture(), fixture(), staged()]) {
+    assert.throws(() => refused.modelContext(), /IDENTITY/u);
+  }
+  assert.throws(() => { context.observeEvent(event("Runtime.executionContextsCleared", {})); }, /INVALIDATED/u);
+  assert.throws(() => context.modelContext(), /IDENTITY/u);
 });

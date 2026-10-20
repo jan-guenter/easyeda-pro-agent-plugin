@@ -8,6 +8,7 @@ import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
+import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
@@ -65,13 +66,13 @@ const noProcessIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.
 const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-no-process-released.v1"), ...base,
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
-export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state"]);
+export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "model-state"]);
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
 }).strict().refine(value => {
-  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state") {
+  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state") {
     return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
   if (value.stage === "frames" || value.stage === "worker-script") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
@@ -81,6 +82,17 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   intentSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Observation result exceeds its bound.");
+const projectOpeningIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"), ...base,
+  bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
+  target: currentDisposableOpenSealedTargetSchema, preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
+  checkpointReceiptSha256: diagnosticLifecycleDigestSchema,
+  confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
+}).strict();
+const projectOpeningResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
+  intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
 export const diagnosticLifecycleRecordSchemas = {
   "intent.json": intentSchema, "binding.json": bindingSchema, "close-intent.json": closeIntentSchema,
   "close-acknowledged.json": closeAcknowledgmentSchema, "terminated.json": terminationSchema,
@@ -93,6 +105,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "workers-intent.json": observationIntentSchema, "workers-result.json": observationResultSchema,
   "worker-script-intent.json": observationIntentSchema, "worker-script-result.json": observationResultSchema,
   "worker-state-intent.json": observationIntentSchema, "worker-state-result.json": observationResultSchema,
+  "model-state-intent.json": observationIntentSchema, "model-state-result.json": observationResultSchema,
+  "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
 export interface DiagnosticLifecycleOperation { readonly operationId: string; readonly records: DiagnosticLifecycleRecords }
@@ -106,7 +120,12 @@ function requireValue(condition: boolean, message: string): asserts condition {
 }
 function absent(value: unknown): boolean { return value instanceof Error && "code" in value && value.code === "ENOENT"; }
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
-function recordBound(name: RecordName): number { return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES; }
+function recordBound(name: RecordName): number {
+  // Two 4096-unit paths can each require six JSON bytes per UTF-16 unit;
+  // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
+  if (name === "project-opening-intent.json") { return 64 * 1024; }
+  return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
+}
 function same(left: BigIntStats, right: BigIntStats): boolean {
   return (["dev", "ino", "mode", "nlink", "size", "mtimeNs", "ctimeNs"] as const).every(key => left[key] === right[key]);
 }
@@ -176,6 +195,14 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["workers-intent.json"] === undefined || records["frames-result.json"] !== undefined, "WORKERS_CHAIN");
   requireValue(records["worker-script-intent.json"] === undefined || records["workers-result.json"] !== undefined, "WORKER_SCRIPT_CHAIN");
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
+  const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
+  requireValue(records["model-state-intent.json"] === undefined || script !== undefined && script.result["family"] === "pcb" &&
+    script.result["sourceVerified"] === true && records["script-intent.json"]?.family === "pcb", "MODEL_STATE_SOURCE_CHAIN");
+  requireValue(opening === undefined || binding !== undefined && binding.launchAcknowledged && binding.binding.rootCreated !== "0" &&
+    opening.bindingSha256 === sha256Json(binding) && script !== undefined &&
+    opening.scriptResultSha256 === sha256Json(script) && script.result["family"] === "ui" && script.result["sourceVerified"] === true &&
+    records["script-intent.json"]?.family === "ui", "PROJECT_OPENING_CHAIN");
+  requireValue(opened === undefined || opening !== undefined && opened.intentSha256 === sha256Json(opening), "PROJECT_OPENING_RESULT_CHAIN");
   requireValue(binding === undefined || intent !== undefined && binding.intentSha256 === sha256Json(intent), "BINDING_CHAIN");
   requireValue(close === undefined || binding !== undefined && close.bindingSha256 === sha256Json(binding), "CLOSE_CHAIN");
   requireValue(acknowledgment === undefined || close !== undefined && acknowledgment.closeIntentSha256 === sha256Json(close), "CLOSE_ACK_CHAIN");

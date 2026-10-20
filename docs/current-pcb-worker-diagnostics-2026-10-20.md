@@ -182,3 +182,55 @@ complete native model and Save-participant observation, pending-producer interva
 proof, a one-shot writer, full closed SQL effects and fresh saved/reopened
 same-ID verification. The queue counts added here discharge none of those
 requirements by themselves.
+
+## Delivered release and installation
+
+Version `0.3.0+codex.20261020053706` was published through
+[PR 83](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/83).
+The payload commit was `87ae78ea4f2e0146a9c91d434177872883d15d38`.
+A history-only update produced final head
+`1bdf53b5ee1d540e4336cbc3ba67f307469d02e5`; normal protected merge produced
+`20a67ee0e20810a4f4a50c0b6cd474aa40da2b06`. All three complete trees match.
+This section is post-delivery local handoff documentation, not part of that
+already installed immutable payload.
+
+The frozen local verification passed 11,759 facade tests, four platform skips,
+zero failures and all 424 bridge tests. Types, strict zero-warning type-aware
+lint, repository/privacy, MCP contracts, dependency checks and all seven skill
+validators passed. The log SHA-256 is
+`b2b6c14641819ed80e037a6e6b9687e61485b7fb3805b890e6ce9bd62b96bb81`.
+[Final-head Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39376599868)
+passed all eight shards and its final gate: 11,758 facade passes, five skips,
+zero failures and 424 bridge passes.
+[Final-head Windows CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39376599866)
+passed, including native compilation, empty-Job and pipe checks.
+The superseded pre-merge-history run was cancelled, not counted as passing.
+Automatic merged-main Windows CI `39377961592` passed; Linux `39377961737`
+was still running when this checkpoint was written, with its build check green.
+
+The official named Git marketplace upgrade installed and enabled the version
+from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. The marketplace
+checkout matches merged main. The maintained exact comparison passed 1,564
+files, 42 directories, 32,137,842 bytes and all modes. Plugin tree:
+`8293eded46957fbd877059a3ce18c46e2f0ad41d`; inventory SHA-256:
+`c6ea3e08510020b81d95b0a4908db8e8e1dbe4b03a8fec2d85b6c96324fc7e70`.
+Release evidence is retained in
+`/root/.cache/easyeda-worker-diagnostic-release-0LVXl95L`.
+
+One reviewed offline installation probe passed using the actual configured
+launcher, ambient Node 26 and pinned Node 24. A private synthetic installation
+with its PCB asset deliberately missing selected three offline-only tools;
+50 configured policies and seven skills were present. One catalog query and
+three worker argument validations passed. This is not the separate 25-tool
+restricted-mode registration, a connected worker read or application launch.
+The original child exited and closed with code zero after stdin EOF, without
+signals, stderr or retained handles. Three complete installed inventories matched.
+Two process samples found no child processes or non-stdio sockets; the upstream
+sentinel remained absent. These are sampled observations, not continuous isolation.
+Evidence is in `/root/.cache/easyeda-worker-offline-probe-gzUC6KQl`;
+proof SHA-256 `3dc7b9f7e9958e09b2d701228c9d668bfe59df22b30147afe41250e5be34b17d`.
+The probe is consumed and must not be rerun, imported or syntax-checked.
+
+The existing host was left untouched. A fresh Codex session must load and admit
+the new version before another live diagnostic case. No production project,
+production record, CAD edit or Save was accessed or performed.

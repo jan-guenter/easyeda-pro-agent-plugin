@@ -21,8 +21,15 @@ import { CurrentPcbDiagnosticWorkerContext } from "./current-pcb-diagnostic-work
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
 import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
+import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
+import { currentPcbDiagnosticOpeningArguments, decodeCurrentPcbDiagnosticOpeningReply } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
+import { CurrentPcbDiagnosticModelRunner } from "./current-pcb-diagnostic-model-runner.ts";
+import type { CurrentPcbDiagnosticModelState } from "./current-pcb-diagnostic-model-program.ts";
 
-const HELPER_SHA256 = "8060c09d393064992c5640829c6ac565660263d888cd24503ff6c3dddbcd4c58";
+const HELPER_SHA256 = "c56ff031fc7b4f92163f1e5f53d58146763adea6f2284ffdd8430edef582e09c";
+const HELPER_BYTES = 87_523;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -104,6 +111,9 @@ export class CurrentPcbDiagnosticOwner {
   #workersConsumed = false;
   #workerScriptConsumed = false;
   #workerStateConsumed = false;
+  #projectOpeningConsumed = false;
+  #projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null = null;
+  #modelConsumed = false;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
@@ -134,13 +144,15 @@ export class CurrentPcbDiagnosticOwner {
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
     nativeLaunchError: string | null; createProcessError: number | null;
-    browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null }> {
+    browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
+    projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean }> {
     return Object.freeze({ helperPid: this.#child.pid ?? null, binding: this.#binding, failure: this.#failure,
       busy: this.#busy, launchConsumed: this.#launchConsumed, closeConsumed: this.#closeConsumed,
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
-      frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure });
+      frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
+      projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed });
   }
 
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
@@ -238,11 +250,54 @@ export class CurrentPcbDiagnosticOwner {
     finally { this.#busy = false; }
   }
 
+  /** Project-only fixed opening under this original diagnostic process owner.
+   * The lifecycle supplies the checkpoint-sealed target and one original
+   * reproof callback, after durable intent. No ordinary launcher is borrowed.
+   * Even a refused preflight consumes this overall stage; cleanup stays usable. */
+  public async openProject(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
+    const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    currentPcbDiagnosticOpeningArguments(target, "preflight");
+    if (this.#projectOpeningConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
+        this.#workersConsumed || this.#workerContext !== null || this.#modelConsumed || typeof reverify !== "function") { throw error("PROJECT_OPENING_UNAVAILABLE"); }
+    this.#enter(true); this.#projectOpeningConsumed = true;
+    try {
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      const selected = context.openingContext();
+      await this.#observeParent(); context.openingContext();
+      const preflight = decodeCurrentPcbDiagnosticOpeningReply(
+        await this.#transfer(() => this.#pipe.observeProjectOpening(selected.uniqueContextId, target, "preflight")), target, "preflight");
+      this.#projectOpeningResult = preflight;
+      context.openingContext();
+      await this.#verifyInstallation(); this.#available();
+      if (!preflight.ok) { this.#input.emit("error", error("PROJECT_PREFLIGHT_REFUSED")); return preflight; }
+      await reverify(); context.openingContext();
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      await this.#observeParent(); context.openingContext();
+      const opening = context.beginOpeningTransition(target.projectUuid);
+      const result = decodeCurrentPcbDiagnosticOpeningReply(
+        await this.#transfer(() => this.#pipe.observeProjectOpening(opening.uniqueContextId, target, "open-project")), target, "open-project");
+      this.#projectOpeningResult = result;
+      context.openingContext();
+      await this.#verifyInstallation(); this.#available();
+      if (!result.ok) { this.#input.emit("error", error("PROJECT_OPENING_REFUSED")); return result; }
+      // The armed context deliberately retains its original frame/target until
+      // Both post-reads settle. Ordinary parent checks would reject the expected
+      // Fragment transition instead of completing this one narrow admission.
+      const targets = await this.#transfer(() => this.#pipe.getTargets());
+      context.openingContext();
+      const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
+      context.finishOpeningTransition(targets, frameTree);
+      await this.#verifyInstallation(); await this.#verify(); this.#available(); context.openingContext();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("PROJECT_OPENING_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
   /** Fixed parent-only child reporting. The optional profile is an internal
    * synthetic-test seam, never part of the public lifecycle request. */
   public async inspectWorkers(profile?: DiagnosticWorkerScriptProfile): Promise<Readonly<RecordValue>> {
     const attachment = this.#stagedAttachment;
-    if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed) {
+    if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed || this.#modelConsumed) {
       throw error("WORKER_INSPECTION_UNAVAILABLE");
     }
     this.#enter(true); this.#workersConsumed = true;
@@ -287,6 +342,32 @@ export class CurrentPcbDiagnosticOwner {
       const reply = await this.#transfer(() => this.#pipe.observeWorkerState(context.evaluationContext()));
       return context.finishState(reply, await this.#observeParent());
     } catch (caughtError) { this.#input.emit("error", error("WORKER_STATE_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** Fixed read-only scope path in an already source-qualified PCB context.
+   * No opened UI/worker or caller-provided handle can substitute for it. */
+  public async observeModelState(): Promise<CurrentPcbDiagnosticModelState> {
+    const context = this.#stagedContext;
+    if (this.#modelConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
+        this.#workersConsumed || this.#workerContext !== null || this.#projectOpeningConsumed) { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
+    this.#enter(true); this.#modelConsumed = true;
+    try {
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      const selected = context.modelContext();
+      await this.#observeParent();
+      const assertCurrent = (): void => {
+        this.#available();
+        if (JSON.stringify(context.modelContext()) !== JSON.stringify(selected)) { throw error("MODEL_CONTEXT_CHANGED"); }
+      };
+      const runner = new CurrentPcbDiagnosticModelRunner({
+        request: (command): Promise<unknown> => this.#transfer(() => this.#pipe.observeModel(command)), assertCurrent,
+      }, selected.scriptId, selected.uniqueContextId);
+      const result = await runner.observe();
+      assertCurrent(); await this.#observeParent();
+      await this.#verifyInstallation(); await this.#verify(); this.#available(); assertCurrent();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("MODEL_OBSERVATION_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 
@@ -507,7 +588,9 @@ export class CurrentPcbDiagnosticOwner {
     if (launch) { this.#launchRequestIssued = true; }
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
-      if (Buffer.byteLength(data) > 4096) { throw error("REQUEST_SIZE"); }
+      const maximum = request["action"] === "send" && request["method"] === "Runtime.callFunctionOn" &&
+        (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project") ? 32_768 : 4096;
+      if (Buffer.byteLength(data) > maximum) { throw error("REQUEST_SIZE"); }
       this.#child.stdin.write(data, cause => {
         if (cause !== null && cause !== undefined) { this.#fail("HELPER_WRITE"); }
         else if (this.#pending === pending) { pending.written = true; this.#settle(); }
@@ -574,7 +657,7 @@ export async function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnost
   const before = await lstat(helperPath);
   const verify = async (): Promise<void> => {
     const first = await lstat(helperPath);
-    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size > 65_536 ||
+    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size !== HELPER_BYTES ||
         first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size ||
         first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath(helperPath) !== helperPath ||
         createHash("sha256").update(await readFile(helperPath)).digest("hex") !== HELPER_SHA256) { throw error("HELPER_SOURCE"); }
@@ -594,7 +677,7 @@ export async function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnost
   // Entire native helper and avoids reopening a pathname after byte admission.
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
-    `try{if($file.Length -gt 65536){throw 'pcb-diagnostic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;` +
+    `try{if($file.Length -ne ${HELPER_BYTES}){throw 'pcb-diagnostic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;` +
     `while($offset -lt $bytes.Length){$count=$file.Read($bytes,$offset,$bytes.Length-$offset);if($count -le 0){throw 'pcb-diagnostic-helper-eof'};$offset+=$count};` +
     `$hash=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hash.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()};` +
     `if($digest -cne '${HELPER_SHA256}'){throw 'pcb-diagnostic-helper-hash'};` +

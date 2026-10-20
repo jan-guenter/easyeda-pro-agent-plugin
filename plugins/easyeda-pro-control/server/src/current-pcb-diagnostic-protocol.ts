@@ -1,5 +1,27 @@
 /** Fixed private CDP vocabulary. No generic method, caller code or pause. */
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION } from "./current-pcb-diagnostic-worker-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, currentPcbDiagnosticOpeningArguments } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
+import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
+  CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "./current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "./current-pcb-diagnostic-model-runner.ts";
+import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
+
+// The original complete worker path uses32 requests. Opening adds at most8,
+// And the separate fixed model path adds at most12. No caller budget override.
+export const DIAGNOSTIC_REQUEST_LIMIT = 64;
+export function diagnosticOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+  phase: CurrentPcbDiagnosticOpeningPhase): Readonly<{
+    functionDeclaration: string; uniqueContextId: string; arguments: readonly Readonly<{ value: unknown }>[];
+    returnByValue: true; awaitPromise: true; silent: true; generatePreview: false; userGesture: false; throwOnSideEffect: false;
+  }> {
+  if (!diagnosticToken(uniqueContextId) || !target.rawWindowsPath.isWellFormed()) { return fail(); }
+  return Object.freeze({ functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, uniqueContextId,
+    arguments: currentPcbDiagnosticOpeningArguments(target, phase), returnByValue: true, awaitPromise: true, silent: true,
+    generatePreview: false, userGesture: false, throwOnSideEffect: false });
+}
 
 export const DIAGNOSTIC_WORKER_ATTACH_PARAMS = Object.freeze({ autoAttach: true, waitForDebuggerOnStart: false, flatten: true,
   filter: Object.freeze([Object.freeze({ type: "worker", exclude: false }), Object.freeze({ exclude: true })]) } as const);
@@ -20,7 +42,10 @@ export type DiagnosticCommand =
   | Readonly<{ id: number; method: "Debugger.enable"; params: Readonly<{ maxScriptsCacheSize: 33_554_432 }>; sessionId: string }>
   | Readonly<{ id: number; method: "Debugger.getScriptSource"; params: Readonly<{ scriptId: string }>; sessionId: string }>
   | Readonly<{ id: number; method: "Target.setAutoAttach"; params: typeof DIAGNOSTIC_WORKER_ATTACH_PARAMS; sessionId: string }>
-  | Readonly<{ id: number; method: "Runtime.evaluate"; params: ReturnType<typeof diagnosticWorkerEvaluationParams>; sessionId: string }>;
+  | Readonly<{ id: number; method: "Runtime.evaluate"; params: ReturnType<typeof diagnosticWorkerEvaluationParams>; sessionId: string }>
+  | Readonly<{ id: number; method: "Runtime.callFunctionOn"; params: ReturnType<typeof diagnosticOpeningParams>; sessionId: string }>
+  | (CurrentPcbDiagnosticModelCommand extends infer Command ? Command extends CurrentPcbDiagnosticModelCommand
+      ? Omit<Command, "modelPhase"> & Readonly<{ id: number; sessionId: string }> : never : never);
 export interface DiagnosticEvent { readonly method: string; readonly params: Readonly<Record<string, unknown>>; readonly sessionId?: string }
 export const DIAGNOSTIC_SOURCE_FRAME_BYTES = 33_554_432;
 export const DIAGNOSTIC_SOURCE_BYTES = 20 * 1024 * 1024;
@@ -30,14 +55,54 @@ export function diagnosticRecord(value: unknown): value is Record<string, unknow
 export function diagnosticExact(value: object, keys: readonly string[]): boolean {
   return Object.keys(value).toSorted().join(",") === keys.toSorted().join(",");
 }
+function modelHandle(value: unknown): string {
+  if (typeof value !== "string" || !/^[A-Za-z\d_.:-]{1,256}$/u.test(value)) { return fail(); }
+  return value;
+}
+/** Derive a fixed private model phase from the exact wire function/options.
+ * No model phase or raw expression is accepted from a public request. */
+function modelWire(id: number, method: unknown, params: Record<string, unknown>, sessionId: string):
+  Readonly<{ command: DiagnosticCommand; request: Readonly<Record<string, unknown>> }> | null {
+  const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const;
+  const base = { action: "send", requestId: id, method, sessionId };
+  let command: DiagnosticCommand, request: Readonly<Record<string, unknown>>;
+  if (method === "Runtime.evaluate" && params["expression"] === CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION) {
+    const uniqueContextId = modelHandle(params["uniqueContextId"]);
+    command = { id, method, params: { ...effects, expression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
+      uniqueContextId, objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP, returnByValue: false,
+      timeout: 1000, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false }, sessionId };
+    request = { ...base, modelPhase: "wrapper", uniqueContextId };
+  } else if (method === "Runtime.getProperties") {
+    const objectId = modelHandle(params["objectId"]);
+    command = { id, method, params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false }, sessionId };
+    request = { ...base, modelPhase: "properties", objectId };
+  } else if (method === "Runtime.callFunctionOn" && params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION) {
+    const objectId = modelHandle(params["objectId"]);
+    command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, returnByValue: false }, sessionId };
+    request = { ...base, modelPhase: "handler", objectId };
+  } else if (method === "Runtime.callFunctionOn" && params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION) {
+    const args = params["arguments"];
+    if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["objectId"])) { return fail(); }
+    const callbackObjectId = modelHandle(args[0]["objectId"]), objectId = modelHandle(params["objectId"]);
+    command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
+      returnByValue: true, arguments: [{ objectId: callbackObjectId }] }, sessionId };
+    request = { ...base, modelPhase: "snapshot", objectId, callbackObjectId };
+  } else if (method === "Runtime.releaseObjectGroup") {
+    command = { id, method, params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP }, sessionId };
+    request = { ...base, modelPhase: "release" };
+  } else { return null; }
+  if (!("params" in command) || JSON.stringify(params) !== JSON.stringify(command.params)) { return fail(); }
+  return { command, request };
+}
 /** The native helper independently checks these same flat fields and constructs
  * JSON itself. Canonical re-encoding prevents an alternative wire vocabulary. */
 export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
-  if (chunk.length > 8192 || chunk.at(-1) !== 0) { return fail(); }
+  if (chunk.length > 65_536 || chunk.at(-1) !== 0) { return fail(); }
   const raw: unknown = JSON.parse(chunk.subarray(0, -1).toString("utf8"));
-  if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 || raw["id"] > 32) { return fail(); }
+  if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 || raw["id"] > DIAGNOSTIC_REQUEST_LIMIT) { return fail(); }
   const id = raw["id"], method = raw["method"], params = raw["params"], sessionId = raw["sessionId"];
-  if (method !== "Runtime.evaluate" && chunk.length > 1024) { return fail(); }
+  if (method === "Runtime.evaluate" && chunk.length > 8192 ||
+      method !== "Runtime.evaluate" && method !== "Runtime.callFunctionOn" && chunk.length > 1024) { return fail(); }
   let command: DiagnosticCommand;
   let request: Readonly<Record<string, unknown>>;
   if (method === "Browser.getVersion" || method === "Target.getTargets") {
@@ -50,7 +115,9 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
     request = { action: "send", requestId: id, method, targetId: params["targetId"] };
   } else {
     if (!diagnosticExact(raw, ["id", "method", "params", "sessionId"]) || !diagnosticToken(sessionId) || !diagnosticRecord(params)) { return fail(); }
-    if (method === "Page.enable" || method === "Page.getFrameTree" || method === "Runtime.enable") {
+    const model = modelWire(id, method, params, sessionId);
+    if (model !== null) { command = model.command; request = model.request; }
+    else if (method === "Page.enable" || method === "Page.getFrameTree" || method === "Runtime.enable") {
       if (!diagnosticExact(params, [])) { return fail(); }
       command = { id, method, params: {}, sessionId }; request = { action: "send", requestId: id, method, sessionId };
     } else if (method === "Debugger.enable") {
@@ -73,6 +140,20 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
       // The native helper independently embeds this exact program. No expression
       // Or evaluation-option string crosses its flat request boundary.
       request = { action: "send", requestId: id, method, sessionId, uniqueContextId: params["uniqueContextId"] };
+    } else if (method === "Runtime.callFunctionOn") {
+      const args = params["arguments"];
+      if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== 2 ||
+          !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["value"]) ||
+          !diagnosticRecord(args[1]) || !diagnosticExact(args[1], ["value"])) { return fail(); }
+      const phase = args[1]["value"], target = args[0]["value"];
+      if (!diagnosticRecord(target) || phase !== "preflight" && phase !== "open-project") { return fail(); }
+      const selected = currentDisposableOpenSealedTargetSchema.parse(target);
+      const fixed = diagnosticOpeningParams(params["uniqueContextId"], selected, phase);
+      if (JSON.stringify(params) !== JSON.stringify(fixed)) { return fail(); }
+      command = { id, method, params: fixed, sessionId };
+      request = { action: "send", requestId: id, method, sessionId, uniqueContextId: params["uniqueContextId"],
+        openingPhase: phase, targetRawWindowsPath: selected.rawWindowsPath, targetProjectUuid: selected.projectUuid,
+        targetBranchUuid: selected.branchUuid, targetDocumentUuid: selected.documentUuid, targetExpectedSourceSha256: selected.expectedSourceSha256 };
     } else { return fail(); }
   }
   if (chunk.toString("utf8") !== `${JSON.stringify(command)}\0`) { return fail(); }
