@@ -4,6 +4,75 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261020093241` through protected PR85 on2026-10-20.
+Payload `b507384bdd3d51f27e0c4060d8de318043d9760e`, merged main
+`85efb3f561e395f6b7dde8e39b522cddba905732`; complete tree3c3d6418 and plugin
+tree82235f52 are identical between final PR head and merged main.
+
+This is one combined dispatch/PCB-frame/model batch, not a new general PCB
+writer. It fixes PowerShell optional-string binding and bounded send-error
+retention; admits source-derived project titles; adds original-owned disposable
+PCB opening with exact frame/DOM/source/native-identity proof; and combines
+compiler, pending-producer and raw String samples. Historical checkpoint
+verification no longer incorrectly requires unchanged live storage after opening.
+The53-request path retains the64-request/128KiB aggregate bounds. The model
+samples are non-atomic and incomplete; no writer/Save authority follows.
+
+Final unchanged-payload verify32842 PASSED:11,848facade/4platformskips/0failures,
+424bridge; strict types/type-aware lint, build parity, package/MCP and seven
+skills pass. Log4e399243, complete frozen-input4af8d98f comparison passed.
+Repository/privacy66542 passed14d728e9; seven installed skill-creator checks
+passed33066965. Earlier verify30894 also passed, but separate repository58563
+found two missing marketplace disclosures; final copy restores them. That failed
+repository report is retained, not passing evidence. No runtime code changed
+between the two full runs. Source527/fda41348, runtime3/d3cbdcbe, compatibility
+manifest212df499; only facade projections/review time changed, no external pins.
+Exact-head Linux39403874149 PASSED all8shards/build/finalgate:11,847facade/
+5platformskips/0failures. Windows39403874297 PASSED native compile/binder/
+emptyJob/pipes and shared synthetic launch lifecycle. Post-main Windows
+39405715245 PASSED; automatic Linux39405715451 is still running on85efb3f.
+Check its result next session, without rerunning another validation campaign.
+
+Official named Git marketplace upgrade72244 completed without errors/stderr;
+list25411 confirms installed/enabled093241 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison77291 PASSED all
+1,581files/42directories/32,756,692bytes/modes, inventory66fe440f, receiptc7165b05.
+Exact-main worktree:
+`/root/.cache/easyeda-093241-merged-main-0nrTX8JT/worktree`.
+Release evidence: `/root/.cache/easyeda-pcb-frame-model-release-LwjVijkD`.
+Installation comparison is not actual loaded-runtime admission.
+
+Installed081744's consumed case `diag-native-081744-20261020-01` is terminal
+released, with original root/whole-Job termination and helper release proved.
+It qualified launch/normal cleanup only; its first browser read failed before
+project opening. Never replay it. No new connected browser/opening/model result
+is claimed. No agent-dispatched CAD edit, explicit Save or production-design
+read occurred. Existing-profile startup effects are not guaranteed absent.
+Running081744 facade836356 was not killed, rebound or hotpatched. No more live
+calls on it after the official upgrade. A fresh Codex session must load/admit093241.
+
+Next work:
+
+1. Check automatic main Linux CI and admit the actual fresh093241 host. Qualify
+   one NEW original-owned browser/frame/source/disposable project/PCB/model/
+   normal-cleanup case. Start the app ourselves through the supported owner;
+   use only disposable scope. Separately qualify the mutually exclusive worker
+   path. Inspect consumed failures; never replay opening or lose the owner.
+2. Complete PCB target/source and pending-producer evidence, then implement the
+   one-shot String writer and full closed/reopened SQL/content proof.
+3. Qualify populated Image/Dimension/polygon-Pad readers. Remaining schematic/
+   connectivity/structure, libraries/3D, placement/routing/copper/rules/stackup,
+   ECO/ERC/DRC and manufacturing/export families remain implementation backlog.
+4. Portable upstream bootstrap and additional independently admitted platforms.
+
+Inventory remains774:212public subsets/33native equivalents/79blocked/450omitted.
+Batch further useful implementation before another version. This local handoff
+is not part of the immutable PR85 payload. Details:
+`docs/current-pcb-frame-model-batch-2026-10-20.md`.
+
+### Completed093241 preparation (historical)
+
 Candidate `0.3.0+codex.20261020093241` is in final review/verification.
 This combined batch fixes actual PowerShell optional-string binding, retains
 native send diagnostics, adds diagnostic-owned PCB opening with exact title/
