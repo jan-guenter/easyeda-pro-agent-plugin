@@ -8,6 +8,7 @@ export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_calculate",
   "easyeda_control_system", "easyeda_control_extensions",
   "easyeda_control_launch", "easyeda_control_editor_shell",
+  "easyeda_control_pcb_diagnostic_validation",
   "easyeda_control_editor_context",
   "easyeda_control_shortcuts",
   "easyeda_control_pcb_layers",

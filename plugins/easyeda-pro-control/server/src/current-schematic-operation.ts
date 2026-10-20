@@ -27,7 +27,9 @@ const batchSteps = z.array(currentSchematicOperationStepSchema).min(2).max(4).re
 }), "A batch needs adjacent forward phases and cannot cross the original-launch termination record or include cleanup.");
 export const currentSchematicOperationOpeningRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("open"), operationId, ...currentDisposableOpenTargetSchema.shape,
-    rename: currentSchematicOperationIntentSchema, acceptNormalOpenEffects: z.literal(true), confirmDisposableProject: z.literal(true) }).strict(),
+    rename: currentSchematicOperationIntentSchema, acceptNormalOpenEffects: z.literal(true),
+    // Preserve old sealed opening journals without injecting an acknowledgment into new requests.
+    confirmDisposableProject: z.literal(true).optional() }).strict(),
   z.object({ action: z.literal("observe"), operationId }).strict(),
   z.object({ action: z.literal("inspect-opening"), operationId }).strict(),
   z.object({ action: z.literal("request-normal-close"), operationId, confirmNormalClose: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
@@ -53,13 +55,14 @@ export function queryCurrentSchematicOperation(input: unknown = {}): Record<stri
   const query = currentSchematicOperationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_project_schematic_rename", purpose: CURRENT_SCHEMATIC_OPERATION_PURPOSE,
     registrationEnabled: true, invocationEnabledByDiscovery: false, executionAuthorized: false, connectedValidation: false,
-    ordinaryProjectsSupported: false, validationOnly: true, forwardOnly: true, inverseSupported: false, replayAllowed: false, explicitSaveDispatched: false,
+    historicalConnectedValidation: "installed203733-ordinary-schematic-title-only-lifecycle",
+    ordinaryProjectsSupported: true, validationOnly: false, forwardOnly: true, inverseSupported: false, replayAllowed: false, explicitSaveDispatched: false,
     limitations: [
-      "Validation only on an explicitly acknowledged disposable project until this new ordinary-purpose composition completes its own connected lifecycle. One local SCH-container title in an already registered project, its default branch and an existing PCB opening target. The open request seals the exact rename target/title and supported startup, metadata and complete child projections from the managed pre-navigation checkpoint. A changed baseline refuses before writing.",
+      "One ordinary local SCH-container title in an already registered project, its default branch and an existing PCB opening target. The open request seals the exact rename target/title and supported startup, metadata and complete child projections from the managed pre-navigation checkpoint. A changed baseline refuses before writing. Legacy confirmDisposableProject:true is optional for old opening journals; omission stays omitted and false is rejected. The separate disposable route keeps its required confirmations and scope.",
       "Original ordinary purpose is retained through opening, baseline, clock, one write, closed full SQL comparison, fresh cache-excluded metadata/peer/child-roster verification and final closed SQL equality. Disposable/symbol owners and journal copies cannot supply continuation.",
       "No unqualified schematic startup acknowledgment is accepted. Imported/reuse/block-symbol containers, reparented children, unsupported histories/names and ambiguous order refuse. Live startup, both AST holders, actors, clocks and inactive panels remain mandatory.",
       "Opening and normal closure may persist or migrate data. There is no explicit Save, Save/Discard choice, force close, inverse or restoration. Lost replies consume the original step; inspect instead of replaying. Batch steps are explicit, adjacent and bounded to two through four, stopping on failure or a pending observation.",
-      "The ordinary composed route has source and offline coverage only until its own disposable-fixture lifecycle passes. Historical disposable143713 evidence does not validate this new purpose. Saved validation covers metadata/child roster and complete SQL preservation, not a canvas or connectivity read.",
+      "Installed203733 passed this ordinary-purpose title-only lifecycle on a disposable fixture, including bounded batching, complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster and both AST readback, final normal closure and complete SQL equality. That historical result does not admit another payload, project history or invocation. Saved validation covers metadata/child roster and complete SQL preservation, not a canvas or connectivity read.",
     ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentSchematicOperationRequestSchema) } : {}) };
 }
 export function validateCurrentSchematicOperationArguments(input: unknown): Record<string, unknown> {

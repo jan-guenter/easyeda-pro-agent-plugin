@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { isRecord, sha256Json } from "../src/core.ts";
+import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { ORDINARY_LAUNCH_PROFILE, OrdinaryLaunchCoordinator, parseOrdinaryLaunchRequest, queryOrdinaryLaunch,
   validateOrdinaryLaunchArguments, verifyOrdinaryLaunchInstallation } from "../src/ordinary-launch.ts";
 import type { OrdinaryLaunchOptions, OrdinaryLaunchRuntime } from "../src/ordinary-launch.ts";
@@ -127,6 +128,18 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   });
   return { options, calls, coordinator, markTerminated: () => { terminated = true; }, markExistingClosed: () => { existing = false; } };
 }
+
+void test("diagnostic lifetime exclusion refuses ordinary startup before helper or journal consumption", async (context) => {
+  const id = "ordinary-test-diagnostic-exclusion";
+  cleanup(context, id);
+  const current = fixture(id), original = acquireCurrentPcbDiagnosticLaunchExclusion();
+  try {
+    await assert.rejects(current.coordinator.run(request(id)), /LAUNCH_BUSY/u);
+    assert.equal(current.calls.includes("allocate"), false);
+    assert.equal(current.calls.includes("launch"), false);
+    assert.equal(await state(current.coordinator, id), "not-found");
+  } finally { releaseCurrentPcbDiagnosticLaunchExclusion(original); }
+});
 
 void test("ordinary launch discovery and validation disclose effects and reject arbitrary options without intent", async (context) => {
   const id = "ordinary-test-schema";

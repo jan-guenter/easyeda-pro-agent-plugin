@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { sha256Json } from "../src/core.ts";
+import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion,
+  reserveCurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import type { AuthenticatedBridgeSessionIdentity, ExecutionAuthorityCaptureInput } from "../src/engine.ts";
 import { assertClosedSessionCopyAuthority, assertClosedSessionTerminationProof } from "../src/windows-authority.ts";
 import type { ClosedSessionBinding, WindowsAuthorityLaunch, WindowsAuthorityStartOptions, WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
@@ -312,4 +314,46 @@ void test("runtime refuses ownership drift after awaited intent preparation", as
   assert.throws(() => runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true }), /not prepared/u);
   assert.equal(authority.requests.filter((entry) => entry["action"] === "normal-close").length, 0);
   assert.deepEqual(bridge.calls, []);
+});
+
+void test("diagnostic lifetime exclusion blocks ordinary startup before helper allocation", async () => {
+  const { upstream } = upstreamFixture();
+  let hashes = 0;
+  const runtime = new WindowsControlRuntime({ upstream, pluginRoot: "/opt/control",
+    assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets", wslDistribution: "ReviewDistro",
+    reviewedExecutionScopeSha256: "e".repeat(64) }, {
+    hashExecutable(): never { hashes += 1; throw new Error("Unexpected helper admission"); },
+  });
+  const original = acquireCurrentPcbDiagnosticLaunchExclusion();
+  try {
+    await assert.rejects(runtime.launch(), /LAUNCH_BUSY/u);
+    assert.equal(hashes, 0);
+    assert.equal(runtime.status().state, "not-launched");
+  } finally { releaseCurrentPcbDiagnosticLaunchExclusion(original); }
+});
+
+void test("partial diagnostic reservation blocks native dispatch and subsequent runtime allocation", async () => {
+  const { upstream } = upstreamFixture(), authority = closedSessionFixture();
+  let helpers = 0;
+  const options = { upstream, pluginRoot: "/opt/control", assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets",
+    wslDistribution: "ReviewDistro", reviewedExecutionScopeSha256: "e".repeat(64) };
+  const dependencies = {
+    hashExecutable: (): Promise<string> => Promise.resolve("d".repeat(64)),
+    async startSupervisor(): Promise<WindowsAuthoritySupervisor> {
+      helpers += 1;
+      await reserveCurrentPcbDiagnosticLifecycle("synthetic-partial-diagnostic");
+      return authority.supervisor;
+    },
+  };
+  const runtime = new WindowsControlRuntime(options, dependencies);
+  await assert.rejects(runtime.launch(), /UNRESOLVED_LAUNCH/u);
+  assert.equal(helpers, 1);
+  assert.equal(runtime.status().state, "launch-unknown");
+  assert.deepEqual(authority.requests, []);
+  const replacement = new WindowsControlRuntime(options, dependencies);
+  await assert.rejects(replacement.launch(), /UNRESOLVED_LAUNCH/u);
+  assert.equal(helpers, 1);
+  assert.equal(replacement.status().state, "not-launched");
+  assert.deepEqual(authority.requests, []);
+  // Retain the synthetic partial reservation in this worker's isolated root.
 });

@@ -1,28 +1,31 @@
 # Schematic-container rename lifecycles
 
-This route changes one ordinary project-local SCH container's title, not a
-sheet title or circuit. It is a native task equivalent with a separate SCH
-owner. Installed143713 passed one complete disposable lifecycle. Use only an
-explicitly disposable project, after admitting the
-installed payload. Ordinary projects, imported/reuse/block containers, child
-reparenting, inverse/delete and explicit Save are unsupported.
+These routes change one ordinary project-local SCH container's title, not a
+sheet title or circuit. Each is a native task equivalent with an original SCH
+owner. `easyeda_control_project_schematic_rename` supports ordinary projects;
+`easyeda_control_disposable_schematic_rename` remains disposable-only. Admit the
+installed payload before either workflow. Imported/reuse/block containers,
+child reparenting, inverse/delete and explicit Save remain unsupported.
 
-## New ordinary-purpose validation route
+## Ordinary project route
 
-Use `easyeda_control_project_schematic_rename` to validate the newly composed
-ordinary-purpose lifecycle. It is still **disposable-validation-only**: its
-`open` requires `confirmDisposableProject:true`, and discovery reports
-`validationOnly:true`, `ordinaryProjectsSupported:false` and
-`connectedValidation:false`. The older disposable case does not validate this
-entrypoint. Do not use production projects until that gate is deliberately
-changed after its own connected lifecycle passes.
+Use `easyeda_control_project_schematic_rename` for the ordinary-purpose
+lifecycle. Installed203733 passed this route's own complete title-only lifecycle
+on a disposable fixture, including batching. Discovery reports
+`validationOnly:false`, `ordinaryProjectsSupported:true` and historical label
+`installed203733-ordinary-schematic-title-only-lifecycle`.
+`connectedValidation:false` and `executionAuthorized:false` remain intentional:
+historical success does not admit the current payload, project or invocation.
 
 Query `project-schematic-operation` with `includeSchemas:true`; validate exact
 requests with `project-schematic-operation-validate`. Its `open` includes the
 registered path, project UUID, existing PCB UUID, source hash,
-`acceptNormalOpenEffects:true`, `confirmDisposableProject:true`, and
+`acceptNormalOpenEffects:true` and
 `rename:{target,desiredTitle}`. Only this initial open accepts the actual
 authenticated `expectedFingerprint` at the tool's top level.
+For old sealed opening journals, `confirmDisposableProject:true` remains
+accepted but is optional. An omitted field stays omitted; `false` is rejected.
+Do not copy a disposable-route owner or its different phase acknowledgments.
 
 Before navigation, the managed checkpoint seals the rename intent, supported
 startup, SCH metadata peers and complete child projection. The closed baseline
@@ -35,7 +38,7 @@ the same target/title, original `openingOperationId` and
 `acceptSchematicRename:true`. Continue through this same tool. Its phase order,
 clock/closure requirements and completion criteria below remain unchanged,
 but its write step has only `confirmWrite:true` and
-`acceptSchematicRename:true`; the disposable confirmation was consumed at open.
+`acceptSchematicRename:true`; it never accepts a disposable confirmation.
 Its `baseline-open-project` accepts only `acceptNormalOpenEffects:true`, never
 the old route's unqualified schematic-startup acknowledgment.
 
@@ -48,6 +51,16 @@ No caller-supplied fingerprint or saved journal can restore continuation.
 
 ## Historical connected scope
 
+Installed `0.3.0+codex.20261019203733` completed the separate ordinary-purpose
+case with `nextPhase:"completed"`, `renameVerified:true`, retained-owner
+retirement and original root/Job termination. Its one acknowledged write passed
+complete closed SQL effect verification. Fresh cache-excluded reopening matched
+the container, all metadata peers, complete child roster and both AST readbacks.
+Final normal closure preserved the complete post-edit SQL. No explicit Save was
+sent. This supports the narrow ordinary-project scope above, not generic writers,
+another history's startup qualification, complete sheet canvases/connectivity
+or delayed subscriber completion. Never replay the completed case.
+
 Installed `0.3.0+codex.20261019143713` completed one title-only case with
 `nextPhase:"completed"` and `renameVerified:true`. One acknowledged write was
 followed by original root/Job termination and the exact complete closed SQL
@@ -59,10 +72,12 @@ Discovery records this as
 `installed143713-disposable-schematic-title-only-lifecycle`, not current
 execution authority. It does not validate another history, payload or invocation,
 complete sheet canvases/connectivity, delayed subscriber completion or
-prospective backend actor identity. No inverse, ordinary-project support or
-generic SDK wrapper is enabled. The completed case must never be replayed.
+prospective backend actor identity. The separate disposable route gains no
+inverse, ordinary-project support or generic SDK wrapper. Installed163322 later
+passed its batched disposable lifecycle; that is distinct from the ordinary
+route's installed203733 case. None of these completed cases may be replayed.
 
-## Select the original owner
+## Disposable route's original owner
 
 Read [current project opening](current-project-opening.md) for the retained
 ordinary launch and disposable opening. The opener's selected PCB binds the
@@ -102,12 +117,13 @@ must also be unique for the later saved absence query.
 Every `advance` names the exact returned `result.nextPhase` in
 `step.expectedPhase`, with the acknowledgments shown by offline discovery.
 
-If the installed schema offers `advance-batch`, it accepts two to four explicit
-adjacent phase steps in one request. This action was not present in
-installed143713; that historical single-phase case does not validate batching
-or another invocation. Prefer the following pair once the returned
-next phase is `rename-write`, so ordinary closure follows the acknowledged write
-without another agent roundtrip:
+`advance-batch` accepts two to four explicit adjacent phase steps in one request.
+Installed163322 passed the disposable batched lifecycle; installed203733 passed
+the ordinary-purpose batched lifecycle. Neither admits a later invocation.
+Prefer a write/close pair once the returned next phase is `rename-write`, so
+normal closure follows the acknowledged write without another agent roundtrip.
+The following example is for the disposable route. For the ordinary route,
+omit `confirmDisposableProject` from the write step; otherwise validation refuses:
 
 ```json
 {

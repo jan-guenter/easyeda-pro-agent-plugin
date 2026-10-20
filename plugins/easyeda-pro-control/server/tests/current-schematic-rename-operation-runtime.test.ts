@@ -217,7 +217,9 @@ void test("ordinary SCH composes the same single-write lifecycle without accepti
   await value.ordinary(ordinaryBegin);
   assert.equal(value.calls[0], "opening.ordinary-transfer");
   assert.equal(value.inspect()["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
-  assert.equal(value.inspect()["validationOnly"], true); assert.equal(value.inspect()["ordinaryProjectsSupported"], false);
+  assert.equal(value.inspect()["validationOnly"], false); assert.equal(value.inspect()["ordinaryProjectsSupported"], true);
+  assert.equal(value.inspect()["historicalConnectedValidation"], "installed203733-ordinary-schematic-title-only-lifecycle");
+  assert.equal(value.inspect()["executionAuthorized"], false); assert.equal(value.inspect()["genericWritersEnabled"], false);
   await assert.rejects(value.run({ action: "inspect", operationId: ID }), /another purpose/u);
   await assert.rejects(value.run({ action: "advance", operationId: ID, step: step("baseline-close") }), /another purpose/u);
   await assert.rejects(value.run({ action: "cleanup", operationId: ID, confirmAbort: true }), /another purpose/u);
@@ -260,6 +262,8 @@ void test("ordinary SCH can inspect its pending opening without clearing its liv
 
 void test("SCHEMATIC batches validate all bounded adjacent acknowledgments before consuming any phase", async () => {
   const value = await fixture(); await value.run(BEGIN); await reach(value, "rename-write");
+  assert.equal(value.inspect()["ordinaryProjectsSupported"], false);
+  assert.equal(value.inspect()["validationOnly"], false); assert.equal(value.inspect()["historicalConnectedValidation"], undefined);
   const before = structuredClone(value.inspect()), calls = [...value.calls];
   for (const request of [batch([]), batch(["rename-write"]), batch(["rename-write", "rename-write"]),
     batch(["rename-write", "rename-observe-termination"]), batch(["cleanup-close", "cleanup-observe-termination"]),

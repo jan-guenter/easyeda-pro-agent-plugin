@@ -149,16 +149,25 @@ for (const kind of ["unfinished", "terminal-orphan"] as const) {
 for (const kind of ["owned", "released", "launch-unknown", "launching"] as const) {
   void test(`actual ${kind} runtime cannot enter bootstrap`, async () => {
     const value = await fixture(); let pending: Promise<unknown> | undefined; let unblock: (() => void) | undefined;
-    if (kind === "owned") { await value.runtime.launch(); }
-    if (kind === "released") { await value.runtime.release(); }
-    if (kind === "launch-unknown") { value.owner.behavior.errorAction = "launch"; await assert.rejects(value.runtime.launch()); }
-    if (kind === "launching") {
-      const gate = Promise.withResolvers<null>(); unblock = (): void => { gate.resolve(null); }; value.state.onHash = async (): Promise<void> => { await gate.promise; };
-      pending = value.runtime.launch(); assert.equal(value.runtime.status().state, "launching");
+    try {
+      if (kind === "owned") { await value.runtime.launch(); }
+      if (kind === "released") { await value.runtime.release(); }
+      if (kind === "launch-unknown") { value.owner.behavior.errorAction = "launch"; await assert.rejects(value.runtime.launch()); }
+      if (kind === "launching") {
+        const entered = Promise.withResolvers<null>(), gate = Promise.withResolvers<null>();
+        unblock = (): void => { gate.resolve(null); };
+        value.state.onHash = async (): Promise<void> => { entered.resolve(null); await gate.promise; };
+        pending = value.runtime.launch();
+        // Launch now first awaits its real shared exclusion/journal admission.
+        // Observe entry rather than assuming a synchronous state transition.
+        await Promise.race([entered.promise, pending]); assert.equal(value.runtime.status().state, "launching");
+      }
+      const before = value.launches();
+      await assert.rejects(value.stage.launch(value.journal), /new index-owned/u); assert.equal(value.launches(), before);
+    } finally {
+      unblock?.();
+      try { await pending; } finally { await value.dispose(); }
     }
-    const before = value.launches();
-    try { await assert.rejects(value.stage.launch(value.journal), /new index-owned/u); assert.equal(value.launches(), before); }
-    finally { unblock?.(); await pending; await value.dispose(); }
   });
 }
 

@@ -35,25 +35,83 @@ continuous isolation or live CAD validation. Evidence:
 `/root/.cache/easyeda-ordinary-polygon-offline-probe-nyMyMdMk`, proof837e17f3,
 responses85aee949. CONSUMED: never rerun, import or syntax-check this probe.
 
-Post-merge Windows CI39326797192 passed; Linux CI39326797242 is still running.
-Check its final result next. The live chat still holds old163322 facade142445;
-no further old-host live calls, cache patches, hot reload or host termination.
-A fresh Codex session must admit the actual203733 process before live work.
-EasyEDA is CLOSED. The completed163322 case below is retired; never replay it
-or issue extra Save. No production project or production record was accessed.
+Post-merge Windows CI39326797192 and Linux CI39326797242 both passed.
+Fresh203733 continuation, 2026-10-20: actual facade373452/start44117453 and
+parent364573/start42128293 independently and root admitted; complete510source,
+3runtime, manifest and1545file/42directory/31,607,372byte/mode inventory match.
+All18scratch pins match. Evidence:
+`/root/.cache/easyeda-203733-independent-admission-Dmnx8HQP`, proof5b553534,
+scratch-proof749ab908. New launch `sch-ordinary-203733-20261020-launch`
+completed ONCE in functions17: root27992/Job01c7aad33a944851993f5c6972c61369,
+launchede07853ca. Never replay. Status19 authenticated, no incomplete operations;
+context29 proved Start Page. New ordinary-purpose opening34 completed exact
+disposable PCB identity, preparation581632/1ea100db. Baseline-begin47 captured
+the original owner. Batch52 passed baseline-close/termination/clock preparation;
+the separate original ordinary-launch termination record also passed. Batch74
+relaunched once, then stopped on explicitly pending authentication. Single
+admission passed (`09-generation-admit.json`). Batch92 passed cache/open.
+Batch105 passed clock/write/normal-close: desired title acknowledged, ticket782,
+write consumed once and close acknowledged. NEVER replay write/close or add Save.
+Batch118 passed retained termination/full closed SQL and verification startup,
+then paused on pending admission. Admission123 and cache observation127 passed.
+Final batch129 PASSED all4steps: saved metadata/peers/child roster/both ASTs,
+normal closure and final full SQL equality. nextPhasecompleted/renameVerifiedtrue,
+retiredtrue/terminationterminated, no failedphase or explicitSave. All20documents
+and57oldhistoryrows/61oldchunks preserved; newticket782; after/laterSQLeda005bb.
+Final closure04:00:36.3832570Z proves original root/Job exit. EasyEDA is CLOSED.
+Terminal evidence53e9eee1, journal e3d700d3; closed disposable fixture598016bytes/
+e620d21af8ca0378b7a3960a10acdaadf894f216e93a034f698fd7e4795fb741.
+NEVER replay the completed case or add Save. Independent final audit PASSED all54
+managed artifacts,3rawcopies/receipts/checkpoints, native reply and saved-readback
+decoders, full-SQL effect/equality and3distinct retained launch/closure chains.
+All15MCP envelopes pass; descriptor inventory0651d5bf, journal body seal18221e8f
+and unchanged raw journal e3d700d3. No production access or audit writes.
+Deliberate narrow ordinary-project scope enablement is now authorized in source,
+retaining every startup/clock/ownership/full-SQL/inverse restriction.
+Live evidence: `/root/.cache/easyeda-203733-ordinary-sch-live-W8Wk73YC`.
+The completed163322 case below is retired; never replay it or issue extra Save.
+No production project or production record was accessed.
 
-Next batch: disposable validation of the new ordinary-purpose SCH route, then
-deliberate production-scope enablement only after its own lifecycle passes;
+Next batch: narrow ordinary-purpose SCH scope enablement following this case;
 native PCB installation/owner admission, journaled diagnostic launch and fixed
 frame/script/context/worker integration before writer work. Also pending:
 populated Image/Dimension/polygon reads; broader geometry/structure, schematic
 content/connectivity, library/3D, placement/routing/copper, rules/stackup,
 ECO/ERC/DRC/manufacturing/export, portable upstream bootstrap and other platform
-tuples. Keep batching useful changes. The new native owner is private and
-unregistered; the new schematic route remains disposable-validation-only.
+tuples. Keep batching useful changes. The installed native owner is private and
+unregistered; the installed schematic route remains disposable-validation-only.
 Details: `docs/current-ordinary-schematic-polygon-diagnostic-batch-2026-10-19.md`.
-Only post-delivery root documentation differs from main on
-`feature/203733-live-continuation`; the packaged payload remains byte-exact.
+Source work on `feature/203733-live-continuation` now includes a validation-only
+public diagnostic tool, native installation admission, staged fixed frame/script/
+context inspection and original-owner lifecycle journals. This batch is not built,
+frozen or published;
+the installed payload remains byte-exact and separate from source changes.
+Root launch-exclusion focused45tests and strict lint pass; the new central gate
+covers every WindowsControlRuntime launch/replacement. Known diagnostic blockers
+refuse ordinary startup before consuming an intent. Full diagnostic focused/types
+checks pass. Engine reverse exclusion now also covers scratch helpers and live
+status startup/probes; diagnostic inspect/cleanup remain local. Independent
+review accepted the integrated source. A final bounded cleanup gap has been
+fixed: exact completed pre-creation refusals now have original-helper no-process
+proof and distinct durable settlement, never timeout/PID absence inference.
+Root and independent review accepted the final native/owner/lifecycle source.
+Candidate `0.3.0+codex.20261020041000` freezes this combined batch for required
+build, compatibility projection, full local verification and protected CI.
+Source517/568f2973, runtime3/4de0c8a9, manifest02c616ed; external pins unchanged.
+Initial verify38758 completed11702passes/31failures/4skips, no cancellations;
+log359c122f and exact frozen-input comparison retained. All31 failures are in
+two fixtures: a synchronous launch-state assumption skipped cleanup and caused
+28failures; a VM fixture omitted the newly imported real exclusion functions
+and caused3ReferenceErrors. Fix fixtures only, never runtime guards. The separate
+repository scan found a literal synthetic credential URL; that fixture now
+constructs the same URL through its fields, with15focused passes/strict lint.
+No scanner weakening. Root-reviewed fixture corrections passed all44tests in
+the two affected launch files, full types and strict targeted lint. The VM now
+uses the real shared exclusion functions, not stubs. No runtime/bundle/pin change.
+Final frozen full verification and exact-payload GitHub CI remain required.
+The new diagnostic route has not been
+loaded or exercised live. Details:
+`docs/current-schematic-native-diagnostics-2026-10-20.md`.
 
 ### Completed163322 continuation and203733 release preparation (historical)
 

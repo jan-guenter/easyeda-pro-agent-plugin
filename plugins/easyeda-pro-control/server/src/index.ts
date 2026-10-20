@@ -117,6 +117,10 @@ import { editorShellRequestSchema } from "./editor-shell.ts";
 import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
+import { CurrentPcbDiagnosticLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { currentPcbDiagnosticValidationRequestSchema } from "./current-pcb-diagnostic-validation.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "./current-pcb-diagnostic-profile.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { shortcutKeysRequestSchema } from "./shortcut-keys.ts";
 import { readShortcutKeys } from "./shortcut-keys-runtime.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
@@ -182,6 +186,7 @@ const upstream = new UpstreamEasyedaClient({
 let windowsRuntime: WindowsControlRuntime | undefined;
 let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
+let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -269,6 +274,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
       .map(key => disposableOwnerMethod(runtime, key))];
 }
 function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true) { throw new Error("An original diagnostic lifecycle reserves application startup."); }
   if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
   if (ordinaryLaunchRuntime !== undefined) { throw new Error("The Windows runtime is reserved by the ordinary launch coordinator."); }
 }
@@ -288,7 +294,8 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     }
     const requestText = canonicalJson(parsed.request);
     phase = "reservation"; reason = "attempt-unavailable";
-    if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined) {
+    if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined ||
+        currentPcbDiagnosticLifecycle?.hasActiveReservation() === true) {
       throw new Error("Disposable index attempt is unavailable.");
     }
     if (disposableOwnData(engine, "upstream") !== upstream) { throw new Error("Disposable index engine owner differs."); }
@@ -1072,7 +1079,9 @@ function serializedStatusGuarded<Input>(
   return guarded((input) =>
     bridgeGate.run(async () => {
       const admission = await engine.observeStatusAdmission();
+      await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       await upstream.listTools();
+      await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
       const lifecycle = upstream.bridgeSessionLifecycle();
       if (lifecycle?.activeSession === null) {
         const disconnectedObservation = await handler(input, admission);
@@ -1886,6 +1895,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_launch: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_pcb_diagnostic_validation: currentSymbolOperationToolOutputSchema,
   easyeda_control_editor_shell: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_editor_context: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_shortcuts: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1935,7 +1945,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both symbol routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL and fresh metadata/peer/child-roster and both AST readback followed by final closure/SQL equality. Its ordinary-project scope retains the startup, clock and one-write guards; this historical result grants no current-invocation authority. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1979,7 +1989,7 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
+        capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL, fresh metadata/peer/child-roster and both AST readback, final closure and unchanged SQL. Ordinary-project scope retains exact startup, clock and one-write guards; historical validation grants no current-invocation authority. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
@@ -2018,9 +2028,10 @@ registerFacadeTool(
           historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle", phaseEffectAcknowledgementsRequired: true, inverseSupported: false,
           ordinaryProjectsSupported: false, savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, genericWritersEnabled: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-or-seven-phase-current-baseline-before-relaunch", replayAuthority: false },
-        projectSchematicRename: { tool: "easyeda_control_project_schematic_rename", scope: "ordinary-purpose-schematic-title-lifecycle-disposable-validation-only",
+        projectSchematicRename: { tool: "easyeda_control_project_schematic_rename", scope: "ordinary-project-local-schematic-title-forward-only",
           runtimeAdmissionRequired: true, designMutation: true, originalOwnerRequired: true, connectedValidation: false,
-          validationOnly: true, ordinaryProjectsSupported: false, inverseSupported: false, genericWritersEnabled: false },
+          historicalConnectedValidation: "installed203733-ordinary-schematic-title-only-lifecycle",
+          validationOnly: false, ordinaryProjectsSupported: true, inverseSupported: false, genericWritersEnabled: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false, scope: "generic-design-routes" }, navigation: { enabled: true, tool: "easyeda_control_project_open",
           scope: "registered-disposable-project-and-existing-pcb-opening-plus-owned-validation-reopening", retainedLaunchRequired: true, unchangedStorageGuaranteed: false },
@@ -2375,6 +2386,71 @@ registerFacadeTool(
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) })),
 );
+
+if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(currentPcbDiagnosticValidationRequestSchema) }).strict();
+  let original: { readonly owner: CurrentPcbDiagnosticLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
+    readonly assertLocal: () => void } | undefined;
+  server.registerTool("easyeda_control_pcb_diagnostic_validation", {
+    title: "Validate a contained native EasyEDA diagnostic session",
+    description: "Validation-only diagnostic startup and bounded browser/frame/pinned-script identity observations. Query offline pcb-diagnostic-validation/pcb-diagnostic-validation-validate first. Launch requires confirmValidationOnly:true, confirmDiagnosticLaunch:true and acceptExistingProfileEffects:true. Existing-profile startup may restore projects and persist data; isolation, project-free startup and connected qualification are unproved. One original helper/Job owns the pipe and each observation is consumed once. No caller executable, URL, source hash, CDP command, evaluation, project navigation, CAD edit or Save. Source identity does not prove the worker/compiler or authorize execution. inspect is local, retains bounded outcomes and accepts an optional observation selector; normal close, original termination, helper release and exact-record settlement require retained ownership. No force exit, Save/Discard choice or journal-derived owner recreation.",
+    inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  }, guarded((input: z.infer<typeof inputSchema>) => {
+    const { request } = inputSchema.parse(input);
+    if (original === undefined) {
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const authority = disposableOwnData(engine, "executionAuthorityValidator");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
+        disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "run"),
+        disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasActiveReservation")];
+      const capturedMethods = methodIdentities();
+      const assertLocal = (): void => {
+        const currentMethods = methodIdentities();
+        if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate ||
+            disposableOwnData(engine, "upstream") !== originalUpstream ||
+            disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise ||
+            disposableOwnData(engine, "executionAuthorityValidator") !== authority ||
+            process.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            controlDataDirectory() !== controlPath || retainedControlRoot.path !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            capturedMethods.some((method, index) => method !== currentMethods[index]) ||
+            original !== undefined && (currentPcbDiagnosticLifecycle !== original.owner || original.owner.run !== original.run)) {
+          throw new Error("Diagnostic original index owner, environment or methods changed.");
+        }
+      };
+      const assertUnreserved = (): void => {
+        assertLocal();
+        if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+            currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined) {
+          throw new Error("Diagnostic launch requires no retained ordinary, project, closed-symbol or replacement owner and no shutdown.");
+        }
+      };
+      const assertOtherLaunchesSettled = async (): Promise<void> => {
+        assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
+      };
+      const owner = new CurrentPcbDiagnosticLifecycle({ pluginRoot, assetsRoot: assetsRoot ?? "", ...(wslDistribution === undefined ? {} : { wslDistribution }),
+        powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256, powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes,
+        assertLocalAllowed: assertLocal, assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled });
+      currentPcbDiagnosticLifecycle = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Preserve original identity; calls below always supply its original receiver.
+      original = { owner, run: owner.run, assertLocal };
+    }
+    const retained = original; retained.assertLocal();
+    // Inspection must not wait behind the original one-shot native call. Other
+    // Actions share serialization, but cleanup never re-enters bridge admission.
+    const run = async (): Promise<{ result: Record<string, unknown> }> => {
+      retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
+    };
+    return request.action === "inspect" ? run() : bridgeGate.run(run);
+  }));
+}
 
 registerFacadeTool(
   "easyeda_control_launch",
@@ -3803,7 +3879,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_disposable_schematic_renam
   const inputSchema = z.object({ request: z.unknown().pipe(currentSchematicRenameOperationRequestSchema) }).strict();
   server.registerTool("easyeda_control_disposable_schematic_rename", {
     title: "Rename one schematic container in an owned disposable project",
-    description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. advance-batch accepts two to four explicit adjacent steps with the same acknowledgments, stopping on failure or pending observation without retry or automatic cleanup; inspect lastBatch after a lost reply, never replay the batch. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies for the current phase, elapsed time and last outcome. These passive diagnostics are not writer clocks or retry authority; busy plus stopped reserves ongoing work. Never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. Installed143713 passed one disposable title-only lifecycle with complete closed SQL, fresh saved metadata/peer/child-roster verification and final closure. That single-phase case does not validate advance-batch or later generations.",
+    description: "Disposable-only schematic title change through a retained original-owner lifecycle. Query offline disposable-schematic-rename/disposable-schematic-rename-validate first. baseline-begin requires this facade's existing disposable project opening and a distinct operation ID. The opener's PCB binds the local project; the separate existing SCH target is selected from complete closed SQL. Every advance names its exact next phase and effects. advance-batch accepts two to four explicit adjacent steps with the same acknowledgments, stopping on failure or pending observation without retry or automatic cleanup; inspect lastBatch after a lost reply, never replay the batch. Original baseline, fresh project-only generation, child roster/startup, actor and Windows/document clock checks precede one project-qualified title update. Titles must be printable ASCII without capital I; old-name duplicates, imported/reuse/block-symbol and child-reparenting branches refuse. Completion needs renameVerified and nextPhase completed after the actual acknowledgment, original root/Job closure, exact complete SQL effect, cache-excluded fresh reopening, matching container/all-peer metadata and unchanged child roster/both ASTs, final normal closure and SQL equality. This is metadata/roster verification, not sheet canvas/connectivity proof. Subscriber completion and prospective backend actor attestation are not claimed. Inspect lost replies for the current phase, elapsed time and last outcome. These passive diagnostics are not writer clocks or retry authority; busy plus stopped reserves ongoing work. Never repeat writes, navigation, close or scratch processes. Cleanup retains original ownership; journals cannot reconstruct it after restart. Opening/closure may automatically persist files. No explicit Save, Save/Discard choice, forced exit, inverse, delete, restore, ordinary projects or generic SDK writer. Installed143713 passed one disposable title-only lifecycle with complete closed SQL, fresh saved metadata/peer/child-roster verification and final closure. That single-phase case does not validate batching; installed163322 separately passed the batched disposable lifecycle. Neither historical case grants current invocation authority or validates the new ordinary-purpose composition.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   }, guarded(async ({ request }: z.output<typeof inputSchema>) => {
@@ -3830,8 +3906,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_project_schematic_rename")
   const inputSchema = z.object({ request: z.unknown().pipe(currentSchematicOperationRequestSchema),
     expectedFingerprint: privateFingerprintSchema.optional() }).strict();
   server.registerTool("easyeda_control_project_schematic_rename", {
-    title: "Validate the ordinary schematic-title lifecycle on a disposable project",
-    description: "Original-owner ordinary-purpose SCH-container title lifecycle, currently disposable-validation-only. Query offline project-schematic-operation/project-schematic-operation-validate first. open requires confirmDisposableProject:true and seals the exact rename target/title plus supported startup, metadata and complete child projection from the managed pre-navigation checkpoint. Production projects remain blocked pending this composition's own connected validation; the previous disposable lifecycle is not validation of this entrypoint. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member PCB. Opening and normal closure can persist or migrate data. Separate operation and opening IDs retain one original owner through baseline, aged actor/clock proof, exactly one title write, complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster verification and final closed SQL equality. Use returned nextPhase and exact effect acknowledgments; advance-batch accepts two through four adjacent explicit steps and stops on failure or pending observation without retry. No unqualified startup opt-in, replacement target/title, caller code, explicit Save, prompt choice, force close, inverse, restoration or generic writer. Inspect lost replies without replaying writes, navigation, closure or scratch processes. Journals cannot recreate ownership; only offered original-owner cleanup is available after failure. Completion requires renameVerified and nextPhase completed. Canvas/connectivity and delayed subscriber completion remain unverified. The newly composed ordinary-purpose route has source/offline coverage, not a connected lifecycle.",
+    title: "Rename one ordinary project-local schematic container",
+    description: "Original-owner ordinary-purpose SCH-container title lifecycle. Query offline project-schematic-operation/project-schematic-operation-validate first. open seals the exact rename target/title plus supported startup, metadata and complete child projection from the managed pre-navigation checkpoint. Legacy confirmDisposableProject:true is optional for old journals; omission stays omitted and false refuses. The separate disposable route keeps its required confirmations and scope. Initial opening requires this facade's retained ordinary launch, empty editor, exact registered local path/hash and checkpoint-member PCB. Opening and normal closure can persist or migrate data. Separate operation and opening IDs retain one original owner through baseline, aged actor/clock proof, exactly one title write, complete closed SQL effect, cache-excluded fresh metadata/peer/child-roster verification and final closed SQL equality. Use returned nextPhase and exact effect acknowledgments; advance-batch accepts two through four adjacent explicit steps and stops on failure or pending observation without retry. No unqualified startup opt-in, replacement target/title, caller code, explicit Save, prompt choice, force close, inverse, restoration or generic writer. Inspect lost replies without replaying writes, navigation, closure or scratch processes. Journals cannot recreate ownership; only offered original-owner cleanup is available after failure. Completion requires renameVerified and nextPhase completed. Canvas/connectivity and delayed subscriber completion remain unverified. Installed203733 passed this ordinary-purpose title-only lifecycle on a disposable fixture, including batching, complete closed SQL, fresh metadata/peer/child-roster and both AST readback, final normal closure and unchanged full SQL. Historical validation does not grant current-invocation authority or qualify another project history.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   }, guarded(async ({ request, expectedFingerprint }: z.output<typeof inputSchema>) => {

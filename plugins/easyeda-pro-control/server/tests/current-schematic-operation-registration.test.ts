@@ -19,7 +19,7 @@ const target = { projectUuid: "ae1e63d56d3a3edecbcdd98bfcfaf76b1705cdf748b7f35ef
   branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), schematicUuid: "d".repeat(16) };
 const opening = { action: "open", operationId: openingOperationId, rawWindowsPath, projectUuid: target.projectUuid,
   documentUuid: "e".repeat(16), expectedSourceSha256: "f".repeat(64), rename: { target, desiredTitle: "Renamed SCH" },
-  acceptNormalOpenEffects: true, confirmDisposableProject: true };
+  acceptNormalOpenEffects: true };
 const begin = { action: "baseline-begin", operationId, openingOperationId, target, desiredTitle: "Renamed SCH", acceptSchematicRename: true };
 const batch = { action: "advance-batch", operationId, steps: [
   { expectedPhase: "rename-write", confirmWrite: true, acceptSchematicRename: true },
@@ -134,13 +134,26 @@ void test("ordinary and disposable SCH registrations share their single original
   assert.ok(fixture.calls.slice(1).every(call => call.fingerprint === undefined));
 });
 
-void test("ordinary SCH registration rejects missing disposal acknowledgment and outer or nested injection before allocation", async () => {
+void test("ordinary SCH registration preserves omitted or legacy disposal confirmation at dispatch", async () => {
+  for (const request of [opening, { ...opening, confirmDisposableProject: true }]) {
+    const fixture = await registration(false);
+    await fixture.invoke({ request });
+    assert.equal(fixture.calls.length, 1); assert.deepEqual(fixture.calls[0]?.request, request);
+    assert.equal(Object.hasOwn(fixture.calls[0]?.request ?? {}, "confirmDisposableProject"), Object.hasOwn(request, "confirmDisposableProject"));
+  }
+  // The distinct disposable route still requires its own explicit confirmation.
+  const fixture = await registration(false);
+  await assert.rejects(fixture.invoke({ request: begin }, disposableTool));
+  assert.equal(fixture.allocations.length, 0); assert.equal(fixture.calls.length, 0);
+});
+
+void test("ordinary SCH registration rejects false disposal confirmation and outer or nested injection before allocation", async () => {
   const fixture = await registration(false);
   for (const extra of [{ code: "caller()" }, { runtime: {} }, { clock: {} }, { verifier: {} }, { title: "replacement" }]) {
     await assert.rejects(fixture.invoke({ request: opening, ...extra }));
     await assert.rejects(fixture.invoke({ request: { ...opening, ...extra } }));
   }
-  for (const request of [{ ...opening, confirmDisposableProject: undefined }, { ...opening, confirmDisposableProject: false },
+  for (const request of [{ ...opening, confirmDisposableProject: false },
     { ...opening, acceptNormalOpenEffects: false }, { ...opening, projectUuid: "a".repeat(64) },
     { ...opening, rename: { ...opening.rename, target: { ...target, projectUuid: "a".repeat(64) } } },
     { ...opening, rename: { ...opening.rename, code: "caller()" } },
@@ -163,14 +176,15 @@ void test("ordinary SCH registration rejects replacement fingerprints on every n
   assert.equal(fixture.calls.length, prior); assert.equal(fixture.history.length, 0); assert.equal(fixture.allocations.length, 1);
 });
 
-void test("ordinary SCH offline schema and exact argument validation report disposable-only admission without execution authority", () => {
+void test("ordinary SCH offline schema reports ordinary scope and historical validation without execution authority", () => {
   const discovery = queryCurrentSchematicOperation({ includeSchemas: true });
   assert.equal(discovery["tool"], ordinaryTool); assert.equal(discovery["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
-  assert.equal(discovery["validationOnly"], true); assert.equal(discovery["ordinaryProjectsSupported"], false);
+  assert.equal(discovery["validationOnly"], false); assert.equal(discovery["ordinaryProjectsSupported"], true);
+  assert.equal(discovery["historicalConnectedValidation"], "installed203733-ordinary-schematic-title-only-lifecycle");
   assert.equal(discovery["connectedValidation"], false); assert.equal(discovery["invocationEnabledByDiscovery"], false);
   assert.equal(discovery["executionAuthorized"], false); assert.notEqual(discovery["inputSchema"], undefined);
   assert.deepEqual(queryOfflineApi(apiRequestSchema.parse({ action: "project-schematic-operation", query: { includeSchemas: true } })).result, discovery);
-  for (const request of [opening, begin, batch, { action: "inspect-opening", operationId: openingOperationId }]) {
+  for (const request of [opening, { ...opening, confirmDisposableProject: true }, begin, batch, { action: "inspect-opening", operationId: openingOperationId }]) {
     const result = queryOfflineApi(apiRequestSchema.parse({ action: "project-schematic-operation-validate", query: { request } })).result;
     assert.deepEqual(result, validateCurrentSchematicOperationArguments(request));
     assert.equal(z.object({ valid: z.literal(true), executionAuthorized: z.literal(false) }).safeParse(result).success, true);

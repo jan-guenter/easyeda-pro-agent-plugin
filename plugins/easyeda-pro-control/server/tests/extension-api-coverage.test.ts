@@ -241,18 +241,19 @@ void test("SCH rename coverage exposes the disposable metadata and child roster 
   assert.equal(result["forwardOnly"], true); assert.equal(result["inverseSupported"], false);
 });
 
-void test("ordinary-purpose SCH coverage remains disposable-validation-only without inheriting historical writer evidence", () => {
+void test("ordinary-purpose SCH coverage enables narrow ordinary scope after its own historical lifecycle", () => {
   const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.dmt_Schematic.modifySchematicName"); assert.ok(row);
   assert.equal(row.routes.length, 3); assert.equal(row.status, "implemented-native-equivalent");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
   assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
   const route = row.routes.find(item => item.tool === "easyeda_control_project_schematic_rename"); assert.ok(route);
-  assert.equal(route.selector, "advance;rename-write;ordinary-purpose-disposable-validation-only");
+  assert.equal(route.selector, "advance;rename-write;ordinary-project-local-schematic-title-forward-only");
   assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.implementation, "native-task-equivalent");
   assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, []);
-  for (const restriction of ["temporary disposable-validation-only gate", "open requires confirmDisposableProject true",
-    "production projects remain unsupported", "Before first navigation", "changed closed baseline refuses", "exactly one title write",
-    "full closed SQL effect", "final closed SQL equality", "unqualified startup opt-ins cannot supply authority", "No connected validation",
+  for (const restriction of ["ordinary-project SCH-container title lifecycle", "Legacy confirmDisposableProject true is optional",
+    "separate disposable route retains its required confirmations", "Before first navigation", "changed closed baseline refuses", "exactly one title write",
+    "full closed SQL effect", "final closed SQL equality", "unqualified startup opt-ins cannot supply authority", "Installed203733 passed",
+    "Historical validation grants no current-invocation authority", "No complete canvas/connectivity read",
     "explicit Save, inverse, delete, restore or generic writer enablement"]) { assert.ok(route.scope.includes(restriction)); }
   assert.equal(row.routes.find(item => item.tool === "easyeda_control_library")?.executionState, "blocked");
   assert.equal(row.routes.find(item => item.tool === "easyeda_control_disposable_schematic_rename")?.executionState, "available-with-runtime-guards");
@@ -262,10 +263,12 @@ void test("ordinary-purpose SCH coverage remains disposable-validation-only with
   const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments.request));
   assert.equal(discovery.offline, true); const result = discovery.result; assert.ok(isRecord(result));
   assert.equal(result["tool"], "easyeda_control_project_schematic_rename"); assert.equal(result["purpose"], "ordinary-schematic-rename");
-  assert.equal(result["registrationEnabled"], true); assert.equal(result["validationOnly"], true); assert.equal(result["forwardOnly"], true);
-  for (const key of ["ordinaryProjectsSupported", "connectedValidation", "executionAuthorized", "invocationEnabledByDiscovery",
+  assert.equal(result["registrationEnabled"], true); assert.equal(result["validationOnly"], false); assert.equal(result["forwardOnly"], true);
+  assert.equal(result["ordinaryProjectsSupported"], true);
+  for (const key of ["connectedValidation", "executionAuthorized", "invocationEnabledByDiscovery",
     "inverseSupported", "replayAllowed", "explicitSaveDispatched"]) { assert.equal(result[key], false); }
-  assert.equal(result["historicalConnectedValidation"], undefined); assert.ok(isRecord(result["inputSchema"]));
+  assert.equal(result["historicalConnectedValidation"], "installed203733-ordinary-schematic-title-only-lifecycle");
+  assert.ok(isRecord(result["inputSchema"]));
 });
 
 void test("topology restrictions remain documented beneath the broader schematic, symbol and PCB lifecycle refusal", () => {
