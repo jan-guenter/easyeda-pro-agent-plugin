@@ -5,13 +5,14 @@ import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
-import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import { currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
-function fixture(context: TestContext, delayedWrite = false): Readonly<{
+function fixture(context: TestContext, delayedWrite = false, stringPurpose = false): Readonly<{
   input: PassThrough; output: Writable; pipe: CurrentPcbDiagnosticPipe; sent: Buffer[];
   acknowledge: (error?: Error) => void;
 }> {
@@ -25,7 +26,8 @@ function fixture(context: TestContext, delayedWrite = false): Readonly<{
       callback();
     }
   } });
-  const pipe = new CurrentPcbDiagnosticPipe(input, output);
+  const Pipe = stringPurpose ? CurrentPcbStringPrecreatePipe : CurrentPcbDiagnosticPipe;
+  const pipe = new Pipe(input, output);
   context.after(async () => {
     // These are synthetic test streams, never real diagnostic-pipe shutdown.
     const closed = [input, output].filter(stream => !stream.closed).map(async stream => { await once(stream, "close"); });
@@ -45,6 +47,19 @@ function retained(value: ReturnType<typeof fixture>): void {
   assert.equal(value.output.writableEnded, false); assert.equal(value.pipe.status().listenersReleased, false);
   assert.throws(() =>{  value.pipe.releaseClosedListeners(); }, /RETAIN_ORIGINAL_STREAMS/u);
 }
+
+void test("separate String pipe has fixed90requests and ordinary diagnostics cannot adopt its phase", async context => {
+  const diagnostic = fixture(context);
+  await assert.rejects(diagnostic.pipe.observeStringPrecreate(currentPcbStringWorkerCommand("worker")), /PCB_STRING_PIPE_PURPOSE/u);
+  assert.equal(diagnostic.sent.length, 0);
+  const string = fixture(context, false, true);
+  for (let id = 1; id <= 90; id += 1) {
+    const result = string.pipe.getTargets();
+    string.input.write(wire({ id, result: {} })); await result;
+  }
+  await assert.rejects(string.pipe.getTargets(), /PIPE_BUDGET/u);
+  assert.equal(string.sent.length, 90); retained(string); retained(diagnostic);
+});
 
 void test("diagnostic pipe sends only fixed browser discovery reads and keeps complete replies", async context => {
   const value = fixture(context), version = value.pipe.getVersion();

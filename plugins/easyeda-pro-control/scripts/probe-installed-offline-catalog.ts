@@ -23,7 +23,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "pcb_diagnostic_validation", "pcb_geometry",
-  "pcb_identities", "pcb_layers", "project_board", "project_open", "project_pcb", "project_schematic",
+  "pcb_identities", "pcb_layers", "pcb_string_precreate_validation", "project_board", "project_open", "project_pcb", "project_schematic",
   "project_schematic_rename", "project_symbol", "project_symbol_metadata", "shortcuts", "status", "system",
 ].map(name => `easyeda_control_${name}`).toSorted();
 
@@ -298,7 +298,18 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Offline exact-argument validation changed or implies execution authority.");
   }
-  return { tools: tools.length, queries: 7 };
+  const precreate = await offlineApi(child, { action: "pcb-string-precreate-validation", query: { includeSchemas: true } });
+  requireCheck(precreate["tool"] === "easyeda_control_pcb_string_precreate_validation" &&
+    precreate["executionAuthorized"] === false && precreate["saveAuthorized"] === false &&
+    precreate["invocationEnabledByDiscovery"] === false && Array.isArray(record(precreate["inputSchema"])["oneOf"]),
+  "String precreate discovery or its schema changed.");
+  const stringLaunch = { ...launch, operationId: "string-precreate-offline-catalog" };
+  for (const [request, valid] of [[stringLaunch, true], [{ ...stringLaunch, callerCode: "not accepted" }, false]] as const) {
+    const result = await offlineApi(child, { action: "pcb-string-precreate-validation-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "String precreate exact-argument validation changed or implies execution authority.");
+  }
+  return { tools: tools.length, queries: 10 };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {
@@ -326,6 +337,8 @@ export async function probeInstalledOfflineCatalog(installedRoot: string): Promi
       JSON.stringify(config["args"]) === '["server/dist/server.mjs","--machine-launch"]' &&
       Object.keys(record(config["env"])).length === 0 && EXPECTED_TOOLS.every(name => Object.hasOwn(configuredTools, name)),
     "Package does not use the supported configured startup.");
+    requireCheck(record(configuredTools["easyeda_control_pcb_string_precreate_validation"])["approval_mode"] === "prompt",
+      "String precreate validation must retain prompt approval.");
     const temporaryRoot = await realpath(tmpdir());
     const directory = await createPrivateTemporaryDirectory(join(temporaryRoot, "easyeda-installed-offline-probe-"), "Offline probe evidence");
     evidencePath = directory.path;

@@ -3,6 +3,7 @@
 import { types } from "node:util";
 import { z } from "zod";
 import { sha256Json } from "./core.ts";
+import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { compareCurrentPcbStringCreateBody } from "./current-pcb-string-create.ts";
 import type { CurrentPcbStringCreateCandidate } from "./current-pcb-string-create.ts";
@@ -99,9 +100,9 @@ const resultSchema = z.object({ profile: z.literal("private.current-pcb-string-c
 export function compareCurrentPcbStringCreateObservation(plan: CurrentPcbStringCreateObservationPlan, suppliedJson: unknown):
   Readonly<z.infer<typeof resultSchema> & typeof LIMITS & { suppliedResultMatchesContract: true }> {
   requireOriginalCurrentPcbStringCreateObservationPlan(plan);
-  need(typeof suppliedJson === "string" && suppliedJson.length <= CURRENT_PCB_STRING_CREATE_RESULT_MAX_BYTES &&
+  need(typeof suppliedJson === "string" && suppliedJson.isWellFormed() && suppliedJson.length <= CURRENT_PCB_STRING_CREATE_RESULT_MAX_BYTES &&
     Buffer.byteLength(suppliedJson) <= CURRENT_PCB_STRING_CREATE_RESULT_MAX_BYTES, "bounded JSON result required");
-  const parsed: unknown = JSON.parse(suppliedJson);
+  const parsed = decodeCurrentPcbDiagnosticJson(Buffer.from(suppliedJson));
   const result = resultSchema.parse(parsed);
   need(result.planSha256 === plan.planSha256 && !Object.is(result.dispatchAttempts, -0), "plan binding differs");
   const acknowledged = result.acknowledgedPrimitiveId !== null, dispatched = result.dispatchAttempts === 1;

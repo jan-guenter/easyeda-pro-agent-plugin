@@ -137,7 +137,8 @@ void test("String publication plans require original matching create plans and b
   const other = fixture("Other text");
   assert.throws(() => planCurrentPcbStringPublication(candidate, other.create, binding), /create plans differ/u);
   assert.throws(() => compareCurrentPcbStringPublication({ ...plan }, plan.expectedPayload), /original publication plan/u);
-  for (const update of [{ primitiveId: "x" }, { client: "x" }, { uniqueId: "" }, { uniqueId: "x".repeat(129) },
+  for (const update of [{ primitiveId: "x" }, { client: "" }, { client: "window/foreign" },
+    { client: "x".repeat(129) }, { uniqueId: "" }, { uniqueId: "x".repeat(129) },
     { maximumTicket: -0 }, { maximumTicket: -1 }, { maximumTicket: 0.5 }, { maximumTicket: "41" },
     { maximumTicket: Number.MAX_SAFE_INTEGER }, { executionAuthorized: true }]) {
     assert.throws(() => planCurrentPcbStringPublication(candidate, create, { ...binding, ...update }));
@@ -147,6 +148,14 @@ void test("String publication plans require original matching create plans and b
   assert.throws(() => planCurrentPcbStringPublication(candidate, create, getter));
   const proxy = new Proxy(candidate, { getPrototypeOf(): object { calls += 1; return Object.prototype; } });
   assert.throws(() => planCurrentPcbStringPublication(proxy, create, binding)); assert.equal(calls, 0);
+});
+
+void test("String publication client preserves the source-supplied window identity rather than requiring a generated16hex ID", () => {
+  const { candidate, create } = fixture();
+  const value = planCurrentPcbStringPublication(candidate, create, { ...binding, client: "original_UI-window_01" });
+  assert.equal(value.expectedPayload[1], "original_UI-window_01");
+  assert.equal(compareCurrentPcbStringPublication(value, value.expectedPayload).suppliedPayloadMatchesPrediction, true);
+  assert.equal(value.producerOwnershipVerified, false);
 });
 
 void test("String publication preserves boundary text and freezes prediction independently of caller data", () => {

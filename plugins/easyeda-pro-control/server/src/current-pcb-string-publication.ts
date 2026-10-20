@@ -12,7 +12,10 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 const MAX_PAYLOAD_BYTES = 8192;
 const identifier = z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/u);
 const bindingSchema = z.object({ primitiveId: z.string().regex(/^[a-f0-9]{16}$/u),
-  client: z.string().regex(/^[a-f0-9]{16}$/u), uniqueId: identifier,
+  // PCB217199c8 _8e@3156621 supplies windowTabId to sCe, not Qe()'s
+  // Fallback16hex identifier. The joined observer separately requires equality
+  // To the original window ID; this supplied-data model proves no such origin.
+  client: identifier, uniqueId: identifier,
   maximumTicket: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER - 1).refine(value => !Object.is(value, -0)) }).strict();
 const LIMITS = Object.freeze({ livePublicationVerified: false, originalNativeIdVerified: false,
   producerOwnershipVerified: false, workerDeliveryVerified: false, completeIntervalVerified: false,

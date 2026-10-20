@@ -2,16 +2,21 @@
 import assert from "node:assert/strict";
 import process from "node:process";
 import { createInterface } from "node:readline";
+import { runInContext } from "node:vm";
+import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION, CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION } from "../../src/current-pcb-string-association.ts";
+import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION } from "../../src/current-pcb-string-empty-producers.ts";
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./current-pcb-diagnostic-model-replies.ts";
+import { callPcbStringObservation, pcbStringObservationFixture, pcbStringReply } from "./current-pcb-string-observation-fixture.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
 const staged = scenario?.startsWith("staged") === true;
 const openingCase = scenario?.startsWith("opening") === true;
 const pcbCase = scenario?.startsWith("opening-pcb") === true;
+const stringCase = scenario?.startsWith("opening-pcb-string") === true;
 const ancillaryCase = scenario?.includes("ancillary") === true;
 const modelCase = scenario?.startsWith("staged-model") === true || pcbCase;
-const workerCase = scenario?.startsWith("staged-worker") === true;
+const workerCase = scenario?.startsWith("staged-worker") === true || stringCase;
 const identityCase = staged || openingCase || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
 const noProcessCase = scenario?.startsWith("no-process-") === true;
 const creationState = scenario === "no-process-create-refused" || scenario?.startsWith("no-process-win32") === true ? "returned-false" : "not-entered";
@@ -26,6 +31,7 @@ let workerAttached = false;
 let opened = false;
 let pcbOpened = false, pcbSourceRead = false;
 let pcbDocumentUuid = "", pcbTabId = "";
+let branchUuid = "b".repeat(32), projectUuid = "a".repeat(64), stringReads = 0;
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let ancillaryReads = 0;
@@ -78,7 +84,9 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if ("modelPhase" in request) {
+        if ("stringPhase" in request) {
+          assert.equal(stringCase, true); payload = stringResponse(request);
+        } else if ("modelPhase" in request) {
           assert.equal(modelCase, true); payload = modelResponse(request, events);
         } else if (request["method"] === "Target.setAutoAttach") {
           assert.ok(workerCase || openingCase); payload = {};
@@ -121,7 +129,7 @@ lines.on("line", line => {
     if (scenario === "malformed-chunk") {
       process.stdout.write(`${JSON.stringify({ id: request["id"], ok: true, result: { bytes: "%%%" } })}\n`); return;
     }
-    const size = scenario === "identity-large-source" || scenario === "staged-large-source" ? 65_536 : 17;
+    const size = scenario === "identity-large-source" || scenario === "staged-large-source" || stringCase ? 65_536 : 17;
     result = { bytes: sent.subarray(0, size).toString("base64") }; sent = sent.subarray(size);
   } else if (request["action"] === "window") { result = { hwnd: "456" }; }
   else if (request["action"] === "normal-close") { terminated = true; result = { closeDispatched: true, saveOrDiscardSelected: false }; }
@@ -255,7 +263,8 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   assert.equal(phase, "snapshot");
   return { result: { type: "string", value: JSON.stringify({
     schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
-    main: { uuid: documentUuid, uniqueId: "b".repeat(32), headType: "PCB", isProject: true, isInit: true, canSave: true,
+    main: { uuid: documentUuid, uniqueId: stringCase && scenario !== "opening-pcb-string-token-drift" ? "c".repeat(16) : "b".repeat(32),
+      headType: "PCB", isProject: true, isInit: true, canSave: true,
       isInitIng: false, pendCacheLength: 0, pendingDocumentKeyCount: 0, cacheKeyCount: 0, deleteCacheCount: 0,
       subscriptionCount: 0, pendTimer: "absent", pendPromise: "absent", maxTicket: 0, pendingChange: false, localChange: false },
     loadedFootprintCount: 0, customFootprints: [],
@@ -318,6 +327,8 @@ function openingResponse(request: object, events: unknown[]): unknown {
   const expectedOpenedTitle = `${projectName} | ${initialTitle}`;
   if (dispatchAttempted && ok) {
     opened = true; target.url = `${uiBase}#id=${String(request.targetProjectUuid)}`; target.title = expectedOpenedTitle;
+    projectUuid = String(request.targetProjectUuid); branchUuid = String(request.targetBranchUuid);
+    if (stringCase) { worker.title = `project_${projectUuid}_original-window`; }
     if (scenario !== "opening-no-event") {
       events.push({ method: scenario === "opening-context-lost" ? "Runtime.executionContextsCleared" : "Page.navigatedWithinDocument",
         sessionId: "session-1", params: scenario === "opening-context-lost" ? {} :
@@ -358,12 +369,34 @@ function workerResponse(request: object & Record<"method", unknown>, events: unk
   if (request["method"] === "Runtime.evaluate") {
     assert.ok("uniqueContextId" in request); assert.equal(request["uniqueContextId"], "worker-context-1");
     assert.equal(Object.hasOwn(request, "expression"), false);
+    if ("stringPhase" in request) { return stringResponse(request); }
     if (scenario === "staged-worker-context-lost") {
       events.push(workerEvent("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "worker-context-1" }));
     }
     return scenario === "staged-worker-effect-refused" ? { result: { type: "undefined" }, exceptionDetails: {} } : workerStateReply();
   }
   throw new Error("unexpected synthetic worker method");
+}
+function stringResponse(request: object & Record<"stringPhase", unknown>): unknown {
+  assert.equal(stringCase, true); stringReads += 1;
+  const workerRole = request.stringPhase === "worker-association";
+  const windowId = scenario === "opening-pcb-string-window-drift" ? "foreign-window" : "original-window";
+  const change = `const selectedProject=${JSON.stringify(projectUuid)}, selectedWindow=${JSON.stringify(windowId)};
+  const selectedChannel="/"+selectedWindow+"/project/"+selectedProject;
+  const env=scope.object.x.env, base=env._compiler.base;
+  env._id=${JSON.stringify(pcbDocumentUuid)};env._tabId=env._id+"@"+selectedProject;
+  base.uuid=env._id;env._compiler.uuid=env._id;base.path=selectedProject;base.windowId=selectedWindow;
+  base.consistencyManager.client=selectedWindow;base.dataBus=new J(selectedChannel);
+  PROJECT.uuid=selectedProject;PROJECT._branchUuid=${JSON.stringify(branchUuid)};globalThis._TAB_ID_=selectedWindow;
+  PROJECT.workerBus=new JP(selectedChannel);globalThis[selectedChannel]=${workerRole ? "PROJECT.workerBus" : "base.dataBus"};
+  ${scenario === "opening-pcb-string-sample-drift" && stringReads > 3 ? 'base.dataBus.uuid="33333333-3333-4333-8333-333333333333";' : ""}`;
+  const context = pcbStringObservationFixture(workerRole, change);
+  if (workerRole) { return pcbStringReply(runInContext(CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION, context) as unknown); }
+  assert.ok("objectId" in request && "callbackObjectId" in request);
+  assert.equal(request.objectId, "handler-scopes-zero"); assert.equal(request.callbackObjectId, "wrapper");
+  assert.ok(request.stringPhase === "renderer-association" || request.stringPhase === "empty-producers");
+  return pcbStringReply(callPcbStringObservation(context, request.stringPhase === "renderer-association" ?
+    CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION : CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION));
 }
 function sizes(names: readonly string[]): Record<string, number> { return Object.fromEntries(names.map(name => [name, 0])); }
 function watchers(): Record<string, number> { return sizes(["footprint", "symbol", "device", "board", "sch", "sheet", "pcb", "panel", "simulation"]); }

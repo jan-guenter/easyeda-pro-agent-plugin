@@ -9,7 +9,7 @@ function fixture(): Record<string, unknown> {
   return {
     target: { projectUuid: "a".repeat(64), documentUuid: "b".repeat(16), uniqueId: "synthetic-unique", client: "synthetic-client" },
     compiler: { uuid: "b".repeat(16), path: "a".repeat(64), uniqueId: "synthetic-unique", client: "synthetic-client",
-      headType: "PCB", isProject: true, isInit: true, canSave: true, isInitIng: false, isDestroy: null,
+      headType: "PCB", isProject: true, isInit: true, canSave: true, isInitIng: false, isDestroy: false,
       pendCacheLength: 0, pendCacheKeys: [], pendTimer: null, pendPromise: null, cacheKeys: [], deleteCacheKeys: [] },
     footprints: { holderKeys: [], otherProjectManagerKeys: [], otherDecodingProjectId: null },
     dynamicCopper: { workerName: null, bus: null, time: null },
@@ -64,12 +64,17 @@ void test("String Save excludes existing history, unpublished compiler data and 
   for (const [section, key, value] of [
     ["history", "stack", { commands: [], waitingUploadStack: [] }],
     ["compiler", "pendCacheLength", 1], ["compiler", "pendPromise", "settled"], ["compiler", "pendTimer", 0],
-    ["compiler", "isDestroy", false], ["uploads", "boardFlag", true],
+    ["compiler", "isDestroy", true], ["uploads", "boardFlag", true],
     ["teardrop", "isMove", true], ["teardrop", "suspend", false], ["teardrop", "timeoutId", 0],
     ["projectWorker", "isUploadingCloud", true], ["projectWorker", "pendingSyncCloud", true],
     ["projectWorker", "isBatchUpload", true], ["projectWorker", "isTemporary", true],
     ["projectWorker", "isHistoryBack", true], ["projectWorker", "isV2Format", true],
   ] as const) { refuse(changed(section, key, value)); }
+});
+
+void test("String Save uses the actual initialized compiler flag, without null or falsey normalization", () => {
+  assert.doesNotThrow(() => inspectCurrentPcbStringSavePrerequisites(fixture(), fixture()));
+  for (const value of [null, undefined, true, 0, "", "false"]) { refuse(changed("compiler", "isDestroy", value)); }
 });
 
 void test("String Save rejects incomplete, extra, coerced and conflicting identities", () => {

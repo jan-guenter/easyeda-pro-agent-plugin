@@ -187,7 +187,10 @@ void test("native adapter embeds and private fields match TS programs without na
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
-  assert.ok(source.includes("$request.requestId -gt 64")); assert.ok(source.includes("id!=nextRequest || id>64"));
+  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {90} else {64}"));
+  assert.ok(source.includes("$request.requestId -gt $requestLimit"));
+  assert.ok(source.includes("id!=nextRequest || id>RequestLimit"));
+  assert.ok(source.includes("int RequestLimit { get { return stringPrecreate?90:64; } }"));
   assert.ok(source.includes('if(received+count>64*1024*1024) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId')}"));

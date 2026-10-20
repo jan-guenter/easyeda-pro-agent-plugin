@@ -28,13 +28,16 @@ void test("native helper embeds the complete fixed worker program with separate 
   assert.ok(source.includes("$line.Length -ge 32768"));
   assert.ok(source.includes("$request.method -cne 'Runtime.callFunctionOn') -and $line.Length -gt 4096"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::VerifyProtocolSmoke()"));
+  assert.ok(source.includes("static string WorkerExpressionJson() {"));
+  assert.ok(source.includes("static string JsonString(string value) {"));
 });
 
 void test("native worker commands accept identifiers only and keep fixed non-pausing effect controls", async () => {
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
-  assert.ok(source.includes('if(id<1 || id>64 || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes('if(id<1 || id>(stringPurpose?90:64) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes("return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);"));
   assert.ok(source.includes('if(scriptId!=null || !token(uniqueContextId))'));
   assert.ok(source.includes(String.raw`\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]`));
   assert.ok(source.includes(String.raw`\"autoAttach\":true,\"waitForDebuggerOnStart\":false,\"flatten\":true`));

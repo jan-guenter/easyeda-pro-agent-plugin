@@ -6,6 +6,7 @@
  * class therefore NEVER ends, destroys or closes either stream, even on error.
  * The original native owner must retain both pipe handles until its reviewed
  * application-closure policy permits release. No TCP endpoint is supported. */
+/* oxlint-disable max-classes-per-file -- Two fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
   diagnosticExact, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
@@ -15,6 +16,8 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_STRING_PRECREATE_PHASES, CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT } from "./current-pcb-string-commands.ts";
+import type { CurrentPcbStringPrecreateCommand, CurrentPcbStringPrecreatePhase } from "./current-pcb-string-commands.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -28,7 +31,7 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
-  `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}`;
+  `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -38,6 +41,7 @@ const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "model-wrapper", "model-properties", "model-handler",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
+  ...CURRENT_PCB_STRING_PRECREATE_PHASES.map(phase => `string-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -93,9 +97,10 @@ function failureError(code: Failure): Error { return new Error(`PCB_DIAGNOSTIC_P
  * JavaScript, pause, resume,
  * reconnect, retry or pipe-close method. Construction acquires nothing; the
  * caller retains this object before start attaches fallible event listeners. */
-export class CurrentPcbDiagnosticPipe {
+class CurrentPcbFixedPipeCore {
   readonly #input: Readable;
   readonly #output: Writable;
+  readonly #stringPurpose: boolean;
   #started = false;
   #failure: Failure | null = null;
   #failureObservation: CurrentPcbDiagnosticFailureObservation | null = null;
@@ -118,8 +123,8 @@ export class CurrentPcbDiagnosticPipe {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable) {
-    this.#input = input; this.#output = output;
+  public constructor(input: Readable, output: Writable, stringPurpose: boolean) {
+    this.#input = input; this.#output = output; this.#stringPurpose = stringPurpose;
   }
 
   public start(): void {
@@ -163,13 +168,13 @@ export class CurrentPcbDiagnosticPipe {
   /** Original newly observed child frame only. The owner/context validates the
    * reciprocal DOM node; no caller selectors or recursive DOM traversal. */
   public getFrameOwner(frameId: string): Promise<Reply> {
-    if (this.#sessionId === null || this.#workerEvent !== null || !diagnosticToken(frameId)) {
+    if (this.#sessionId === null || this.#workerEvent !== null && !this.#stringPurpose || !diagnosticToken(frameId)) {
       return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT"));
     }
     return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId }, "frame-owner");
   }
   public describeFrameOwner(backendNodeId: number): Promise<Reply> {
-    if (this.#sessionId === null || this.#workerEvent !== null || !Number.isSafeInteger(backendNodeId) ||
+    if (this.#sessionId === null || this.#workerEvent !== null && !this.#stringPurpose || !Number.isSafeInteger(backendNodeId) ||
         backendNodeId < 1 || backendNodeId > 2_147_483_647) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT")); }
     return this.#request({ id: this.#nextId, method: "DOM.describeNode",
       params: { backendNodeId, depth: 0, pierce: false }, sessionId: this.#sessionId }, "frame-owner");
@@ -217,9 +222,19 @@ export class CurrentPcbDiagnosticPipe {
       params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, `project-${phase}`);
   }
   public observeModel(command: CurrentPcbDiagnosticModelCommand): Promise<Reply> {
-    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
+    if (this.#sessionId === null || this.#workerEvent !== null && !this.#stringPurpose) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
     const { modelPhase: _modelPhase, ...wire } = command;
     return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId }, `model-${command.modelPhase}`);
+  }
+  /** Only the separate fixed String facade can use these pre-create programs.
+   * Its selected child and page sessions stay independent and immutable. */
+  public observeStringPrecreate(command: CurrentPcbStringPrecreateCommand): Promise<Reply> {
+    if (!this.#stringPurpose || this.#sessionId === null || this.#selectedWorkerSession === null) {
+      return Promise.reject(new Error("PCB_STRING_PIPE_PURPOSE"));
+    }
+    const { stringPhase, ...wire } = command;
+    return this.#request({ id: this.#nextId, ...wire,
+      sessionId: stringPhase === "worker-association" ? this.#workerSession() : this.#sessionId }, `string-${stringPhase}`);
   }
   public observePcbOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
     phase: CurrentPcbDiagnosticPcbOpeningPhase): Promise<Reply> {
@@ -263,11 +278,14 @@ export class CurrentPcbDiagnosticPipe {
   }
 
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand, phase: RequestPhase = "discovery"): Promise<Reply> {
+  async #request(command: DiagnosticCommand | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+    Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
-    if (this.#nextId > DIAGNOSTIC_REQUEST_LIMIT) { this.#fail("budget"); throw failureError("budget"); }
+    if (this.#nextId > (this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) {
+      this.#fail("budget"); throw failureError("budget");
+    }
     const id = this.#nextId; this.#nextId += 1;
     this.#lastRequest = Object.freeze({ id,
       method: REQUEST_METHODS.find(method => method === command.method) ?? "unknown",
@@ -403,4 +421,14 @@ export class CurrentPcbDiagnosticPipe {
   readonly #inputEnd = (): void => { this.#inputEnded = true; this.#fail(this.#used === 0 ? "eof" : "framing"); };
   readonly #inputClose = (): void => { this.#inputClosed = true; this.#fail("closed"); };
   readonly #outputClose = (): void => { this.#outputClosed = true; this.#fail("closed"); };
+}
+
+/** Legacy diagnostic profile. No caller cap or purpose override exists. */
+export class CurrentPcbDiagnosticPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, false); }
+}
+/** Internal, unregistered String pre-create profile. It has no create/Save
+ * vocabulary and cannot extend an existing diagnostic pipe's lifetime budget. */
+export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, true); }
 }

@@ -13,6 +13,8 @@ import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "./current-pcb-diagn
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "./current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, currentPcbDiagnosticPcbOpeningArguments } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringScopeCommand, currentPcbStringWorkerCommand } from "./current-pcb-string-commands.ts";
+import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses30; the complete project/PCB opening and
@@ -128,13 +130,46 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
 /** The native helper independently checks these same flat fields and constructs
  * JSON itself. Canonical re-encoding prevents an alternative wire vocabulary. */
 export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  return fixedNativeRequest(chunk, false);
+}
+/** Separate fixed factory path. The public diagnostic owner never selects this
+ * profile; it cannot upgrade its original native or byte-transport purpose. */
+export function stringPrecreateNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  return fixedNativeRequest(chunk, true);
+}
+function stringWire(id: number, method: unknown, params: Record<string, unknown>, sessionId: string):
+  Readonly<{ command: Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> & Readonly<{ id: number; sessionId: string }>;
+    request: Readonly<Record<string, unknown>> }> | null {
+  let fixed: CurrentPcbStringPrecreateCommand | null = null;
+  if (method === "Runtime.evaluate" && typeof params["uniqueContextId"] === "string") {
+    const candidate = currentPcbStringWorkerCommand(params["uniqueContextId"]);
+    if ("expression" in candidate.params && params["expression"] === candidate.params.expression) { fixed = candidate; }
+  } else if (method === "Runtime.callFunctionOn") {
+    const args = params["arguments"];
+    if (Array.isArray(args) && args.length === 1 && diagnosticRecord(args[0]) && diagnosticExact(args[0], ["objectId"]) &&
+        typeof params["objectId"] === "string" && typeof args[0]["objectId"] === "string") {
+      for (const phase of ["renderer-association", "empty-producers"] as const) {
+        const candidate = currentPcbStringScopeCommand(phase, params["objectId"], args[0]["objectId"]);
+        if ("functionDeclaration" in candidate.params && params["functionDeclaration"] === candidate.params.functionDeclaration) { fixed = candidate; }
+      }
+    }
+  }
+  if (fixed === null) { return null; }
+  if (JSON.stringify(params) !== JSON.stringify(fixed.params)) { return fail(); }
+  const { stringPhase, ...wire } = fixed;
+  return { command: { id, ...wire, sessionId }, request: { action: "send", requestId: id, method, sessionId, stringPhase,
+    ...("uniqueContextId" in fixed.params ? { uniqueContextId: fixed.params.uniqueContextId } :
+      { objectId: fixed.params.objectId, callbackObjectId: fixed.params.arguments[0].objectId }) } };
+}
+function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Record<string, unknown>> {
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { return fail(); }
   const raw: unknown = JSON.parse(chunk.subarray(0, -1).toString("utf8"));
-  if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 || raw["id"] > DIAGNOSTIC_REQUEST_LIMIT) { return fail(); }
+  if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 ||
+      raw["id"] > (stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) { return fail(); }
   const id = raw["id"], method = raw["method"], params = raw["params"], sessionId = raw["sessionId"];
   if (method === "Runtime.evaluate" && chunk.length > 8192 ||
       method !== "Runtime.evaluate" && method !== "Runtime.callFunctionOn" && chunk.length > 1024) { return fail(); }
-  let command: DiagnosticCommand;
+  let command: DiagnosticCommand | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> & Readonly<{ id: number; sessionId: string }>);
   let request: Readonly<Record<string, unknown>>;
   if (method === "Browser.getVersion" || method === "Target.getTargets") {
     if (!diagnosticExact(raw, ["id", "method"])) { return fail(); }
@@ -146,8 +181,10 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
     request = { action: "send", requestId: id, method, targetId: params["targetId"] };
   } else {
     if (!diagnosticExact(raw, ["id", "method", "params", "sessionId"]) || !diagnosticToken(sessionId) || !diagnosticRecord(params)) { return fail(); }
-    const model = modelWire(id, method, params, sessionId);
-    if (model !== null) { command = model.command; request = model.request; }
+    const string = stringPurpose ? stringWire(id, method, params, sessionId) : null;
+    const model = string === null ? modelWire(id, method, params, sessionId) : null;
+    if (string !== null) { command = string.command; request = string.request; }
+    else if (model !== null) { command = model.command; request = model.request; }
     else if (method === "Page.enable" || method === "Page.getFrameTree" || method === "Runtime.enable") {
       if (!diagnosticExact(params, [])) { return fail(); }
       command = { id, method, params: {}, sessionId }; request = { action: "send", requestId: id, method, sessionId };

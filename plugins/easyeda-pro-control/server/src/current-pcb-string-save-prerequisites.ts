@@ -16,7 +16,9 @@ const snapshotSchema = z.object({
   // Nullish raw field, never a falsey/coerced value or a missing observation.
   compiler: z.object({ uuid: identifier, path: identifier, uniqueId: identifier, client: identifier,
     headType: z.literal("PCB"), isProject: z.literal(true), isInit: z.literal(true), canSave: z.literal(true),
-    isInitIng: z.literal(false), isDestroy: z.null(), pendCacheLength: z.literal(0),
+    // A8e.initProject sets isDestroy=false before its first awaited RPC.
+    // An initialized compiler never represents that state as null/undefined.
+    isInitIng: z.literal(false), isDestroy: z.literal(false), pendCacheLength: z.literal(0),
     pendCacheKeys: empty, pendTimer: z.null(), pendPromise: z.null(), cacheKeys: empty, deleteCacheKeys: empty }).strict(),
   // Native wi/Dm@4309943 selects a manager while otherDecodingProjectId is
   // Set. Empty component DTOs say nothing about loaded Al custom holders.
@@ -26,8 +28,9 @@ const snapshotSchema = z.object({
   dynamicCopper: z.object({ workerName: z.null(), bus: z.null(), time: z.null() }).strict(),
   workers: z.object({ mapKeys: empty, busMapKeys: empty, ratlineWorkerKeys: empty,
     workerBusKeys: empty, workerStateKeys: empty }).strict(),
-  // Xe/kde@7922234 and De@7916638. Any existing stack is excluded even when
-  // Its current waiting-upload list is empty. This is a pre-create condition.
+  // Xe/kde@7922234 initializes stack=null. Us/tge's eagerly created empty De
+  // It is a different owner; it must not be substituted for this history stack.
+  // Any existing history stack is excluded, even with no waiting uploads.
   history: z.object({ undoCommand: empty, redoCommand: empty, stack: z.null() }).strict(),
   uploads: z.object({ boardFlag: z.literal(false), pouredIds: empty, innerLayerIds: empty }).strict(),
   // Sfe@9092131 always schedules a callback; removeTears calls increaseUpload

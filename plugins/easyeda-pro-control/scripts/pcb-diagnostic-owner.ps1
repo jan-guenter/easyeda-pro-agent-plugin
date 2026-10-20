@@ -1,4 +1,4 @@
-param([switch]$CompileOnly)
+param([switch]$CompileOnly,[switch]$StringPrecreate)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
@@ -248,6 +248,8 @@ public sealed class EasyedaDiagnosticOwner {
   enum CreationPhase { NotEntered, Unknown, ReturnedFalse, RootRetained }
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
+  readonly bool stringPrecreate;
+  int RequestLimit { get { return stringPrecreate?90:64; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -256,6 +258,8 @@ public sealed class EasyedaDiagnosticOwner {
   static Exception Error(string reason) { return new InvalidOperationException("pcb-diagnostic-"+reason); }
   static void Native(bool value) { if(!value) throw Error("native-call"); }
   public EasyedaDiagnosticOwner() { }
+  EasyedaDiagnosticOwner(bool stringPrecreatePurpose) { stringPrecreate=stringPrecreatePurpose; }
+  public static EasyedaDiagnosticOwner CreateStringPrecreate() { return new EasyedaDiagnosticOwner(true); }
   public void Initialize() {
     if(job!=IntPtr.Zero || released) throw Error("initialize-consumed");
     job=CreateJobObject(IntPtr.Zero,null); if(job==IntPtr.Zero) throw Error("job-create");
@@ -388,8 +392,9 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-worker-state.
   // Exact compiled opening function; no input provides code or method names.
   const string OpeningFunction=@"async function(target,phase){
 ""use strict"";
-let stage=""setup"",code=""EXCEPTION"",dispatchAttempted=false,publicResult=null,prefixObserved=false,expired=false,timer,clear,cleanup,observation=null,outcome;
-const bad=(value=""GUARD"")=>{code=value;throw new Error(""PCB_DIAGNOSTIC_OPENING"");};
+let stage=""setup"",substage=""setup"",code=""EXCEPTION"",firstFailure=null,cleanupFailure=null,dispatchAttempted=false,publicResult=null,prefixObserved=false,expired=false,timer,clear,cleanup,observation=null,outcome;
+const retainFailure=(value=code)=>{if(firstFailure===null)firstFailure={stage,code:value,substage};return firstFailure;};
+const bad=(value=""GUARD"")=>{code=value;retainFailure(value);throw new Error(""PCB_DIAGNOSTIC_OPENING"");};
 try{
 const root=globalThis,apply=Reflect.apply;
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!==""object""&&typeof owner!==""function""))bad(""FIELD"");const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad(""FIELD"");}if(!Object.hasOwn(d,""value""))bad(""FIELD"");return d.value;};
@@ -435,6 +440,7 @@ const bus=own(host,""messageBus""),registryCall=method(bus,""rpcCall""),subscrib
 const apiBus=own(host,""extensionApiMessageBus2""),openCall=method(apiBus,""rpcCall"");
 const set=own(root,""setTimeout"");clear=own(root,""clearTimeout"");if(typeof set!==""function""||typeof clear!==""function"")bad();
 const check=()=>{
+ substage=""root-binding"";
  if(expired)bad(""TIMEOUT"");
  if(root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==retainedHref||location?.href!==retainedHref||location?.origin!==""https://client"")bad(""URL"");
  if(parseProjectUrl(retainedHref,target.projectUuid).base!==initialUrl.base)bad(""URL"");
@@ -444,22 +450,26 @@ const check=()=>{
  if(apply(query.fn,document,['meta[name=""editorMainVersion""]'])!==meta||meta.ownerDocument!==document||apply(attribute.fn,meta,[""content""])!==version)bad(""TITLE"");
  if(prefixCheck!==undefined)prefixCheck();
 };
-const sample=()=>{
- check();const owners=[],project=plain(own(host,""currentProject""));owners.push(project);const pid=own(project,""projectId"",true),branch=own(project,""branchUuid"",true),projectPresent=pid===target.projectUuid;
+const projectIdentity=()=>{
+ check();substage=""project-identity"";const project=plain(own(host,""currentProject"")),pid=own(project,""projectId"",true),branch=own(project,""branchUuid"",true),projectPresent=pid===target.projectUuid;
  if(pid!==undefined&&!projectPresent)bad(""PROJECT"");
  if(projectPresent){if(branch!==target.branchUuid)bad(""BRANCH"");if(own(project,""isV2Format"")!==false)bad(""FORMAT"");}else if(branch!==undefined&&branch!=="""")bad(""BRANCH"");
+ if(own(host,""isHistoryMode"")!==false)bad(""HISTORY"");return{project,pid,branch,projectPresent};
+};
+const sample=()=>{
+ const {project,pid,branch,projectPresent}=projectIdentity(),owners=[project];substage=""title"";
  const documentTitle=text(document.title,512),clientName=own(client,""currentProjectName"",true);
  if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""""))bad(""TITLE"");
- if(own(host,""isHistoryMode"")!==false)bad(""HISTORY"");
+ substage=""container-roster"";
  const ids=own(tabs,""containerIds""),n=dense(ids,128);if(n===0)bad(""TAB"");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad(""TAB"");registry.add(id);names.push(id);}
- const tree=own(tabs,""containerTree""),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
+ substage=""container-tree"";const tree=own(tabs,""containerTree""),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
  if(own(tabs,""belongContainer"")!==""editor-window-main""||own(tree,""id"")!==""editor-window-main"")bad(""TAB"");
  while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad(""TAB"");seen.add(node);owners.push(node);const id=text(own(node,""id""),256),children=own(node,""children"",true);if(treeIds.has(id))bad(""TAB"");treeIds.add(id);treeProjection.push([id,item.depth]);
   if(children===undefined){if(!registry.has(id)||leaves.has(id))bad(""TAB"");leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad(""TAB"");owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
  if(leaves.size!==registry.size)bad(""TAB"");const current=text(own(tabs,""currentTabId""),512,true);if(apply(active.fn,tabs,[])!==current)bad(""TAB"");
- const allIds=new Set(),projection=[],ordinaryIds=[];let count=0,start=0,placeholder=0,currentCount=0;
- for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,""id"")!==id||own(info,""belong"")!==""editor-window-main"")bad(""TAB"");const list=own(info,""tabs""),length=dense(list,256);if(count+length>256)bad(""TAB"");count+=length;owners.push(list);const localActive=text(own(info,""activeTabId""),512,true),localIds=new Set(),rows=[];
+ substage=""tab-roster"";const allIds=new Set(),projection=[],ordinaryIds=[];let count=0,start=0,placeholder=0,currentCount=0;
+ for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();substage=""tab-roster"";owners.push(info);if(own(info,""id"")!==id||own(info,""belong"")!==""editor-window-main"")bad(""TAB"");const list=own(info,""tabs""),length=dense(list,256);if(count+length>256)bad(""TAB"");count+=length;owners.push(list);const localActive=text(own(info,""activeTabId""),512,true),localIds=new Set(),rows=[];
   for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),id2=text(own(tab,""tabId""),512),data=plain(own(tab,""data""));owners.push(tab,data);if(allIds.has(id2))bad(""TAB"");allIds.add(id2);localIds.add(id2);const type=own(data,""doctype"");
    if(id2===""tab_page1""||id2===""0""){const isStart=id2===""tab_page1"";if(type!==(isStart?-1:0)||own(tab,""isAbleDelete"")!==false||own(tab,""group"")!==""start_blank""||own(tab,""draggable"")!==isStart)bad(""TAB"");const hidden=own(tab,""isDisplayNone"");if(typeof hidden!==""boolean""||(!isStart&&hidden!==true))bad(""TAB"");const declared=own(tab,""documentType"",true);if(declared!==undefined&&declared!==type)bad(""TAB"");for(const key of [""pid"",""owner""])if(own(data,key,true)!==undefined)bad(""TAB"");for(const key of [""parentProjectUuid"",""parentLibraryUuid""])if(own(tab,key,true)!==undefined)bad(""TAB"");if(isStart)start++;else placeholder++;
    }else{if(!projectPresent||own(data,""pid"")!==target.projectUuid||own(tab,""parentLibraryUuid"",true)!==undefined||![1,3,26].includes(type))bad(""TAB"");const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[0]!==id2||parts[2]!==target.projectUuid)bad(""TAB"");const parentProject=own(tab,""parentProjectUuid"",true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad(""TAB"");ordinaryIds.push(id2);}
@@ -468,39 +478,44 @@ const sample=()=>{
   if(localActive!==""""&&!localIds.has(localActive))bad(""TAB"");projection.push([id,localActive,rows]);}
  if(start>1||placeholder>1||(current===""""?currentCount!==0:currentCount!==1))bad(""TAB"");
  if(!projectPresent&&(start!==1||current!==""tab_page1""||count!==start+placeholder))bad(""TAB"");
- const url=parseProjectUrl(retainedHref,target.projectUuid,current);
+ substage=""url"";const url=parseProjectUrl(retainedHref,target.projectUuid,current);
  if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad(""URL"");check();
  return{owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null,documentTitle,clientName??null]),public:{projectPresent,branchUuid:projectPresent?branch:null,windowTabId,containerCount:n,tabIds:ordinaryIds,activeTabId:current,initialTitle,expectedOpenedTitle,documentTitle}};
 };
 const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad(""OWNERS"");};
-const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,[""/pro-mgr/api/client/getProjectPaths"",{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,""message""));if(own(message,""success"")!==true)bad(""REGISTRY"");const result=plain(own(message,""result"")),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>!matches(key,/^[a-f0-9]{64}$/)))bad(""REGISTRY"");const selected=plain(own(result,target.projectUuid));if(text(own(selected,""path""),4096)!==target.rawWindowsPath||own(selected,""isCbb"")!==false)bad(""REGISTRY"");return before;};
+const registration=async()=>{const before=sample();substage=""registration"";const reply=await apply(registryCall.fn,bus,[""/pro-mgr/api/client/getProjectPaths"",{},0]);check();same(before,sample());substage=""registration"";plain(reply);const message=plain(own(reply,""message""));if(own(message,""success"")!==true)bad(""REGISTRY"");const result=plain(own(message,""result"")),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>!matches(key,/^[a-f0-9]{64}$/)))bad(""REGISTRY"");const selected=plain(own(result,target.projectUuid));if(text(own(selected,""path""),4096)!==target.rawWindowsPath||own(selected,""isCbb"")!==false)bad(""REGISTRY"");return before;};
 const run=async()=>{
  stage=""registration-before"";const initial=await registration();check();if(initial.public.projectPresent)bad(""PROJECT"");
  if(phase===""open-project""){
   stage=""subscribe"";let delivered=0,eventFailed=false,eventProject,settle;const event=new Promise(resolve=>{settle=resolve;});
   const advanceUrl=()=>{if(!dispatchAttempted)bad(""PREFIX"");retainedHref=location?.href;check();};
-  const receive=(...args)=>{delivered++;try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad(""PREFIX"");advanceUrl();const observed=sample();if(!observed.public.projectPresent)bad(""PROJECT"");eventProject=own(host,""currentProject"");prefixObserved=true;}catch{eventFailed=true;}settle();};
+  // UI3823ed6e createBlankTab16424906 publishes a simulated click, not an
+  // Awaited tab-render completion. ON_OPENED16669194 emits this prefix before
+  // Restoration. Capture project identity here; complete title/tab/owner
+  // Checks remain mandatory after acknowledgment and around registry/final reads.
+  const receive=(...args)=>{delivered++;const priorStage=stage,priorSubstage=substage;stage=""prefix"";substage=""event-shape"";try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad(""PREFIX"");advanceUrl();const observed=projectIdentity();if(!observed.projectPresent)bad(""PROJECT"");eventProject=observed.project;prefixObserved=true;}catch{retainFailure();eventFailed=true;}finally{stage=priorStage;substage=priorSubstage;}settle();};
   const task=apply(subscribe.fn,bus,[""loadProjectCompleted"",receive]),cancel=method(task,""cancel"");
-  const listener=()=>{methodCheck(cancel);if(own(task,""callback"")!==receive||own(task,""isRunning"")!==true)bad(""PREFIX"");};
+  const listener=()=>{const prior=substage;substage=""listener"";methodCheck(cancel);if(own(task,""callback"")!==receive||own(task,""isRunning"")!==true)bad(""PREFIX"");substage=prior;};
   cleanup=()=>{listener();apply(cancel.fn,task,[]);if(own(task,""callback"")!==null||own(task,""isRunning"")!==false)bad(""CLEANUP"");};
   prefixCheck=()=>{listener();if(eventFailed||delivered>1)bad(""PREFIX"");};
   listener();same(initial,sample());check();if(delivered!==0||eventFailed)bad(""PREFIX"");
   stage=""dispatch"";dispatchAttempted=true;const result=await apply(openCall.fn,apiBus,[""extensionApi.DMT_Project.openProject"",target.projectUuid]);
-  stage=""acknowledgement"";advanceUrl();listener();if(typeof result!==""boolean"")bad(""ACK"");publicResult=result;if(!result)bad(""ACK"");
+  stage=""acknowledgement"";advanceUrl();listener();substage=""acknowledgement"";if(typeof result!==""boolean"")bad(""ACK"");publicResult=result;if(!result)bad(""ACK"");
   stage=""prefix"";await event;check();listener();if(delivered!==1||eventFailed||!prefixObserved)bad(""PREFIX"");if(own(host,""currentProject"")!==eventProject)bad(""OWNERS"");
  }
  stage=""registration-after"";const after=await registration();check();stage=""observe"";const final=sample();same(after,final);await Promise.resolve();check();same(final,sample());
  if(final.public.projectPresent!==(phase===""open-project""))bad(""PROJECT"");
- observation=final.public;stage=""output"";return{ok:true,status:phase===""preflight""?""ready"":""opened-prefix-observed"",failure:null};
+ observation=final.public;stage=""output"";substage=""output"";return{ok:true,status:phase===""preflight""?""ready"":""opened-prefix-observed"",failure:null};
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;code=""TIMEOUT"";reject(new Error(""PCB_DIAGNOSTIC_OPENING""));},phase===""preflight""?10000:45000]);});
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;code=""TIMEOUT"";retainFailure(""TIMEOUT"");reject(new Error(""PCB_DIAGNOSTIC_OPENING""));},phase===""preflight""?10000:45000]);});
 outcome=await Promise.race([run(),timeout]);
-}catch{outcome={ok:false,status:""refused"",failure:{stage,code}};}
+}catch{outcome={ok:false,status:""refused"",failure:retainFailure()};}
 finally{
- try{if(cleanup!==undefined)cleanup();}catch{outcome={ok:false,status:""refused"",failure:{stage:""cleanup"",code:""CLEANUP""}};}
- if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{outcome={ok:false,status:""refused"",failure:{stage:""cleanup"",code:""CLEANUP""}};}}
+ stage=""cleanup"";substage=""cleanup"";
+ try{if(cleanup!==undefined)cleanup();}catch{cleanupFailure={stage:""cleanup"",code:""CLEANUP""};outcome={ok:false,status:""refused"",failure:retainFailure(""CLEANUP"")};}
+ if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailure={stage:""cleanup"",code:""CLEANUP""};outcome={ok:false,status:""refused"",failure:retainFailure(""CLEANUP"")};}}
 }
-return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-opening.v1"",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,...outcome,dispatchAttempted,publicResult,prefixObserved,nativeWorkMayRemain:dispatchAttempted,observation});
+return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-opening.v1"",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,...outcome,cleanupFailure,dispatchAttempted,publicResult,prefixObserved,nativeWorkMayRemain:dispatchAttempted,observation});
 }";
   static string WorkerExpressionJson() {
     return "\""+WorkerExpression.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\r","\\r").Replace("\n","\\n")+"\"";
@@ -746,16 +761,16 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
 }";
   public static string OpeningProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
-    return OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source);
+    return OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   public static string PcbOpeningProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
-    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source);
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
-    string path,string project,string branch,string document,string source) {
+    string path,string project,string branch,string document,string source,bool stringPurpose) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(id<1 || id>64 || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+    if(id<1 || id>(stringPurpose?90:64) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
       !matches(path,@"\A[A-Za-z]:\\[^\x00-\x1F\x7F<>:""|?*/]+\.eprj2\z") ||
@@ -1209,10 +1224,269 @@ const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-root-in
 if(output.length>8192)bad();
 return output;
 }";
+  const string StringRendererAssociationFunction=@"function(originalCallback){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+
+const channel=(bus,name,klassName)=>{
+named(bus,klassName);if(own(globalThis,name)!==bus)bad();
+const bc=object(own(bus,""bc"")),constructor=own(globalThis,""BroadcastChannel""),prototype=own(constructor,""prototype"");
+if(Object.getPrototypeOf(bc)!==prototype||Object.hasOwn(bc,""name""))bad();
+const d=Object.getOwnPropertyDescriptor(prototype,""name"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();
+if(Reflect.apply(d.get,bc,[])!==name)bad();
+const uuid=id(own(bus,""uuid""),/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
+return {name,uuid};
+};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
+const ec=klass(""x""),env=instance(own(ec,""env""),ec),compiler=instance(own(env,""_compiler""),klass(""Zu""));
+const base=instance(own(compiler,""base""),klass(""A8e"")),consistency=instance(own(base,""consistencyManager""),klass(""sCe""));
+const documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),projectUuid=id(own(base,""path""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/);
+const windowTabId=id(own(base,""windowId""),/^[A-Za-z0-9_-]{1,128}$/),tabId=documentUuid+""@""+projectUuid;
+const uniqueId=id(own(consistency,""unique""),/^[a-f0-9]{16}$/),client=id(own(consistency,""client""),/^[A-Za-z0-9_-]{1,128}$/);
+if(own(env,""_doctype"")!==3||own(env,""_tabId"")!==tabId||own(compiler,""uuid"")!==documentUuid||own(base,""uuid"")!==documentUuid||
+own(compiler,""consistencyManager"")!==consistency||own(base,""_headType"")!==""PCB""||client!==windowTabId)bad();
+const compilerChannel=instance(own(env,""compilerChannel""),klass(""mCe""));
+if(own(base,""channel"")!==compilerChannel)bad();
+const registry=plain(own(compilerChannel,""compiler"")),registryNames=keys(registry);
+if(registryNames.length>6||!registryNames.includes(""PCB"")||registryNames.some(n=>![""SYMBOL"",""FOOTPRINT"",""DEVICE"",""SCH_PAGE"",""PCB"",""PANEL""].includes(n)))bad();
+const compilerRegistry={};for(const kind of registryNames){const map=own(registry,kind),n=size(map,Map.prototype);
+if(kind===""PCB""){if(n!==1||Reflect.apply(own(Map.prototype,""get""),map,[uniqueId])!==base)bad();compilerRegistry[kind]=[uniqueId];}
+else{if(n!==0)bad();compilerRegistry[kind]=[];}}
+const mc=klass(""wi""),manager=instance(own(mc,""manager""),mc),alternate=marker(mc,""otherDecodingProjectId"");
+if(alternate===""present"")bad();
+const footprints={holderKeys:emptyMap(own(manager,""map"")),otherProjectManagerKeys:emptyObject(own(mc,""otherProjectManagerMap"")),otherDecodingProjectId:alternate};
+const bus=channel(own(base,""dataBus""),""/""+windowTabId+""/project/""+projectUuid,""J"");
+const compilerState={isProject:flag(own(base,""isProject"")),isInit:flag(own(base,""isInit"")),canSave:flag(own(base,""canSave"")),
+isInitIng:flag(own(base,""isInitIng"")),isDestroy:flag(own(base,""isDestroy""))};
+const channelState={locker:count(own(compilerChannel,""_locker"")),lockerTicket:count(own(compilerChannel,""_lockerTicket"")),
+temporaryUnlock:marker(compilerChannel,""_temporaryUnlock""),temporaryUnlockValue:null,isPull:flag(own(compilerChannel,""isPull""))};
+if(channelState.temporaryUnlock===""present"")channelState.temporaryUnlockValue=count(own(compilerChannel,""_temporaryUnlock""));
+verify();if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-renderer-association.v1"",
+identity:{projectUuid,documentUuid,windowTabId,tabId,uniqueId,client},bus,compilerState,compilerRegistry,channelState,footprints});
+}";
+  const string StringWorkerAssociationExpression=@"(()=>{
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+
+const channel=(bus,name,klassName)=>{
+named(bus,klassName);if(own(globalThis,name)!==bus)bad();
+const bc=object(own(bus,""bc"")),constructor=own(globalThis,""BroadcastChannel""),prototype=own(constructor,""prototype"");
+if(Object.getPrototypeOf(bc)!==prototype||Object.hasOwn(bc,""name""))bad();
+const d=Object.getOwnPropertyDescriptor(prototype,""name"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();
+if(Reflect.apply(d.get,bc,[])!==name)bad();
+const uuid=id(own(bus,""uuid""),/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
+return {name,uuid};
+};
+
+const project=named(own(globalThis,""PROJECT""),""Lg""),gp=Object.getPrototypeOf(Object.getPrototypeOf(project));
+if(own(own(gp,""constructor""),""name"")!==""Gd""||Object.getPrototypeOf(gp)!==Object.prototype)bad();
+const consistency=named(own(project,""consistencyManager""),""ja"");
+const projectUuid=id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid=id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId=id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/);
+const bus=channel(own(project,""workerBus""),""/""+windowTabId+""/project/""+projectUuid,""JP"");
+const uploadMaps={},taskSets={};
+for(const key of [""bufferUploadData"",""bufferUploadCache""])uploadMaps[key]=emptyMap(own(project,key));
+for(const key of [""task1"",""task2"",""task3"",""cachePromise"",""publishTask"",""rollbackPromise"",""syncPendingNodeUuids"",""confirmedEmptyNodeUuids"",""warnedEmptyNodeUuids""])taskSets[key]=emptySet(own(project,key));
+const membership={uniqueIdsKeys:emptyObject(own(consistency,""uniqueIds""))};
+verify();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-worker-association.v1"",identity:{projectUuid,branchUuid,windowTabId},
+bus,uploadMaps,taskSets,uniqueIdsKeys:membership.uniqueIdsKeys});
+})()";
+  const string StringEmptyProducersFunction=@"function(originalCallback){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
+const ec=klass(""x""),env=instance(own(ec,""env""),ec),documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
+if(own(env,""_doctype"")!==3)bad();
+const emptyArray=o=>{if(arraySize(o)!==0)bad();return [];};
+const nullish=(o,k)=>{const m=marker(o,k);if(m===""present"")bad();return m;};
+const modelClass=klass(""MI""),models=instance(own(modelClass,""manager""),modelClass);
+const views=instance(own(scope,""jo""),klass(""mpe""));
+const model={netKeys:emptyMap(own(models,""map"")),idKeys:emptyMap(own(models,""idMap"")),
+lastRatline:nullish(models,""_lastRatline""),last:nullish(models,""_last"")};
+const view={netKeys:emptyMap(own(views,""map"")),idKeys:emptyMap(own(views,""idMap"")),
+highlightNets:emptySet(own(views,""highLightNets"")),clickHighlight:emptySet(own(views,""clickHighlightRatlines"")),
+hoverHighlight:emptySet(own(views,""hoverHighlightRatlines""))};
+const network=instance(own(scope,""ze""),klass(""Yde"")),updates=plain(own(network,""updateNets""));
+if(keys(updates).length!==3)bad();
+const notification=instance(own(network,""debounce""),klass(""U5""));
+const net={keys:emptyMap(own(network,""map"")),noneKeys:emptyMap(own(network,""noneNetMap"")),
+lengthKeys:emptyMap(own(network,""netLength"")),modifyKeys:emptyMap(own(network,""netModify"")),
+rubbish:emptySet(own(network,""rubbish"")),options:emptyArray(own(network,""netOptions"")),
+add:emptyArray(own(updates,""addNet"")),delete:emptyArray(own(updates,""deleteNet"")),
+updateLengthKeys:emptyObject(own(updates,""updateNetLength"")),grayKeys:emptyObject(own(network,""ratlineVisibleBeforeGray"")),
+viewGroups:null,viewGroupsMarker:marker(network,""_viewGroupIds""),updateLeftTree:nullish(network,""updateLeftTree""),
+notification:{func:nullish(notification,""func""),animationFrame:nullish(notification,""animationFrameId""),
+lastTime:own(notification,""lastTime""),delay:own(notification,""delay"")}};
+if(net.viewGroupsMarker===""present"")net.viewGroups=emptyArray(own(network,""_viewGroupIds""));
+if(net.notification.lastTime!==-1||net.notification.delay!==0)bad();
+const clusters={networkKeys:emptyMap(own(klass(""pP""),""map"")),
+wireClusterKeys:emptyMap(own(instance(own(scope,""h_""),klass(""HSe"")),""map"")),
+jumpWireKeys:emptyMap(own(instance(own(scope,""aE""),klass(""USe"")),""map"")),
+useWireClusterCache:flag(own(klass(""h0""),""useWireClusterCache"")),emptyNetChange:flag(own(klass(""h0""),""emptyNetChange""))};
+verify();if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v1"",documentUuid,model,view,net,clusters});
+}";
   public static string ModelProtocolMessage(int id,string method,string sessionId,string phase,
     string uniqueContextId,string objectId,string callbackObjectId) {
+    return ModelProtocolMessageCore(id,method,sessionId,phase,uniqueContextId,objectId,callbackObjectId,false);
+  }
+  static string ModelProtocolMessageCore(int id,string method,string sessionId,string phase,
+    string uniqueContextId,string objectId,string callbackObjectId,bool stringPurpose) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>64 || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
+    if(id<1 || id>(stringPurpose?90:64) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     const string group="easyeda-pro-control-pcb-model-v1";
     string parameters;
@@ -1246,7 +1520,10 @@ return output;
   // Pure fixed-command encoder, also used by no-process Windows CI. Native
   // ownership, monotonic request IDs and pipe writes remain in Send.
   public static string ProtocolMessage(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId) {
-    if(id<1 || id>64 || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
+    return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);
+  }
+  static string ProtocolMessageCore(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId,bool stringPurpose) {
+    if(id<1 || id>(stringPurpose?90:64) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
     string fields="";
     if(method=="Browser.getVersion" || method=="Target.getTargets") { if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields"); }
@@ -1278,8 +1555,8 @@ return output;
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
     }
     string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,ModelRootInventoryFunction,PcbOpeningFunction};
-    int[] lengths={15508,2204,1730,7741,10692,8313,19842,13044};
-    string[] digests={"55d5bccdd6e4a661a2f1dfac4c496e103a1df87211ad08e06b1d68083210db87",
+    int[] lengths={16768,2204,1730,7741,10692,8313,19842,13044};
+    string[] digests={"414f7d97b46e650aabeae7874560d3c6fca3783fd4eed495e1fe1249b5763625",
       "f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e",
       "548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591",
       "67d4081399cdc22be17e2e1ddd0be234290092a2c5287f629fc2de9be16b85a5",
@@ -1291,6 +1568,25 @@ return output;
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[i]);
       if(bytes.Length!=lengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[i]) throw Error("fixed-program");
     }
+    string[] stringPrograms={StringRendererAssociationFunction,StringWorkerAssociationExpression,StringEmptyProducersFunction};
+    int[] stringLengths={10446,4246,9630};
+    string[] stringDigests={"c18652b92e5cf0cfc512ec6c9eff73fd15fd7343cf22a52b18102f3c28861a0d",
+      "b10ad5e9cd78f3bf0755af6a5c9cba6348d7642f275909933ffafc97da39f3b7",
+      "e3c0850e8981e6845474f14cb35722812bceb216c3f96253b29bc25088aba0d0"};
+    for(int i=0;i<stringPrograms.Length;i++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(stringPrograms[i]);
+      if(bytes.Length!=stringLengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=stringDigests[i]) throw Error("string-program");
+    }
+    foreach(string phase in new string[] {"renderer-association","empty-producers"}) {
+      string message=StringPrecreateProtocolMessage(89,"Runtime.callFunctionOn","page",phase,null,"scope","callback");
+      if(message.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 ||
+        message.IndexOf("\"arguments\":[{\"objectId\":\"callback\"}]",StringComparison.Ordinal)<0) throw Error("string-scope-smoke");
+    }
+    StringPrecreateProtocolMessage(90,"Runtime.evaluate","worker","worker-association","context",null,null);
+    bool diagnostic65Refused=false,string91Refused=false;
+    try { ProtocolMessage(65,"Browser.getVersion",null,null,null,null); } catch(InvalidOperationException) { diagnostic65Refused=true; }
+    try { StringPrecreateProtocolMessage(91,"Runtime.evaluate","worker","worker-association","context",null,null); } catch(InvalidOperationException) { string91Refused=true; }
+    if(!diagnostic65Refused || !string91Refused) throw Error("string-budget-smoke");
     string syntheticPath=@"C:\synthetic\fixture.eprj2",project;
     using(SHA256 hash=SHA256.Create()) project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(syntheticPath))).Replace("-","").ToLowerInvariant();
     foreach(string phase in new string[]{"preflight","open-project"}) {
@@ -1345,8 +1641,11 @@ return output;
     return ModelProtocolMessage(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId));
   }
   public static string DomProtocolMessage(int id,string method,string sessionId,object frameId,object backendNodeId) {
+    return DomProtocolMessageCore(id,method,sessionId,frameId,backendNodeId,false);
+  }
+  static string DomProtocolMessageCore(int id,string method,string sessionId,object frameId,object backendNodeId,bool stringPurpose) {
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
-    if(id<1 || id>64 || !token(sessionId)) throw Error("dom-fields");
+    if(id<1 || id>(stringPurpose?90:64) || !token(sessionId)) throw Error("dom-fields");
     string parameters;
     if(method=="DOM.getFrameOwner") {
       string frame=OptionalText(frameId);
@@ -1364,22 +1663,48 @@ return output;
     return message;
   }
   public void SendDom(int id,string method,string sessionId,object frameId,object backendNodeId) {
-    SendMessage(id,DomProtocolMessage(id,method,sessionId,frameId,backendNodeId));
+    SendMessage(id,DomProtocolMessageCore(id,method,sessionId,frameId,backendNodeId,stringPrecreate));
   }
   public void Send(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId) {
-    SendMessage(id,BoundProtocolMessage(id,method,targetId,sessionId,scriptId,uniqueContextId));
+    SendMessage(id,ProtocolMessageCore(id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate));
   }
   public void SendOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
-    SendMessage(id,OpeningProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+    SendMessage(id,OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));
   }
   public void SendPcbOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
-    SendMessage(id,PcbOpeningProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+    SendMessage(id,OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));
   }
   public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId) {
-    SendMessage(id,BoundModelProtocolMessage(id,method,sessionId,phase,uniqueContextId,objectId,callbackObjectId));
+    SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),stringPrecreate));
+  }
+  public static string StringPrecreateProtocolMessage(int id,string method,string sessionId,string phase,
+    object suppliedContext,object suppliedObject,object suppliedCallback) {
+    string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback);
+    Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
+    if(id<1 || id>90 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
+    const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    string parameters;
+    if(phase=="worker-association" && method=="Runtime.evaluate") {
+      if(!handle(context) || scope!=null || callback!=null) throw Error("string-context");
+      parameters=effects+",\"expression\":"+JsonString(StringWorkerAssociationExpression)+",\"uniqueContextId\":"+JsonString(context)+
+        ",\"returnByValue\":true,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false,\"timeout\":1000";
+    } else if((phase=="renderer-association" || phase=="empty-producers") && method=="Runtime.callFunctionOn") {
+      if(context!=null || !handle(scope) || !handle(callback)) throw Error("string-scope");
+      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+
+        JsonString(phase=="renderer-association"?StringRendererAssociationFunction:StringEmptyProducersFunction)+
+        ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callback)+"}]";
+    } else throw Error("string-phase");
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+
+      parameters+"},\"sessionId\":"+JsonString(sessionId)+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>(method=="Runtime.callFunctionOn"?65536:8192)) throw Error("string-send-size");
+    return message;
+  }
+  public void SendStringPrecreate(int id,string method,string sessionId,string phase,object context,object scope,object callback) {
+    if(!stringPrecreate) throw Error("string-purpose");
+    SendMessage(id,StringPrecreateProtocolMessage(id,method,sessionId,phase,context,scope,callback));
   }
   void SendMessage(int id,string message) {
-    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>64) throw Error("discovery-request");
+    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>RequestLimit) throw Error("discovery-request");
     byte[] bytes=Encoding.UTF8.GetBytes(message);
     nextRequest++; // A failed write consumes its ID and the entire diagnostic channel.
     try { uint written; Native(WriteFile(parentWrite,bytes,(uint)bytes.Length,out written,IntPtr.Zero)); if(written!=bytes.Length) throw Error("partial-write"); AssertLive(); }
@@ -1453,7 +1778,7 @@ return output;
   }
 }
 '@
-$owner=New-Object EasyedaDiagnosticOwner
+$owner=if ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} else {New-Object EasyedaDiagnosticOwner}
 try {
   $owner.Initialize()
   if ($CompileOnly) {
@@ -1539,9 +1864,19 @@ try {
           $result=@{helperInstance=$owner.HelperInstance;jobId=$owner.JobId;rootPid=$owner.RootPid;rootCreated=$owner.RootCreated}
         }
         'send' {
-          if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 64 -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
+          $requestLimit=if ($StringPrecreate) {90} else {64}
+          if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $requestLimit -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
           $fields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid')
-          if ($null -ne $request.modelPhase) {
+          if ($null -ne $request.stringPhase) {
+            if (-not $StringPrecreate) {throw 'pcb-diagnostic-string-purpose'}
+            $fields+=@('sessionId','stringPhase')
+            switch -CaseSensitive ($request.stringPhase) {
+              'worker-association' {$fields+=@('uniqueContextId')}
+              'renderer-association' {$fields+=@('objectId','callbackObjectId')}
+              'empty-producers' {$fields+=@('objectId','callbackObjectId')}
+              default {throw 'pcb-diagnostic-string-phase'}
+            }
+          } elseif ($null -ne $request.modelPhase) {
             $fields+=@('sessionId','modelPhase')
             switch -CaseSensitive ($request.modelPhase) {
               'wrapper' {$fields+=@('uniqueContextId')}
@@ -1574,8 +1909,10 @@ try {
             default {throw 'pcb-diagnostic-session-method'}
           }}
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
-          foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','objectId','callbackObjectId','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
-          if ($null -ne $request.modelPhase) {
+          foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','objectId','callbackObjectId','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
+          if ($null -ne $request.stringPhase) {
+            $owner.SendStringPrecreate([int]$request.requestId,$request.method,$request.sessionId,$request.stringPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId)
+          } elseif ($null -ne $request.modelPhase) {
             $owner.SendModel([int]$request.requestId,$request.method,$request.sessionId,$request.modelPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId)
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)

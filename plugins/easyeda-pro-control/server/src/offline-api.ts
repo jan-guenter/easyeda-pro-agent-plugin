@@ -13,6 +13,8 @@ import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArgumen
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
 import { currentPcbDiagnosticValidationQuerySchema, queryCurrentPcbDiagnosticValidation,
   validateCurrentPcbDiagnosticValidationArguments } from "./current-pcb-diagnostic-validation.ts";
+import { currentPcbStringPrecreateQuerySchema, queryCurrentPcbStringPrecreate,
+  validateCurrentPcbStringPrecreateArguments } from "./current-pcb-string-precreate-validation.ts";
 import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbLayersArguments } from "./current-pcb-layers.ts";
 import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateCurrentDisposableOpenArguments } from "./current-disposable-open.ts";
 import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCurrentPcbIdentitiesArguments } from "./current-pcb-identities.ts";
@@ -96,6 +98,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("pcb-string-precreate-validation"), query: currentPcbStringPrecreateQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("pcb-string-precreate-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
   z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
 ]);
@@ -126,6 +130,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
   switch (request.action) {
     case "pcb-diagnostic-validation": { result = queryCurrentPcbDiagnosticValidation(request.query ?? {}); break; }
     case "pcb-diagnostic-validation-validate": { result = validateCurrentPcbDiagnosticValidationArguments(request.query.request); break; }
+    case "pcb-string-precreate-validation": { result = queryCurrentPcbStringPrecreate(request.query ?? {}); break; }
+    case "pcb-string-precreate-validation-validate": { result = validateCurrentPcbStringPrecreateArguments(request.query.request); break; }
     case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
     case "coverage": { result = queryExtensionApiCoverage(request.query ?? {}); break; }
     case "sdk-reads": { result = queryPublicSdkReads(request.query ?? {}); break; }

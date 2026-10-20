@@ -15,6 +15,13 @@ closed disposable fixture remained unchanged. The case is consumed.
 The source-derived navigation-policy corrections below have no connected
 qualification yet. Earlier launch/browser/frame/source evidence and unchanged
 fixture bytes do not validate project/PCB opening, worker or model samples.
+Installed155927 subsequently returned a public project-open acknowledgment but
+failed its prefix check. The original process was normally closed and released;
+the closed disposable file remained byte-exact. PCB opening and model/worker
+observations were not reached. Do not replay either consumed case.
+The next source batch separates initialization-prefix checks from final blank-tab
+checks and preserves the first fixed failure label. This is source-backed,
+not a retrospective diagnosis of the lost original prefix error.
 Older snapshots may lack this tool or the additional fields described below.
 
 Existing-profile startup can restore projects, run extensions, contact services,
@@ -120,6 +127,11 @@ file, replay cached work, restore tabs, change shared metadata and automatically
 Save. It performs no explicit Save or document-open call. A result
 `opened-prefix-observed` is only the public acknowledgment plus the operation's
 `loadProjectCompleted` prefix; it does not prove restoration completion.
+The prefix checks the initialized root/project/branch/format/history identity.
+The source emits that event before the asynchronous blank-tab update; exact
+title, tab and container-registry checks therefore run after acknowledgment and
+again at the final check. Their requirements are unchanged. Results preserve
+the first failing stage/code/substage separately from cleanup failure.
 
 This project-only stage retains the original top-level UI frame and optionally
 one pre-existing, unchanged ancillary child. The child must be `about:blank`

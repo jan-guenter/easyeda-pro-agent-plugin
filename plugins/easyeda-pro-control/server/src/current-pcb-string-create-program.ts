@@ -4,24 +4,72 @@
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { CURRENT_PCB_STRING_CREATE_RESULT_MAX_BYTES, requireOriginalCurrentPcbStringCreateObservationPlan } from "./current-pcb-string-create-observation.ts";
 import type { CurrentPcbStringCreateObservationPlan } from "./current-pcb-string-create-observation.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+
+interface ProgramBinding {
+  readonly target: string;
+  readonly arguments: string;
+  readonly expected: string;
+  readonly planSha256: string;
+  readonly receiverDeclaration: string;
+  readonly receiverCheck: string;
+}
+const NATIVE_RECEIVER = Object.freeze({
+  receiverDeclaration: "const windowTabId=own(root,'_TAB_ID_');if(typeof expectedWindowTabId!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(expectedWindowTabId)||windowTabId!==expectedWindowTabId)bad();",
+  receiverCheck: "if(own(root,'_TAB_ID_')!==windowTabId)bad();",
+});
+
+/** Fixed shared frame/receiver guards for dormant native-context programs.
+ * Required lexical inputs are root, apply, target, expectedWindowTabId, bad,
+ * expired and clear. This is source text only, not a live context or capability. */
+export const DORMANT_CURRENT_PCB_STRING_NATIVE_CONTEXT = contextProgram(NATIVE_RECEIVER);
 
 /** At most one create per invocation, not replay protection across invocations.
  * Pinned PCB217199c8: string-create@10393687, string-getAll@10397039,
  * getTabIdAndDocType@10807394, yr.toJSON@7384285. No Save or source exporter. */
 export function buildDormantCurrentPcbStringCreateProgram(input: CurrentPcbStringCreateObservationPlan): string {
   const plan = requireOriginalCurrentPcbStringCreateObservationPlan(input);
-  return `let timer,clear,stage='setup',dispatchAttempts=0,acknowledgedPrimitiveId=null,matchingBeforeSamples=0,matchingAfterSamples=0,readback=null,deadlineExpired=false,completed=false,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(plan.target)},args=${JSON.stringify(plan.candidateArguments)},expected=${JSON.stringify(plan.expectedExposedScalars)};
-const bad=()=>{throw new Error('DORMANT_CURRENT_PCB_STRING_CREATE_FAILED');};
-${buildCurrentProjectUrlGuard()}
+  return createProgram({ target: JSON.stringify(plan.target), arguments: JSON.stringify(plan.candidateArguments),
+    expected: JSON.stringify(plan.expectedExposedScalars), planSha256: JSON.stringify(plan.planSha256),
+    receiverDeclaration: "const edaOwner=eda;",
+    receiverCheck: "if(eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();" });
+}
+
+/** A fixed, separate UI-context variant. It has no lexical bridge `eda` object.
+ * The future native owner must separately admit the complete UI/PCB sources,
+ * original contexts, joined worker and one-shot intent. This constant is not
+ * registered, dispatched, or sufficient to create those authorities.
+ *
+ * UI3823ed6e Ot@15781978 and PCB217199c8 string-create@10393687 use the selected
+ * PCB message-bus receiver. This variant binds that receiver, the original UI
+ * window identity and exact child DOM instead of pretending an extension
+ * object exists in the default UI execution context. */
+export const DORMANT_CURRENT_PCB_STRING_NATIVE_CREATE_FUNCTION = `async function(plan,expectedWindowTabId){
+${createProgram({ target: "plan.target", arguments: "plan.candidateArguments", expected: "plan.expectedExposedScalars",
+    planSha256: "plan.planSha256", ...NATIVE_RECEIVER })}
+}`;
+
+/** Original inert plan identity only; not a native dispatch capability. */
+export function dormantCurrentPcbStringNativeCreateArguments(input: CurrentPcbStringCreateObservationPlan,
+  windowTabId: string): readonly Readonly<{ value: unknown }>[] {
+  const plan = requireOriginalCurrentPcbStringCreateObservationPlan(input);
+  if (typeof windowTabId !== "string" || !/^[A-Za-z\d_-]{1,128}$/u.test(windowTabId)) {
+    throw new Error("DORMANT_CURRENT_PCB_STRING_NATIVE_WINDOW");
+  }
+  return freezeDeep([{ value: { target: plan.target, candidateArguments: plan.candidateArguments,
+    expectedExposedScalars: plan.expectedExposedScalars, planSha256: plan.planSha256 } }, { value: windowTabId }]);
+}
+
+function contextProgram(binding: Pick<ProgramBinding, "receiverDeclaration" | "receiverCheck">): string {
+  return `${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
 const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
 const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const topPlain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
 const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),mode=own(root,'PRO_EDITOR_MODE');
-const project=topPlain(own(host,'currentProject')),tabs=own(ui,'tabBar'),edaOwner=eda;
+const project=topPlain(own(host,'currentProject')),tabs=own(ui,'tabBar');
+${binding.receiverDeclaration}
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=fn(tabs,'getActiveTab'),getTab=fn(tabs,'getTabById'),select=document?.querySelectorAll;
 if(typeof select!=='function')bad();
@@ -40,7 +88,8 @@ const check=()=>{
  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
  parseProjectUrl(href,target.projectUuid,target.tabId);
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
- if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs)bad();
+ ${binding.receiverCheck}
  if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
  if(fn(tabs,'getActiveTab')!==active||fn(tabs,'getTabById')!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,'data')!==data)bad();
  if(own(tab,'tabId')!==target.tabId||own(data,'doctype')!==3||own(data,'pid')!==target.projectUuid)bad();absent(tab,'parentLibraryUuid');
@@ -58,7 +107,16 @@ const exact=(value,keys)=>{plain(value);const actual=Reflect.ownKeys(value);if(a
 const unwrap=reply=>own(plain(reply),'message');
 const id=value=>{if(typeof value!=='string'||value.length!==16||!/^[a-f0-9]{16}$/.test(value))bad();return value;};
 const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();return unwrap(reply);};
-const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
+const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};`;
+}
+
+/** All expression fragments are compiled here; no caller fragment is accepted. */
+function createProgram(binding: ProgramBinding): string {
+  return `let timer,clear,stage='setup',dispatchAttempts=0,acknowledgedPrimitiveId=null,matchingBeforeSamples=0,matchingAfterSamples=0,readback=null,deadlineExpired=false,completed=false,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,target=${binding.target},args=${binding.arguments},expected=${binding.expected};
+const bad=()=>{throw new Error('DORMANT_CURRENT_PCB_STRING_CREATE_FAILED');};
+${contextProgram(binding)}
 const copyRows=(raw,after)=>{
  if(!Array.isArray(raw))bad();const p=Object.getPrototypeOf(raw);if(p!==Array.prototype&&p!==childArrayPrototype)bad();
  const n=own(raw,'length');if(n!==(after?1:0)||Reflect.ownKeys(raw).length!==n+1)bad();if(!after)return null;
@@ -92,6 +150,6 @@ await Promise.race([run(),timeout]);check();completed=true;
  if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{stage='cleanup';completed=false;}}
 }
 if(completed)stage='complete';
-const output=JSON.stringify({profile:'private.current-pcb-string-create-dormant-result.v1',planSha256:${JSON.stringify(plan.planSha256)},completed,stage,dispatchAttempts,acknowledgedPrimitiveId,matchingBeforeSamples,matchingAfterSamples,readback,deadlineExpired});
+const output=JSON.stringify({profile:'private.current-pcb-string-create-dormant-result.v1',planSha256:${binding.planSha256},completed,stage,dispatchAttempts,acknowledgedPrimitiveId,matchingBeforeSamples,matchingAfterSamples,readback,deadlineExpired});
 if(output.length>${CURRENT_PCB_STRING_CREATE_RESULT_MAX_BYTES})throw new Error('DORMANT_CURRENT_PCB_STRING_CREATE_RESULT_BOUND');return output;`;
 }

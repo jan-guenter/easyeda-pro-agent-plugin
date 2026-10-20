@@ -1,5 +1,6 @@
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
+/* oxlint-disable max-classes-per-file, import/max-dependencies -- Two fixed public facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
 import type { z } from "zod";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
@@ -7,27 +8,32 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentPcbDiagnosticOwner } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentPcbDiagnosticOwner } from "./current-pcb-diagnostic-owner.ts";
+import { startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticValidationRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current-pcb-diagnostic-validation.ts";
-import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLifecycleSnapshot,
+import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateRequestSchema, currentPcbStringPrecreateStages } from "./current-pcb-string-precreate-validation.ts";
+import type { CurrentPcbStringPrecreateRequest } from "./current-pcb-string-precreate-validation.ts";
+import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLifecycleSnapshot,
   assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleBindingSchema,
   diagnosticLifecycleDigestSchema, diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticLifecycleWindowSchema,
   diagnosticObservationStageSchema, diagnosticPcbOpeningSourceAccepted, publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
-  reserveCurrentPcbDiagnosticLifecycle } from "./current-pcb-diagnostic-lifecycle-journal.ts";
+  reserveCurrentPcbDiagnosticLifecycle, stringPrecreateObservationResultSchema, stringPrecreateTargetMatches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticLaunchLease, DiagnosticLifecycleBinding, DiagnosticLifecycleOperation, DiagnosticLifecycleRecordName, DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 
-type CleanupRequest = Exclude<Request, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<Request, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" }>;
-type ObservationStage = z.infer<typeof diagnosticObservationStageSchema>;
+type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest;
+type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
+type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" }>;
+type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "string-precreate";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]>;
+export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate">;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate">>;
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
   readonly assertAllowed: () => Promise<void>;
   /** Original local method/environment identity only. No bridge or full startup admission. */
@@ -45,10 +51,13 @@ export interface CurrentPcbDiagnosticLifecycleDependencies {
   readonly verifyCheckpoint?: typeof verifyCurrentDisposableOpenCheckpoint;
   readonly verifyHistoricalCheckpoint?: typeof verifyHistoricalCurrentDisposableOpenCheckpoint;
 }
+export interface CurrentPcbStringPrecreateLifecycleDependencies extends Omit<CurrentPcbDiagnosticLifecycleDependencies, "allocateOwner"> {
+  readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbStringPrecreateLifecycleOwner>;
+}
 interface Retained {
   readonly operationId: string;
-  readonly owner: CurrentPcbDiagnosticLifecycleOwner;
-  readonly methods: CurrentPcbDiagnosticLifecycleOwner;
+  readonly owner: LifecycleOwner;
+  readonly methods: LifecycleOwner;
   readonly installation: string;
   readonly intentSha256: string;
   binding: DiagnosticLifecycleBinding | null;
@@ -90,10 +99,14 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     ...claims };
 }
 
-export class CurrentPcbDiagnosticLifecycle {
+/** Shared cleanup and journal machinery. Only the two fixed exported facades
+ * construct it; neither public requests nor dependency seams select purpose. */
+class CurrentPcbLifecycleCore {
+  readonly #stringPurpose: boolean;
+  readonly #stages: readonly ObservationStage[];
   readonly #options: CurrentPcbDiagnosticLifecycleOptions;
   readonly #verify: NonNullable<CurrentPcbDiagnosticLifecycleDependencies["verifyInstallation"]>;
-  readonly #allocate: NonNullable<CurrentPcbDiagnosticLifecycleDependencies["allocateOwner"]>;
+  readonly #allocate: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<LifecycleOwner>;
   readonly #publish: typeof publishCurrentPcbDiagnosticLifecycleRecord;
   readonly #prepareCheckpoint: typeof prepareCurrentDisposableOpenCheckpoint;
   readonly #verifyCheckpoint: typeof verifyCurrentDisposableOpenCheckpoint;
@@ -117,10 +130,13 @@ export class CurrentPcbDiagnosticLifecycle {
   #pcbOpeningAttempted = false;
   #pcbOpeningResult: Readonly<Record<string, unknown>> | null = null;
 
-  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
+    dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies, stringPurpose: boolean) {
+    this.#stringPurpose = stringPurpose;
+    this.#stages = stringPurpose ? currentPcbStringPrecreateStages : diagnosticObservationStageSchema.options;
     this.#options = Object.freeze({ ...options });
     this.#verify = dependencies.verifyInstallation ?? verifyCurrentPcbDiagnosticInstallation;
-    this.#allocate = dependencies.allocateOwner ?? startCurrentPcbDiagnosticOwner;
+    this.#allocate = dependencies.allocateOwner ?? (stringPurpose ? startCurrentPcbStringPrecreateOwner : startCurrentPcbDiagnosticOwner);
     this.#publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
     this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
     this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
@@ -128,18 +144,19 @@ export class CurrentPcbDiagnosticLifecycle {
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
-    const request = currentPcbDiagnosticValidationRequestSchema.parse(input);
+    const request = this.#stringPurpose ? currentPcbStringPrecreateRequestSchema.parse(input) : currentPcbDiagnosticValidationRequestSchema.parse(input);
     if (request.action === "inspect") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
+      this.#assertPurpose(request.operationId, operation);
       const original = this.#retained?.operationId === request.operationId;
       const pendingIntent = this.#attempt?.operationId === request.operationId ? this.#attempt : null;
       const noProcessCleanupAvailable = original && this.#retained !== null && this.#lease !== null && !this.#noProcessInvoked &&
         this.#retained.methods.status.call(this.#retained.owner).noProcessCleanupAvailable;
       const native = original && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
-      const selectedStage = request.observation ?? diagnosticObservationStageSchema.options.toReversed().find(stage =>
+      const selectedStage = request.observation ?? this.#stages.toReversed().find(stage =>
         operation?.records[`${stage}-result.json`] !== undefined || original && this.#pending.has(`${stage}-result.json`));
-      const observations = diagnosticObservationStageSchema.options.map(stage => {
+      const observations = this.#stages.map(stage => {
         const record = operation?.records[`${stage}-result.json`];
         const pending = original ? this.#pending.get(`${stage}-result.json`) : undefined;
         const retained = pending === undefined ? undefined : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending) as unknown);
@@ -209,11 +226,20 @@ export class CurrentPcbDiagnosticLifecycle {
 
   public hasActiveReservation(): boolean { return this.#lease !== null; }
 
+  #assertPurpose(operationId: string, operation?: DiagnosticLifecycleOperation): void {
+    const intent = operation?.records["intent.json"];
+    requireValue(operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX) === this.#stringPurpose &&
+      (intent === undefined || (intent.schema === "easyeda-pro-control.pcb-string-precreate-launch-intent.v1") === this.#stringPurpose),
+    "PURPOSE_MISMATCH");
+  }
   #assertOwner(retained: Retained): void {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
+    requireValue(status.profile === (this.#stringPurpose ? "string-precreate90" : "diagnostic64") &&
+      (!this.#stringPurpose || typeof retained.methods.observeStringPrecreate === "function" &&
+        retained.owner.observeStringPrecreate === retained.methods.observeStringPrecreate), "OWNER_PURPOSE_CHANGED");
     requireValue(retained.binding === null || canonicalJson(status.binding) === canonicalJson(retained.binding), "BINDING_CHANGED");
   }
   async #installation(retained: Retained): Promise<void> {
@@ -237,6 +263,7 @@ export class CurrentPcbDiagnosticLifecycle {
     this.#options.assertLocalAllowed();
     const attempt = this.#attempt;
     requireValue(attempt !== null && attempt.operationId === operationId && attempt.intentSha256 === intentSha256 && this.#lease !== null, "ORIGINAL_ATTEMPT_REQUIRED");
+    this.#assertPurpose(operationId);
     assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     if (this.#retained !== null) { this.#assertOwner(this.#retained); }
     return attempt;
@@ -342,8 +369,9 @@ export class CurrentPcbDiagnosticLifecycle {
     await assertSnapshot(operations.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
     this.#releaseLease(); return describe(operationId, completed);
   }
-  async #launch(request: Extract<Request, { action: "launch" }>): Promise<Record<string, unknown>> {
+  async #launch(request: Extract<LifecycleRequest, { action: "launch" }>): Promise<Record<string, unknown>> {
     requireValue(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
+    this.#assertPurpose(request.operationId);
     await this.#options.assertAllowed(); await this.#otherLaunches();
     await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     const before = await readCurrentPcbDiagnosticLifecycles();
@@ -358,7 +386,8 @@ export class CurrentPcbDiagnosticLifecycle {
     this.#launchAttempted = true;
     await reserveCurrentPcbDiagnosticLifecycle(request.operationId);
     const intent: NonNullable<DiagnosticLifecycleRecords["intent.json"]> = {
-      schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      ...(this.#stringPurpose ? { schema: "easyeda-pro-control.pcb-string-precreate-launch-intent.v1" as const, purpose: "string-precreate" as const } :
+        { schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1" as const }), operationId: request.operationId, createdAt: new Date().toISOString(),
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
     };
@@ -376,7 +405,8 @@ export class CurrentPcbDiagnosticLifecycle {
       browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript,
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
-      openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening });
+      openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
+      ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate } : {}) });
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
       intentSha256: sha256Json(intent), binding: null };
     this.#retained = retained;
@@ -417,6 +447,7 @@ export class CurrentPcbDiagnosticLifecycle {
   async #cleanup(request: CleanupRequest): Promise<Record<string, unknown>> {
     const operations = await readCurrentPcbDiagnosticLifecycles();
     const operation = operations.find(value => value.operationId === request.operationId);
+    this.#assertPurpose(request.operationId, operation);
     const binding = operation?.records["binding.json"], retained = this.#retained;
     requireValue(retained !== null && retained.operationId === request.operationId && operation !== undefined && binding !== undefined &&
       binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
@@ -429,7 +460,7 @@ export class CurrentPcbDiagnosticLifecycle {
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
-        request.action === "observe-model-state" || request.action === "observe-pcb-opening") {
+        request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-window") {
@@ -484,6 +515,7 @@ export class CurrentPcbDiagnosticLifecycle {
     if (request.action === "observe-worker-state") { stage = "worker-state"; }
     if (request.action === "observe-model-state") { stage = "model-state"; }
     if (request.action === "observe-pcb-opening") { stage = "pcb-opening"; }
+    if (request.action === "observe-string-precreate") { stage = "string-precreate"; }
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
       operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "OBSERVATION_UNAVAILABLE");
     requireValue(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === undefined, "OBSERVATION_CONSUMED");
@@ -504,7 +536,8 @@ export class CurrentPcbDiagnosticLifecycle {
       requireValue(originalSource || openedSource, "ORIGINAL_PCB_SOURCE_REQUIRED");
     }
     if (stage === "workers") {
-      requireValue(!this.#pcbOpeningAttempted && operation.records["pcb-open-intent.json"] === undefined, "PCB_BRANCH_SELECTED");
+      if (this.#stringPurpose) { this.#originalPcbSource(operation); }
+      else { requireValue(!this.#pcbOpeningAttempted && operation.records["pcb-open-intent.json"] === undefined, "PCB_BRANCH_SELECTED"); }
     }
     if (stage === "pcb-opening") {
       this.#originalProjectOpening(operation);
@@ -522,8 +555,19 @@ export class CurrentPcbDiagnosticLifecycle {
         opened !== undefined && canonicalJson(opened.result) === canonicalJson(this.#openingResult) &&
         this.#pending.get("project-opening-result.json") === canonicalJson(opened), "PROJECT_OPENING_UNCONFIRMED");
     }
+    if (stage === "string-precreate") {
+      requireValue(this.#stringPurpose, "STRING_PURPOSE_REQUIRED");
+      this.#originalPcbSource(operation);
+      const record = operation.records["worker-script-result.json"], source = this.#observations.get("worker-script");
+      requireValue(source !== undefined && record !== undefined && source["sourceVerified"] === true &&
+        canonicalJson(source) === canonicalJson(record.result) && this.#pending.get("worker-script-result.json") === canonicalJson(record), "ORIGINAL_WORKER_SOURCE_REQUIRED");
+    }
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
-    const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"]> = {
+    const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"] | DiagnosticLifecycleRecords["string-precreate-intent.json"]> = stage === "string-precreate" ? {
+      schema: "easyeda-pro-control.pcb-string-precreate-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      bindingSha256: request.expectedBindingSha256, stage, pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]),
+      workerScriptResultSha256: sha256Json(operation.records["worker-script-result.json"]),
+    } : {
       schema: "easyeda-pro-control.pcb-diagnostic-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       bindingSha256: request.expectedBindingSha256, stage,
       ...(request.action === "inspect-frames" || request.action === "inspect-worker-script" ? { targetId: request.targetId } : {}),
@@ -540,6 +584,11 @@ export class CurrentPcbDiagnosticLifecycle {
     else if (request.action === "inspect-workers") { result = await retained.methods.inspectWorkers.call(retained.owner); }
     else if (request.action === "inspect-worker-script") { result = await retained.methods.inspectWorkerScript.call(retained.owner, request.targetId); }
     else if (request.action === "observe-model-state") { result = await retained.methods.observeModelState.call(retained.owner); }
+    else if (request.action === "observe-string-precreate") {
+      const observe = retained.methods.observeStringPrecreate;
+      requireValue(this.#stringPurpose && observe !== undefined, "STRING_PURPOSE_REQUIRED");
+      result = await observe.call(retained.owner);
+    }
     else if (request.action === "observe-pcb-opening") {
       const preparation = this.#originalProjectOpening(operation);
       result = await retained.methods.observePcbOpening.call(retained.owner, preparation.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
@@ -547,10 +596,18 @@ export class CurrentPcbDiagnosticLifecycle {
     else { result = await retained.methods.observeWorkerState.call(retained.owner); }
     // Preserve the original observation before validation/publication can fail.
     this.#observations.set(stage, result);
-    requireValue(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "OBSERVATION_BOUND");
-    const record: NonNullable<DiagnosticLifecycleRecords["browser-result.json"]> = {
-      schema: "easyeda-pro-control.pcb-diagnostic-observation-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
-      intentSha256: sha256Json(intent), stage, result: structuredClone(result), executionAuthorized: false,
+    requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES), "OBSERVATION_BOUND");
+    if (stage === "string-precreate") {
+      const observed = stringPrecreateObservationResultSchema.parse(result), target = this.#projectPreparation?.sealedTarget;
+      requireValue(target !== undefined && stringPrecreateTargetMatches(observed, target, this.#openingResult,
+        this.#observations.get("pcb-opening")), "STRING_PRECREATE_TARGET");
+    }
+    const record = {
+      ...(stage === "string-precreate" ? { schema: "easyeda-pro-control.pcb-string-precreate-observation-result.v1" as const,
+        stage, result: stringPrecreateObservationResultSchema.parse(structuredClone(result)) } :
+        { schema: "easyeda-pro-control.pcb-diagnostic-observation-result.v1" as const, stage, result: structuredClone(result) }),
+      operationId: request.operationId, createdAt: new Date().toISOString(),
+      intentSha256: sha256Json(intent), executionAuthorized: false as const,
     };
     this.#retainRecord(`${stage}-result.json`, record);
     this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
@@ -631,6 +688,13 @@ export class CurrentPcbDiagnosticLifecycle {
       canonicalJson(intent.target) === canonicalJson(preparation.sealedTarget), "PROJECT_OPENING_UNCONFIRMED");
     return preparation;
   }
+  #originalPcbSource(operation: DiagnosticLifecycleOperation): void {
+    const preparation = this.#originalProjectOpening(operation);
+    const record = operation.records["pcb-opening-result.json"], source = this.#observations.get("pcb-opening");
+    requireValue(source !== undefined && record !== undefined &&
+      diagnosticPcbOpeningSourceAccepted(source, preparation.sealedTarget) &&
+      canonicalJson(source) === canonicalJson(record.result) && this.#pending.get("pcb-opening-result.json") === canonicalJson(record), "ORIGINAL_PCB_SOURCE_REQUIRED");
+  }
   async #openPcb(request: Extract<CleanupRequest, { action: "open-pcb" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
     requireValue(!this.#pcbOpeningAttempted && operation.records["pcb-open-intent.json"] === undefined, "PCB_OPENING_CONSUMED");
@@ -697,5 +761,19 @@ export class CurrentPcbDiagnosticLifecycle {
     };
     await this.#record(operation.operationId, "released.json", released); this.#releaseLease();
     return describe(operation.operationId, { ...updated, records: { ...updated.records, "released.json": released } });
+  }
+}
+
+/** Existing diagnostic facade never joins its mutually exclusive branches. */
+export class CurrentPcbDiagnosticLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+    super(options, dependencies, false);
+  }
+}
+
+/** Separate, fixed-purpose precreate observation only; no create or Save. */
+export class CurrentPcbStringPrecreateLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbStringPrecreateLifecycleDependencies = {}) {
+    super(options, dependencies, true);
   }
 }

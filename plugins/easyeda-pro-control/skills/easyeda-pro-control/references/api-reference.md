@@ -40,6 +40,7 @@ After offline discovery, read only the reference for the operation you will use:
 - [Legacy SDK readers](legacy-sdk-readers.md): older-tuple schematic, PCB and library read contracts.
 - [Current project opening](current-project-opening.md): retained startup, metadata writing and closure workflows.
 - [Native diagnostic validation](current-pcb-diagnostic-validation.md): separate existing-profile launch, bounded target/frame/script observation and original-owner cleanup, without CAD execution.
+- [String precreate validation](current-pcb-string-precreate-validation.md): separate launch-sealed combined PCB/worker observations on a disposable project, without create or Save.
 - [Schematic rename lifecycles](current-schematic-rename.md): distinct ordinary and disposable SCH-container title workflows, exact phase acknowledgments and historical connected scope.
 
 The legacy links below retain their anchors and route to these contracts. Do not
@@ -135,6 +136,15 @@ No caller code, protocol method, URL or source hash is accepted. Read
 or cleanup. It is validation-only existing-profile startup, not isolated,
 guaranteed project-free or connected-validated. It adds no public SDK method
 coverage and enables no CAD writer.
+
+For the separate combined PCB/worker path, query
+`pcb-string-precreate-validation` and validate with
+`pcb-string-precreate-validation-validate`. The tool is
+`easyeda_control_pcb_string_precreate_validation`; operation IDs begin
+`string-precreate-`. Its fixed purpose is not a mode of an existing diagnostic
+owner. Read [the String sequence](current-pcb-string-precreate-validation.md)
+before launch. Two matching sweeps do not establish complete live source,
+publication, saved state or writer eligibility.
 
 ## Omitted system-library component lookup
 
