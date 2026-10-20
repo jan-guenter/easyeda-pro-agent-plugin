@@ -32,9 +32,11 @@ import type { CurrentPcbDiagnosticModelObservation } from "./current-pcb-diagnos
 import { currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-runner.ts";
+import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
+import type { CurrentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
 
-const HELPER_SHA256 = "2adfd78eaf1d1783fa6b3b45eafefbc36c410bed5409668ea3b8b2027de22e67";
-const HELPER_BYTES = 185_280;
+const HELPER_SHA256 = "39bcb93312146c74da9c6333968bdb2347a8065d914e00b2a33eb679a08c3157";
+const HELPER_BYTES = 185_849;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -102,6 +104,7 @@ class CurrentPcbRetainedOwnerCore {
   #noProcessProof: Readonly<NoProcessProof> | null = null;
   #nativeLaunchError: string | null = null;
   #nativeSendError: string | null = null;
+  #observationFailure: CurrentPcbObservationFailure | null = null;
   #closeConsumed = false;
   #releaseConsumed = false;
   #released = false;
@@ -161,6 +164,7 @@ class CurrentPcbRetainedOwnerCore {
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
+    observationFailure?: CurrentPcbObservationFailure | null;
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
@@ -172,6 +176,7 @@ class CurrentPcbRetainedOwnerCore {
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
+      observationFailure: this.#observationFailure,
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
@@ -481,7 +486,10 @@ class CurrentPcbRetainedOwnerCore {
       assertCurrent(); await this.#observeParent();
       await this.#verifyInstallation(); await this.#verify(); this.#available(); assertCurrent();
       return result;
-    } catch (caughtError) { this.#input.emit("error", error("MODEL_OBSERVATION_FAILED")); throw caughtError; }
+    } catch (caughtError) {
+      this.#observationFailure ??= currentPcbObservationFailureDetail(caughtError);
+      this.#input.emit("error", error("MODEL_OBSERVATION_FAILED")); throw caughtError;
+    }
     finally { this.#busy = false; }
   }
 
@@ -515,7 +523,10 @@ class CurrentPcbRetainedOwnerCore {
       const result = await runner.observe();
       assertCurrent(); await this.#verifyInstallation(); await this.#verify(); assertCurrent();
       return result;
-    } catch (caughtError) { this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw caughtError; }
+    } catch (caughtError) {
+      this.#observationFailure ??= currentPcbObservationFailureDetail(caughtError);
+      this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw caughtError;
+    }
     finally { this.#busy = false; }
   }
 

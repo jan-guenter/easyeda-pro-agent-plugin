@@ -9,6 +9,7 @@ import {
   CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
   decodeCurrentPcbDiagnosticPendingReply,
 } from "../src/current-pcb-diagnostic-pending-program.ts";
+import { currentPcbPendingFailureDetail, currentPcbPendingFailureReasonSchema, currentPcbPendingFailureStageSchema } from "../src/current-pcb-observation-failure.ts";
 
 const FIXTURE = `
 globalThis.reads=0;
@@ -95,7 +96,34 @@ void test("pending reader reports structural worker mismatches and rejects unsup
     'scope.object.Zec.modify=new Set(Array.from({length:65537},(_,i)=>i));',
     'Object.defineProperty(scope.object.Zec,"task",{get(){reads++;throw new Error("GETTER");}});',
     'Object.defineProperty(scope.object.qI,"proxy",{get(){reads++;throw new Error("GETTER");}});',
-  ]) { assert.throws(() => snapshot(change), /PCB_DIAGNOSTIC_PENDING_STATE/u, change); }
+  ]) { assert.throws(() => decodeCurrentPcbDiagnosticPendingReply(reply(snapshot(change).raw)), /PCB_DIAGNOSTIC_PENDING_REPLY/u, change); }
+});
+
+void test("pending failure labels identify the failed group without disclosing values or invoking getters", () => {
+  for (const [change, stage, reason] of [
+    ["scope.object.FP.manager=null;", "dynamic-copper", "object"],
+    ["scope.object.Xe.stack={};", "active-stack", "instance"],
+    ['Object.defineProperty(scope.object.Zec,"task",{get(){reads++;throw new Error("PRIVATE_PAYLOAD");}});', "teardrops", "own"],
+  ] as const) {
+    const observed = snapshot(change);
+    assert.equal(observed.reads, 0); assert.doesNotMatch(observed.raw, /PRIVATE_PAYLOAD/u);
+    assert.throws(() => decodeCurrentPcbDiagnosticPendingReply(reply(observed.raw)), (caught: unknown) => {
+      assert.deepEqual(currentPcbPendingFailureDetail(caught), { schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage, reason });
+      return true;
+    });
+  }
+  const stages = [...CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION.matchAll(/stage="([a-z-]+)"/gu)].map(match => match[1]);
+  const reasons = [...CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION.matchAll(/bad\("([a-z-]+)"\)/gu)].map(match => match[1]);
+  for (const stage of stages) { assert.ok(currentPcbPendingFailureStageSchema.safeParse(stage).success); }
+  for (const reason of reasons) { assert.ok(currentPcbPendingFailureReasonSchema.safeParse(reason).success); }
+  assert.deepEqual(new Set(stages), new Set(currentPcbPendingFailureStageSchema.options.filter(stage => stage !== "decode")));
+  for (const field of ["stage", "reason"]) {
+    const raw = JSON.stringify({ schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own", [field]: "private-payload" });
+    assert.throws(() => decodeCurrentPcbDiagnosticPendingReply(reply(raw)), (caught: unknown) => {
+      assert.equal(currentPcbPendingFailureDetail(caught)?.stage, "decode");
+      assert.ok(caught instanceof Error); assert.doesNotMatch(caught.message, /private-payload/u); return true;
+    });
+  }
 });
 
 void test("pending decoder refuses duplicate keys, invented authority, contradictions and hostile transport objects", () => {

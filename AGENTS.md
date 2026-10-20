@@ -4,6 +4,45 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Active baseline/effect batch after20202000 admission
+
+Actual20202000 admission passed main and independent checks: facade1653522/
+start50499364, parent1651779/start50493900, Node24.18.0/core0, installed
+cwd/argv and source554/runtime3/manifest match the delivered payload below.
+Independent complete1637-file/mode comparison passes mergedmain7df9a9cd.
+Post-main Linux39493798341 is now SUCCESS, as is the previously checked Windows CI.
+Main evidence `/root/.cache/easyeda-20202000-live-s113xEJq`; independent
+receipt cbe244e4 in `/root/.cache/easyeda-20202000-independent-admission-8RZRLZU3`.
+
+NEW `string-precreate-20202000-20261020-01` is terminal released. Corrected
+project opening, PCB opening/frame/full source and direct-child project-worker
+full source passed. The combined observation stopped at `FAILED_PENDING`.
+Its original object-group cleanup succeeded; the subsequent synthetic owner
+invalidation is recorded against last request72/model-release and must NOT be
+misreported as a failed release. No raw pending reply or leaf guard was retained,
+so the precise cause is unknown. No create or explicit Save ran. Original14600/
+created134370038451731880, binding07e887de, hwnd59970136 closed normally;
+retained root/whole-Job termination and helper release passed. Closed disposable
+remains598016/e620d21a. No prompt choice or production-design access. NEVER replay.
+
+Candidate `0.3.0+codex.20261020211943` is on
+`feature/pcb-baseline-effects-batch-20261020`:
+selected common-body encoding, full-rule/filter encoding, raw enumerability
+evidence, callback profiles/receiver limits, phase-specific text-base/cache
+checks, exact default-font box prediction and bounded primary-reader diagnostics.
+New modules remain private/unregistered; no writer authority or budget expansion.
+Main and reciprocal reviews pass. Own public-getter/method shadows, selected-owner
+absence evidence and radius/safe-map aliases were corrected before freezing;
+unknown backing state remains retained. Targeted common42/geometry10/phase6/
+callback3 and diagnostic regressions pass; strict targeted lint/types pass.
+Both actual Windows CompileOnly profiles were reported passing; helper185849/
+39bcb933 bytes and pins independently verified. Execution outputs were direct
+tool results, not independently retained receipt files. No app was launched.
+Dependency/tree/signature/audit/sanitizer precheck14892 passes. Frozen build,
+verification, protected publication and official installation are next.
+Release evidence: `/root/.cache/easyeda-common-effects-release-llsad1tM`.
+Installed20202000 and its host remain unchanged. Production designs untouched.
+
 ### Delivered20202000 checkpoint
 
 Delivered `0.3.0+codex.20261020202000` through protected PR90 on2026-10-20.

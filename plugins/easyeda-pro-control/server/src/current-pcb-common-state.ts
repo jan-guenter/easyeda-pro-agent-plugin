@@ -20,6 +20,13 @@ const MODEL_FIELDS = ["_prevTrackWidth", "_adsorb", "_removeLoop"] as const;
 const VIA_FIELDS = ["innerRadius", "radius"] as const;
 const ROUTING_FIELDS = ["_mode", "_type"] as const;
 const OPTION_FIELDS = ["minimumTrackCorners", "pushViaOptimization", "pathOptimization", "currentPathOptimization", "removeCircuitsContainingVias", "removeAntenna"] as const;
+const CANVAS_PUBLIC_READS = ["origin", "unit", "altGridSize", "gridType", "multiType", "multiRatio", "forceValue"] as const;
+const GRID_PUBLIC_CALLS = ["getGridX", "getGridY", "getSnapX", "getSnapY"] as const;
+const SILK_PUBLIC_READS = ["topBoardColor", "topSilkscreenColor", "bottomBoardColor", "bottomSilkscreenColor"] as const;
+const CONFIG_PUBLIC_READS = ["startTrackWidth", "startViaSize", "rotateWhole", "trackFollow", "layerPhyPerferenceConfig"] as const;
+const MODEL_PUBLIC_READS = ["prevTrackWidth", "adsorb", "removeLoop"] as const;
+const PANEL_PUBLIC_READS = ["trackMinCorner", "pushVia", "pathOptimization4BePushed", "currentPathOptimization4BePushed", "removeCircuitsContainingVias", "removeAntenna"] as const;
+const OPTION_PUBLIC_CALLS = ["getTrackMinCorner", "getPushVia", "getPathOptimization4BePushed", "getCurrentPathOptimization", "getRemoveCircuitsContainingVias", "getRemoveAntenna"] as const;
 
 const GUARDS = `
 "use strict";const bad=()=>{throw new Error("PCB_COMMON_STATE");};
@@ -31,10 +38,11 @@ const instance=(o,n)=>{object(o);if(Object.getPrototypeOf(o)!==own(klass(n),"pro
 const env=instance(own(klass("x"),"env"),"x"),documentUuid=own(env,"_id");
 if(own(env,"_doctype")!==3||typeof documentUuid!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
 const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own(o,n);return r;};
+const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
 ${CURRENT_PCB_COMMON_GRAPH_PROGRAM}
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+const finish=(schema,roots)=>{graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
 `;
 
 /** Includes all own fields of layer and physical-stack models. Custom disabled
@@ -42,17 +50,22 @@ const finish=(schema,roots)=>{graphVerify();for(const r of retained){const d=Obj
  * are separate, preserving the getter's fallback inputs without invoking it.
  * PANELIZE is disabled but its entire parameter object is retained. */
 export const CURRENT_PCB_COMMON_PRESENTATION_FUNCTION = `function(originalCallback){${GUARDS}
+noOwnPublic(env,${JSON.stringify(CANVAS_PUBLIC_READS)});
 const canvas=pick(env,${JSON.stringify(CANVAS_FIELDS)});
 const grid=instance(own(klass("At"),"ins"),"At"),gridFields=${JSON.stringify(GRID_FIELDS)};
+noOwnPublic(grid,${JSON.stringify(GRID_PUBLIC_CALLS)});
 const gridParam=own(grid,"param"),gridState={owner:pick(grid,gridFields),parameter:gridParam===null?null:pick(instance(gridParam,"ogt"),gridFields)};
+if(gridParam!==null)noOwnPublic(gridParam,${JSON.stringify(GRID_PUBLIC_CALLS)});
 const layers=instance(own(klass("Ke"),"manager"),"Ke"),filters=instance(own(klass("zi"),"manager"),"zi");
 graphCollection(own(layers,"map"),Map.prototype);graphCollection(own(layers,"_layerPhys"),Map.prototype);graphCollection(own(filters,"map"),Map.prototype);
 own(layers,"activeLayer");own(layers,"_deactiveAlpha");
 const panel=instance(own(klass("ai"),"model"),"ai"),panelParam=object(own(panel,"_param"));
+noOwnPublic(panel,["getDefaultPanelize"]);
 if(own(panelParam,"on")!==false||own(panelParam,"success")!==false)bad();
 const model=instance(own(scope,"Me"),"Yme"),silk=pick(model,${JSON.stringify(SILK_FIELDS)});
+noOwnPublic(model,${JSON.stringify(SILK_PUBLIC_READS)});
 const roots=[["canvas",graphValue(canvas)],["grid",graphValue(gridState)],["layers",graphValue(layers)],["filters",graphValue(filters)],["silk",graphValue(silk)],["panelize",graphValue(panelParam)]];
-return finish("easyeda-pro-control.pcb-common-presentation.v1",roots);
+return finish("easyeda-pro-control.pcb-common-presentation.v2",roots);
 }`;
 
 /** All fourteen raw rule-family maps, complete own fields and nested tables,
@@ -67,7 +80,8 @@ graphCollection(own(rules,"defaultRuleMap"),Map.prototype);graphCollection(own(r
 for(const name of ${JSON.stringify(EMPTY_SELECTORS)})emptyMap(own(rules,name));
 const between=instance(own(rules,"betweenNetRule"),"Wre");
 for(const name of ["rule","cacheRuleMap"]){const a=own(between,name);if(!Array.isArray(a)||Object.getPrototypeOf(a)!==Array.prototype||own(a,"length")!==0||Reflect.ownKeys(a).length!==1)bad();}
-return finish("easyeda-pro-control.pcb-common-rules.v1",[["rules",graphValue(rules)]]);
+const ruleUnit=own(object(own(scope,"_Fe")),"UNIT_NAME");graphString(ruleUnit);
+return finish("easyeda-pro-control.pcb-common-rules.v2",[["rules",graphValue(rules)],["ruleUnit",graphValue(ruleUnit)]]);
 }`;
 
 /** Raw backing inputs to every field read by D5. The null previous-width and
@@ -78,12 +92,14 @@ export const CURRENT_PCB_COMMON_PREFERENCE_FUNCTION = `function(originalCallback
 const config=instance(own(instance(own(scope,"ce"),"Nfe"),"pcbConfig"),"vfe"),model=instance(own(scope,"Me"),"Yme");
 const route=instance(own(klass("nr"),"instance"),"nr"),params=instance(own(klass("pl"),"instance"),"pl");
 const panel=instance(own(klass("ha"),"instance"),"ha");if(own(panel,"wiringRouterParams")!==params)bad();
+noOwnPublic(config,${JSON.stringify(CONFIG_PUBLIC_READS)});noOwnPublic(model,${JSON.stringify(MODEL_PUBLIC_READS)});
+noOwnPublic(route,["mode","type"]);noOwnPublic(panel,${JSON.stringify(PANEL_PUBLIC_READS)});noOwnPublic(params,${JSON.stringify(OPTION_PUBLIC_CALLS)});
 const via=own(instance(own(scope,"rt"),"Epe"),"defaultVia");
 const configValues=pick(config,${JSON.stringify(CONFIG_FIELDS)});
 configValues.layerPreference=optional(config,"_layerPhyPerferenceConfig");
 const modelValues=pick(model,${JSON.stringify(MODEL_FIELDS)}),viaValues=pick(via,${JSON.stringify(VIA_FIELDS)});
 const routing=pick(route,${JSON.stringify(ROUTING_FIELDS)}),options=pick(params,${JSON.stringify(OPTION_FIELDS)});
-return finish("easyeda-pro-control.pcb-common-preference.v1",[["config",graphValue(configValues)],["model",graphValue(modelValues)],["via",graphValue(viaValues)],["routing",graphValue(routing)],["options",graphValue(options)]]);
+return finish("easyeda-pro-control.pcb-common-preference.v2",[["config",graphValue(configValues)],["model",graphValue(modelValues)],["via",graphValue(viaValues)],["routing",graphValue(routing)],["options",graphValue(options)]]);
 }`;
 
 type Graph = z.infer<typeof currentPcbCommonGraphSchema>;
@@ -108,7 +124,7 @@ function mapField(graph: Graph, node: Extract<Node, { kind: "object" }>, key: st
 }
 function rulesShape(graph: Graph): boolean {
   const rules = graphObject(graph, graph.roots[0]?.[1], "te");
-  if (rules === undefined || ![...RULE_FAMILIES, "map", "defaultRuleMap"].every(name => mapField(graph, rules, name)) ||
+  if (graph.roots[1]?.[1][0] !== "string" || rules === undefined || ![...RULE_FAMILIES, "map", "defaultRuleMap"].every(name => mapField(graph, rules, name)) ||
       !EMPTY_SELECTORS.every(name => mapField(graph, rules, name, true)) || ownValue(rules, "ruleTemplateName")?.[0] !== "string") { return false; }
   const between = graphObject(graph, ownValue(rules, "betweenNetRule"), "Wre");
   return between !== undefined && ["rule", "cacheRuleMap"].every(name => {
@@ -145,16 +161,17 @@ function preferenceShape(graph: Graph): boolean {
   return present?.[0] === "boolean" && exactFields(optional, present[1] ? ["present", "value"] : ["present"]);
 }
 function stateSchema<T extends string>(schema: T, names: readonly string[], shape: (graph: Graph) => boolean): z.ZodType<{
-  schema: T; documentUuid: string; graph: z.infer<typeof currentPcbCommonGraphSchema>;
+  schema: T; documentUuid: string; pickedOwnerPublicShadowsAbsent: true; graph: z.infer<typeof currentPcbCommonGraphSchema>;
 }> {
   return z.object({ schema: z.literal(schema), documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
+    pickedOwnerPublicShadowsAbsent: z.literal(true),
     graph: currentPcbCommonGraphSchema.refine(graph => graph.roots.length === names.length &&
       graph.roots.every((root, index) => root[0] === names[index]) && shape(graph)),
   }).strict();
 }
-const presentationSchema = stateSchema("easyeda-pro-control.pcb-common-presentation.v1", ["canvas", "grid", "layers", "filters", "silk", "panelize"], presentationShape);
-const rulesSchema = stateSchema("easyeda-pro-control.pcb-common-rules.v1", ["rules"], rulesShape);
-const preferenceSchema = stateSchema("easyeda-pro-control.pcb-common-preference.v1", ["config", "model", "via", "routing", "options"], preferenceShape);
+const presentationSchema = stateSchema("easyeda-pro-control.pcb-common-presentation.v2", ["canvas", "grid", "layers", "filters", "silk", "panelize"], presentationShape);
+const rulesSchema = stateSchema("easyeda-pro-control.pcb-common-rules.v2", ["rules", "ruleUnit"], rulesShape);
+const preferenceSchema = stateSchema("easyeda-pro-control.pcb-common-preference.v2", ["config", "model", "via", "routing", "options"], preferenceShape);
 export type CurrentPcbCommonPresentation = Readonly<z.infer<typeof presentationSchema>> & typeof CURRENT_PCB_COMMON_GRAPH_LIMITS;
 export type CurrentPcbCommonRules = Readonly<z.infer<typeof rulesSchema>> & typeof CURRENT_PCB_COMMON_GRAPH_LIMITS;
 export type CurrentPcbCommonPreference = Readonly<z.infer<typeof preferenceSchema>> & typeof CURRENT_PCB_COMMON_GRAPH_LIMITS;

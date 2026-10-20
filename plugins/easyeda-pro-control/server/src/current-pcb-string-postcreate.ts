@@ -8,6 +8,7 @@ import { compareCurrentPcbStringCreateBody } from "./current-pcb-string-create.t
 import type { CurrentPcbStringCreateCandidate } from "./current-pcb-string-create.ts";
 import { compareCurrentPcbStringCreateObservation } from "./current-pcb-string-create-observation.ts";
 import type { CurrentPcbStringCreateObservationPlan } from "./current-pcb-string-create-observation.ts";
+import { compareCurrentPcbStringDefaultGeometry } from "./current-pcb-string-default-geometry.ts";
 import { compareCurrentPcbStringPublication } from "./current-pcb-string-publication.ts";
 import type { CurrentPcbStringPublicationPlan } from "./current-pcb-string-publication.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -26,7 +27,7 @@ const REMAINING = Object.freeze([
   "Retain the original renderer and joined project-worker owner, complete source and stored baselines, and the fresh no-interaction history.",
   "Account for every non-String model, secondary index, shared compiler, Save participant and extension subscriber.",
   "Observe the complete publication interval and asynchronous command, teardrop and worker effects; one matching batch proves none of these.",
-  "Qualify raw data-state flags and text-box geometry independently; equality of two supplied samples is not native settling or visual proof.",
+  "Bind the actual default glyph table and qualify raw data-state flags/outlines; a source-predicted box is not native settling or visual proof.",
   "Consume one durable create intent and one Save intent, preserve ambiguous results without retry, then prove complete closed SQL and fresh reopened content.",
 ] as const);
 const INPUT_FIELDS = ["createResultJson", "beforeFirst", "beforeSecond", "afterFirst", "afterSecond", "publication"] as const;
@@ -88,8 +89,8 @@ function rawModelMatches(candidate: CurrentPcbStringCreateCandidate, model: RawM
   equal(model.box.value.layerId, expected.layerId, "box layer");
   equal(model.box.value.locked, expected.locked, "box lock");
   need(model.stateWatcher.kind === "value" && model.stateWatcher.value === "reciprocal-yr", "reciprocal String view missing");
-  // Box coordinates and dataState remain in the complete sample hash and must
-  // Agree between supplied samples. Their correctness is not predicted here.
+  // A separate source-derived comparator checks the complete default-font box.
+  // DataState and outlines remain unmodeled; equal samples are not settling.
 }
 function rawPair(first: unknown, second: unknown, documentUuid: string, count: 0 | 1):
   Readonly<{ sample: CurrentPcbDiagnosticRawStrings; sha256: string }> {
@@ -117,6 +118,7 @@ export interface CurrentPcbStringPostCreateRelation extends Readonly<typeof LIMI
   readonly beforeRawModelProjectionSha256: string;
   readonly afterRawModelProjectionSha256: string;
   readonly publicationProjectionSha256: string;
+  readonly boxPredictionSha256: string;
   readonly relationSha256: string;
   readonly remaining: typeof REMAINING;
 }
@@ -145,6 +147,7 @@ export function compareCurrentPcbStringPostCreate(candidate: CurrentPcbStringCre
   const model = after.sample.models[0];
   need(model !== undefined, "created String model missing");
   rawModelMatches(candidate, model, publicationPlan.binding.primitiveId);
+  const geometry = compareCurrentPcbStringDefaultGeometry(candidate, input.afterFirst, model.globalIndex);
   const relation = {
     requestSha256: candidate.requestSha256, createPlanSha256: createPlan.planSha256,
     publicationPlanSha256: publicationPlan.planSha256, primitiveId: model.globalIndex, documentUuid,
@@ -152,6 +155,7 @@ export function compareCurrentPcbStringPostCreate(candidate: CurrentPcbStringCre
     createResultProjectionSha256: sha256Text(canonicalJson(create)),
     beforeRawModelProjectionSha256: before.sha256, afterRawModelProjectionSha256: after.sha256,
     publicationProjectionSha256: publication.payloadProjectionSha256,
+    boxPredictionSha256: geometry.expectedBoxProjectionSha256,
   } as const;
   return freezeDeep({ profile: "private.current-pcb-string-postcreate-relation.v1",
     stage: "supplied-first-string-effect-only", suppliedCreateRawPublicationRelationMatches: true,

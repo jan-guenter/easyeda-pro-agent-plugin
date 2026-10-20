@@ -24,6 +24,13 @@ checks and preserves the first fixed failure label. This is source-backed,
 not a retrospective diagnosis of the lost original prefix error.
 Older snapshots may lack this tool or the additional fields described below.
 
+The separate String-precreate purpose on installed20202000 subsequently passed
+the corrected project opening, exact PCB-frame/source admission and project-worker
+source admission. Its pending-work reader refused before a complete observation.
+Original normal cleanup and unchanged closed fixture bytes were verified. This
+is evidence for those stages under that purpose, not a completed diagnostic model
+sample, a writer lifecycle or permission to replay the terminal case.
+
 Existing-profile startup can restore projects, run extensions, contact services,
 migrate data or persist preferences/cache. It is neither isolated nor guaranteed
 project-free. A later observed Start Page is scoped evidence, not a guarantee

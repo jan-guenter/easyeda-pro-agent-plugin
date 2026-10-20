@@ -20,12 +20,14 @@ export const CURRENT_PCB_COMMON_GRAPH_CLASSES = [
  * cannot exclude Proxy traps or establish pristine intrinsics.
  */
 export const CURRENT_PCB_COMMON_GRAPH_PROGRAM = `
-const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[];let graphFields=0,graphStringUnits=0;
+const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
 const graphClassNames=${JSON.stringify(CURRENT_PCB_COMMON_GRAPH_CLASSES)};
 const graphClasses=graphClassNames.map(n=>[n,own(klass(n),"prototype")]);
 const graphString=v=>{if(typeof v!=="string"||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
 const graphKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!=="string"))bad();return k;};
-const graphDescriptor=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);return d.value;};
+const graphDescriptor=(o,k,enumerableKeys)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
+const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,"toJSON");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
+if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
 const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,"entries"),o,[]),next=own(Object.getPrototypeOf(iterator),"next"),items=[];if(typeof next!=="function")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);if(own(e,"done")!==false)bad();const pair=own(e,"value");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,"0"),own(pair,"1")]);}if(own(Reflect.apply(next,iterator,[]),"done")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
 const graphValue=(v,depth=0)=>{
 if(depth>32)bad();if(v===null)return["null"];if(v===undefined)return["undefined"];
@@ -35,10 +37,10 @@ if(typeof v!=="object")bad();if(graphSeen.has(v))return["ref",graphSeen.get(v)];
 if(graphNodes.length>=4096)bad();const index=graphNodes.length;graphSeen.set(v,index);graphNodes.push(null);
 const p=Object.getPrototypeOf(v);let node;
 if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node=p===Map.prototype?{kind:"map",entries:entries.map(e=>[graphValue(e[0],depth+1),graphValue(e[1],depth+1)])}:{kind:"set",values:entries.map(e=>graphValue(e[0],depth+1))};}
-else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,"length");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!=="length")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:"array",values};}
-else{let className=p===null?"null":p===Object.prototype?"plain":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key),depth+1)]);node={kind:"object",className,fields};}
+else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,"length");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!=="length")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:"array",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
+else{let className=p===null?"null":p===Object.prototype?"plain":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:"object",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 graphNodes[index]=node;return["ref",index];};
-const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}};
+const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){const present=Object.getOwnPropertyDescriptor(h[0],"toJSON")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
 `;
 
 const indexSchema = z.number().int().min(0).max(4095).refine(value => !Object.is(value, -0));
@@ -54,10 +56,11 @@ const fieldSchema = z.tuple([stringSchema, scalarSchema]);
 const mapEntrySchema = z.tuple([scalarSchema, scalarSchema]);
 const nodeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("object"), className: z.enum(["plain", "null", ...CURRENT_PCB_COMMON_GRAPH_CLASSES]),
-    fields: z.array(fieldSchema).max(4096) }).strict(),
+    fields: z.array(fieldSchema).max(4096), enumerableKeys: z.array(stringSchema).max(4096).optional(),
+    jsonToJSONAbsent: z.boolean().optional() }).strict(),
   z.object({ kind: z.literal("map"), entries: z.array(mapEntrySchema).max(4096) }).strict(),
   z.object({ kind: z.literal("set"), values: z.array(scalarSchema).max(4096) }).strict(),
-  z.object({ kind: z.literal("array"), values: z.array(scalarSchema).max(4096) }).strict(),
+  z.object({ kind: z.literal("array"), values: z.array(scalarSchema).max(4096), jsonToJSONAbsent: z.boolean().optional() }).strict(),
 ]);
 export const currentPcbCommonGraphSchema = z.object({
   roots: z.array(z.tuple([stringSchema, scalarSchema])).min(1).max(64),
@@ -89,6 +92,17 @@ export const currentPcbCommonGraphSchema = z.object({
     if (node === undefined) { context.addIssue({ code: "custom", message: "Missing graph reference" }); return; }
     if (node.kind === "object") {
       unique(node.fields.map(entry => entry[0])); fieldCount += node.fields.length;
+      if (node.enumerableKeys !== undefined) {
+        unique(node.enumerableKeys);
+        const enumerable = new Set(node.enumerableKeys);
+        const expected = node.fields.filter(entry => enumerable.has(entry[0])).map(entry => entry[0]);
+        if (expected.length !== node.enumerableKeys.length || expected.some((key, position) => key !== node.enumerableKeys?.[position])) {
+          context.addIssue({ code: "custom", message: "Enumerable fields differ from captured field order" });
+        }
+      }
+      if (node.jsonToJSONAbsent === true && node.fields.some(entry => entry[0] === "toJSON")) {
+        context.addIssue({ code: "custom", message: "Contradictory toJSON absence" });
+      }
       for (const [, value] of node.fields) { visit(value); }
     } else if (node.kind === "map") {
       unique(node.entries.map(entry => nativeKey(entry[0]))); fieldCount += node.entries.length * 2;

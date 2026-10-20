@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "eaa60ef3c19417ac1342b29a82b03acd7887cacd08152390c1f2bd656b3a7db4";
+const __easyedaBundlePairId = "6a1512a489c64ea1e5abe5ce91b62fc50adff3172567ffada5fa9f528c255440";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -48657,8 +48657,8 @@ function validateEditorTabLookupResult(input, requestInput2, scopeInput) {
   if (activeCount !== 1 || [...nodes.values()].some((node) => node.branch && node.children === 0)) {
     throw new Error("Editor lookup tree lacks complete active membership.");
   }
-  const leaves = result.tree.filter((node) => node.tabs !== null);
-  const leaf = request13.method === TAB_METHOD ? leaves.find((node) => node.tabs?.some((tab4) => tab4.tabId === request13.arguments.tabId && tab4.uuid !== null) === true) : leaves.find((node) => node.id === request13.arguments.splitScreenId);
+  const leaves2 = result.tree.filter((node) => node.tabs !== null);
+  const leaf = request13.method === TAB_METHOD ? leaves2.find((node) => node.tabs?.some((tab4) => tab4.tabId === request13.arguments.tabId && tab4.uuid !== null) === true) : leaves2.find((node) => node.id === request13.arguments.splitScreenId);
   if (leaf === void 0 || canonicalJson(result.value) !== canonicalJson(request13.method === TAB_METHOD ? leaf.id : leaf.tabs)) {
     throw new Error("Editor lookup response differs from its complete tree.");
   }
@@ -49525,7 +49525,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     }
     return payload;
   };
-  const observations = async () => {
+  const observations2 = async () => {
     const beforePayload = await observe3("pcb-source");
     const inventory2 = await observe3("pcb-inventory");
     const afterPayload = await observe3("pcb-source");
@@ -49544,10 +49544,10 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
       contextBinding: inventory2.read_consistency.contextBinding
     };
   };
-  let initial = await observations();
+  let initial = await observations2();
   if (pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await capturePcbInheritedLineScope(engine2, context3);
-    initial = await observations();
+    initial = await observations2();
   }
   const classify = (observed2) => {
     const { source: source5, inventory: inventory2, ...proof } = observed2, inherited = inheritedScope?.derive(source5, inventory2);
@@ -49557,7 +49557,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
-  const first = classify(initial), second = classify(await observations());
+  const first = classify(initial), second = classify(await observations2());
   if (canonicalJson(first) !== canonicalJson(second)) {
     throw new Error("PCB primitive type complete observations changed between cycles.");
   }
@@ -66865,19 +66865,19 @@ function validateStartupResult(inputValue, input) {
     value2["profile"] === PROFILE6 && value2["phase"] === input.phase && typeof value2["ok"] === "boolean" && typeof value2["markerCreateAttempted"] === "boolean" && value2["executionAuthorized"] === false && value2["startupQualified"] === false && value2["completionProved"] === false,
     "Startup result shape refused."
   );
-  const failedStep = value2["failedStep"], observations = value2["observations"];
+  const failedStep = value2["failedStep"], observations2 = value2["observations"];
   requireValue5(
-    Array.isArray(observations) && Object.getPrototypeOf(observations) === Array.prototype && observations.length <= steps.length && Reflect.ownKeys(observations).length === observations.length + 1,
+    Array.isArray(observations2) && Object.getPrototypeOf(observations2) === Array.prototype && observations2.length <= steps.length && Reflect.ownKeys(observations2).length === observations2.length + 1,
     "Startup observation list refused."
   );
   const failure2 = steps.indexOf(failedStep);
-  requireValue5(value2["ok"] ? failedStep === null && observations.length === steps.length : failure2 !== -1 && observations.length >= failure2 && observations.length <= failure2 + 1, "Startup observation order refused.");
+  requireValue5(value2["ok"] ? failedStep === null && observations2.length === steps.length : failure2 !== -1 && observations2.length >= failure2 && observations2.length <= failure2 + 1, "Startup observation order refused.");
   const markerIndex = steps.indexOf("marker-create");
   requireValue5(value2["markerCreateAttempted"] === (markerIndex !== -1 && (value2["ok"] || failure2 >= markerIndex)), "Startup mutation attempt flag refused.");
   let actor7;
-  const parsed2 = steps.slice(0, observations.length).map((_, index) => {
+  const parsed2 = steps.slice(0, observations2.length).map((_, index) => {
     const step = steps[index];
-    const itemDescriptor = Object.getOwnPropertyDescriptor(observations, String(index));
+    const itemDescriptor = Object.getOwnPropertyDescriptor(observations2, String(index));
     requireValue5(itemDescriptor !== void 0 && Object.hasOwn(itemDescriptor, "value"), "Startup observation index refused.");
     const entry = fields4(itemDescriptor.value, ["step", "observation"]);
     requireValue5(entry["step"] === step && step !== void 0, "Startup observation entry refused.");
@@ -80209,9 +80209,9 @@ async function reconstructRecordedSavedRead(input) {
     marker: journal.plan.marker
   };
   const startup2 = validateStartupResult(extractToolPayload(startupData["rawReturn"]), startupInput);
-  const observations = startup2["observations"];
-  need37(startup2["ok"] === true && Array.isArray(observations), "Terminal saved-read startup missing.");
-  const actor7 = validateActorProjection(bag9(bag9(observations[0])["observation"])["startupActor"]);
+  const observations2 = startup2["observations"];
+  need37(startup2["ok"] === true && Array.isArray(observations2), "Terminal saved-read startup missing.");
+  const actor7 = validateActorProjection(bag9(bag9(observations2[0])["observation"])["startupActor"]);
   const clock7 = bag9(request13["clock"]);
   const capture3 = bag9(request13["clockCapture"]);
   const authority2 = bag9(capture3["executionAuthority"]);
@@ -95572,6 +95572,112 @@ var init_current_pcb_string_precreate_validation = __esm({
   }
 });
 
+// server/src/current-pcb-observation-failure.ts
+function currentPcbPendingFailure(stage, reason) {
+  const leaf = freezeDeep(currentPcbPendingFailureSchema.parse({ schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage, reason }));
+  const error52 = new Error(`PCB_DIAGNOSTIC_PENDING_REPLY_${stage.toUpperCase().replaceAll("-", "_")}_${reason.toUpperCase()}`);
+  leaves.set(error52, leaf);
+  return error52;
+}
+function currentPcbPendingFailureDetail(error52) {
+  return error52 !== null && typeof error52 === "object" ? leaves.get(error52) ?? null : null;
+}
+function currentPcbObservationFailureDetail(error52) {
+  return error52 !== null && typeof error52 === "object" ? observations.get(error52) ?? null : null;
+}
+function currentPcbObservationFailure(family2, phase5, failures, cleanupFailed) {
+  const leaf = currentPcbPendingFailureDetail(failures[0]);
+  const suffix = leaf === null ? "" : `_LEAF_${leaf.stage.toUpperCase().replaceAll("-", "_")}_${leaf.reason.toUpperCase()}`;
+  const error52 = new AggregateError(
+    failures,
+    `PCB_${family2 === "MODEL" ? "DIAGNOSTIC_MODEL" : family2}_OBSERVATION_FAILED_${phase5.toUpperCase().replaceAll("-", "_")}${suffix}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
+    { cause: failures[0] }
+  );
+  observations.set(error52, freezeDeep(currentPcbObservationFailureSchema.parse({
+    schema: "easyeda-pro-control.pcb-observation-failure.v1",
+    family: family2,
+    phase: phase5,
+    leaf,
+    cleanupFailed,
+    failureCount: failures.length,
+    executionAuthorized: false,
+    dispatchAbsenceVerified: false
+  })));
+  return error52;
+}
+var currentPcbPendingFailureStageSchema, currentPcbPendingFailureReasonSchema, currentPcbPendingFailureSchema, phaseSchema2, currentPcbObservationFailureSchema, leaves, observations;
+var init_current_pcb_observation_failure = __esm({
+  "server/src/current-pcb-observation-failure.ts"() {
+    init_zod();
+    init_sqlite_inventory_core();
+    currentPcbPendingFailureStageSchema = external_exports.enum([
+      "callback",
+      "scope",
+      "environment",
+      "copper-uploads",
+      "plane-uploads",
+      "board-upload",
+      "commands",
+      "active-stack",
+      "teardrops",
+      "dynamic-copper",
+      "worker-registry",
+      "worker-association",
+      "reproof",
+      "serialize",
+      "decode"
+    ]);
+    currentPcbPendingFailureReasonSchema = external_exports.enum([
+      "guard",
+      "object",
+      "own",
+      "instance",
+      "count",
+      "flag",
+      "id",
+      "collection",
+      "unexpected",
+      "reply"
+    ]);
+    currentPcbPendingFailureSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-pending-failure.v1"),
+      stage: currentPcbPendingFailureStageSchema,
+      reason: currentPcbPendingFailureReasonSchema
+    }).strict();
+    phaseSchema2 = external_exports.enum([
+      "owner",
+      "wrapper",
+      "properties",
+      "handler",
+      "snapshot",
+      "pending",
+      "raw-strings",
+      "root-inventory",
+      "renderer-association",
+      "worker-association",
+      "empty-producers",
+      "identity",
+      "empty-baseline",
+      "bounds",
+      "sample-match",
+      "owner-observation",
+      "release"
+    ]);
+    currentPcbObservationFailureSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-observation-failure.v1"),
+      family: external_exports.enum(["MODEL", "STRING_PRECREATE"]),
+      phase: phaseSchema2,
+      leaf: currentPcbPendingFailureSchema.nullable(),
+      cleanupFailed: external_exports.boolean(),
+      failureCount: external_exports.number().int().min(1).max(8),
+      executionAuthorized: external_exports.literal(false),
+      dispatchAbsenceVerified: external_exports.literal(false)
+    }).strict();
+    leaves = /* @__PURE__ */ new WeakMap();
+    observations = /* @__PURE__ */ new WeakMap();
+  }
+});
+
 // server/src/current-pcb-diagnostic-lifecycle-journal.ts
 import { constants as constants21 } from "node:fs";
 import { lstat as lstat29, mkdir as mkdir4, open as open26, opendir as opendir4 } from "node:fs/promises";
@@ -95683,6 +95789,12 @@ function validateChain(operation) {
     requireValue14(observation2 === void 0 || binding9 !== void 0 && observation2.stage === stage && observation2.bindingSha256 === sha256Json(binding9) && binding9.launchAcknowledged && binding9.binding.rootCreated !== "0", "OBSERVATION_CHAIN");
     requireValue14(result === void 0 || observation2 !== void 0 && result.stage === stage && result.intentSha256 === sha256Json(observation2), "OBSERVATION_RESULT_CHAIN");
   }
+  const observationFailure = records2["observation-failure.json"];
+  if (observationFailure !== void 0) {
+    const stage = observationFailure.stage;
+    const observation2 = records2[`${stage}-intent.json`];
+    requireValue14(observation2 !== void 0 && observationFailure.intentSha256 === sha256Json(observation2) && records2[`${stage}-result.json`] === void 0 && stage === "string-precreate" === stringPurpose, "OBSERVATION_FAILURE_CHAIN");
+  }
   requireValue14(records2["frames-intent.json"] === void 0 || records2["browser-result.json"] !== void 0, "FRAMES_CHAIN");
   requireValue14(records2["script-intent.json"] === void 0 || records2["frames-result.json"] !== void 0, "SCRIPT_CHAIN");
   requireValue14(records2["workers-intent.json"] === void 0 || records2["frames-result.json"] !== void 0, "WORKERS_CHAIN");
@@ -95787,7 +95899,7 @@ async function publishCurrentPcbDiagnosticLifecycleRecord(operationId12, name6, 
 function assertCurrentPcbDiagnosticLifecycleSnapshot(actual, expected3) {
   requireValue14(canonicalJson(actual) === canonicalJson(expected3), "JOURNAL_CHANGED");
 }
-var DIRECTORY, MAX_BYTES7, DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, MAX_OPERATIONS, qualifiedPcbOpeningSchema, diagnosticLifecycleIdSchema, diagnosticLifecycleDigestSchema, diagnosticLifecycleWindowSchema, token2, diagnosticLifecycleBindingSchema, base3, diagnosticIntentSchema, stringIntentSchema, intentSchema2, bindingSchema2, closeIntentSchema, closeAcknowledgmentSchema, terminationSchema, releaseIntentSchema, releasedSchema, unlaunchedIntentSchema, notDispatchedSchema2, diagnosticLifecycleNoProcessReleaseProofSchema, noProcessIntentSchema, noProcessReleasedSchema, diagnosticObservationStageSchema, lifecycleObservationStages, observationIntentSchema, observationResultSchema, stringPrecreateIntentSchema, stringPrecreateObservationResultSchema, projectWindowSchema, pcbWindowSchema, stringPrecreateResultSchema, projectOpeningIntentSchema, projectOpeningResultSchema, pcbOpenIntentSchema, pcbOpenResultSchema, diagnosticLifecycleRecordSchemas, launchLease;
+var DIRECTORY, MAX_BYTES7, DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, MAX_OPERATIONS, qualifiedPcbOpeningSchema, diagnosticLifecycleIdSchema, diagnosticLifecycleDigestSchema, diagnosticLifecycleWindowSchema, token2, diagnosticLifecycleBindingSchema, base3, diagnosticIntentSchema, stringIntentSchema, intentSchema2, bindingSchema2, closeIntentSchema, closeAcknowledgmentSchema, terminationSchema, releaseIntentSchema, releasedSchema, unlaunchedIntentSchema, notDispatchedSchema2, diagnosticLifecycleNoProcessReleaseProofSchema, noProcessIntentSchema, noProcessReleasedSchema, diagnosticObservationStageSchema, lifecycleObservationStages, observationIntentSchema, observationResultSchema, stringPrecreateIntentSchema, stringPrecreateObservationResultSchema, projectWindowSchema, pcbWindowSchema, stringPrecreateResultSchema, observationFailureSchema, projectOpeningIntentSchema, projectOpeningResultSchema, pcbOpenIntentSchema, pcbOpenResultSchema, diagnosticLifecycleRecordSchemas, launchLease;
 var init_current_pcb_diagnostic_lifecycle_journal = __esm({
   "server/src/current-pcb-diagnostic-lifecycle-journal.ts"() {
     init_zod();
@@ -95795,6 +95907,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
     init_core3();
     init_current_disposable_open();
     init_current_pcb_string_precreate_validation();
+    init_current_pcb_observation_failure();
     DIRECTORY = "pcb-diagnostic-lifecycle-v1";
     MAX_BYTES7 = 8192;
     DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
@@ -95997,6 +96110,14 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       result: stringPrecreateObservationResultSchema,
       executionAuthorized: external_exports.literal(false)
     }).strict().refine((value2) => Buffer.byteLength(canonicalJson(value2.result)) <= STRING_PRECREATE_OBSERVATION_MAX_BYTES, "String precreate result exceeds its bound.");
+    observationFailureSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-observation-failure.v1"),
+      ...base3,
+      stage: external_exports.enum(["model-state", "string-precreate"]),
+      intentSha256: diagnosticLifecycleDigestSchema,
+      failure: currentPcbObservationFailureSchema,
+      executionAuthorized: external_exports.literal(false)
+    }).strict().refine((value2) => value2.stage === "string-precreate" === (value2.failure.family === "STRING_PRECREATE"));
     projectOpeningIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"),
       ...base3,
@@ -96063,7 +96184,8 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       "pcb-opening-intent.json": observationIntentSchema,
       "pcb-opening-result.json": observationResultSchema,
       "string-precreate-intent.json": stringPrecreateIntentSchema,
-      "string-precreate-result.json": stringPrecreateResultSchema
+      "string-precreate-result.json": stringPrecreateResultSchema,
+      "observation-failure.json": observationFailureSchema
     };
     launchLease = null;
   }
@@ -97887,13 +98009,13 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_IDENTITIES_MAX_BYTES) {
     throw new Error("PCB identities result exceeds its byte bound.");
   }
-  const { observations, ...metadata10 } = payload;
-  if (canonicalJson(observations.map((entry) => entry.family)) !== canonicalJson(currentPcbIdentityFamilies(request13))) {
+  const { observations: observations2, ...metadata10 } = payload;
+  if (canonicalJson(observations2.map((entry) => entry.family)) !== canonicalJson(currentPcbIdentityFamilies(request13))) {
     throw new Error("PCB identities result has unexpected family observations.");
   }
   const seen = /* @__PURE__ */ new Set();
   const extra = {};
-  for (const entry of observations) {
+  for (const entry of observations2) {
     if (entry.family === "selected" && entry.ids.length > CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS) {
       throw new Error("PCB selection exceeds its identity bound.");
     }
@@ -97910,14 +98032,14 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
   }
   let value2;
   if (request13.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
-    const match = observations.find((entry) => entry.ids.includes(request13.arguments.id));
+    const match = observations2.find((entry) => entry.ids.includes(request13.arguments.id));
     if (match === void 0 || !["Line", "Arc", "Via"].includes(match.family)) {
       throw new Error("PCB identity is not in an observed supported family.");
     }
     value2 = match.family;
-    extra["familyObservations"] = observations;
+    extra["familyObservations"] = observations2;
   } else {
-    const first = observations[0];
+    const first = observations2[0];
     if (first === void 0) {
       throw new Error("PCB identities observation is missing.");
     }
@@ -124382,7 +124504,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     }
     return payload;
   };
-  const observations = async () => {
+  const observations2 = async () => {
     const beforePayload = await observe3("pcb-source");
     const inventory2 = await observe3("pcb-inventory");
     const afterPayload = await observe3("pcb-source");
@@ -124401,10 +124523,10 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
       contextBinding: inventory2.read_consistency.contextBinding
     };
   };
-  let initial = await observations();
+  let initial = await observations2();
   if (request13.arguments.primitiveTypes.includes("Line") && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await capturePcbInheritedLineScope(engine2, context3);
-    initial = await observations();
+    initial = await observations2();
   }
   const classify = (observed2) => {
     const { source: source5, inventory: inventory2, ...proof } = observed2, inherited = inheritedScope?.derive(source5, inventory2);
@@ -124414,7 +124536,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
-  const first = classify(initial), second = classify(await observations());
+  const first = classify(initial), second = classify(await observations2());
   if (canonicalJson(first) !== canonicalJson(second)) {
     throw new Error("PCB net membership complete observations changed between cycles.");
   }
@@ -124612,7 +124734,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
     await guard();
     return payload;
   };
-  const observations = async () => {
+  const observations2 = async () => {
     const beforePayload = await observeExact("pcb-source");
     const beforeIds = await observeIds();
     const inventory2 = await observeExact("pcb-inventory");
@@ -124636,12 +124758,12 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
     };
   };
   await guard();
-  let initial = await observations();
+  let initial = await observations2();
   const initialSelected = new Set(initial.ids);
   if (initial.source.objects.some((row7) => row7.type === "LINE" && initialSelected.has(row7.id)) && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await timings.measure("inherited-capture", () => capturePcbInheritedLineScope(engine2, context3));
     await guard();
-    initial = await observations();
+    initial = await observations2();
   }
   const classify = (observed2) => {
     const { source: source5, inventory: inventory2, ids: ids2, ...proof2 } = observed2, inherited = inheritedScope?.derive(source5, inventory2);
@@ -124652,7 +124774,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
-  const first = classify(initial), second = classify(await observations());
+  const first = classify(initial), second = classify(await observations2());
   if (canonicalJson(first) !== canonicalJson(second)) {
     throw new Error("Selected PCB complete observations changed between independent cycles.");
   }
@@ -124781,7 +124903,7 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
     await guard();
     return payload;
   };
-  const observations = async () => {
+  const observations2 = async () => {
     const beforePayload = await observe3("pcb-source"), inventory2 = await observe3("pcb-inventory");
     const afterPayload = await observe3("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
@@ -124800,11 +124922,11 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
     };
   };
   await guard();
-  let initial = await observations();
+  let initial = await observations2();
   if (initial.source.objects.some((row7) => row7.type === "LINE" && requestedIds.includes(row7.id)) && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await capturePcbInheritedLineScope(engine2, context3);
     await guard();
-    initial = await observations();
+    initial = await observations2();
   }
   const classify = (observed2) => {
     const { source: source5, inventory: inventory2, ...proof2 } = observed2, inherited = inheritedScope?.derive(source5, inventory2);
@@ -124814,7 +124936,7 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
-  const first = classify(initial), second = classify(await observations());
+  const first = classify(initial), second = classify(await observations2());
   if (canonicalJson(first) !== canonicalJson(second)) {
     throw new Error("Explicit PCB complete observations changed between independent cycles.");
   }
@@ -126443,7 +126565,7 @@ function openingTarget(input) {
   return target9;
 }
 function currentPcbDiagnosticOpeningArguments(target9, phase5) {
-  return freezeDeep([{ value: openingTarget(target9) }, { value: phaseSchema2.parse(phase5) }]);
+  return freezeDeep([{ value: openingTarget(target9) }, { value: phaseSchema3.parse(phase5) }]);
 }
 function refuse3() {
   throw new Error("PCB_DIAGNOSTIC_OPENING_REPLY");
@@ -126472,7 +126594,7 @@ function ownRecord2(input, keys2) {
 }
 function decodeCurrentPcbDiagnosticOpeningReply(input, targetInput3, phaseInput) {
   const target9 = openingTarget(targetInput3);
-  const phase5 = phaseSchema2.parse(phaseInput), reply = ownRecord2(input, ["result"]);
+  const phase5 = phaseSchema3.parse(phaseInput), reply = ownRecord2(input, ["result"]);
   const value2 = ownRecord2(reply["result"], ["type", "value"]);
   const raw = value2["value"];
   if (value2["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_OPENING_RESULT_BYTES) {
@@ -126499,7 +126621,7 @@ function decodeCurrentPcbDiagnosticOpeningReply(input, targetInput3, phaseInput)
     return refuse3();
   }
 }
-var CURRENT_PCB_DIAGNOSTIC_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES, phaseSchema2, stages3, substages, codes4, CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION_SHA256, opaque, tab2, title11, observationSchema5, resultSchema3, LIMITS2;
+var CURRENT_PCB_DIAGNOSTIC_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES, phaseSchema3, stages3, substages, codes4, CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION_SHA256, opaque, tab2, title11, observationSchema5, resultSchema3, LIMITS2;
 var init_current_pcb_diagnostic_opening = __esm({
   "server/src/current-pcb-diagnostic-opening.ts"() {
     init_zod();
@@ -126509,7 +126631,7 @@ var init_current_pcb_diagnostic_opening = __esm({
     init_sqlite_inventory_core();
     CURRENT_PCB_DIAGNOSTIC_OPENING_RESULT_BYTES = 49152;
     CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES = ["preflight", "open-project"];
-    phaseSchema2 = external_exports.enum(CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES);
+    phaseSchema3 = external_exports.enum(CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES);
     stages3 = [
       "setup",
       "registration-before",
@@ -126694,7 +126816,7 @@ return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-opening.v1",ph
     }).strict();
     resultSchema3 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-opening.v1"),
-      phase: phaseSchema2,
+      phase: phaseSchema3,
       projectUuid: external_exports.string().regex(/^[a-f\d]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f\d]{32}$/u),
       documentUuid: external_exports.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
@@ -127051,7 +127173,7 @@ var init_current_pcb_diagnostic_model_scope = __esm({
 import { createHash as createHash48 } from "node:crypto";
 import { types as types11 } from "node:util";
 function refuse6() {
-  throw new Error("PCB_DIAGNOSTIC_PENDING_REPLY");
+  throw currentPcbPendingFailure("decode", "reply");
 }
 function record8(value2, names2) {
   if (value2 === null || typeof value2 !== "object" || types11.isProxy(value2) || Array.isArray(value2)) {
@@ -127082,9 +127204,16 @@ function decodeCurrentPcbDiagnosticPendingReply(input) {
     return refuse6();
   }
   try {
-    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), state4 = schema2.parse(decoded);
+    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), failure2 = currentPcbPendingFailureSchema.safeParse(decoded);
+    if (failure2.success) {
+      throw currentPcbPendingFailure(failure2.data.stage, failure2.data.reason);
+    }
+    const state4 = schema2.parse(decoded);
     return freezeDeep({ ...state4, ...LIMITS4 });
-  } catch {
+  } catch (caughtError) {
+    if (currentPcbPendingFailureDetail(caughtError) !== null) {
+      throw caughtError;
+    }
     return refuse6();
   }
 }
@@ -127094,56 +127223,61 @@ var init_current_pcb_diagnostic_pending_program = __esm({
     init_zod();
     init_current_pcb_diagnostic_json();
     init_current_pcb_diagnostic_model_program();
+    init_current_pcb_observation_failure();
     init_sqlite_inventory_core();
     CURRENT_PCB_DIAGNOSTIC_PENDING_RESULT_BYTES = 8192;
     MAX_COUNT3 = 65536;
     GUARDS2 = `
 "use strict";
-const bad=()=>{throw new Error("PCB_DIAGNOSTIC_PENDING_STATE");};
-const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
-const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+let stage="callback",reason="unexpected";
+const bad=(r="guard")=>{reason=r;throw new Error("PCB_DIAGNOSTIC_PENDING_STATE");};
+const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad("object");return o;};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad("own");const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad("own");return d.value;};
 const optional=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return {marker:"absent",value:undefined};const v=own(o,k);if(v===undefined)return {marker:"undefined",value:v};if(v===null)return {marker:"null",value:v};return {marker:"present",value:v};};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad("count");return n;};
 const count=n=>{extent(n);if(n>${MAX_COUNT3})bad();return n;};
-const flag=v=>{if(typeof v!=="boolean")bad();return v;};
-const id=v=>{if(typeof v!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad();return v;};
+const flag=v=>{if(typeof v!=="boolean")bad("flag");return v;};
+const id=v=>{if(typeof v!=="string"||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad("id");return v;};
 const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
 const keyCount=o=>{plain(o);const keys=Reflect.ownKeys(o);if(keys.some(k=>typeof k!=="string"))bad();return count(keys.length);};
 const arrayCount=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,"length"));};
-const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad("collection");const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad("collection");return count(Reflect.apply(d.get,o,[]));};
 `;
     CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback){${GUARDS2}
+try{
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
+stage="scope";
 const scope=object(own(this,"object")),retained=[];
 const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
-const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad();return o;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad("instance");return o;};
 const keep=(o,k)=>{const v=optional(o,k);retained.push([o,k,v.marker,v.value]);return v;};
-const envClass=klass("x"),env=instance(keep(envClass,"env").value,envClass),compiler=own(env,"_compiler");
+stage="environment";const envClass=klass("x"),env=instance(keep(envClass,"env").value,envClass),compiler=own(env,"_compiler");
 if(own(env,"_doctype")!==3||compiler===null||typeof compiler!=="object")bad();
 const documentUuid=id(own(env,"_id"));
 const upload=n=>{const c=klass(n),v=keep(c,"proxy");if(v.marker!=="present")return {marker:v.marker,count:null};
 const owner=instance(v.value,c),data=keep(owner,"data").value;return {marker:"present",count:collection(data,Set.prototype)};};
-const copperUploads=upload("qI"),planeUploads=upload("e5");
-const boardClass=klass("pE"),boardOwner=keep(boardClass,"proxy");
+stage="copper-uploads";const copperUploads=upload("qI");stage="plane-uploads";const planeUploads=upload("e5");
+stage="board-upload";const boardClass=klass("pE"),boardOwner=keep(boardClass,"proxy");
 const boardUpload={marker:boardOwner.marker,flag:boardOwner.marker==="present"?flag(own(instance(boardOwner.value,boardClass),"flag")):null};
-const commands=instance(keep(scope,"Xe").value,klass("kde")),undo=keep(commands,"undoCommand").value,redo=keep(commands,"redoCommand").value;
+stage="commands";const commands=instance(keep(scope,"Xe").value,klass("kde")),undo=keep(commands,"undoCommand").value,redo=keep(commands,"redoCommand").value;
 const undoCount=arrayCount(undo),redoCount=arrayCount(redo);if(undoCount>50||redoCount>50)bad();
 const active=keep(commands,"stack");if(active.marker!=="null"&&active.marker!=="present")bad();
 let activeStack=null;
 if(active.marker==="present"){
+stage="active-stack";
 const stack=instance(active.value,klass("De"));
 activeStack={commandCount:arrayCount(keep(stack,"_commands").value),waitingUploadCount:arrayCount(keep(stack,"waitingUploadStack").value),
 idMapCount:collection(keep(stack,"idMap").value,Map.prototype),refreshService:flag(own(stack,"refreshService")),
 needCheckFilterCommand:flag(own(stack,"needCheckFilterCommand")),partitionNeedAskBeforeDelete:flag(own(stack,"_partitionNeedAskBeforeDelete")),
 createPartitionFile:flag(own(stack,"createPartitionFile")),sendCopperOrderChange:flag(own(stack,"sendCopperOrderChange"))};
 }
-const tears=instance(keep(scope,"Zec").value,klass("Sfe"));
+stage="teardrops";const tears=instance(keep(scope,"Zec").value,klass("Sfe"));
 const teardrops={isMove:flag(own(tears,"isMove")),suspend:flag(own(tears,"suspend")),
 modifyCount:collection(keep(tears,"modify").value,Set.prototype),taskCount:collection(keep(tears,"task").value,Set.prototype),
 modifyTearsCount:collection(keep(tears,"modifyTears").value,Set.prototype),timer:keep(tears,"timeoutId").marker};
-const copperClass=klass("FP"),copper=instance(keep(copperClass,"manager").value,copperClass),worker=keep(copper,"workerName"),copperBus=keep(copper,"_bus");
+stage="dynamic-copper";const copperClass=klass("FP"),copper=instance(keep(copperClass,"manager").value,copperClass),worker=keep(copper,"workerName"),copperBus=keep(copper,"_bus");
 const workerId=worker.marker==="present"?extent(worker.value):null;
-const workerClass=klass("Of"),registry=keep(workerClass,"manager");
+stage="worker-registry";const workerClass=klass("Of"),registry=keep(workerClass,"manager");
 let workers=null,association=workerId===null?"no-worker-id":"registry-unavailable";
 if(registry.marker==="present"){
 const manager=instance(registry.value,workerClass),map=keep(manager,"map").value,bridges=keep(manager,"busMap").value;
@@ -127152,6 +127286,7 @@ ratlineWorkerCount:collection(keep(manager,"ratlineWorker").value,Map.prototype)
 threadBusCount:collection(keep(manager,"workerBus").value,Map.prototype),
 stateCount:keyCount(keep(manager,"_workerStateMap").value),nextWorkerId:extent(own(manager,"id")),nextThreadId:extent(own(manager,"i"))};
 if(workerId!==null){
+stage="worker-association";
 const registered=Reflect.apply(own(Map.prototype,"get"),map,[workerId]),bridge=optional(bridges,String(workerId));
 if(registered===undefined)association="missing-worker";
 else if(bridge.marker!=="present")association="missing-bridge";
@@ -127166,12 +127301,13 @@ else association="matched";
 }
 }
 }
-if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
+stage="reproof";if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
 for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v1",documentUuid,copperUploads,planeUploads,boardUpload,
+stage="serialize";return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v1",documentUuid,copperUploads,planeUploads,boardUpload,
 commands:{undoCount,redoCount,activeStack},teardrops,workerRegistry:{marker:registry.marker,workers},
 dynamicCopper:{workerMarker:worker.marker,workerId,busMarker:copperBus.marker,association}});
+}catch{return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-failure.v1",stage,reason});}
 }`;
     CURRENT_PCB_DIAGNOSTIC_PENDING_PROGRAM_SHA256 = createHash48("sha256").update(CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION).digest("hex");
     extentSchema2 = external_exports.number().int().min(0).max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
@@ -127918,19 +128054,6 @@ return output;
   }
 });
 
-// server/src/current-pcb-observation-failure.ts
-function currentPcbObservationFailure(family2, phase5, failures, cleanupFailed) {
-  return new AggregateError(
-    failures,
-    `PCB_${family2 === "MODEL" ? "DIAGNOSTIC_MODEL" : family2}_OBSERVATION_FAILED_${phase5.toUpperCase().replaceAll("-", "_")}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
-    { cause: failures[0] }
-  );
-}
-var init_current_pcb_observation_failure = __esm({
-  "server/src/current-pcb-observation-failure.ts"() {
-  }
-});
-
 // server/src/current-pcb-diagnostic-model-runner.ts
 import { types as types14 } from "node:util";
 function refuse9() {
@@ -128137,7 +128260,7 @@ function currentPcbDiagnosticPcbOpeningArguments(input, phase5) {
   if (!target9.rawWindowsPath.isWellFormed()) {
     throw new Error("PCB_DIAGNOSTIC_PCB_OPENING_TARGET");
   }
-  return freezeDeep([{ value: target9 }, { value: phaseSchema3.parse(phase5) }]);
+  return freezeDeep([{ value: target9 }, { value: phaseSchema4.parse(phase5) }]);
 }
 function refuse10() {
   throw new Error("PCB_DIAGNOSTIC_PCB_OPENING_REPLY");
@@ -128180,7 +128303,7 @@ function decodeCurrentPcbDiagnosticPcbOpeningReply(input, target9, phase5) {
     return refuse10();
   }
 }
-var CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES, phaseSchema3, stages4, codes5, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256, id12, tab3, resultSchema4, LIMITS7;
+var CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES, phaseSchema4, stages4, codes5, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256, id12, tab3, resultSchema4, LIMITS7;
 var init_current_pcb_diagnostic_pcb_opening = __esm({
   "server/src/current-pcb-diagnostic-pcb-opening.ts"() {
     init_zod();
@@ -128190,7 +128313,7 @@ var init_current_pcb_diagnostic_pcb_opening = __esm({
     init_sqlite_inventory_core();
     CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_RESULT_BYTES = 16384;
     CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES = ["preflight", "open-document", "observe"];
-    phaseSchema3 = external_exports.enum(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES);
+    phaseSchema4 = external_exports.enum(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_PHASES);
     stages4 = ["setup", "registration-before", "dispatch", "acknowledgement", "registration-after", "frame", "output", "cleanup"];
     codes5 = ["EXCEPTION", "GUARD", "FIELD", "METHOD", "BINDING", "URL", "PROJECT", "TAB", "REGISTRY", "FRAME", "ACK", "TIMEOUT", "CLEANUP"];
     CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION = `async function(target,phase){
@@ -128280,7 +128403,7 @@ return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pcb-opening.v1
     tab3 = external_exports.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})@[a-f\d]{64}$/u);
     resultSchema4 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-pcb-opening.v1"),
-      phase: phaseSchema3,
+      phase: phaseSchema4,
       projectUuid: external_exports.string().regex(/^[a-f\d]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f\d]{32}$/u),
       documentUuid: id12,
@@ -131588,8 +131711,9 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_diagnostic_model_runner();
     init_current_pcb_diagnostic_pcb_opening();
     init_current_pcb_string_precreate_runner();
-    HELPER_SHA256 = "2adfd78eaf1d1783fa6b3b45eafefbc36c410bed5409668ea3b8b2027de22e67";
-    HELPER_BYTES = 185280;
+    init_current_pcb_observation_failure();
+    HELPER_SHA256 = "39bcb93312146c74da9c6333968bdb2347a8065d914e00b2a33eb679a08c3157";
+    HELPER_BYTES = 185849;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -131617,6 +131741,7 @@ var init_current_pcb_diagnostic_owner = __esm({
       #noProcessProof = null;
       #nativeLaunchError = null;
       #nativeSendError = null;
+      #observationFailure = null;
       #closeConsumed = false;
       #releaseConsumed = false;
       #released = false;
@@ -131694,6 +131819,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           scriptInspectionConsumed: this.#scriptConsumed,
           diagnosticFailure: this.#pipe.status().failure,
           diagnosticFailureObservation: this.#pipe.status().failureObservation,
+          observationFailure: this.#observationFailure,
           projectOpeningConsumed: this.#projectOpeningConsumed,
           projectOpeningResult: this.#projectOpeningResult,
           modelObservationConsumed: this.#modelConsumed,
@@ -132182,6 +132308,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           assertCurrent();
           return result;
         } catch (caughtError) {
+          this.#observationFailure ??= currentPcbObservationFailureDetail(caughtError);
           this.#input.emit("error", error51("MODEL_OBSERVATION_FAILED"));
           throw caughtError;
         } finally {
@@ -132228,6 +132355,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           assertCurrent();
           return result;
         } catch (caughtError) {
+          this.#observationFailure ??= currentPcbObservationFailureDetail(caughtError);
           this.#input.emit("error", error51("STRING_PRECREATE_FAILED"));
           throw caughtError;
         } finally {
@@ -132789,6 +132917,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
     init_current_pcb_diagnostic_validation();
     init_current_pcb_string_precreate_validation();
     init_current_pcb_diagnostic_lifecycle_journal();
+    init_current_pcb_observation_failure();
     methods6 = [
       "launch",
       "status",
@@ -132868,8 +132997,10 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           const pendingIntent = this.#attempt?.operationId === request13.operationId ? this.#attempt : null;
           const noProcessCleanupAvailable = original2 && this.#retained !== null && this.#lease !== null && !this.#noProcessInvoked && this.#retained.methods.status.call(this.#retained.owner).noProcessCleanupAvailable;
           const native = original2 && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
+          const pendingFailure = original2 ? this.#pending.get("observation-failure.json") : void 0;
+          const failureRecord = pendingFailure === void 0 ? operation?.records["observation-failure.json"] : diagnosticLifecycleRecordSchemas["observation-failure.json"].parse(JSON.parse(pendingFailure));
           const selectedStage = request13.observation ?? this.#stages.toReversed().find((stage) => operation?.records[`${stage}-result.json`] !== void 0 || original2 && this.#pending.has(`${stage}-result.json`));
-          const observations = this.#stages.map((stage) => {
+          const observations2 = this.#stages.map((stage) => {
             const record15 = operation?.records[`${stage}-result.json`];
             const pending = original2 ? this.#pending.get(`${stage}-result.json`) : void 0;
             const retained2 = pending === void 0 ? void 0 : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending));
@@ -132899,7 +133030,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           return {
             ...describe4(request13.operationId, operation),
             busy: this.#busy,
-            observations,
+            observations: observations2,
             noProcessCleanupAvailable,
             projectOpeningAttemptConsumed: openingConsumed,
             projectOpeningResultRetained: original2 && this.#openingResult !== null,
@@ -132912,6 +133043,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             ...nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false },
             ...nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false },
             diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
+            observationFailure: native?.observationFailure ?? failureRecord?.failure ?? null,
+            observationFailurePublished: operation?.records["observation-failure.json"] !== void 0,
             nativeSendError: native?.nativeSendError ?? null,
             ...native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError },
             ...pendingIntent === null ? {} : {
@@ -133432,27 +133565,55 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         await assertSnapshot(expected3);
         this.#assertOwner(retained2);
         let result;
-        if (request13.action === "browser-observation") {
-          result = await retained2.methods.browserObservation.call(retained2.owner);
-        } else if (request13.action === "inspect-frames") {
-          result = await retained2.methods.inspectFrames.call(retained2.owner, request13.targetId);
-        } else if (request13.action === "inspect-script") {
-          result = await retained2.methods.inspectScript.call(retained2.owner, request13.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request13.family]);
-        } else if (request13.action === "inspect-workers") {
-          result = await retained2.methods.inspectWorkers.call(retained2.owner);
-        } else if (request13.action === "inspect-worker-script") {
-          result = await retained2.methods.inspectWorkerScript.call(retained2.owner, request13.targetId);
-        } else if (request13.action === "observe-model-state") {
-          result = await retained2.methods.observeModelState.call(retained2.owner);
-        } else if (request13.action === "observe-string-precreate") {
-          const observe3 = retained2.methods.observeStringPrecreate;
-          requireValue16(this.#stringPurpose && observe3 !== void 0, "STRING_PURPOSE_REQUIRED");
-          result = await observe3.call(retained2.owner);
-        } else if (request13.action === "observe-pcb-opening") {
-          const preparation3 = this.#originalProjectOpening(operation);
-          result = await retained2.methods.observePcbOpening.call(retained2.owner, preparation3.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
-        } else {
-          result = await retained2.methods.observeWorkerState.call(retained2.owner);
+        try {
+          if (request13.action === "browser-observation") {
+            result = await retained2.methods.browserObservation.call(retained2.owner);
+          } else if (request13.action === "inspect-frames") {
+            result = await retained2.methods.inspectFrames.call(retained2.owner, request13.targetId);
+          } else if (request13.action === "inspect-script") {
+            result = await retained2.methods.inspectScript.call(retained2.owner, request13.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request13.family]);
+          } else if (request13.action === "inspect-workers") {
+            result = await retained2.methods.inspectWorkers.call(retained2.owner);
+          } else if (request13.action === "inspect-worker-script") {
+            result = await retained2.methods.inspectWorkerScript.call(retained2.owner, request13.targetId);
+          } else if (request13.action === "observe-model-state") {
+            result = await retained2.methods.observeModelState.call(retained2.owner);
+          } else if (request13.action === "observe-string-precreate") {
+            const observe3 = retained2.methods.observeStringPrecreate;
+            requireValue16(this.#stringPurpose && observe3 !== void 0, "STRING_PURPOSE_REQUIRED");
+            result = await observe3.call(retained2.owner);
+          } else if (request13.action === "observe-pcb-opening") {
+            const preparation3 = this.#originalProjectOpening(operation);
+            result = await retained2.methods.observePcbOpening.call(retained2.owner, preparation3.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
+          } else {
+            result = await retained2.methods.observeWorkerState.call(retained2.owner);
+          }
+        } catch (caughtError) {
+          const failure2 = currentPcbObservationFailureDetail(caughtError);
+          if (failure2 !== null && (stage === "model-state" || stage === "string-precreate")) {
+            const record16 = diagnosticLifecycleRecordSchemas["observation-failure.json"].parse({
+              schema: "easyeda-pro-control.pcb-diagnostic-observation-failure.v1",
+              operationId: request13.operationId,
+              createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+              stage,
+              intentSha256: sha256Json(intent),
+              failure: failure2,
+              executionAuthorized: false
+            });
+            this.#retainRecord("observation-failure.json", record16);
+            try {
+              this.#assertOwner(retained2);
+              await assertSnapshot(expected3);
+              this.#assertOwner(retained2);
+              await this.#publish(request13.operationId, "observation-failure.json", record16);
+              const failed = { ...updated, records: { ...updated.records, "observation-failure.json": record16 } };
+              await assertSnapshot(expected3.map((value2) => value2.operationId === request13.operationId ? failed : value2));
+              this.#assertOwner(retained2);
+            } catch (publicationError) {
+              throw new AggregateError([caughtError, publicationError], "PCB_DIAGNOSTIC_OBSERVATION_FAILURE_PUBLICATION", { cause: caughtError });
+            }
+          }
+          throw caughtError;
         }
         this.#observations.set(stage, result);
         requireValue16(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES), "OBSERVATION_BOUND");

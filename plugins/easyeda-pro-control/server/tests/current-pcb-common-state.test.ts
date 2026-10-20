@@ -47,6 +47,8 @@ void test("rules retain all raw families, nested tables, source order and shared
   assert.ok(state.graph.nodes.some(node => node.kind === "object" && node.className === "fj"));
   assert.ok(state.graph.nodes.some(node => node.kind === "object" && node.className === "E8"));
   assert.equal(state.graph.nodes.filter(node => node.kind === "object" && node.className === "xI").length, 1);
+  assert.deepEqual(state.graph.roots[1], ["ruleUnit", ["string", "mm"]]);
+  assert.equal(state.schema, "easyeda-pro-control.pcb-common-rules.v2");
   assert.equal(state.saveAuthorized, false);
 });
 
@@ -152,7 +154,8 @@ void test("decoder requires every fixed pick field and initialized map across al
       const node = graph.nodes.find(item => item.kind === "object" && item.fields.some(field => field[0] === name));
       assert.ok(node?.kind === "object");
       node.fields = node.fields.filter(field => field[0] !== name);
-      const malformed = JSON.stringify({ schema: original.schema, documentUuid: original.documentUuid, graph });
+      if (node.enumerableKeys !== undefined) { node.enumerableKeys = node.enumerableKeys.filter(key => key !== name); }
+      const malformed = JSON.stringify({ schema: original.schema, documentUuid: original.documentUuid, pickedOwnerPublicShadowsAbsent: true, graph });
       assert.throws(() => decode(pcbStringReply(malformed)), /PCB_COMMON_GRAPH_REPLY/u, name);
     }
     for (const [name, value] of original.graph.roots) {
@@ -161,7 +164,8 @@ void test("decoder requires every fixed pick field and initialized map across al
       const graph = structuredClone(original.graph), node = graph.nodes[value[1]];
       assert.ok(node?.kind === "object");
       node.fields = [];
-      const malformed = JSON.stringify({ schema: original.schema, documentUuid: original.documentUuid, graph });
+      if (node.enumerableKeys !== undefined) { node.enumerableKeys = []; }
+      const malformed = JSON.stringify({ schema: original.schema, documentUuid: original.documentUuid, pickedOwnerPublicShadowsAbsent: true, graph });
       assert.throws(() => decode(pcbStringReply(malformed)), /PCB_COMMON_GRAPH_REPLY/u, name);
     }
   }
@@ -180,4 +184,29 @@ void test("common decoder rejects reply tricks, duplicate JSON keys, malformed U
   assert.throws(() => decodeCurrentPcbCommonRules({ result: { type: "string", value: raw, objectId: "fake" } }), /PCB_COMMON_GRAPH_REPLY/u);
   assert.throws(() => decodeCurrentPcbCommonRules(new Proxy(reply, {})), /PCB_COMMON_GRAPH_REPLY/u);
   assert.throws(() => decodeCurrentPcbCommonRules(pcbStringReply(" ".repeat(524_289))), /PCB_COMMON_GRAPH_REPLY/u);
+});
+
+void test("picked owners refuse public getter/method shadows without invoking them; old evidence is not inferred", () => {
+  for (const [source, target, key] of [
+    [CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, "scope.object.x.env", "origin"],
+    [CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, "scope.object.At.ins", "getGridX"],
+    [CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, "scope.object.At.ins.param", "getSnapY"],
+    [CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, "scope.object.Me", "topBoardColor"],
+    [CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, "scope.object.ai.model", "getDefaultPanelize"],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, "scope.object.ce.pcbConfig", "startTrackWidth"],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, "scope.object.Me", "prevTrackWidth"],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, "scope.object.nr.instance", "mode"],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, "scope.object.ha.instance", "trackMinCorner"],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, "scope.object.pl.instance", "getTrackMinCorner"],
+  ] as const) {
+    const context = pcbCommonFixture(`Object.defineProperty(${target},${JSON.stringify(key)},{get(){getterReads++;throw new Error("NO_GETTER");}});`);
+    assert.throws(() => callPcbStringObservation(context, source), /PCB_COMMON_STATE/u, key);
+    assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
+  }
+  for (const [source, decode] of [[CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, decodeCurrentPcbCommonPresentation],
+    [CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, decodeCurrentPcbCommonPreference]] as const) {
+    const reply = sample(source); const raw = reply.result.value; assert.ok(typeof raw === "string");
+    assert.throws(() => decode(pcbStringReply(raw.replace(',"pickedOwnerPublicShadowsAbsent":true', ""))), /PCB_COMMON_GRAPH_REPLY/u);
+    assert.throws(() => decode(pcbStringReply(raw.replace(".v2", ".v1"))), /PCB_COMMON_GRAPH_REPLY/u);
+  }
 });

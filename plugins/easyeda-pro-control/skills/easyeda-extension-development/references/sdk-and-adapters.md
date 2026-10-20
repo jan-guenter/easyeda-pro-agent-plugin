@@ -158,8 +158,11 @@ smart command are not replaced by null assumptions.
 `current-pcb-string-postcreate.ts` joins original candidate/create/publication
 plans, a supplied completed acknowledgment, exact raw zero-to-one String
 samples and the one-record publication. It checks birth markers, raw scalars,
-color, document and ID together. Text-box geometry and data-state flags remain
-unmodeled; comparison digests are projection hashes, not raw artifact hashes.
+color, document and ID together. The default-font box is separately predicted
+from pinned ASCII glyph extrema, native endpoint rounding and the fixed
+origin/matrix relation. This is not an outline or rendering check; raw data-state
+flags remain unmodeled. The glyph table still needs live provenance. Comparison
+digests are projection hashes, not raw artifact hashes.
 Both modules leave all ownership, complete-effect, Save and writer authority
 false. They do not observe the publication interval or join a project worker.
 

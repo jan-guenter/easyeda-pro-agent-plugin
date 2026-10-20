@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "9c7cbf80988f3728484c7c134397a380fbadf39c98fc59e418117c44816af97f",
-      "fileCount": 554,
+      "sha256": "c45702a0539a94752bb046d09b7abd3cfeb04da89632094a31165ea70cc936cc",
+      "fileCount": 560,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -542,14 +542,24 @@
           "sha256": "5ff51ab6b819796249bee4495ce0f1de1777bffa46e67c9e276949053710ff16"
         },
         {
+          "relativePath": "current-pcb-common-encoding.ts",
+          "bytes": 19485,
+          "sha256": "5fffc2e2852146d0baefa7a8df2e7538a99a8fd240b58a9ef0800657e2b4e5e0"
+        },
+        {
           "relativePath": "current-pcb-common-graph.ts",
-          "bytes": 10269,
-          "sha256": "1af4e561390be367b04a6a8cd2397e4c66ecc325694ae59de6431a4639542bd7"
+          "bytes": 11964,
+          "sha256": "b5c393c5eac8f83b61bebe771634f1735aaf19d4018df5be01e26f14da89d8a0"
+        },
+        {
+          "relativePath": "current-pcb-common-rule-encoding.ts",
+          "bytes": 21494,
+          "sha256": "e3328405d2d1435610c32356f2b0dc59ddb2ad7f1ab1e80016e1d6ede2ec27e7"
         },
         {
           "relativePath": "current-pcb-common-state.ts",
-          "bytes": 14222,
-          "sha256": "c3bb58d1ca2111cf48c2a83f0745e892d261fbca86a709ec1c8d27e231dd7884"
+          "bytes": 16113,
+          "sha256": "552f593e83f49cd83b8bd2fad0cb1b340f8fe39ef45b601c182ffbb172d4c3ad"
         },
         {
           "relativePath": "current-pcb-diagnostic-ancillary.ts",
@@ -583,13 +593,13 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle-journal.ts",
-          "bytes": 31793,
-          "sha256": "0bee46c81077b95ba1c80501985decb283dd4cd073e1657cb4479e2eec8e1130"
+          "bytes": 32834,
+          "sha256": "dec7e000872aa65c865077f8f758cfe8132007cfa6152717e810fe57b54d79c9"
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle.ts",
-          "bytes": 64784,
-          "sha256": "9e42e90a628377f2a5acb390e316ecdbac09dc936ea6bd3befd02a5def2de8d0"
+          "bytes": 66845,
+          "sha256": "83ef1d103b9977f7dc01d5c14ca347ca6c3a2c03243951da12245ba4944f31df"
         },
         {
           "relativePath": "current-pcb-diagnostic-model-program.ts",
@@ -613,8 +623,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-owner.ts",
-          "bytes": 59831,
-          "sha256": "078e2dbf88128d3eb2ed57dbdf4306df03535c09cf0b9faaf8d45525279e15d6"
+          "bytes": 60381,
+          "sha256": "d01ab422fdb50c8e1797942fc08ccbb11d8780fccdabd42630749b18f9d84b28"
         },
         {
           "relativePath": "current-pcb-diagnostic-pcb-opening.ts",
@@ -623,8 +633,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-pending-program.ts",
-          "bytes": 12752,
-          "sha256": "08f05f238ba62f5c1334bdd2106b3442a07492fb8a7ae1e34b80abbfe39f4dc8"
+          "bytes": 13694,
+          "sha256": "6a48d4f745ab5d328ff29ac406b042b931085d8c75685d2a047491346aaa9ed5"
         },
         {
           "relativePath": "current-pcb-diagnostic-pipe.ts",
@@ -723,8 +733,8 @@
         },
         {
           "relativePath": "current-pcb-observation-failure.ts",
-          "bytes": 985,
-          "sha256": "65db1db91d67ff3d6d145b8cd63bced7fee78b60ee1e981dd203664509ce533f"
+          "bytes": 4059,
+          "sha256": "08df3e8b63a73523c22e84e7753d5d2d7c612e97a32159abf523ffc3676be73d"
         },
         {
           "relativePath": "current-pcb-pad-polygon.ts",
@@ -903,8 +913,13 @@
         },
         {
           "relativePath": "current-pcb-string-create.ts",
-          "bytes": 8719,
-          "sha256": "c4c67c498cceeb3d2eb65851a9f715cbb07fca9695489134638ec57b80c69b89"
+          "bytes": 9026,
+          "sha256": "57c3963c4782a12e370d7a73970a3ee5949170609bfa39cd237095251e5600c5"
+        },
+        {
+          "relativePath": "current-pcb-string-default-geometry.ts",
+          "bytes": 5162,
+          "sha256": "771bd9e8bc091de238541d67f9581d5a32a4e1283b92253f03fa772a567de0c9"
         },
         {
           "relativePath": "current-pcb-string-empty-assets.ts",
@@ -937,9 +952,14 @@
           "sha256": "a0a40656ac84da25ab2b36b1c6e1a4be4fe47f96683d682173f49cfeb0aa26ac"
         },
         {
+          "relativePath": "current-pcb-string-phase-assets.ts",
+          "bytes": 11055,
+          "sha256": "1338e78e5bb9f4d285096fa92534b20417555519f1c536ad951d6486cde48dfc"
+        },
+        {
           "relativePath": "current-pcb-string-postcreate.ts",
-          "bytes": 10910,
-          "sha256": "efd6c9cff4c0ff760032821c8bb20fe9b4026536af538554b134c92740a0b743"
+          "bytes": 11223,
+          "sha256": "9eb190ceab643160c2d7071e223c4212b4a49db73d55d99710400e09910f04ea"
         },
         {
           "relativePath": "current-pcb-string-precreate-runner.ts",
@@ -950,6 +970,16 @@
           "relativePath": "current-pcb-string-precreate-validation.ts",
           "bytes": 6011,
           "sha256": "3f0be6db173d01858d05a359cab022348b119f69b2cabaddb6a17ce347b9b325"
+        },
+        {
+          "relativePath": "current-pcb-string-producer-callback-program.ts",
+          "bytes": 5901,
+          "sha256": "9d4bc81e3b92928626aae5fe0cec75b259a941ce31bb6fa157f71a02a69c4030"
+        },
+        {
+          "relativePath": "current-pcb-string-producer-callback-scope.ts",
+          "bytes": 9958,
+          "sha256": "b2a4cb382d252201cec56807dbeb9ae16b3835952a828c30aa2bd7d79fb1fbba"
         },
         {
           "relativePath": "current-pcb-string-producer-observation.ts",
@@ -2781,7 +2811,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5d8bbaf3435e1fbf0ab910ae60772f9852b5cbb876e9e58444dac99c308a0b8c",
+      "sha256": "020a0ca540067ecb02fede2db574e92dba03176d743baf1d306963d00ebec282",
       "fileCount": 3,
       "files": [
         {
@@ -2791,19 +2821,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 9487505,
-          "sha256": "75e86e2e479ca6925d9322fa24c713209c632410c706a64594bc84370721dd34"
+          "bytes": 9495397,
+          "sha256": "3fb6b16a57c4d0c3d5770392c2e8f8be06f2ecae844e2af34743af50b2139393"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "a68a1cf323b840a9018e63546766b5ac9c7bb7e8acf384f0eee4b720dc4275aa"
+          "sha256": "854a20be06219d42aab0a8ef902f19db609e6c72a6081e2eb200977577a65ea0"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-20T20:22:35.362Z",
+  "reviewedAt": "2026-10-20T21:27:35.924Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

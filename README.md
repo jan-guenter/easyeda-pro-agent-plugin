@@ -9,6 +9,11 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
+Candidate `0.3.0+codex.20261020211943` combines [common-record and rule encoding,
+callback profiles, text-base/cache phases, default-font geometry and retained
+failure diagnostics](docs/current-pcb-common-effects-batch-2026-10-20.md).
+These components support further integration; no new writer is registered.
+
 Published and installed `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
 duplicate startup-scan removal, preserved observation/cleanup errors, and
 [common-state and latent-producer runners](docs/current-pcb-baseline-producers-batch-2026-10-20.md).
@@ -29,7 +34,13 @@ Installed185144 passed the initialization prefix but refused the post-open title
 check. That disposable case was normally closed and released, with its closed
 file unchanged. The UUID-only SDK route retains the base title; our predicate
 incorrectly expected the path-based route's filename prefix. The corrected
-opening and combined observation path still need connected qualification.
+project opening has now passed on installed20202000, followed by exact PCB-frame
+and project-worker source qualification. Its combined observation stopped at the
+pending-work reader before any create or explicit Save. Original normal closure,
+whole-Job termination and release passed; the disposable file remained unchanged.
+The candidate batch combines reader diagnostics with common-record encoding,
+callback profiles, text-base/cache phases and default-font geometry checks.
+The complete writer and saved/reopened lifecycle remain unfinished.
 
 Installed `0.3.0+codex.20261018195000` passed the disposable PCB title-change
 lifecycle: one acknowledged rename, exact complete closed SQL effect, matching
@@ -80,8 +91,8 @@ uses that evidence to enable only eligible ordinary-project container titles;
 it does not enable sheet or circuit editing. It also adds a validation-only
 native diagnostic tool with fixed browser/frame/script observations, original
 process ownership and explicit cleanup, including confirmed no-process refusals.
-Connected native diagnostic qualification
-and PCB writing remain pending; no diagnostic result grants CAD execution.
+At that release, connected native diagnostic qualification and PCB writing were
+pending; no diagnostic result grants CAD execution.
 
 Update `0.3.0+codex.20261020081744` adds a
 [retained-owner disposable project opener](docs/current-pcb-diagnostic-opening-2026-10-20.md)
@@ -93,7 +104,7 @@ verifies the suspended process image before its single resume. The shared launch
 code passed a synthetic Windows no-op child test. The installed081744 continuation
 also launched EasyEDA and completed original-owned normal closure and release.
 Browser inspection stopped at the native dispatch boundary before any project
-opening; opening and model-observer qualification remain pending. Windows CI
+opening; that snapshot did not qualify opening or the model observer. Windows CI
 runs the shared synthetic launch test.
 
 Update `0.3.0+codex.20261020093241` adds a separate
@@ -105,7 +116,7 @@ and integrates [pending-producer samples](docs/current-pcb-pending-producers-202
 with [bounded raw String observations](docs/current-pcb-raw-string-observation-2026-10-20.md).
 These are fixed diagnostic operations, not a complete PCB baseline or a writer.
 Its installed continuation passed native browser/frame/UI-source reads and
-normal cleanup. Project/PCB/model qualification remains pending: the Start Page
+normal cleanup. That snapshot did not qualify project/PCB/model observations: the Start Page
 contained an extra blank child whose DOM owner was not inspected. See the
 [combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
 
@@ -114,8 +125,9 @@ navigation-event corrections with two pure String-writer compositions.
 Installed120717 retained an `event-callback` refusal with event kind `unknown`
 while project opening was pending. It did not establish completed opening.
 Original normal closure, process/Job termination and terminal release passed;
-the closed disposable fixture remained unchanged. The corrected event policy
-still needs its own connected qualification.
+the closed disposable fixture remained unchanged. At that release, the corrected
+event policy still needed its own connected qualification; the later20202000
+opening/source result is recorded above.
 
 The new offline models check 47 first-fixture conditions and join a supplied
 create acknowledgment, raw String observations and one exact publication.
