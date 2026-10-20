@@ -4,7 +4,59 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-### Active185144 continuation
+### Delivered20202000 checkpoint
+
+Delivered `0.3.0+codex.20261020202000` through protected PR90 on2026-10-20.
+Exact CI head `dc17c0fa61feb1be2937e10fedf7af41a3e9ef80`, merged main
+`7df9a9cd2c7e6935ad341df3ae9e08dcc76b1d9e`; complete tree17bf51b3 and plugin
+treef689108a are identical. Batch: UUID-only opening title contract, duplicate
+admission-scan removal, primary/cleanup failure retention, raw common-state/
+assets and fixed11-command runner, selected producer closures and fixed34-command
+runner. New runners remain private/unregistered; native64/90 budgets unchanged.
+No String writer/Save action or added SDK coverage. Full backlog is in
+`docs/current-pcb-baseline-producers-batch-2026-10-20.md`.
+
+Frozen source554/9c7cbf80, runtime3/5d8bbaf3, manifest48a25216. Only facade
+projections/review time changed; external pins unchanged. Final helper185280/
+2adfd78e passes both actual Windows CompileOnly profiles without application
+launch. Independent source/integration/native/pin/package reviews pass.
+Dependencies/tree/signatures/audit/sanitizer pass. Frozen verify61383 PASSED:
+12021facade tests/12017passed/4platformskips/0failures,424bridge tests, strict
+lint/types and package/MCP checks. Rebuilt committed bundles are exact. Root
+repository/privacy and all7skill-creator checks58200 pass. Prefreeze190test run
+failed49 due full /tmp then synthetic launch-quarantine cascades; final tests use
+TMPDIR=/root/.cache. Earlier repository28003 overlapped bundle publication and
+refused transient files; settled58200 passes. Both failed records retained.
+Exact-head Linux39491797097(all10jobs) and Windows39491797251 PASSED.
+Post-main Windows39493798406 PASSED; Linux39493798341 still runs on exact
+7df9a9cd. Check its completion next session; do not repeat broad local suites.
+
+Official named Git marketplace upgrade86417 completed with no errors/stderr.
+CLI lists20202000 installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+is merged main. Maintained comparison60509 passes all1637files/42directories/
+33598845bytes/modes, inventory3c87674a, receiptff2a81f9. Exact-main worktree:
+`/root/.cache/easyeda-20202000-merged-main-okSfnQ8O/worktree`.
+Installed offline probe60509 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0,0stderr and normal EOF/exit0. Post-close marker/
+control checks and no-descendant/socket samples pass; continuous isolation and
+connected execution are not claimed. Receipte756d9d8, liveControlRootSelectedfalse.
+Loaded host1534112 remains185144. It was not killed/rebound/hotpatched; no live
+call after installation. Fresh Codex session and actual20202000 admission are
+required before the next NEW disposable case. Terminal185144 below is NEVER
+replayed; no pending CAD/native owner, edit or Save. Production designs untouched.
+
+Release evidence: `/root/.cache/easyeda-common-producer-release-2Lz05itK`.
+Main fully read three private next-work files: next-writer-integration.md
+SHA7cbc8c6d, common-encoding-next.md SHA29c7f9ba, producer-callbacks-next.md
+SHA106e49c0. They identify concrete encoder/asset/callback/publisher/clock/owner
+gaps. Proposed607+ command composition is NOT an approved minimum; derive the
+smallest useful fixed transcript without duplicate samples or weakened guards.
+Next: actual host admission and one new corrected opening/precreate case, then
+batch the complete writer integration; do not publish each diagnostic fix alone.
+These local delivery notes are beyond immutable PR90; packaged plugin unchanged.
+
+### Completed185144 continuation
 
 Actual185144 admission passed main and independent checks: facade1534112/
 start50167713, parent1532634/start50165334, exact installed cwd/argv,

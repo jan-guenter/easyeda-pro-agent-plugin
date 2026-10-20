@@ -9,7 +9,7 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Candidate `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
+Published and installed `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
 duplicate startup-scan removal, preserved observation/cleanup errors, and
 [common-state and latent-producer runners](docs/current-pcb-baseline-producers-batch-2026-10-20.md).
 The new private runners preserve raw common state and inspect selected deferred
