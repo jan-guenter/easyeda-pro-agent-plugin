@@ -4,6 +4,96 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020120717` combines bounded first-failure diagnostics,
+interaction/secondary-index observations within the same root request, an
+offline installed-catalog checker and operational skill updates. No writer
+authority or SDK-method coverage added. Focused diagnostic tests125,
+interaction/root13 and native/protocol14 pass; strict targeted lint/types pass.
+Independent root/source, diagnostic integration and offline-probe reviews pass.
+The probe now checks forbidden shutdown effects after EOF; six focused tests
+and final types/strict lint pass. No connected writer claim follows.
+Native CompileOnly passed actual helper152165/555146fd, emptyJob/pipes and
+processLaunchedfalse. Evidence:
+`/root/.cache/easyeda-pcb-live-model-release-KEPZgePX`.
+Final freeze/verification, CI/publication and installation remain pending.
+PR87 initially failed Windows synthetic-launch validation because its separate
+test fixture still pinned the old helper. Corrected only that fixture's exact
+size/hash. The shared native suspended-image/no-op-child test now passes:
+root/Job natural exit and release, no EasyEDA process or forced termination.
+The superseded local full run1025 was stopped through its own verified test
+process group; its log is retained and is not passing evidence. A new final
+unchanged-payload verification is required. No host-owned gateway was signaled.
+
+Delivered `0.3.0+codex.20261020105401` through protected PR86 on2026-10-20.
+Final payload `162e2d0a0d8357c9a076943c35d5254f6c813537`, merged main
+`65e54dec5c6e9649fec870ece8c21b6c8321b91b`; complete treee458f504 and plugin
+tree91edab1b are identical between final PR head and merged main.
+
+One batch adds strict Start Page ancillary-object admission, populated PCB-root
+inventory and two String input-walker Proxy fixes, with operational skill updates.
+The full path uses64requests, including original-group release. Four samples
+remain non-atomic; no empty-board, complete ownership, queue completion, writer
+or Save authority follows. SDK coverage remains774:212public subsets,
+33native equivalents/79blocked/450omitted.
+
+Final frozen verify18294 PASSED:11,872facade/4platformskips/0failures;
+424bridge; strict types/type-aware lint, build, package/MCP and seven skills.
+Logb90b8ccf; all1,585 packaged input files unchanged, fingerprint94a30a01.
+Repository/privacy57533 passededf62efe; seven skill-creator checks33066965.
+Dependency signatures151/attestations40/audit pass, zero vulnerabilities.
+Source529/b28057a3, runtime3/c51ddba3, manifestcc4145ae, plugin manifestb5700204.
+Only facade projections/review time changed; external pins unchanged.
+Exact-head Linux39412830256 PASSED all8shards/build/finalgate; Windows
+39412830294 PASSED. Post-main Windows39414551492 and Linux39414551512
+PASSED on exact65e54dec. The restarted session confirmed Linux completion.
+Do not rerun another broad validation campaign for this delivered payload.
+
+Official named Git marketplace upgrade18342 completed with no errors/stderr;
+list confirms installed/enabled105401 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison98505 PASSED
+1,585files/42directories/32,867,120bytes and modes, inventory1102edaf.
+Exact-main worktree:
+`/root/.cache/easyeda-105401-merged-main-YJt3ekLW/worktree`.
+Release evidence: `/root/.cache/easyeda-start-page-inventory-release-xu66hOr6`.
+The frozen package's offline catalog checks passed; installed byte comparison
+is not an installed-process startup/admission claim. Fresh actual105401 admission
+now passed independently and by main: facade1149806/start47208795,
+parent1148063/start47202747, exact argv/cwd and Node24.18.0/core0.
+All529source/3runtime/manifest and the full1,585-file inventory match.
+Independent proofbc05a3ef:
+`/root/.cache/easyeda-105401-independent-admission-psgR1vDO/proof.json`.
+Former1037922 was not killed or hotpatched.
+
+The consumed093241 diagnostic is terminal released, with original root/Job
+termination proved. Its browser/frame/UI-source reads passed; its actual blank
+child owner was never inspected. No project/PCB opening, worker/model sample,
+CAD edit, explicit Save or production-design access occurred. Existing-profile
+startup effects remain unqualified. Do not replay that case or reinterpret it
+as proof of the new ancillary path.
+
+NEW `diag-native-105401-20261020-01` passed launch/browser/frames/UI source,
+then project opening failed `PCB_DIAGNOSTIC_PIPE_REPLY` after retained successful
+preflight. Dispatch after that preflight remains ambiguous; do not replay.
+No PCB opening, worker/model sample, CAD edit or explicit Save was issued.
+Original4912/created134369709344525245, binding60d01ff9, hwnd13243490 received
+one normal-close. Original root/whole-Job termination and terminal release passed.
+Closed disposable fixture remains exacte620d21a/598016bytes. This is file
+invariance, not a claim of absent startup/profile effects.
+Receipts: `/root/.cache/easyeda-105401-native-diagnostic-live-cF32iVUP`.
+
+Current source batch on `feature/pcb-live-model-batch-20261020`: retain bounded
+first-failure request/event diagnostics; extend the same root observation with
+source-derived idle interaction and secondary-index state; add a dependency-free
+offline installed-catalog checker. None is published or connected-validated yet.
+Next live work remains project/PCB/model qualification and the exclusive worker
+path, then String writer/source/producer and saved/reopened/visual proof.
+Populated geometry readers, remaining design/library/manufacturing families and
+portability remain backlog. Batch useful work before another release.
+This continuation is beyond the immutable PR86 payload.
+
+### Completed105401 preparation
+
 Candidate `0.3.0+codex.20261020105401` batches Start Page ancillary-object
 admission, a populated PCB-root census and two String walker Proxy fixes.
 Four non-atomic diagnostic samples fit the unchanged64-request/64MiB/128KiB

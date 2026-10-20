@@ -13,6 +13,10 @@ root/whole-Job termination and helper release. Its observed Start Page had an
 additional blank child that its opener did not support; no project opening was
 attempted. This does not validate project/PCB opening, worker or model samples.
 Older snapshots may lack the tool or the additional fields described below.
+Installed105401 reached a successful project-opening preflight, then stopped
+with an opaque pipe-reply error. Its original normal cleanup completed, but
+actual project dispatch remained ambiguous. Do not treat that preflight or
+the unchanged closed fixture as completed project/PCB qualification.
 
 Existing-profile startup can restore projects, run extensions, contact services,
 migrate data or persist preferences/cache. It is neither isolated nor guaranteed
@@ -194,10 +198,18 @@ scope and document identity:
   Populated collections are accepted within fixed bounds. Root-tree/Set
   disagreements are reported, not silently corrected or treated as emptiness.
   Absent or undefined owners are diagnostic abnormal states, not empty models.
+  Its `interaction` subset also reports the original tool chain, selection,
+  selected controllers and secondary indexes. The ordinary idle chain is
+  `$0 → m0e → Eh`; a fresh smart-dimension controller has an empty command,
+  not a null command. Unknown active tools are labeled `other`, not treated
+  as idle. Missing, undefined, null and present timer fields stay distinct.
 
 These samples are not atomic. The String manager is not the whole PCB, and an
 empty manager or zero root census does not prove an empty board. The census
-does not cover secondary indexes, active tools, geometry or complete ownership.
+does not cover every secondary index or active tool, geometry or complete
+ownership. Ratline/network indexes and the latent move-callback closure remain
+outside the interaction subset. A timer's presence does not prove it is pending
+or completed. These fields do not establish writer readiness.
 Unsupported models or over-budget
 results refuse without truncation. The combined reply stays within128KiB.
 No queue payloads are returned. This is not a complete pending-producer inventory,
@@ -221,6 +233,13 @@ object group's release must succeed before the composite is accepted.
   refusal or an absent process. Cleanup proof retains the code when available.
   Opening status/results are separately retained on `inspect`; they never mint
   a new attempt.
+- New snapshots also return `diagnosticFailureObservation` from the original
+  retained owner. It records the first transport failure's fixed request
+  method/phase/number, pending status, reason label and bounded event kind.
+  Unknown event names become `unknown`; payloads and exception text are absent.
+  This distinguishes a malformed reply from an event-policy refusal without
+  extra protocol requests. It does not prove dispatch absence, authorize a
+  retry or recover the cause of an older opaque failure.
 - If publication failed, keep the original facade alive. When offered,
   `settle-records` takes the inspected `intentSha256` as `expectedIntentSha256`.
   It publishes only absent records from the original retained bytes. It neither

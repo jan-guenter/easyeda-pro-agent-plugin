@@ -85,7 +85,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     status: () => ({ helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"),
-      scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null,
+      scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null, diagnosticFailureObservation: null,
       projectOpeningConsumed: calls.includes("open-preflight"), projectOpeningResult: calls.includes("native-opening-reply") ? OPEN_RESULT : null,
       modelObservationConsumed: calls.includes("model-state"),
       pcbOpeningConsumed: calls.includes("pcb-preflight"), pcbOpeningResult: calls.includes("native-pcb-reply") ? PCB_OPEN_RESULT : null,
@@ -497,6 +497,12 @@ void test("opening uncertainty retains intent and allows cleanup but not worker 
 
 void test("postcheck failure exposes the original native reply without accepting, publishing or replaying opening", async context => {
   const id = "diagnostic-test-project-postcheck", value = fixture(context, id);
+  const failure = { schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1", code: "reply",
+    reason: "event-callback", request: { id: 25, method: "Runtime.callFunctionOn", phase: "project-open-project" },
+    requestPending: true, eventKind: "Page.frameNavigated", executionAuthorized: false, dispatchAbsenceVerified: false } as const;
+  const status = value.owner.status;
+  value.owner.status = (): ReturnType<CurrentPcbDiagnosticLifecycleOwner["status"]> =>
+    ({ ...status(), diagnosticFailure: "reply", diagnosticFailureObservation: failure });
   value.owner.openProject = async (_target, reverify): Promise<never> => {
     value.calls.push("open-preflight"); await reverify(); value.calls.push("open-dispatch", "native-opening-reply");
     throw new Error("synthetic postcheck refused");
@@ -505,6 +511,7 @@ void test("postcheck failure exposes the original native reply without accepting
   await assert.rejects(value.request("open-project", OPEN_INPUT), /postcheck refused/u);
   const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
   assert.deepEqual(inspected["nativeOpeningReply"], OPEN_RESULT);
+  assert.deepEqual(inspected["diagnosticFailureObservation"], failure);
   assert.equal(inspected["hostTransitionAccepted"], false);
   assert.equal(inspected["projectOpeningState"], "opening-unknown");
   assert.equal(inspected["projectOpeningResultRetained"], false);
@@ -519,6 +526,7 @@ void test("postcheck failure exposes the original native reply without accepting
   const historical = await new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id });
   assert.equal(historical["projectOpeningState"], "opening-unknown");
   assert.equal(Object.hasOwn(historical, "nativeOpeningReply"), false);
+  assert.equal(historical["diagnosticFailureObservation"], null);
   assert.equal(value.calls.filter(call => call === "open-dispatch").length, 1);
   await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
 });

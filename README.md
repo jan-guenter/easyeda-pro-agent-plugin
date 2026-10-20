@@ -87,6 +87,13 @@ normal cleanup. Project/PCB/model qualification remains pending: the Start Page
 contained an extra blank child whose DOM owner was not inspected. See the
 [combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
 
+Candidate `0.3.0+codex.20261020120717` batches bounded first-failure diagnostics,
+selected PCB interaction/secondary-index observations and a dependency-free
+offline installed-catalog checker. The observations still grant no writer
+authority. Installed105401 reached project-opening preflight but stopped on an
+opaque pipe reply; it was normally closed and released without retry.
+See the [live-model batch and backlog](docs/current-pcb-live-model-batch-2026-10-20.md).
+
 Update `0.3.0+codex.20261020105401` adds strict
 [Start Page ancillary-object admission](docs/current-pcb-start-placeholder-2026-10-20.md),
 a [populated PCB root inventory](docs/current-pcb-root-membership-2026-10-20.md)

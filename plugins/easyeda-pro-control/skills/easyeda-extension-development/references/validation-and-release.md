@@ -211,6 +211,18 @@ the installed catalog. Do not kill the host-owned gateway, patch a loaded cache
 or force a connected runtime onto a new source tree. Report any outstanding
 live admission/import requirement explicitly.
 
+Use `scripts/probe-installed-offline-catalog.ts /absolute/installed/plugin`
+with pinned Node24.18.0 and soft core limit zero for the offline catalog check.
+It requires a dependency-free package path, creates its own private synthetic
+profile, and uses the package's configured `--machine-launch` entrypoint.
+It checks restricted tool/schema discovery and argument validation, samples
+for unexpected child processes and sockets, then closes only its own child
+through stdin EOF. It never uses the live control root or a connected tool.
+Keep its receipt separate from full installed-file comparison and admission of
+the actual host-owned facade. Its two isolation samples are not continuous
+observation. If EOF closure is uncertain, retain that owner and evidence;
+do not signal another facade or treat the timeout as successful cleanup.
+
 After a marketplace upgrade, inspect the installed version and files before
 issuing another plugin add. The upgrade may already have refreshed an enabled
 plugin. A later redundant add error does not undo verified installed bytes;

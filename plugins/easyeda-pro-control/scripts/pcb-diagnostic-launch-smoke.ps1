@@ -31,11 +31,11 @@ $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 # The larger fixed root-inventory program raises only this source-artifact
 # ceiling. Protocol limits stay 64 requests, 64 MiB and 128 KiB observations.
 $bytes = Read-BoundedFile $helper 196608
-if ($bytes.Length -ne 144881) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 152165) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne 'e315c83350188bdcd4a6de4221098e2539c073b4378fa9d134329db5da838a1f') {
+if ($helperHash -cne '555146fdb9ae2ff0672a7cef758e96ac9618fb3a3472a0bd80a570e6ca0fa8e9') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)

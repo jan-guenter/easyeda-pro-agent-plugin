@@ -1,5 +1,12 @@
 # PCB root model membership
 
+This note records the first census, delivered in105401. Its function hash and
+omission list describe that snapshot. The later
+[interaction follow-up](current-pcb-string-writer-prerequisites-2026-10-20.md)
+adds selected tool state and partition, inner-layer, retained-line, smart-
+dimension and group-view indexes to the same request. It still does not prove
+complete ownership, cover all secondary roots or authorize writing.
+
 ## Result
 
 A useful root-membership census is reachable through the existing source-admitted

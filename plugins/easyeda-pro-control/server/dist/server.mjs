@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a183e36c7dcb06fdaacb5f7f4955cfe9b3e3780793448fa07b0c5f06bb1c6afd";
+const __easyedaBundlePairId = "23040adb0e40589b4ffa6f1fc6cb4e03d9a14d7a72812d6a9248395af6f1f933";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -4206,8 +4206,8 @@ var init_az = __esm({
 });
 
 // node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getBelarusianPlural(count3, one, few, many) {
+  const absCount = Math.abs(count3);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -6387,8 +6387,8 @@ var init_hu = __esm({
 });
 
 // node_modules/zod/v4/locales/hy.js
-function getArmenianPlural(count2, one, many) {
-  return Math.abs(count2) === 1 ? one : many;
+function getArmenianPlural(count3, one, many) {
+  return Math.abs(count3) === 1 ? one : many;
 }
 function withDefiniteArticle(word) {
   if (!word)
@@ -8629,8 +8629,8 @@ var init_ro = __esm({
 });
 
 // node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getRussianPlural(count3, one, few, many) {
+  const absCount = Math.abs(count3);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -26435,20 +26435,20 @@ var require_resolve = __commonJS({
       return false;
     }
     function countKeys(schema3) {
-      let count2 = 0;
+      let count3 = 0;
       for (const key in schema3) {
         if (key === "$ref")
           return Infinity;
-        count2++;
+        count3++;
         if (SIMPLE_INLINED.has(key))
           continue;
         if (typeof schema3[key] == "object") {
-          (0, util_1.eachItem)(schema3[key], (sch) => count2 += countKeys(sch));
+          (0, util_1.eachItem)(schema3[key], (sch) => count3 += countKeys(sch));
         }
-        if (count2 === Infinity)
+        if (count3 === Infinity)
           return Infinity;
       }
-      return count2;
+      return count3;
     }
     function getFullPath(resolver, id14 = "", normalize) {
       if (normalize !== false)
@@ -29930,8 +29930,8 @@ var require_contains = __commonJS({
         cxt.result(valid, () => cxt.reset());
         function validateItemsWithCount() {
           const schValid = gen.name("_valid");
-          const count2 = gen.let("count", 0);
-          validateItems(schValid, () => gen.if(schValid, () => checkLimits(count2)));
+          const count3 = gen.let("count", 0);
+          validateItems(schValid, () => gen.if(schValid, () => checkLimits(count3)));
         }
         function validateItems(_valid, block) {
           gen.forRange("i", 0, len, (i2) => {
@@ -29944,16 +29944,16 @@ var require_contains = __commonJS({
             block();
           });
         }
-        function checkLimits(count2) {
-          gen.code((0, codegen_1._)`${count2}++`);
+        function checkLimits(count3) {
+          gen.code((0, codegen_1._)`${count3}++`);
           if (max === void 0) {
-            gen.if((0, codegen_1._)`${count2} >= ${min}`, () => gen.assign(valid, true).break());
+            gen.if((0, codegen_1._)`${count3} >= ${min}`, () => gen.assign(valid, true).break());
           } else {
-            gen.if((0, codegen_1._)`${count2} > ${max}`, () => gen.assign(valid, false).break());
+            gen.if((0, codegen_1._)`${count3} > ${max}`, () => gen.assign(valid, false).break());
             if (min === 1)
               gen.assign(valid, true);
             else
-              gen.if((0, codegen_1._)`${count2} >= ${min}`, () => gen.assign(valid, true));
+              gen.if((0, codegen_1._)`${count3} >= ${min}`, () => gen.assign(valid, true));
           }
         }
       }
@@ -32236,7 +32236,7 @@ var init_mcp_server = __esm({
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 function toolInputElementCount(value2, max) {
-  let count2 = 0;
+  let count3 = 0;
   const stack = [value2];
   while (stack.length > 0) {
     const node = stack.pop();
@@ -32244,8 +32244,8 @@ function toolInputElementCount(value2, max) {
       continue;
     if (Array.isArray(node)) {
       for (const child of node) {
-        if (++count2 > max)
-          return count2;
+        if (++count3 > max)
+          return count3;
         if (child !== null && typeof child === "object")
           stack.push(child);
       }
@@ -32253,15 +32253,15 @@ function toolInputElementCount(value2, max) {
       for (const key in node) {
         if (!Object.prototype.hasOwnProperty.call(node, key))
           continue;
-        if (++count2 > max)
-          return count2;
+        if (++count3 > max)
+          return count3;
         const child = node[key];
         if (child !== null && typeof child === "object")
           stack.push(child);
       }
     }
   }
-  return count2;
+  return count3;
 }
 function resolveMaxToolInputElements(value2) {
   if (value2 === void 0 || value2 === Infinity)
@@ -34640,7 +34640,7 @@ function validateSchematicPrimitiveStates(value2, input) {
     ...row7.names.map((name6) => name6.primitiveId),
     ...row7.customAttributeIds
   ])];
-  const characters = text38.reduce((sum, row7) => sum + row7.value.length + (row7.color?.length ?? 0) + (row7.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row7) => sum + row7.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row7.lines.reduce((count2, line6) => count2 + (line6.color?.length ?? 0), 0), 0);
+  const characters = text38.reduce((sum, row7) => sum + row7.value.length + (row7.color?.length ?? 0) + (row7.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row7) => sum + row7.names.reduce((count3, name6) => count3 + name6.value.length, 0) + row7.lines.reduce((count3, line6) => count3 + (line6.color?.length ?? 0), 0), 0);
   if (new Set(allIds).size !== allIds.length || characters > 262144) {
     throw new Error("Primitive observation has aliased identities or exceeds the combined string bound.");
   }
@@ -36451,13 +36451,13 @@ function operationSummary(operation) {
   };
 }
 function isTerminalOperation(operation) {
-  const state3 = isRecord(operation) ? operation["state"] : void 0;
+  const state4 = isRecord(operation) ? operation["state"] : void 0;
   return [
     "completed",
     "rolled-back",
     "reconciled-no-mutation",
     "plan-invalidated"
-  ].includes(String(state3));
+  ].includes(String(state4));
 }
 var CONTROL_VERSION, OPERATION_SCHEMA, REVIEWED_LOCAL_GENERIC_READ_NAMES, LIVE_PCB_CONSTRAINT_READ_NAMES, EXPECTED_FINGERPRINT_REQUIREMENTS, REVIEWED_COMPATIBILITY_SCHEMA, LEGACY_ORPHAN_RISK_STATES;
 var init_core3 = __esm({
@@ -37271,10 +37271,10 @@ async function reserveEvidencePaths(evidence2, beforeFinalPathValidation) {
       receiptPath,
       "Evidence receipt reservation"
     );
-    const marker = `${JSON.stringify({ schema: "easyeda-pro-control.evidence-reservation.v1", token: token3, createdAt })}
+    const marker2 = `${JSON.stringify({ schema: "easyeda-pro-control.evidence-reservation.v1", token: token3, createdAt })}
 `;
-    await resultFile.handle.writeFile(marker, "utf8");
-    await receiptFile.handle.writeFile(marker, "utf8");
+    await resultFile.handle.writeFile(marker2, "utf8");
+    await receiptFile.handle.writeFile(marker2, "utf8");
     await resultFile.handle.sync();
     await receiptFile.handle.sync();
     await resultFile.directory.handle.sync();
@@ -40940,8 +40940,8 @@ var init_design_operations = __esm({
         while (typeof source5[cursor] === "number") {
           cursor += 1;
         }
-        const count2 = cursor - start;
-        const valid = command === "L" && count2 >= 2 && count2 % 2 === 0 || (command === "ARC" || command === "CARC") && count2 === 3 || command === "C" && count2 >= 6 && count2 % 6 === 0;
+        const count3 = cursor - start;
+        const valid = command === "L" && count3 >= 2 && count3 % 2 === 0 || (command === "ARC" || command === "CARC") && count3 === 3 || command === "C" && count3 >= 6 && count3 % 6 === 0;
         if (!valid) {
           context3.addIssue({ code: "custom", message: "Malformed polygon command or arity." });
           return;
@@ -41236,8 +41236,8 @@ function emptyNativeDocumentRecordChain(documentUuid5) {
   identifier.parse(documentUuid5);
   return { recordCount: 0, maximumTicket: 0, chainSha256: sha256Json({ profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, documentUuid: documentUuid5 }) };
 }
-function appendNativeDocumentRecordChain(chain2, recordEncodingSha256, recordTicket) {
-  const previous = chainSchema.parse(chain2);
+function appendNativeDocumentRecordChain(chain3, recordEncodingSha256, recordTicket) {
+  const previous = chainSchema.parse(chain3);
   digest.parse(recordEncodingSha256);
   ticket.parse(recordTicket);
   if (previous.recordCount >= 1e6) {
@@ -41245,8 +41245,8 @@ function appendNativeDocumentRecordChain(chain2, recordEncodingSha256, recordTic
   }
   return { recordCount: previous.recordCount + 1, maximumTicket: Math.max(previous.maximumTicket, recordTicket), chainSha256: sha256Json({ previous: previous.chainSha256, recordEncodingSha256 }) };
 }
-function sealNativeDocumentRecordHistory(chain2, checkpointSha256, documentUuid5) {
-  const body4 = { profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, checkpointSha256, documentUuid: documentUuid5, ...chainSchema.parse(chain2) };
+function sealNativeDocumentRecordHistory(chain3, checkpointSha256, documentUuid5) {
+  const body4 = { profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, checkpointSha256, documentUuid: documentUuid5, ...chainSchema.parse(chain3) };
   return historySchema2.parse({ ...body4, sha256: sha256Json(body4) });
 }
 function validateNativeDocumentRecordHistory(document3, checkpointSha256) {
@@ -41284,11 +41284,11 @@ function appendClosedContainerMetadataRecords(before, document3) {
     `${JSON.stringify({ type: "DOCHEAD", ticket: meta5.ticket })}||${JSON.stringify(header)}`,
     `${JSON.stringify({ type: "META", ticket: meta5.ticket, id: "META" })}||${JSON.stringify(body4)}`
   ];
-  let chain2 = before;
+  let chain3 = before;
   for (const encoded of records2) {
-    chain2 = appendNativeDocumentRecordChain(chain2, createHash5("sha256").update(encoded).digest("hex"), meta5.ticket);
+    chain3 = appendNativeDocumentRecordChain(chain3, createHash5("sha256").update(encoded).digest("hex"), meta5.ticket);
   }
-  return chain2;
+  return chain3;
 }
 var NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, digest, identifier, ticket, chainSchema, historySchema2;
 var init_native_document_record_history = __esm({
@@ -41769,11 +41769,11 @@ function isNativeDocumentDeleted(document3) {
   if (markers.length === 0) {
     return false;
   }
-  const marker = markers[0];
-  if (markers.length !== 1 || marker?.id !== "DELETE_DOC" || marker.type !== "DELETE_DOC" || Object.keys(marker.body).length !== 1 || typeof marker.body["isDelete"] !== "boolean") {
+  const marker2 = markers[0];
+  if (markers.length !== 1 || marker2?.id !== "DELETE_DOC" || marker2.type !== "DELETE_DOC" || Object.keys(marker2.body).length !== 1 || typeof marker2.body["isDelete"] !== "boolean") {
     fail2("delete-document");
   }
-  return marker.body["isDelete"];
+  return marker2.body["isDelete"];
 }
 function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, options = {}) {
   if (checkpointSha256 !== void 0 && !/^[a-f0-9]{64}$/u.test(checkpointSha256)) {
@@ -42015,8 +42015,8 @@ async function readNativeHistoryCheckpoint(input) {
     for (const row7 of rows2.toReversed()) {
       const historyUuid = uuid3(row7["uuid"]);
       const keyHex = uuid3(row7["key"]);
-      const count2 = integer2(row7["num"], 1024);
-      for (let index = 0; index <= count2; index += 1) {
+      const count3 = integer2(row7["num"], 1024);
+      for (let index = 0; index <= count3; index += 1) {
         stage = "history-chunk";
         const chunkUuid = index === 0 ? historyUuid : `${historyUuid}-${String(index)}`;
         const payload = record2(database.prepare("SELECT history_uuid, dataStr FROM history_data WHERE uuid=?").get(chunkUuid));
@@ -42955,13 +42955,13 @@ function validateExactReadPayload(payload, request13) {
         }
         const indexEntries = [];
         for (const id14 of familyPrimitiveIds) {
-          const state3 = familyIndex[id14];
-          if (!isUnknownRecord(state3) || state3["primitiveId"] !== id14) {
+          const state4 = familyIndex[id14];
+          if (!isUnknownRecord(state4) || state4["primitiveId"] !== id14) {
             throw new Error(
               `Exact PCB inventory family ${name6} mismatched state for ${id14}.`
             );
           }
-          indexEntries.push([id14, state3]);
+          indexEntries.push([id14, state4]);
         }
         validatedFamilyIndex = Object.fromEntries(indexEntries);
       }
@@ -51420,12 +51420,12 @@ function containsPoint(edges, point7) {
 }
 function resultGroups(raw, accepted) {
   const groups2 = groupSchema.parse(raw);
-  let count2 = 0, rings = 0;
+  let count3 = 0, rings = 0;
   for (const group of groups2) {
     for (const ring of [group.outer, ...group.holes]) {
-      count2 += ring.length;
+      count3 += ring.length;
       rings += 1;
-      if (count2 > SDK_CLIPPING_MAX_POINTS || rings > SDK_CLIPPING_MAX_RINGS) {
+      if (count3 > SDK_CLIPPING_MAX_POINTS || rings > SDK_CLIPPING_MAX_RINGS) {
         throw new Error("Clipping result exceeds its complete output budget.");
       }
       const first = ring[0], last = ring.at(-1);
@@ -51585,13 +51585,13 @@ function simpleRing2(points, convex = false) {
     return false;
   }
   const vertices = ringPoints(points);
-  const count2 = vertices.length;
-  if (count2 < 3 || count2 > SDK_MATH_MAX_VERTICES) {
+  const count3 = vertices.length;
+  if (count3 < 3 || count3 > SDK_MATH_MAX_VERTICES) {
     return false;
   }
   let area = 0n, turn = 0n;
   for (const [index, a] of vertices.entries()) {
-    const b = vertices[(index + 1) % count2], c = vertices[(index + 2) % count2];
+    const b = vertices[(index + 1) % count3], c = vertices[(index + 2) % count3];
     if (b === void 0 || c === void 0 || a.x === b.x && a.y === b.y) {
       return false;
     }
@@ -51606,9 +51606,9 @@ function simpleRing2(points, convex = false) {
     if (cross === 0n && (a.x - b.x) * (c.x - b.x) + (a.y - b.y) * (c.y - b.y) > 0n) {
       return false;
     }
-    for (let other = index + 2; other < count2; other += 1) {
-      if (index !== 0 || other !== count2 - 1) {
-        const d = vertices[other], e = vertices[(other + 1) % count2];
+    for (let other = index + 2; other < count3; other += 1) {
+      if (index !== 0 || other !== count3 - 1) {
+        const d = vertices[other], e = vertices[(other + 1) % count3];
         if (d === void 0 || e === void 0 || intersects(a, b, d, e)) {
           return false;
         }
@@ -52193,14 +52193,14 @@ function inventoryExtensionApiCoverage() {
   });
 }
 function extensionApiCoverageSummary(entries6 = inventoryExtensionApiCoverage()) {
-  const count2 = (predicate) => entries6.filter((entry) => predicate(entry)).length;
+  const count3 = (predicate) => entries6.filter((entry) => predicate(entry)).length;
   return {
     totalDistinctMethods: entries6.length,
-    reviewedDistinctMethods: count2((entry) => entry.reviewedRuntimeDeclaration),
-    latestDistinctMethods: count2((entry) => entry.declarations.some((declaration) => declaration.reference === "official-latest")),
-    statuses: Object.fromEntries(statusSchema.options.map((status2) => [status2, count2((entry) => entry.status === status2)])),
-    executionRoutes: Object.fromEntries(["available-with-runtime-guards", "blocked", "partially-blocked"].map((state3) => [state3, entries6.flatMap((entry) => entry.routes).filter((route) => route.executionState === state3).length])),
-    omissions: Object.fromEntries([...new Set(entries6.flatMap((entry) => entry.omission === null ? [] : [entry.omission.code]))].toSorted().map((code) => [code, count2((entry) => entry.omission?.code === code)])),
+    reviewedDistinctMethods: count3((entry) => entry.reviewedRuntimeDeclaration),
+    latestDistinctMethods: count3((entry) => entry.declarations.some((declaration) => declaration.reference === "official-latest")),
+    statuses: Object.fromEntries(statusSchema.options.map((status2) => [status2, count3((entry) => entry.status === status2)])),
+    executionRoutes: Object.fromEntries(["available-with-runtime-guards", "blocked", "partially-blocked"].map((state4) => [state4, entries6.flatMap((entry) => entry.routes).filter((route) => route.executionState === state4).length])),
+    omissions: Object.fromEntries([...new Set(entries6.flatMap((entry) => entry.omission === null ? [] : [entry.omission.code]))].toSorted().map((code) => [code, count3((entry) => entry.omission?.code === code)])),
     currentGenerationLiveValidatedMethods: 0,
     declarationSignatures: extensionApiSnapshots.map((snapshot8) => ({ reference: snapshot8.reference, version: snapshot8.version, sourceSha256: snapshot8.sourceSha256, signatures: snapshot8.namespaces.reduce((sum, namespace) => sum + namespace.methods.length, 0) }))
   };
@@ -54803,21 +54803,21 @@ function schematicNewWireOrders(before, records2, native, created) {
     }
     groups2.sort((a, b) => String(first.get(a)).localeCompare(String(first.get(b))));
     const owner = old[0] ?? groups2[0];
-    const count2 = owner === void 0 ? void 0 : counts2.get(owner);
-    if (count2 === void 0 || owner === void 0) {
+    const count3 = owner === void 0 ? void 0 : counts2.get(owner);
+    if (count3 === void 0 || owner === void 0) {
       return;
     }
     const pinCount = node.pins.length, wireCount = node.lines.size;
     if (wireCount + pinCount === 1) {
-      count2.danglingDots += 1;
-      count2.recategorized = true;
+      count3.danglingDots += 1;
+      count3.recategorized = true;
     }
     const junction = pinCount >= 3 && wireCount > 0 || pinCount === 2 && wireCount > 0 && !node.zeroLine || pinCount === 1 && wireCount >= 2 || pinCount === 0 && wireCount >= 3;
     if (junction) {
-      count2.junctions += 1;
+      count3.junctions += 1;
       const rootOrder = number9(wires.get(owner)?.body["zIndex"]);
       if (node.pins.every((order2) => rootOrder > order2)) {
-        count2.recategorized = true;
+        count3.recategorized = true;
       }
     }
   };
@@ -54825,8 +54825,8 @@ function schematicNewWireOrders(before, records2, native, created) {
     visit(node);
   }
   return [...created].map(([id14, relevanceId]) => {
-    const attr = records2.get(relevanceId), count2 = counts2.get(id14);
-    if (count2 === void 0 || attr?.type !== "ATTR" || attr.body["parentId"] !== id14 || attr.body["key"] !== "Relevance" || attr.body["value"] !== "[]" || attr.body["x"] !== null || attr.body["y"] !== null) {
+    const attr = records2.get(relevanceId), count3 = counts2.get(id14);
+    if (count3 === void 0 || attr?.type !== "ATTR" || attr.body["parentId"] !== id14 || attr.body["key"] !== "Relevance" || attr.body["value"] !== "[]" || attr.body["x"] !== null || attr.body["y"] !== null) {
       throw new Error("Wire-order proof lost its exact new hidden Relevance attribute.");
     }
     const lineCount = lines3.filter((row7) => row7.body["lineGroup"] === id14).length;
@@ -54834,10 +54834,10 @@ function schematicNewWireOrders(before, records2, native, created) {
       id: id14,
       relevanceId,
       lines: lineCount,
-      junctions: count2.junctions,
-      danglingDots: count2.danglingDots,
-      recategorized: count2.recategorized,
-      zIndex: count2.recategorized ? lineCount + count2.junctions + count2.danglingDots : 0
+      junctions: count3.junctions,
+      danglingDots: count3.danglingDots,
+      recategorized: count3.recategorized,
+      zIndex: count3.recategorized ? lineCount + count3.junctions + count3.danglingDots : 0
     };
   });
 }
@@ -55792,19 +55792,19 @@ function verifySchematicElectricalEffect(input, before, after, oldNativeInput, n
     if (operation.action === "sch.component-pin.no-connect") {
       const prior = getPin(oldNative, id14).pin;
       const current10 = getPin(newNative, id14).pin;
-      const marker = current10.noConnect;
+      const marker2 = current10.noConnect;
       const value2 = operation.noConnected ? "yes" : "no";
-      if (marker === null || marker.value !== value2 || prior.noConnect !== null && marker.id !== prior.noConnect.id) {
+      if (marker2 === null || marker2.value !== value2 || prior.noConnect !== null && marker2.id !== prior.noConnect.id) {
         throw new Error("No-connect marker identity/value mismatch.");
       }
-      if (prior.noConnect === null && expected3.has(marker.id)) {
+      if (prior.noConnect === null && expected3.has(marker2.id)) {
         throw new Error("New no-connect marker reused a source identity.");
       }
       const body4 = prior.noConnect === null ? { parentId: id14, key: "NO_CONNECT", x: prior.body["x"], y: prior.body["y"], value: value2, zIndex: nextZ(before), locked: false, groupId: "" } : { ...prior.noConnect.body, value: value2 };
-      if (!same9(body4, marker.body)) {
+      if (!same9(body4, marker2.body)) {
         throw new Error("No-connect changed pin-marker geometry or metadata.");
       }
-      expected3.set(marker.id, { id: marker.id, type: "ATTR", body: body4 });
+      expected3.set(marker2.id, { id: marker2.id, type: "ATTR", body: body4 });
       if (!same9(withoutMarker(oldNative.components, id14), withoutMarker(newNative.components, id14))) {
         throw new Error("No-connect changed another native pin, property or net.");
       }
@@ -59161,12 +59161,12 @@ function multipleNetWireAttributes(rows2, id14) {
   return { relevance: first, nets: ordered7 };
 }
 function inactiveOrAbsentNoConnect(pin4, records2) {
-  const marker = pin4.noConnect;
-  if (marker === null) {
+  const marker2 = pin4.noConnect;
+  if (marker2 === null) {
     return true;
   }
-  const stored2 = records2.get(marker.id);
-  return marker.value === "no" && marker.body["value"] === "no" && marker.body["key"] === "NO_CONNECT" && marker.body["parentId"] === pin4.id && stored2?.type === "ATTR" && same14(stored2.body, marker.body) && [...records2.values()].filter((row7) => row7.type === "ATTR" && row7.body["key"] === "NO_CONNECT" && row7.body["parentId"] === pin4.id).length === 1;
+  const stored2 = records2.get(marker2.id);
+  return marker2.value === "no" && marker2.body["value"] === "no" && marker2.body["key"] === "NO_CONNECT" && marker2.body["parentId"] === pin4.id && stored2?.type === "ATTR" && same14(stored2.body, marker2.body) && [...records2.values()].filter((row7) => row7.type === "ATTR" && row7.body["key"] === "NO_CONNECT" && row7.body["parentId"] === pin4.id).length === 1;
 }
 function retainedWireAttributeOrders(order2) {
   const nets = "nets" in order2 ? order2.nets : [{ id: order2.netId, beforeOrder: order2.beforeNetOrder, order: order2.netOrder }];
@@ -59692,8 +59692,8 @@ function proveQuarterTurnPinDisplacement(history, referenceSource, observedSourc
       const old = oldPin.noConnect;
       const current10 = pin4.noConnect;
       const markers = page.records.filter((row7) => row7.type === "ATTR" && row7.id === old?.id);
-      const marker = markers[0];
-      if (old === null || current10 === null || old.id !== current10.id || old.value !== "no" || current10.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same15(marker.body, old.body) || !same15(old, { ...current10, body: { ...current10.body, x: old.body["x"], y: old.body["y"] } }) || !same15(point3(old.body), point3(oldPin.body)) || !same15(point3(current10.body), point3(pin4.body))) {
+      const marker2 = markers[0];
+      if (old === null || current10 === null || old.id !== current10.id || old.value !== "no" || current10.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker2 === void 0 || !same15(marker2.body, old.body) || !same15(old, { ...current10, body: { ...current10.body, x: old.body["x"], y: old.body["y"] } }) || !same15(point3(old.body), point3(oldPin.body)) || !same15(point3(current10.body), point3(pin4.body))) {
         fail7();
       }
     }
@@ -60226,17 +60226,17 @@ function restoreComposedCoordinateStorage(source5, native, capturedSource, captu
       }
     }
     const restoreMarker = (pin4) => {
-      const marker = pin4.noConnect, rawMarker = raw.pins.find((entry) => entry.id === pin4.id)?.noConnect;
-      if (marker === null || rawMarker === void 0 || rawMarker === null || same16(marker.body, rawMarker.body)) {
+      const marker2 = pin4.noConnect, rawMarker = raw.pins.find((entry) => entry.id === pin4.id)?.noConnect;
+      if (marker2 === null || rawMarker === void 0 || rawMarker === null || same16(marker2.body, rawMarker.body)) {
         return;
       }
-      const nc = proof.inactiveNoConnects.find((entry) => entry.componentId === componentId && entry.pinId === pin4.id && entry.attributeId === marker.id);
-      if (nc === void 0 || marker.id !== rawMarker.id || marker.value !== "no" || rawMarker.value !== "no") {
+      const nc = proof.inactiveNoConnects.find((entry) => entry.componentId === componentId && entry.pinId === pin4.id && entry.attributeId === marker2.id);
+      if (nc === void 0 || marker2.id !== rawMarker.id || marker2.value !== "no" || rawMarker.value !== "no") {
         throw new Error("Composed storage marker is not the proved inactive NC.");
       }
       const spelling = { stored: nc.before, compared: nc.reconstructed };
-      restoreBody(marker.body, rawMarker.body, spelling);
-      restoreRecord(marker.id, spelling);
+      restoreBody(marker2.body, rawMarker.body, spelling);
+      restoreRecord(marker2.id, spelling);
     };
     for (const pin4 of model2.pins) {
       restoreMarker(pin4);
@@ -60276,10 +60276,10 @@ function projectDisplacedInactiveNoConnect(history, source5, native, stored2, ex
   const owners7 = native.components.filter((model3) => model3.pins.some((pin5) => pin5.noConnect?.id === stored2.id));
   const model2 = owners7[0], pins = model2?.pins.filter((pin5) => pin5.noConnect?.id === stored2.id);
   const pin4 = pins?.[0];
-  const marker = pin4?.noConnect;
+  const marker2 = pin4?.noConnect;
   const original2 = page?.records.find((row7) => row7.type === "COMPONENT" && row7.id === model2?.id);
   const symbolAttrs = model2?.attributes.filter((attr) => attr.key === "Symbol"), symbolId = symbolAttrs?.[0]?.value;
-  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners7.length !== 1 || model2 === void 0 || model2.kind !== "part" || pins?.length !== 1 || pin4 === void 0 || marker === void 0 || marker === null || original2 === void 0 || model2.body["rotation"] !== 90 || model2.body["isMirror"] !== false || stored2.id !== exported.id || stored2.type !== "ATTR" || exported.type !== "ATTR" || stored2.body["key"] !== "NO_CONNECT" || stored2.body["parentId"] !== pin4.id || stored2.body["value"] !== "no" || marker.value !== "no" || !same16(marker.body, exported.body) || !same16({ ...stored2.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same16({ ...original2.body, x: model2.body["x"], y: model2.body["y"] }, model2.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row7) => row7.type === "ATTR" && row7.body["parentId"] === model2.id && row7.body["key"] === "Symbol" && row7.body["value"] === symbolId).length !== 1) {
+  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners7.length !== 1 || model2 === void 0 || model2.kind !== "part" || pins?.length !== 1 || pin4 === void 0 || marker2 === void 0 || marker2 === null || original2 === void 0 || model2.body["rotation"] !== 90 || model2.body["isMirror"] !== false || stored2.id !== exported.id || stored2.type !== "ATTR" || exported.type !== "ATTR" || stored2.body["key"] !== "NO_CONNECT" || stored2.body["parentId"] !== pin4.id || stored2.body["value"] !== "no" || marker2.value !== "no" || !same16(marker2.body, exported.body) || !same16({ ...stored2.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same16({ ...original2.body, x: model2.body["x"], y: model2.body["y"] }, model2.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row7) => row7.type === "ATTR" && row7.body["parentId"] === model2.id && row7.body["key"] === "Symbol" && row7.body["value"] === symbolId).length !== 1) {
     throw new Error("Stored inactive no-connect lacks exact component/pin coordinate evidence.");
   }
   const { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model2, history);
@@ -63432,7 +63432,7 @@ return{schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};})()
 }
 function parseEditorTabsRead(value2) {
   const result = editorTabsSnapshotSchema.parse(decodeExactReadEnvelope(value2));
-  if (canonicalJson(result.contextBefore) !== canonicalJson(result.contextAfter) || result.nodes.reduce((count2, node) => count2 + node.items.length, 0) > 256) {
+  if (canonicalJson(result.contextBefore) !== canonicalJson(result.contextAfter) || result.nodes.reduce((count3, node) => count3 + node.items.length, 0) > 256) {
     throw new Error("Editor-tab inspection changed context or exceeded its bound.");
   }
   return result;
@@ -64112,7 +64112,7 @@ function plan(input) {
   const operation = projectSymbolMetadataOperation(value2["operation"]);
   requireValue("uuid" in operation.target && operation.target.uuid === targetUuid && operation.libraryUuid === projectUuid4, "Closed journal operation identity differs.");
   const markerFields = exact3(value2["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
-  const marker = { namespaceNonce: text9(markerFields["namespaceNonce"], HASH4), keyNonce: text9(markerFields["keyNonce"], HASH4), bodyNonce: text9(markerFields["bodyNonce"], HASH4) };
+  const marker2 = { namespaceNonce: text9(markerFields["namespaceNonce"], HASH4), keyNonce: text9(markerFields["keyNonce"], HASH4), bodyNonce: text9(markerFields["bodyNonce"], HASH4) };
   return {
     profile: FAMILY,
     projectUuid: projectUuid4,
@@ -64122,7 +64122,7 @@ function plan(input) {
     activeUuid,
     projectPath: text9(value2["projectPath"], /^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u),
     operation,
-    marker,
+    marker: marker2,
     nativePinsSha256: text9(value2["nativePinsSha256"], HASH4),
     facadeSha256: text9(value2["facadeSha256"], HASH4),
     expectedFingerprintSha256: text9(value2["expectedFingerprintSha256"], HASH4)
@@ -64435,8 +64435,8 @@ var init_engine_operation_summary = __esm({
 
 // server/src/current-process-sql-runtime-lease.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-function current(lease, state3) {
-  if (state3 === void 0 || !state3.active || state3.failed || scopes.getStore() !== lease || state3.node.runtime !== lease.runtime) {
+function current(lease, state4) {
+  if (state4 === void 0 || !state4.active || state4.failed || scopes.getStore() !== lease || state4.node.runtime !== lease.runtime) {
     throw new MachineProfileError("machine-sql-scan-lease-not-current");
   }
 }
@@ -64444,32 +64444,32 @@ function requireCurrentProcessSqlRuntimeLease(lease) {
   current(lease, owners.get(lease));
 }
 async function assertCurrentProcessSqlRuntimeLease(lease) {
-  const state3 = owners.get(lease);
-  current(lease, state3);
-  if (state3.assertion !== void 0) {
+  const state4 = owners.get(lease);
+  current(lease, state4);
+  if (state4.assertion !== void 0) {
     throw new MachineProfileError("machine-sql-scan-lease-busy");
   }
   const assertion = (async () => {
     await Promise.resolve();
-    current(lease, state3);
-    await state3.node.assertCurrent();
+    current(lease, state4);
+    await state4.node.assertCurrent();
   })();
-  state3.assertion = assertion;
+  state4.assertion = assertion;
   try {
     await assertion;
-    current(lease, state3);
+    current(lease, state4);
   } catch (error52) {
-    state3.failed = true;
+    state4.failed = true;
     throw error52;
   } finally {
-    state3.assertion = void 0;
+    state4.assertion = void 0;
   }
 }
 async function withCurrentProcessSqlRuntimeLease(invoke) {
   const node = await retainCurrentProcessSqlNode();
   const lease = Object.freeze({ runtime: node.runtime });
-  const state3 = { node, active: true, failed: false, assertion: void 0 };
-  owners.set(lease, state3);
+  const state4 = { node, active: true, failed: false, assertion: void 0 };
+  owners.set(lease, state4);
   let failed = false;
   let primary;
   try {
@@ -64483,11 +64483,11 @@ async function withCurrentProcessSqlRuntimeLease(invoke) {
     primary = error52;
     throw error52;
   } finally {
-    state3.active = false;
+    state4.active = false;
     const failures = [];
-    if (state3.assertion !== void 0) {
+    if (state4.assertion !== void 0) {
       try {
-        await state3.assertion;
+        await state4.assertion;
       } catch (error52) {
         failures.push(error52);
       }
@@ -65579,7 +65579,7 @@ async function openTemporarySnapshotDirectory(checkpointDirectory, policy2) {
     throw error52;
   }
 }
-async function makeSnapshotDescriptorOnly(file3, state3) {
+async function makeSnapshotDescriptorOnly(file3, state4) {
   const linked = await lstat12(file3.boundPath, { bigint: true });
   assertSameIdentity(file3.info, linked, "Temporary checkpoint verification snapshot");
   if (linked.nlink !== 1n || (linked.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && linked.uid !== BigInt(process.getuid())) {
@@ -65588,7 +65588,7 @@ async function makeSnapshotDescriptorOnly(file3, state3) {
     );
   }
   await unlink3(file3.boundPath);
-  state3.value = true;
+  state4.value = true;
   await file3.directory.handle.sync();
   const detached = await file3.handle.stat({ bigint: true });
   if (!isSameIdentity(file3.info, detached) || detached.nlink !== 0n || (detached.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && detached.uid !== BigInt(process.getuid())) {
@@ -66219,8 +66219,8 @@ async function observe(root, files) {
     const bytes2 = stat3.size, digest11 = createHash15("sha256");
     let offset7 = 0;
     while (offset7 < bytes2) {
-      const count2 = Math.min(buffer.length, bytes2 - offset7), read2 = await item2.file.read(buffer, 0, count2, offset7);
-      need3(read2.bytesRead > 0 && read2.bytesRead <= count2, "read length changed");
+      const count3 = Math.min(buffer.length, bytes2 - offset7), read2 = await item2.file.read(buffer, 0, count3, offset7);
+      need3(read2.bytesRead > 0 && read2.bytesRead <= count3, "read length changed");
       digest11.update(buffer.subarray(0, read2.bytesRead));
       offset7 += read2.bytesRead;
     }
@@ -66653,9 +66653,9 @@ function parseStorageMarkerDescriptor(input) {
   return Object.freeze({ profile: STORAGE_MARKER_DESCRIPTOR, namespaceNonce, keyNonce, bodyNonce });
 }
 function expression(input, create) {
-  const marker = parseStorageMarkerDescriptor(input);
+  const marker2 = parseStorageMarkerDescriptor(input);
   return `(async()=>{
-const marker=${JSON.stringify(marker)};
+const marker=${JSON.stringify(marker2)};
 const cacheName='easyeda-pro-agent.storage-continuity.v1.'+marker.namespaceNonce;
 const key='https://client/.easyeda-pro-agent/storage-continuity/v1/'+marker.keyNonce;
 const root=globalThis,apply=Reflect.apply;
@@ -66777,11 +66777,11 @@ function buildStorageMarkerReadExpression(input) {
   return expression(input, false);
 }
 function validateStorageMarkerResult(input, descriptor10, mode) {
-  const marker = parseStorageMarkerDescriptor(descriptor10);
+  const marker2 = parseStorageMarkerDescriptor(descriptor10);
   if (mode !== "created-and-readback" && mode !== "observed-present") {
     throw new Error("STORAGE_MARKER_RESULT");
   }
-  const expected3 = { profile: STORAGE_MARKER_RESULT, namespaceNonce: marker.namespaceNonce, keyNonce: marker.keyNonce, bodyNonce: marker.bodyNonce, origin: "https://client", mode, scope: "point-in-time-plugin-owned-marker" };
+  const expected3 = { profile: STORAGE_MARKER_RESULT, namespaceNonce: marker2.namespaceNonce, keyNonce: marker2.keyNonce, bodyNonce: marker2.bodyNonce, origin: "https://client", mode, scope: "point-in-time-plugin-owned-marker" };
   const value2 = fields3(input, Object.keys(expected3), "STORAGE_MARKER_RESULT");
   for (const [name6, item2] of Object.entries(expected3)) {
     if (value2[name6] !== item2) {
@@ -66825,8 +66825,8 @@ function selected(inputValue) {
     (phase5 === "baseline-marker-create" || phase5 === "edit-marker-read" || phase5 === "verify-marker-read") && typeof projectUuid4 === "string" && typeof branchUuid2 === "string" && typeof ownerUuid === "string" && /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid4) && /^[a-f0-9]{32}$/u.test(branchUuid2) && /^[a-f0-9]{32}$/u.test(ownerUuid),
     "Startup fixed input refused."
   );
-  const marker = fields4(value2["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
-  const descriptor10 = parseStorageMarkerDescriptor({ profile: STORAGE_MARKER_DESCRIPTOR, ...marker });
+  const marker2 = fields4(value2["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
+  const descriptor10 = parseStorageMarkerDescriptor({ profile: STORAGE_MARKER_DESCRIPTOR, ...marker2 });
   const input = { phase: phase5, projectUuid: projectUuid4, branchUuid: branchUuid2, ownerUuid, marker: { namespaceNonce: descriptor10.namespaceNonce, keyNonce: descriptor10.keyNonce, bodyNonce: descriptor10.bodyNonce } };
   const steps = phase5 === "baseline-marker-create" ? ["startup-before", "sw-before", "queue-before", "marker-create", "startup-after", "sw-after", "queue-after"] : ["startup-before", "sw-before", "marker-read", "queue-after", "startup-after", "sw-after"];
   return { input, steps, descriptor: descriptor10 };
@@ -67029,8 +67029,8 @@ import { join as join16 } from "node:path";
 function inputs(rawRequest, rawPlan) {
   const request13 = parseClosedSymbolValidationRequest(rawRequest);
   const source5 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
-  const marker = exactData(source5["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
-  const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
+  const marker2 = exactData(source5["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
+  const nonces = Object.freeze({ namespaceNonce: hashText(marker2["namespaceNonce"]), keyNonce: hashText(marker2["keyNonce"]), bodyNonce: hashText(marker2["bodyNonce"]) });
   requireValue6(new Set(Object.values(nonces)).size === 3, "Validation marker nonces must differ.");
   const operation = exactData(source5["operation"], ["id", "action", "libraryUuid", "target", "patch"]);
   const patch5 = exactData(operation["patch"], ["name", "description"]), target9 = exactData(operation["target"], ["uuid"]);
@@ -67089,11 +67089,11 @@ function finalReservation(root, parent, slot, artifact2, expected3) {
     const bytes2 = Buffer.alloc(expected3.length + 1);
     let offset7 = 0;
     while (offset7 < bytes2.length) {
-      const count2 = readSync(descriptor10, bytes2, offset7, bytes2.length - offset7, offset7);
-      if (count2 === 0) {
+      const count3 = readSync(descriptor10, bytes2, offset7, bytes2.length - offset7, offset7);
+      if (count3 === 0) {
         break;
       }
-      offset7 += count2;
+      offset7 += count3;
     }
     requireValue6(offset7 === expected3.length && bytes2.subarray(0, offset7).equals(expected3) && sameFile2(before, fstatSync2(descriptor10, { bigint: true })), "Validation claim bytes changed after publication cleanup.");
   } finally {
@@ -67234,11 +67234,11 @@ async function noLaterEvidence(operationId11) {
   const directory4 = await root.openDirectory(operationPath(operationId11).slice(0, -5), false);
   try {
     const entries6 = await opendir(`/proc/self/fd/${directory4.handle.fd}`);
-    let count2 = 0;
+    let count3 = 0;
     for await (const entry of entries6) {
-      count2 += 1;
+      count3 += 1;
       need5(
-        count2 <= 128 && !/^(?:1[7-9]|[2-9]\d|\d{3,})-/u.test(entry.name),
+        count3 <= 128 && !/^(?:1[7-9]|[2-9]\d|\d{3,})-/u.test(entry.name),
         "Closed-symbol abandonment found later or excessive phase evidence."
       );
     }
@@ -67541,10 +67541,10 @@ async function noLaterEvidence2(loaded) {
   const allowed = /* @__PURE__ */ new Set(["00-expected-fingerprint.json", WINDOW_FILE, FILE, ...loaded.journal.artifacts.map((item2) => basename9(item2.path))]);
   try {
     const entries6 = await opendir2(`/proc/self/fd/${directory4.handle.fd}`);
-    let count2 = 0;
+    let count3 = 0;
     for await (const entry of entries6) {
-      count2 += 1;
-      need6(count2 <= allowed.size && allowed.has(entry.name), "Baseline abandonment found later or unrecognized evidence.");
+      count3 += 1;
+      need6(count3 <= allowed.size && allowed.has(entry.name), "Baseline abandonment found later or unrecognized evidence.");
     }
     await root.assertCurrent();
   } finally {
@@ -68408,10 +68408,10 @@ async function captureClosedSymbolJournalBytes(input) {
     let position = 0;
     while (position < bytes2.length) {
       deadline();
-      const count2 = Math.min(CLOSURE_LIMITS.chunkBytes, bytes2.length - position);
-      const read2 = await handle2.read(bytes2, position, count2, position);
+      const count3 = Math.min(CLOSURE_LIMITS.chunkBytes, bytes2.length - position);
+      const read2 = await handle2.read(bytes2, position, count3, position);
       deadline();
-      requireEvidence(read2.bytesRead > 0 && read2.bytesRead <= count2, "closure-journal-read-length");
+      requireEvidence(read2.bytesRead > 0 && read2.bytesRead <= count3, "closure-journal-read-length");
       position += read2.bytesRead;
     }
     let raw;
@@ -69322,10 +69322,10 @@ async function observe2(input, profile = "locked", lease) {
       let position = 0;
       while (position < Number(before.size)) {
         deadline();
-        const count2 = Math.min(chunk.length, Number(before.size) - position);
-        const result2 = await handle2.read(chunk, 0, count2, position);
+        const count3 = Math.min(chunk.length, Number(before.size) - position);
+        const result2 = await handle2.read(chunk, 0, count3, position);
         deadline();
-        requireEvidence(result2.bytesRead > 0 && result2.bytesRead <= count2, "closure-read-length");
+        requireEvidence(result2.bytesRead > 0 && result2.bytesRead <= count3, "closure-read-length");
         const bytes2 = chunk.subarray(0, result2.bytesRead);
         hash45.update(bytes2);
         if (expectedJson.length > 0 && retainedJsonDigest === void 0) {
@@ -73417,23 +73417,23 @@ function applyHeader(current10, edit, ticketValue, selected3) {
   } : selected3;
 }
 function applyAtom(atoms, atom) {
-  let chain2 = atoms.get(atom.id);
-  if (chain2 === void 0) {
-    chain2 = { clocks: /* @__PURE__ */ new Map(), first: atom, last: atom };
-    atoms.set(atom.id, chain2);
+  let chain3 = atoms.get(atom.id);
+  if (chain3 === void 0) {
+    chain3 = { clocks: /* @__PURE__ */ new Map(), first: atom, last: atom };
+    atoms.set(atom.id, chain3);
   }
-  const clock7 = `${atom.ticket}:${atom.client}`, duplicate = chain2.clocks.get(clock7);
+  const clock7 = `${atom.ticket}:${atom.client}`, duplicate = chain3.clocks.get(clock7);
   need18(duplicate === void 0 || duplicate.raw === atom.raw && duplicate.type === atom.type, "duplicate native clock has different raw encoding");
   if (duplicate !== void 0) {
     return false;
   }
-  const selected3 = chain2.clocks.size === 0 || earlier(chain2.last, atom);
-  chain2.clocks.set(clock7, atom);
-  if (earlier(atom, chain2.first)) {
-    chain2.first = atom;
+  const selected3 = chain3.clocks.size === 0 || earlier(chain3.last, atom);
+  chain3.clocks.set(clock7, atom);
+  if (earlier(atom, chain3.first)) {
+    chain3.first = atom;
   }
-  if (earlier(chain2.last, atom)) {
-    chain2.last = atom;
+  if (earlier(chain3.last, atom)) {
+    chain3.last = atom;
   }
   return selected3 && atom.type !== "ELE_PLACEHOLDER" && atom.type !== "META_PLACEHOLDER";
 }
@@ -73773,10 +73773,10 @@ async function prepareProjection(input, strategy) {
   const metadata10 = { title: value2["title"], description: value2["description"], tags: value2["tags"], docType: value2["docType"], source: value2["source"] };
   const canvas = [];
   const idsByLine = /* @__PURE__ */ new Map();
-  for (const chain2 of atoms.values()) {
-    const atom = chain2.last;
+  for (const chain3 of atoms.values()) {
+    const atom = chain3.last;
     if (!IGNORED.has(atom.type)) {
-      const encoded = line5(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain2.first.ticket ? void 0 : chain2.first.ticket);
+      const encoded = line5(atom.type, atom.ticket, atom.id, atom.raw, atom.ticket === chain3.first.ticket ? void 0 : chain3.first.ticket);
       canvas.push(encoded);
       if (canvasSegmentsScope !== void 0) {
         idsByLine.set(encoded, atom.id);
@@ -75147,7 +75147,7 @@ async function prepareRecoveryNavigation(input) {
     { checkpointSha256: verified.checkpointSha256, projectUuid: projectUuid4 }
   ) : void 0;
   const target9 = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
-  const navigation = {
+  const navigation2 = {
     ...captured.navigation?.navigate === void 0 ? {} : { navigate: captured.navigation.navigate },
     ...captured.navigation?.requireExclusiveTabs === void 0 ? {} : { requireExclusiveTabs: captured.navigation.requireExclusiveTabs },
     ...captured.navigation?.requireEditorReadiness === void 0 ? {} : { requireEditorReadiness: captured.navigation.requireEditorReadiness },
@@ -75155,7 +75155,7 @@ async function prepareRecoveryNavigation(input) {
   };
   return {
     target: target9,
-    code: buildRecoveryNavigationCode(target9, navigation),
+    code: buildRecoveryNavigationCode(target9, navigation2),
     checkpointSha256: verified.checkpointSha256,
     ...libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence }
   };
@@ -76633,16 +76633,16 @@ function parseRetainedMainReferenceTransport(input, requestSha256, intentSha256)
   need25(typeof streams["timedOut"] === "boolean" && streams["timedOut"] === (failure2 === "deadline"));
   need25(bytes(streams["rawStdoutBase64"]).length + bytes(streams["rawStderrBase64"]).length <= 131072);
   if (v2) {
-    const state3 = streams["transportState"];
+    const state4 = streams["transportState"];
     const spawn10 = streams["spawnReturnObserved"];
     const closed = streams["transportCloseObserved"];
     const guards2 = streams["observationGuardsComplete"];
     const containment = streams["containmentRequest"];
-    need25((state3 === "closed" || state3 === "unresolved") && typeof spawn10 === "boolean" && typeof closed === "boolean" && typeof guards2 === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
-    need25(state3 === (spawn10 && closed && guards2 ? "closed" : "unresolved"));
+    need25((state4 === "closed" || state4 === "unresolved") && typeof spawn10 === "boolean" && typeof closed === "boolean" && typeof guards2 === "boolean" && (containment === "not-requested" || containment === "accepted" || containment === "refused" || containment === "threw") && streams["windowsJobTerminationProved"] === false && streams["executionAuthorized"] === false);
+    need25(state4 === (spawn10 && closed && guards2 ? "closed" : "unresolved"));
     need25(closed || code === null && signal === null);
     need25(spawn10 || !closed && !guards2 && code === null && signal === null && containment === "not-requested" && failure2 === "start-failure");
-    need25(failure2 !== null || state3 === "closed" && containment === "not-requested");
+    need25(failure2 !== null || state4 === "closed" && containment === "not-requested");
   }
   return Object.freeze({ profile, requestSha256, intentSha256, returnedEncoding: "base64-streams-v1", returned: streams });
 }
@@ -78384,14 +78384,14 @@ var init_closed_symbol_saved_read = __esm({
       returns = /* @__PURE__ */ new Map();
       captures = /* @__PURE__ */ new Map();
       released = /* @__PURE__ */ new Set();
-      constructor(engine2, runtime, admission, relaunch, startup2, navigation, fingerprint) {
+      constructor(engine2, runtime, admission, relaunch, startup2, navigation2, fingerprint) {
         validatePrivateFingerprint(fingerprint);
         this.engine = engine2;
         this.runtime = runtime;
         this.admission = admission;
         this.relaunch = relaunch;
         this.startup = startup2;
-        this.navigation = navigation;
+        this.navigation = navigation2;
         this.fingerprint = structuredClone(fingerprint);
       }
       originalReturn(operationId11) {
@@ -80485,7 +80485,7 @@ async function replay(loaded, evidence2, runtime) {
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
   current10();
-  const navigation = await recordedNavigationBinding(journal, events, "verify-open");
+  const navigation2 = await recordedNavigationBinding(journal, events, "verify-open");
   current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
@@ -80512,7 +80512,7 @@ async function replay(loaded, evidence2, runtime) {
     ...sql3.resultHashes,
     writeResultSha256: sha256Json(write),
     savedReadResultSha256: sha256Json(savedRead),
-    verificationNavigationBindingSha256: sha256Json(navigation)
+    verificationNavigationBindingSha256: sha256Json(navigation2)
   });
   const values2 = Object.freeze({
     witness: witness.result,
@@ -82205,7 +82205,7 @@ async function replay2(loaded, evidence2, runtime) {
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
   current10();
-  const navigation = await recordedNavigationBinding(journal, events, "verify-open");
+  const navigation2 = await recordedNavigationBinding(journal, events, "verify-open");
   current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
@@ -82233,7 +82233,7 @@ async function replay2(loaded, evidence2, runtime) {
     ...sql3.resultHashes,
     writeResultSha256: sha256Json(write),
     savedReadResultSha256: sha256Json(savedRead),
-    verificationNavigationBindingSha256: sha256Json(navigation)
+    verificationNavigationBindingSha256: sha256Json(navigation2)
   });
   const values2 = Object.freeze({
     mainReference: mainReference.result,
@@ -82744,12 +82744,12 @@ function diagnosticInteger(value2) {
 function project2(operation) {
   const plan2 = operation["plan"];
   const family2 = isRecord(plan2) ? plan2["profile"] : void 0;
-  const state3 = operation["state"];
-  const bridgeBlocking = state3 === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
+  const state4 = operation["state"];
+  const bridgeBlocking = state4 === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
   const unfinished = !isTerminalOperation(operation);
-  const reserved = family2 === FAMILY || typeof family2 === "string" && family2.startsWith("easyeda-pro-control.project-symbol-closed-session.") || typeof state3 === "string" && state3.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
+  const reserved = family2 === FAMILY || typeof family2 === "string" && family2.startsWith("easyeda-pro-control.project-symbol-closed-session.") || typeof state4 === "string" && state4.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
   if (family2 !== "easyeda-pro-control.current-symbol-closed-baseline.v1" && !reserved && !bridgeBlocking && !unfinished) {
-    return { compact: true, classification: "legacy", operationId: operation["operationId"], state: state3 };
+    return { compact: true, classification: "legacy", operationId: operation["operationId"], state: state4 };
   }
   const summary20 = operationSummary2(asOperationJournal(operation));
   const base7 = { compact: false, bridgeBlocking, unfinished, summary: summary20 };
@@ -82761,12 +82761,12 @@ function project2(operation) {
   if (!reserved) {
     return { ...base7, classification: "legacy", terminal: null, incomplete: null };
   }
-  if (family2 === FAMILY && (state3 === "closed-session-recording" || state3 === "closed-session-evidence-recorded") && !Object.hasOwn(operation, "terminalArtifact")) {
+  if (family2 === FAMILY && (state4 === "closed-session-recording" || state4 === "closed-session-evidence-recorded") && !Object.hasOwn(operation, "terminalArtifact")) {
     const operationId11 = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     const incomplete = typeof operationId11 === "string" && typeof storedJournalSha256 === "string" && HASH13.test(storedJournalSha256) ? { operationId: operationId11, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
     return { ...base7, classification: "incomplete", terminal: null, incomplete };
   }
-  if (family2 !== FAMILY || state3 !== TERMINAL_STATE) {
+  if (family2 !== FAMILY || state4 !== TERMINAL_STATE) {
     return { ...base7, classification: "invalid", terminal: null, incomplete: null };
   }
   try {
@@ -82777,7 +82777,7 @@ function project2(operation) {
     const terminalArtifact = parseClosedSymbolTerminalArtifact(operation["terminalArtifact"], operationId11);
     return { ...base7, classification: "terminal", incomplete: null, terminal: {
       operationId: operationId11,
-      state: state3,
+      state: state4,
       family: family2,
       storedJournalSha256,
       entireStoredJournalSha256: sha256Json(operation),
@@ -86086,7 +86086,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
   return {
     profile: "easyeda-pro-control.layout-wire-group-repair-topology.v1",
     componentCount: original2.length,
-    pinCount: original2.reduce((count2, part) => count2 + part.pins.length, 0),
+    pinCount: original2.reduce((count3, part) => count3 + part.pins.length, 0),
     beforeTopologySha256: sha256Json(original2),
     currentTopologySha256: sha256Json(current10),
     changedPins
@@ -90366,7 +90366,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const intent = await _DesignExecutor.phase(journal, "library-reopen-recovery-intent", true);
         const noDispatch = await _DesignExecutor.phase(journal, "library-reopen-recovery-not-dispatched", true);
         const outstandingDispatch = intent !== void 0 && (!isRecord(noDispatch) || noDispatch["dispatched"] !== false || noDispatch["intentSha256"] !== sha256Text(canonicalJson(intent)));
-        const navigation = selectSavedLibraryReopen({
+        const navigation2 = selectSavedLibraryReopen({
           documentUuid: documentUuid5,
           documentType: documentType3,
           tabId,
@@ -90374,7 +90374,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           outstandingDispatch
         });
         await verifyLibraryNativeProfile(installed.assetsRoot);
-        return { lifecycle, navigation, evidence: {
+        return { lifecycle, navigation: navigation2, evidence: {
           schema: "easyeda-pro-control.saved-library-recovery.v1",
           saveRepeated: false,
           sourceSha256: journal.after.sha256,
@@ -90383,7 +90383,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           effect,
           retainedPersistence,
           persistence,
-          navigation: navigation.action
+          navigation: navigation2.action
         } };
       }
       async resumeSavedLibraryReopen(journal, current10) {
@@ -95262,7 +95262,7 @@ function validateCurrentDisposableOpenArguments(input) {
 function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
   const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
-  const navigation = phase5 === "open-project" || phase5 === "open-document";
+  const navigation2 = phase5 === "open-project" || phase5 === "open-document";
   return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target9)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
@@ -95364,7 +95364,7 @@ const run=async()=>{
  const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad('OUTPUT');return envelope;
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation2 ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
 }catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
 finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{cleanupFailed=true;}if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailed=true;}}if(cleanupFailed)throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}`;
 }
@@ -95373,8 +95373,8 @@ function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const result = currentDisposableOpenResultSchema.parse(raw);
   const expectedTab = `${target9.documentUuid}@${target9.projectUuid}`;
-  const navigation = phase5 === "open-project" || phase5 === "open-document";
-  if (result.phase !== phase5 || result.projectUuid !== target9.projectUuid || result.documentUuid !== target9.documentUuid || result.dispatchAttempted !== navigation || result.branchUuid !== (result.projectPresent ? target9.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
+  const navigation2 = phase5 === "open-project" || phase5 === "open-document";
+  if (result.phase !== phase5 || result.projectUuid !== target9.projectUuid || result.documentUuid !== target9.documentUuid || result.dispatchAttempted !== navigation2 || result.branchUuid !== (result.projectPresent ? target9.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
     throw new Error("Disposable opening result contradicts its exact target and phase.");
   }
   let validAcknowledgement = result.publicResult === null;
@@ -95559,16 +95559,16 @@ async function readRecord(directory4, name6) {
     const initial = await handle2.stat({ bigint: true });
     requireValue14(initial.isFile() && initial.nlink === 1n && initial.size > 0n && initial.size <= BigInt(recordBound(name6)) && initial.mode % 512n === 0o600n && typeof process.getuid === "function" && initial.uid === BigInt(process.getuid()), "RECORD_AUTHORITY");
     const bytes2 = Buffer.alloc(Number(initial.size) + 1);
-    let count2 = 0;
-    while (count2 < bytes2.length) {
-      const read2 = await handle2.read(bytes2, count2, bytes2.length - count2, count2);
+    let count3 = 0;
+    while (count3 < bytes2.length) {
+      const read2 = await handle2.read(bytes2, count3, bytes2.length - count3, count3);
       if (read2.bytesRead === 0) {
         break;
       }
-      count2 += read2.bytesRead;
+      count3 += read2.bytesRead;
     }
-    requireValue14(count2 === Number(initial.size) && same41(initial, await handle2.stat({ bigint: true })) && same41(initial, await lstat29(path6, { bigint: true })), "RECORD_CHANGED");
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count2)));
+    requireValue14(count3 === Number(initial.size) && same41(initial, await handle2.stat({ bigint: true })) && same41(initial, await lstat29(path6, { bigint: true })), "RECORD_CHANGED");
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count3)));
   } finally {
     await handle2.close();
   }
@@ -96348,18 +96348,18 @@ async function verifyHelper(helperPath, expected3) {
       throw new Error("Recovery helper source check failed.");
     }
     const bytes2 = Buffer.alloc(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes + 1);
-    let count2 = 0;
-    while (count2 < bytes2.length) {
-      const result = await handle2.read(bytes2, count2, bytes2.length - count2, count2);
+    let count3 = 0;
+    while (count3 < bytes2.length) {
+      const result = await handle2.read(bytes2, count3, bytes2.length - count3, count3);
       if (result.bytesRead === 0) {
         break;
       }
-      count2 += result.bytesRead;
+      count3 += result.bytesRead;
     }
-    if (count2 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash34("sha256").update(bytes2.subarray(0, count2)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile4(before, await handle2.stat({ bigint: true })) || !sameFile4(before, await lstat31(helperPath, { bigint: true })) || await realpath19(helperPath) !== helperPath) {
+    if (count3 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash34("sha256").update(bytes2.subarray(0, count3)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile4(before, await handle2.stat({ bigint: true })) || !sameFile4(before, await lstat31(helperPath, { bigint: true })) || await realpath19(helperPath) !== helperPath) {
       throw new Error("Recovery helper source check failed.");
     }
-    const source5 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count2));
+    const source5 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count3));
     return { stat: before, command: Buffer.from(source5, "utf16le").toString("base64") };
   } finally {
     await handle2.close();
@@ -96381,7 +96381,7 @@ async function invokeHelper(command) {
     throw refused("spawn");
   }
   const chunks = [], completion2 = Promise.withResolvers();
-  let count2 = 0, settled = false;
+  let count3 = 0, settled = false;
   function reject(category) {
     if (settled) {
       return;
@@ -96401,8 +96401,8 @@ async function invokeHelper(command) {
       reject("output-schema");
       return;
     }
-    count2 += chunk.length;
-    if (count2 > 4096) {
+    count3 += chunk.length;
+    if (count3 > 4096) {
       reject("output-bound");
       return;
     }
@@ -96432,7 +96432,7 @@ async function invokeHelper(command) {
       return;
     }
     try {
-      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks, count2));
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks, count3));
       const result = nativeObservationSchema.parse(JSON.parse(decoded));
       settled = true;
       completion2.resolve(result);
@@ -96546,8 +96546,8 @@ var init_ordinary_launch_timings = __esm({
           return action();
         }
         const start = this.#now();
-        const state3 = this.#stages.get(stage) ?? { completedCount: 0, failedCount: 0, totalElapsedMs: 0, maxElapsedMs: 0 };
-        this.#stages.set(stage, state3);
+        const state4 = this.#stages.get(stage) ?? { completedCount: 0, failedCount: 0, totalElapsedMs: 0, maxElapsedMs: 0 };
+        this.#stages.set(stage, state4);
         let completed5 = false;
         try {
           const result = await action();
@@ -96557,12 +96557,12 @@ var init_ordinary_launch_timings = __esm({
           const end = this.#now();
           const elapsed2 = start === void 0 || end === void 0 ? 0 : bounded(end - start);
           if (completed5) {
-            state3.completedCount = bounded(state3.completedCount + 1);
+            state4.completedCount = bounded(state4.completedCount + 1);
           } else {
-            state3.failedCount = bounded(state3.failedCount + 1);
+            state4.failedCount = bounded(state4.failedCount + 1);
           }
-          state3.totalElapsedMs = bounded(state3.totalElapsedMs + elapsed2);
-          state3.maxElapsedMs = Math.max(state3.maxElapsedMs, elapsed2);
+          state4.totalElapsedMs = bounded(state4.totalElapsedMs + elapsed2);
+          state4.maxElapsedMs = Math.max(state4.maxElapsedMs, elapsed2);
         }
       }
       snapshot() {
@@ -96571,8 +96571,8 @@ var init_ordinary_launch_timings = __esm({
           scope: "original-launch-request; same-coordinator-memory-only; inner-checks-included",
           authority: "passive-diagnostics-not-admission-or-termination-proof",
           stages: Object.freeze(STAGES.flatMap((stage) => {
-            const state3 = this.#stages.get(stage);
-            return state3 === void 0 ? [] : [Object.freeze({ stage, ...state3 })];
+            const state4 = this.#stages.get(stage);
+            return state4 === void 0 ? [] : [Object.freeze({ stage, ...state4 })];
           }))
         });
       }
@@ -96661,14 +96661,14 @@ async function hashPinnedFile(absolute, sha256, bytes2) {
     const before = await handle2.stat({ bigint: true });
     requireValue15(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= 1073741824n && (bytes2 === void 0 ? before.size <= 65536n : before.size === BigInt(bytes2)), "Ordinary launch pinned file size or kind differs.");
     const hash45 = createHash35("sha256");
-    let count2 = 0;
+    let count3 = 0;
     for await (const chunk of handle2.createReadStream({ autoClose: false })) {
       requireValue15(Buffer.isBuffer(chunk), "Ordinary launch hash requires bytes.");
-      count2 += chunk.length;
-      requireValue15(count2 <= Number(before.size), "Ordinary launch file grew during hashing.");
+      count3 += chunk.length;
+      requireValue15(count3 <= Number(before.size), "Ordinary launch file grew during hashing.");
       hash45.update(chunk);
     }
-    requireValue15(count2 === Number(before.size) && hash45.digest("hex") === sha256 && sameFile5(before, await handle2.stat({ bigint: true })) && sameFile5(before, await lstat32(absolute, { bigint: true })) && await realpath20(absolute) === absolute, "Ordinary launch pinned file identity differs.");
+    requireValue15(count3 === Number(before.size) && hash45.digest("hex") === sha256 && sameFile5(before, await handle2.stat({ bigint: true })) && sameFile5(before, await lstat32(absolute, { bigint: true })) && await realpath20(absolute) === absolute, "Ordinary launch pinned file identity differs.");
   } finally {
     await handle2.close();
   }
@@ -96815,28 +96815,28 @@ async function publish(operationId11, name6, record14) {
   );
 }
 function describe3(operationId11, operation) {
-  let state3 = "not-found";
+  let state4 = "not-found";
   if (operation !== void 0) {
-    state3 = "launch-unknown";
+    state4 = "launch-unknown";
     if (operation.launched !== void 0) {
-      state3 = "launched";
+      state4 = "launched";
     }
     if (operation.terminated !== void 0) {
-      state3 = "terminated";
+      state4 = "terminated";
     }
     if (operation.refused !== void 0) {
-      state3 = "not-dispatched";
+      state4 = "not-dispatched";
     }
     if (operation.abandoned !== void 0) {
-      state3 = "supervision-abandoned";
+      state4 = "supervision-abandoned";
     }
     if (operation.unknownAbandoned !== void 0) {
-      state3 = "unknown-launch-abandoned";
+      state4 = "unknown-launch-abandoned";
     }
   }
   return {
     operationId: operationId11,
-    state: state3,
+    state: state4,
     attemptConsumed: operation !== void 0,
     ...claims,
     limitations: limitations9,
@@ -97896,12 +97896,12 @@ function currentPcbPadPolygonGrammar(path6) {
     while (typeof path6[offset7] === "number") {
       offset7 += 1;
     }
-    const count2 = offset7 - start;
+    const count3 = offset7 - start;
     if (command === "ARC" || command === "CARC") {
-      if (count2 !== 3) {
+      if (count3 !== 3) {
         return false;
       }
-    } else if (count2 < 2 || count2 % 2 !== 0) {
+    } else if (count3 < 2 || count3 % 2 !== 0) {
       return false;
     }
   }
@@ -98014,7 +98014,7 @@ function discoveryResultSchema(method6) {
     Image: imageSchema
   }[currentPcbGeometryFamily({ method: method6 })];
   const selected3 = method6.endsWith(".get");
-  const count2 = external_exports.number().int().min(selected3 ? 1 : 0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+  const count3 = external_exports.number().int().min(selected3 ? 1 : 0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
   const hash45 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
   const uiImplementation = external_exports.object({
     version: external_exports.literal(CURRENT_UI_IMPLEMENTATION.version),
@@ -98035,8 +98035,8 @@ function discoveryResultSchema(method6) {
   return projection9.extend({
     method: external_exports.literal(method6),
     value: external_exports.array(row7).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
-    observedRowCount: count2,
-    ...selected3 || method6 === componentPadsMethod ? { returnedRowCount: count2 } : {},
+    observedRowCount: count3,
+    ...selected3 || method6 === componentPadsMethod ? { returnedRowCount: count3 } : {},
     units: external_exports.object({ linear: external_exports.literal("mil"), arcAngle: external_exports.literal("degrees"), rotation: external_exports.literal("degrees") }).strict(),
     effect: external_exports.literal("current-pcb-loaded-view-geometry-read"),
     encoding: external_exports.literal("native-getter-projection-without-public-wrapper-rounding"),
@@ -101977,11 +101977,11 @@ function targetRecordPointer(primitiveId3) {
     ""
   );
 }
-function targetChangeAssertions(plan2, state3) {
+function targetChangeAssertions(plan2, state4) {
   return plan2.targetChanges.map((change) => ({
     pointer: `${targetRecordPointer(change.primitiveId)}${change.pointer}`,
     op: "equals",
-    value: change[state3]
+    value: change[state4]
   }));
 }
 function maskRelativePointer(root, pointer) {
@@ -104076,8 +104076,8 @@ var init_engine = __esm({
           }
           const callArguments = spec.arguments ?? {};
           const keys2 = Object.keys(callArguments).toSorted();
-          const state3 = callArguments["state"];
-          if (canonicalJson(keys2) !== canonicalJson(["state"]) || state3 !== "before" && state3 !== "after") {
+          const state4 = callArguments["state"];
+          if (canonicalJson(keys2) !== canonicalJson(["state"]) || state4 !== "before" && state4 !== "after") {
             throw new Error(
               `${EXACT_COMPONENT_MUTATION_TOOL} requires only arguments.state=before|after.`
             );
@@ -104095,7 +104095,7 @@ var init_engine = __esm({
               hasConfirmWrite: true,
               idempotent: true
             },
-            exactComponentMutation: { state: state3 }
+            exactComponentMutation: { state: state4 }
           };
         }
         const tool = await this.upstream.findTool?.(spec.toolName);
@@ -107593,12 +107593,12 @@ function own3(value2, key) {
 }
 function selectedPaths(error52) {
   const values2 = own3(error52, "mismatches");
-  const count2 = own3(values2, "length");
-  if (types4.isProxy(values2) || !Array.isArray(values2) || typeof count2 !== "number" || !Number.isSafeInteger(count2) || count2 < 0 || count2 > 64) {
+  const count3 = own3(values2, "length");
+  if (types4.isProxy(values2) || !Array.isArray(values2) || typeof count3 !== "number" || !Number.isSafeInteger(count3) || count3 < 0 || count3 > 64) {
     return [];
   }
   const paths = /* @__PURE__ */ new Set();
-  for (let index = 0; index < count2; index += 1) {
+  for (let index = 0; index < count3; index += 1) {
     const pointer = own3(own3(values2, String(index)), "pointer");
     if (typeof pointer === "string" && PATHS.has(pointer)) {
       paths.add(pointer);
@@ -107631,12 +107631,12 @@ function closedSymbolEntryFailureDiagnostic(entry) {
 }
 function closedSymbolFailureDiagnosticText(value2) {
   const errorCode6 = own3(value2, "errorCode"), lastSuccessfulStage = own3(value2, "lastSuccessfulStage"), messageSha256 = own3(value2, "messageSha256"), paths = own3(value2, "mismatchPaths"), stage = own3(value2, "stage");
-  const count2 = own3(paths, "length");
-  if (own3(value2, "profile") !== PROFILE17 || typeof stage !== "string" || !STAGES2.has(stage) || !(lastSuccessfulStage === null || typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage)) || typeof errorCode6 !== "string" || !SAFE_CODES.has(errorCode6) || !(messageSha256 === null || typeof messageSha256 === "string" && /^[a-f0-9]{64}$/u.test(messageSha256)) || types4.isProxy(paths) || !Array.isArray(paths) || typeof count2 !== "number" || !Number.isSafeInteger(count2) || count2 < 0 || count2 > 8) {
+  const count3 = own3(paths, "length");
+  if (own3(value2, "profile") !== PROFILE17 || typeof stage !== "string" || !STAGES2.has(stage) || !(lastSuccessfulStage === null || typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage)) || typeof errorCode6 !== "string" || !SAFE_CODES.has(errorCode6) || !(messageSha256 === null || typeof messageSha256 === "string" && /^[a-f0-9]{64}$/u.test(messageSha256)) || types4.isProxy(paths) || !Array.isArray(paths) || typeof count3 !== "number" || !Number.isSafeInteger(count3) || count3 < 0 || count3 > 8) {
     return [];
   }
   const mismatchPaths = [];
-  for (let index = 0; index < count2; index += 1) {
+  for (let index = 0; index < count3; index += 1) {
     const path6 = own3(paths, String(index));
     if (typeof path6 !== "string" || !PATHS.has(path6)) {
       return [];
@@ -113715,8 +113715,8 @@ var init_authenticated_bridge_gateway = __esm({
         };
       }
       #recordConnectionEvent(code, phase5, failure2) {
-        const count2 = this.#connectionEventCounts.get(code) ?? 0;
-        this.#connectionEventCounts.set(code, Math.min(Number.MAX_SAFE_INTEGER, count2 + 1));
+        const count3 = this.#connectionEventCounts.get(code) ?? 0;
+        this.#connectionEventCounts.set(code, Math.min(Number.MAX_SAFE_INTEGER, count3 + 1));
         const event3 = { atEpochMs: this.#now(), code, phase: phase5 };
         this.#lastConnectionEvent = event3;
         if (failure2) {
@@ -118440,18 +118440,18 @@ var init_acorn = __esm({
       this.pos = pos;
       return true;
     };
-    pp$1.validateRegExpFlags = function(state3) {
-      var validFlags = state3.validFlags;
-      var flags4 = state3.flags;
+    pp$1.validateRegExpFlags = function(state4) {
+      var validFlags = state4.validFlags;
+      var flags4 = state4.flags;
       var u = false;
       var v = false;
       for (var i2 = 0; i2 < flags4.length; i2++) {
         var flag = flags4.charAt(i2);
         if (validFlags.indexOf(flag) === -1) {
-          this.raise(state3.start, "Invalid regular expression flag");
+          this.raise(state4.start, "Invalid regular expression flag");
         }
         if (flags4.indexOf(flag, i2 + 1) > -1) {
-          this.raise(state3.start, "Duplicate regular expression flag");
+          this.raise(state4.start, "Duplicate regular expression flag");
         }
         if (flag === "u") {
           u = true;
@@ -118461,167 +118461,167 @@ var init_acorn = __esm({
         }
       }
       if (this.options.ecmaVersion >= 15 && u && v) {
-        this.raise(state3.start, "Invalid regular expression flag");
+        this.raise(state4.start, "Invalid regular expression flag");
       }
     };
-    pp$1.validateRegExpPattern = function(state3) {
-      this.regexp_pattern(state3);
-      if (!state3.switchN && this.options.ecmaVersion >= 9 && hasProp(state3.groupNames)) {
-        state3.switchN = true;
-        this.regexp_pattern(state3);
+    pp$1.validateRegExpPattern = function(state4) {
+      this.regexp_pattern(state4);
+      if (!state4.switchN && this.options.ecmaVersion >= 9 && hasProp(state4.groupNames)) {
+        state4.switchN = true;
+        this.regexp_pattern(state4);
       }
     };
-    pp$1.regexp_pattern = function(state3) {
-      state3.pos = 0;
-      state3.lastIntValue = 0;
-      state3.lastStringValue = "";
-      state3.lastAssertionIsQuantifiable = false;
-      state3.numCapturingParens = 0;
-      state3.maxBackReference = 0;
-      state3.groupNames = /* @__PURE__ */ Object.create(null);
-      state3.backReferenceNames.length = 0;
-      state3.branchID = null;
-      this.regexp_disjunction(state3);
-      if (state3.pos !== state3.source.length) {
-        if (state3.eat(
+    pp$1.regexp_pattern = function(state4) {
+      state4.pos = 0;
+      state4.lastIntValue = 0;
+      state4.lastStringValue = "";
+      state4.lastAssertionIsQuantifiable = false;
+      state4.numCapturingParens = 0;
+      state4.maxBackReference = 0;
+      state4.groupNames = /* @__PURE__ */ Object.create(null);
+      state4.backReferenceNames.length = 0;
+      state4.branchID = null;
+      this.regexp_disjunction(state4);
+      if (state4.pos !== state4.source.length) {
+        if (state4.eat(
           41
           /* ) */
         )) {
-          state3.raise("Unmatched ')'");
+          state4.raise("Unmatched ')'");
         }
-        if (state3.eat(
+        if (state4.eat(
           93
           /* ] */
-        ) || state3.eat(
+        ) || state4.eat(
           125
           /* } */
         )) {
-          state3.raise("Lone quantifier brackets");
+          state4.raise("Lone quantifier brackets");
         }
       }
-      if (state3.maxBackReference > state3.numCapturingParens) {
-        state3.raise("Invalid escape");
+      if (state4.maxBackReference > state4.numCapturingParens) {
+        state4.raise("Invalid escape");
       }
-      for (var i2 = 0, list2 = state3.backReferenceNames; i2 < list2.length; i2 += 1) {
+      for (var i2 = 0, list2 = state4.backReferenceNames; i2 < list2.length; i2 += 1) {
         var name6 = list2[i2];
-        if (!state3.groupNames[name6]) {
-          state3.raise("Invalid named capture referenced");
+        if (!state4.groupNames[name6]) {
+          state4.raise("Invalid named capture referenced");
         }
       }
     };
-    pp$1.regexp_disjunction = function(state3) {
+    pp$1.regexp_disjunction = function(state4) {
       var trackDisjunction = this.options.ecmaVersion >= 16;
       if (trackDisjunction) {
-        state3.branchID = new BranchID(state3.branchID, null);
+        state4.branchID = new BranchID(state4.branchID, null);
       }
-      this.regexp_alternative(state3);
-      while (state3.eat(
+      this.regexp_alternative(state4);
+      while (state4.eat(
         124
         /* | */
       )) {
         if (trackDisjunction) {
-          state3.branchID = state3.branchID.sibling();
+          state4.branchID = state4.branchID.sibling();
         }
-        this.regexp_alternative(state3);
+        this.regexp_alternative(state4);
       }
       if (trackDisjunction) {
-        state3.branchID = state3.branchID.parent;
+        state4.branchID = state4.branchID.parent;
       }
-      if (this.regexp_eatQuantifier(state3, true)) {
-        state3.raise("Nothing to repeat");
+      if (this.regexp_eatQuantifier(state4, true)) {
+        state4.raise("Nothing to repeat");
       }
-      if (state3.eat(
+      if (state4.eat(
         123
         /* { */
       )) {
-        state3.raise("Lone quantifier brackets");
+        state4.raise("Lone quantifier brackets");
       }
     };
-    pp$1.regexp_alternative = function(state3) {
-      while (state3.pos < state3.source.length && this.regexp_eatTerm(state3)) {
+    pp$1.regexp_alternative = function(state4) {
+      while (state4.pos < state4.source.length && this.regexp_eatTerm(state4)) {
       }
     };
-    pp$1.regexp_eatTerm = function(state3) {
-      if (this.regexp_eatAssertion(state3)) {
-        if (state3.lastAssertionIsQuantifiable && this.regexp_eatQuantifier(state3)) {
-          if (state3.switchU) {
-            state3.raise("Invalid quantifier");
+    pp$1.regexp_eatTerm = function(state4) {
+      if (this.regexp_eatAssertion(state4)) {
+        if (state4.lastAssertionIsQuantifiable && this.regexp_eatQuantifier(state4)) {
+          if (state4.switchU) {
+            state4.raise("Invalid quantifier");
           }
         }
         return true;
       }
-      if (state3.switchU ? this.regexp_eatAtom(state3) : this.regexp_eatExtendedAtom(state3)) {
-        this.regexp_eatQuantifier(state3);
+      if (state4.switchU ? this.regexp_eatAtom(state4) : this.regexp_eatExtendedAtom(state4)) {
+        this.regexp_eatQuantifier(state4);
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatAssertion = function(state3) {
-      var start = state3.pos;
-      state3.lastAssertionIsQuantifiable = false;
-      if (state3.eat(
+    pp$1.regexp_eatAssertion = function(state4) {
+      var start = state4.pos;
+      state4.lastAssertionIsQuantifiable = false;
+      if (state4.eat(
         94
         /* ^ */
-      ) || state3.eat(
+      ) || state4.eat(
         36
         /* $ */
       )) {
         return true;
       }
-      if (state3.eat(
+      if (state4.eat(
         92
         /* \ */
       )) {
-        if (state3.eat(
+        if (state4.eat(
           66
           /* B */
-        ) || state3.eat(
+        ) || state4.eat(
           98
           /* b */
         )) {
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
-      if (state3.eat(
+      if (state4.eat(
         40
         /* ( */
-      ) && state3.eat(
+      ) && state4.eat(
         63
         /* ? */
       )) {
         var lookbehind = false;
         if (this.options.ecmaVersion >= 9) {
-          lookbehind = state3.eat(
+          lookbehind = state4.eat(
             60
             /* < */
           );
         }
-        if (state3.eat(
+        if (state4.eat(
           61
           /* = */
-        ) || state3.eat(
+        ) || state4.eat(
           33
           /* ! */
         )) {
-          this.regexp_disjunction(state3);
-          if (!state3.eat(
+          this.regexp_disjunction(state4);
+          if (!state4.eat(
             41
             /* ) */
           )) {
-            state3.raise("Unterminated group");
+            state4.raise("Unterminated group");
           }
-          state3.lastAssertionIsQuantifiable = !lookbehind;
+          state4.lastAssertionIsQuantifiable = !lookbehind;
           return true;
         }
       }
-      state3.pos = start;
+      state4.pos = start;
       return false;
     };
-    pp$1.regexp_eatQuantifier = function(state3, noError) {
+    pp$1.regexp_eatQuantifier = function(state4, noError) {
       if (noError === void 0) noError = false;
-      if (this.regexp_eatQuantifierPrefix(state3, noError)) {
-        state3.eat(
+      if (this.regexp_eatQuantifierPrefix(state4, noError)) {
+        state4.eat(
           63
           /* ? */
         );
@@ -118629,82 +118629,82 @@ var init_acorn = __esm({
       }
       return false;
     };
-    pp$1.regexp_eatQuantifierPrefix = function(state3, noError) {
-      return state3.eat(
+    pp$1.regexp_eatQuantifierPrefix = function(state4, noError) {
+      return state4.eat(
         42
         /* * */
-      ) || state3.eat(
+      ) || state4.eat(
         43
         /* + */
-      ) || state3.eat(
+      ) || state4.eat(
         63
         /* ? */
-      ) || this.regexp_eatBracedQuantifier(state3, noError);
+      ) || this.regexp_eatBracedQuantifier(state4, noError);
     };
-    pp$1.regexp_eatBracedQuantifier = function(state3, noError) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatBracedQuantifier = function(state4, noError) {
+      var start = state4.pos;
+      if (state4.eat(
         123
         /* { */
       )) {
         var min = 0, max = -1;
-        if (this.regexp_eatDecimalDigits(state3)) {
-          min = state3.lastIntValue;
-          if (state3.eat(
+        if (this.regexp_eatDecimalDigits(state4)) {
+          min = state4.lastIntValue;
+          if (state4.eat(
             44
             /* , */
-          ) && this.regexp_eatDecimalDigits(state3)) {
-            max = state3.lastIntValue;
+          ) && this.regexp_eatDecimalDigits(state4)) {
+            max = state4.lastIntValue;
           }
-          if (state3.eat(
+          if (state4.eat(
             125
             /* } */
           )) {
             if (max !== -1 && max < min && !noError) {
-              state3.raise("numbers out of order in {} quantifier");
+              state4.raise("numbers out of order in {} quantifier");
             }
             return true;
           }
         }
-        if (state3.switchU && !noError) {
-          state3.raise("Incomplete quantifier");
+        if (state4.switchU && !noError) {
+          state4.raise("Incomplete quantifier");
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatAtom = function(state3) {
-      return this.regexp_eatPatternCharacters(state3) || state3.eat(
+    pp$1.regexp_eatAtom = function(state4) {
+      return this.regexp_eatPatternCharacters(state4) || state4.eat(
         46
         /* . */
-      ) || this.regexp_eatReverseSolidusAtomEscape(state3) || this.regexp_eatCharacterClass(state3) || this.regexp_eatUncapturingGroup(state3) || this.regexp_eatCapturingGroup(state3);
+      ) || this.regexp_eatReverseSolidusAtomEscape(state4) || this.regexp_eatCharacterClass(state4) || this.regexp_eatUncapturingGroup(state4) || this.regexp_eatCapturingGroup(state4);
     };
-    pp$1.regexp_eatReverseSolidusAtomEscape = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatReverseSolidusAtomEscape = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         92
         /* \ */
       )) {
-        if (this.regexp_eatAtomEscape(state3)) {
+        if (this.regexp_eatAtomEscape(state4)) {
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatUncapturingGroup = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatUncapturingGroup = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         40
         /* ( */
       )) {
-        if (state3.eat(
+        if (state4.eat(
           63
           /* ? */
         )) {
           if (this.options.ecmaVersion >= 16) {
-            var addModifiers = this.regexp_eatModifiers(state3);
-            var hasHyphen = state3.eat(
+            var addModifiers = this.regexp_eatModifiers(state4);
+            var hasHyphen = state4.eat(
               45
               /* - */
             );
@@ -118712,375 +118712,375 @@ var init_acorn = __esm({
               for (var i2 = 0; i2 < addModifiers.length; i2++) {
                 var modifier = addModifiers.charAt(i2);
                 if (addModifiers.indexOf(modifier, i2 + 1) > -1) {
-                  state3.raise("Duplicate regular expression modifiers");
+                  state4.raise("Duplicate regular expression modifiers");
                 }
               }
               if (hasHyphen) {
-                var removeModifiers = this.regexp_eatModifiers(state3);
-                if (!addModifiers && !removeModifiers && state3.current() === 58) {
-                  state3.raise("Invalid regular expression modifiers");
+                var removeModifiers = this.regexp_eatModifiers(state4);
+                if (!addModifiers && !removeModifiers && state4.current() === 58) {
+                  state4.raise("Invalid regular expression modifiers");
                 }
                 for (var i$1 = 0; i$1 < removeModifiers.length; i$1++) {
                   var modifier$1 = removeModifiers.charAt(i$1);
                   if (removeModifiers.indexOf(modifier$1, i$1 + 1) > -1 || addModifiers.indexOf(modifier$1) > -1) {
-                    state3.raise("Duplicate regular expression modifiers");
+                    state4.raise("Duplicate regular expression modifiers");
                   }
                 }
               }
             }
           }
-          if (state3.eat(
+          if (state4.eat(
             58
             /* : */
           )) {
-            this.regexp_disjunction(state3);
-            if (state3.eat(
+            this.regexp_disjunction(state4);
+            if (state4.eat(
               41
               /* ) */
             )) {
               return true;
             }
-            state3.raise("Unterminated group");
+            state4.raise("Unterminated group");
           }
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatCapturingGroup = function(state3) {
-      if (state3.eat(
+    pp$1.regexp_eatCapturingGroup = function(state4) {
+      if (state4.eat(
         40
         /* ( */
       )) {
         if (this.options.ecmaVersion >= 9) {
-          this.regexp_groupSpecifier(state3);
-        } else if (state3.current() === 63) {
-          state3.raise("Invalid group");
+          this.regexp_groupSpecifier(state4);
+        } else if (state4.current() === 63) {
+          state4.raise("Invalid group");
         }
-        this.regexp_disjunction(state3);
-        if (state3.eat(
+        this.regexp_disjunction(state4);
+        if (state4.eat(
           41
           /* ) */
         )) {
-          state3.numCapturingParens += 1;
+          state4.numCapturingParens += 1;
           return true;
         }
-        state3.raise("Unterminated group");
+        state4.raise("Unterminated group");
       }
       return false;
     };
-    pp$1.regexp_eatModifiers = function(state3) {
+    pp$1.regexp_eatModifiers = function(state4) {
       var modifiers = "";
       var ch = 0;
-      while ((ch = state3.current()) !== -1 && isRegularExpressionModifier(ch)) {
+      while ((ch = state4.current()) !== -1 && isRegularExpressionModifier(ch)) {
         modifiers += codePointToString(ch);
-        state3.advance();
+        state4.advance();
       }
       return modifiers;
     };
-    pp$1.regexp_eatExtendedAtom = function(state3) {
-      return state3.eat(
+    pp$1.regexp_eatExtendedAtom = function(state4) {
+      return state4.eat(
         46
         /* . */
-      ) || this.regexp_eatReverseSolidusAtomEscape(state3) || this.regexp_eatCharacterClass(state3) || this.regexp_eatUncapturingGroup(state3) || this.regexp_eatCapturingGroup(state3) || this.regexp_eatInvalidBracedQuantifier(state3) || this.regexp_eatExtendedPatternCharacter(state3);
+      ) || this.regexp_eatReverseSolidusAtomEscape(state4) || this.regexp_eatCharacterClass(state4) || this.regexp_eatUncapturingGroup(state4) || this.regexp_eatCapturingGroup(state4) || this.regexp_eatInvalidBracedQuantifier(state4) || this.regexp_eatExtendedPatternCharacter(state4);
     };
-    pp$1.regexp_eatInvalidBracedQuantifier = function(state3) {
-      if (this.regexp_eatBracedQuantifier(state3, true)) {
-        state3.raise("Nothing to repeat");
+    pp$1.regexp_eatInvalidBracedQuantifier = function(state4) {
+      if (this.regexp_eatBracedQuantifier(state4, true)) {
+        state4.raise("Nothing to repeat");
       }
       return false;
     };
-    pp$1.regexp_eatSyntaxCharacter = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatSyntaxCharacter = function(state4) {
+      var ch = state4.current();
       if (isSyntaxCharacter(ch)) {
-        state3.lastIntValue = ch;
-        state3.advance();
+        state4.lastIntValue = ch;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatPatternCharacters = function(state3) {
-      var start = state3.pos;
+    pp$1.regexp_eatPatternCharacters = function(state4) {
+      var start = state4.pos;
       var ch = 0;
-      while ((ch = state3.current()) !== -1 && !isSyntaxCharacter(ch)) {
-        state3.advance();
+      while ((ch = state4.current()) !== -1 && !isSyntaxCharacter(ch)) {
+        state4.advance();
       }
-      return state3.pos !== start;
+      return state4.pos !== start;
     };
-    pp$1.regexp_eatExtendedPatternCharacter = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatExtendedPatternCharacter = function(state4) {
+      var ch = state4.current();
       if (ch !== -1 && ch !== 36 && !(ch >= 40 && ch <= 43) && ch !== 46 && ch !== 63 && ch !== 91 && ch !== 94 && ch !== 124) {
-        state3.advance();
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_groupSpecifier = function(state3) {
-      if (state3.eat(
+    pp$1.regexp_groupSpecifier = function(state4) {
+      if (state4.eat(
         63
         /* ? */
       )) {
-        if (!this.regexp_eatGroupName(state3)) {
-          state3.raise("Invalid group");
+        if (!this.regexp_eatGroupName(state4)) {
+          state4.raise("Invalid group");
         }
         var trackDisjunction = this.options.ecmaVersion >= 16;
-        var known = state3.groupNames[state3.lastStringValue];
+        var known = state4.groupNames[state4.lastStringValue];
         if (known) {
           if (trackDisjunction) {
             for (var i2 = 0, list2 = known; i2 < list2.length; i2 += 1) {
               var altID = list2[i2];
-              if (!altID.separatedFrom(state3.branchID)) {
-                state3.raise("Duplicate capture group name");
+              if (!altID.separatedFrom(state4.branchID)) {
+                state4.raise("Duplicate capture group name");
               }
             }
           } else {
-            state3.raise("Duplicate capture group name");
+            state4.raise("Duplicate capture group name");
           }
         }
         if (trackDisjunction) {
-          (known || (state3.groupNames[state3.lastStringValue] = [])).push(state3.branchID);
+          (known || (state4.groupNames[state4.lastStringValue] = [])).push(state4.branchID);
         } else {
-          state3.groupNames[state3.lastStringValue] = true;
+          state4.groupNames[state4.lastStringValue] = true;
         }
       }
     };
-    pp$1.regexp_eatGroupName = function(state3) {
-      state3.lastStringValue = "";
-      if (state3.eat(
+    pp$1.regexp_eatGroupName = function(state4) {
+      state4.lastStringValue = "";
+      if (state4.eat(
         60
         /* < */
       )) {
-        if (this.regexp_eatRegExpIdentifierName(state3) && state3.eat(
+        if (this.regexp_eatRegExpIdentifierName(state4) && state4.eat(
           62
           /* > */
         )) {
           return true;
         }
-        state3.raise("Invalid capture group name");
+        state4.raise("Invalid capture group name");
       }
       return false;
     };
-    pp$1.regexp_eatRegExpIdentifierName = function(state3) {
-      state3.lastStringValue = "";
-      if (this.regexp_eatRegExpIdentifierStart(state3)) {
-        state3.lastStringValue += codePointToString(state3.lastIntValue);
-        while (this.regexp_eatRegExpIdentifierPart(state3)) {
-          state3.lastStringValue += codePointToString(state3.lastIntValue);
+    pp$1.regexp_eatRegExpIdentifierName = function(state4) {
+      state4.lastStringValue = "";
+      if (this.regexp_eatRegExpIdentifierStart(state4)) {
+        state4.lastStringValue += codePointToString(state4.lastIntValue);
+        while (this.regexp_eatRegExpIdentifierPart(state4)) {
+          state4.lastStringValue += codePointToString(state4.lastIntValue);
         }
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatRegExpIdentifierStart = function(state3) {
-      var start = state3.pos;
+    pp$1.regexp_eatRegExpIdentifierStart = function(state4) {
+      var start = state4.pos;
       var forceU = this.options.ecmaVersion >= 11;
-      var ch = state3.current(forceU);
-      state3.advance(forceU);
-      if (ch === 92 && this.regexp_eatRegExpUnicodeEscapeSequence(state3, forceU)) {
-        ch = state3.lastIntValue;
+      var ch = state4.current(forceU);
+      state4.advance(forceU);
+      if (ch === 92 && this.regexp_eatRegExpUnicodeEscapeSequence(state4, forceU)) {
+        ch = state4.lastIntValue;
       }
       if (isRegExpIdentifierStart(ch)) {
-        state3.lastIntValue = ch;
+        state4.lastIntValue = ch;
         return true;
       }
-      state3.pos = start;
+      state4.pos = start;
       return false;
     };
-    pp$1.regexp_eatRegExpIdentifierPart = function(state3) {
-      var start = state3.pos;
+    pp$1.regexp_eatRegExpIdentifierPart = function(state4) {
+      var start = state4.pos;
       var forceU = this.options.ecmaVersion >= 11;
-      var ch = state3.current(forceU);
-      state3.advance(forceU);
-      if (ch === 92 && this.regexp_eatRegExpUnicodeEscapeSequence(state3, forceU)) {
-        ch = state3.lastIntValue;
+      var ch = state4.current(forceU);
+      state4.advance(forceU);
+      if (ch === 92 && this.regexp_eatRegExpUnicodeEscapeSequence(state4, forceU)) {
+        ch = state4.lastIntValue;
       }
       if (isRegExpIdentifierPart(ch)) {
-        state3.lastIntValue = ch;
+        state4.lastIntValue = ch;
         return true;
       }
-      state3.pos = start;
+      state4.pos = start;
       return false;
     };
-    pp$1.regexp_eatAtomEscape = function(state3) {
-      if (this.regexp_eatBackReference(state3) || this.regexp_eatCharacterClassEscape(state3) || this.regexp_eatCharacterEscape(state3) || state3.switchN && this.regexp_eatKGroupName(state3)) {
+    pp$1.regexp_eatAtomEscape = function(state4) {
+      if (this.regexp_eatBackReference(state4) || this.regexp_eatCharacterClassEscape(state4) || this.regexp_eatCharacterEscape(state4) || state4.switchN && this.regexp_eatKGroupName(state4)) {
         return true;
       }
-      if (state3.switchU) {
-        if (state3.current() === 99) {
-          state3.raise("Invalid unicode escape");
+      if (state4.switchU) {
+        if (state4.current() === 99) {
+          state4.raise("Invalid unicode escape");
         }
-        state3.raise("Invalid escape");
+        state4.raise("Invalid escape");
       }
       return false;
     };
-    pp$1.regexp_eatBackReference = function(state3) {
-      var start = state3.pos;
-      if (this.regexp_eatDecimalEscape(state3)) {
-        var n = state3.lastIntValue;
-        if (state3.switchU) {
-          if (n > state3.maxBackReference) {
-            state3.maxBackReference = n;
+    pp$1.regexp_eatBackReference = function(state4) {
+      var start = state4.pos;
+      if (this.regexp_eatDecimalEscape(state4)) {
+        var n = state4.lastIntValue;
+        if (state4.switchU) {
+          if (n > state4.maxBackReference) {
+            state4.maxBackReference = n;
           }
           return true;
         }
-        if (n <= state3.numCapturingParens) {
+        if (n <= state4.numCapturingParens) {
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatKGroupName = function(state3) {
-      if (state3.eat(
+    pp$1.regexp_eatKGroupName = function(state4) {
+      if (state4.eat(
         107
         /* k */
       )) {
-        if (this.regexp_eatGroupName(state3)) {
-          state3.backReferenceNames.push(state3.lastStringValue);
+        if (this.regexp_eatGroupName(state4)) {
+          state4.backReferenceNames.push(state4.lastStringValue);
           return true;
         }
-        state3.raise("Invalid named reference");
+        state4.raise("Invalid named reference");
       }
       return false;
     };
-    pp$1.regexp_eatCharacterEscape = function(state3) {
-      return this.regexp_eatControlEscape(state3) || this.regexp_eatCControlLetter(state3) || this.regexp_eatZero(state3) || this.regexp_eatHexEscapeSequence(state3) || this.regexp_eatRegExpUnicodeEscapeSequence(state3, false) || !state3.switchU && this.regexp_eatLegacyOctalEscapeSequence(state3) || this.regexp_eatIdentityEscape(state3);
+    pp$1.regexp_eatCharacterEscape = function(state4) {
+      return this.regexp_eatControlEscape(state4) || this.regexp_eatCControlLetter(state4) || this.regexp_eatZero(state4) || this.regexp_eatHexEscapeSequence(state4) || this.regexp_eatRegExpUnicodeEscapeSequence(state4, false) || !state4.switchU && this.regexp_eatLegacyOctalEscapeSequence(state4) || this.regexp_eatIdentityEscape(state4);
     };
-    pp$1.regexp_eatCControlLetter = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatCControlLetter = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         99
         /* c */
       )) {
-        if (this.regexp_eatControlLetter(state3)) {
+        if (this.regexp_eatControlLetter(state4)) {
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatZero = function(state3) {
-      if (state3.current() === 48 && !isDecimalDigit(state3.lookahead())) {
-        state3.lastIntValue = 0;
-        state3.advance();
+    pp$1.regexp_eatZero = function(state4) {
+      if (state4.current() === 48 && !isDecimalDigit(state4.lookahead())) {
+        state4.lastIntValue = 0;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatControlEscape = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatControlEscape = function(state4) {
+      var ch = state4.current();
       if (ch === 116) {
-        state3.lastIntValue = 9;
-        state3.advance();
+        state4.lastIntValue = 9;
+        state4.advance();
         return true;
       }
       if (ch === 110) {
-        state3.lastIntValue = 10;
-        state3.advance();
+        state4.lastIntValue = 10;
+        state4.advance();
         return true;
       }
       if (ch === 118) {
-        state3.lastIntValue = 11;
-        state3.advance();
+        state4.lastIntValue = 11;
+        state4.advance();
         return true;
       }
       if (ch === 102) {
-        state3.lastIntValue = 12;
-        state3.advance();
+        state4.lastIntValue = 12;
+        state4.advance();
         return true;
       }
       if (ch === 114) {
-        state3.lastIntValue = 13;
-        state3.advance();
+        state4.lastIntValue = 13;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatControlLetter = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatControlLetter = function(state4) {
+      var ch = state4.current();
       if (isControlLetter(ch)) {
-        state3.lastIntValue = ch % 32;
-        state3.advance();
+        state4.lastIntValue = ch % 32;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatRegExpUnicodeEscapeSequence = function(state3, forceU) {
+    pp$1.regexp_eatRegExpUnicodeEscapeSequence = function(state4, forceU) {
       if (forceU === void 0) forceU = false;
-      var start = state3.pos;
-      var switchU = forceU || state3.switchU;
-      if (state3.eat(
+      var start = state4.pos;
+      var switchU = forceU || state4.switchU;
+      if (state4.eat(
         117
         /* u */
       )) {
-        if (this.regexp_eatFixedHexDigits(state3, 4)) {
-          var lead = state3.lastIntValue;
+        if (this.regexp_eatFixedHexDigits(state4, 4)) {
+          var lead = state4.lastIntValue;
           if (switchU && lead >= 55296 && lead <= 56319) {
-            var leadSurrogateEnd = state3.pos;
-            if (state3.eat(
+            var leadSurrogateEnd = state4.pos;
+            if (state4.eat(
               92
               /* \ */
-            ) && state3.eat(
+            ) && state4.eat(
               117
               /* u */
-            ) && this.regexp_eatFixedHexDigits(state3, 4)) {
-              var trail = state3.lastIntValue;
+            ) && this.regexp_eatFixedHexDigits(state4, 4)) {
+              var trail = state4.lastIntValue;
               if (trail >= 56320 && trail <= 57343) {
-                state3.lastIntValue = (lead - 55296) * 1024 + (trail - 56320) + 65536;
+                state4.lastIntValue = (lead - 55296) * 1024 + (trail - 56320) + 65536;
                 return true;
               }
             }
-            state3.pos = leadSurrogateEnd;
-            state3.lastIntValue = lead;
+            state4.pos = leadSurrogateEnd;
+            state4.lastIntValue = lead;
           }
           return true;
         }
-        if (switchU && state3.eat(
+        if (switchU && state4.eat(
           123
           /* { */
-        ) && this.regexp_eatHexDigits(state3) && state3.eat(
+        ) && this.regexp_eatHexDigits(state4) && state4.eat(
           125
           /* } */
-        ) && isValidUnicode(state3.lastIntValue)) {
+        ) && isValidUnicode(state4.lastIntValue)) {
           return true;
         }
         if (switchU) {
-          state3.raise("Invalid unicode escape");
+          state4.raise("Invalid unicode escape");
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatIdentityEscape = function(state3) {
-      if (state3.switchU) {
-        if (this.regexp_eatSyntaxCharacter(state3)) {
+    pp$1.regexp_eatIdentityEscape = function(state4) {
+      if (state4.switchU) {
+        if (this.regexp_eatSyntaxCharacter(state4)) {
           return true;
         }
-        if (state3.eat(
+        if (state4.eat(
           47
           /* / */
         )) {
-          state3.lastIntValue = 47;
+          state4.lastIntValue = 47;
           return true;
         }
         return false;
       }
-      var ch = state3.current();
-      if (ch !== 99 && (!state3.switchN || ch !== 107)) {
-        state3.lastIntValue = ch;
-        state3.advance();
+      var ch = state4.current();
+      if (ch !== 99 && (!state4.switchN || ch !== 107)) {
+        state4.lastIntValue = ch;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatDecimalEscape = function(state3) {
-      state3.lastIntValue = 0;
-      var ch = state3.current();
+    pp$1.regexp_eatDecimalEscape = function(state4) {
+      state4.lastIntValue = 0;
+      var ch = state4.current();
       if (ch >= 49 && ch <= 57) {
         do {
-          state3.lastIntValue = 10 * state3.lastIntValue + (ch - 48);
-          state3.advance();
-        } while ((ch = state3.current()) >= 48 && ch <= 57);
+          state4.lastIntValue = 10 * state4.lastIntValue + (ch - 48);
+          state4.advance();
+        } while ((ch = state4.current()) >= 48 && ch <= 57);
         return true;
       }
       return false;
@@ -119088,238 +119088,238 @@ var init_acorn = __esm({
     CharSetNone = 0;
     CharSetOk = 1;
     CharSetString = 2;
-    pp$1.regexp_eatCharacterClassEscape = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatCharacterClassEscape = function(state4) {
+      var ch = state4.current();
       if (isCharacterClassEscape(ch)) {
-        state3.lastIntValue = -1;
-        state3.advance();
+        state4.lastIntValue = -1;
+        state4.advance();
         return CharSetOk;
       }
       var negate = false;
-      if (state3.switchU && this.options.ecmaVersion >= 9 && ((negate = ch === 80) || ch === 112)) {
-        state3.lastIntValue = -1;
-        state3.advance();
+      if (state4.switchU && this.options.ecmaVersion >= 9 && ((negate = ch === 80) || ch === 112)) {
+        state4.lastIntValue = -1;
+        state4.advance();
         var result;
-        if (state3.eat(
+        if (state4.eat(
           123
           /* { */
-        ) && (result = this.regexp_eatUnicodePropertyValueExpression(state3)) && state3.eat(
+        ) && (result = this.regexp_eatUnicodePropertyValueExpression(state4)) && state4.eat(
           125
           /* } */
         )) {
           if (negate && result === CharSetString) {
-            state3.raise("Invalid property name");
+            state4.raise("Invalid property name");
           }
           return result;
         }
-        state3.raise("Invalid property name");
+        state4.raise("Invalid property name");
       }
       return CharSetNone;
     };
-    pp$1.regexp_eatUnicodePropertyValueExpression = function(state3) {
-      var start = state3.pos;
-      if (this.regexp_eatUnicodePropertyName(state3) && state3.eat(
+    pp$1.regexp_eatUnicodePropertyValueExpression = function(state4) {
+      var start = state4.pos;
+      if (this.regexp_eatUnicodePropertyName(state4) && state4.eat(
         61
         /* = */
       )) {
-        var name6 = state3.lastStringValue;
-        if (this.regexp_eatUnicodePropertyValue(state3)) {
-          var value2 = state3.lastStringValue;
-          this.regexp_validateUnicodePropertyNameAndValue(state3, name6, value2);
+        var name6 = state4.lastStringValue;
+        if (this.regexp_eatUnicodePropertyValue(state4)) {
+          var value2 = state4.lastStringValue;
+          this.regexp_validateUnicodePropertyNameAndValue(state4, name6, value2);
           return CharSetOk;
         }
       }
-      state3.pos = start;
-      if (this.regexp_eatLoneUnicodePropertyNameOrValue(state3)) {
-        var nameOrValue = state3.lastStringValue;
-        return this.regexp_validateUnicodePropertyNameOrValue(state3, nameOrValue);
+      state4.pos = start;
+      if (this.regexp_eatLoneUnicodePropertyNameOrValue(state4)) {
+        var nameOrValue = state4.lastStringValue;
+        return this.regexp_validateUnicodePropertyNameOrValue(state4, nameOrValue);
       }
       return CharSetNone;
     };
-    pp$1.regexp_validateUnicodePropertyNameAndValue = function(state3, name6, value2) {
-      if (!hasOwn(state3.unicodeProperties.nonBinary, name6)) {
-        state3.raise("Invalid property name");
+    pp$1.regexp_validateUnicodePropertyNameAndValue = function(state4, name6, value2) {
+      if (!hasOwn(state4.unicodeProperties.nonBinary, name6)) {
+        state4.raise("Invalid property name");
       }
-      if (!state3.unicodeProperties.nonBinary[name6].test(value2)) {
-        state3.raise("Invalid property value");
+      if (!state4.unicodeProperties.nonBinary[name6].test(value2)) {
+        state4.raise("Invalid property value");
       }
     };
-    pp$1.regexp_validateUnicodePropertyNameOrValue = function(state3, nameOrValue) {
-      if (state3.unicodeProperties.binary.test(nameOrValue)) {
+    pp$1.regexp_validateUnicodePropertyNameOrValue = function(state4, nameOrValue) {
+      if (state4.unicodeProperties.binary.test(nameOrValue)) {
         return CharSetOk;
       }
-      if (state3.switchV && state3.unicodeProperties.binaryOfStrings.test(nameOrValue)) {
+      if (state4.switchV && state4.unicodeProperties.binaryOfStrings.test(nameOrValue)) {
         return CharSetString;
       }
-      state3.raise("Invalid property name");
+      state4.raise("Invalid property name");
     };
-    pp$1.regexp_eatUnicodePropertyName = function(state3) {
+    pp$1.regexp_eatUnicodePropertyName = function(state4) {
       var ch = 0;
-      state3.lastStringValue = "";
-      while (isUnicodePropertyNameCharacter(ch = state3.current())) {
-        state3.lastStringValue += codePointToString(ch);
-        state3.advance();
+      state4.lastStringValue = "";
+      while (isUnicodePropertyNameCharacter(ch = state4.current())) {
+        state4.lastStringValue += codePointToString(ch);
+        state4.advance();
       }
-      return state3.lastStringValue !== "";
+      return state4.lastStringValue !== "";
     };
-    pp$1.regexp_eatUnicodePropertyValue = function(state3) {
+    pp$1.regexp_eatUnicodePropertyValue = function(state4) {
       var ch = 0;
-      state3.lastStringValue = "";
-      while (isUnicodePropertyValueCharacter(ch = state3.current())) {
-        state3.lastStringValue += codePointToString(ch);
-        state3.advance();
+      state4.lastStringValue = "";
+      while (isUnicodePropertyValueCharacter(ch = state4.current())) {
+        state4.lastStringValue += codePointToString(ch);
+        state4.advance();
       }
-      return state3.lastStringValue !== "";
+      return state4.lastStringValue !== "";
     };
-    pp$1.regexp_eatLoneUnicodePropertyNameOrValue = function(state3) {
-      return this.regexp_eatUnicodePropertyValue(state3);
+    pp$1.regexp_eatLoneUnicodePropertyNameOrValue = function(state4) {
+      return this.regexp_eatUnicodePropertyValue(state4);
     };
-    pp$1.regexp_eatCharacterClass = function(state3) {
-      if (state3.eat(
+    pp$1.regexp_eatCharacterClass = function(state4) {
+      if (state4.eat(
         91
         /* [ */
       )) {
-        var negate = state3.eat(
+        var negate = state4.eat(
           94
           /* ^ */
         );
-        var result = this.regexp_classContents(state3);
-        if (!state3.eat(
+        var result = this.regexp_classContents(state4);
+        if (!state4.eat(
           93
           /* ] */
         )) {
-          state3.raise("Unterminated character class");
+          state4.raise("Unterminated character class");
         }
         if (negate && result === CharSetString) {
-          state3.raise("Negated character class may contain strings");
+          state4.raise("Negated character class may contain strings");
         }
         return true;
       }
       return false;
     };
-    pp$1.regexp_classContents = function(state3) {
-      if (state3.current() === 93) {
+    pp$1.regexp_classContents = function(state4) {
+      if (state4.current() === 93) {
         return CharSetOk;
       }
-      if (state3.switchV) {
-        return this.regexp_classSetExpression(state3);
+      if (state4.switchV) {
+        return this.regexp_classSetExpression(state4);
       }
-      this.regexp_nonEmptyClassRanges(state3);
+      this.regexp_nonEmptyClassRanges(state4);
       return CharSetOk;
     };
-    pp$1.regexp_nonEmptyClassRanges = function(state3) {
-      while (this.regexp_eatClassAtom(state3)) {
-        var left = state3.lastIntValue;
-        if (state3.eat(
+    pp$1.regexp_nonEmptyClassRanges = function(state4) {
+      while (this.regexp_eatClassAtom(state4)) {
+        var left = state4.lastIntValue;
+        if (state4.eat(
           45
           /* - */
-        ) && this.regexp_eatClassAtom(state3)) {
-          var right = state3.lastIntValue;
-          if (state3.switchU && (left === -1 || right === -1)) {
-            state3.raise("Invalid character class");
+        ) && this.regexp_eatClassAtom(state4)) {
+          var right = state4.lastIntValue;
+          if (state4.switchU && (left === -1 || right === -1)) {
+            state4.raise("Invalid character class");
           }
           if (left !== -1 && right !== -1 && left > right) {
-            state3.raise("Range out of order in character class");
+            state4.raise("Range out of order in character class");
           }
         }
       }
     };
-    pp$1.regexp_eatClassAtom = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatClassAtom = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         92
         /* \ */
       )) {
-        if (this.regexp_eatClassEscape(state3)) {
+        if (this.regexp_eatClassEscape(state4)) {
           return true;
         }
-        if (state3.switchU) {
-          var ch$1 = state3.current();
+        if (state4.switchU) {
+          var ch$1 = state4.current();
           if (ch$1 === 99 || isOctalDigit(ch$1)) {
-            state3.raise("Invalid class escape");
+            state4.raise("Invalid class escape");
           }
-          state3.raise("Invalid escape");
+          state4.raise("Invalid escape");
         }
-        state3.pos = start;
+        state4.pos = start;
       }
-      var ch = state3.current();
+      var ch = state4.current();
       if (ch !== 93) {
-        state3.lastIntValue = ch;
-        state3.advance();
+        state4.lastIntValue = ch;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatClassEscape = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatClassEscape = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         98
         /* b */
       )) {
-        state3.lastIntValue = 8;
+        state4.lastIntValue = 8;
         return true;
       }
-      if (state3.switchU && state3.eat(
+      if (state4.switchU && state4.eat(
         45
         /* - */
       )) {
-        state3.lastIntValue = 45;
+        state4.lastIntValue = 45;
         return true;
       }
-      if (!state3.switchU && state3.eat(
+      if (!state4.switchU && state4.eat(
         99
         /* c */
       )) {
-        if (this.regexp_eatClassControlLetter(state3)) {
+        if (this.regexp_eatClassControlLetter(state4)) {
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
-      return this.regexp_eatCharacterClassEscape(state3) || this.regexp_eatCharacterEscape(state3);
+      return this.regexp_eatCharacterClassEscape(state4) || this.regexp_eatCharacterEscape(state4);
     };
-    pp$1.regexp_classSetExpression = function(state3) {
+    pp$1.regexp_classSetExpression = function(state4) {
       var result = CharSetOk, subResult;
-      if (this.regexp_eatClassSetRange(state3)) ;
-      else if (subResult = this.regexp_eatClassSetOperand(state3)) {
+      if (this.regexp_eatClassSetRange(state4)) ;
+      else if (subResult = this.regexp_eatClassSetOperand(state4)) {
         if (subResult === CharSetString) {
           result = CharSetString;
         }
-        var start = state3.pos;
-        while (state3.eatChars(
+        var start = state4.pos;
+        while (state4.eatChars(
           [38, 38]
           /* && */
         )) {
-          if (state3.current() !== 38 && (subResult = this.regexp_eatClassSetOperand(state3))) {
+          if (state4.current() !== 38 && (subResult = this.regexp_eatClassSetOperand(state4))) {
             if (subResult !== CharSetString) {
               result = CharSetOk;
             }
             continue;
           }
-          state3.raise("Invalid character in character class");
+          state4.raise("Invalid character in character class");
         }
-        if (start !== state3.pos) {
+        if (start !== state4.pos) {
           return result;
         }
-        while (state3.eatChars(
+        while (state4.eatChars(
           [45, 45]
           /* -- */
         )) {
-          if (this.regexp_eatClassSetOperand(state3)) {
+          if (this.regexp_eatClassSetOperand(state4)) {
             continue;
           }
-          state3.raise("Invalid character in character class");
+          state4.raise("Invalid character in character class");
         }
-        if (start !== state3.pos) {
+        if (start !== state4.pos) {
           return result;
         }
       } else {
-        state3.raise("Invalid character in character class");
+        state4.raise("Invalid character in character class");
       }
       for (; ; ) {
-        if (this.regexp_eatClassSetRange(state3)) {
+        if (this.regexp_eatClassSetRange(state4)) {
           continue;
         }
-        subResult = this.regexp_eatClassSetOperand(state3);
+        subResult = this.regexp_eatClassSetOperand(state4);
         if (!subResult) {
           return result;
         }
@@ -119328,229 +119328,229 @@ var init_acorn = __esm({
         }
       }
     };
-    pp$1.regexp_eatClassSetRange = function(state3) {
-      var start = state3.pos;
-      if (this.regexp_eatClassSetCharacter(state3)) {
-        var left = state3.lastIntValue;
-        if (state3.eat(
+    pp$1.regexp_eatClassSetRange = function(state4) {
+      var start = state4.pos;
+      if (this.regexp_eatClassSetCharacter(state4)) {
+        var left = state4.lastIntValue;
+        if (state4.eat(
           45
           /* - */
-        ) && this.regexp_eatClassSetCharacter(state3)) {
-          var right = state3.lastIntValue;
+        ) && this.regexp_eatClassSetCharacter(state4)) {
+          var right = state4.lastIntValue;
           if (left !== -1 && right !== -1 && left > right) {
-            state3.raise("Range out of order in character class");
+            state4.raise("Range out of order in character class");
           }
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatClassSetOperand = function(state3) {
-      if (this.regexp_eatClassSetCharacter(state3)) {
+    pp$1.regexp_eatClassSetOperand = function(state4) {
+      if (this.regexp_eatClassSetCharacter(state4)) {
         return CharSetOk;
       }
-      return this.regexp_eatClassStringDisjunction(state3) || this.regexp_eatNestedClass(state3);
+      return this.regexp_eatClassStringDisjunction(state4) || this.regexp_eatNestedClass(state4);
     };
-    pp$1.regexp_eatNestedClass = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatNestedClass = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         91
         /* [ */
       )) {
-        var negate = state3.eat(
+        var negate = state4.eat(
           94
           /* ^ */
         );
-        var result = this.regexp_classContents(state3);
-        if (state3.eat(
+        var result = this.regexp_classContents(state4);
+        if (state4.eat(
           93
           /* ] */
         )) {
           if (negate && result === CharSetString) {
-            state3.raise("Negated character class may contain strings");
+            state4.raise("Negated character class may contain strings");
           }
           return result;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
-      if (state3.eat(
+      if (state4.eat(
         92
         /* \ */
       )) {
-        var result$1 = this.regexp_eatCharacterClassEscape(state3);
+        var result$1 = this.regexp_eatCharacterClassEscape(state4);
         if (result$1) {
           return result$1;
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return null;
     };
-    pp$1.regexp_eatClassStringDisjunction = function(state3) {
-      var start = state3.pos;
-      if (state3.eatChars(
+    pp$1.regexp_eatClassStringDisjunction = function(state4) {
+      var start = state4.pos;
+      if (state4.eatChars(
         [92, 113]
         /* \q */
       )) {
-        if (state3.eat(
+        if (state4.eat(
           123
           /* { */
         )) {
-          var result = this.regexp_classStringDisjunctionContents(state3);
-          if (state3.eat(
+          var result = this.regexp_classStringDisjunctionContents(state4);
+          if (state4.eat(
             125
             /* } */
           )) {
             return result;
           }
         } else {
-          state3.raise("Invalid escape");
+          state4.raise("Invalid escape");
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return null;
     };
-    pp$1.regexp_classStringDisjunctionContents = function(state3) {
-      var result = this.regexp_classString(state3);
-      while (state3.eat(
+    pp$1.regexp_classStringDisjunctionContents = function(state4) {
+      var result = this.regexp_classString(state4);
+      while (state4.eat(
         124
         /* | */
       )) {
-        if (this.regexp_classString(state3) === CharSetString) {
+        if (this.regexp_classString(state4) === CharSetString) {
           result = CharSetString;
         }
       }
       return result;
     };
-    pp$1.regexp_classString = function(state3) {
-      var count2 = 0;
-      while (this.regexp_eatClassSetCharacter(state3)) {
-        count2++;
+    pp$1.regexp_classString = function(state4) {
+      var count3 = 0;
+      while (this.regexp_eatClassSetCharacter(state4)) {
+        count3++;
       }
-      return count2 === 1 ? CharSetOk : CharSetString;
+      return count3 === 1 ? CharSetOk : CharSetString;
     };
-    pp$1.regexp_eatClassSetCharacter = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatClassSetCharacter = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         92
         /* \ */
       )) {
-        if (this.regexp_eatCharacterEscape(state3) || this.regexp_eatClassSetReservedPunctuator(state3)) {
+        if (this.regexp_eatCharacterEscape(state4) || this.regexp_eatClassSetReservedPunctuator(state4)) {
           return true;
         }
-        if (state3.eat(
+        if (state4.eat(
           98
           /* b */
         )) {
-          state3.lastIntValue = 8;
+          state4.lastIntValue = 8;
           return true;
         }
-        state3.pos = start;
+        state4.pos = start;
         return false;
       }
-      var ch = state3.current();
-      if (ch < 0 || ch === state3.lookahead() && isClassSetReservedDoublePunctuatorCharacter(ch)) {
+      var ch = state4.current();
+      if (ch < 0 || ch === state4.lookahead() && isClassSetReservedDoublePunctuatorCharacter(ch)) {
         return false;
       }
       if (isClassSetSyntaxCharacter(ch)) {
         return false;
       }
-      state3.advance();
-      state3.lastIntValue = ch;
+      state4.advance();
+      state4.lastIntValue = ch;
       return true;
     };
-    pp$1.regexp_eatClassSetReservedPunctuator = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatClassSetReservedPunctuator = function(state4) {
+      var ch = state4.current();
       if (isClassSetReservedPunctuator(ch)) {
-        state3.lastIntValue = ch;
-        state3.advance();
+        state4.lastIntValue = ch;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatClassControlLetter = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatClassControlLetter = function(state4) {
+      var ch = state4.current();
       if (isDecimalDigit(ch) || ch === 95) {
-        state3.lastIntValue = ch % 32;
-        state3.advance();
+        state4.lastIntValue = ch % 32;
+        state4.advance();
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatHexEscapeSequence = function(state3) {
-      var start = state3.pos;
-      if (state3.eat(
+    pp$1.regexp_eatHexEscapeSequence = function(state4) {
+      var start = state4.pos;
+      if (state4.eat(
         120
         /* x */
       )) {
-        if (this.regexp_eatFixedHexDigits(state3, 2)) {
+        if (this.regexp_eatFixedHexDigits(state4, 2)) {
           return true;
         }
-        if (state3.switchU) {
-          state3.raise("Invalid escape");
+        if (state4.switchU) {
+          state4.raise("Invalid escape");
         }
-        state3.pos = start;
+        state4.pos = start;
       }
       return false;
     };
-    pp$1.regexp_eatDecimalDigits = function(state3) {
-      var start = state3.pos;
+    pp$1.regexp_eatDecimalDigits = function(state4) {
+      var start = state4.pos;
       var ch = 0;
-      state3.lastIntValue = 0;
-      while (isDecimalDigit(ch = state3.current())) {
-        state3.lastIntValue = 10 * state3.lastIntValue + (ch - 48);
-        state3.advance();
+      state4.lastIntValue = 0;
+      while (isDecimalDigit(ch = state4.current())) {
+        state4.lastIntValue = 10 * state4.lastIntValue + (ch - 48);
+        state4.advance();
       }
-      return state3.pos !== start;
+      return state4.pos !== start;
     };
-    pp$1.regexp_eatHexDigits = function(state3) {
-      var start = state3.pos;
+    pp$1.regexp_eatHexDigits = function(state4) {
+      var start = state4.pos;
       var ch = 0;
-      state3.lastIntValue = 0;
-      while (isHexDigit(ch = state3.current())) {
-        state3.lastIntValue = 16 * state3.lastIntValue + hexToInt(ch);
-        state3.advance();
+      state4.lastIntValue = 0;
+      while (isHexDigit(ch = state4.current())) {
+        state4.lastIntValue = 16 * state4.lastIntValue + hexToInt(ch);
+        state4.advance();
       }
-      return state3.pos !== start;
+      return state4.pos !== start;
     };
-    pp$1.regexp_eatLegacyOctalEscapeSequence = function(state3) {
-      if (this.regexp_eatOctalDigit(state3)) {
-        var n1 = state3.lastIntValue;
-        if (this.regexp_eatOctalDigit(state3)) {
-          var n2 = state3.lastIntValue;
-          if (n1 <= 3 && this.regexp_eatOctalDigit(state3)) {
-            state3.lastIntValue = n1 * 64 + n2 * 8 + state3.lastIntValue;
+    pp$1.regexp_eatLegacyOctalEscapeSequence = function(state4) {
+      if (this.regexp_eatOctalDigit(state4)) {
+        var n1 = state4.lastIntValue;
+        if (this.regexp_eatOctalDigit(state4)) {
+          var n2 = state4.lastIntValue;
+          if (n1 <= 3 && this.regexp_eatOctalDigit(state4)) {
+            state4.lastIntValue = n1 * 64 + n2 * 8 + state4.lastIntValue;
           } else {
-            state3.lastIntValue = n1 * 8 + n2;
+            state4.lastIntValue = n1 * 8 + n2;
           }
         } else {
-          state3.lastIntValue = n1;
+          state4.lastIntValue = n1;
         }
         return true;
       }
       return false;
     };
-    pp$1.regexp_eatOctalDigit = function(state3) {
-      var ch = state3.current();
+    pp$1.regexp_eatOctalDigit = function(state4) {
+      var ch = state4.current();
       if (isOctalDigit(ch)) {
-        state3.lastIntValue = ch - 48;
-        state3.advance();
+        state4.lastIntValue = ch - 48;
+        state4.advance();
         return true;
       }
-      state3.lastIntValue = 0;
+      state4.lastIntValue = 0;
       return false;
     };
-    pp$1.regexp_eatFixedHexDigits = function(state3, length) {
-      var start = state3.pos;
-      state3.lastIntValue = 0;
+    pp$1.regexp_eatFixedHexDigits = function(state4, length) {
+      var start = state4.pos;
+      state4.lastIntValue = 0;
       for (var i2 = 0; i2 < length; ++i2) {
-        var ch = state3.current();
+        var ch = state4.current();
         if (!isHexDigit(ch)) {
-          state3.pos = start;
+          state4.pos = start;
           return false;
         }
-        state3.lastIntValue = 16 * state3.lastIntValue + hexToInt(ch);
-        state3.advance();
+        state4.lastIntValue = 16 * state4.lastIntValue + hexToInt(ch);
+        state4.advance();
       }
       return true;
     };
@@ -120006,10 +120006,10 @@ var init_acorn = __esm({
       if (this.containsEsc) {
         this.unexpected(flagsStart);
       }
-      var state3 = this.regexpState || (this.regexpState = new RegExpValidationState(this));
-      state3.reset(start, pattern, flags4);
-      this.validateRegExpFlags(state3);
-      this.validateRegExpPattern(state3);
+      var state4 = this.regexpState || (this.regexpState = new RegExpValidationState(this));
+      state4.reset(start, pattern, flags4);
+      this.validateRegExpFlags(state4);
+      this.validateRegExpPattern(state4);
       var value2 = null;
       try {
         value2 = new RegExp(pattern, flags4);
@@ -120694,10 +120694,10 @@ function executionSourceFor(cwd, path6, source5) {
     transform: transform2
   };
 }
-async function resolveImportedDependency(dependency, parentUrl, state3) {
+async function resolveImportedDependency(dependency, parentUrl, state4) {
   let result;
   try {
-    result = await state3.esmResolver.resolve(dependency.specifier, parentUrl);
+    result = await state4.esmResolver.resolve(dependency.specifier, parentUrl);
   } catch (error52) {
     if (errorCode4(error52) === "ERR_MODULE_NOT_FOUND") {
       return { format: null, url: null };
@@ -120712,10 +120712,10 @@ async function resolveImportedDependency(dependency, parentUrl, state3) {
   const resolvedPath = fileURLToPath3(result.url);
   const derivedFormat = await packageTypeFor(
     resolvedPath,
-    state3.cwd,
-    state3.seals,
-    state3.capturedSeals,
-    state3.packageTypeCache
+    state4.cwd,
+    state4.seals,
+    state4.capturedSeals,
+    state4.packageTypeCache
   );
   const reportedFormat = supportedResolvedFormat(result.format, resolvedPath);
   if (reportedFormat !== void 0 && reportedFormat !== derivedFormat) {
@@ -120725,7 +120725,7 @@ async function resolveImportedDependency(dependency, parentUrl, state3) {
   }
   return { format: derivedFormat, url: result.url };
 }
-async function resolveRequiredDependency(dependency, parentUrl, state3) {
+async function resolveRequiredDependency(dependency, parentUrl, state4) {
   let resolved2;
   try {
     resolved2 = createRequire(parentUrl).resolve(dependency.specifier);
@@ -120749,36 +120749,36 @@ async function resolveRequiredDependency(dependency, parentUrl, state3) {
   return {
     format: await packageTypeFor(
       resolvedPath,
-      state3.cwd,
-      state3.seals,
-      state3.capturedSeals,
-      state3.packageTypeCache
+      state4.cwd,
+      state4.seals,
+      state4.capturedSeals,
+      state4.packageTypeCache
     ),
     url: pathToFileURL(resolvedPath).href
   };
 }
-function resolveDependency(dependency, parentUrl, state3) {
+function resolveDependency(dependency, parentUrl, state4) {
   const builtin = normalizedBuiltin(dependency.specifier);
   if (builtin !== void 0) {
     return Promise.resolve({ format: "builtin", url: builtin });
   }
-  return dependency.mode === "import" ? resolveImportedDependency(dependency, parentUrl, state3) : resolveRequiredDependency(dependency, parentUrl, state3);
+  return dependency.mode === "import" ? resolveImportedDependency(dependency, parentUrl, state4) : resolveRequiredDependency(dependency, parentUrl, state4);
 }
-function enqueueResolvedModule(resolved2, state3) {
+function enqueueResolvedModule(resolved2, state4) {
   if (resolved2.format === "builtin" || resolved2.format === null || resolved2.url === null) {
     return;
   }
   const resolvedPath = fileURLToPath3(resolved2.url);
-  if (!isWithin4(state3.cwd, resolvedPath)) {
+  if (!isWithin4(state4.cwd, resolvedPath)) {
     throw new Error(
       `Reachable upstream module escapes its reviewed cwd: ${resolvedPath}`
     );
   }
-  state3.queue.push({ format: resolved2.format, path: resolvedPath });
+  state4.queue.push({ format: resolved2.format, path: resolvedPath });
 }
-async function captureReachableModule(current10, state3) {
+async function captureReachableModule(current10, state4) {
   const currentUrl = pathToFileURL(current10.path).href;
-  if (state3.modules.has(currentUrl)) {
+  if (state4.modules.has(currentUrl)) {
     return;
   }
   if (!SUPPORTED_SOURCE_EXTENSIONS.has(extname(current10.path).toLowerCase())) {
@@ -120788,15 +120788,15 @@ async function captureReachableModule(current10, state3) {
   }
   const captured = await readSealedFile(
     current10.path,
-    state3.seals,
-    state3.capturedSeals
+    state4.seals,
+    state4.capturedSeals
   );
   const execution = executionSourceFor(
-    state3.cwd,
+    state4.cwd,
     current10.path,
     captured.bytes
   );
-  state3.modules.set(currentUrl, {
+  state4.modules.set(currentUrl, {
     bytes: execution.bytes,
     executionSha256: execution.executionSha256,
     format: current10.format,
@@ -120811,9 +120811,9 @@ async function captureReachableModule(current10, state3) {
   );
   for (const dependency of dependencies3) {
     const key = resolutionKey(currentUrl, dependency.specifier, dependency.mode);
-    if (!state3.resolutions.has(key)) {
-      const resolved2 = await resolveDependency(dependency, currentUrl, state3);
-      state3.resolutions.set(key, {
+    if (!state4.resolutions.has(key)) {
+      const resolved2 = await resolveDependency(dependency, currentUrl, state4);
+      state4.resolutions.set(key, {
         format: resolved2.format,
         loadsTarget: dependency.loadsTarget,
         mode: dependency.mode,
@@ -120822,7 +120822,7 @@ async function captureReachableModule(current10, state3) {
         specifier: dependency.specifier
       });
       if (dependency.loadsTarget) {
-        enqueueResolvedModule(resolved2, state3);
+        enqueueResolvedModule(resolved2, state4);
       }
     }
   }
@@ -120899,7 +120899,7 @@ async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
   const modules = /* @__PURE__ */ new Map();
   const resolutions = /* @__PURE__ */ new Map();
   const esmResolver = new EsmResolutionAuthority();
-  const state3 = {
+  const state4 = {
     capturedSeals,
     cwd,
     esmResolver,
@@ -120913,7 +120913,7 @@ async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
     while (queue.length > 0) {
       const current10 = queue.shift();
       if (current10 !== void 0) {
-        await captureReachableModule(current10, state3);
+        await captureReachableModule(current10, state4);
       }
     }
   } finally {
@@ -121879,7 +121879,7 @@ var init_upstream_trust = __esm({
         if (!LOCAL_INTEGRITY_STAGES.some((allowed) => allowed === stage)) {
           return action();
         }
-        const state3 = this.#stages.get(stage) ?? {
+        const state4 = this.#stages.get(stage) ?? {
           activeCount: 0,
           activeStartedAt: null,
           completedCount: 0,
@@ -121889,11 +121889,11 @@ var init_upstream_trust = __esm({
           totalElapsedMs: 0
         };
         const start = this.#now();
-        if (state3.activeCount === 0) {
-          state3.activeStartedAt = start;
+        if (state4.activeCount === 0) {
+          state4.activeStartedAt = start;
         }
-        state3.activeCount = boundedTimingInteger(state3.activeCount + 1);
-        this.#stages.set(stage, state3);
+        state4.activeCount = boundedTimingInteger(state4.activeCount + 1);
+        this.#stages.set(stage, state4);
         let completed5 = false;
         try {
           const result = await action();
@@ -121901,18 +121901,18 @@ var init_upstream_trust = __esm({
           return result;
         } finally {
           const elapsed2 = timingElapsed(start, this.#now());
-          state3.activeCount = boundedTimingInteger(state3.activeCount - 1);
-          if (state3.activeCount === 0) {
-            state3.activeStartedAt = null;
+          state4.activeCount = boundedTimingInteger(state4.activeCount - 1);
+          if (state4.activeCount === 0) {
+            state4.activeStartedAt = null;
           }
           if (completed5) {
-            state3.completedCount = boundedTimingInteger(state3.completedCount + 1);
+            state4.completedCount = boundedTimingInteger(state4.completedCount + 1);
           } else {
-            state3.failedCount = boundedTimingInteger(state3.failedCount + 1);
+            state4.failedCount = boundedTimingInteger(state4.failedCount + 1);
           }
-          state3.lastElapsedMs = elapsed2;
-          state3.maxElapsedMs = Math.max(state3.maxElapsedMs, elapsed2);
-          state3.totalElapsedMs = boundedTimingInteger(state3.totalElapsedMs + elapsed2);
+          state4.lastElapsedMs = elapsed2;
+          state4.maxElapsedMs = Math.max(state4.maxElapsedMs, elapsed2);
+          state4.totalElapsedMs = boundedTimingInteger(state4.totalElapsedMs + elapsed2);
         }
       }
       snapshot() {
@@ -121920,16 +121920,16 @@ var init_upstream_trust = __esm({
         return Object.freeze({
           schema: "easyeda-pro-control.local-integrity-timings.v1",
           stages: Object.freeze(LOCAL_INTEGRITY_STAGES.flatMap((stage) => {
-            const state3 = this.#stages.get(stage);
-            return state3 === void 0 ? [] : [Object.freeze({
+            const state4 = this.#stages.get(stage);
+            return state4 === void 0 ? [] : [Object.freeze({
               stage,
-              activeCount: state3.activeCount,
-              activeSpanElapsedMs: timingElapsed(state3.activeStartedAt, now2),
-              completedCount: state3.completedCount,
-              failedCount: state3.failedCount,
-              lastElapsedMs: state3.lastElapsedMs,
-              maxElapsedMs: state3.maxElapsedMs,
-              totalElapsedMs: state3.totalElapsedMs
+              activeCount: state4.activeCount,
+              activeSpanElapsedMs: timingElapsed(state4.activeStartedAt, now2),
+              completedCount: state4.completedCount,
+              failedCount: state4.failedCount,
+              lastElapsedMs: state4.lastElapsedMs,
+              maxElapsedMs: state4.maxElapsedMs,
+              totalElapsedMs: state4.totalElapsedMs
             })];
           }))
         });
@@ -122232,16 +122232,16 @@ function hasExactKeys(value2, expected3) {
   const keys2 = Object.keys(value2);
   return keys2.length === expected3.size && keys2.every((key) => expected3.has(key));
 }
-function parseBubblewrapStatusLine(line6, state3) {
+function parseBubblewrapStatusLine(line6, state4) {
   const value2 = JSON.parse(line6);
   if (!isRecord8(value2)) {
     throw new Error("Bubblewrap emitted a non-object status record.");
   }
-  if (state3.exitCode !== null) {
+  if (state4.exitCode !== null) {
     throw new Error("Bubblewrap emitted status after its exit record.");
   }
   if (Object.hasOwn(value2, "child-pid")) {
-    if (!hasExactKeys(value2, CHILD_STATUS_KEYS) || state3.childPid !== null || state3.exitCode !== null || !positiveSafeInteger(value2["child-pid"])) {
+    if (!hasExactKeys(value2, CHILD_STATUS_KEYS) || state4.childPid !== null || state4.exitCode !== null || !positiveSafeInteger(value2["child-pid"])) {
       throw new Error("Bubblewrap emitted an invalid child status record.");
     }
     for (const key of CHILD_STATUS_KEYS) {
@@ -122253,8 +122253,8 @@ function parseBubblewrapStatusLine(line6, state3) {
     if (!positiveSafeInteger(childPid)) {
       throw new Error("Bubblewrap emitted an invalid child PID.");
     }
-    state3.childPid = childPid;
-    state3.childNamespaces = {
+    state4.childPid = childPid;
+    state4.childNamespaces = {
       cgroup: requiredPositiveSafeInteger(
         value2["cgroup-namespace"],
         "cgroup namespace identity"
@@ -122280,10 +122280,10 @@ function parseBubblewrapStatusLine(line6, state3) {
   }
   if (Object.hasOwn(value2, "exit-code")) {
     const exitCode = value2["exit-code"];
-    if (!hasExactKeys(value2, EXIT_STATUS_KEYS) || state3.childPid === null || state3.exitCode !== null || typeof exitCode !== "number" || !Number.isSafeInteger(exitCode) || exitCode < 0 || exitCode > 255) {
+    if (!hasExactKeys(value2, EXIT_STATUS_KEYS) || state4.childPid === null || state4.exitCode !== null || typeof exitCode !== "number" || !Number.isSafeInteger(exitCode) || exitCode < 0 || exitCode > 255) {
       throw new Error("Bubblewrap emitted an invalid exit status record.");
     }
-    state3.exitCode = exitCode;
+    state4.exitCode = exitCode;
     return void 0;
   }
   throw new Error("Bubblewrap emitted an unknown status record.");
@@ -122703,7 +122703,7 @@ var init_sandboxed_stdio_client_transport = __esm({
       monitorStatus(stream) {
         const ready = Promise.withResolvers();
         void ready.promise.catch(() => null);
-        const state3 = {
+        const state4 = {
           childNamespaces: null,
           childPid: null,
           exitCode: null,
@@ -122723,8 +122723,8 @@ var init_sandboxed_stdio_client_transport = __esm({
         };
         stream.on("data", (chunk) => {
           try {
-            state3.totalBytes += chunk.length;
-            if (state3.totalBytes > MAXIMUM_STATUS_BYTES) {
+            state4.totalBytes += chunk.length;
+            if (state4.totalBytes > MAXIMUM_STATUS_BYTES) {
               throw new Error("Bubblewrap status exceeded its byte limit.");
             }
             buffered = Buffer.concat([buffered, chunk]);
@@ -122743,11 +122743,11 @@ var init_sandboxed_stdio_client_transport = __esm({
               }
               const childPid = parseBubblewrapStatusLine(
                 lineBytes.toString("utf8"),
-                state3
+                state4
               );
-              this.sandboxExitCode = state3.exitCode;
+              this.sandboxExitCode = state4.exitCode;
               if (childPid !== void 0 && !settled) {
-                const namespaces = state3.childNamespaces;
+                const namespaces = state4.childNamespaces;
                 if (namespaces === null) {
                   throw new Error("Bubblewrap omitted child namespace identity.");
                 }
@@ -122763,9 +122763,9 @@ var init_sandboxed_stdio_client_transport = __esm({
         stream.once("end", () => {
           if (buffered.length > 0) {
             fail12(new Error("Bubblewrap status ended with an incomplete record."));
-          } else if (state3.childPid === null) {
+          } else if (state4.childPid === null) {
             fail12(new Error("Bubblewrap exited before reporting its child PID."));
-          } else if (state3.exitCode === null) {
+          } else if (state4.exitCode === null) {
             fail12(
               new Error("Bubblewrap status ended without an exit record.")
             );
@@ -124332,8 +124332,8 @@ var init_pcb_selected_read_timings = __esm({
           return action();
         }
         const start = this.#now();
-        const state3 = this.#stages.get(stage) ?? { completedCount: 0, failedCount: 0, totalElapsedMs: 0, maxElapsedMs: 0 };
-        this.#stages.set(stage, state3);
+        const state4 = this.#stages.get(stage) ?? { completedCount: 0, failedCount: 0, totalElapsedMs: 0, maxElapsedMs: 0 };
+        this.#stages.set(stage, state4);
         let completed5 = false;
         try {
           const value2 = await action();
@@ -124343,12 +124343,12 @@ var init_pcb_selected_read_timings = __esm({
           const end = this.#now();
           const elapsed2 = start === void 0 || end === void 0 ? 0 : bounded2(end - start);
           if (completed5) {
-            state3.completedCount = bounded2(state3.completedCount + 1);
+            state4.completedCount = bounded2(state4.completedCount + 1);
           } else {
-            state3.failedCount = bounded2(state3.failedCount + 1);
+            state4.failedCount = bounded2(state4.failedCount + 1);
           }
-          state3.totalElapsedMs = bounded2(state3.totalElapsedMs + elapsed2);
-          state3.maxElapsedMs = Math.max(state3.maxElapsedMs, elapsed2);
+          state4.totalElapsedMs = bounded2(state4.totalElapsedMs + elapsed2);
+          state4.maxElapsedMs = Math.max(state4.maxElapsedMs, elapsed2);
         }
       }
       snapshot() {
@@ -124357,8 +124357,8 @@ var init_pcb_selected_read_timings = __esm({
           scope: "coordinator-stages; constituent-read-and-capture-times-include-inner-guards",
           authority: "passive-diagnostics-not-native-observation-or-admission-proof",
           stages: Object.freeze(STAGES3.flatMap((stage) => {
-            const state3 = this.#stages.get(stage);
-            return state3 === void 0 ? [] : [Object.freeze({ stage, ...state3 })];
+            const state4 = this.#stages.get(stage);
+            return state4 === void 0 ? [] : [Object.freeze({ stage, ...state4 })];
           }))
         });
       }
@@ -126153,8 +126153,8 @@ function decodeCurrentPcbDiagnosticWorkerReply(input) {
     return refuse2();
   }
   try {
-    const state3 = stateSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
-    return freezeDeep({ ...state3, ...LIMITS });
+    const state4 = stateSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
+    return freezeDeep({ ...state4, ...LIMITS });
   } catch {
     return refuse2();
   }
@@ -126543,8 +126543,8 @@ function decodeCurrentPcbDiagnosticModelReply(input) {
     return refuse4();
   }
   try {
-    const state3 = stateSchema2.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
-    return freezeDeep({ ...state3, ...LIMITS3 });
+    const state4 = stateSchema2.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
+    return freezeDeep({ ...state4, ...LIMITS3 });
   } catch {
     return refuse4();
   }
@@ -126870,8 +126870,8 @@ function decodeCurrentPcbDiagnosticPendingReply(input) {
     return refuse6();
   }
   try {
-    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), state3 = schema2.parse(decoded);
-    return freezeDeep({ ...state3, ...LIMITS4 });
+    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), state4 = schema2.parse(decoded);
+    return freezeDeep({ ...state4, ...LIMITS4 });
   } catch {
     return refuse6();
   }
@@ -127231,6 +127231,217 @@ return output;
   }
 });
 
+// server/src/current-pcb-diagnostic-interaction.ts
+function collectionEntries(value2) {
+  const { toolChain, scene: scene2, selection: selection2, controllers, secondary } = value2;
+  let total = scene2.modes.length + scene2.historyToolCount + Object.values(selection2.counts).reduce((sum, n) => sum + n, 0);
+  const nav = toolChain.navigation;
+  if (nav !== null) {
+    total += nav.filterCount + nav.markCount + (nav.idle?.filterCount ?? 0);
+  }
+  const { smart, turn } = controllers;
+  total += controllers.lockedLayerCount + smart.startSpotCount + smart.highlightSpotCount + smart.historyItemCount + smart.commandCount + smart.waitingUploadCount + smart.commandIndexCount + turn.itemCount + turn.queueCount + turn.settleCallbackCount;
+  total += (secondary.partitions.count ?? 0) + (secondary.innerModels?.keys ?? 0) + (secondary.innerModels?.members ?? 0) + secondary.innerViews.keys + secondary.innerViews.members + secondary.smartDimensionViews + secondary.groupViews + (secondary.retainedLines?.mapCount ?? 0) + (secondary.retainedLines?.updateCount ?? 0);
+  return total;
+}
+var CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT, count2, marker, ownerCount, idle, navigation, chain2, selectionCounts, smartSchema, controllersSchema, nestedSets, secondarySchema, modeSchema, modesSchema, state3, currentPcbDiagnosticInteractionSchema;
+var init_current_pcb_diagnostic_interaction = __esm({
+  "server/src/current-pcb-diagnostic-interaction.ts"() {
+    init_zod();
+    CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT = `
+const interaction=(()=>{
+const startEntries=budget.entries;
+const reference=(o,k)=>{const v=optional(o,k);if(v.marker==="present")object(v.value);return v.marker;};
+const timer=(o,k)=>{const v=optional(o,k);if(v.marker==="present"&&(typeof v.value!=="number"||!Number.isSafeInteger(v.value)||Object.is(v.value,-0)||v.value<0))bad();return v.marker;};
+const matching=(o,k,target)=>{const v=optional(o,k);if(v.marker!=="present")return v.marker;object(v.value);return v.value===target?"matching":"other";};
+const named=(name,type)=>instance(own(scope,name),klass(type));
+const selection=named("Fe","XU"),root=named("$0","Lpe"),rootNext=optional(root,"nextTool");
+let navigation=null;
+if(rootNext.marker==="present"){
+object(rootNext.value);
+if(Object.getPrototypeOf(rootNext.value)===own(klass("m0e"),"prototype")){
+const nav=rootNext.value,next=optional(nav,"nextTool");let idle=null,nextKind=null;
+if(next.marker==="present"){
+object(next.value);nextKind="other";
+if(Object.getPrototypeOf(next.value)===own(klass("Eh"),"prototype")){
+nextKind="Eh";idle={drawing:flag(own(next.value,"drawing")),filterCount:set(own(next.value,"filterItems")),next:reference(next.value,"nextTool")};
+}
+}
+navigation={drawing:flag(own(nav,"drawing")),filterCount:set(own(nav,"filterItems")),mouseRightDown:flag(own(nav,"isMouseRightDown")),
+mouseMidDown:flag(own(nav,"isMouseMidDown")),markCount:array(own(nav,"mark")),shiftHelp:reference(nav,"shiftMoveHelpLine"),
+wheelTimer:timer(object(own(nav,"wheelData")),"clearTime"),nextMarker:next.marker,nextKind,idle};
+}
+}
+const button=optional(root,"mouseDownStatus");let mouseDownButton=null;
+if(button.marker==="present"){if(!Number.isSafeInteger(button.value)||Object.is(button.value,-0)||button.value<0||button.value>4)bad();mouseDownButton=button.value;}
+const sceneOwner=named("Pi","Kme"),scene=own(sceneOwner,"scene"),sceneCount=array(scene);if(sceneCount>8)bad();
+const modes=[];for(let i=0;i<sceneCount;i++){const v=own(scene,String(i));if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<1||v>6)bad();modes.push(v);}
+const sceneState={modes,dropDrag:flag(own(sceneOwner,"_dropDrag")),historyToolCount:set(own(sceneOwner,"needHistoryTool"))};
+const selected={items:array(own(selection,"items")),selections:array(own(selection,"selections")),
+components:array(own(selection,"components")),tracks:array(own(selection,"tracks")),lines:set(own(selection,"lines")),
+points:array(own(selection,"currentPointSelectedItems")),annotations:array(own(selection,"selectAnnotations")),
+drcItems:set(own(selection,"drcItems")),selectionOrder:map(own(selection,"selectionOrder"))};
+const selectionState={counts:selected,mouseLeftDown:flag(own(selection,"mouseLeftDown")),mouseLeftUp:flag(own(selection,"mouseLeftUp")),
+dragging:flag(own(selection,"dragging")),readyToCopyDragging:flag(own(selection,"readyToCopyDragging")),
+keepSelection:flag(own(selection,"keepSelection")),specialPaste:flag(own(selection,"isSpecialPaste")),dialog:reference(selection,"_dialog")};
+const control=named("Sr","fpe"),flipping=named("cm","P1e"),attributes=named("nu","mge"),type=optional(attributes,"_type");
+if(type.marker==="present"&&typeof type.value!=="string")bad();
+const toolHistoryClass=klass("Cy"),toolHistory=optional(toolHistoryClass,"instance");let history=null;
+if(toolHistory.marker==="present"){
+const owner=instance(toolHistory.value,toolHistoryClass),activeId=optional(owner,"activeToolId");
+if(activeId.marker==="present"&&typeof activeId.value!=="string")bad();
+history={activeTool:reference(owner,"activeToolHistory"),activeId:activeId.marker};
+}
+const smart=named("Us","tge"),command=instance(own(smart,"command"),klass("De"));
+const smartState={control:reference(smart,"_control"),dimension:reference(smart,"dimension"),
+start:reference(smart,"start"),end:reference(smart,"end"),startSpotCount:array(own(smart,"startSpots")),
+highlightSpotCount:array(own(smart,"highlightedSpots")),historyItemCount:set(own(smart,"_historyItems")),
+commandCount:array(own(command,"_commands")),waitingUploadCount:array(own(command,"waitingUploadStack")),
+commandIndexCount:map(own(command,"idMap")),commandFromOutside:flag(own(smart,"initCommandFromOutside"))};
+const turn=named("Xo","$me");
+const controllers={pointControl:reference(control,"control"),lockedLayerCount:set(own(control,"lockedLayers")),
+mouseMoveCheck:flag(own(control,"mouseMoveCheck")),mouseAltDown:flag(own(control,"mouseAltDown")),hasAlt:flag(own(control,"hasAlt")),
+layerTool:reference(named("dl","Spe"),"tool"),routeTool:reference(named("Yr","Ume"),"tool"),
+attributeTool:reference(named("ru","cge"),"tool"),flipMoveTool:reference(flipping,"moveTool"),flipping:flag(own(flipping,"_flipping")),
+toolHistoryMarker:toolHistory.marker,toolHistory:history,attributeType:type.marker,attributesUnmounted:flag(own(attributes,"isUnmounted")),
+attributeTimer:timer(attributes,"_ui2PCBAboutAttrDataUpdateTimer"),smart:smartState,
+turn:{selectionRelation:matching(turn,"currTool",selection),itemCount:array(own(turn,"items")),queueCount:array(own(turn,"_flipQueue")),
+settleCallbackCount:array(own(turn,"_onSettleCallbacks")),processing:flag(own(turn,"_isProcessingFlip"))}};
+const optionalMap=(name,field)=>{
+const c=klass(name),v=optional(c,"manager");return {marker:v.marker,count:v.marker==="present"?map(own(instance(v.value,c),field)):null};
+};
+const dictionarySets=value=>{
+object(value);const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==null)bad();
+const keys=Reflect.ownKeys(value);spend(keys.length);let members=0;
+for(const key of keys){if(typeof key!=="string")bad();members+=set(own(value,key));}
+return {keys:keys.length,members};
+};
+const innerClass=klass("zo"),innerOwner=optional(innerClass,"manager");let innerModels=null;
+if(innerOwner.marker==="present")innerModels=dictionarySets(own(instance(innerOwner.value,innerClass),"layerMapSet"));
+const innerView=named("Wn","Tfe"),innerViews=dictionarySets(own(innerView,"layerMapSet"));
+const retainedClass=klass("Hb"),retainedOwner=optional(retainedClass,"manager");let retainedLines=null;
+if(retainedOwner.marker==="present"){
+const owner=instance(retainedOwner.value,retainedClass);retainedLines={mapCount:map(own(owner,"map")),updateCount:set(own(owner,"updateIds"))};
+}
+const secondary={partitions:optionalMap("Nn","items"),innerModelMarker:innerOwner.marker,innerModels,innerViews,
+innerViewManagerMatches:innerOwner.marker==="present"&&own(innerView,"mgr")===innerOwner.value,
+smartDimensionViews:map(own(named("Yh","Qme"),"map")),groupViews:map(own(named("Ft","jde"),"map")),
+retainedLineMarker:retainedOwner.marker,retainedLines};
+return {schema:"easyeda-pro-control.pcb-diagnostic-interaction.v1",
+toolChain:{nextMarker:rootNext.marker,nextKind:rootNext.marker==="present"?(navigation===null?"other":"m0e"):null,
+rightDownTimer:timer(root,"mouseRightDownTimer"),mouseDownMarker:button.marker,mouseDownButton,navigation},
+scene:sceneState,selection:selectionState,controllers,secondary,collectionEntries:budget.entries-startEntries};
+})();
+`;
+    count2 = external_exports.number().int().min(0).max(65536).refine((value2) => !Object.is(value2, -0));
+    marker = external_exports.enum(["absent", "undefined", "null", "present"]);
+    ownerCount = external_exports.object({ marker, count: count2.nullable() }).strict().refine((value2) => value2.marker === "present" === (value2.count !== null));
+    idle = external_exports.object({ drawing: external_exports.boolean(), filterCount: count2, next: marker }).strict();
+    navigation = external_exports.object({
+      drawing: external_exports.boolean(),
+      filterCount: count2,
+      mouseRightDown: external_exports.boolean(),
+      mouseMidDown: external_exports.boolean(),
+      markCount: count2,
+      shiftHelp: marker,
+      wheelTimer: marker,
+      nextMarker: marker,
+      nextKind: external_exports.enum(["Eh", "other"]).nullable(),
+      idle: idle.nullable()
+    }).strict().refine((value2) => value2.nextMarker === "present" === (value2.nextKind !== null) && value2.nextKind === "Eh" === (value2.idle !== null));
+    chain2 = external_exports.object({
+      nextMarker: marker,
+      nextKind: external_exports.enum(["m0e", "other"]).nullable(),
+      rightDownTimer: marker,
+      mouseDownMarker: marker,
+      mouseDownButton: count2.max(4).nullable(),
+      navigation: navigation.nullable()
+    }).strict().refine((value2) => value2.nextMarker === "present" === (value2.nextKind !== null) && value2.nextKind === "m0e" === (value2.navigation !== null) && value2.mouseDownMarker === "present" === (value2.mouseDownButton !== null));
+    selectionCounts = external_exports.object({
+      items: count2,
+      selections: count2,
+      components: count2,
+      tracks: count2,
+      lines: count2,
+      points: count2,
+      annotations: count2,
+      drcItems: count2,
+      selectionOrder: count2
+    }).strict();
+    smartSchema = external_exports.object({
+      control: marker,
+      dimension: marker,
+      start: marker,
+      end: marker,
+      startSpotCount: count2,
+      highlightSpotCount: count2,
+      historyItemCount: count2,
+      commandCount: count2,
+      waitingUploadCount: count2,
+      commandIndexCount: count2,
+      commandFromOutside: external_exports.boolean()
+    }).strict();
+    controllersSchema = external_exports.object({
+      pointControl: marker,
+      lockedLayerCount: count2,
+      mouseMoveCheck: external_exports.boolean(),
+      mouseAltDown: external_exports.boolean(),
+      hasAlt: external_exports.boolean(),
+      layerTool: marker,
+      routeTool: marker,
+      attributeTool: marker,
+      flipMoveTool: marker,
+      flipping: external_exports.boolean(),
+      toolHistoryMarker: marker,
+      toolHistory: external_exports.object({ activeTool: marker, activeId: marker }).strict().nullable(),
+      attributeType: marker,
+      attributesUnmounted: external_exports.boolean(),
+      attributeTimer: marker,
+      smart: smartSchema,
+      turn: external_exports.object({
+        selectionRelation: external_exports.enum(["absent", "undefined", "null", "matching", "other"]),
+        itemCount: count2,
+        queueCount: count2,
+        settleCallbackCount: count2,
+        processing: external_exports.boolean()
+      }).strict()
+    }).strict().refine((value2) => value2.toolHistoryMarker === "present" === (value2.toolHistory !== null));
+    nestedSets = external_exports.object({ keys: count2, members: count2 }).strict().refine((value2) => value2.keys !== 0 || value2.members === 0);
+    secondarySchema = external_exports.object({
+      partitions: ownerCount,
+      innerModelMarker: marker,
+      innerModels: nestedSets.nullable(),
+      innerViews: nestedSets,
+      innerViewManagerMatches: external_exports.boolean(),
+      smartDimensionViews: count2,
+      groupViews: count2,
+      retainedLineMarker: marker,
+      retainedLines: external_exports.object({ mapCount: count2, updateCount: count2 }).strict().nullable()
+    }).strict().refine((value2) => value2.innerModelMarker === "present" === (value2.innerModels !== null) && value2.retainedLineMarker === "present" === (value2.retainedLines !== null) && (value2.innerModelMarker === "present" || !value2.innerViewManagerMatches));
+    modeSchema = count2.min(1).max(6);
+    modesSchema = external_exports.array(modeSchema).max(8);
+    state3 = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-interaction.v1"),
+      toolChain: chain2,
+      scene: external_exports.object({ modes: modesSchema, dropDrag: external_exports.boolean(), historyToolCount: count2 }).strict(),
+      selection: external_exports.object({
+        counts: selectionCounts,
+        mouseLeftDown: external_exports.boolean(),
+        mouseLeftUp: external_exports.boolean(),
+        dragging: external_exports.boolean(),
+        readyToCopyDragging: external_exports.boolean(),
+        keepSelection: external_exports.boolean(),
+        specialPaste: external_exports.boolean(),
+        dialog: marker
+      }).strict(),
+      controllers: controllersSchema,
+      secondary: secondarySchema,
+      collectionEntries: count2
+    }).strict();
+    currentPcbDiagnosticInteractionSchema = state3.refine((value2) => collectionEntries(value2) === value2.collectionEntries);
+  }
+});
+
 // server/src/current-pcb-diagnostic-root-inventory.ts
 import { createHash as createHash50 } from "node:crypto";
 import { types as types13 } from "node:util";
@@ -127272,6 +127483,7 @@ var MAX_ENTRIES5, MAX_TREES, MAX_DEPTH, MAX_RETAINED_DESCRIPTORS, CURRENT_PCB_DI
 var init_current_pcb_diagnostic_root_inventory = __esm({
   "server/src/current-pcb-diagnostic-root-inventory.ts"() {
     init_zod();
+    init_current_pcb_diagnostic_interaction();
     init_current_pcb_diagnostic_json();
     init_current_pcb_diagnostic_model_program();
     init_sqlite_inventory_core();
@@ -127377,10 +127589,11 @@ else inspectTree(entry,result);
 });return result;
 };
 const spatialIndexes={typed:branch(own(spatial,"map"),true),other:branch(own(spatial,"otherMap"),false),ratline:branch(own(spatial,"ratlineMap"),false)};
+${CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT}
 for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]==="absent"?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[3])bad();}
 for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-root-inventory.v1",documentUuid,families,board,panelization,spatialIndexes,collectionEntries:budget.entries,treeCount:budget.trees});
+const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-root-inventory.v1",documentUuid,families,board,panelization,spatialIndexes,interaction,collectionEntries:budget.entries,treeCount:budget.trees});
 if(output.length>${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES})bad();
 return output;
 }`;
@@ -127456,6 +127669,7 @@ return output;
       board: boardSchema,
       panelization: panelSchema,
       spatialIndexes: external_exports.object({ typed: treeSchema, other: treeSchema, ratline: treeSchema }).strict(),
+      interaction: currentPcbDiagnosticInteractionSchema,
       collectionEntries: countSchema4,
       treeCount: countSchema4.max(MAX_TREES)
     }).strict().refine((value2) => {
@@ -127466,12 +127680,12 @@ return output;
       let entries6 = Object.values(value2.families).reduce((sum, owner) => sum + (owner.count ?? 0), 0);
       entries6 += value2.board.outlineCount ?? 0;
       if (value2.panelization.counts !== null) {
-        entries6 += 2 + Object.values(value2.panelization.counts).reduce((sum, count2) => sum + count2, 0);
+        entries6 += 2 + Object.values(value2.panelization.counts).reduce((sum, count3) => sum + count3, 0);
       }
       for (const branch of [typed, other, ratline]) {
         entries6 += branch.outerKeyCount + branch.nestedKeyCount + branch.itemCount + branch.changeCount + branch.deadCount + 2 * branch.rootNodeCount - branch.treeCount + branch.rootLeafCount;
       }
-      return entries6 === value2.collectionEntries;
+      return entries6 + value2.interaction.collectionEntries === value2.collectionEntries;
     });
     LIMITS6 = Object.freeze({
       completeModelMembershipVerified: false,
@@ -128128,13 +128342,16 @@ var init_current_pcb_diagnostic_protocol = __esm({
 });
 
 // server/src/current-pcb-diagnostic-pipe.ts
+function eventKind(value2) {
+  return EVENT_KINDS.find((kind) => kind === value2) ?? "unknown";
+}
 function record11(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2);
 }
 function failureError(code) {
   return new Error(`PCB_DIAGNOSTIC_PIPE_${code.toUpperCase()}`);
 }
-var MAX_FRAME_BYTES, MAX_CHUNK_BYTES2, DEADLINE_MS, CurrentPcbDiagnosticPipe;
+var MAX_FRAME_BYTES, MAX_CHUNK_BYTES2, DEADLINE_MS, REQUEST_METHODS, REQUEST_PHASES, EVENT_KINDS, CurrentPcbDiagnosticPipe;
 var init_current_pcb_diagnostic_pipe = __esm({
   "server/src/current-pcb-diagnostic-pipe.ts"() {
     init_current_pcb_diagnostic_protocol();
@@ -128143,11 +128360,90 @@ var init_current_pcb_diagnostic_pipe = __esm({
     MAX_FRAME_BYTES = 1024 * 1024;
     MAX_CHUNK_BYTES2 = MAX_FRAME_BYTES + 1;
     DEADLINE_MS = 5e3;
+    REQUEST_METHODS = [
+      "Browser.getVersion",
+      "Target.getTargets",
+      "Target.attachToTarget",
+      "Page.enable",
+      "Page.getFrameTree",
+      "Runtime.enable",
+      "Debugger.enable",
+      "Debugger.getScriptSource",
+      "DOM.getFrameOwner",
+      "DOM.describeNode",
+      "Target.setAutoAttach",
+      "Runtime.evaluate",
+      "Runtime.callFunctionOn",
+      "Runtime.getProperties",
+      "Runtime.releaseObjectGroup"
+    ];
+    REQUEST_PHASES = [
+      "discovery",
+      "frame-owner",
+      "worker-discovery",
+      "worker-state",
+      "project-preflight",
+      "project-open-project",
+      "pcb-preflight",
+      "pcb-open-document",
+      "pcb-observe",
+      "model-wrapper",
+      "model-properties",
+      "model-handler",
+      "model-snapshot",
+      "model-pending",
+      "model-raw-strings",
+      "model-root-inventory",
+      "model-release"
+    ];
+    EVENT_KINDS = [
+      "Target.attachedToTarget",
+      "Target.detachedFromTarget",
+      "Target.targetCreated",
+      "Target.targetDestroyed",
+      "Target.targetInfoChanged",
+      "Target.targetCrashed",
+      "Inspector.detached",
+      "Inspector.targetCrashed",
+      "Runtime.executionContextCreated",
+      "Runtime.executionContextDestroyed",
+      "Runtime.executionContextsCleared",
+      "Runtime.consoleAPICalled",
+      "Runtime.exceptionThrown",
+      "Runtime.exceptionRevoked",
+      "Runtime.inspectRequested",
+      "Debugger.scriptParsed",
+      "Debugger.scriptFailedToParse",
+      "Debugger.paused",
+      "Debugger.resumed",
+      "Page.navigatedWithinDocument",
+      "Page.frameAttached",
+      "Page.frameDetached",
+      "Page.frameNavigated",
+      "Page.frameStartedLoading",
+      "Page.frameStoppedLoading",
+      "Page.frameStartedNavigating",
+      "Page.frameRequestedNavigation",
+      "Page.domContentEventFired",
+      "Page.loadEventFired",
+      "Page.frameResized",
+      "Page.lifecycleEvent",
+      "DOM.documentUpdated",
+      "DOM.setChildNodes",
+      "DOM.childNodeInserted",
+      "DOM.childNodeRemoved",
+      "DOM.childNodeCountUpdated",
+      "DOM.attributeModified",
+      "DOM.attributeRemoved",
+      "DOM.characterDataModified"
+    ];
     CurrentPcbDiagnosticPipe = class {
       #input;
       #output;
       #started = false;
       #failure = null;
+      #failureObservation = null;
+      #lastRequest = null;
       #pending = null;
       #nextId = 1;
       #receivedBytes = 0;
@@ -128202,7 +128498,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         this.#event = event3;
         const reply = await this.#request({ id: this.#nextId, method: "Target.attachToTarget", params: { targetId: targetId2, flatten: true } });
         if (!diagnosticExact(reply, ["sessionId"]) || !diagnosticToken(reply["sessionId"])) {
-          this.#fail("reply");
+          this.#fail("reply", "attachment-result");
           throw failureError("reply");
         }
         this.#sessionId = reply["sessionId"];
@@ -128235,7 +128531,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         if (this.#sessionId === null || this.#workerEvent !== null || !diagnosticToken(frameId)) {
           return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT"));
         }
-        return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId });
+        return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId }, "frame-owner");
       }
       describeFrameOwner(backendNodeId) {
         if (this.#sessionId === null || this.#workerEvent !== null || !Number.isSafeInteger(backendNodeId) || backendNodeId < 1 || backendNodeId > 2147483647) {
@@ -128246,7 +128542,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           method: "DOM.describeNode",
           params: { backendNodeId, depth: 0, pierce: false },
           sessionId: this.#sessionId
-        });
+        }, "frame-owner");
       }
       /** One fixed direct-child discovery on the original page. No recursive
        * autoattachment, debugger waiting, detached adoption or caller target URL. */
@@ -128260,9 +128556,9 @@ var init_current_pcb_diagnostic_pipe = __esm({
           method: "Target.setAutoAttach",
           params: DIAGNOSTIC_WORKER_ATTACH_PARAMS,
           sessionId: this.#sessionId
-        });
+        }, "worker-discovery");
         if (!diagnosticExact(reply, [])) {
-          this.#fail("reply");
+          this.#fail("reply", "worker-discovery-result");
           throw failureError("reply");
         }
         this.#workerDiscoverySettled = true;
@@ -128299,7 +128595,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           method: "Runtime.evaluate",
           params: diagnosticWorkerEvaluationParams(uniqueContextId),
           sessionId: this.#workerSession()
-        });
+        }, "worker-state");
       }
       /** The native helper reconstructs this exact fixed service call. No caller
        * function/options; source, checkpoint and one-shot admission live in owner. */
@@ -128312,14 +128608,14 @@ var init_current_pcb_diagnostic_pipe = __esm({
           method: "Runtime.callFunctionOn",
           params: diagnosticOpeningParams(uniqueContextId, target9, phase5),
           sessionId: this.#sessionId
-        });
+        }, `project-${phase5}`);
       }
       observeModel(command) {
         if (this.#sessionId === null || this.#workerEvent !== null) {
           return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT"));
         }
         const { modelPhase: _modelPhase, ...wire2 } = command;
-        return this.#request({ id: this.#nextId, ...wire2, sessionId: this.#sessionId });
+        return this.#request({ id: this.#nextId, ...wire2, sessionId: this.#sessionId }, `model-${command.modelPhase}`);
       }
       observePcbOpening(uniqueContextId, target9, phase5) {
         if (this.#sessionId === null || this.#workerEvent !== null) {
@@ -128330,7 +128626,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           method: "Runtime.callFunctionOn",
           params: diagnosticPcbOpeningParams(uniqueContextId, target9, phase5),
           sessionId: this.#sessionId
-        });
+        }, `pcb-${phase5}`);
       }
       #workerSession() {
         if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null || !this.#workerSessions.has(this.#selectedWorkerSession)) {
@@ -128348,6 +128644,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         return Object.freeze({
           started: this.#started,
           failure: this.#failure,
+          failureObservation: this.#failureObservation,
           pendingRequestId: this.#pending?.id ?? null,
           requestCount: this.#nextId - 1,
           receivedBytes: this.#receivedBytes,
@@ -128375,7 +128672,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         this.#released = true;
       }
       // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-      async #request(command) {
+      async #request(command, phase5 = "discovery") {
         if (!this.#started || this.#released) {
           throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED");
         }
@@ -128391,6 +128688,11 @@ var init_current_pcb_diagnostic_pipe = __esm({
         }
         const id14 = this.#nextId;
         this.#nextId += 1;
+        this.#lastRequest = Object.freeze({
+          id: id14,
+          method: REQUEST_METHODS.find((method6) => method6 === command.method) ?? "unknown",
+          phase: REQUEST_PHASES.find((value2) => value2 === phase5) ?? "unknown"
+        });
         const deferred = Promise.withResolvers();
         let deadline = DEADLINE_MS;
         if (command.method === "Debugger.getScriptSource") {
@@ -128425,7 +128727,17 @@ var init_current_pcb_diagnostic_pipe = __esm({
         }
         return deferred.promise;
       }
-      #fail(code) {
+      #fail(code, reason = code, rejectedEvent = null) {
+        this.#failureObservation ??= Object.freeze({
+          schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1",
+          code,
+          reason,
+          request: this.#lastRequest,
+          requestPending: this.#pending !== null,
+          eventKind: rejectedEvent,
+          executionAuthorized: false,
+          dispatchAbsenceVerified: false
+        });
         this.#failure ??= code;
         this.#used = 0;
         const pending = this.#pending;
@@ -128446,7 +128758,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
       #frame(bytes2) {
         const pending = this.#pending;
         if (bytes2.length === 0) {
-          this.#fail("reply");
+          this.#fail("reply", "empty-frame");
           return;
         }
         let decoded;
@@ -128457,21 +128769,29 @@ var init_current_pcb_diagnostic_pipe = __esm({
           return;
         }
         if (!record11(decoded)) {
-          this.#fail("reply");
+          this.#fail("reply", "nonobject-frame");
           return;
         }
         if (Object.hasOwn(decoded, "method")) {
           this.#receiveEvent(decoded, bytes2.length);
           return;
         }
-        if (pending === null || pending.reply !== null || !Object.is(decoded["id"], pending.id)) {
-          this.#fail("reply");
+        if (pending === null) {
+          this.#fail("reply", "reply-unsolicited");
+          return;
+        }
+        if (pending.reply !== null) {
+          this.#fail("reply", "reply-duplicate");
+          return;
+        }
+        if (!Object.is(decoded["id"], pending.id)) {
+          this.#fail("reply", "reply-id");
           return;
         }
         const keys2 = Object.keys(decoded);
         const expectedKeys = pending.sessionId === null ? 2 : 3;
         if (keys2.length !== expectedKeys || !keys2.includes("id") || keys2.includes("result") === keys2.includes("error") || (pending.sessionId === null ? keys2.includes("sessionId") : decoded["sessionId"] !== pending.sessionId)) {
-          this.#fail("reply");
+          this.#fail("reply", "reply-envelope");
           return;
         }
         if (keys2.includes("error")) {
@@ -128480,7 +128800,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
         }
         const result = decoded["result"];
         if (!record11(result)) {
-          this.#fail("reply");
+          this.#fail("reply", "reply-result");
           return;
         }
         pending.reply = result;
@@ -128489,8 +128809,16 @@ var init_current_pcb_diagnostic_pipe = __esm({
         const method6 = value2["method"], params = value2["params"], sessionId = value2["sessionId"];
         this.#eventCount += 1;
         this.#eventBytes += bytes2;
-        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES || typeof method6 !== "string" || !record11(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"]) || sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
-          this.#fail("reply");
+        if (this.#event === null || bytes2 > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES) {
+          this.#fail("reply", "event-budget-or-handler", eventKind(method6));
+          return;
+        }
+        if (typeof method6 !== "string" || !record11(params) || !diagnosticExact(value2, sessionId === void 0 ? ["method", "params"] : ["method", "params", "sessionId"])) {
+          this.#fail("reply", "event-envelope", eventKind(method6));
+          return;
+        }
+        if (sessionId !== void 0 && (this.#sessionId === null || sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
+          this.#fail("reply", "event-session", eventKind(method6));
           return;
         }
         try {
@@ -128498,14 +128826,14 @@ var init_current_pcb_diagnostic_pipe = __esm({
           if (sessionId === this.#sessionId && method6 === "Target.attachedToTarget") {
             const child = params["targetInfo"], childSession = params["sessionId"];
             if (this.#workerEvent === null || !diagnosticExact(params, ["sessionId", "targetInfo", "waitingForDebugger"]) || !record11(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) || !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId || this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) || this.#workerSessions.size >= 16) {
-              this.#fail("reply");
+              this.#fail("reply", "worker-attachment", eventKind(method6));
               return;
             }
             this.#workerSessions.set(childSession, child["targetId"]);
             this.#workerEvent(event3);
           } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
             if (this.#workerEvent === null) {
-              this.#fail("reply");
+              this.#fail("reply", "worker-handler", eventKind(method6));
               return;
             }
             this.#workerEvent(event3);
@@ -128515,7 +128843,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
             this.#event(event3);
           }
         } catch {
-          this.#fail("reply");
+          this.#fail("reply", "event-callback", eventKind(method6));
         }
       }
       #data = (chunk) => {
@@ -128523,7 +128851,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           return;
         }
         if (this.#pending === null && this.#event === null) {
-          this.#fail("reply");
+          this.#fail("reply", "unsolicited-data");
           return;
         }
         if (!Buffer.isBuffer(chunk) || chunk.length === 0 || chunk.length > MAX_CHUNK_BYTES2 || this.#receivedBytes + chunk.length > (this.#event === null ? 8 * MAX_FRAME_BYTES : DIAGNOSTIC_SESSION_BYTES)) {
@@ -128555,7 +128883,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
           start = end + 1;
         }
         if (this.#event === null && this.#pending?.reply !== null && this.#used > 0) {
-          this.#fail("reply");
+          this.#fail("reply", "trailing-reply-data");
         }
         this.#complete();
       };
@@ -129650,15 +129978,15 @@ var init_current_pcb_diagnostic_worker_context = __esm({
         this.evaluationContext();
         this.#targets(targetReply);
         try {
-          const state3 = decodeCurrentPcbDiagnosticWorkerReply(reply);
-          if (this.#selected?.target["title"] !== `project_${state3.identity.projectUuid}_${state3.identity.windowTabId}`) {
+          const state4 = decodeCurrentPcbDiagnosticWorkerReply(reply);
+          if (this.#selected?.target["title"] !== `project_${state4.identity.projectUuid}_${state4.identity.windowTabId}`) {
             this.#refuse();
           }
           return diagnosticBoundedObservation({
             schema: "easyeda-pro-control.pcb-diagnostic-worker-observation.v1",
             ...this.#identity(),
             expressionSha256: CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256,
-            state: state3,
+            state: state4,
             eventCount: this.#eventCount,
             eventKinds: [...this.#eventKinds].toSorted(),
             sourceVerified: true,
@@ -129879,8 +130207,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_diagnostic_opening();
     init_current_pcb_diagnostic_model_runner();
     init_current_pcb_diagnostic_pcb_opening();
-    HELPER_SHA256 = "e315c83350188bdcd4a6de4221098e2539c073b4378fa9d134329db5da838a1f";
-    HELPER_BYTES = 144881;
+    HELPER_SHA256 = "555146fdb9ae2ff0672a7cef758e96ac9618fb3a3472a0bd80a570e6ca0fa8e9";
+    HELPER_BYTES = 152165;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -129981,6 +130309,7 @@ var init_current_pcb_diagnostic_owner = __esm({
           frameInspectionConsumed: this.#framesConsumed,
           scriptInspectionConsumed: this.#scriptConsumed,
           diagnosticFailure: this.#pipe.status().failure,
+          diagnosticFailureObservation: this.#pipe.status().failureObservation,
           projectOpeningConsumed: this.#projectOpeningConsumed,
           projectOpeningResult: this.#projectOpeningResult,
           modelObservationConsumed: this.#modelConsumed,
@@ -130966,28 +131295,28 @@ async function assertSnapshot(expected3) {
 function describe4(operationId11, operation) {
   const records2 = operation?.records;
   const binding9 = records2?.["binding.json"];
-  let state3 = operation === void 0 ? "not-found" : "launch-unknown";
+  let state4 = operation === void 0 ? "not-found" : "launch-unknown";
   if (binding9?.launchAcknowledged === true) {
-    state3 = "launched";
+    state4 = "launched";
   }
   if (binding9?.binding.rootCreated === "0") {
-    state3 = "cleanup-only";
+    state4 = "cleanup-only";
   }
   if (records2?.["terminated.json"] !== void 0) {
-    state3 = "terminated";
+    state4 = "terminated";
   }
   if (records2?.["released.json"] !== void 0) {
-    state3 = "released";
+    state4 = "released";
   }
   if (records2?.["not-dispatched.json"] !== void 0) {
-    state3 = "not-dispatched";
+    state4 = "not-dispatched";
   }
   if (records2?.["no-process-released.json"] !== void 0) {
-    state3 = "no-process-released";
+    state4 = "no-process-released";
   }
   return {
     operationId: operationId11,
-    state: state3,
+    state: state4,
     attemptConsumed: operation !== void 0,
     closeAttemptConsumed: records2?.["close-intent.json"] !== void 0,
     closeAcknowledged: records2?.["close-acknowledged.json"] !== void 0,
@@ -131131,6 +131460,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             ...nativeOpeningReply === null ? {} : { nativeOpeningReply, hostTransitionAccepted: false },
             ...nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false },
             ...nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false },
+            diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
             nativeSendError: native?.nativeSendError ?? null,
             ...native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError },
             ...pendingIntent === null ? {} : {
@@ -133080,11 +133410,11 @@ function frozenMetadata(value2) {
 }
 function stringsIn(value2) {
   const pending = [value2], strings = [];
-  let count2 = 0;
+  let count3 = 0;
   while (pending.length > 0) {
     const item2 = pending.pop();
-    count2 += 1;
-    need55(count2 <= 1e6, "JSON traversal budget exceeded");
+    count3 += 1;
+    need55(count3 <= 1e6, "JSON traversal budget exceeded");
     if (typeof item2 === "string") {
       need55(exactText(item2), "lossy Unicode is unsupported");
       strings.push(item2);
@@ -133216,9 +133546,9 @@ function assertCurrentSymbolCopyPlanInventory(original2, before) {
   need55(retained(original2).before === before, "copy plan requires its exact original SQL inventory");
 }
 function currentSymbolCopySourceMetadata(original2) {
-  const state3 = retained(original2);
-  const document3 = state3.decoded.history.documents.find((item2) => item2.uuid === original2.source.symbolUuid);
-  const ticket2 = state3.atomTickets.get(original2.source.symbolUuid), version7 = document3?.metadata["version"];
+  const state4 = retained(original2);
+  const document3 = state4.decoded.history.documents.find((item2) => item2.uuid === original2.source.symbolUuid);
+  const ticket2 = state4.atomTickets.get(original2.source.symbolUuid), version7 = document3?.metadata["version"];
   need55(typeof version7 === "string" && ticket2 !== void 0, "complete source metadata is absent");
   return Object.freeze({
     name: original2.sourceMetadata.title,
@@ -133230,13 +133560,13 @@ function currentSymbolCopySourceMetadata(original2) {
   });
 }
 function assertCurrentSymbolCopyDestination(original2, targetUuid) {
-  const state3 = retained(original2);
+  const state4 = retained(original2);
   need55(typeof targetUuid === "string" && /^[a-f0-9]{16}$/u.test(targetUuid), "new destination identity refused");
-  need55(!state3.strings.some((value2) => value2.includes(targetUuid)), "destination UUID already occurs in retained history");
+  need55(!state4.strings.some((value2) => value2.includes(targetUuid)), "destination UUID already occurs in retained history");
 }
 function currentSymbolCopyProgramSource(original2, observation2) {
-  const state3 = retained(original2);
-  verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(state3.raw, state3.canvas, observation2);
+  const state4 = retained(original2);
+  verifyCurrentCanvasSegmentsSavedSymbolProjectionAlternatives(state4.raw, state4.canvas, observation2);
   need55(isRecord(observation2) && typeof observation2["content"] === "string", "source observation content missing");
   const sourceContent = observation2["content"];
   const lines3 = sourceContent.split("|\n");
@@ -133245,34 +133575,34 @@ function currentSymbolCopyProgramSource(original2, observation2) {
   const separator = first.indexOf("||");
   need55(separator > 0, "source outer header framing differs");
   lines3[0] = `${JSON.stringify({ type: "DOCHEAD", ticket: original2.exportedHeaderTicket })}${first.slice(separator)}`;
-  const activeSymbols = state3.decoded.history.documents.filter((document3) => document3.docType === "SYMBOL" && !isNativeDocumentDeleted(document3)).map((document3) => {
-    const maximumAtomTicket = state3.atomTickets.get(document3.uuid);
+  const activeSymbols = state4.decoded.history.documents.filter((document3) => document3.docType === "SYMBOL" && !isNativeDocumentDeleted(document3)).map((document3) => {
+    const maximumAtomTicket = state4.atomTickets.get(document3.uuid);
     need55(maximumAtomTicket !== void 0, "complete symbol atom ticket is absent");
     return { uuid: document3.uuid, maximumAtomTicket, header: structuredClone(document3.metadata), metadata: structuredClone(meta4(document3)) };
   });
-  return freezeDeep({ sourceContent, sourceContentAfterCopy: lines3.join("|\n"), activeSymbols, occupiedStrings: state3.strings });
+  return freezeDeep({ sourceContent, sourceContentAfterCopy: lines3.join("|\n"), activeSymbols, occupiedStrings: state4.strings });
 }
 function currentSymbolCopySourceRows(original2) {
   return retained(original2).rows;
 }
 async function verifyCurrentSymbolCopyAppend(original2, input) {
   const captured = external_exports.object({ targetUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u), chunk: external_exports.string().min(1).max(8388608) }).strict().parse(input);
-  const state3 = retained(original2), { targetUuid, chunk } = captured;
+  const state4 = retained(original2), { targetUuid, chunk } = captured;
   need55(exactText(chunk) && Buffer.byteLength(chunk) <= 8388608, "append byte bound or UTF8 differs");
   assertCurrentSymbolCopyDestination(original2, targetUuid);
   const lines3 = chunk.split("|\n");
   need55(
-    lines3.length === state3.rows.length + 4 && lines3[2] === `${JSON.stringify({ type: "META", ticket: original2.metadataTicket, id: "META" })}||${JSON.stringify(original2.destinationMetadata)}`,
+    lines3.length === state4.rows.length + 4 && lines3[2] === `${JSON.stringify({ type: "META", ticket: original2.metadataTicket, id: "META" })}||${JSON.stringify(original2.destinationMetadata)}`,
     "append cardinality or exact destination metadata differs"
   );
-  verifyCurrentCanvasSegmentsCopySourceOrder(state3.canvas, lines3.slice(4));
+  verifyCurrentCanvasSegmentsCopySourceOrder(state4.canvas, lines3.slice(4));
   const projection9 = await prepareCurrentCreatedCopySavedSymbolProjection({
-    chunks: [...state3.decoded.chunks, chunk],
+    chunks: [...state4.decoded.chunks, chunk],
     targetUuid,
     beforeMaximumTicket: original2.maximumTicket,
     currentEditVersion: "3.2.206"
   });
-  need55(plans3.get(original2) === state3, "original copy plan changed");
+  need55(plans3.get(original2) === state4, "original copy plan changed");
   return Object.freeze({
     profile: "private.current-symbol-copy-append.v1",
     plan: original2,
@@ -137967,12 +138297,12 @@ var init_current_symbol_verification_runtime = __esm({
             need72(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods8(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need72(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
-            const state3 = lifecycleReader.call(upstream2);
-            need72(isRecord(state3) && state3["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state3["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state3["publicEndpoint"]) === endpointText && Array.isArray(state3["recentClosedSessions"]));
-            const closed = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
+            const state4 = lifecycleReader.call(upstream2);
+            need72(isRecord(state4) && state4["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state4["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state4["publicEndpoint"]) === endpointText && Array.isArray(state4["recentClosedSessions"]));
+            const closed = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
             const old = closed[0];
             need72(closed.length === 1 && isRecord(old) && old["sequence"] === prior.sequence && old["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
-            const active2 = state3["activeSession"];
+            const active2 = state4["activeSession"];
             if (slot?.launch === void 0) {
               need72(active2 === null && canonicalJson(runtime.status().launch) === priorLaunchText);
               return;
@@ -137981,18 +138311,18 @@ var init_current_symbol_verification_runtime = __esm({
             need72(status2.state === "owned" && canonicalJson(status2.launch) === slot.launchText && canonicalJson(slot.launch) === slot.launchText && slot.launch.helperInstance === previousLaunch.helperInstance && slot.launch.jobId !== previousLaunch.jobId && slot.launch.root.startIdentity !== previousLaunch.root.startIdentity);
             if (active2 !== null) {
               need72(isRecord(active2) && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== prior.sessionId && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > prior.sequence && typeof active2["authenticationReceiptSha256"] === "string" && /^[a-f0-9]{64}$/u.test(active2["authenticationReceiptSha256"]) && typeof active2["authenticatedAtEpochMs"] === "number" && Number.isSafeInteger(active2["authenticatedAtEpochMs"]) && active2["authenticatedAtEpochMs"] > 0);
-              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state3["gatewayInstanceId"] });
+              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state4["gatewayInstanceId"] });
               slot.sessionText ??= selected3;
               need72(slot.sessionText === selected3);
             } else if (slot.sessionText !== void 0) {
               need72(slot.finishing, "Current symbol verification selected session disconnected before closure.");
               const selected3 = JSON.parse(slot.sessionText);
               need72(isRecord(selected3));
-              const ended = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
+              const ended = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
               const found = ended[0];
               need72(ended.length === 1 && isRecord(found));
               const { closeReason: _reason, closedAtEpochMs, ...identity32 } = found;
-              need72(canonicalJson({ ...identity32, gatewayInstanceId: state3["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
+              need72(canonicalJson({ ...identity32, gatewayInstanceId: state4["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
             }
           };
           infrastructure();
@@ -145411,12 +145741,12 @@ var init_current_symbol_copy_verification_runtime = __esm({
             need86(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods10(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need86(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
-            const state3 = lifecycleReader.call(upstream2);
-            need86(isRecord(state3) && state3["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state3["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state3["publicEndpoint"]) === endpointText && Array.isArray(state3["recentClosedSessions"]));
-            const closed = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
+            const state4 = lifecycleReader.call(upstream2);
+            need86(isRecord(state4) && state4["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state4["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state4["publicEndpoint"]) === endpointText && Array.isArray(state4["recentClosedSessions"]));
+            const closed = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
             const old = closed[0];
             need86(closed.length === 1 && isRecord(old) && old["sequence"] === prior.sequence && old["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
-            const active2 = state3["activeSession"];
+            const active2 = state4["activeSession"];
             if (slot?.launch === void 0) {
               need86(active2 === null && canonicalJson(runtime.status().launch) === priorLaunchText);
               return;
@@ -145425,18 +145755,18 @@ var init_current_symbol_copy_verification_runtime = __esm({
             need86(status2.state === "owned" && canonicalJson(status2.launch) === slot.launchText && canonicalJson(slot.launch) === slot.launchText && slot.launch.helperInstance === previousLaunch.helperInstance && slot.launch.jobId !== previousLaunch.jobId && slot.launch.root.startIdentity !== previousLaunch.root.startIdentity);
             if (active2 !== null) {
               need86(isRecord(active2) && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== prior.sessionId && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > prior.sequence && typeof active2["authenticationReceiptSha256"] === "string" && /^[a-f0-9]{64}$/u.test(active2["authenticationReceiptSha256"]) && typeof active2["authenticatedAtEpochMs"] === "number" && Number.isSafeInteger(active2["authenticatedAtEpochMs"]) && active2["authenticatedAtEpochMs"] > 0);
-              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state3["gatewayInstanceId"] });
+              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state4["gatewayInstanceId"] });
               slot.sessionText ??= selected3;
               need86(slot.sessionText === selected3);
             } else if (slot.sessionText !== void 0) {
               need86(slot.finishing, "Current symbol verification selected session disconnected before closure.");
               const selected3 = JSON.parse(slot.sessionText);
               need86(isRecord(selected3));
-              const ended = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
+              const ended = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
               const found = ended[0];
               need86(ended.length === 1 && isRecord(found));
               const { closeReason: _reason, closedAtEpochMs, ...identity32 } = found;
-              need86(canonicalJson({ ...identity32, gatewayInstanceId: state3["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
+              need86(canonicalJson({ ...identity32, gatewayInstanceId: state4["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
             }
           };
           infrastructure();
@@ -155982,12 +156312,12 @@ var init_current_pcb_rename_verification_runtime = __esm({
             need109(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods14(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need109(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
-            const state3 = lifecycleReader.call(upstream2);
-            need109(isRecord(state3) && state3["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state3["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state3["publicEndpoint"]) === endpointText && Array.isArray(state3["recentClosedSessions"]));
-            const closed = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
+            const state4 = lifecycleReader.call(upstream2);
+            need109(isRecord(state4) && state4["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state4["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state4["publicEndpoint"]) === endpointText && Array.isArray(state4["recentClosedSessions"]));
+            const closed = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
             const old = closed[0];
             need109(closed.length === 1 && isRecord(old) && old["sequence"] === prior.sequence && old["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
-            const active2 = state3["activeSession"];
+            const active2 = state4["activeSession"];
             if (slot?.launch === void 0) {
               need109(active2 === null && canonicalJson(runtime.status().launch) === priorLaunchText);
               return;
@@ -155996,18 +156326,18 @@ var init_current_pcb_rename_verification_runtime = __esm({
             need109(status2.state === "owned" && canonicalJson(status2.launch) === slot.launchText && canonicalJson(slot.launch) === slot.launchText && slot.launch.helperInstance === previousLaunch.helperInstance && slot.launch.jobId !== previousLaunch.jobId && slot.launch.root.startIdentity !== previousLaunch.root.startIdentity);
             if (active2 !== null) {
               need109(isRecord(active2) && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== prior.sessionId && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > prior.sequence && typeof active2["authenticationReceiptSha256"] === "string" && /^[a-f0-9]{64}$/u.test(active2["authenticationReceiptSha256"]) && typeof active2["authenticatedAtEpochMs"] === "number" && Number.isSafeInteger(active2["authenticatedAtEpochMs"]) && active2["authenticatedAtEpochMs"] > 0);
-              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state3["gatewayInstanceId"] });
+              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state4["gatewayInstanceId"] });
               slot.sessionText ??= selected3;
               need109(slot.sessionText === selected3);
             } else if (slot.sessionText !== void 0) {
               need109(slot.finishing, "Current PCB verification selected session disconnected before closure.");
               const selected3 = JSON.parse(slot.sessionText);
               need109(isRecord(selected3));
-              const ended = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
+              const ended = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
               const found = ended[0];
               need109(ended.length === 1 && isRecord(found));
               const { closeReason: _reason, closedAtEpochMs, ...identity32 } = found;
-              need109(canonicalJson({ ...identity32, gatewayInstanceId: state3["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
+              need109(canonicalJson({ ...identity32, gatewayInstanceId: state4["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
             }
             if (lease !== void 0) {
               need109(slot.sessionText !== void 0);
@@ -157003,32 +157333,32 @@ var init_current_pcb_rename_operation_runtime = __esm({
           }]
         ];
         for (const [owner, inspect] of candidates) {
-          let state3;
+          let state4;
           try {
-            state3 = inspect();
+            state4 = inspect();
           } catch {
           }
-          if (owner === "writer" && state3?.["ownerRetained"] === false) {
-            state3 = void 0;
+          if (owner === "writer" && state4?.["ownerRetained"] === false) {
+            state4 = void 0;
           }
-          if (state3 !== void 0) {
+          if (state4 !== void 0) {
             slot.cleanup = owner;
-            slot.last = structuredClone(state3);
-            if (state3["retired"] === true || state3["finished"] === true) {
+            slot.last = structuredClone(state4);
+            if (state4["retired"] === true || state4["finished"] === true) {
               return;
             }
             if (owner === "baseline") {
               need110(slot.baseline !== void 0);
-              if (state3["cleanupOnly"] !== true) {
-                state3 = await slot.baseline.requestCleanup(slot.operationId);
-                slot.last = structuredClone(state3);
+              if (state4["cleanupOnly"] !== true) {
+                state4 = await slot.baseline.requestCleanup(slot.operationId);
+                slot.last = structuredClone(state4);
               }
             }
-            if (state3["closedBaselineRetirementAvailable"] === true) {
+            if (state4["closedBaselineRetirementAvailable"] === true) {
               slot.next = "cleanup-retire-closed";
-            } else if (state3["finishObservationAvailable"] === true) {
+            } else if (state4["finishObservationAvailable"] === true) {
               slot.next = "cleanup-observe-termination";
-            } else if (state3["cleanupCloseAvailable"] === true) {
+            } else if (state4["cleanupCloseAvailable"] === true) {
               slot.next = "cleanup-close";
             }
             return;
@@ -163859,12 +164189,12 @@ var init_current_schematic_rename_verification_runtime = __esm({
             need131(this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.bridgeSessionLifecycle === lifecycleReader && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && methods19(this.engine, runtime).every((method6, index) => method6 === retainedMethods[index]) && canonicalJson(prior) === priorText && canonicalJson(previousLaunch) === priorLaunchText);
             const lease = scopeReader.call(upstream2);
             need131(scopeText === void 0 ? lease === void 0 : lease !== void 0 && canonicalJson(lease) === scopeText);
-            const state3 = lifecycleReader.call(upstream2);
-            need131(isRecord(state3) && state3["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state3["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state3["publicEndpoint"]) === endpointText && Array.isArray(state3["recentClosedSessions"]));
-            const closed = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
+            const state4 = lifecycleReader.call(upstream2);
+            need131(isRecord(state4) && state4["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" && state4["gatewayInstanceId"] === prior.gatewayInstanceId && canonicalJson(state4["publicEndpoint"]) === endpointText && Array.isArray(state4["recentClosedSessions"]));
+            const closed = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === prior.sessionId);
             const old = closed[0];
             need131(closed.length === 1 && isRecord(old) && old["sequence"] === prior.sequence && old["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && old["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof old["closedAtEpochMs"] === "number" && Number.isSafeInteger(old["closedAtEpochMs"]) && old["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
-            const active2 = state3["activeSession"];
+            const active2 = state4["activeSession"];
             if (slot?.launch === void 0) {
               need131(active2 === null && canonicalJson(runtime.status().launch) === priorLaunchText);
               return;
@@ -163873,18 +164203,18 @@ var init_current_schematic_rename_verification_runtime = __esm({
             need131(status2.state === "owned" && canonicalJson(status2.launch) === slot.launchText && canonicalJson(slot.launch) === slot.launchText && slot.launch.helperInstance === previousLaunch.helperInstance && slot.launch.jobId !== previousLaunch.jobId && slot.launch.root.startIdentity !== previousLaunch.root.startIdentity);
             if (active2 !== null) {
               need131(isRecord(active2) && typeof active2["sessionId"] === "string" && /^[A-Za-z0-9_-]{43}$/u.test(active2["sessionId"]) && active2["sessionId"] !== prior.sessionId && typeof active2["sequence"] === "number" && Number.isSafeInteger(active2["sequence"]) && active2["sequence"] > prior.sequence && typeof active2["authenticationReceiptSha256"] === "string" && /^[a-f0-9]{64}$/u.test(active2["authenticationReceiptSha256"]) && typeof active2["authenticatedAtEpochMs"] === "number" && Number.isSafeInteger(active2["authenticatedAtEpochMs"]) && active2["authenticatedAtEpochMs"] > 0);
-              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state3["gatewayInstanceId"] });
+              const selected3 = canonicalJson({ ...active2, gatewayInstanceId: state4["gatewayInstanceId"] });
               slot.sessionText ??= selected3;
               need131(slot.sessionText === selected3);
             } else if (slot.sessionText !== void 0) {
               need131(slot.finishing, "Current SCH verification selected session disconnected before closure.");
               const selected3 = JSON.parse(slot.sessionText);
               need131(isRecord(selected3));
-              const ended = state3["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
+              const ended = state4["recentClosedSessions"].filter((entry) => isRecord(entry) && entry["sessionId"] === selected3["sessionId"]);
               const found = ended[0];
               need131(ended.length === 1 && isRecord(found));
               const { closeReason: _reason, closedAtEpochMs, ...identity32 } = found;
-              need131(canonicalJson({ ...identity32, gatewayInstanceId: state3["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
+              need131(canonicalJson({ ...identity32, gatewayInstanceId: state4["gatewayInstanceId"] }) === slot.sessionText && typeof closedAtEpochMs === "number" && Number.isSafeInteger(closedAtEpochMs) && typeof selected3["authenticatedAtEpochMs"] === "number" && closedAtEpochMs >= selected3["authenticatedAtEpochMs"]);
             }
             if (lease !== void 0) {
               need131(slot.sessionText !== void 0);
@@ -164998,32 +165328,32 @@ var init_current_schematic_rename_operation_runtime = __esm({
           }]
         ];
         for (const [owner, inspect] of candidates) {
-          let state3;
+          let state4;
           try {
-            state3 = inspect();
+            state4 = inspect();
           } catch {
           }
-          if (owner === "writer" && state3?.["ownerRetained"] === false) {
-            state3 = void 0;
+          if (owner === "writer" && state4?.["ownerRetained"] === false) {
+            state4 = void 0;
           }
-          if (state3 !== void 0) {
+          if (state4 !== void 0) {
             slot.cleanup = owner;
-            slot.last = structuredClone(state3);
-            if (state3["retired"] === true || state3["finished"] === true) {
+            slot.last = structuredClone(state4);
+            if (state4["retired"] === true || state4["finished"] === true) {
               return;
             }
             if (owner === "baseline") {
               need132(slot.baseline !== void 0);
-              if (state3["cleanupOnly"] !== true) {
-                state3 = await slot.baseline.requestCleanup(slot.operationId);
-                slot.last = structuredClone(state3);
+              if (state4["cleanupOnly"] !== true) {
+                state4 = await slot.baseline.requestCleanup(slot.operationId);
+                slot.last = structuredClone(state4);
               }
             }
-            if (state3["closedBaselineRetirementAvailable"] === true) {
+            if (state4["closedBaselineRetirementAvailable"] === true) {
               slot.next = "cleanup-retire-closed";
-            } else if (state3["finishObservationAvailable"] === true) {
+            } else if (state4["finishObservationAvailable"] === true) {
               slot.next = "cleanup-observe-termination";
-            } else if (state3["cleanupCloseAvailable"] === true) {
+            } else if (state4["cleanupCloseAvailable"] === true) {
               slot.next = "cleanup-close";
             }
             return;
@@ -165693,8 +166023,8 @@ import { join as join74 } from "node:path";
 function inputs2(rawRequest, rawPlan) {
   const request13 = parseClosedSymbolOperationRequest(rawRequest);
   const source5 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
-  const marker = exactData(source5["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
-  const nonces = Object.freeze({ namespaceNonce: hashText(marker["namespaceNonce"]), keyNonce: hashText(marker["keyNonce"]), bodyNonce: hashText(marker["bodyNonce"]) });
+  const marker2 = exactData(source5["marker"], ["namespaceNonce", "keyNonce", "bodyNonce"]);
+  const nonces = Object.freeze({ namespaceNonce: hashText(marker2["namespaceNonce"]), keyNonce: hashText(marker2["keyNonce"]), bodyNonce: hashText(marker2["bodyNonce"]) });
   requireValue6(new Set(Object.values(nonces)).size === 3, "Operation marker nonces must differ.");
   const operation = exactData(source5["operation"], ["id", "action", "libraryUuid", "target", "patch"]);
   const patch5 = exactData(operation["patch"], ["name", "description"]), target9 = exactData(operation["target"], ["uuid"]);
@@ -165753,11 +166083,11 @@ function finalReservation2(root, parent, slot, artifact2, expected3) {
     const bytes2 = Buffer.alloc(expected3.length + 1);
     let offset7 = 0;
     while (offset7 < bytes2.length) {
-      const count2 = readSync2(descriptor10, bytes2, offset7, bytes2.length - offset7, offset7);
-      if (count2 === 0) {
+      const count3 = readSync2(descriptor10, bytes2, offset7, bytes2.length - offset7, offset7);
+      if (count3 === 0) {
         break;
       }
-      offset7 += count2;
+      offset7 += count3;
     }
     requireValue6(offset7 === expected3.length && bytes2.subarray(0, offset7).equals(expected3) && sameFile10(before, fstatSync3(descriptor10, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
   } finally {

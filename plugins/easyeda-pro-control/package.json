@@ -31,6 +31,7 @@
     "api:coverage:update": "node scripts/generate-api-coverage.ts --write",
     "repository:validate": "node scripts/validate-repository.ts",
     "doctor": "node scripts/doctor.ts --offline",
+    "probe:installed:offline": "node scripts/probe-installed-offline-catalog.ts",
     "compatibility:check": "node scripts/reviewed-compatibility.ts --check",
     "compatibility:update": "node scripts/reviewed-compatibility.ts --write",
     "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run api:coverage:check && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run skills:validate && npm run validate"

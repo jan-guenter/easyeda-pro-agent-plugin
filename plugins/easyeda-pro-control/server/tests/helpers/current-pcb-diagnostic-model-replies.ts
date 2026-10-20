@@ -1,5 +1,7 @@
 /** Synthetic by-value leaves for composed diagnostic transport tests.
  * These supplied samples do not test vendor code or confer runtime ownership. */
+import { currentPcbDiagnosticInteractionFixture } from "./current-pcb-diagnostic-interaction-fixture.ts";
+
 export function pendingModelReply(documentUuid = "a".repeat(32)): unknown {
   return { result: { type: "string", value: JSON.stringify({
     schema: "easyeda-pro-control.pcb-diagnostic-pending-state.v1", documentUuid,
@@ -27,6 +29,7 @@ export function rootInventoryModelReply(documentUuid = "a".repeat(32)): unknown 
       polygons: owner, images: owner, pictures: owner, copper: owner, inner: owner, groups: owner },
     board: { ownerMarker: "null", boardMarker: null, outlineCount: null, autoGenerate: null },
     panelization: { ownerMarker: "null", viewModelMatchesOwner: null, activation: null, counts: null },
-    spatialIndexes: { typed: branch, other: branch, ratline: branch }, collectionEntries: 0, treeCount: 0,
+    spatialIndexes: { typed: branch, other: branch, ratline: branch },
+    interaction: currentPcbDiagnosticInteractionFixture(), collectionEntries: 1, treeCount: 0,
   }) } };
 }

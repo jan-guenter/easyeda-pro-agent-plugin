@@ -1094,6 +1094,91 @@ else inspectTree(entry,result);
 });return result;
 };
 const spatialIndexes={typed:branch(own(spatial,""map""),true),other:branch(own(spatial,""otherMap""),false),ratline:branch(own(spatial,""ratlineMap""),false)};
+
+const interaction=(()=>{
+const startEntries=budget.entries;
+const reference=(o,k)=>{const v=optional(o,k);if(v.marker===""present"")object(v.value);return v.marker;};
+const timer=(o,k)=>{const v=optional(o,k);if(v.marker===""present""&&(typeof v.value!==""number""||!Number.isSafeInteger(v.value)||Object.is(v.value,-0)||v.value<0))bad();return v.marker;};
+const matching=(o,k,target)=>{const v=optional(o,k);if(v.marker!==""present"")return v.marker;object(v.value);return v.value===target?""matching"":""other"";};
+const named=(name,type)=>instance(own(scope,name),klass(type));
+const selection=named(""Fe"",""XU""),root=named(""$0"",""Lpe""),rootNext=optional(root,""nextTool"");
+let navigation=null;
+if(rootNext.marker===""present""){
+object(rootNext.value);
+if(Object.getPrototypeOf(rootNext.value)===own(klass(""m0e""),""prototype"")){
+const nav=rootNext.value,next=optional(nav,""nextTool"");let idle=null,nextKind=null;
+if(next.marker===""present""){
+object(next.value);nextKind=""other"";
+if(Object.getPrototypeOf(next.value)===own(klass(""Eh""),""prototype"")){
+nextKind=""Eh"";idle={drawing:flag(own(next.value,""drawing"")),filterCount:set(own(next.value,""filterItems"")),next:reference(next.value,""nextTool"")};
+}
+}
+navigation={drawing:flag(own(nav,""drawing"")),filterCount:set(own(nav,""filterItems"")),mouseRightDown:flag(own(nav,""isMouseRightDown"")),
+mouseMidDown:flag(own(nav,""isMouseMidDown"")),markCount:array(own(nav,""mark"")),shiftHelp:reference(nav,""shiftMoveHelpLine""),
+wheelTimer:timer(object(own(nav,""wheelData"")),""clearTime""),nextMarker:next.marker,nextKind,idle};
+}
+}
+const button=optional(root,""mouseDownStatus"");let mouseDownButton=null;
+if(button.marker===""present""){if(!Number.isSafeInteger(button.value)||Object.is(button.value,-0)||button.value<0||button.value>4)bad();mouseDownButton=button.value;}
+const sceneOwner=named(""Pi"",""Kme""),scene=own(sceneOwner,""scene""),sceneCount=array(scene);if(sceneCount>8)bad();
+const modes=[];for(let i=0;i<sceneCount;i++){const v=own(scene,String(i));if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<1||v>6)bad();modes.push(v);}
+const sceneState={modes,dropDrag:flag(own(sceneOwner,""_dropDrag"")),historyToolCount:set(own(sceneOwner,""needHistoryTool""))};
+const selected={items:array(own(selection,""items"")),selections:array(own(selection,""selections"")),
+components:array(own(selection,""components"")),tracks:array(own(selection,""tracks"")),lines:set(own(selection,""lines"")),
+points:array(own(selection,""currentPointSelectedItems"")),annotations:array(own(selection,""selectAnnotations"")),
+drcItems:set(own(selection,""drcItems"")),selectionOrder:map(own(selection,""selectionOrder""))};
+const selectionState={counts:selected,mouseLeftDown:flag(own(selection,""mouseLeftDown"")),mouseLeftUp:flag(own(selection,""mouseLeftUp"")),
+dragging:flag(own(selection,""dragging"")),readyToCopyDragging:flag(own(selection,""readyToCopyDragging"")),
+keepSelection:flag(own(selection,""keepSelection"")),specialPaste:flag(own(selection,""isSpecialPaste"")),dialog:reference(selection,""_dialog"")};
+const control=named(""Sr"",""fpe""),flipping=named(""cm"",""P1e""),attributes=named(""nu"",""mge""),type=optional(attributes,""_type"");
+if(type.marker===""present""&&typeof type.value!==""string"")bad();
+const toolHistoryClass=klass(""Cy""),toolHistory=optional(toolHistoryClass,""instance"");let history=null;
+if(toolHistory.marker===""present""){
+const owner=instance(toolHistory.value,toolHistoryClass),activeId=optional(owner,""activeToolId"");
+if(activeId.marker===""present""&&typeof activeId.value!==""string"")bad();
+history={activeTool:reference(owner,""activeToolHistory""),activeId:activeId.marker};
+}
+const smart=named(""Us"",""tge""),command=instance(own(smart,""command""),klass(""De""));
+const smartState={control:reference(smart,""_control""),dimension:reference(smart,""dimension""),
+start:reference(smart,""start""),end:reference(smart,""end""),startSpotCount:array(own(smart,""startSpots"")),
+highlightSpotCount:array(own(smart,""highlightedSpots"")),historyItemCount:set(own(smart,""_historyItems"")),
+commandCount:array(own(command,""_commands"")),waitingUploadCount:array(own(command,""waitingUploadStack"")),
+commandIndexCount:map(own(command,""idMap"")),commandFromOutside:flag(own(smart,""initCommandFromOutside""))};
+const turn=named(""Xo"",""$me"");
+const controllers={pointControl:reference(control,""control""),lockedLayerCount:set(own(control,""lockedLayers"")),
+mouseMoveCheck:flag(own(control,""mouseMoveCheck"")),mouseAltDown:flag(own(control,""mouseAltDown"")),hasAlt:flag(own(control,""hasAlt"")),
+layerTool:reference(named(""dl"",""Spe""),""tool""),routeTool:reference(named(""Yr"",""Ume""),""tool""),
+attributeTool:reference(named(""ru"",""cge""),""tool""),flipMoveTool:reference(flipping,""moveTool""),flipping:flag(own(flipping,""_flipping"")),
+toolHistoryMarker:toolHistory.marker,toolHistory:history,attributeType:type.marker,attributesUnmounted:flag(own(attributes,""isUnmounted"")),
+attributeTimer:timer(attributes,""_ui2PCBAboutAttrDataUpdateTimer""),smart:smartState,
+turn:{selectionRelation:matching(turn,""currTool"",selection),itemCount:array(own(turn,""items"")),queueCount:array(own(turn,""_flipQueue"")),
+settleCallbackCount:array(own(turn,""_onSettleCallbacks"")),processing:flag(own(turn,""_isProcessingFlip""))}};
+const optionalMap=(name,field)=>{
+const c=klass(name),v=optional(c,""manager"");return {marker:v.marker,count:v.marker===""present""?map(own(instance(v.value,c),field)):null};
+};
+const dictionarySets=value=>{
+object(value);const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==null)bad();
+const keys=Reflect.ownKeys(value);spend(keys.length);let members=0;
+for(const key of keys){if(typeof key!==""string"")bad();members+=set(own(value,key));}
+return {keys:keys.length,members};
+};
+const innerClass=klass(""zo""),innerOwner=optional(innerClass,""manager"");let innerModels=null;
+if(innerOwner.marker===""present"")innerModels=dictionarySets(own(instance(innerOwner.value,innerClass),""layerMapSet""));
+const innerView=named(""Wn"",""Tfe""),innerViews=dictionarySets(own(innerView,""layerMapSet""));
+const retainedClass=klass(""Hb""),retainedOwner=optional(retainedClass,""manager"");let retainedLines=null;
+if(retainedOwner.marker===""present""){
+const owner=instance(retainedOwner.value,retainedClass);retainedLines={mapCount:map(own(owner,""map"")),updateCount:set(own(owner,""updateIds""))};
+}
+const secondary={partitions:optionalMap(""Nn"",""items""),innerModelMarker:innerOwner.marker,innerModels,innerViews,
+innerViewManagerMatches:innerOwner.marker===""present""&&own(innerView,""mgr"")===innerOwner.value,
+smartDimensionViews:map(own(named(""Yh"",""Qme""),""map"")),groupViews:map(own(named(""Ft"",""jde""),""map"")),
+retainedLineMarker:retainedOwner.marker,retainedLines};
+return {schema:""easyeda-pro-control.pcb-diagnostic-interaction.v1"",
+toolChain:{nextMarker:rootNext.marker,nextKind:rootNext.marker===""present""?(navigation===null?""other"":""m0e""):null,
+rightDownTimer:timer(root,""mouseRightDownTimer""),mouseDownMarker:button.marker,mouseDownButton,navigation},
+scene:sceneState,selection:selectionState,controllers,secondary,collectionEntries:budget.entries-startEntries};
+})();
+
 for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]===""absent""?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[3])bad();}
 for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
 if(((()=>{
@@ -1120,7 +1205,7 @@ const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
 if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
 })())!==originalCallback)bad();
-const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-root-inventory.v1"",documentUuid,families,board,panelization,spatialIndexes,collectionEntries:budget.entries,treeCount:budget.trees});
+const output=JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-root-inventory.v1"",documentUuid,families,board,panelization,spatialIndexes,interaction,collectionEntries:budget.entries,treeCount:budget.trees});
 if(output.length>8192)bad();
 return output;
 }";
@@ -1193,14 +1278,14 @@ return output;
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
     }
     string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,ModelRootInventoryFunction,PcbOpeningFunction};
-    int[] lengths={15508,2204,1730,7741,10692,8313,12838,13044};
+    int[] lengths={15508,2204,1730,7741,10692,8313,19842,13044};
     string[] digests={"55d5bccdd6e4a661a2f1dfac4c496e103a1df87211ad08e06b1d68083210db87",
       "f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e",
       "548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591",
       "67d4081399cdc22be17e2e1ddd0be234290092a2c5287f629fc2de9be16b85a5",
       "b99cbde9a9b72274458fea3b11dadd09f36b7e600cee3b67de2bdf632a921f68",
       "bd31d235e95935bebeff4400cb08219cc2419b7bd25cead9ead2aa459299a8f4",
-      "b7bbf6d7fee73c528d3100aeffe6bc358eabb5bace66a3270802fe1a745e5092",
+      "c17ab3b3da88f96407c4a0b980a1c6eef6f34f87fd3867643f26ca0f4912204a",
       "62d282abfdea1db218ba057d5af99ca7b7198390454efdded7a72ab57d5568bf"};
     for(int i=0;i<programs.Length;i++) using(SHA256 hash=SHA256.Create()) {
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[i]);

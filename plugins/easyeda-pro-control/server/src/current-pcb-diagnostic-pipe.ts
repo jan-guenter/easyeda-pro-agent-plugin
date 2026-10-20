@@ -23,6 +23,49 @@ const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
 const DEADLINE_MS = 5000;
 type Reply = Readonly<Record<string, unknown>>;
 type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" | "reply" | "remote-error" | "deadline" | "budget";
+type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
+  "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
+  "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
+type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
+  `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}`;
+const REQUEST_METHODS = [
+  "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
+  "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
+  "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup",
+] as const satisfies readonly DiagnosticCommand["method"][];
+const REQUEST_PHASES = [
+  "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
+  "pcb-preflight", "pcb-open-document", "pcb-observe", "model-wrapper", "model-properties", "model-handler",
+  "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
+] as const satisfies readonly RequestPhase[];
+const EVENT_KINDS = [
+  "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
+  "Target.targetInfoChanged", "Target.targetCrashed", "Inspector.detached", "Inspector.targetCrashed",
+  "Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared",
+  "Runtime.consoleAPICalled", "Runtime.exceptionThrown", "Runtime.exceptionRevoked", "Runtime.inspectRequested",
+  "Debugger.scriptParsed", "Debugger.scriptFailedToParse", "Debugger.paused", "Debugger.resumed",
+  "Page.navigatedWithinDocument", "Page.frameAttached", "Page.frameDetached", "Page.frameNavigated",
+  "Page.frameStartedLoading", "Page.frameStoppedLoading", "Page.frameStartedNavigating", "Page.frameRequestedNavigation",
+  "Page.domContentEventFired", "Page.loadEventFired", "Page.frameResized", "Page.lifecycleEvent",
+  "DOM.documentUpdated", "DOM.setChildNodes", "DOM.childNodeInserted", "DOM.childNodeRemoved",
+  "DOM.childNodeCountUpdated", "DOM.attributeModified", "DOM.attributeRemoved", "DOM.characterDataModified",
+] as const;
+type EventKind = typeof EVENT_KINDS[number] | "unknown";
+type RequestObservation = Readonly<{ id: number; method: DiagnosticCommand["method"] | "unknown"; phase: RequestPhase | "unknown" }>;
+export interface CurrentPcbDiagnosticFailureObservation {
+  readonly schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1";
+  readonly code: Failure;
+  readonly reason: FailureReason;
+  readonly request: RequestObservation | null;
+  readonly requestPending: boolean;
+  readonly eventKind: EventKind | null;
+  readonly executionAuthorized: false;
+  readonly dispatchAbsenceVerified: false;
+}
+function eventKind(value: unknown): EventKind {
+  return EVENT_KINDS.find(kind => kind === value) ?? "unknown";
+}
 interface Pending {
   readonly id: number;
   readonly resolve: (value: Reply) => void;
@@ -49,6 +92,8 @@ export class CurrentPcbDiagnosticPipe {
   readonly #output: Writable;
   #started = false;
   #failure: Failure | null = null;
+  #failureObservation: CurrentPcbDiagnosticFailureObservation | null = null;
+  #lastRequest: RequestObservation | null = null;
   #pending: Pending | null = null;
   #nextId = 1;
   #receivedBytes = 0;
@@ -95,7 +140,7 @@ export class CurrentPcbDiagnosticPipe {
     if (this.#event !== null || !diagnosticToken(targetId)) { throw new Error("PCB_DIAGNOSTIC_PIPE_ATTACH_INPUT"); }
     this.#event = event;
     const reply = await this.#request({ id: this.#nextId, method: "Target.attachToTarget", params: { targetId, flatten: true } });
-    if (!diagnosticExact(reply, ["sessionId"]) || !diagnosticToken(reply["sessionId"])) { this.#fail("reply"); throw failureError("reply"); }
+    if (!diagnosticExact(reply, ["sessionId"]) || !diagnosticToken(reply["sessionId"])) { this.#fail("reply", "attachment-result"); throw failureError("reply"); }
     this.#sessionId = reply["sessionId"]; return this.#sessionId;
   }
   public enablePage(): Promise<Reply> { return this.#sessionRequest("Page.enable"); }
@@ -115,13 +160,13 @@ export class CurrentPcbDiagnosticPipe {
     if (this.#sessionId === null || this.#workerEvent !== null || !diagnosticToken(frameId)) {
       return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT"));
     }
-    return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId });
+    return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId }, "frame-owner");
   }
   public describeFrameOwner(backendNodeId: number): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null || !Number.isSafeInteger(backendNodeId) ||
         backendNodeId < 1 || backendNodeId > 2_147_483_647) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT")); }
     return this.#request({ id: this.#nextId, method: "DOM.describeNode",
-      params: { backendNodeId, depth: 0, pierce: false }, sessionId: this.#sessionId });
+      params: { backendNodeId, depth: 0, pierce: false }, sessionId: this.#sessionId }, "frame-owner");
   }
   /** One fixed direct-child discovery on the original page. No recursive
    * autoattachment, debugger waiting, detached adoption or caller target URL. */
@@ -131,8 +176,8 @@ export class CurrentPcbDiagnosticPipe {
     }
     this.#workerEvent = event;
     const reply = await this.#request({ id: this.#nextId, method: "Target.setAutoAttach",
-      params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId: this.#sessionId });
-    if (!diagnosticExact(reply, [])) { this.#fail("reply"); throw failureError("reply"); }
+      params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId: this.#sessionId }, "worker-discovery");
+    if (!diagnosticExact(reply, [])) { this.#fail("reply", "worker-discovery-result"); throw failureError("reply"); }
     this.#workerDiscoverySettled = true; return reply;
   }
   public selectWorkerSession(sessionId: string): void {
@@ -155,7 +200,7 @@ export class CurrentPcbDiagnosticPipe {
    * original context. This primitive never accepts an expression or options. */
   public observeWorkerState(uniqueContextId: string): Promise<Reply> {
     return this.#request({ id: this.#nextId, method: "Runtime.evaluate",
-      params: diagnosticWorkerEvaluationParams(uniqueContextId), sessionId: this.#workerSession() });
+      params: diagnosticWorkerEvaluationParams(uniqueContextId), sessionId: this.#workerSession() }, "worker-state");
   }
   /** The native helper reconstructs this exact fixed service call. No caller
    * function/options; source, checkpoint and one-shot admission live in owner. */
@@ -163,18 +208,18 @@ export class CurrentPcbDiagnosticPipe {
     phase: CurrentPcbDiagnosticOpeningPhase): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
-      params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId });
+      params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, `project-${phase}`);
   }
   public observeModel(command: CurrentPcbDiagnosticModelCommand): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
     const { modelPhase: _modelPhase, ...wire } = command;
-    return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId });
+    return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId }, `model-${command.modelPhase}`);
   }
   public observePcbOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
     phase: CurrentPcbDiagnosticPcbOpeningPhase): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
-      params: diagnosticPcbOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId });
+      params: diagnosticPcbOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, `pcb-${phase}`);
   }
   #workerSession(): string {
     if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||
@@ -186,10 +231,10 @@ export class CurrentPcbDiagnosticPipe {
     return this.#request({ id: this.#nextId, method, params: {}, sessionId: this.#sessionId });
   }
 
-  public status(): Readonly<{ started: boolean; failure: Failure | null; pendingRequestId: number | null;
+  public status(): Readonly<{ started: boolean; failure: Failure | null; failureObservation: CurrentPcbDiagnosticFailureObservation | null; pendingRequestId: number | null;
     requestCount: number; receivedBytes: number; inputEnded: boolean; inputClosed: boolean;
     outputClosed: boolean; listenersReleased: boolean; nativeOwnerVerified: false; executionAuthorized: false }> {
-    return Object.freeze({ started: this.#started, failure: this.#failure, pendingRequestId: this.#pending?.id ?? null,
+    return Object.freeze({ started: this.#started, failure: this.#failure, failureObservation: this.#failureObservation, pendingRequestId: this.#pending?.id ?? null,
       requestCount: this.#nextId - 1, receivedBytes: this.#receivedBytes, inputEnded: this.#inputEnded,
       inputClosed: this.#inputClosed, outputClosed: this.#outputClosed, listenersReleased: this.#released,
       nativeOwnerVerified: false, executionAuthorized: false });
@@ -212,12 +257,15 @@ export class CurrentPcbDiagnosticPipe {
   }
 
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand): Promise<Reply> {
+  async #request(command: DiagnosticCommand, phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     if (this.#nextId > DIAGNOSTIC_REQUEST_LIMIT) { this.#fail("budget"); throw failureError("budget"); }
     const id = this.#nextId; this.#nextId += 1;
+    this.#lastRequest = Object.freeze({ id,
+      method: REQUEST_METHODS.find(method => method === command.method) ?? "unknown",
+      phase: REQUEST_PHASES.find(value => value === phase) ?? "unknown" });
     const deferred = Promise.withResolvers<Reply>();
     let deadline = DEADLINE_MS;
     if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
@@ -238,7 +286,14 @@ export class CurrentPcbDiagnosticPipe {
     return deferred.promise;
   }
 
-  #fail(code: Failure): void {
+  #fail(code: Failure, reason: FailureReason = code, rejectedEvent: EventKind | null = null): void {
+    // First failure only. Later cleanup and stream noise cannot replace it.
+    // Fixed method/phase/event labels carry no received params or private text.
+    this.#failureObservation ??= Object.freeze({
+      schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1", code, reason, request: this.#lastRequest,
+      requestPending: this.#pending !== null, eventKind: rejectedEvent,
+      executionAuthorized: false, dispatchAbsenceVerified: false,
+    });
     this.#failure ??= code;
     this.#used = 0;
     const pending = this.#pending;
@@ -255,22 +310,24 @@ export class CurrentPcbDiagnosticPipe {
 
   #frame(bytes: Buffer): void {
     const pending = this.#pending;
-    if (bytes.length === 0) { this.#fail("reply"); return; }
+    if (bytes.length === 0) { this.#fail("reply", "empty-frame"); return; }
     let decoded: unknown;
     try { decoded = decodeCurrentPcbDiagnosticJson(bytes); }
     catch { this.#fail("framing"); return; }
-    if (!record(decoded)) { this.#fail("reply"); return; }
+    if (!record(decoded)) { this.#fail("reply", "nonobject-frame"); return; }
     if (Object.hasOwn(decoded, "method")) { this.#receiveEvent(decoded, bytes.length); return; }
-    if (pending === null || pending.reply !== null || !Object.is(decoded["id"], pending.id)) { this.#fail("reply"); return; }
+    if (pending === null) { this.#fail("reply", "reply-unsolicited"); return; }
+    if (pending.reply !== null) { this.#fail("reply", "reply-duplicate"); return; }
+    if (!Object.is(decoded["id"], pending.id)) { this.#fail("reply", "reply-id"); return; }
     const keys = Object.keys(decoded);
     const expectedKeys = pending.sessionId === null ? 2 : 3;
     if (keys.length !== expectedKeys || !keys.includes("id") || (keys.includes("result") === keys.includes("error")) ||
         (pending.sessionId === null ? keys.includes("sessionId") : decoded["sessionId"] !== pending.sessionId)) {
-      this.#fail("reply"); return;
+      this.#fail("reply", "reply-envelope"); return;
     }
     if (keys.includes("error")) { this.#fail("remote-error"); return; }
     const result = decoded["result"];
-    if (!record(result)) { this.#fail("reply"); return; }
+    if (!record(result)) { this.#fail("reply", "reply-result"); return; }
     // Keep the complete decoded result, including unknown fields. No target or
     // Script token is issued and no semantic completeness claim is made here.
     pending.reply = result;
@@ -279,10 +336,17 @@ export class CurrentPcbDiagnosticPipe {
   #receiveEvent(value: Record<string, unknown>, bytes: number): void {
     const method = value["method"], params = value["params"], sessionId = value["sessionId"];
     this.#eventCount += 1; this.#eventBytes += bytes;
-    if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES ||
-        typeof method !== "string" || !record(params) || !diagnosticExact(value, sessionId === undefined ? ["method", "params"] : ["method", "params", "sessionId"]) ||
-        (sessionId !== undefined && (this.#sessionId === null ||
-          sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId))))) { this.#fail("reply"); return; }
+    if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES) {
+      this.#fail("reply", "event-budget-or-handler", eventKind(method)); return;
+    }
+    if (typeof method !== "string" || !record(params) ||
+        !diagnosticExact(value, sessionId === undefined ? ["method", "params"] : ["method", "params", "sessionId"])) {
+      this.#fail("reply", "event-envelope", eventKind(method)); return;
+    }
+    if (sessionId !== undefined && (this.#sessionId === null ||
+        sessionId !== this.#sessionId && (typeof sessionId !== "string" || !this.#workerSessions.has(sessionId)))) {
+      this.#fail("reply", "event-session", eventKind(method)); return;
+    }
     try {
       const event = sessionId === undefined ? { method, params } : { method, params, sessionId };
       if (sessionId === this.#sessionId && method === "Target.attachedToTarget") {
@@ -291,22 +355,22 @@ export class CurrentPcbDiagnosticPipe {
             !record(child) || child["type"] !== "worker" || child["attached"] !== true || !diagnosticToken(child["targetId"]) ||
             !diagnosticToken(childSession) || params["waitingForDebugger"] !== false || childSession === this.#sessionId ||
             this.#workerSessions.has(childSession) || [...this.#workerSessions.values()].includes(child["targetId"]) ||
-            this.#workerSessions.size >= 16) { this.#fail("reply"); return; }
+            this.#workerSessions.size >= 16) { this.#fail("reply", "worker-attachment", eventKind(method)); return; }
         this.#workerSessions.set(childSession, child["targetId"]);
         this.#workerEvent(event);
       } else if (typeof sessionId === "string" && this.#workerSessions.has(sessionId)) {
-        if (this.#workerEvent === null) { this.#fail("reply"); return; }
+        if (this.#workerEvent === null) { this.#fail("reply", "worker-handler", eventKind(method)); return; }
         this.#workerEvent(event);
       } else if (sessionId === this.#sessionId && method === "Target.detachedFromTarget" && this.#workerEvent !== null) {
         this.#workerEvent(event);
       } else { this.#event(event); }
     }
-    catch { this.#fail("reply"); }
+    catch { this.#fail("reply", "event-callback", eventKind(method)); }
   }
 
   readonly #data = (chunk: unknown): void => {
     if (this.#failure !== null) { return; }
-    if (this.#pending === null && this.#event === null) { this.#fail("reply"); return; }
+    if (this.#pending === null && this.#event === null) { this.#fail("reply", "unsolicited-data"); return; }
     if (!Buffer.isBuffer(chunk) || chunk.length === 0 || chunk.length > MAX_CHUNK_BYTES ||
       this.#receivedBytes + chunk.length > (this.#event === null ? 8 * MAX_FRAME_BYTES : DIAGNOSTIC_SESSION_BYTES)) { this.#fail("framing"); return; }
     this.#receivedBytes += chunk.length;
@@ -325,7 +389,7 @@ export class CurrentPcbDiagnosticPipe {
       start = end + 1;
     }
     // Validate every coalesced frame before settling the matching response.
-    if (this.#event === null && this.#pending?.reply !== null && this.#used > 0) { this.#fail("reply"); }
+    if (this.#event === null && this.#pending?.reply !== null && this.#used > 0) { this.#fail("reply", "trailing-reply-data"); }
     this.#complete();
   };
   readonly #inputError = (): void => { this.#fail("input"); };

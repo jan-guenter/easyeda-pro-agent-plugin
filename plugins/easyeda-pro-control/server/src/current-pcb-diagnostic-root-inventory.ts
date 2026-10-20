@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT, currentPcbDiagnosticInteractionSchema } from "./current-pcb-diagnostic-interaction.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -117,10 +118,11 @@ else inspectTree(entry,result);
 });return result;
 };
 const spatialIndexes={typed:branch(own(spatial,"map"),true),other:branch(own(spatial,"otherMap"),false),ratline:branch(own(spatial,"ratlineMap"),false)};
+${CURRENT_PCB_DIAGNOSTIC_INTERACTION_FRAGMENT}
 for(const item of retained){const d=descriptor(item[0],item[1]);if(item[2]==="absent"?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[3])bad();}
 for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-root-inventory.v1",documentUuid,families,board,panelization,spatialIndexes,collectionEntries:budget.entries,treeCount:budget.trees});
+const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-root-inventory.v1",documentUuid,families,board,panelization,spatialIndexes,interaction,collectionEntries:budget.entries,treeCount:budget.trees});
 if(output.length>${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES})bad();
 return output;
 }`;
@@ -175,6 +177,7 @@ const stateSchema = z.object({
   documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
   families: familiesSchema, board: boardSchema, panelization: panelSchema,
   spatialIndexes: z.object({ typed: treeSchema, other: treeSchema, ratline: treeSchema }).strict(),
+  interaction: currentPcbDiagnosticInteractionSchema,
   collectionEntries: countSchema, treeCount: countSchema.max(MAX_TREES),
 }).strict().refine(value => {
   const { typed, other, ratline } = value.spatialIndexes;
@@ -192,7 +195,7 @@ const stateSchema = z.object({
     entries += branch.outerKeyCount + branch.nestedKeyCount + branch.itemCount + branch.changeCount +
       branch.deadCount + 2 * branch.rootNodeCount - branch.treeCount + branch.rootLeafCount;
   }
-  return entries === value.collectionEntries;
+  return entries + value.interaction.collectionEntries === value.collectionEntries;
 });
 const LIMITS = Object.freeze({
   completeModelMembershipVerified: false, emptyRootPcbVerified: false, completeLiveBaselineVerified: false,

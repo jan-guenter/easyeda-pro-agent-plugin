@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { createHash } from "node:crypto";
 import { PassThrough, Writable } from "node:stream";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
@@ -226,6 +227,53 @@ void test("identity event rejection poisons transport but never closes the origi
   const reply = value.pipe.getFrameTree(); const rejected = assert.rejects(reply, /PIPE_REPLY/u);
   value.input.write(wire({ method: "Page.frameNavigated", params: {}, sessionId: "session-1" }));
   await rejected; retained(value);
+});
+void test("first rejected event retains bounded request identity and survives later noise without private payload", async context => {
+  const value = fixture(context);
+  const result = value.pipe.attachTarget("target-1", () => { throw new Error("private exception URL and design data"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); await result;
+  const rejected = assert.rejects(value.pipe.getFrameTree(), /PIPE_REPLY/u);
+  value.input.write(wire({ method: "Page.frameNavigated", params: { url: "private-project-url", objectId: "private-handle" }, sessionId: "session-1" }));
+  await rejected;
+  const first = value.pipe.status().failureObservation;
+  assert.deepEqual(first, { schema: "easyeda-pro-control.pcb-diagnostic-pipe-failure.v1", code: "reply", reason: "event-callback",
+    request: { id: 2, method: "Page.getFrameTree", phase: "discovery" }, requestPending: true, eventKind: "Page.frameNavigated",
+    executionAuthorized: false, dispatchAbsenceVerified: false });
+  assert.ok(Object.isFrozen(first)); assert.ok(Object.isFrozen(first?.request));
+  assert.equal(JSON.stringify(first).includes("private"), false);
+  value.input.emit("error", new Error("later private failure")); value.input.emit("end"); value.output.emit("error", new Error("cleanup noise"));
+  assert.equal(value.pipe.status().failureObservation, first);
+  await assert.rejects(value.pipe.getTargets(), /PIPE_REPLY/u); assert.equal(value.sent.length, 2); retained(value);
+});
+void test("unknown event labels and malformed envelopes disclose no received strings or exception text", async context => {
+  const value = fixture(context);
+  const attached = value.pipe.attachTarget("target-1", () => { throw new Error("private callback detail"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); await attached;
+  value.input.write(wire({ method: "private-user-text", params: { data: "private-data" }, sessionId: "session-1" }));
+  const failure = value.pipe.status().failureObservation;
+  assert.equal(failure?.eventKind, "unknown"); assert.equal(failure?.requestPending, false);
+  assert.equal(failure?.request?.id, 1); assert.equal(failure?.reason, "event-callback");
+  assert.equal(JSON.stringify(failure).includes("private"), false);
+  await assert.rejects(value.pipe.getTargets(), /PIPE_REPLY/u); retained(value);
+  const envelope = fixture(context), rejected = assert.rejects(envelope.pipe.getVersion(), /PIPE_REPLY/u);
+  envelope.input.write(wire({ id: "private-id", result: { private: "private-value" } })); await rejected;
+  assert.equal(envelope.pipe.status().failureObservation?.reason, "reply-id");
+  assert.equal(envelope.pipe.status().failureObservation?.eventKind, null);
+  assert.equal(JSON.stringify(envelope.pipe.status().failureObservation).includes("private"), false); retained(envelope);
+});
+void test("opening failure records exact fixed phase without target paths contexts or native dispatch claims", async context => {
+  const value = fixture(context); await attach(value, []);
+  const rawWindowsPath = String.raw`C:\Fixtures\PrivateDiagnostic.eprj2`;
+  const target = { rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex"),
+    branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), expectedSourceSha256: "d".repeat(64) };
+  const rejected = assert.rejects(value.pipe.observeProjectOpening("private-context", target, "open-project"), /PIPE_REPLY/u);
+  value.input.write(wire({ id: 2, result: [], sessionId: "session-1" })); await rejected;
+  const failure = value.pipe.status().failureObservation;
+  assert.deepEqual(failure?.request, { id: 2, method: "Runtime.callFunctionOn", phase: "project-open-project" });
+  assert.equal(failure?.reason, "reply-result"); assert.equal(failure?.requestPending, true);
+  assert.equal(failure?.dispatchAbsenceVerified, false); assert.equal(failure?.executionAuthorized, false);
+  assert.equal(JSON.stringify(failure).includes("Private"), false);
+  assert.equal(JSON.stringify(failure).includes("private"), false); retained(value);
 });
 void test("partial event after a reply must complete before the request settles", async context => {
   const events: DiagnosticEvent[] = [], value = fixture(context); await attach(value, events);

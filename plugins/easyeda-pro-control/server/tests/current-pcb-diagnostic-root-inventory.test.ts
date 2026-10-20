@@ -9,6 +9,7 @@ import {
   CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES,
   decodeCurrentPcbDiagnosticRootInventoryReply,
 } from "../src/current-pcb-diagnostic-root-inventory.ts";
+import { CURRENT_PCB_DIAGNOSTIC_INTERACTION_SETUP, currentPcbDiagnosticInteractionFixture } from "./helpers/current-pcb-diagnostic-interaction-fixture.ts";
 
 /** Self-authored raw layouts. No vendor source, native owner or live project. */
 const SETUP = `(()=>{
@@ -47,7 +48,8 @@ for(const p of [Ni.prototype,lD.prototype,Panel.prototype,Md.prototype,F0.protot
 for(const key of ["itemsCount","board","outlineCollect","getDefaultPanelize","size","bbox","flushWhenNeed"]){
 Object.defineProperty(p,key,{get(){getterReads++;throw new Error("GETTER");}});
 }}
-})();`;
+})();
+${CURRENT_PCB_DIAGNOSTIC_INTERACTION_SETUP}`;
 const EXPRESSION = `(${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
 const reply = (value: unknown): unknown => ({ result: { type: "string", value } });
 
@@ -78,7 +80,8 @@ c.manager.map.set("private-key",{hidden:true,_stateWatcher:undefined,modelType:"
   const value = decodeCurrentPcbDiagnosticRootInventoryReply(reply(raw));
   assert.equal(Object.keys(value.families).length, 17);
   for (const owner of Object.values(value.families)) { assert.deepEqual(owner, { marker: "present", count: 1 }); }
-  assert.equal(value.collectionEntries, 19);
+  assert.equal(value.collectionEntries, 20);
+  assert.deepEqual(value.interaction, currentPcbDiagnosticInteractionFixture());
   assert.equal(value.completeModelMembershipVerified, false);
   assert.equal(value.emptyRootPcbVerified, false);
   assert.equal(value.completeLiveBaselineVerified, false);
@@ -102,7 +105,7 @@ scope.object._s.instance=undefined;delete scope.object.ai.model;`);
   assert.deepEqual(value.families.circles, { marker: "present", count: 0 });
   assert.deepEqual(value.board, { ownerMarker: "undefined", boardMarker: null, outlineCount: null, autoGenerate: null });
   assert.deepEqual(value.panelization, { ownerMarker: "absent", viewModelMatchesOwner: null, activation: null, counts: null });
-  assert.equal(value.collectionEntries, 0);
+  assert.equal(value.collectionEntries, 1);
   assert.equal(sample().board.boardMarker, "absent");
   assert.equal(sample("state.board._board=undefined;").board.boardMarker, "undefined");
   assert.equal(sample("state.board._board=null;").board.boardMarker, "null");
@@ -126,8 +129,101 @@ state.Si.model={};`);
     items: 2, outlines: 1, slots: 1, originOutline: 1, holes: 1, positionHoles: 1, stampGroups: 1,
     marks: 1, vCutShapes: 1, closures: 1, borderClosuresFirst: 2, borderClosuresSecond: 1, borderClosuresOuterMost: 1,
   });
-  assert.equal(value.collectionEntries, 18);
+  assert.equal(value.collectionEntries, 19);
   assert.equal(value.emptyRootPcbVerified, false);
+});
+
+void test("interaction sample recognizes the ordinary Eh chain and preserves unknown or missing tools", () => {
+  const baseline = sample().interaction;
+  assert.equal(baseline.toolChain.navigation?.idle?.drawing, false);
+  assert.equal(baseline.controllers.smart.commandCount, 0);
+  assert.equal(baseline.controllers.attributesUnmounted, false);
+  assert.equal(baseline.selection.dialog, "absent");
+  const value = sample(`scope.object.$0.nextTool.nextTool={secret:"private-tool"};
+scope.object.$0.mouseDownStatus=0;scope.object.$0.mouseRightDownTimer=0;
+scope.object.Sr.control={};scope.object.Sr.mouseMoveCheck=true;
+scope.object.Fe.items.push({private:"selection"});scope.object.Fe.dragging=true;
+scope.object.Us.command._commands.push({private:"command"});scope.object.Us.initCommandFromOutside=true;
+scope.object.Xo._flipQueue.push(()=>{vendorCalls++;});scope.object.Xo._isProcessingFlip=true;
+scope.object.nu._type="private-tool-type";scope.object.nu._ui2PCBAboutAttrDataUpdateTimer=0;`).interaction;
+  assert.equal(value.toolChain.navigation?.nextKind, "other");
+  assert.equal(value.toolChain.navigation?.idle, null);
+  assert.equal(value.toolChain.mouseDownButton, 0);
+  assert.equal(value.toolChain.rightDownTimer, "present");
+  assert.equal(value.controllers.pointControl, "present");
+  assert.equal(value.controllers.smart.commandCount, 1);
+  assert.equal(value.controllers.smart.commandFromOutside, true);
+  assert.equal(value.controllers.turn.queueCount, 1);
+  assert.equal(value.controllers.turn.processing, true);
+  assert.equal(value.controllers.attributeType, "present");
+  assert.equal(value.controllers.attributeTimer, "present");
+  assert.equal(value.collectionEntries, 4);
+  assert.equal(JSON.stringify(value).includes("private"), false);
+  const absent = sample("delete scope.object.$0.nextTool;scope.object.nu._type=undefined;").interaction;
+  assert.equal(absent.toolChain.nextMarker, "absent");
+  assert.equal(absent.toolChain.navigation, null);
+  assert.equal(absent.controllers.attributeType, "undefined");
+  const other = sample("scope.object.$0.nextTool={};scope.object.Fe._dialog=undefined;").interaction;
+  assert.equal(other.toolChain.nextKind, "other");
+  assert.equal(other.selection.dialog, "undefined");
+});
+
+void test("secondary indexes expose retained partition, inner and view members independently of raw roots", () => {
+  const value = sample(`const s=scope.object;
+s.Nn.manager=new s.Nn();s.Nn.manager.items.set("private-partition",{});
+s.zo.manager.layerMapSet={"private-empty-layer":new Set(),"private-layer":new Set([{},{}])};
+s.Wn.layerMapSet={"private-layer":new Set([{}])};s.Wn.mgr={};
+s.Yh.map.set("private-dimension",{});s.Ft.map.set("private-group",{});
+s.Hb.manager=new s.Hb();s.Hb.manager.map.set("private-line",{});s.Hb.manager.updateIds.add("private-line");
+s.Cy.instance=new s.Cy();s.Cy.instance.activeToolHistory={};s.Cy.instance.activeToolId="private-history";`);
+  for (const owner of Object.values(value.families)) { assert.equal(owner.count, 0); }
+  const { secondary, controllers } = value.interaction;
+  assert.deepEqual(secondary.partitions, { marker: "present", count: 1 });
+  assert.deepEqual(secondary.innerModels, { keys: 2, members: 2 });
+  assert.deepEqual(secondary.innerViews, { keys: 1, members: 1 });
+  assert.equal(secondary.innerViewManagerMatches, false);
+  assert.equal(secondary.smartDimensionViews, 1);
+  assert.equal(secondary.groupViews, 1);
+  assert.deepEqual(secondary.retainedLines, { mapCount: 1, updateCount: 1 });
+  assert.deepEqual(controllers.toolHistory, { activeTool: "present", activeId: "present" });
+  assert.equal(value.interaction.collectionEntries, 12);
+  assert.equal(value.collectionEntries, 14);
+  assert.equal(JSON.stringify(value).includes("private"), false);
+  assert.equal(value.activeToolsCovered, false);
+  assert.equal(value.secondaryIndexesCovered, false);
+  assert.equal(value.executionAuthorized, false);
+});
+
+void test("interaction rejects getters, false timer/reference substitutions and malformed nested containers", () => {
+  for (const change of [
+    'Object.defineProperty(scope.object.$0,"nextTool",{get(){getterReads++;throw new Error("GETTER");}});',
+    'scope.object.$0.nextTool=false;',
+    'scope.object.$0.mouseRightDownTimer=false;',
+    'scope.object.$0.mouseDownStatus=-0;',
+    'scope.object.$0.mouseDownStatus=5;',
+    'scope.object.$0.nextTool.nextTool.filterItems=[];',
+    'scope.object.Pi.scene=[0];',
+    'scope.object.Pi.scene=[3,3,3,3,3,3,3,3,3];',
+    'scope.object.Fe.mouseLeftDown=0;',
+    'scope.object.Fe._dialog=false;',
+    'scope.object.Sr.lockedLayers={};',
+    'scope.object.Us.command={_commands:[],waitingUploadStack:[],idMap:new Map()};',
+    'scope.object.Us.command._commands.length=1;',
+    'scope.object.Xo._flipQueue.length=1;',
+    'scope.object.nu._type=false;',
+    'scope.object.nu._ui2PCBAboutAttrDataUpdateTimer=-1;',
+    'scope.object.Cy.instance={};',
+    'scope.object.Cy.instance=new scope.object.Cy();scope.object.Cy.instance.activeToolId=false;',
+    'scope.object.Nn.manager=new scope.object.Nn();scope.object.Nn.manager.items=new Set();',
+    'scope.object.zo.manager.layerMapSet={x:[]};',
+    'scope.object.zo.manager.layerMapSet={[Symbol("x")]:new Set()};',
+    'Object.defineProperty(scope.object.Wn.layerMapSet,"x",{get(){getterReads++;throw new Error("GETTER");}});',
+    'scope.object.Yh={map:new Map()};',
+    'scope.object.Ft.map=new Set();',
+  ]) { refused(change); }
+  refused("for(let i=0;i<65534;i++)state.families.vn.manager.map.set(i,null);");
+  const full = sample("for(let i=0;i<65533;i++)state.families.vn.manager.map.set(i,null);");
+  assert.equal(full.collectionEntries, 65_536);
 });
 
 const POPULATED_TREES = `(()=>{
@@ -152,7 +248,7 @@ void test("spatial witnesses preserve pending insertion/removal differences and 
   assert.equal(value.spatialIndexes.other.rootLeafWithoutItemCount, 0);
   assert.equal(value.spatialIndexes.ratline.treeCount, 1);
   assert.equal(value.treeCount, 3);
-  assert.equal(value.collectionEntries, 22);
+  assert.equal(value.collectionEntries, 23);
 });
 
 void test("census refuses accessors, inherited shadows and malformed original layouts before calling them", () => {
@@ -194,8 +290,8 @@ void test("decoder refuses contradictory counts, claims, duplicate keys, proxies
   for (const value of [
     { result: { type: "string", value: raw, objectId: "handle" } },
     { result: { type: "string", value: raw }, exceptionDetails: {} },
-    reply(raw.replace('"collectionEntries":22', '"collectionEntries":23')),
-    reply(raw.replace('"collectionEntries":22', '"collectionEntries":22,"collectionEntries":22')),
+    reply(raw.replace('"collectionEntries":23', '"collectionEntries":24')),
+    reply(raw.replace('"collectionEntries":23', '"collectionEntries":23,"collectionEntries":23')),
     reply(raw.replace('"marker":"present","count":0', '"marker":"null","count":0')),
     reply(raw.replace('"marker":"present","count":0', '"marker":"present","count":null')),
     reply(raw.replace('"count":0', '"count":-0')),
