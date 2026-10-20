@@ -9,10 +9,14 @@ import { controlDataDirectory, controlRootCapability, publishManagedAttachmentEx
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
+/** Two fixed 184 KiB sweeps plus a bounded 16 KiB relation envelope. This does
+ * not enlarge the older diagnostic observation allowance. */
+export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 384 * 1024;
 const MAX_OPERATIONS = 4096;
 const qualifiedPcbOpeningSchema = z.looseObject({
   family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
@@ -40,10 +44,16 @@ export const diagnosticLifecycleBindingSchema = z.object({
   rootCreated: z.string().regex(/^(?:0|[1-9]\d{14,19})$/u),
 }).strict();
 const base = { operationId: diagnosticLifecycleIdSchema, createdAt: z.iso.datetime() };
-const intentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-launch-intent.v1"), ...base,
+const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-launch-intent.v1"), ...base,
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
+const stringIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-string-precreate-launch-intent.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, purpose: z.literal("string-precreate"),
+  facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
+  confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
+}).strict();
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema]);
 const bindingSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-launch-binding.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, binding: diagnosticLifecycleBindingSchema,
   launchAcknowledged: z.boolean(),
@@ -84,6 +94,7 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
+export const lifecycleObservationStages = [...diagnosticObservationStageSchema.options, "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
@@ -99,6 +110,39 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   intentSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Observation result exceeds its bound.");
+const stringPrecreateIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"),
+  bindingSha256: diagnosticLifecycleDigestSchema, pcbOpeningResultSha256: diagnosticLifecycleDigestSchema,
+  workerScriptResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+export const stringPrecreateObservationResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation.v1"),
+  target: z.object({ projectUuid: diagnosticLifecycleDigestSchema, branchUuid: token,
+    documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
+    windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict(),
+  first: z.record(z.string(), z.unknown()), second: z.record(z.string(), z.unknown()),
+  matchingSamples: z.literal(true), originalContextsRechecked: z.literal(true),
+  atomicSnapshotVerified: z.literal(false), projectWorkerAssociationVerified: z.literal(false),
+  publicationCaptureVerified: z.literal(false), completeLiveSourceVerified: z.literal(false),
+  continuousObservation: z.literal(false), queueCompletionVerified: z.literal(false),
+  saveAuthorized: z.literal(false), executionAuthorized: z.literal(false),
+}).strict().refine(value => canonicalJson(value.first) === canonicalJson(value.second) &&
+  Buffer.byteLength(canonicalJson(value.first)) <= 188_416, "String precreate sweeps differ or exceed their bound.");
+const projectWindowSchema = z.looseObject({ observation: z.looseObject({ windowTabId: z.string() }) });
+const pcbWindowSchema = z.looseObject({ openingObservation: z.looseObject({ windowTabId: z.string() }) });
+export function stringPrecreateTargetMatches(result: z.infer<typeof stringPrecreateObservationResultSchema>,
+  target: Readonly<{ projectUuid: string; branchUuid: string; documentUuid: string }>, projectOpening: unknown, pcbOpening: unknown): boolean {
+  const pcb = pcbWindowSchema.safeParse(pcbOpening), project = projectWindowSchema.safeParse(projectOpening);
+  return pcb.success && project.success && result.target.projectUuid === target.projectUuid &&
+    result.target.branchUuid === target.branchUuid && result.target.documentUuid === target.documentUuid &&
+    result.target.windowTabId === project.data.observation.windowTabId && result.target.windowTabId === pcb.data.openingObservation.windowTabId;
+}
+const stringPrecreateResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-result.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: stringPrecreateObservationResultSchema, executionAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= STRING_PRECREATE_OBSERVATION_MAX_BYTES, "String precreate result exceeds its bound.");
 const projectOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -135,6 +179,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
+  "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
 export interface DiagnosticLifecycleOperation { readonly operationId: string; readonly records: DiagnosticLifecycleRecords }
@@ -152,6 +197,7 @@ function recordBound(name: RecordName): number {
   // Two 4096-unit paths can each require six JSON bytes per UTF-16 unit;
   // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
   if (name === "project-opening-intent.json") { return 64 * 1024; }
+  if (name === "string-precreate-result.json") { return STRING_PRECREATE_OBSERVATION_MAX_BYTES + MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
 }
 function same(left: BigIntStats, right: BigIntStats): boolean {
@@ -212,7 +258,13 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const release = records["release-intent.json"], released = records["released.json"];
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
-  for (const stage of diagnosticObservationStageSchema.options) {
+  const stringPurpose = intent?.schema === "easyeda-pro-control.pcb-string-precreate-launch-intent.v1";
+  requireValue(!stringPurpose || operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "STRING_PURPOSE_ID");
+  requireValue(intent === undefined || stringPurpose || !operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "RESERVED_STRING_PURPOSE_ID");
+  requireValue(stringPurpose || records["string-precreate-intent.json"] === undefined && records["string-precreate-result.json"] === undefined, "STRING_PURPOSE_REQUIRED");
+  requireValue(!stringPurpose || records["model-state-intent.json"] === undefined && records["worker-state-intent.json"] === undefined &&
+    (records["script-intent.json"] === undefined || records["script-intent.json"].family === "ui"), "STRING_PURPOSE_BRANCH");
+  for (const stage of lifecycleObservationStages) {
     const observation = records[`${stage}-intent.json`], result = records[`${stage}-result.json`];
     requireValue(observation === undefined || binding !== undefined && observation.stage === stage &&
       observation.bindingSha256 === sha256Json(binding) && binding.launchAcknowledged && binding.binding.rootCreated !== "0", "OBSERVATION_CHAIN");
@@ -229,10 +281,20 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     opening !== undefined && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== undefined &&
     pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true &&
     opened.result["status"] === "opened-prefix-observed" && opened.result["failure"] === null &&
-    records["workers-intent.json"] === undefined, "PCB_OPEN_CHAIN");
+    (stringPurpose || records["workers-intent.json"] === undefined), "PCB_OPEN_CHAIN");
   requireValue(pcbOpened === undefined || pcbOpen !== undefined && pcbOpened.intentSha256 === sha256Json(pcbOpen), "PCB_OPEN_RESULT_CHAIN");
   requireValue(records["pcb-opening-intent.json"] === undefined || pcbOpened !== undefined &&
     pcbOpened.result["ok"] === true && pcbOpened.result["status"] === "opened" && pcbOpened.result["failure"] === null, "PCB_OPEN_OBSERVATION_CHAIN");
+  requireValue(!stringPurpose || records["workers-intent.json"] === undefined ||
+    pcbObserved !== undefined && opening !== undefined && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target), "STRING_WORKERS_SOURCE_CHAIN");
+  const stringObservation = records["string-precreate-intent.json"], workerScript = records["worker-script-result.json"];
+  requireValue(stringObservation === undefined || stringPurpose && pcbObserved !== undefined && opening !== undefined &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) &&
+    stringObservation.pcbOpeningResultSha256 === sha256Json(pcbObserved) && workerScript !== undefined &&
+    workerScript.result["sourceVerified"] === true && stringObservation.workerScriptResultSha256 === sha256Json(workerScript), "STRING_PRECREATE_SOURCE_CHAIN");
+  const stringResult = records["string-precreate-result.json"];
+  requireValue(stringResult === undefined || opening !== undefined && stringPrecreateTargetMatches(stringResult.result, opening.target,
+    opened?.result, pcbObserved?.result), "STRING_PRECREATE_TARGET_CHAIN");
   requireValue(records["model-state-intent.json"] === undefined ||
     script !== undefined && script.result["family"] === "pcb" && script.result["sourceVerified"] === true &&
       records["script-intent.json"]?.family === "pcb" ||

@@ -7,8 +7,9 @@ import { sha256Json, sha256Text } from "../src/core.ts";
 import type { CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
-import { CurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
-import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner,
+  CurrentPcbStringPrecreateLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { LIFECYCLE_MODEL_RESULT as MODEL_RESULT } from "./helpers/current-pcb-diagnostic-lifecycle-model.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertNoUnresolvedCurrentPcbDiagnosticLaunches,
   diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticPcbOpeningSourceAccepted,
@@ -56,14 +57,14 @@ const PCB_SOURCE_RESULT = { family: "pcb", projectUuid: OPEN_TARGET.projectUuid,
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^diagnostic-test-[a-z0-9-]+$/u);
+  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^(?:diagnostic-test|(?:string-precreate-test))-[a-z0-9-]+$/u);
   return join(root, "pcb-diagnostic-lifecycle-v1", id);
 }
 function launch(id: string): Record<string, unknown> {
   return { action: "launch", operationId: id, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 }
 function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}): {
-  coordinator: CurrentPcbDiagnosticLifecycle; owner: CurrentPcbDiagnosticLifecycleOwner;
+  coordinator: CurrentPcbDiagnosticLifecycle; owner: CurrentPcbStringPrecreateLifecycleOwner;
   options: CurrentPcbDiagnosticLifecycleOptions; calls: string[];
   state: { bound: boolean; closed: boolean; terminated: boolean; released: boolean; failLaunch: boolean;
     failClose: boolean; cleanupOnly: boolean; failOther: boolean; failAllowed: boolean; installationDrift: boolean;
@@ -81,8 +82,9 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123,
     rootCreated: state.cleanupOnly ? "0" : "123456789012345",
   });
-  const owner: CurrentPcbDiagnosticLifecycleOwner = {
-    status: () => ({ helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
+  const stringPurpose = id.startsWith("string-precreate-");
+  const owner: CurrentPcbStringPrecreateLifecycleOwner = {
+    status: () => ({ profile: stringPurpose ? "string-precreate90" : "diagnostic64", stringPrecreateConsumed: calls.includes("string-precreate"), helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"),
       scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null, diagnosticFailureObservation: null,
@@ -95,7 +97,8 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false }),
     launch: async () => {
       calls.push("launch");
-      const intent = await readFile(join(directory(id), "intent.json"), "utf8"); assert.match(intent, /diagnostic-launch-intent/u);
+      const intent = await readFile(join(directory(id), "intent.json"), "utf8");
+      assert.match(intent, stringPurpose ? /string-precreate-launch-intent/u : /diagnostic-launch-intent/u);
       if (state.rootless !== null) { throw new Error("synthetic settled rootless refusal"); }
       state.bound = true;
       if (state.failLaunch || state.cleanupOnly) { throw new Error("synthetic lost launch acknowledgment"); }
@@ -143,6 +146,17 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       calls.push("worker-state");
       return Promise.resolve({ queueCompletionVerified: false, executionAuthorized: false });
     },
+    observeStringPrecreate: async () => {
+      calls.push("string-precreate");
+      const intent = await readFile(join(directory(id), "string-precreate-intent.json"), "utf8");
+      assert.match(intent, /pcbOpeningResultSha256/u);
+      return { schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
+        target: { projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid,
+          documentUuid: OPEN_TARGET.documentUuid, windowTabId: "fixture-tab" },
+        first: { synthetic: true }, second: { synthetic: true }, matchingSamples: true, originalContextsRechecked: true,
+        atomicSnapshotVerified: false, projectWorkerAssociationVerified: false, publicationCaptureVerified: false,
+        completeLiveSourceVerified: false, continuousObservation: false, queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false };
+    },
     observeModelState: () => {
       calls.push("model-state");
       return Promise.resolve(structuredClone(MODEL_RESULT));
@@ -178,7 +192,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     assertAllowed: (): Promise<void> => state.failAllowed ? Promise.reject(new Error("synthetic admission refused")) : Promise.resolve(),
     assertOtherLaunchesSettled: (): Promise<void> => state.failOther ? Promise.reject(new Error("synthetic unresolved project")) : Promise.resolve(),
   };
-  const coordinator = new CurrentPcbDiagnosticLifecycle(options, {
+  const commonDependencies: CurrentPcbDiagnosticLifecycleDependencies = {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
     allocateOwner: (): Promise<CurrentPcbDiagnosticLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); },
     prepareCheckpoint: (target): Promise<CurrentDisposableOpenCheckpoint> => {
@@ -194,7 +208,10 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       return Promise.resolve();
     },
     ...dependencies,
-  });
+  };
+  const coordinator = stringPurpose ? new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
+    allocateOwner: (): Promise<CurrentPcbStringPrecreateLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); } }) :
+    new CurrentPcbDiagnosticLifecycle(options, commonDependencies);
   async function request(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
     const inspected = await coordinator.run({ action: "inspect", operationId: id });
     assert.equal(typeof inspected["bindingSha256"], "string");
@@ -224,6 +241,110 @@ async function readyForOpening(id: string, value: ReturnType<typeof fixture>): P
   await value.request("inspect-frames", { targetId: "target-1" });
   await value.request("inspect-script", { frameId: "frame-1", family: "ui" });
 }
+async function readyForString(id: string, value: ReturnType<typeof fixture>): Promise<void> {
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await value.request("inspect-workers"); await value.request("inspect-worker-script", { targetId: "worker-1" });
+}
+void test("fixed String lifecycle seals purpose, journals the joined source chain and preserves historical read-only inspection", async context => {
+  const id = "string-precreate-test-chain", value = fixture(context, id);
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("inspect-workers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("inspect-workers"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true });
+  await assert.rejects(value.request("inspect-workers"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  await value.request("observe-pcb-opening");
+  await assert.rejects(value.request("observe-string-precreate"), /ORIGINAL_WORKER_SOURCE_REQUIRED/u);
+  await value.request("inspect-workers");
+  await assert.rejects(value.request("observe-string-precreate"), /ORIGINAL_WORKER_SOURCE_REQUIRED/u);
+  await value.request("inspect-worker-script", { targetId: "worker-1" });
+  const observed = await value.request("observe-string-precreate");
+  assert.equal(observed["stage"], "string-precreate");
+  await assert.rejects(value.request("observe-string-precreate"), /OBSERVATION_CONSUMED/u);
+  await assert.rejects(value.request("observe-model-state"));
+  await assert.rejects(value.request("observe-worker-state"));
+  assert.equal(value.calls.filter(call => call === "string-precreate").length, 1);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(entry => entry.operationId === id);
+  assert.ok(operation);
+  assert.equal(operation.records["intent.json"]?.schema, "easyeda-pro-control.pcb-string-precreate-launch-intent.v1");
+  assert.equal(operation.records["string-precreate-intent.json"]?.pcbOpeningResultSha256, sha256Json(operation.records["pcb-opening-result.json"]));
+  assert.equal(operation.records["string-precreate-intent.json"]?.workerScriptResultSha256, sha256Json(operation.records["worker-script-result.json"]));
+  await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /UNRESOLVED_LAUNCH/u);
+  const historical = new CurrentPcbStringPrecreateLifecycle(value.options);
+  const inspected = await historical.run({ action: "inspect", operationId: id, observation: "string-precreate" });
+  assert.match(JSON.stringify(inspected), /pcb-string-precreate-observation/u);
+  await assert.rejects(historical.run({ action: "observe-string-precreate", operationId: id,
+    expectedBindingSha256: sha256Json(operation.records["binding.json"]) }), /ORIGINAL_OWNER_REQUIRED/u);
+  await assert.rejects(new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id }), /PURPOSE_MISMATCH/u);
+});
+void test("String publication uncertainty consumes once, retains the result and settles only original bytes", async context => {
+  let fail = true;
+  const id = "string-precreate-test-publication", value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "string-precreate-result.json" && fail) { fail = false; throw new Error("synthetic String publication failure"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  await readyForString(id, value);
+  await assert.rejects(value.request("observe-string-precreate"), /publication failure/u);
+  await assert.rejects(value.request("observe-string-precreate"), /OBSERVATION_CONSUMED/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: "string-precreate" });
+  assert.match(JSON.stringify(inspected), /"resultRetained":true,"published":false/u);
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  assert.equal(value.calls.filter(call => call === "string-precreate").length, 1);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  assert.ok(operations.find(entry => entry.operationId === id)?.records["string-precreate-result.json"]);
+});
+void test("String purpose admits its bounded pair above the old diagnostic bound without enlarging diagnostic records", async context => {
+  const id = "string-precreate-test-bound", sample = { synthetic: "x".repeat(160 * 1024) }, value = fixture(context, id);
+  const original = value.owner.observeStringPrecreate;
+  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
+    ({ ...await original.call(value.owner), first: sample, second: sample });
+  await readyForString(id, value);
+  await value.request("observe-string-precreate");
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const record = operations.find(entry => entry.operationId === id)?.records["string-precreate-result.json"];
+  assert.ok(record);
+  assert.equal(diagnosticLifecycleRecordSchemas["browser-result.json"].safeParse({ ...record,
+    schema: "easyeda-pro-control.pcb-diagnostic-observation-result.v1", stage: "browser" }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["string-precreate-result.json"].safeParse({ ...record,
+    result: { ...record.result, first: { value: "x".repeat(188_416) }, second: { value: "x".repeat(188_416) } } }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["string-precreate-result.json"].safeParse({ ...record,
+    result: { ...record.result, saveAuthorized: true } }).success, false);
+});
+void test("journal refuses changing String intent to diagnostic and method/profile drift cannot select another owner purpose", async context => {
+  const id = "string-precreate-test-purpose", value = fixture(context, id);
+  await readyForString(id, value);
+  const path = join(directory(id), "intent.json"), text = await readFile(path, "utf8");
+  const record = diagnosticLifecycleRecordSchemas["intent.json"].parse(JSON.parse(text) as unknown);
+  assert.equal(record.schema, "easyeda-pro-control.pcb-string-precreate-launch-intent.v1");
+  const changed = { ...record, schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1" };
+  Reflect.deleteProperty(changed, "purpose");
+  await writeFile(path, JSON.stringify(changed), { mode: 0o600 });
+  await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /RESERVED_STRING_PURPOSE_ID/u);
+  await writeFile(path, text, { mode: 0o600 });
+  const original = value.owner.observeStringPrecreate;
+  value.owner.observeStringPrecreate = (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> => Promise.resolve({});
+  await assert.rejects(value.request("observe-string-precreate"), /OWNER_PURPOSE_CHANGED/u);
+  value.owner.observeStringPrecreate = original;
+  await value.request("observe-string-precreate");
+});
+void test("String result with a changed window cannot be published and original cleanup remains available", async context => {
+  const id = "string-precreate-test-window", value = fixture(context, id);
+  const original = value.owner.observeStringPrecreate;
+  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
+    ({ ...await original.call(value.owner), target: { projectUuid: OPEN_TARGET.projectUuid,
+      branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, documentUuid: OPEN_TARGET.documentUuid, windowTabId: "different-window" } });
+  await readyForString(id, value);
+  await assert.rejects(value.request("observe-string-precreate"), /STRING_PRECREATE_TARGET/u);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  assert.equal(operations.find(entry => entry.operationId === id)?.records["string-precreate-result.json"], undefined);
+  assert.equal(value.calls.filter(call => call === "string-precreate").length, 1);
+  await assert.rejects(value.request("observe-string-precreate"), /OBSERVATION_CONSUMED/u);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  assert.equal(value.coordinator.hasActiveReservation(), false);
+});
 void test("PCB source proof requires matching original target and accepted native readiness, not DOM/source alone", () => {
   const target = { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid };
   assert.equal(diagnosticPcbOpeningSourceAccepted(PCB_SOURCE_RESULT, target), true);

@@ -19,6 +19,9 @@ export type CurrentPcbDiagnosticOpeningPhase = typeof CURRENT_PCB_DIAGNOSTIC_OPE
 const phaseSchema = z.enum(CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES);
 const stages = ["setup", "registration-before", "subscribe", "dispatch", "acknowledgement",
   "prefix", "registration-after", "observe", "output", "cleanup"] as const;
+const substages = ["setup", "root-binding", "project-identity", "title", "container-roster",
+  "container-tree", "tab-roster", "url", "registration", "listener", "event-shape",
+  "acknowledgement", "output", "cleanup"] as const;
 const codes = ["GUARD", "FIELD", "OBJECT", "ARRAY", "TEXT", "METHOD", "BINDING", "URL", "PROJECT",
   "BRANCH", "FORMAT", "HISTORY", "TAB", "REGISTRY", "OWNERS", "PREFIX", "TITLE", "ACK", "TIMEOUT", "EXCEPTION", "CLEANUP"] as const;
 
@@ -30,8 +33,9 @@ const codes = ["GUARD", "FIELD", "OBJECT", "ARRAY", "TEXT", "METHOD", "BINDING",
  */
 export const CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION = String.raw`async function(target,phase){
 "use strict";
-let stage="setup",code="EXCEPTION",dispatchAttempted=false,publicResult=null,prefixObserved=false,expired=false,timer,clear,cleanup,observation=null,outcome;
-const bad=(value="GUARD")=>{code=value;throw new Error("PCB_DIAGNOSTIC_OPENING");};
+let stage="setup",substage="setup",code="EXCEPTION",firstFailure=null,cleanupFailure=null,dispatchAttempted=false,publicResult=null,prefixObserved=false,expired=false,timer,clear,cleanup,observation=null,outcome;
+const retainFailure=(value=code)=>{if(firstFailure===null)firstFailure={stage,code:value,substage};return firstFailure;};
+const bad=(value="GUARD")=>{code=value;retainFailure(value);throw new Error("PCB_DIAGNOSTIC_OPENING");};
 try{
 const root=globalThis,apply=Reflect.apply;
 const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=="object"&&typeof owner!=="function"))bad("FIELD");const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad("FIELD");}if(!Object.hasOwn(d,"value"))bad("FIELD");return d.value;};
@@ -61,6 +65,7 @@ const bus=own(host,"messageBus"),registryCall=method(bus,"rpcCall"),subscribe=me
 const apiBus=own(host,"extensionApiMessageBus2"),openCall=method(apiBus,"rpcCall");
 const set=own(root,"setTimeout");clear=own(root,"clearTimeout");if(typeof set!=="function"||typeof clear!=="function")bad();
 const check=()=>{
+ substage="root-binding";
  if(expired)bad("TIMEOUT");
  if(root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==retainedHref||location?.href!==retainedHref||location?.origin!=="https://client")bad("URL");
  if(parseProjectUrl(retainedHref,target.projectUuid).base!==initialUrl.base)bad("URL");
@@ -70,22 +75,26 @@ const check=()=>{
  if(apply(query.fn,document,['meta[name="editorMainVersion"]'])!==meta||meta.ownerDocument!==document||apply(attribute.fn,meta,["content"])!==version)bad("TITLE");
  if(prefixCheck!==undefined)prefixCheck();
 };
-const sample=()=>{
- check();const owners=[],project=plain(own(host,"currentProject"));owners.push(project);const pid=own(project,"projectId",true),branch=own(project,"branchUuid",true),projectPresent=pid===target.projectUuid;
+const projectIdentity=()=>{
+ check();substage="project-identity";const project=plain(own(host,"currentProject")),pid=own(project,"projectId",true),branch=own(project,"branchUuid",true),projectPresent=pid===target.projectUuid;
  if(pid!==undefined&&!projectPresent)bad("PROJECT");
  if(projectPresent){if(branch!==target.branchUuid)bad("BRANCH");if(own(project,"isV2Format")!==false)bad("FORMAT");}else if(branch!==undefined&&branch!=="")bad("BRANCH");
+ if(own(host,"isHistoryMode")!==false)bad("HISTORY");return{project,pid,branch,projectPresent};
+};
+const sample=()=>{
+ const {project,pid,branch,projectPresent}=projectIdentity(),owners=[project];substage="title";
  const documentTitle=text(document.title,512),clientName=own(client,"currentProjectName",true);
  if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""))bad("TITLE");
- if(own(host,"isHistoryMode")!==false)bad("HISTORY");
+ substage="container-roster";
  const ids=own(tabs,"containerIds"),n=dense(ids,128);if(n===0)bad("TAB");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad("TAB");registry.add(id);names.push(id);}
- const tree=own(tabs,"containerTree"),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
+ substage="container-tree";const tree=own(tabs,"containerTree"),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
  if(own(tabs,"belongContainer")!=="editor-window-main"||own(tree,"id")!=="editor-window-main")bad("TAB");
  while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad("TAB");seen.add(node);owners.push(node);const id=text(own(node,"id"),256),children=own(node,"children",true);if(treeIds.has(id))bad("TAB");treeIds.add(id);treeProjection.push([id,item.depth]);
   if(children===undefined){if(!registry.has(id)||leaves.has(id))bad("TAB");leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad("TAB");owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
  if(leaves.size!==registry.size)bad("TAB");const current=text(own(tabs,"currentTabId"),512,true);if(apply(active.fn,tabs,[])!==current)bad("TAB");
- const allIds=new Set(),projection=[],ordinaryIds=[];let count=0,start=0,placeholder=0,currentCount=0;
- for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,"id")!==id||own(info,"belong")!=="editor-window-main")bad("TAB");const list=own(info,"tabs"),length=dense(list,256);if(count+length>256)bad("TAB");count+=length;owners.push(list);const localActive=text(own(info,"activeTabId"),512,true),localIds=new Set(),rows=[];
+ substage="tab-roster";const allIds=new Set(),projection=[],ordinaryIds=[];let count=0,start=0,placeholder=0,currentCount=0;
+ for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();substage="tab-roster";owners.push(info);if(own(info,"id")!==id||own(info,"belong")!=="editor-window-main")bad("TAB");const list=own(info,"tabs"),length=dense(list,256);if(count+length>256)bad("TAB");count+=length;owners.push(list);const localActive=text(own(info,"activeTabId"),512,true),localIds=new Set(),rows=[];
   for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),id2=text(own(tab,"tabId"),512),data=plain(own(tab,"data"));owners.push(tab,data);if(allIds.has(id2))bad("TAB");allIds.add(id2);localIds.add(id2);const type=own(data,"doctype");
    if(id2==="tab_page1"||id2==="0"){const isStart=id2==="tab_page1";if(type!==(isStart?-1:0)||own(tab,"isAbleDelete")!==false||own(tab,"group")!=="start_blank"||own(tab,"draggable")!==isStart)bad("TAB");const hidden=own(tab,"isDisplayNone");if(typeof hidden!=="boolean"||(!isStart&&hidden!==true))bad("TAB");const declared=own(tab,"documentType",true);if(declared!==undefined&&declared!==type)bad("TAB");for(const key of ["pid","owner"])if(own(data,key,true)!==undefined)bad("TAB");for(const key of ["parentProjectUuid","parentLibraryUuid"])if(own(tab,key,true)!==undefined)bad("TAB");if(isStart)start++;else placeholder++;
    }else{if(!projectPresent||own(data,"pid")!==target.projectUuid||own(tab,"parentLibraryUuid",true)!==undefined||![1,3,26].includes(type))bad("TAB");const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[0]!==id2||parts[2]!==target.projectUuid)bad("TAB");const parentProject=own(tab,"parentProjectUuid",true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad("TAB");ordinaryIds.push(id2);}
@@ -94,39 +103,44 @@ const sample=()=>{
   if(localActive!==""&&!localIds.has(localActive))bad("TAB");projection.push([id,localActive,rows]);}
  if(start>1||placeholder>1||(current===""?currentCount!==0:currentCount!==1))bad("TAB");
  if(!projectPresent&&(start!==1||current!=="tab_page1"||count!==start+placeholder))bad("TAB");
- const url=parseProjectUrl(retainedHref,target.projectUuid,current);
+ substage="url";const url=parseProjectUrl(retainedHref,target.projectUuid,current);
  if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad("URL");check();
  return{owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null,documentTitle,clientName??null]),public:{projectPresent,branchUuid:projectPresent?branch:null,windowTabId,containerCount:n,tabIds:ordinaryIds,activeTabId:current,initialTitle,expectedOpenedTitle,documentTitle}};
 };
 const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad("OWNERS");};
-const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,["/pro-mgr/api/client/getProjectPaths",{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,"message"));if(own(message,"success")!==true)bad("REGISTRY");const result=plain(own(message,"result")),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>!matches(key,/^[a-f0-9]{64}$/)))bad("REGISTRY");const selected=plain(own(result,target.projectUuid));if(text(own(selected,"path"),4096)!==target.rawWindowsPath||own(selected,"isCbb")!==false)bad("REGISTRY");return before;};
+const registration=async()=>{const before=sample();substage="registration";const reply=await apply(registryCall.fn,bus,["/pro-mgr/api/client/getProjectPaths",{},0]);check();same(before,sample());substage="registration";plain(reply);const message=plain(own(reply,"message"));if(own(message,"success")!==true)bad("REGISTRY");const result=plain(own(message,"result")),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>!matches(key,/^[a-f0-9]{64}$/)))bad("REGISTRY");const selected=plain(own(result,target.projectUuid));if(text(own(selected,"path"),4096)!==target.rawWindowsPath||own(selected,"isCbb")!==false)bad("REGISTRY");return before;};
 const run=async()=>{
  stage="registration-before";const initial=await registration();check();if(initial.public.projectPresent)bad("PROJECT");
  if(phase==="open-project"){
   stage="subscribe";let delivered=0,eventFailed=false,eventProject,settle;const event=new Promise(resolve=>{settle=resolve;});
   const advanceUrl=()=>{if(!dispatchAttempted)bad("PREFIX");retainedHref=location?.href;check();};
-  const receive=(...args)=>{delivered++;try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad("PREFIX");advanceUrl();const observed=sample();if(!observed.public.projectPresent)bad("PROJECT");eventProject=own(host,"currentProject");prefixObserved=true;}catch{eventFailed=true;}settle();};
+  // UI3823ed6e createBlankTab16424906 publishes a simulated click, not an
+  // Awaited tab-render completion. ON_OPENED16669194 emits this prefix before
+  // Restoration. Capture project identity here; complete title/tab/owner
+  // Checks remain mandatory after acknowledgment and around registry/final reads.
+  const receive=(...args)=>{delivered++;const priorStage=stage,priorSubstage=substage;stage="prefix";substage="event-shape";try{if(!dispatchAttempted||delivered!==1||args.length!==3||args[0]!==null||args[1]!==undefined||args[2]!==undefined)bad("PREFIX");advanceUrl();const observed=projectIdentity();if(!observed.projectPresent)bad("PROJECT");eventProject=observed.project;prefixObserved=true;}catch{retainFailure();eventFailed=true;}finally{stage=priorStage;substage=priorSubstage;}settle();};
   const task=apply(subscribe.fn,bus,["loadProjectCompleted",receive]),cancel=method(task,"cancel");
-  const listener=()=>{methodCheck(cancel);if(own(task,"callback")!==receive||own(task,"isRunning")!==true)bad("PREFIX");};
+  const listener=()=>{const prior=substage;substage="listener";methodCheck(cancel);if(own(task,"callback")!==receive||own(task,"isRunning")!==true)bad("PREFIX");substage=prior;};
   cleanup=()=>{listener();apply(cancel.fn,task,[]);if(own(task,"callback")!==null||own(task,"isRunning")!==false)bad("CLEANUP");};
   prefixCheck=()=>{listener();if(eventFailed||delivered>1)bad("PREFIX");};
   listener();same(initial,sample());check();if(delivered!==0||eventFailed)bad("PREFIX");
   stage="dispatch";dispatchAttempted=true;const result=await apply(openCall.fn,apiBus,["extensionApi.DMT_Project.openProject",target.projectUuid]);
-  stage="acknowledgement";advanceUrl();listener();if(typeof result!=="boolean")bad("ACK");publicResult=result;if(!result)bad("ACK");
+  stage="acknowledgement";advanceUrl();listener();substage="acknowledgement";if(typeof result!=="boolean")bad("ACK");publicResult=result;if(!result)bad("ACK");
   stage="prefix";await event;check();listener();if(delivered!==1||eventFailed||!prefixObserved)bad("PREFIX");if(own(host,"currentProject")!==eventProject)bad("OWNERS");
  }
  stage="registration-after";const after=await registration();check();stage="observe";const final=sample();same(after,final);await Promise.resolve();check();same(final,sample());
  if(final.public.projectPresent!==(phase==="open-project"))bad("PROJECT");
- observation=final.public;stage="output";return{ok:true,status:phase==="preflight"?"ready":"opened-prefix-observed",failure:null};
+ observation=final.public;stage="output";substage="output";return{ok:true,status:phase==="preflight"?"ready":"opened-prefix-observed",failure:null};
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;code="TIMEOUT";reject(new Error("PCB_DIAGNOSTIC_OPENING"));},phase==="preflight"?10000:45000]);});
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;code="TIMEOUT";retainFailure("TIMEOUT");reject(new Error("PCB_DIAGNOSTIC_OPENING"));},phase==="preflight"?10000:45000]);});
 outcome=await Promise.race([run(),timeout]);
-}catch{outcome={ok:false,status:"refused",failure:{stage,code}};}
+}catch{outcome={ok:false,status:"refused",failure:retainFailure()};}
 finally{
- try{if(cleanup!==undefined)cleanup();}catch{outcome={ok:false,status:"refused",failure:{stage:"cleanup",code:"CLEANUP"}};}
- if(timer!==undefined&&typeof clear==="function"){try{Reflect.apply(clear,globalThis,[timer]);}catch{outcome={ok:false,status:"refused",failure:{stage:"cleanup",code:"CLEANUP"}};}}
+ stage="cleanup";substage="cleanup";
+ try{if(cleanup!==undefined)cleanup();}catch{cleanupFailure={stage:"cleanup",code:"CLEANUP"};outcome={ok:false,status:"refused",failure:retainFailure("CLEANUP")};}
+ if(timer!==undefined&&typeof clear==="function"){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailure={stage:"cleanup",code:"CLEANUP"};outcome={ok:false,status:"refused",failure:retainFailure("CLEANUP")};}}
 }
-return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-opening.v1",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,...outcome,dispatchAttempted,publicResult,prefixObserved,nativeWorkMayRemain:dispatchAttempted,observation});
+return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-opening.v1",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,...outcome,cleanupFailure,dispatchAttempted,publicResult,prefixObserved,nativeWorkMayRemain:dispatchAttempted,observation});
 }`;
 
 export const CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION_SHA256 =
@@ -157,7 +171,8 @@ const resultSchema = z.object({
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u),
   documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
   ok: z.boolean(), status: z.enum(["ready", "opened-prefix-observed", "refused"]),
-  failure: z.object({ stage: z.enum(stages), code: z.enum(codes) }).strict().nullable(),
+  failure: z.object({ stage: z.enum(stages), code: z.enum(codes), substage: z.enum(substages).optional() }).strict().nullable(),
+  cleanupFailure: z.object({ stage: z.literal("cleanup"), code: z.literal("CLEANUP") }).strict().nullable().optional(),
   dispatchAttempted: z.boolean(), publicResult: z.boolean().nullable(), prefixObserved: z.boolean(),
   nativeWorkMayRemain: z.boolean(), observation: observationSchema.nullable(),
 }).strict();
@@ -197,7 +212,8 @@ export function decodeCurrentPcbDiagnosticOpeningReply(input: unknown, targetInp
         result.documentUuid !== target.documentUuid || result.nativeWorkMayRemain !== result.dispatchAttempted ||
         (result.publicResult !== null || result.prefixObserved) && !result.dispatchAttempted ||
         phase === "preflight" && result.dispatchAttempted || result.ok !== (result.failure === null) ||
-        result.ok !== (result.status !== "refused")) { return refuse(); }
+        result.ok !== (result.status !== "refused") ||
+        result.cleanupFailure !== undefined && result.cleanupFailure !== null && result.ok) { return refuse(); }
     const observed = result.observation;
     const projectName = target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\") + 1,
       target.rawWindowsPath.indexOf(".eprj2"));

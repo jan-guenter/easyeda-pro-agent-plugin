@@ -4,25 +4,32 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
+import { currentPcbStringPrecreateRequestSchema } from "../src/current-pcb-string-precreate-validation.ts";
 
-void test("public diagnostic registration preserves local inspection/cleanup, fixed pins and complete reverse-owner exclusions", async () => {
+for (const stringPurpose of [false, true]) {
+void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registration preserves local inspection/cleanup, fixed pins and reverse-owner exclusions`, async () => {
+  const tool = stringPurpose ? "easyeda_control_pcb_string_precreate_validation" : "easyeda_control_pcb_diagnostic_validation";
+  const operationId = stringPurpose ? "string-precreate-registration" : "registration";
+  const requestSchema = stringPurpose ? currentPcbStringPrecreateRequestSchema : currentPcbDiagnosticValidationRequestSchema;
+  const Base = stringPurpose ? CurrentPcbStringPrecreateLifecycle : CurrentPcbDiagnosticLifecycle;
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"))');
-  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start);
+  const start = source.indexOf(`if (facadeToolRegistered(facadeMode, "${tool}"))`);
+  const end = source.indexOf(stringPurpose ? 'if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"))' :
+    'registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
   const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
   assert.ok(start > 0 && end > start);
   let options: CurrentPcbDiagnosticLifecycleOptions | undefined;
   let invoke: ((input: { request: unknown; extra?: boolean }) => Promise<unknown>) | undefined;
   let blocked = false, checks = 0, gateCalls = 0;
   let pendingAdmission: Promise<null> | undefined;
-  class Coordinator extends CurrentPcbDiagnosticLifecycle {
+  class Coordinator extends Base {
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); options = input; }
     public override async run(input: unknown): Promise<Record<string, unknown>> {
-      const request = currentPcbDiagnosticValidationRequestSchema.parse(input);
+      const request = requestSchema.parse(input);
       if (request.action === "inspect") { return super.run(request); }
       assert.ok(options); options.assertLocalAllowed();
       if (request.action === "launch") { await options.assertAllowed(); }
@@ -36,8 +43,9 @@ void test("public diagnostic registration preserves local inspection/cleanup, fi
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcbDiagnosticValidationRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
-    CurrentPcbDiagnosticLifecycle: Coordinator, currentPcbDiagnosticLifecycle: undefined, process: { env: environment }, engine, upstream,
+  const scope = vm.createContext({ z, currentPcbDiagnosticValidationRequestSchema, currentPcbStringPrecreateRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcbStringPrecreateLifecycle: Coordinator,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
@@ -49,31 +57,35 @@ void test("public diagnostic registration preserves local inspection/cleanup, fi
       const result = await handler(input); return result;
     },
     server: { registerTool: (name: string, configuration: { inputSchema: z.ZodType }, handler: typeof invoke): void => {
-      assert.equal(name, "easyeda_control_pcb_diagnostic_validation");
-      assert.equal(configuration.inputSchema.safeParse({ request: { action: "inspect", operationId: "registration" }, extra: true }).success, false);
+      assert.equal(name, tool);
+      assert.equal(configuration.inputSchema.safeParse({ request: { action: "inspect", operationId }, extra: true }).success, false);
       invoke = handler;
     } },
   });
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   blocked = true;
-  const inspected = await invoke({ request: { action: "inspect", operationId: "registration" } });
+  const inspected = await invoke({ request: { action: "inspect", operationId } });
   assert.match(JSON.stringify(inspected), /not-found/u); assert.equal(checks, 0); assert.equal(gateCalls, 0);
-  await assert.rejects(invoke({ request: { action: "inspect", operationId: "registration" }, extra: true }));
+  await assert.rejects(invoke({ request: { action: "inspect", operationId }, extra: true }));
   assert.ok(options);
   assert.equal(options.powershellSha256, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256);
   assert.equal(options.powershellBytes, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes);
-  const launch = { action: "launch", operationId: "registration", confirmValidationOnly: true,
+  const launch = { action: "launch", operationId, confirmValidationOnly: true,
     confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
   await assert.rejects(invoke({ request: launch }), /unresolved engine journal/u);
-  await invoke({ request: { action: "normal-close", operationId: "registration", expectedBindingSha256: "a".repeat(64), hwnd: "123", confirmNormalClose: true } });
-  await invoke({ request: { action: "cleanup-no-process", operationId: "registration", expectedIntentSha256: "a".repeat(64) } });
+  await invoke({ request: { action: "normal-close", operationId, expectedBindingSha256: "a".repeat(64), hwnd: "123", confirmNormalClose: true } });
+  await invoke({ request: { action: "cleanup-no-process", operationId, expectedIntentSha256: "a".repeat(64) } });
   assert.equal(checks, 1); blocked = false;
   const excluded = ["windowsRuntime", "ordinaryLaunchRuntime", "currentDisposableOpenCoordinator", "currentPcbRenameOperationCoordinator",
     "currentSchematicRenameOperationCoordinator", "closedSymbolIndexReservation", "scheduledShutdown"];
   for (const name of excluded) {
     scope[name] = {}; await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
   }
+  const otherOwner = stringPurpose ? "currentPcbDiagnosticLifecycle" : "currentPcbStringPrecreateLifecycle";
+  scope[otherOwner] = { hasActiveReservation: (): boolean => true };
+  await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u);
+  scope[otherOwner] = undefined;
   scope["closedSymbolUnreservedFailure"] = { observed: true };
   await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u);
   scope["closedSymbolUnreservedFailure"] = { observed: false };
@@ -87,4 +99,22 @@ void test("public diagnostic registration preserves local inspection/cleanup, fi
   engine.assertDiagnosticLaunchOtherOperationsSettled = originalMethod;
   environment.WSL_DISTRO_NAME = "Changed"; assert.throws(options.assertLocalAllowed, /original index owner/u);
   environment.WSL_DISTRO_NAME = "Ubuntu"; options.assertLocalAllowed();
+  // The fixed public classes inherit the real methods directly. Capturing only
+  // A trivial public wrapper would miss substitution of its dynamic super call.
+  assert.equal(Object.hasOwn(Base.prototype, "run"), false);
+  assert.equal(Object.hasOwn(Base.prototype, "hasActiveReservation"), false);
+  assert.equal(Reflect.deleteProperty(Coordinator.prototype, "run"), true);
+  scope["currentPcbDiagnosticLifecycle"] = undefined; scope["currentPcbStringPrecreateLifecycle"] = undefined;
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+  await invoke({ request: { action: "inspect", operationId } });
+  const core: unknown = Object.getPrototypeOf(Base.prototype);
+  assert.ok(core !== null && typeof core === "object");
+  for (const name of ["run", "hasActiveReservation"]) {
+    const descriptor = Object.getOwnPropertyDescriptor(core, name); assert.ok(descriptor);
+    try {
+      Object.defineProperty(core, name, { ...descriptor, value: (): never => { throw new Error("substituted core method called"); } });
+      await assert.rejects(invoke({ request: { action: "inspect", operationId } }), /original index owner/u);
+    } finally { Object.defineProperty(core, name, descriptor); }
+  }
 });
+}

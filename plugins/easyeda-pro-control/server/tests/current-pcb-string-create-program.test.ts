@@ -4,12 +4,13 @@ import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { createContext, runInContext } from "node:vm";
 import { planCurrentPcbStringCreate } from "../src/current-pcb-string-create.ts";
 import { compareCurrentPcbStringCreateObservation, planCurrentPcbStringCreateObservation } from "../src/current-pcb-string-create-observation.ts";
-import { buildDormantCurrentPcbStringCreateProgram } from "../src/current-pcb-string-create-program.ts";
+import { DORMANT_CURRENT_PCB_STRING_NATIVE_CREATE_FUNCTION, buildDormantCurrentPcbStringCreateProgram,
+  dormantCurrentPcbStringNativeCreateArguments } from "../src/current-pcb-string-create-program.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
 const id = "0123456789abcdef";
-interface Options { before?: string; beforeChild?: string; afterCall?: string; fastDeadline?: boolean; }
+interface Options { before?: string; beforeChild?: string; afterCall?: string; fastDeadline?: boolean; nativeContext?: boolean; }
 interface Fixture {
   run: () => Promise<ReturnType<typeof compareCurrentPcbStringCreateObservation>>;
   child: (source: string) => unknown;
@@ -45,7 +46,8 @@ globalThis.PRO_EDITOR_MODE='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM';
 globalThis.target=${JSON.stringify(target)};globalThis.tab={tabId:target.tabId,data:{doctype:3,pid:target.projectUuid}};globalThis.activeTab=target.tabId;
 class Tabs {static getActiveTab(){return activeTab;}static getTabById(value){return value===tab.tabId?tab:null;}}
 globalThis.gVars={currentProject:{projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false},isHistoryMode:false};
-globalThis.UI={gVars,tabBar:Tabs};globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40'};
+globalThis.UI={gVars,tabBar:Tabs};globalThis._TAB_ID_='original-ui-window';
+${options.nativeContext === true ? "" : "globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40'};"}
 globalThis.attributes={'c_dbid':target.tabId,'c_doctype':'3',src:'editor?entry=pcb','pcb-canvas':'true'};
 globalThis.frame={tagName:'IFRAME',id:'frame_'+target.tabId,ownerDocument:document,isConnected:true,contentWindow:child,
 classList:{contains(name){return name==='editframe';}},getAttribute(name){return attributes[name]??null;},hasAttribute(name){return Object.hasOwn(attributes,name);},
@@ -53,7 +55,11 @@ parentElement:{getAttribute(name){return name==='uuid'?target.tabId:null;}}};
 child.document={defaultView:child,nodeType:9};child.frameElement=frame;child.parent=globalThis;child.top=globalThis;
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return { run: async (): Promise<ReturnType<typeof compareCurrentPcbStringCreateObservation>> => {
-    const raw: unknown = await Promise.resolve(runInContext(`(async()=>{${buildDormantCurrentPcbStringCreateProgram(plan)}})()`, context, { timeout: 1000 }) as unknown);
+    const code = options.nativeContext === true
+      ? `(${DORMANT_CURRENT_PCB_STRING_NATIVE_CREATE_FUNCTION})(...${JSON.stringify(
+        dormantCurrentPcbStringNativeCreateArguments(plan, "original-ui-window").map(argument => argument.value))})`
+      : `(async()=>{${buildDormantCurrentPcbStringCreateProgram(plan)}})()`;
+    const raw: unknown = await Promise.resolve(runInContext(code, context, { timeout: 1000 }) as unknown);
     return compareCurrentPcbStringCreateObservation(plan, raw);
   }, child: (source: string): unknown => runInContext(source, childContext, { timeout: 1000 }) as unknown };
 }
@@ -68,6 +74,31 @@ void test("dormant String program uses exactly one fixed create and four unfilte
   assert.equal(result.queueCompletionVerified, false); assert.equal(result.persistenceVerified, false);
   assert.equal(result.writerSupported, false); assert.equal(result.executionAuthorized, false);
   assert.equal(result.readback?.["silkColor"], "#000000"); assert.equal(Object.hasOwn(result.readback ?? {}, "font"), false);
+});
+
+void test("separate native-context String program needs no lexical extension and binds the original UI window", async () => {
+  const fixture = environment({ nativeContext: true }), result = await fixture.run();
+  assert.equal(result.completed, true); assert.equal(fixture.child("createCalls"), 1);
+  assert.equal(result.executionAuthorized, false); assert.equal(result.liveReceiverVerified, false);
+  assert.equal(DORMANT_CURRENT_PCB_STRING_NATIVE_CREATE_FUNCTION.includes("edaOwner"), false);
+  const foreign = environment({ nativeContext: true, before: "_TAB_ID_='other-window';" });
+  const refused = await foreign.run();
+  assert.equal(refused.dispatchAttempts, 0); assert.equal(refused.stage, "setup");
+  const replaced = environment({ nativeContext: true,
+    afterCall: "if(topic==='pcb/extensionAPI/string-create')parent._TAB_ID_='other-window';" });
+  const changed = await replaced.run();
+  assert.equal(changed.dispatchAttempts, 1); assert.equal(changed.acknowledgedPrimitiveId, id);
+  assert.equal(changed.stage, "create"); assert.equal(replaced.child("createCalls"), 1);
+});
+
+void test("native String argument builder rejects copied plans and malformed window identity", () => {
+  const plan = planCurrentPcbStringCreateObservation(planCurrentPcbStringCreate({ x: 0, y: 0, text: "A" }), target);
+  assert.throws(() => dormantCurrentPcbStringNativeCreateArguments({ ...plan }, "window"), /original/u);
+  for (const windowId of ["", "a".repeat(129), "window\n", "window/other"]) {
+    assert.throws(() => dormantCurrentPcbStringNativeCreateArguments(plan, windowId), /WINDOW/u);
+  }
+  const args = dormantCurrentPcbStringNativeCreateArguments(plan, "window");
+  assert.equal(args.length, 2); assert.ok(Object.isFrozen(args)); assert.ok(Object.isFrozen(args[0]?.value));
 });
 
 void test("dormant String program rejects copied plans and wrong exact frames before dispatch", async () => {

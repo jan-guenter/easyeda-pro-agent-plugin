@@ -76,3 +76,22 @@ void test("dormant String comparison does not normalize signed zero, color, hidd
     assert.notEqual(json, encoded); assert.throws(() => compareCurrentPcbStringCreateObservation(value, json));
   }
 });
+
+void test("create result refuses contradictory duplicate fields, escaped aliases and malformed Unicode before decoding", () => {
+  const value = plan();
+  const encoded = JSON.stringify(resultFor(value));
+  assert.equal(compareCurrentPcbStringCreateObservation(value, encoded).completed, true);
+  for (const changed of [
+    encoded.replace('"completed":true', '"completed":false,"completed":true'),
+    encoded.replace('"dispatchAttempts":1', String.raw`"dispatchAttempts":0,"dispatch\u0041ttempts":1`),
+    encoded.replace('"x":0', String.raw`"x":7,"\u0078":0`),
+  ]) {
+    assert.notEqual(changed, encoded);
+    assert.throws(() => compareCurrentPcbStringCreateObservation(value, changed), /FRAMING/u);
+  }
+  for (const surrogate of ["\uD800", "\uDFFF"]) {
+    const malformed = encoded.replace('"completed"', `"${surrogate}completed"`);
+    assert.equal(malformed.isWellFormed(), false);
+    assert.throws(() => compareCurrentPcbStringCreateObservation(value, malformed), /bounded JSON/u);
+  }
+});

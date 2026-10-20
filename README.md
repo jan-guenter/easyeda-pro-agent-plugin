@@ -9,6 +9,21 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
+Candidate `0.3.0+codex.20261020185144`, the [String lifecycle batch](docs/current-pcb-string-lifecycle-batch-2026-10-20.md),
+adds a separate, launch-sealed combined PCB/worker observation workflow,
+an opening-order correction, dormant native create/Save programs, bounded
+publication capture and exact supplied SQL/history comparisons. It is one
+combined implementation release, not a completed PCB writer. The callable
+precreate tool performs observations only; it cannot create geometry or Save.
+Its [operational skill](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-string-precreate-validation.md)
+separates sampled evidence from complete baseline and saved-state requirements.
+
+Installed155927 reached a public project-open acknowledgment but failed its
+prefix check. The original disposable case was normally closed and released,
+with the closed file unchanged. The new opening and combined observation path
+still need connected qualification. The initial prefix error was not retained,
+so the source correction is not a retrospective diagnosis of that exact failure.
+
 Installed `0.3.0+codex.20261018195000` passed the disposable PCB title-change
 lifecycle: one acknowledged rename, exact complete closed SQL effect, matching
 PCB metadata and peers after fresh reopening, final SQL equality and original
@@ -87,7 +102,7 @@ normal cleanup. Project/PCB/model qualification remains pending: the Start Page
 contained an extra blank child whose DOM owner was not inspected. See the
 [combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
 
-Candidate `0.3.0+codex.20261020155927` combines source-derived root/child
+Delivered `0.3.0+codex.20261020155927` combines source-derived root/child
 navigation-event corrections with two pure String-writer compositions.
 Installed120717 retained an `event-callback` refusal with event kind `unknown`
 while project opening was pending. It did not establish completed opening.

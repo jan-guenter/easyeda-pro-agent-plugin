@@ -4,6 +4,63 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020185144` batches a callable, launch-sealed
+String-precreate observation lifecycle with the project-opening correction,
+native create/Save building blocks, bounded publication capture, post-phase
+readers, full supplied history/SQL comparisons and operational skill updates.
+The String tool has a separate fixed90-request owner; diagnostic64 remains
+exclusive. No String writer or Save action is registered. SDK coverage stays
+774:212public subsets/33native equivalents/79blocked/450omitted.
+
+Actual installed155927 admission passed main and independent checks:
+facade1404835/start49541092, parent1403115/start49535539, Node24.18.0/core0,
+source534/47c8a472 and runtime3/915ba71a. All1,598installed files/modes match.
+Prior main CI39456990180 and Windows39456990282 both PASSED.
+
+NEW `diag-native-155927-20261020-01` is terminal released. Launch/browser/
+frames/UI-source passed; consumed project opening returned publicResulttrue
+but prefixObservedfalse and prefix/PREFIX failure. No PCB/worker/model stage,
+edit or explicitSave. Original37648/created134369942365501402,
+binding58ffaffd and hwnd12129604 were normally closed; root/whole-Job exit,
+helper release and terminal journal passed. Closed disposable remains exact
+e620d21a/598016bytes. No prompt choice or production-design access. Evidence:
+`/root/.cache/easyeda-155927-live-0qSlGsJ0`. NEVER replay this terminal case.
+Opening first-failure data was overwritten in that snapshot; the source-backed
+event-order correction is not a proven retrospective diagnosis.
+
+Independent reciprocal reviews fixed native helper embedding omissions,
+duplicate-key/Unicode decoders, mutable superclass delegation, String result
+window binding, capture task-method overrides and late-callback counting.
+Both actual Windows CompileOnly profiles pass; shared native no-op child90993
+proves image admission/resume, normal exit, empty Job and release without
+EasyEDA or production access. Helper185043bytes/810ebda1.
+Candidate source545/eb07e457, runtime3/fe30aa7f, manifestd0a50c26.
+Only facade projections/review time refreshed; external pins are unchanged.
+Dependency install/tree/signatures/audit, sanitizer and build/compatibility pass.
+Package-focused17tests pass:26restricted/51configured tools,10offlinequeries.
+Seven installed skill-creator checks pass. Frozen verify70544 completed with
+11,986tests/11,981passed/4platformskips and one stale25-versus26 tool-count
+expectation. The final two-test registration rerun passes after correcting that
+assertion and explicitly checking the new tool. Required manifest boundary
+wording was restored after the run. Neither correction changes implementation,
+runtime bundles or compatibility pins. Final38985 passes424bridge tests,
+strict targeted lint, all skills, package/MCP and repository/privacy checks.
+The original failure log is retained; do not report a fully green local verify.
+Exact-head CI must pass the complete final payload before merge and installation.
+
+Release evidence: `/root/.cache/easyeda-string-lifecycle-release-2mMm3lmA`.
+Scope and complete remaining work:
+`docs/current-pcb-string-lifecycle-batch-2026-10-20.md`.
+After actual publication/installation, fresh host admission and one NEW
+`string-precreate-*` disposable case are next. Complete live source/latent
+producer admission, publisher/Proxy checks, integrated one-create/one-Save,
+closed SQL/fresh reopen/visual acceptance remain unfinished. FileSource can
+repair rules and is not a complete read-only shortcut. Populated geometry,
+remaining schematic/library/layout/manufacturing families and portability
+remain backlog. Production designs stay excluded.
+
+### Delivered155927 checkpoint
+
 Delivered `0.3.0+codex.20261020155927` through protected PR88 on2026-10-20.
 Final payload `9797a4d69264951959ae0916ba6fd930eba498e8`, merged main
 `7adb2453ffa9d7a0880567e2e63e41452740d19c`; complete treea0bbeb02 and plugin

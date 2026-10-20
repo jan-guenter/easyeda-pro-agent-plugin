@@ -1,13 +1,15 @@
 /** Offline contract only. Discovery never starts a helper or grants execution. */
 import { z } from "zod";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
+import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX } from "./current-pcb-string-precreate-validation.ts";
 
 const operationId = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u);
 const bound = { operationId, expectedBindingSha256: digest };
 export const currentPcbDiagnosticValidationRequestSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("launch"), operationId, confirmValidationOnly: z.literal(true),
+  z.object({ action: z.literal("launch"), operationId: operationId.refine(value => !value.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX),
+    "The String precreate operation prefix is reserved for its separate fixed facade."), confirmValidationOnly: z.literal(true),
     confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId, observation: z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]).optional() }).strict(),
   z.object({ action: z.literal("settle-records"), operationId, expectedIntentSha256: digest }).strict(),

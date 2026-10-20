@@ -80,6 +80,31 @@ void test("fixed project service is called once and waits for one contextual pre
   assert.equal(env.evaluate("cancelCalls"), 1); assert.equal(env.evaluate("listeners[0].callback"), null);
 });
 
+void test("project prefix permits unfinished blank-tab rendering but requires the complete final title and tab state", async () => {
+  const transition = "document.title='EasyEDA Pro - V3.2.196';" +
+    "info.tabs.push({tabId:'0',data:{doctype:0},isAbleDelete:false,group:'start_blank',draggable:false,isDisplayNone:true});" +
+    "info.activeTabId='0';publish(null,undefined,undefined);await Promise.resolve();";
+  const complete = fixture({ projectEvent: `${transition}Tabs.currentTabId='0';document.title='Selected | EasyEDA Pro - V3.2.196';` });
+  const result = await complete.run("open-project");
+  assert.equal(result.ok, true); assert.equal(result.prefixObserved, true);
+  assert.equal(result.observation?.activeTabId, "0"); assert.equal(complete.evaluate("projectCalls"), 1);
+  const unfinished = fixture({ projectEvent: transition });
+  const refused = await unfinished.run("open-project");
+  assert.equal(refused.ok, false); assert.equal(refused.prefixObserved, true);
+  assert.equal(refused.failure?.stage, "registration-after"); assert.equal(refused.failure.code, "TITLE");
+  assert.equal(refused.failure.substage, "title"); assert.equal(unfinished.evaluate("projectCalls"), 1);
+});
+
+void test("prefix first failure survives later PREFIX and separate cleanup failure without private payload", async () => {
+  const env = fixture({ before: "Task.prototype.cancel=function(){throw new Error('PRIVATE_CLEANUP');};",
+    projectEvent: "gVars.currentProject.branchUuid='a'.repeat(32);publish(null,undefined,undefined);" });
+  const result = await env.run("open-project");
+  assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, true); assert.equal(result.prefixObserved, false);
+  assert.deepEqual(result.failure, { stage: "prefix", code: "BRANCH", substage: "project-identity" });
+  assert.deepEqual(result.cleanupFailure, { stage: "cleanup", code: "CLEANUP" });
+  assert.equal(env.evaluate("projectCalls"), 1); assert.ok(!JSON.stringify(result).includes("PRIVATE"));
+});
+
 void test("pre-dispatch authority, accessor and registration failures never call the project service", async () => {
   for (const before of [
     "info.tabs.push({tabId:'private',data:{doctype:3,pid:'private'}});",
@@ -187,7 +212,8 @@ void test("strict typed arguments and exact remote results cannot supply code or
     { observation: { ...result.observation, tabIds: [`${target.documentUuid}@${target.projectUuid}`] } },
     { observation: { ...result.observation, expectedOpenedTitle: "Other | EasyEDA Pro - V3.2.196" } },
     { observation: { ...result.observation, documentTitle: "Selected | EasyEDA Pro - V3.2.196" } },
-    { rawWindowsPath }, { failure: { stage: "output", code: "EXCEPTION" } }]) {
+    { rawWindowsPath }, { failure: { stage: "output", code: "EXCEPTION" } },
+    { cleanupFailure: { stage: "cleanup", code: "CLEANUP" } }]) {
     assert.throws(() => decodeCurrentPcbDiagnosticOpeningReply(resultReply(result, change), target, "preflight"), /PCB_DIAGNOSTIC_OPENING_REPLY/u);
   }
   for (const value of [{ result: { type: "object", objectId: "remote" } },

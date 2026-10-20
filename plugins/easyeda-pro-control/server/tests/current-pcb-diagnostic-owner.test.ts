@@ -8,13 +8,13 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { CurrentPcbDiagnosticOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
 const LAUNCH = { executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true } as const;
 const SOURCE = "const syntheticIdentity = true;\n";
 const SCRIPT_PROFILE = { family: "pcb", relativePath: "pro-pcb/test-version/js/pcb.js",
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
-function fixture(context: TestContext, scenario = "normal"): Readonly<{
+function fixture(context: TestContext, scenario = "normal", stringPurpose = false): Readonly<{
   owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean };
   actions: string[]; openingPhases: string[]; pcbPhases: string[];
 }> {
@@ -32,7 +32,8 @@ function fixture(context: TestContext, scenario = "normal"): Readonly<{
     }
     return originalWrite(...args);
   });
-  const owner = new CurrentPcbDiagnosticOwner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
+  const Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
+  const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
     () => installation.valid ? Promise.resolve() : Promise.reject(new Error("installation changed")));
   owner.start();
   context.after(async () => {
@@ -635,4 +636,59 @@ void test("all model leaves agreeing on a foreign document still fail original s
   await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
   await assert.rejects(value.owner.observeModelState(), /MODEL_DOCUMENT_CHANGED/u);
   assert.equal(value.owner.status().modelObservationConsumed, true); await close(value);
+});
+
+async function stringFixture(context: TestContext, scenario = "opening-pcb-string-ancillary"): Promise<ReturnType<typeof fixture>> {
+  const value = fixture(context, scenario, true);
+  await value.owner.launch(LAUNCH); await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
+  await value.owner.inspectScript("frame-1", UI_PROFILE);
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+  await value.owner.inspectWorkers({ relativePath: "test/js/project-worker.js",
+    scriptSha256: SCRIPT_PROFILE.scriptSha256, scriptBytes: SCRIPT_PROFILE.scriptBytes });
+  await value.owner.inspectWorkerScript("worker-1");
+  return value;
+}
+
+void test("separate String purpose joins both original contexts and two baseline sweeps within exactly90requests", async context => {
+  const value = await stringFixture(context);
+  assert.equal(value.actions.filter(action => action === "send").length, 61);
+  const result = await value.owner.observeStringPrecreate();
+  assert.equal(result["schema"], "easyeda-pro-control.pcb-string-precreate-observation.v1");
+  assert.equal(result["matchingSamples"], true); assert.equal(result["originalContextsRechecked"], true);
+  assert.equal(result["saveAuthorized"], false); assert.equal(result["executionAuthorized"], false);
+  assert.equal(result["projectWorkerAssociationVerified"], false); assert.equal(result["queueCompletionVerified"], false);
+  assert.deepEqual(result["first"], result["second"]);
+  assert.equal(value.owner.status().stringPrecreateConsumed, true);
+  assert.equal(value.actions.filter(action => action === "send").length, 90);
+  await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+  await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
+  await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
+  assert.equal(value.actions.filter(action => action === "send").length, 90);
+  await close(value);
+});
+
+void test("String purpose refuses wrong window, compiler token and changed second sample while retaining normal closure", async context => {
+  for (const scenario of ["opening-pcb-string-window-drift", "opening-pcb-string-token-drift", "opening-pcb-string-sample-drift"]) {
+    const value = await stringFixture(context, scenario);
+    await assert.rejects(value.owner.observeStringPrecreate(), /PCB_STRING_PRECREATE_OBSERVATION/u, scenario);
+    assert.equal(value.owner.status().stringPrecreateConsumed, true);
+    assert.notEqual(value.owner.status().diagnosticFailure, null);
+    assert.equal(value.child.stdin?.writableEnded, false);
+    await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+    await close(value);
+  }
+});
+
+void test("diagnostic purpose never adopts joined String observations or worker-plus-PCB admission", async context => {
+  const value = await openingFixture(context, "opening-pcb");
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+  const count = value.actions.filter(action => action === "send").length;
+  await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
+  await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+  assert.equal(value.actions.filter(action => action === "send").length, count);
+  assert.equal(value.owner.status().stringPrecreateConsumed, false); await close(value);
 });
