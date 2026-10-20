@@ -2,6 +2,7 @@
 import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
 import { observeQualifiedAdmissionOperations, scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
 import type { AdmissionScanDiagnostics } from "./closed-symbol-terminal-admission.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { assertCurrentIssuedWindowsClockObservation, windowsClockObservationForResult } from "./windows-authority.ts";
 import type { IssuedCurrentWindowsClockObservation, IssuedWindowsClockObservation } from "./windows-authority.ts";
 import {
@@ -2873,6 +2874,7 @@ export class EasyedaControlEngine {
   }
 
   public async assertBridgeDispatchAllowed(): Promise<true> {
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     return assertNoBridgeBlockingOperations(await scanBridgeBlockingOperations());
   }
 
@@ -2893,6 +2895,7 @@ export class EasyedaControlEngine {
   public async assertRecoveryOperationIsolated(
     operationId: string,
   ): Promise<true> {
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     return assertNoOtherRecoveryOperations(operationId, await scanRecoveryBlockingOperations());
   }
 
@@ -2901,6 +2904,7 @@ export class EasyedaControlEngine {
    * Bridge quarantine precedes recovery isolation, including the selected ID.
    */
   public async assertBridgeAndRecoveryAdmission(operationId: string): Promise<true> {
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     const operations = await scanQualifiedAdmissionOperations();
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return assertNoOtherRecoveryOperations(operationId, operations.map((entry) => entry.summary));
@@ -2910,6 +2914,18 @@ export class EasyedaControlEngine {
    * scan. Quarantine still refuses first; no result can admit a later invocation.
    */
   public async assertBridgeAndNativeUiEditingAdmission(): Promise<true> {
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+    const operations = await scanQualifiedAdmissionOperations();
+    assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
+    return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
+  }
+
+  /** Diagnostic startup separately owns and scans its original diagnostic
+   * lifetime. This fixed, engine-only check avoids rejecting that same owner's
+   * newly reserved intent, while still refusing every unfinished CAD operation.
+   * It is not bridge/edit admission and accepts no journal exclusion selector.
+   */
+  public async assertDiagnosticLaunchOtherOperationsSettled(): Promise<true> {
     const operations = await scanQualifiedAdmissionOperations();
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return assertNoNativeUiEditingOperations(operations.map((entry) => entry.summary));
@@ -2920,6 +2936,7 @@ export class EasyedaControlEngine {
    * inspection, focus and normal close bypass this editing-only gate.
    */
   public async assertNativeUiEditingAllowed(): Promise<true> {
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     return assertNoNativeUiEditingOperations(await scanRecoveryBlockingOperations());
   }
 

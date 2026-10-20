@@ -4,6 +4,130 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261019203733` on 2026-10-19 as one combined batch.
+PR81 payload `346d88e17b162edb4df7932a56450c4f8a491fdc` merged normally as
+main `a9c0a83dd4f57d0e49c1f2a913340717de757015`; complete trees match.
+Exact-head Linux CI39324862810 passed all eight shards/build/final gate:
+11,645 facade passes, five platform skips, zero failures, and 424 bridge passes.
+Windows CI39324862952 passed recovery and native diagnostic compile/empty-Job/
+pipe checks without launching an application. Local full verify96843 passed
+11,646 facade tests/four skips/zero failures and all 424 bridge tests. Strict
+type-aware lint/types, repository/privacy, all seven skills and frozen-input
+checks passed. Final log SHA `ce5a1c5cc68c8a7f8a02b3c9618816bf4178025c4adb0400ed6154fcdb45775e`.
+The first failed suite remains retained; only its two test fixtures changed.
+Source510/9860210a, runtime3/02f4a502, manifestb19afd52; external pins unchanged.
+
+Official named Git marketplace upgrade27890 installed/enabled203733 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+equals merged main. Exact installed comparison16323 passed 1545 files,
+42 directories, 31,607,372 bytes and modes; inventory07dbd750, plugin tree68f86d67.
+Exact-main worktree: `/root/.cache/easyeda-203733-merged-main-kvNxBs1l/worktree`.
+Release evidence: `/root/.cache/easyeda-ordinary-sch-polygon-diagnostic-release-cScBpStm`.
+
+Root and independent whole-script review accepted offline probe97f1592e and
+its candidate pins; root then approved final pins67719575. Sole execution61197
+passed: configured ambient Node26 handed
+to pinned Node24; 24 restricted/49 configured tools and 26 offline queries passed.
+Original child359973/start42028617 exited/closed0 after EOF, no retained handles
+or stderr; all three inventories stayed exact. Two sampled checkpoints had no
+children/non-stdio sockets and the upstream sentinel stayed absent. This is not
+continuous isolation or live CAD validation. Evidence:
+`/root/.cache/easyeda-ordinary-polygon-offline-probe-nyMyMdMk`, proof837e17f3,
+responses85aee949. CONSUMED: never rerun, import or syntax-check this probe.
+
+Post-merge Windows CI39326797192 and Linux CI39326797242 both passed.
+Fresh203733 continuation, 2026-10-20: actual facade373452/start44117453 and
+parent364573/start42128293 independently and root admitted; complete510source,
+3runtime, manifest and1545file/42directory/31,607,372byte/mode inventory match.
+All18scratch pins match. Evidence:
+`/root/.cache/easyeda-203733-independent-admission-Dmnx8HQP`, proof5b553534,
+scratch-proof749ab908. New launch `sch-ordinary-203733-20261020-launch`
+completed ONCE in functions17: root27992/Job01c7aad33a944851993f5c6972c61369,
+launchede07853ca. Never replay. Status19 authenticated, no incomplete operations;
+context29 proved Start Page. New ordinary-purpose opening34 completed exact
+disposable PCB identity, preparation581632/1ea100db. Baseline-begin47 captured
+the original owner. Batch52 passed baseline-close/termination/clock preparation;
+the separate original ordinary-launch termination record also passed. Batch74
+relaunched once, then stopped on explicitly pending authentication. Single
+admission passed (`09-generation-admit.json`). Batch92 passed cache/open.
+Batch105 passed clock/write/normal-close: desired title acknowledged, ticket782,
+write consumed once and close acknowledged. NEVER replay write/close or add Save.
+Batch118 passed retained termination/full closed SQL and verification startup,
+then paused on pending admission. Admission123 and cache observation127 passed.
+Final batch129 PASSED all4steps: saved metadata/peers/child roster/both ASTs,
+normal closure and final full SQL equality. nextPhasecompleted/renameVerifiedtrue,
+retiredtrue/terminationterminated, no failedphase or explicitSave. All20documents
+and57oldhistoryrows/61oldchunks preserved; newticket782; after/laterSQLeda005bb.
+Final closure04:00:36.3832570Z proves original root/Job exit. EasyEDA is CLOSED.
+Terminal evidence53e9eee1, journal e3d700d3; closed disposable fixture598016bytes/
+e620d21af8ca0378b7a3960a10acdaadf894f216e93a034f698fd7e4795fb741.
+NEVER replay the completed case or add Save. Independent final audit PASSED all54
+managed artifacts,3rawcopies/receipts/checkpoints, native reply and saved-readback
+decoders, full-SQL effect/equality and3distinct retained launch/closure chains.
+All15MCP envelopes pass; descriptor inventory0651d5bf, journal body seal18221e8f
+and unchanged raw journal e3d700d3. No production access or audit writes.
+Deliberate narrow ordinary-project scope enablement is now authorized in source,
+retaining every startup/clock/ownership/full-SQL/inverse restriction.
+Live evidence: `/root/.cache/easyeda-203733-ordinary-sch-live-W8Wk73YC`.
+The completed163322 case below is retired; never replay it or issue extra Save.
+No production project or production record was accessed.
+
+Next batch: narrow ordinary-purpose SCH scope enablement following this case;
+native PCB installation/owner admission, journaled diagnostic launch and fixed
+frame/script/context/worker integration before writer work. Also pending:
+populated Image/Dimension/polygon reads; broader geometry/structure, schematic
+content/connectivity, library/3D, placement/routing/copper, rules/stackup,
+ECO/ERC/DRC/manufacturing/export, portable upstream bootstrap and other platform
+tuples. Keep batching useful changes. The installed native owner is private and
+unregistered; the installed schematic route remains disposable-validation-only.
+Details: `docs/current-ordinary-schematic-polygon-diagnostic-batch-2026-10-19.md`.
+Source work on `feature/203733-live-continuation` now includes a validation-only
+public diagnostic tool, native installation admission, staged fixed frame/script/
+context inspection and original-owner lifecycle journals. This batch is built
+and frozen for final verification, but not published;
+the installed payload remains byte-exact and separate from source changes.
+Root launch-exclusion focused45tests and strict lint pass; the new central gate
+covers every WindowsControlRuntime launch/replacement. Known diagnostic blockers
+refuse ordinary startup before consuming an intent. Full diagnostic focused/types
+checks pass. Engine reverse exclusion now also covers scratch helpers and live
+status startup/probes; diagnostic inspect/cleanup remain local. Independent
+review accepted the integrated source. A final bounded cleanup gap has been
+fixed: exact completed pre-creation refusals now have original-helper no-process
+proof and distinct durable settlement, never timeout/PID absence inference.
+Root and independent review accepted the final native/owner/lifecycle source.
+Candidate `0.3.0+codex.20261020041000` freezes this combined batch for required
+build, compatibility projection, full local verification and protected CI.
+Final source517/da0b4f52, runtime3/c7131a75, manifest97096336; external pins unchanged.
+Initial verify38758 completed11702passes/31failures/4skips, no cancellations;
+log359c122f and exact frozen-input comparison retained. All31 failures are in
+two fixtures: a synchronous launch-state assumption skipped cleanup and caused
+28failures; a VM fixture omitted the newly imported real exclusion functions
+and caused3ReferenceErrors. Fix fixtures only, never runtime guards. The separate
+repository scan found a literal synthetic credential URL; that fixture now
+constructs the same URL through its fields, with15focused passes/strict lint.
+No scanner weakening. Root-reviewed fixture corrections passed all44tests in
+the two affected launch files, full types and strict targeted lint. The VM now
+uses the real shared exclusion functions, not stubs. No runtime/bundle/pin change.
+Final frozen full verification and exact-payload GitHub CI remain required.
+PR82 head51f0a87 opened for parallel checks. Linux39369603080 build gate passed;
+Windows39369603153 compiled the helper but synthetic invalid-path smoke failed:
+Framework Path.GetFullPath rejects the colon fixture with NotSupportedException,
+while the smoke expected only InvalidOperationException. Native validation still
+refuses it. Root normally interrupted the now-outdated private final-test group
+493968 with SIGINT after exact shell/npm/test identity checks; session17824 is
+terminal and that group is empty. Log6cdadaf8 is retained, not passing evidence.
+Root and independent review accepted the final correction: the smoke accepts
+Framework's exact synthetic colon-path refusal, and native cwd comes directly
+from its retained parent-directory lease rather than legacy path parsing.
+Only the smoke normalizes its own freshly created TEMP directory's short alias;
+production admission stays strict. Helperc4ca248d and owner90f56bc5 match;
+45focused tests/full types/strict lint pass. Windows execution remains a CI gate.
+The new diagnostic route has not been
+loaded or exercised live. Details:
+`docs/current-schematic-native-diagnostics-2026-10-20.md`.
+
+### Completed163322 continuation and203733 release preparation (historical)
+
 163322 continuation, 2026-10-19. Actual facade142445/start41574386,
 parent140831/start41571749 independently and root admitted; all506source/3runtime/
 manifest and1536file/42dir/31,401,025byte inventory/modes match delivered163322.

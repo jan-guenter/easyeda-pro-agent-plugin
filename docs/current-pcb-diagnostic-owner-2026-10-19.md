@@ -1,5 +1,12 @@
 # Retained PCB diagnostic owner
 
+Historical delivered203733 scope below. The 2026-10-20 source continuation adds
+native installation leases, separate lifecycle journals/shared startup exclusion
+and fixed frame/script/context inspection; see
+[the continuation record](current-schematic-native-diagnostics-2026-10-20.md).
+That source work does not retroactively qualify the native launcher or the custom
+EasyEDA build described here.
+
 The source now connects the bounded Chromium byte transport to a separate
 Windows helper. It implements the internal path from a new process and Job to
 fixed browser discovery and normal closure. It has no MCP registration, no

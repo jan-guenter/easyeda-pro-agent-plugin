@@ -1,4 +1,4 @@
-/** Ordinary-purpose validation gate and original full-SQL startup projection.
+/** Ordinary-purpose scope and original full-SQL startup projection.
  * Synthetic storage only; these tests are not connected writer validation.
  */
 import assert from "node:assert/strict";
@@ -13,26 +13,39 @@ import { REQUEST, TARGET, schematicBaseline } from "./helpers/current-schematic-
 
 const RAW = String.raw`C:\Synthetic\OrdinarySchematic.eprj2`;
 const OPEN = { action: "open", operationId: "ordinary-sch-opening", rawWindowsPath: RAW, projectUuid: sha256Text(RAW),
-  documentUuid: "a".repeat(16), expectedSourceSha256: "b".repeat(64), acceptNormalOpenEffects: true, confirmDisposableProject: true,
+  documentUuid: "a".repeat(16), expectedSourceSha256: "b".repeat(64), acceptNormalOpenEffects: true,
   rename: { target: { ...TARGET, projectUuid: sha256Text(RAW) }, desiredTitle: REQUEST.desiredTitle } };
 const BEGIN = { action: "baseline-begin", operationId: "ordinary-sch-operation", openingOperationId: OPEN.operationId,
   target: OPEN.rename.target, desiredTitle: OPEN.rename.desiredTitle, acceptSchematicRename: true };
 
-void test("ordinary SCH discovery preserves the temporary disposable-only gate and does not inherit old live evidence", () => {
+void test("ordinary SCH discovery reports its own historical validation without granting invocation authority", () => {
   const query = queryCurrentSchematicOperation({ includeSchemas: true });
   assert.equal(query["purpose"], CURRENT_SCHEMATIC_OPERATION_PURPOSE);
-  assert.equal(query["validationOnly"], true); assert.equal(query["ordinaryProjectsSupported"], false);
+  assert.equal(query["validationOnly"], false); assert.equal(query["ordinaryProjectsSupported"], true);
+  assert.equal(query["historicalConnectedValidation"], "installed203733-ordinary-schematic-title-only-lifecycle");
   assert.equal(query["connectedValidation"], false); assert.equal(query["executionAuthorized"], false);
   assert.equal(query["inverseSupported"], false); assert.equal(query["replayAllowed"], false);
   assert.ok(query["inputSchema"] !== undefined);
   assert.equal(validateCurrentSchematicOperationArguments(OPEN)["valid"], true);
   assert.equal(validateCurrentSchematicOperationArguments(BEGIN)["valid"], true);
-  for (const request of [{ ...OPEN, confirmDisposableProject: undefined }, { ...OPEN, confirmDisposableProject: false },
+  for (const request of [{ ...OPEN, confirmDisposableProject: false },
     { ...OPEN, purpose: "disposable-validation" }, { ...OPEN, rawWindowsPath: `${RAW}2` },
     { ...OPEN, rename: { ...OPEN.rename, target: TARGET } }, { ...BEGIN, openingOperationId: BEGIN.operationId },
     { ...BEGIN, desiredTitle: "INPUT" }, { ...BEGIN, startupExpectation: {} }, { ...BEGIN, owner: {} },
     { action: "inverse", operationId: BEGIN.operationId }]) {
     assert.equal(validateCurrentSchematicOperationArguments(request)["valid"], false);
+  }
+});
+
+void test("ordinary SCH opening preserves omitted confirmation and legacy true without accepting false", () => {
+  const current = currentSchematicOperationRequestSchema.parse(OPEN);
+  assert.deepEqual(current, OPEN); assert.equal(Object.hasOwn(current, "confirmDisposableProject"), false);
+  const legacy = { ...OPEN, confirmDisposableProject: true };
+  assert.deepEqual(currentSchematicOperationRequestSchema.parse(legacy), legacy);
+  assert.deepEqual(validateCurrentSchematicOperationArguments(OPEN)["request"], OPEN);
+  assert.deepEqual(validateCurrentSchematicOperationArguments(legacy)["request"], legacy);
+  for (const confirmDisposableProject of [false, null, "true", 1]) {
+    assert.equal(currentSchematicOperationRequestSchema.safeParse({ ...OPEN, confirmDisposableProject }).success, false);
   }
 });
 

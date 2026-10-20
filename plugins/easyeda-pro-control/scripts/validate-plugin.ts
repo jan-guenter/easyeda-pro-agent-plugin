@@ -53,6 +53,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_system: ["result"],
   easyeda_control_extensions: ["result"],
   easyeda_control_launch: ["result"],
+  easyeda_control_pcb_diagnostic_validation: ["result"],
   easyeda_control_editor_shell: ["result"],
   easyeda_control_editor_context: ["result"],
   easyeda_control_shortcuts: ["result"],

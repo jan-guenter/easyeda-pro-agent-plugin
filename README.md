@@ -41,13 +41,25 @@ title lifecycle passed on that installed version, including pending-authenticati
 continuation, full closed SQL, saved metadata/child-roster readback and final
 closure. No live speedup, new ordinary-purpose validation or PCB writer is claimed.
 
-Candidate `0.3.0+codex.20261019203733` adds [polygon-pad paths](docs/current-pcb-pad-polygon-geometry-2026-10-19.md),
+Installed `0.3.0+codex.20261019203733` adds [polygon-pad paths](docs/current-pcb-pad-polygon-geometry-2026-10-19.md),
 a [retained native diagnostic owner](docs/current-pcb-diagnostic-owner-2026-10-19.md),
 and an ordinary-purpose schematic-title route with startup qualification before
-navigation. The new title route remains disposable-validation-only until its
-own connected case passes. The diagnostic owner is private and unregistered:
+navigation. At release, the new title route was disposable-validation-only until
+its own connected case passed. That snapshot's diagnostic owner is private and unregistered:
 native installation and frame/worker qualification, complete PCB observers and
-the PCB writer remain unfinished. These changes are not yet published or installed.
+the PCB writer remain unfinished. This release is published and installed; the
+next combined batch is tracked in the
+[schematic and diagnostic continuation](docs/current-schematic-native-diagnostics-2026-10-20.md).
+
+The ordinary-purpose title route has now passed its own installed203733
+disposable lifecycle: one write, exact full SQL effect, fresh metadata/peer/child
+readback and final retained closure with unchanged SQL. Candidate `0.3.0+codex.20261020041000`
+uses that evidence to enable only eligible ordinary-project container titles;
+it does not enable sheet or circuit editing. It also adds a validation-only
+native diagnostic tool with fixed browser/frame/script observations, original
+process ownership and explicit cleanup, including confirmed no-process refusals.
+Connected native diagnostic qualification
+and PCB writing remain pending; no diagnostic result grants CAD execution.
 
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are
@@ -1142,9 +1154,9 @@ The supported editing/runtime profile is Linux x86_64 under WSL controlling the 
   The reviewed local Arch package assumes Linux 6.18 or newer; its binary pin
   does not establish support on older kernels. See the
   [upgrade review and execution scope](docs/bubblewrap-admission-research-2026-10-15.md).
-- EasyEDA Pro `3.2.149.88089769`
-- PCB editor bundle `3.2.149.5378b690`
-- public API bundle `0.2.53.aee2f57a`
+- Legacy full-review tuple: EasyEDA Pro `3.2.149.88089769`, PCB editor bundle
+  `3.2.149.5378b690`, public API bundle `0.2.53.aee2f57a`. Current3.2.206
+  capabilities use separate, narrower admission profiles described above.
 - external `easyeda-mcp-pro` server `1.0.0-rc.1`
 - authenticated bridge derivative reviewed against upstream commit `964c05082f1c7c9e8b98f56e967e36bfc3f26128`: distinct private package, UUID, menu, socket, and repository identity; fixed extension-facing gateway at `127.0.0.1:49621`; nonce-bound mutual HMAC authentication; exact private-build-receipt/index-bundle/key-epoch admission with fail-closed stale-runtime cleanup; a 2 KiB parser limit and bounded pending clients before authentication; absent-or-exact-native `https://client` Origin admission (never an authentication substitute); and no adjacent-port or raw/browser transport fallback or raw-secret transmission (extension manifest `0.3.0`)
 - Node's built-in SQLite support plus a reviewed absolute `sqlite3` binary at `/usr/bin/sqlite3` or `/usr/local/bin/sqlite3` for deterministic logical dumps; `PATH` is never used to select it
@@ -1162,8 +1174,9 @@ not the currently installed application. An unsafe profile or unverified Node
 still prevents startup. Configuration reuse and the offline doctor remain strict.
 After repairing and reviewing the installation, restart the MCP session; do not
 change compatibility pins merely to suppress the failure. The currently observed
-EasyEDA update is [inventoried separately](docs/easyeda-3.2.206-upgrade-inventory-2026-10-13.md)
-and is not yet admitted.
+EasyEDA3.2.206 update is [inventoried separately](docs/easyeda-3.2.206-upgrade-inventory-2026-10-13.md).
+Its separately admitted capability profiles do not admit the legacy tuple's
+general writer routes; each current operation retains its own exact gates.
 
 Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/configure-machine.ts --profile /absolute/control/machine-profile.json`, without configuration overrides. Overrides against an existing profile are refused. For another supported installation, create a fresh explicit profile path inside its owner-only control directory. Do not overwrite an active profile or change directories to evade the sole-owner lease or quarantine.
 

@@ -6,10 +6,11 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json, sha256Text } from "./core.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
+// oxlint-disable-next-line import/max-dependencies -- Preserve separate runtime, diagnostic exclusion, recovery and passive timing boundaries.
 import { WindowsControlRuntime } from "./windows-runtime.ts";
-// oxlint-disable-next-line import/max-dependencies -- Bind the production runtime issuer directly while preserving separate recovery and passive timing modules.
 import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
 import { OrdinaryLaunchTimings } from "./ordinary-launch-timings.ts";
 import type { OrdinaryLaunchTimingStage } from "./ordinary-launch-timings.ts";
@@ -417,6 +418,15 @@ function allowsNextLaunch(operation: Operation): boolean {
   return operation.terminated !== undefined || operation.refused !== undefined || operation.abandoned !== undefined || operation.unknownAbandoned !== undefined;
 }
 
+/** Shared startup exclusion only. Explicit historical abandonment can clear an
+ * ordinary blocker without proving old descendant termination or design safety.
+ * Callers must retain their own native owner and all remaining admission gates.
+ */
+export async function assertNoUnresolvedOrdinaryLaunches(): Promise<void> {
+  const operations = await inventory();
+  requireValue(operations.every(operation => allowsNextLaunch(operation)), "An unresolved ordinary launch blocks another launch family.");
+}
+
 export class OrdinaryLaunchCoordinator {
   private readonly options: OrdinaryLaunchOptions;
   private readonly verify: (options: OrdinaryLaunchOptions) => Promise<string>;
@@ -477,6 +487,10 @@ export class OrdinaryLaunchCoordinator {
       if (request.action === "abandon-unknown-launch") { return await this.abandonUnknown(request, operation, operations); }
       requireValue(operation === undefined && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
       requireValue(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
+      // Refuse an already known diagnostic blocker before allocating a helper
+      // Or consuming an ordinary intent. The runtime repeats this exclusion at
+      // Native dispatch to cover changes during the intervening admission work.
+      await withCurrentPcbDiagnosticLaunchExclusion(assertNoUnresolvedCurrentPcbDiagnosticLaunches);
       const facadeSha256 = digestSchema.parse(await measure("installation-initial", () => this.verify(this.options)));
       await measure("admission-before-helper", () => this.options.assertAllowed());
       this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,

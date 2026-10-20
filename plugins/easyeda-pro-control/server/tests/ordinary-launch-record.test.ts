@@ -1,6 +1,7 @@
 /** Actual ordinary coordinator/issuer in a private realm with synthetic I/O.
  * No Windows process, native helper, production token or live record is used.
  */
+/* oxlint-disable import/max-dependencies -- The source-realm fixture binds the real shared diagnostic exclusion and journal guard alongside the original coordinator contracts. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -9,6 +10,7 @@ import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "../src/ordinary-launch-recovery.ts";
 import { OrdinaryLaunchTimings } from "../src/ordinary-launch-timings.ts";
 
@@ -39,6 +41,7 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
   const program = stripTypeScriptTypes(await readFile(new URL("../src/ordinary-launch.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ z, Object, Reflect, Buffer, join, canonicalJson, sha256Json, sha256Text, OrdinaryLaunchTimings,
+    assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion,
     ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema, WindowsControlRuntime: SyntheticRuntime,
     observeOrdinaryLaunchRecovery: (): never => { throw new Error("Unexpected recovery"); },
     controlDataDirectory: (): string => root,

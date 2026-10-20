@@ -14,7 +14,7 @@ interface Observation { observedAt: string; incompleteOperations: unknown[]; dia
 type Handler = (input: object) => Promise<Record<string, unknown>>;
 
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
-  facadeMode?: "legacy-reviewed" | "calculation-only" } = {}): Promise<{
+  facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean } = {}): Promise<{
   calls: string[]; invoke: Handler; refuseAdmission: () => void;
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -37,6 +37,10 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
     boundedTransactionErrorOutput: (): object => ({}),
     isRecord: (value: unknown): boolean => typeof value === "object" && value !== null,
     success: (value: unknown): unknown => value,
+    assertNoUnresolvedCurrentPcbDiagnosticLaunches: (): Promise<void> => {
+      if (options.diagnosticBlocked === true) { calls.push("diagnostic-block"); return Promise.reject(new Error("unresolved diagnostic launch")); }
+      return Promise.resolve();
+    },
     bridgeGate: { run: (task: () => unknown): unknown => task() },
     controlDataDirectory: (): string => "/synthetic",
     engine: {
@@ -105,6 +109,12 @@ void test("registered status uses one fresh admission and labels its report obse
   fixture.refuseAdmission();
   await assert.rejects(fixture.invoke({}), /fresh orphan blocks status/u);
   assert.deepEqual(fixture.calls, ["admission"]);
+});
+
+void test("status refuses upstream startup and bridge probes while a diagnostic lifetime is unresolved", async () => {
+  const fixture = await registeredStatus({ diagnosticBlocked: true });
+  await assert.rejects(fixture.invoke({}), /unresolved diagnostic launch/u);
+  assert.deepEqual(fixture.calls, ["admission", "diagnostic-block"]);
 });
 
 void test("registered disconnected status resamples runtime under a lease without rescanning its report", async () => {
@@ -181,6 +191,11 @@ void test("restricted status separates historical metadata and canvas validation
     connectedValidation: false, originalOwnerRequired: true, historicalConnectedValidation: "installed143713-disposable-schematic-title-only-lifecycle",
     phaseEffectAcknowledgementsRequired: true, inverseSupported: false, ordinaryProjectsSupported: false,
     savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, genericWritersEnabled: false }));
+  assert.equal(JSON.stringify(capabilities["projectSchematicRename"]), JSON.stringify({ tool: "easyeda_control_project_schematic_rename",
+    scope: "ordinary-project-local-schematic-title-forward-only", runtimeAdmissionRequired: true, designMutation: true,
+    originalOwnerRequired: true, connectedValidation: false,
+    historicalConnectedValidation: "installed203733-ordinary-schematic-title-only-lifecycle",
+    validationOnly: false, ordinaryProjectsSupported: true, inverseSupported: false, genericWritersEnabled: false }));
   assert.equal(JSON.stringify(capabilities["disposableValidation"]), JSON.stringify({ tool: "easyeda_control_project_open", actions: "validation-*",
     scope: "sealed-disposable-unused-meta-only-or-bounded-canvas-segments-symbol-name-description-forward-inverse", designMutation: true, connectedValidation: false,
     sharedLifecycleConnectedValidation: "installed101500-disposable-meta-only-roundtrip",

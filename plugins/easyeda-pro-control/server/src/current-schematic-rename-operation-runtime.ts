@@ -205,8 +205,10 @@ export class CurrentSchematicRenameOperationCoordinator {
       phaseDiagnostics: inspectDiagnostic(slot),
       lastBatch: slot.lastBatch === undefined ? null : Object.freeze({ ...slot.lastBatch,
         requestedPhases: Object.freeze([...slot.lastBatch.requestedPhases]), diagnosticOnly: true, replayAllowed: false }),
-      savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: false,
-      validationOnly: slot.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE, genericWritersEnabled: false,
+      savedMetadataAndChildRosterOnly: true, completeCanvasRead: false, ordinaryProjectsSupported: slot.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE,
+      ...(slot.purpose === CURRENT_SCHEMATIC_OPERATION_PURPOSE
+        ? { historicalConnectedValidation: "installed203733-ordinary-schematic-title-only-lifecycle" } : {}),
+      validationOnly: false, genericWritersEnabled: false,
       forwardOnly: true, inverseSupported: false, explicitSaveDispatched: false, replayAllowed: false, executionAuthorized: false });
   }
   private async begin(request: Extract<LifecycleRequest, { action: "baseline-begin" }>, purpose: Purpose): Promise<Value> {

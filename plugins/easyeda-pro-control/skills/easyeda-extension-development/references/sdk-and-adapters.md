@@ -265,7 +265,9 @@ reopening, metadata peers, complete child roster, both AST memberships/order and
 final SQL equality.
 The historical label `installed143713-disposable-schematic-title-only-lifecycle`
 does not admit a later generation, other histories or the generic wrapper. The
-newer explicit `advance-batch` action remains synthetic-tested, not live-validated.
+explicit `advance-batch` action also passed a separate installed163322 disposable
+lifecycle. That historical result does not qualify a later generation or the
+new ordinary-purpose composition.
 The public route selects the aged unlocked-head branch, not every modeled branch;
 ordinary projects, inverse and complete canvas/connectivity proof remain excluded.
 
@@ -273,27 +275,58 @@ ordinary projects, inverse and complete canvas/connectivity proof remain exclude
 entrypoint with pre-navigation checkpoint-derived startup, metadata peers and
 complete child projection. The opening, baseline, writer and verification plans
 retain that purpose; cross-purpose owners and historical journals cannot resume
-it. Until its own connected case passes, the public open still requires
-`confirmDisposableProject:true` and reports `validationOnly:true` with ordinary
-production scope disabled. The shared writer's historical success is not proof
-of this new startup/ownership composition. Keep this temporary scope gate
-separate from the permanent startup, clock and full-SQL guards.
+it. Installed203733 passed this composition's own title-only lifecycle on a
+disposable fixture, including bounded batching, complete closed SQL, fresh
+metadata/peer/child-roster and both AST readback, final normal closure and
+unchanged complete SQL. Ordinary-project scope is now enabled, with historical
+label `installed203733-ordinary-schematic-title-only-lifecycle` and
+`validationOnly:false`. Keep current `connectedValidation` and
+`executionAuthorized` false: history does not supply invocation authority.
+Open accepts legacy `confirmDisposableProject:true` optionally so old sealed
+journals still parse, without injecting a field when omitted; `false` refuses.
+The separate disposable route retains its confirmations and scope. Permanent
+startup, clock, owner, one-write and full-SQL guards are unchanged.
 
-The private PCB diagnostic path now has a separate Windows owner in
-`current-pcb-diagnostic-owner.ts` and `pcb-diagnostic-owner.ps1`. It creates the
-original process inside its Job with exactly two inherited anonymous-pipe
-handles and permits only browser version/target discovery. It is not imported
-by a runtime registration. A protocol failure must retain helper stdin and
-native pipes: Electron can quit when those pipes disconnect. Release follows
-original root and complete Job exit, not a timeout. Synthetic child-pipe tests
-and Windows empty-Job construction do not qualify the custom EasyEDA build.
-Before live integration, bind the complete executable/profile/native paths,
-journal launch intent, and implement exact target/frame/worker/script/context
-ownership. Neither returned target metadata nor a matching browser version
-authorizes debugger attachment or execution. Complete PCB text observers,
-writer and persistence remain separate unfinished work.
+The registered `easyeda_control_pcb_diagnostic_validation` route uses the
+separate `current-pcb-diagnostic-owner.ts`/`pcb-diagnostic-owner.ps1` owner,
+not a cast to ordinary Windows runtime authority. Read
+[its staged workflow](../../easyeda-pro-control/references/current-pcb-diagnostic-validation.md)
+before qualification. Existing-profile startup has no project arguments but can
+restore projects or persist application data. It is validation-only, not isolated
+or guaranteed project-free; connected native validation is not recorded.
 
-The unregistered SCH preflight now reads the strict key-value roster, exact target
+One browser observation supplies the target selector. One retained flattened
+attachment supplies the actual reciprocal frame tree, rather than assuming
+frame ID equals target ID. One script inspection then binds that frame/loader,
+the default context's unique ID and exact complete source bytes to a compiled
+UI/PCB/public-API family profile. No caller URL, source pin, method or code is
+accepted. Navigation, detach, context loss or unexpected pause invalidates
+inspection; there is no arbitrary CDP, evaluation, pause/resume, worker or
+compiler access. Identity summaries exclude raw console/exception payloads and
+are bounded to 128 KiB. They are sampled evidence, not execution tokens.
+
+The native owner retains the original process/Job and two anonymous-pipe
+endpoints. File/ancestor leases bind the reviewed executable, bootstrap,
+package/configuration and fixed PowerShell comparison tuple. This is not complete
+OS/DLL/profile qualification or verified Windows catalog trust. Missing creation
+time or other post-create failure retains cleanup-only handles. Shared launch
+exclusion and fresh engine/ordinary/current-generation owner checks prevent
+competing launches; matching process names or historical JSON cannot replace
+those owners. Receipt settlement republishes only original retained bytes,
+never native work. Keep the facade alive after publication failure.
+
+Protocol failure must not close a live diagnostic pipe: Electron can quit when
+it disconnects. Normal closure, original root/Job termination and helper release
+are separate steps, without Save/Discard choice or forced exit. Never infer
+debugger-socket absence from pipe flags. Discovery stays bounded to 8 MiB;
+attached transport permits 64 MiB total, 32 requests and 4096 events/8 MiB.
+Ordinary frames stay at 1 MiB. Only script-source replies allow 32 MiB encoded
+JSON and 20 MiB decoded UTF-8, enough for the pinned UI asset. Synthetic tests
+and empty-Job construction do not qualify the custom EasyEDA build. Actual
+project-worker/compiler/queue/Save-participant ownership, complete PCB text
+observers, writers and saved/reopened proof remain unfinished.
+
+The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL
 projection. It also observes client/ticket, UI actor and renderer/server clocks;
 these samples do not bind the backend producer or qualify startup. Do not

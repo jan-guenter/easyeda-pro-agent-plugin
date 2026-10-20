@@ -39,7 +39,8 @@ After offline discovery, read only the reference for the operation you will use:
 - [Current utility readers](current-utility-readers.md): geometry calculations, units, shortcuts and extension metadata.
 - [Legacy SDK readers](legacy-sdk-readers.md): older-tuple schematic, PCB and library read contracts.
 - [Current project opening](current-project-opening.md): retained startup, metadata writing and closure workflows.
-- [Disposable schematic rename](current-schematic-rename.md): separate SCH container title lifecycle and exact phase acknowledgments; connected validation pending.
+- [Native diagnostic validation](current-pcb-diagnostic-validation.md): separate existing-profile launch, bounded target/frame/script observation and original-owner cleanup, without CAD execution.
+- [Schematic rename lifecycles](current-schematic-rename.md): distinct ordinary and disposable SCH-container title workflows, exact phase acknowledgments and historical connected scope.
 
 The legacy links below retain their anchors and route to these contracts. Do not
 read an unrelated runtime's contract as permission to use its adapters.
@@ -121,6 +122,20 @@ are in [connection and context](connection-and-context.md#ordinary-application-s
 These are not newly covered public SDK methods, so the distinct-method inventory
 above does not increase.
 
+## Native diagnostic validation schemas
+
+Query `pcb-diagnostic-validation` with `query:{"includeSchemas":true}` and
+validate with `pcb-diagnostic-validation-validate` and `query:{"request":...}`.
+The separate `easyeda_control_pcb_diagnostic_validation` tool uses a retained
+native owner, not ordinary-launch or authenticated bridge authority. Its fixed
+stages discover browser targets, inspect an actual frame tree and verify one
+compiled UI/PCB/public-API script family in the selected default context.
+No caller code, protocol method, URL or source hash is accepted. Read
+[the diagnostic workflow](current-pcb-diagnostic-validation.md) before launch
+or cleanup. It is validation-only existing-profile startup, not isolated,
+guaranteed project-free or connected-validated. It adds no public SDK method
+coverage and enables no CAD writer.
+
 ## Omitted system-library component lookup
 
 `eda.lib_Device.getByLcscIds` remains discovery-only. On the reviewed current
@@ -175,6 +190,23 @@ limits live in that task-specific reference.
 Read [component child-pad membership](current-pcb-readers.md#component-child-pad-membership)
 before using this route. Its exact arguments, fields, units, bounds and evidence
 limits live in that task-specific reference.
+
+## Ordinary schematic-container title operation
+
+Discover `project-schematic-operation` and validate the exact inner request with
+`project-schematic-operation-validate` before calling
+`easyeda_control_project_schematic_rename`. Read [the ordinary project
+workflow](current-schematic-rename.md#ordinary-project-route) first. It supports
+one title-only forward change under sealed pre-navigation startup, original-owner,
+clock and complete closed/reopened/final-SQL guards. Legacy
+`confirmDisposableProject:true` at open is optional; omission stays omitted and
+`false` refuses. The separate disposable route still requires its confirmations.
+
+Discovery reports `ordinaryProjectsSupported:true`, `validationOnly:false` and
+`historicalConnectedValidation:"installed203733-ordinary-schematic-title-only-lifecycle"`.
+That completed disposable-fixture case does not grant current admission:
+`connectedValidation` and `executionAuthorized` stay false. Sheet rename,
+circuit edits, explicit Save, inverse and generic schematic writers are excluded.
 
 ## Current project-local symbol metadata
 

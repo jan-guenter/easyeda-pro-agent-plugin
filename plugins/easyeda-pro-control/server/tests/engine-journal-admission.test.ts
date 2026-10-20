@@ -1,6 +1,6 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
-import fsPromises, { link, lstat, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
+import fsPromises, { link, lstat, mkdir, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { after, afterEach, before, mock, test } from "node:test";
@@ -31,6 +31,7 @@ afterEach(async () => {
   mock.restoreAll();
   syncBuiltinESMExports();
   await rm(join(root, "operations"), { recursive: true, force: true });
+  await rm(join(root, "pcb-diagnostic-lifecycle-v1"), { recursive: true, force: true });
 });
 after(async () => {
   const capability = await artifacts.controlRootCapability();
@@ -51,6 +52,27 @@ async function fixture(overrides: UnknownRecord = {}): Promise<{ engine: Easyeda
   await engine.controlFingerprintPromise;
   return { engine, id, journal };
 }
+
+void test("unresolved diagnostic lifetime blocks bridge, scratch recovery and editing admissions", async () => {
+  const { engine, id } = await fixture();
+  await mkdir(join(root, "pcb-diagnostic-lifecycle-v1", "synthetic-reservation"), { recursive: true, mode: 0o700 });
+  for (const admit of [(): Promise<true> => engine.assertBridgeDispatchAllowed(), (): Promise<true> => engine.assertRecoveryOperationIsolated(id),
+    (): Promise<true> => engine.assertBridgeAndRecoveryAdmission(id), (): Promise<true> => engine.assertBridgeAndNativeUiEditingAdmission(),
+    (): Promise<true> => engine.assertNativeUiEditingAllowed()]) {
+    let downstream = false;
+    await assert.rejects(async () => { await admit(); downstream = true; }, /PCB_DIAGNOSTIC_LIFECYCLE_UNRESOLVED_LAUNCH/u);
+    assert.equal(downstream, false);
+  }
+  // Status remains a read-only report. Only the diagnostic owner's fixed launch
+  // Callback uses this separate engine-only scan; no caller-selected bypass.
+  const status = await engine.observeStatusAdmission();
+  assert.deepEqual(status.incompleteOperations, []);
+  assert.equal(await engine.assertDiagnosticLaunchOtherOperationsSettled(), true);
+  await fixture({ state: "library-needs-review", orphanedCallPossible: false });
+  await assert.rejects(engine.assertDiagnosticLaunchOtherOperationsSettled(), /before native UI edits/u);
+  await fixture({ state: "unknown", orphanedCallPossible: true });
+  await assert.rejects(engine.assertDiagnosticLaunchOtherOperationsSettled(), /dispatch is quarantined/u);
+});
 
 const terminalClaims = [
   { state: "completed", profile: FAMILY },

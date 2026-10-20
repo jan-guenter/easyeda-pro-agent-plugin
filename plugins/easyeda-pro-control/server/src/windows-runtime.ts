@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 
 import { canonicalJson, extractToolPayload, sha256Json } from "./core.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type {
   AuthenticatedBridgeSessionIdentity,
   ExecutionAuthorityCaptureInput,
@@ -250,16 +251,24 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   /** Explicit launch only; constructor/status/capture never start an application. */
   public async launch(): Promise<WindowsAuthorityLaunch> {
     if (this.state === "released" || this.state === "launching" || this.state === "launch-unknown") { throw new Error("Windows runtime cannot start another application from its current state."); }
-    this.state = "launching";
-    try {
-      const supervisor = await this.ensureSupervisor();
-      const launch = await supervisor.launch({ confirmLaunch: true });
-      this.currentLaunch = structuredClone(launch);
-      this.state = "owned";
-      const returned = structuredClone(launch);
-      this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
-      return returned;
-    } catch (error) { this.state = "launch-unknown"; throw error; }
+    // Every ordinary, closed-symbol and replacement generation passes here.
+    // A diagnostic owner retains its distinct exclusion lease until original
+    // Root/Job closure and durable release; historical JSON cannot release it.
+    const launched = await withCurrentPcbDiagnosticLaunchExclusion(async () => {
+      await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+      this.state = "launching";
+      try {
+        const supervisor = await this.ensureSupervisor();
+        await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+        const launch = await supervisor.launch({ confirmLaunch: true });
+        this.currentLaunch = structuredClone(launch);
+        this.state = "owned";
+        const returned = structuredClone(launch);
+        this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
+        return returned;
+      } catch (error) { this.state = "launch-unknown"; throw error; }
+    });
+    return launched;
   }
 
   private async ensureSupervisor(): Promise<WindowsAuthoritySupervisor> {

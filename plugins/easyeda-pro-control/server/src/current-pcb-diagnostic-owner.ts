@@ -1,8 +1,9 @@
-/** Private diagnostic launch path. No MCP registration imports this module.
+/** Separate validation-only diagnostic launch path.
  * Its retained helper owns the original process, non-breakaway Job and pipes.
  * A diagnostic failure never ends stdin or closes an Electron pipe. The only
  * release path first proves original root and complete Job termination.
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
+/* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -12,17 +13,29 @@ import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { CurrentPcbDiagnosticPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { diagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
+import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
+  validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
+import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
+import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
+import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 
-const HELPER_SHA256 = "8e224dded3c2de503d24ee190f5411deaaecca94375bebc0394a112f5099be99";
+const HELPER_SHA256 = "c4ca248d6a4346a0fd38ef5befbbb65a75d24255bc5bfca8c9e20f1c00d15547";
 const MAX_LINE = 100_000;
-const MAX_TOTAL = 16 * 1024 * 1024;
+// 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
+const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 type RecordValue = Record<string, unknown>;
 interface Binding { readonly helperInstance: string; readonly jobId: string; readonly rootPid: number; readonly rootCreated: string }
+export interface CurrentPcbDiagnosticNoProcessRelease {
+  readonly launchRequestOutcome: "not-issued" | "native-refused";
+  readonly creationState: "not-entered" | "returned-false";
+  readonly processCreated: false; readonly released: true;
+}
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
-  readonly timer: ReturnType<typeof setTimeout>; written: boolean; reply: RecordValue | null;
+  readonly timer: ReturnType<typeof setTimeout>; readonly launch: boolean; written: boolean; reply: RecordValue | null;
 }
 function record(value: unknown): value is RecordValue { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: RecordValue, fields: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === fields.toSorted().join(","); }
@@ -33,8 +46,14 @@ function binding(value: RecordValue): Binding {
       typeof helperInstance !== "string" || !/^[a-f\d]{32}$/u.test(helperInstance) ||
       typeof jobId !== "string" || !/^[a-f\d]{32}$/u.test(jobId) ||
       typeof rootPid !== "number" || !Number.isSafeInteger(rootPid) || rootPid < 1 ||
-      typeof rootCreated !== "string" || !/^[1-9]\d{14,19}$/u.test(rootCreated)) { throw error("BINDING"); }
+      typeof rootCreated !== "string" || !/^(?:0|[1-9]\d{14,19})$/u.test(rootCreated)) { throw error("BINDING"); }
   return Object.freeze({ helperInstance, jobId, rootPid, rootCreated });
+}
+function noProcessState(value: RecordValue, released: boolean): "not-entered" | "returned-false" {
+  if (!exact(value, released ? ["released", "creationState", "processCreated"] : ["creationState", "processCreated"]) ||
+      value["processCreated"] !== false || released && value["released"] !== true ||
+      value["creationState"] !== "not-entered" && value["creationState"] !== "returned-false") { throw error("NO_PROCESS_PROOF"); }
+  return value["creationState"];
 }
 
 /** Test seams supply a real retained child, never process IDs or an attach path.
@@ -43,6 +62,8 @@ function binding(value: RecordValue): Binding {
 export class CurrentPcbDiagnosticOwner {
   readonly #child: ChildProcessWithoutNullStreams;
   readonly #verify: () => Promise<void>;
+  readonly #verifyInstallation: () => Promise<void>;
+  readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
   readonly #pipe: CurrentPcbDiagnosticPipe;
@@ -54,14 +75,26 @@ export class CurrentPcbDiagnosticOwner {
   #binding: Binding | null = null;
   #busy = false;
   #launchConsumed = false;
+  #launchSucceeded = false;
+  #launchSettled = false;
+  #launchRequestIssued = false;
+  #nativeLaunchRefused = false;
+  #noProcessCreationState: "not-entered" | "returned-false" | null = null;
   #closeConsumed = false;
   #releaseConsumed = false;
   #released = false;
   #childClosed = false;
   #send: Promise<void> | null = null;
+  #inspectionConsumed = false;
+  #browserObservationConsumed = false;
+  #framesConsumed = false;
+  #scriptConsumed = false;
+  #browserTargets: readonly Readonly<RecordValue>[] | null = null;
+  #stagedContext: CurrentPcbDiagnosticContext | null = null;
 
-  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>) {
-    this.#child = child; this.#verify = verify;
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#output = new Writable({ autoDestroy: false,
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable requires its original callback, acknowledged only after native WriteFile.
       write: (chunk: unknown, _encoding, callback): void => {
@@ -86,10 +119,13 @@ export class CurrentPcbDiagnosticOwner {
 
   public status(): Readonly<{ helperPid: number | null; binding: Binding | null; failure: string | null;
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
-    frameWorkerVerified: false; executionAuthorized: false }> {
+    cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
+    browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null }> {
     return Object.freeze({ helperPid: this.#child.pid ?? null, binding: this.#binding, failure: this.#failure,
       busy: this.#busy, launchConsumed: this.#launchConsumed, closeConsumed: this.#closeConsumed,
-      released: this.#released, helperClosed: this.#childClosed, frameWorkerVerified: false, executionAuthorized: false });
+      released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
+      noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
+      frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure });
   }
 
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
@@ -100,23 +136,133 @@ export class CurrentPcbDiagnosticOwner {
         !/^[a-f\d]{64}$/u.test(executableSha256)) { throw error("LAUNCH_INPUT"); }
     this.#enter(); this.#launchConsumed = true;
     try {
-      await this.#verify(); this.#available();
-      try { this.#binding = binding(await this.#request({ action: "launch", executable, executableSha256, confirmDiagnosticLaunch: true })); }
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      const nativeFile = this.#installation?.plan.files[0];
+      if (this.#installation !== null && (nativeFile?.windowsPath !== executable || nativeFile.sha256 !== executableSha256)) { throw error("INSTALLATION_TARGET"); }
+      try { this.#binding = binding(await this.#request({ action: "launch", executable, executableSha256, confirmDiagnosticLaunch: true,
+        ...(this.#installation === null ? {} : { installation: this.#installation.plan }) })); }
       catch (caughtError) {
         // Native failure can follow successful CreateProcess. Recover only this
         // Original helper's retained binding; never launch or adopt a PID again.
-        if (this.#failure === null) {
-          const observed = await this.#request({ action: "identity" });
-          if (observed["rootPid"] !== 0) { this.#binding = binding(observed); }
-        }
+        if (this.#failure === null) { await this.#recoverLaunchBinding(); }
         throw caughtError;
       }
-      await this.#verify(); this.#available(); return this.#binding;
-    } finally { this.#busy = false; }
+      await this.#verify(); this.#available();
+      if (this.#binding.rootCreated === "0") { throw error("CLEANUP_ONLY"); }
+      this.#launchSucceeded = true;
+      return this.#binding;
+    } finally { this.#launchSettled = true; this.#busy = false; }
+  }
+
+  async #recoverLaunchBinding(): Promise<void> {
+    const observed = await this.#request({ action: "identity" });
+    if (observed["rootPid"] !== 0) { this.#binding = binding(observed); }
+    else if (this.#nativeLaunchRefused) {
+      if (!exact(observed, ["helperInstance", "jobId", "rootPid", "rootCreated"]) || observed["rootCreated"] !== "0" ||
+          typeof observed["helperInstance"] !== "string" || !/^[a-f\d]{32}$/u.test(observed["helperInstance"]) ||
+          typeof observed["jobId"] !== "string" || !/^[a-f\d]{32}$/u.test(observed["jobId"])) { throw error("NO_PROCESS_IDENTITY"); }
+      this.#noProcessCreationState = noProcessState(await this.#request({ action: "no-process-proof" }), false);
+    }
   }
 
   public getVersion(): Promise<RecordValue> { return this.#discover("version"); }
   public getTargets(): Promise<RecordValue> { return this.#discover("targets"); }
+
+  /** One fixed browser sample. No attachment, bridge startup or profile claim. */
+  public async browserObservation(): Promise<Readonly<RecordValue>> {
+    if (this.#browserObservationConsumed || this.#inspectionConsumed) { throw error("BROWSER_OBSERVATION_CONSUMED"); }
+    this.#enter(true); this.#browserObservationConsumed = true;
+    try {
+      const version = await this.#transfer(() => this.#pipe.getVersion());
+      if (!exact(version, ["protocolVersion", "product", "revision", "userAgent", "jsVersion"]) ||
+          Object.values(version).some(value => typeof value !== "string" || value.length > 8192 || value.includes("\0"))) {
+        throw error("BROWSER_VERSION_REPLY");
+      }
+      this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets()));
+      return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
+        targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
+        debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
+    } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** Attach once to a member of the retained inventory and expose actual frame
+   * IDs. This original context/event sink stays retained between tool calls. */
+  public async inspectFrames(targetId: string): Promise<Readonly<RecordValue>> {
+    if (this.#framesConsumed || this.#inspectionConsumed || this.#browserTargets === null) { throw error("FRAME_INSPECTION_UNAVAILABLE"); }
+    const original = this.#browserTargets.find(item => item["targetId"] === targetId);
+    if (original?.["type"] !== "page" || original["attached"] !== false) { throw error("FRAME_TARGET_UNOBSERVED"); }
+    this.#enter(true); this.#framesConsumed = true;
+    const context = new CurrentPcbDiagnosticContext(targetId); this.#stagedContext = context;
+    try {
+      const targets = await this.#transfer(() => this.#pipe.getTargets());
+      if (JSON.stringify(diagnosticTargetInventory(targets).find(item => item["targetId"] === targetId)) !== JSON.stringify(original)) { throw error("FRAME_TARGET_CHANGED"); }
+      context.selectTarget(targets);
+      await this.#attach(context, targetId);
+      const page = await this.#transfer(() => this.#pipe.enablePage());
+      if (!exact(page, [])) { throw error("PAGE_ENABLE_REPLY"); }
+      context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
+      context.observeTarget(await this.#transfer(() => this.#pipe.getTargets()));
+      return context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
+    } catch (caughtError) { this.#input.emit("error", error("FRAME_INSPECTION_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** Internal profile only. Public routing supplies a fixed reviewed family;
+   * neither URL/path matching nor source bytes authorize any JavaScript/CAD. */
+  public async inspectScript(frameId: string, input: DiagnosticScriptProfile): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = validateDiagnosticScriptProfile(input);
+    if (this.#scriptConsumed || context === null || !this.#framesConsumed || this.#inspectionConsumed) { throw error("SCRIPT_INSPECTION_UNAVAILABLE"); }
+    this.#enter(true); this.#scriptConsumed = true;
+    try {
+      context.observeTarget(await this.#transfer(() => this.#pipe.getTargets()));
+      context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
+      context.selectFrame(frameId, profile);
+      return await this.#inspectScript(context);
+    } catch (caughtError) { this.#input.emit("error", error("IDENTITY_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  async #attach(context: CurrentPcbDiagnosticContext, targetId: string): Promise<void> {
+    let sessionId: string | null = null;
+    await this.#transfer(async () => {
+      sessionId = await this.#pipe.attachTarget(targetId, event => { context.observeEvent(event); });
+      return { sessionId };
+    });
+    if (sessionId === null) { throw error("ATTACH_REPLY"); }
+    context.bindSession(sessionId);
+  }
+
+  async #inspectScript(context: CurrentPcbDiagnosticContext): Promise<Readonly<RecordValue>> {
+    const runtime = await this.#transfer(() => this.#pipe.enableRuntime());
+    if (!exact(runtime, [])) { throw error("RUNTIME_ENABLE_REPLY"); }
+    const debuggerReply = await this.#transfer(() => this.#pipe.enableDebugger());
+    if (!exact(debuggerReply, ["debuggerId"]) || typeof debuggerReply["debuggerId"] !== "string") { throw error("DEBUGGER_ENABLE_REPLY"); }
+    const selected = context.script();
+    const source = await this.#transfer(() => this.#pipe.getScriptSource(selected.scriptId));
+    const targets = await this.#transfer(() => this.#pipe.getTargets());
+    const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
+    context.assertCurrent(); return context.finish(source, targets, frameTree);
+  }
+
+  /** One fixed identity-only attachment. Expectations are comparison inputs,
+   * not native installation, project-worker or CAD execution authority. */
+  public async inspectFrameIdentity(input: DiagnosticFrameExpectation): Promise<Readonly<Record<string, unknown>>> {
+    const expected = validateDiagnosticFrameExpectation(input);
+    if (this.#inspectionConsumed || this.#browserObservationConsumed) { throw error("INSPECTION_CONSUMED"); }
+    this.#enter(true); this.#inspectionConsumed = true;
+    const context = new CurrentPcbDiagnosticContext(expected);
+    try {
+      context.selectTarget(await this.#transfer(() => this.#pipe.getTargets()));
+      await this.#attach(context, expected.targetId);
+      const page = await this.#transfer(() => this.#pipe.enablePage());
+      if (!exact(page, [])) { throw error("PAGE_ENABLE_REPLY"); }
+      context.observeFrame(await this.#transfer(() => this.#pipe.getFrameTree()));
+      return await this.#inspectScript(context);
+    } catch (caughtError) {
+      this.#input.emit("error", error("IDENTITY_FAILED")); throw caughtError;
+    } finally { this.#busy = false; }
+  }
 
   public async observeApplicationWindow(): Promise<string | null> {
     this.#enter(true);
@@ -150,28 +296,70 @@ export class CurrentPcbDiagnosticOwner {
     } finally { this.#busy = false; }
   }
 
-  public async releaseClosed(): Promise<void> {
+  public releaseClosed(): Promise<void> { return this.#release(false); }
+
+  /** Original helper only, before this owner has ever invoked launch. Native
+   * state independently proves no creation attempt and an empty original Job. */
+  public async releaseUnlaunched(): Promise<void> {
+    if (this.#launchConsumed || this.#binding !== null) { throw error("UNLAUNCHED_RELEASE_REFUSED"); }
+    await this.#release(true);
+  }
+
+  /** A completed original launch refusal is not an uncertain dispatch. The
+   * helper independently proves its creation phase and empty original Job. */
+  public async releaseNoProcess(): Promise<Readonly<CurrentPcbDiagnosticNoProcessRelease>> {
+    if (this.#releaseConsumed) { throw error("RELEASE_CONSUMED"); }
+    if (!this.#noProcessCleanupAvailable()) { throw error("NO_PROCESS_CLEANUP_UNAVAILABLE"); }
+    const launchRequestOutcome = this.#launchRequestIssued ? "native-refused" : "not-issued";
+    this.#enter();
+    try {
+      await this.#verify(); this.#available();
+      this.#releaseConsumed = true;
+      const creationState = noProcessState(await this.#request({ action: "release-no-process" }), true);
+      if (launchRequestOutcome === "not-issued" ? creationState !== "not-entered" : creationState !== this.#noProcessCreationState) {
+        throw error("NO_PROCESS_PROOF_CHANGED");
+      }
+      await this.#finishRelease();
+      return Object.freeze({ launchRequestOutcome, creationState, processCreated: false, released: true });
+    } finally { this.#busy = false; }
+  }
+
+  #noProcessCleanupAvailable(): boolean {
+    return this.#launchConsumed && this.#launchSettled && !this.#launchSucceeded && this.#binding === null &&
+      !this.#busy && this.#pending === null && this.#failure === null && !this.#releaseConsumed && !this.#released &&
+      !this.#childClosed && this.#child.exitCode === null && this.#child.signalCode === null &&
+      (!this.#launchRequestIssued || this.#nativeLaunchRefused && this.#noProcessCreationState !== null);
+  }
+
+  async #release(unlaunched: boolean): Promise<void> {
     if (this.#releaseConsumed) { throw error("RELEASE_CONSUMED"); }
     this.#enter();
     try {
       await this.#verify(); this.#available();
-      const termination = await this.#request({ action: "termination" });
-      if (!exact(termination, ["terminated"]) || termination["terminated"] !== true) { throw error("RETAIN_LIVE_OWNER"); }
+      if (!unlaunched) {
+        const termination = await this.#request({ action: "termination" });
+        if (!exact(termination, ["terminated"]) || termination["terminated"] !== true) { throw error("RETAIN_LIVE_OWNER"); }
+      }
       this.#releaseConsumed = true;
       // Native release independently observes original root and Job again.
       // A rejected live release consumes only this call, never closes a pipe.
-      const reply = await this.#request({ action: "release" });
-      if (!exact(reply, ["released"]) || reply["released"] !== true) { throw error("RELEASE_REPLY"); }
-      this.#released = true;
-      this.#child.stdin.end();
-      await this.#closed.promise;
-      if (this.#failure !== null) { throw error(this.#failure); }
-      if (this.#child.exitCode !== 0 || this.#child.signalCode !== null) { throw error("RELEASE_EXIT"); }
-      this.#input.destroy(); this.#output.destroy();
-      // Local synthetic adapters only. Native pipes were released after closure.
-      await delay(0); this.#pipe.releaseClosedListeners();
-      retainedOwners.delete(this);
+      const reply = await this.#request({ action: unlaunched ? "release-unlaunched" : "release" });
+      if (!exact(reply, unlaunched ? ["released", "launchNeverAttempted"] : ["released"]) || reply["released"] !== true ||
+          unlaunched && reply["launchNeverAttempted"] !== true) { throw error("RELEASE_REPLY"); }
+      await this.#finishRelease();
     } finally { this.#busy = false; }
+  }
+
+  async #finishRelease(): Promise<void> {
+    this.#released = true;
+    this.#child.stdin.end();
+    await this.#closed.promise;
+    if (this.#failure !== null) { throw error(this.#failure); }
+    if (this.#child.exitCode !== 0 || this.#child.signalCode !== null) { throw error("RELEASE_EXIT"); }
+    this.#input.destroy(); this.#output.destroy();
+    // Local synthetic adapters only. Native pipes were released after closure.
+    await delay(0); this.#pipe.releaseClosedListeners();
+    retainedOwners.delete(this);
   }
 
   #available(): void {
@@ -185,9 +373,14 @@ export class CurrentPcbDiagnosticOwner {
   }
   async #discover(kind: "version" | "targets"): Promise<RecordValue> {
     this.#enter(true);
+    try { return await this.#transfer(() => kind === "version" ? this.#pipe.getVersion() : this.#pipe.getTargets()); }
+    finally { this.#busy = false; }
+  }
+  async #transfer(request: () => Promise<RecordValue>): Promise<RecordValue> {
     try {
+      if (!this.#launchSucceeded) { throw error("CLEANUP_ONLY"); }
       await this.#verify(); this.#available();
-      const reply = kind === "version" ? this.#pipe.getVersion() : this.#pipe.getTargets();
+      const reply = request();
       // Attach rejection before any await, including the native write callback.
       const observed = (async (): Promise<{ value: RecordValue } | { cause: unknown }> => {
         try { return { value: await reply }; } catch (caughtError) { return { cause: caughtError }; }
@@ -209,18 +402,13 @@ export class CurrentPcbDiagnosticOwner {
       // Its prior request pending until the byte transport's later deadline.
       // This local adapter error preserves every native endpoint and normal close.
       this.#input.emit("error", error("DISCOVERY_FAILED")); throw caughtError;
-    } finally { this.#busy = false; }
+    }
   }
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This adapter must settle the original Writable completion callback after native WriteFile.
   async #sendFrame(chunk: unknown, callback: (cause?: Error | null) => void): Promise<void> {
     try {
-      if (!Buffer.isBuffer(chunk) || chunk.length > 128 || chunk.at(-1) !== 0) { throw error("OUTBOUND_FRAME"); }
-      const parsed: unknown = JSON.parse(chunk.subarray(0, -1).toString("utf8"));
-      if (!record(parsed) || !exact(parsed, ["id", "method"]) || typeof parsed["id"] !== "number" ||
-          !Number.isSafeInteger(parsed["id"]) || parsed["id"] < 1 || parsed["id"] > 32 ||
-          (parsed["method"] !== "Browser.getVersion" && parsed["method"] !== "Target.getTargets") ||
-          chunk.toString() !== `${JSON.stringify({ id: parsed["id"], method: parsed["method"] })}\0`) { throw error("OUTBOUND_FRAME"); }
-      const result = await this.#request({ action: "send", requestId: parsed["id"], method: parsed["method"] });
+      if (!Buffer.isBuffer(chunk)) { throw error("OUTBOUND_FRAME"); }
+      const result = await this.#request(diagnosticNativeRequest(chunk));
       if (!exact(result, ["written"]) || result["written"] !== true) { throw error("WRITE_ACK"); }
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Writable completion must be the terminal branch operation.
       callback(); return;
@@ -233,9 +421,11 @@ export class CurrentPcbDiagnosticOwner {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
-    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, written: false, reply: null,
+    const launch = request["action"] === "launch";
+    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
+    if (launch) { this.#launchRequestIssued = true; }
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
       if (Buffer.byteLength(data) > 4096) { throw error("REQUEST_SIZE"); }
@@ -251,7 +441,10 @@ export class CurrentPcbDiagnosticOwner {
     if (pending !== null && pending.written && pending.reply !== null && this.#failure === null) {
       this.#pending = null; clearTimeout(pending.timer);
       const reply = pending.reply;
-      if (reply["ok"] === false) { pending.reject(error("NATIVE_REFUSAL")); }
+      if (reply["ok"] === false) {
+        if (pending.launch) { this.#nativeLaunchRefused = true; }
+        pending.reject(error("NATIVE_REFUSAL"));
+      }
       else if (record(reply["result"])) { pending.resolve(reply["result"]); }
       else { pending.reject(error("HELPER_REPLY")); }
     }
@@ -283,8 +476,16 @@ export class CurrentPcbDiagnosticOwner {
   readonly #childClose = (): void => { this.#childClosed = true; if (!this.#released) { this.#fail("HELPER_CLOSED"); } this.#closed.resolve(null); };
 }
 
-// Source remains private and unregistered until runtime qualification.
-export async function startCurrentPcbDiagnosticOwner(): Promise<CurrentPcbDiagnosticOwner> {
+// Only the validation lifecycle allocates this owner. It supplies no ordinary
+// Windows runtime authority, bridge authentication or connected qualification.
+export async function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
+  const sealedOptions = Object.freeze({ ...options });
+  const installation = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
+  if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
+  const verifyInstallation = async (): Promise<void> => {
+    const current = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
+    if (current.facadeSha256 !== installation.facadeSha256 || JSON.stringify(current.plan) !== JSON.stringify(installation.plan)) { throw error("INSTALLATION_CHANGED"); }
+  };
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   const before = await lstat(helperPath);
   const verify = async (): Promise<void> => {
@@ -297,7 +498,7 @@ export async function startCurrentPcbDiagnosticOwner(): Promise<CurrentPcbDiagno
     if (after.dev !== first.dev || after.ino !== first.ino || after.size !== first.size || after.mtimeMs !== first.mtimeMs || after.ctimeMs !== first.ctimeMs) { throw error("HELPER_SOURCE"); }
   };
   await verify();
-  const distro = process.env["WSL_DISTRO_NAME"];
+  const distro = sealedOptions.wslDistribution ?? process.env["WSL_DISTRO_NAME"];
   let windowsPath: string;
   if (/^\/mnt\/[a-z]\//u.test(helperPath)) { windowsPath = `${helperPath[5]?.toUpperCase()}:\\${helperPath.slice(7).replaceAll("/", "\\")}`; }
   else {
@@ -316,9 +517,9 @@ export async function startCurrentPcbDiagnosticOwner(): Promise<CurrentPcbDiagno
     `$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes)))}finally{$file.Dispose()}`;
   const encoded = Buffer.from(bootstrap, "utf16le").toString("base64");
   if (encoded.length > 16_000) { throw error("BOOTSTRAP_BOUND"); }
-  const child = spawn("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
-  const owner = new CurrentPcbDiagnosticOwner(child, verify); retainedOwners.add(owner); owner.start();
+  const owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); retainedOwners.add(owner); owner.start();
   return owner;
 }

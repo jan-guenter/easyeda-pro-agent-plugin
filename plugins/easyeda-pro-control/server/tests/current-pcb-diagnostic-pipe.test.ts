@@ -5,6 +5,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
+import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -201,4 +202,72 @@ void test("diagnostic pipe releases only its own listeners after both original s
   assert.deepEqual(value.input.listeners("error"), [other]); assert.deepEqual(value.output.listeners("error"), [other]);
   await assert.rejects(value.pipe.getVersion(), /NOT_STARTED/u);
   assert.throws(() =>{  value.pipe.start(); }, /START_CONSUMED/u);
+});
+
+async function attach(value: ReturnType<typeof fixture>, events: DiagnosticEvent[]): Promise<void> {
+  const result = value.pipe.attachTarget("target-1", event => { events.push(event); });
+  value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); assert.equal(await result, "session-1");
+}
+void test("fixed attached session accepts bounded events between replies and refuses a foreign session", async context => {
+  const events: DiagnosticEvent[] = [], value = fixture(context); await attach(value, events);
+  const reply = value.pipe.enableRuntime();
+  assert.equal(value.sent[1]?.toString(), '{"id":2,"method":"Runtime.enable","params":{},"sessionId":"session-1"}\0');
+  const created = { method: "Runtime.executionContextCreated", params: { context: { id: 7 } }, sessionId: "session-1" };
+  value.input.write(Buffer.concat([wire(created), wire({ id: 2, result: {}, sessionId: "session-1" })]));
+  await reply; assert.deepEqual(events, [created]);
+  value.input.write(wire({ ...created, sessionId: "foreign" }));
+  await assert.rejects(value.pipe.getFrameTree(), /PIPE_REPLY/u); retained(value);
+});
+void test("identity event rejection poisons transport but never closes the original streams", async context => {
+  const value = fixture(context);
+  const result = value.pipe.attachTarget("target-1", () => { throw new Error("identity lost"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); await result;
+  const reply = value.pipe.getFrameTree(); const rejected = assert.rejects(reply, /PIPE_REPLY/u);
+  value.input.write(wire({ method: "Page.frameNavigated", params: {}, sessionId: "session-1" }));
+  await rejected; retained(value);
+});
+void test("partial event after a reply must complete before the request settles", async context => {
+  const events: DiagnosticEvent[] = [], value = fixture(context); await attach(value, events);
+  const reply = value.pipe.enablePage(); let settled = false;
+  const observed = (async (): Promise<void> => { await reply; settled = true; })();
+  const eventBytes = wire({ method: "Page.loadEventFired", params: { timestamp: 1 }, sessionId: "session-1" });
+  value.input.write(Buffer.concat([wire({ id: 2, result: {}, sessionId: "session-1" }), eventBytes.subarray(0, 9)]));
+  await yieldToEventLoop(); assert.equal(settled, false);
+  value.input.write(eventBytes.subarray(9)); await observed; assert.equal(events.length, 1); retained(value);
+});
+void test("only script-source replies receive the larger frame allowance", async context => {
+  const events: DiagnosticEvent[] = [], value = fixture(context); await attach(value, events);
+  const payload = "a".repeat(2 * 1024 * 1024), reply = value.pipe.getScriptSource("script-1");
+  const bytes = wire({ id: 2, result: { scriptSource: payload }, sessionId: "session-1" });
+  for (let offset = 0; offset < bytes.length; offset += 65_536) { value.input.write(bytes.subarray(offset, offset + 65_536)); }
+  const result = await reply; assert.equal(result["scriptSource"], payload);
+  const small = value.pipe.getFrameTree(); const rejected = assert.rejects(small, /PIPE_FRAMING/u);
+  value.input.write(Buffer.alloc(1024 * 1024, 32)); value.input.write(Buffer.from("x")); await rejected; retained(value);
+});
+void test("attached event count and byte budgets apply even without pending requests", async context => {
+  const events: DiagnosticEvent[] = [], value = fixture(context); await attach(value, events);
+  const eventBytes = wire({ method: "Page.loadEventFired", params: { timestamp: 1 }, sessionId: "session-1" });
+  for (let index = 0; index <= 4096; index += 1) { value.input.write(eventBytes); }
+  assert.equal(events.length, 4096); await assert.rejects(value.pipe.getFrameTree(), /PIPE_REPLY/u); retained(value);
+  const bytesValue = fixture(context); await attach(bytesValue, []);
+  const large = wire({ method: "Runtime.consoleAPICalled", params: { text: "x".repeat(1024 * 1024 - 200) }, sessionId: "session-1" });
+  for (let index = 0; index < 9; index += 1) { bytesValue.input.write(large); }
+  await assert.rejects(bytesValue.pipe.getFrameTree(), /PIPE_REPLY/u); retained(bytesValue);
+});
+void test("source transport enforces its separate 32 MiB frame and64 MiB lifetime limits", async context => {
+  const oversized = fixture(context); await attach(oversized, []);
+  const rejected = assert.rejects(oversized.pipe.getScriptSource("script-1"), /PIPE_FRAMING/u);
+  const chunk = Buffer.alloc(1024 * 1024, 32);
+  for (let index = 0; index < 32; index += 1) { oversized.input.write(chunk); }
+  oversized.input.write(Buffer.from("x")); await rejected; retained(oversized);
+  const cumulative = fixture(context); await attach(cumulative, []);
+  const payload = "x".repeat(16 * 1024 * 1024 - 200);
+  for (let id = 2; id <= 6; id += 1) {
+    const reply = cumulative.pipe.getScriptSource("script-1");
+    const outcome = id === 6 ? assert.rejects(reply, /PIPE_FRAMING/u) : reply;
+    const bytes = wire({ id, result: { scriptSource: payload }, sessionId: "session-1" });
+    for (let offset = 0; offset < bytes.length; offset += 65_536) { cumulative.input.write(bytes.subarray(offset, offset + 65_536)); }
+    await outcome;
+  }
+  retained(cumulative);
 });
