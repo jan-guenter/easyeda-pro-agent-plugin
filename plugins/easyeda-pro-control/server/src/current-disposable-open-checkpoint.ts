@@ -138,6 +138,38 @@ export async function verifyCurrentDisposableOpenCheckpoint(prepared: CurrentDis
   }
 }
 
+/** Reprove only the original managed backup and its historical default-branch
+ * membership after navigation. Deliberately never opens or hashes the live
+ * source, which normal opening may already have migrated or persisted. This is
+ * not a new baseline or evidence of current editor state. */
+export async function verifyHistoricalCurrentDisposableOpenCheckpoint(prepared: CurrentDisposableOpenCheckpoint,
+  input: CurrentDisposableOpenTarget): Promise<void> {
+  const target = currentDisposableOpenTargetSchema.parse(input);
+  const inputText = canonicalJson(input), preparedText = canonicalJson(prepared);
+  const checkpoint = structuredClone(prepared.checkpoint), source = normalizedSource(target);
+  if (prepared.profile !== PROFILE || prepared.preparationCheckpoint === undefined) {
+    throw new Error("Historical disposable opening needs its original managed preparation checkpoint.");
+  }
+  assertSourceBinding(checkpoint, target, source);
+  const receipt = await readArtifact(checkpoint.receiptPath, 0, 65_536);
+  const parsed: unknown = JSON.parse(receipt.text);
+  const { receiptSha256, ...receiptCore } = checkpoint;
+  if (!receipt.eof || canonicalJson(parsed) !== canonicalJson(checkpoint) ||
+      receiptSha256 !== sha256Text(canonicalJson(receiptCore))) {
+    throw new Error("Historical disposable opening checkpoint receipt changed.");
+  }
+  await verifyPreparationCheckpoint(checkpoint, prepared.preparationCheckpoint);
+  const evidence = await targetEvidence(checkpoint, target);
+  if (canonicalJson(evidence) !== canonicalJson(prepared.targetEvidence)) {
+    throw new Error("Historical disposable opening target evidence changed.");
+  }
+  await verifyPreparationCheckpoint(checkpoint, prepared.preparationCheckpoint);
+  const after = await readArtifact(checkpoint.receiptPath, 0, 65_536);
+  if (!after.eof || after.text !== receipt.text || canonicalJson(input) !== inputText || canonicalJson(prepared) !== preparedText) {
+    throw new Error("Historical disposable opening retained evidence changed during verification.");
+  }
+}
+
 async function startupExpectation(prepared: CurrentDisposableOpenCheckpoint): Promise<CurrentSymbolStartupExpectation> {
   const history = await readNativeHistoryCheckpoint({ checkpointPath: prepared.checkpoint.checkpoint,
     expectedSha256: prepared.checkpoint.checkpointSha256, projectUuid: prepared.targetEvidence.projectUuid, libraryAtomHeaders: "preserve" });

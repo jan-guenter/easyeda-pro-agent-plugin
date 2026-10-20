@@ -191,22 +191,36 @@ raw reply cap is65,536bytes. That leaves room for owner metadata and false claim
 within the lifecycle's128KiB publication bound. Scope metadata is separately
 bounded and is never included in that public result.
 
+## Later same-day integration
+
+The combined model result now adds
+[raw String observation](current-pcb-raw-string-observation-2026-10-20.md) and
+[pending-producer observation](current-pcb-pending-producers-2026-10-20.md)
+to the compiler sample described above. It takes ten fixed commands including
+object-group release and enforces the unchanged128KiB aggregate cap. The
+three samples share a document identity but are not atomic.
+
+The raw reader covers a bounded parentless String subset, including watcherless
+models and unnormalized identity/order fields. The pending reader covers the
+listed upload buffers, current command, teardrop state and local copper-worker
+references. Neither completes the wider prerequisites below or qualifies a
+connected runtime.
+
 ## Remaining writer prerequisites
 
 This is not a complete String or whole-model baseline. Still required:
 
 - All model-family membership and source ownership, including ordinary String
   objects omitted from public DTO lists when their state watcher is absent.
-- Raw String z-index, global index, partition, parent/group relationship and
-  model type. The `nP` base (`3424326..3425340`) exposes normalized getters;
+- Complete source correlation for raw String z-index, global index, partition,
+  parent/group relationship and model type. The `nP` base (`3424326..3425340`) exposes normalized getters;
   `rd` (`3980353..3988148`) also has lazy box/base-backed getters. Public DTO
   equality cannot substitute for these raw fields.
 - Full geometry/base/box state and other unchanged model families, plus
   populated Image, Dimension and polygon-Pad qualification.
-- Other pending producers: `qI` and `e5` upload sets (`4721332` and `4839362`),
-  `pE` board flag (`4852802`), `Xe` command stacks (`7922234` onward), teardrop
-  queues/timer (`9092135..9097834`), dynamic-copper worker ownership and
-  renderer/project-worker association.
+- Complete pending-producer participation and completion beyond the new bounded
+  snapshots, including historical command payloads, dynamic-copper worker
+  liveness/CDP association and renderer/project-worker association.
 - One authorized String mutation, original publication/Save/normal-close path,
   full closed database/content/peer-document comparison, reopen verification
   and no-repeat recovery under the same retained owner.

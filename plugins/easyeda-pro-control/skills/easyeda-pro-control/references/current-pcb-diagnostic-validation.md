@@ -4,10 +4,14 @@ Use `easyeda_control_pcb_diagnostic_validation` only to qualify the separate
 native diagnostic owner. It starts the reviewed application in its existing
 profile, observes fixed browser/frame/script identities, and normally closes
 that original process. Separate branches support a one-shot disposable project
-opening followed by direct-child worker inspection, or a bounded compiler-state
-read from an already admitted PCB frame. Neither branch enables CAD editing.
-This registered source route has offline regression coverage; connected native
-validation is not recorded. Older installed snapshots may lack the tool.
+opening followed by either direct-child worker inspection or a separately
+admitted disposable PCB-frame opening and model observation. An already admitted
+PCB frame can also supply model observation. None enables CAD editing.
+Installed081744 completed one original-owned native launch and normal closure,
+including root/whole-Job termination and helper release. Its first browser
+observation failed before any project opening. That result does not validate
+browser, frame, worker or model observation. Older snapshots may lack the tool
+or the additional model fields described below.
 
 Existing-profile startup can restore projects, run extensions, contact services,
 migrate data or persist preferences/cache. It is neither isolated nor guaranteed
@@ -113,42 +117,88 @@ Save. It performs no explicit Save or document-open call. A result
 `opened-prefix-observed` is only the public acknowledgment plus the operation's
 `loadProjectCompleted` prefix; it does not prove restoration completion.
 
-This first route is deliberately worker-only: the original UI frame tree must
+This project-only stage deliberately retains one frame: the original UI tree must
 contain one top-level frame. Only the selected project's same-document fragment
-transition is admitted. Added/restored editor frames, a changed loader/default
+transition and the source-derived project-name window-title prefix are admitted.
+The original product/version title must match the retained target; arbitrary
+title changes are not accepted. Added/restored editor frames, a changed loader/default
 context, unrelated URLs or full navigation stop the branch. Do not remove those
 guards to accommodate an unsupported project. A failed or uncertain stage is
 consumed, including its preflight; inspect and clean up without replay.
 
+## Optional disposable PCB-frame opening
+
+After accepted `open-project`, choose either this branch or worker discovery,
+not both. `open-pcb` takes only the original operation/binding and
+`acceptNormalOpenEffects:true`. It derives the PCB, project, branch and registered
+path from the retained project-opening target. No replacement target or caller
+code is accepted. It uses the fixed public document-opening service once and
+does not dispatch an edit or explicit Save. Ordinary opening may still have
+automatic effects. The retained pre-project checkpoint is historical evidence,
+not a claim that the now-open file still has its original bytes.
+
+An opening acknowledgment is not editor readiness. Continue with
+`observe-pcb-opening`, using only that same operation/binding. This separately
+consumed stage checks the exact new child frame and its DOM owner attributes,
+admits the complete pinned PCB source and default execution context, then
+observes native tab/document identity through the fixed UI program. It preserves
+the original UI source/context; unrelated frames, navigation, mixed tabs,
+replacement owners or conflicting identity refuse.
+
+Only the complete accepted observation permits `observe-model-state`. The
+composite's document identity must still match the original sealed PCB target.
+Source admission alone, a returned tab ID or an iframe URL is insufficient.
+Neither stage grants worker-discovery, editing, Save or saved-state authority.
+Inspect retained outcomes after a lost or failed reply; do not repeat opening
+or manufacture readiness with manual navigation. Original normal cleanup
+remains available after failure.
+
 ## Separate PCB compiler-state observation
 
 After `inspect-script` admits the `pcb` family in an existing disposable PCB
-frame, `observe-model-state` takes only the original operation/binding.
-It cannot be combined with project opening or worker discovery in that generation.
-The worker-only opener does not establish this PCB-frame prerequisite.
+frame, or after the complete PCB-frame opening branch above,
+`observe-model-state` takes only the original operation/binding.
+It cannot be combined with worker discovery. Project-only opening by itself
+does not establish this PCB-frame prerequisite.
 
 The fixed inspector path selects the original `pcb/saveCompiler` callback,
 checks its complete source/script location, and follows only its two bounded
 V8 scope links. It never calls the callback or Save handler, pauses a debugger,
-or accepts an object ID from the tool caller. Eight fixed commands read and
+or accepts an object ID from the tool caller. Ten fixed commands read and
 release the private remote-object group. Effect checks remain enabled.
 
-Returned data covers the main compiler, at most128 loaded footprint participants
-and selected dynamic-copper flags/counts/timer markers. It excludes primitive
-values and queue payloads. It is not a complete model, pending-producer inventory,
-worker association, queue barrier or writer/Save authority. The original object
-group's release must succeed before the result is accepted.
+The composite contains three separate samples from the same original handler
+scope and document identity:
+
+- `compilerState`: main compiler, at most128 loaded footprint participants,
+  and selected dynamic-copper flags/counts/timer markers.
+- `pendingProducers`: upload-buffer counts, command/teardrop state and a local
+  dynamic-copper worker/bus reference comparison. A matched local reference is
+  not a CDP target association, project-worker binding or proof of liveness.
+- `rawStrings`: at most16 root String-manager models, including text and raw
+  identity, ordering, partition/group and base fields. Missing, undefined, null
+  and zero remain distinct; models without a state watcher are not omitted.
+
+These samples are not atomic. The String manager is not the whole PCB, and an
+empty manager does not prove an empty board. Unsupported models or over-budget
+results refuse without truncation. The combined reply stays within128KiB.
+No queue payloads are returned. This is not a complete pending-producer inventory,
+queue barrier, saved-state comparison or writer/Save authority. The original
+object group's release must succeed before the composite is accepted.
 
 ## Lost replies and failures
 
 - `inspect` is local and does not replay native actions. Supply
   `observation:"browser"`, `"frames"`, `"script"`, `"workers"`, `"worker-script"`
-  or `"worker-state"` or `"model-state"` to retrieve one recorded or
+  or `"worker-state"`, `"pcb-opening"` or `"model-state"` to retrieve one recorded or
   retained stage result. Check `busy`, consumed-stage flags, `resultRetained`
   and `published`; a failed response does not authorize another dispatch.
   The original owner also retains a bounded `nativeLaunchError` label and,
   after a proved failed creation, `createProcessError`. The latter is the
   immediately captured numeric Windows error, not arbitrary exception text.
+  `nativeSendError` retains a bounded native dispatch label when available,
+  without exception text or request payloads. It does not prove that no bytes
+  were sent, and cannot explain older failures whose label was not retained.
   Older evidence may lack it; do not guess the failure cause from a generic
   refusal or an absent process. Cleanup proof retains the code when available.
   Opening status/results are separately retained on `inspect`; they never mint
@@ -162,7 +212,8 @@ group's release must succeed before the result is accepted.
   normal closure, termination observation and release remain the cleanup path
   when the helper protocol is still usable. They require local owner integrity,
   not bridge authentication or a fresh full installation admission.
-  Only the sealed opening's bounded same-document transition is an exception;
+  Only the sealed opening's exact title, fragment and child-frame transitions
+  described above are exceptions;
   there is no general context reset.
 - `cleanup-unlaunched` is only for offered original never-dispatched attempts.
   It takes `expectedIntentSha256` and requires proof that native launch was
@@ -199,7 +250,8 @@ only the script-source reply allows a 32 MiB encoded frame and 20 MiB decoded
 UTF-8 source. The larger source allowance covers the pinned UI asset, not
 arbitrary event or response expansion.
 The former complete worker path uses32 requests; opening adds8. The separate
-PCB-source/model path uses27 total. The fixed budget is not permission for extra
+existing-PCB-source/model path uses29 total; the separate complete UI/project/
+PCB-opening/model path uses53. The fixed budget is not permission for extra
 CDP probes or repeated observations. Fixed opening programs allow65,536 outbound
 bytes and32,768 native input bytes; other limits are unchanged.
 

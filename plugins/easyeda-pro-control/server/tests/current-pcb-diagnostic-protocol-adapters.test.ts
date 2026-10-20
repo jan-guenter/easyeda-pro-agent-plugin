@@ -6,8 +6,9 @@ import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposab
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "../src/current-pcb-diagnostic-model-runner.ts";
-import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
-import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 type Row = Record<string, unknown>;
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
@@ -32,6 +33,10 @@ function modelCommands(): readonly Row[] {
     properties("handler"), properties("handler-scopes"),
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+    { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+    { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } },
   ];
   return commands.map((command, index) => ({ id: index + 1, method: command["method"], params: command["params"], sessionId: "original-page-session" }));
@@ -63,8 +68,8 @@ void test("fixed project opener flattens only sealed identifiers and path, with 
   assert.equal(diagnosticNativeRequest(wire(command))["targetRawWindowsPath"], selected.rawWindowsPath);
 });
 
-void test("all eight fixed model requests map to private phases without forwarding source or group selectors", () => {
-  const commands = modelCommands(), expected = ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "release"];
+void test("all ten fixed model requests map to private phases without forwarding source or group selectors", () => {
+  const commands = modelCommands(), expected = ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "pending", "raw-strings", "release"];
   for (let index = 0; index < commands.length; index += 1) {
     const command = commands[index]; assert.ok(command !== undefined);
     const request = diagnosticNativeRequest(wire(command));
@@ -73,8 +78,8 @@ void test("all eight fixed model requests map to private phases without forwardi
     for (const field of ["params", "expression", "functionDeclaration", "objectGroup", "arguments", "timeout"]) {
       assert.equal(Object.hasOwn(request, field), false, field);
     }
-    if (index === 6) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
-    if (index === 7) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
+    if (index >= 6 && index <= 8) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
+    if (index === 9) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
   }
 });
 
@@ -111,7 +116,7 @@ void test("model protocol rejects every effect override, extra scope/call option
       assert.throws(() => diagnosticNativeRequest(wire(command)));
     }
   }
-  for (const index of [0, 3, 6]) {
+  for (const index of [0, 3, 6, 7, 8]) {
     const original = originals[index]; assert.ok(original !== undefined);
     for (const [field, value] of Object.entries({ throwOnSideEffect: false, silent: false, awaitPromise: true,
       generatePreview: true, userGesture: true })) {
@@ -124,7 +129,9 @@ void test("model protocol rejects every effect override, extra scope/call option
     [1, "objectId", "foreign/handle"], [1, "ownProperties", false], [1, "accessorPropertiesOnly", true],
     [3, "timeout", 1000], [3, "arguments", []], [3, "functionDeclaration", "function(){}"],
     [6, "arguments", [{ value: "caller-data" }]], [6, "arguments", [{ objectId: "a" }, { objectId: "b" }]],
-    [6, "arguments", [{ objectId: "x".repeat(257) }]], [7, "objectGroup", "foreign"], [7, "objectId", "extra"],
+    [6, "arguments", [{ objectId: "x".repeat(257) }]], [7, "arguments", []], [8, "arguments", [{ value: "foreign" }]],
+    [7, "functionDeclaration", "function(){}"], [8, "functionDeclaration", "function(){}"],
+    [9, "objectGroup", "foreign"], [9, "objectId", "extra"],
   ] as const) {
     const original = originals[index]; assert.ok(original !== undefined);
     const command = structuredClone(original); params(command)[field] = value;
@@ -147,8 +154,11 @@ void test("adapter request and byte budgets are fixed and reject overflow withou
 void test("native adapter embeds and private fields match TS programs without native execution", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   for (const [name, program] of Object.entries({
-    OpeningFunction: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
+    OpeningFunction: diagnosticOpeningParams("context", target(), "preflight").functionDeclaration,
+    PcbOpeningFunction: diagnosticPcbOpeningParams("context", target(), "preflight").functionDeclaration,
+    ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
     ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
+    ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), program);
@@ -158,9 +168,43 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
   assert.ok(source.includes("$request.requestId -gt 64")); assert.ok(source.includes("id!=nextRequest || id>64"));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));
   const retained = source.indexOf("root=info.process; rootThread=info.thread; rootPid=info.processId;");
   const checked = source.indexOf("installation.AssertCreatedImage(root);"), resumed = source.indexOf("if(ResumeThread(rootThread)!=1)");
   assert.ok(retained > 0 && checked > retained && resumed > checked);
   assert.ok(source.includes("QueryFullProcessImageName(process,1,actual,ref count)"));
+});
+
+void test("PCB document opening has distinct fixed phases and never aliases project opening", () => {
+  const selected = target();
+  for (const phase of ["preflight", "open-document", "observe"] as const) {
+    const command = { id: 63, method: "Runtime.callFunctionOn",
+      params: diagnosticPcbOpeningParams("original-context", selected, phase), sessionId: "original-page-session" };
+    const request = diagnosticNativeRequest(wire(command));
+    assert.equal(request["pcbOpeningPhase"], phase); assert.equal(Object.hasOwn(request, "openingPhase"), false);
+    assert.equal(request["targetDocumentUuid"], selected.documentUuid);
+    for (const other of ["open-project", "save", ""]) {
+      assert.throws(() => diagnosticNativeRequest(wire({ ...command,
+        params: { ...command.params, arguments: [{ value: selected }, { value: other }] } })));
+    }
+    assert.throws(() => diagnosticNativeRequest(wire({ ...command, params: { ...command.params, throwOnSideEffect: true } })));
+  }
+});
+
+void test("DOM correlation accepts only original frame IDs or numeric backend IDs and fixed shallow description", () => {
+  const frame = { id: 60, method: "DOM.getFrameOwner", params: { frameId: "original-frame" }, sessionId: "original-page-session" };
+  const node = { id: 61, method: "DOM.describeNode", params: { backendNodeId: 1234, depth: 0, pierce: false }, sessionId: "original-page-session" };
+  assert.deepEqual(diagnosticNativeRequest(wire(frame)), { action: "send", requestId: 60, method: "DOM.getFrameOwner",
+    sessionId: "original-page-session", frameId: "original-frame" });
+  assert.deepEqual(diagnosticNativeRequest(wire(node)), { action: "send", requestId: 61, method: "DOM.describeNode",
+    sessionId: "original-page-session", backendNodeId: 1234 });
+  for (const bad of [
+    { ...frame, params: { frameId: "x".repeat(129) } }, { ...frame, params: { frameId: "original-frame", nodeId: 1 } },
+    ...[0, -1, 1.5, 2_147_483_648, "1234", null].map(backendNodeId => ({ id: node.id, method: node.method,
+      params: { backendNodeId, depth: 0, pierce: false }, sessionId: node.sessionId })),
+    { ...node, params: { ...node.params, depth: 1 } }, { ...node, params: { ...node.params, pierce: true } },
+    { ...node, params: { nodeId: 1234, depth: 0, pierce: false } },
+  ]) { assert.throws(() => diagnosticNativeRequest(wire(bad))); }
 });

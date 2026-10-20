@@ -343,11 +343,21 @@ persisted data by then. Never equate prefix acknowledgment with completed startu
 
 The separate PCB model reader follows the source/location-admitted
 `pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.
-Eight fixed requests sample main/custom-footprint compiler queues and selected
-dynamic-copper markers, then release the original remote-object group. All
-effect checks remain enabled; caller object handles, code and arbitrary scope
-enumeration are unavailable. Counts are not full model membership or Save
-eligibility. This PCB-frame branch is not reachable through the worker-only opener.
+Ten fixed requests sample main/custom-footprint compiler queues, selected pending
+producers and raw String-manager membership, then release the original remote-
+object group. The three samples must share a document identity but are not
+atomic. Raw absent/undefined/null/zero fields remain distinct, and models without
+view watchers are included. All effect checks remain enabled; caller object
+handles, code and arbitrary scope enumeration are unavailable. The raw String
+subset is not whole-PCB membership, and local copper-worker reference equality
+is not a CDP/project-worker association or completion evidence. Neither counts
+nor raw fields establish Save eligibility. This PCB-frame branch is not
+reachable through project-only opening alone. A separate one-shot `open-pcb`
+stage derives the original sealed target; `observe-pcb-opening` then binds the
+new child frame through its DOM owner, complete pinned source and default
+context before the fixed native identity observation. Preserve the original UI
+identity and source throughout. This branch excludes worker discovery and
+stays within the same64request budget. It does not validate writes or saved state.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

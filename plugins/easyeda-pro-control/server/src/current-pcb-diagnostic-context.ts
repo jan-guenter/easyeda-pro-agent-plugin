@@ -16,6 +16,14 @@ export interface DiagnosticScriptProfile {
   readonly scriptSha256: string;
   readonly scriptBytes: number;
 }
+interface PcbOpeningTransition {
+  readonly projectUuid: string; readonly documentUuid: string; readonly tabId: string; readonly url: string;
+  readonly originalRoot: Row; readonly uiIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }>;
+  childId: string | null; childLoaderId: string | null; child: Row | null; navigationCount: number; fragmentEvents: number;
+  domBackendNodeId: number | null; profile: DiagnosticScriptProfile | null;
+  sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null;
+  completed: boolean;
+}
 function refuse(): never { throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY"); }
 function text(value: unknown, maximum = 8192): value is string { return typeof value === "string" && value.length <= maximum && !value.includes("\0"); }
 function integer(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value > 0; }
@@ -125,7 +133,8 @@ export class CurrentPcbDiagnosticContext {
   #attachmentEvent: Row | null = null;
   #sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null = null;
   #openingConsumed = false;
-  #opening: { readonly base: string; readonly url: string; events: number } | null = null;
+  #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null; events: number } | null = null;
+  #pcbOpening: PcbOpeningTransition | null = null;
 
   public constructor(expected: DiagnosticFrameExpectation | string) {
     if (typeof expected === "string") {
@@ -195,6 +204,7 @@ export class CurrentPcbDiagnosticContext {
       this.#attachmentEvent = clone(params); return;
     }
     if (event.sessionId !== this.#sessionId) { this.#refuse(); }
+    if (this.#pcbOpening !== null && this.#pcbEvent(event)) { return; }
     if (event.method === "Page.navigatedWithinDocument") {
       const opening = this.#opening;
       if (opening === null || opening.events >= 8 || this.#frame === null ||
@@ -226,13 +236,16 @@ export class CurrentPcbDiagnosticContext {
   }
   public script(): Readonly<{ scriptId: string; context: Row; parsed: Row }> {
     this.assertCurrent(); if (this.#frame === null) { return this.#refuse(); }
+    return this.#scriptFor(this.#frame, this.#profile);
+  }
+  #scriptFor(frame: Row, profile: DiagnosticScriptProfile | null): Readonly<{ scriptId: string; context: Row; parsed: Row }> {
     const matching = [...this.#contexts.values()].filter(value => {
       const aux = value["auxData"];
-      return diagnosticRecord(aux) && aux["frameId"] === this.#frame?.["id"] && aux["isDefault"] === true && aux["type"] === "default";
+      return diagnosticRecord(aux) && aux["frameId"] === frame["id"] && aux["isDefault"] === true && aux["type"] === "default";
     });
-    const context = matching[0]; if (matching.length !== 1 || context === undefined || context["origin"] !== this.#frame["securityOrigin"]) { return this.#refuse(); }
+    const context = matching[0]; if (matching.length !== 1 || context === undefined || context["origin"] !== frame["securityOrigin"]) { return this.#refuse(); }
     const scripts = [...this.#scripts.values()].filter(value => value["executionContextId"] === context["id"] &&
-      (this.#expected === null ? this.#profile !== null && scriptUrlMatches(value["url"], this.#profile) : value["url"] === this.#expected.scriptUrl));
+      (this.#expected === null ? profile !== null && scriptUrlMatches(value["url"], profile) : value["url"] === this.#expected.scriptUrl));
     const parsed = scripts[0];
     if (scripts.length !== 1 || parsed === undefined || !diagnosticToken(parsed["scriptId"]) || parsed["hasSourceURL"] === true ||
         (parsed["scriptLanguage"] !== undefined && parsed["scriptLanguage"] !== "JavaScript") || parsed["isLiveEdit"] === true) { return this.#refuse(); }
@@ -284,6 +297,15 @@ export class CurrentPcbDiagnosticContext {
    * a worker-only opening never upgrades its context into a PCB compiler. */
   public modelContext(): Readonly<{ sessionId: string; scriptId: string; uniqueContextId: string }> {
     this.assertCurrent();
+    const pcb = this.#pcbOpening;
+    if (pcb !== null) {
+      this.pcbOpeningContext();
+      if (!pcb.completed || pcb.child === null || pcb.profile === null || pcb.sourceIdentity === null || pcb.domBackendNodeId === null || this.#sessionId === null) { return this.#refuse(); }
+      const selected = this.#scriptFor(pcb.child, pcb.profile), source = pcb.sourceIdentity;
+      if (selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
+          selected.context["uniqueId"] !== source.uniqueContextId) { return this.#refuse(); }
+      return Object.freeze({ sessionId: this.#sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId });
+    }
     const selected = this.script(), source = this.#sourceIdentity;
     if (this.#expected !== null || this.#profile?.family !== "pcb" || this.#frame === null || this.#frames === null ||
         !this.#frames.some(frame => frame["id"] === this.#frame?.["id"]) || this.#openingConsumed ||
@@ -296,7 +318,7 @@ export class CurrentPcbDiagnosticContext {
    * No frame creation/restored editor tabs are admitted: CDP frame URLs alone
    * cannot prove those frames belong to the checkpoint-selected project.
    * Any failure remains terminal; this method never resets an invalid context. */
-  public beginOpeningTransition(projectUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+  public beginOpeningTransition(projectUuid: string, titleProof?: Readonly<{ initialTitle: string; expectedOpenedTitle: string }>): Readonly<{ sessionId: string; uniqueContextId: string }> {
     const selected = this.openingContext();
     if (this.#openingConsumed) { return this.#refuse(); }
     this.#openingConsumed = true;
@@ -304,7 +326,10 @@ export class CurrentPcbDiagnosticContext {
       if (!/^[a-f\d]{64}$/u.test(projectUuid) || this.#frame === null || this.#target === null) { this.#refuse(); }
       const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
       if (this.#target["url"] !== `${base}${fragment}`) { this.#refuse(); }
-      this.#opening = { base, url: `${base}#id=${projectUuid}`, events: 0 };
+      if (titleProof !== undefined && (!diagnosticExact(titleProof, ["initialTitle", "expectedOpenedTitle"]) ||
+          !text(titleProof.initialTitle, 512) || !text(titleProof.expectedOpenedTitle, 512) || titleProof.initialTitle.length === 0 ||
+          titleProof.expectedOpenedTitle.length === 0 || this.#target["title"] !== titleProof.initialTitle)) { this.#refuse(); }
+      this.#opening = { base, url: `${base}#id=${projectUuid}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null, events: 0 };
       return selected;
     } catch { return this.#refuse(); }
   }
@@ -323,12 +348,162 @@ export class CurrentPcbDiagnosticContext {
       const { urlFragment: currentFragment, ...currentFields } = currentFrame;
       const { urlFragment: _originalFragment, ...originalFields } = original;
       if (currentFragment !== opening.url.slice(opening.base.length) || !equal(originalFields, currentFields) ||
-          !equal({ ...this.#target, url: opening.url, attached: true }, currentTarget)) { this.#refuse(); }
+          !equal({ ...this.#target, url: opening.url, attached: true,
+            ...(opening.expectedTitle === null ? {} : { title: opening.expectedTitle }) }, currentTarget)) { this.#refuse(); }
       this.openingContext();
       this.#frame = currentFrame; this.#frames = currentFrames;
       this.#target = Object.freeze({ ...currentTarget, attached: false });
       this.#opening = null;
     } catch { this.#refuse(); }
+  }
+  /** Separate document-opening branch. The project-only transition above stays
+   * single-frame. Only this one-shot branch can provisionally observe a child. */
+  public beginPcbOpeningTransition(projectUuid: string, documentUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    const selected = this.openingContext();
+    if (this.#pcbOpening !== null || !this.#openingConsumed || this.#opening !== null || this.#frame === null ||
+        this.#sourceIdentity === null || this.#target === null || !/^[a-f\d]{64}$/u.test(projectUuid) ||
+        !/^(?:[a-f\d]{16}|[a-f\d]{32})$/u.test(documentUuid) ||
+        this.#frame["urlFragment"] !== `#id=${projectUuid}`) { return this.#refuse(); }
+    const base = this.#frame["url"];
+    if (typeof base !== "string" || this.#target["url"] !== `${base}#id=${projectUuid}`) { return this.#refuse(); }
+    const tabId = `${documentUuid}@${projectUuid}`;
+    this.#pcbOpening = { projectUuid, documentUuid, tabId, url: `${base}#id=${projectUuid},tab=*${tabId}`,
+      originalRoot: this.#frame, uiIdentity: this.#sourceIdentity, childId: null, childLoaderId: null, child: null, navigationCount: 0,
+      fragmentEvents: 0, domBackendNodeId: null, profile: null, sourceIdentity: null, completed: false };
+    return selected;
+  }
+  public pcbOpeningContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    this.assertCurrent();
+    const pcb = this.#pcbOpening, selected = this.script();
+    if (pcb === null || this.#sessionId === null || this.#frame === null || this.#profile?.family !== "ui" ||
+        this.#frame["id"] !== pcb.originalRoot["id"] || this.#frame["loaderId"] !== pcb.originalRoot["loaderId"] ||
+        selected.scriptId !== pcb.uiIdentity.scriptId || selected.context["id"] !== pcb.uiIdentity.contextId ||
+        selected.context["uniqueId"] !== pcb.uiIdentity.uniqueContextId) { return this.#refuse(); }
+    return Object.freeze({ sessionId: this.#sessionId, uniqueContextId: pcb.uiIdentity.uniqueContextId });
+  }
+  #pcbEvent(event: DiagnosticEvent): boolean {
+    const pcb = this.#pcbOpening;
+    if (pcb === null) { return false; }
+    const params = event.params;
+    if (event.method === "Page.navigatedWithinDocument") {
+      if (pcb.child !== null || pcb.fragmentEvents >= 8 || !diagnosticExact(params, ["frameId", "url", "navigationType"]) ||
+          params["frameId"] !== pcb.originalRoot["id"] || params["url"] !== pcb.url ||
+          !["fragment", "historyApi"].includes(String(params["navigationType"]))) { this.#refuse(); }
+      pcb.fragmentEvents += 1; this.pcbOpeningContext(); return true;
+    }
+    if (event.method === "Page.frameAttached") {
+      if (pcb.child !== null || pcb.childId !== null || !diagnosticToken(params["frameId"]) ||
+          params["frameId"] === pcb.originalRoot["id"] || params["parentFrameId"] !== pcb.originalRoot["id"] ||
+          !diagnosticExact(params, params["stack"] === undefined ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) { this.#refuse(); }
+      pcb.childId = params["frameId"]; return true;
+    }
+    if (["Page.frameNavigated", "Page.frameStartedLoading", "Page.frameStartedNavigating", "Page.frameRequestedNavigation"].includes(event.method)) {
+      if (pcb.child !== null || pcb.childId === null || pcb.navigationCount >= 8) { this.#refuse(); }
+      if (event.method === "Page.frameNavigated") {
+        const frame = params["frame"];
+        // Only the initial blank document may precede the one PCB commit.
+        // Once retained, its loader cannot be replaced or reset before sampling.
+        if (pcb.childLoaderId !== null || !diagnosticRecord(frame) || frame["id"] !== pcb.childId || frame["parentId"] !== pcb.originalRoot["id"] ||
+            !diagnosticToken(frame["loaderId"]) || !["about:blank", "https://client/editor?entry=pcb"].includes(String(frame["url"])) ||
+            (params["type"] !== undefined && params["type"] !== "Navigation")) { this.#refuse(); }
+        pcb.childLoaderId = frame["url"] === "https://client/editor?entry=pcb" ? frame["loaderId"] : null;
+      } else if (params["frameId"] !== pcb.childId || event.method !== "Page.frameStartedLoading" &&
+          params["url"] !== "https://client/editor?entry=pcb") { this.#refuse(); }
+      pcb.navigationCount += 1; return true;
+    }
+    if (event.method === "Runtime.executionContextDestroyed") {
+      const id = params["executionContextId"];
+      const context = typeof id === "number" ? this.#contexts.get(id) : undefined;
+      const aux = context?.["auxData"];
+      if (pcb.child !== null || pcb.childId === null || !diagnosticRecord(aux) || aux["frameId"] !== pcb.childId) { this.#refuse(); }
+      this.#contexts.delete(Number(id));
+      for (const [scriptId, row] of this.#scripts) { if (row["executionContextId"] === id) { this.#scripts.delete(scriptId); } }
+      return true;
+    }
+    return false;
+  }
+  public observePcbOpeningFrames(targetReply: Row, frameReply: Row): Readonly<{ frameId: string; rootFrameId: string }> {
+    this.pcbOpeningContext();
+    try {
+      const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true), pcb = this.#pcbOpening;
+      if (pcb === null || pcb.childId === null || pcb.childLoaderId === null || pcb.child !== null || pcb.fragmentEvents === 0 || pcb.navigationCount === 0 ||
+          this.#target === null || currentFrames.length !== 2) { this.#refuse(); }
+      const root = currentFrames.find(frame => frame["id"] === pcb.originalRoot["id"]);
+      const child = currentFrames.find(frame => frame["id"] === pcb.childId);
+      if (root === undefined || child === undefined) { this.#refuse(); }
+      const { urlFragment: _originalFragment, ...originalFields } = pcb.originalRoot;
+      const { urlFragment, ...currentFields } = root;
+      if (!equal(originalFields, currentFields) || urlFragment !== pcb.url.slice(String(root["url"]).length) ||
+          !equal({ ...this.#target, url: pcb.url, attached: true }, currentTarget) ||
+          child["parentId"] !== root["id"] || child["loaderId"] !== pcb.childLoaderId || child["url"] !== "https://client/editor?entry=pcb" ||
+          child["securityOrigin"] !== "https://client" || child["urlFragment"] !== undefined) { this.#refuse(); }
+      pcb.child = child; this.#frames = currentFrames; this.#frame = root;
+      this.#target = Object.freeze({ ...currentTarget, attached: false });
+      return Object.freeze({ frameId: pcb.childId, rootFrameId: String(root["id"]) });
+    } catch { return this.#refuse(); }
+  }
+  public observePcbFrameOwner(ownerReply: Row, describeReply: Row): void {
+    this.pcbOpeningContext();
+    const backend = ownerReply["backendNodeId"], node = describeReply["node"], pcb = this.#pcbOpening;
+    if (pcb === null || pcb.child === null || pcb.domBackendNodeId !== null || !integer(backend) ||
+        !diagnosticExact(ownerReply, ownerReply["nodeId"] === undefined ? ["backendNodeId"] : ["backendNodeId", "nodeId"]) ||
+        ownerReply["nodeId"] !== undefined && !integer(ownerReply["nodeId"]) ||
+        !diagnosticExact(describeReply, ["node"]) || !diagnosticRecord(node) || node["backendNodeId"] !== backend ||
+        node["nodeType"] !== 1 || node["nodeName"] !== "IFRAME" || node["localName"] !== "iframe" || node["frameId"] !== pcb.childId ||
+        !Array.isArray(node["attributes"]) || node["attributes"].length > 256 || node["attributes"].length % 2 !== 0) { this.#refuse(); }
+    const attributes = new Map<string, string>(), raw: unknown[] = node["attributes"];
+    for (let index = 0; index < raw.length; index += 2) {
+      const key = raw[index], value = raw[index + 1];
+      if (!text(key, 128) || key !== key.toLowerCase() || !text(value, 8192) || attributes.has(key)) { this.#refuse(); }
+      attributes.set(key, value);
+    }
+    if (attributes.get("id") !== `frame_${pcb.tabId}` || attributes.get("c_dbid") !== pcb.tabId ||
+        attributes.get("c_doctype") !== "3" || attributes.get("src") !== "editor?entry=pcb" ||
+        attributes.get("pcb-canvas") !== "true" || attributes.get("class")?.split(/\s+/u).includes("editframe") !== true ||
+        ["blankIframe", "fromFile", "jsonCacheReady"].some(name => attributes.has(name.toLowerCase()))) { this.#refuse(); }
+    pcb.domBackendNodeId = backend;
+  }
+  public pcbScript(input: DiagnosticScriptProfile): Readonly<{ scriptId: string; context: Row; parsed: Row }> {
+    this.pcbOpeningContext();
+    const pcb = this.#pcbOpening, profile = validateDiagnosticScriptProfile(input);
+    if (pcb === null || pcb.child === null || pcb.domBackendNodeId === null || profile.family !== "pcb" ||
+        pcb.profile !== null && !equal(pcb.profile, profile)) { return this.#refuse(); }
+    pcb.profile = profile;
+    const selected = this.#scriptFor(pcb.child, profile), source = pcb.sourceIdentity;
+    if (source !== null && (selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
+        selected.context["uniqueId"] !== source.uniqueContextId)) { return this.#refuse(); }
+    return selected;
+  }
+  public finishPcbOpening(source: Row, targetReply: Row, frameReply: Row): Readonly<Record<string, unknown>> {
+    this.pcbOpeningContext(); this.observeFrames(frameReply); this.observeTarget(targetReply);
+    const pcb = this.#pcbOpening;
+    if (pcb === null || pcb.profile === null || pcb.child === null || pcb.domBackendNodeId === null || pcb.sourceIdentity !== null) { return this.#refuse(); }
+    const scriptSource = source["scriptSource"], selected = this.pcbScript(pcb.profile);
+    if (!diagnosticExact(source, ["scriptSource"]) || typeof scriptSource !== "string" || !scriptSource.isWellFormed() ||
+        Buffer.byteLength(scriptSource, "utf8") !== pcb.profile.scriptBytes ||
+        createHash("sha256").update(scriptSource, "utf8").digest("hex") !== pcb.profile.scriptSha256 ||
+        !integer(selected.context["id"]) || !diagnosticToken(selected.context["uniqueId"])) { return this.#refuse(); }
+    pcb.sourceIdentity = Object.freeze({ scriptId: selected.scriptId, contextId: selected.context["id"], uniqueContextId: selected.context["uniqueId"] });
+    return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-pcb-frame-observation.v1",
+      projectUuid: pcb.projectUuid, documentUuid: pcb.documentUuid, tabId: pcb.tabId, family: "pcb", sourceVerified: true,
+      sourceSha256: pcb.profile.scriptSha256, sourceBytes: pcb.profile.scriptBytes, domOwnerVerified: true,
+      targetId: this.#targetId, sessionId: this.#sessionId, frame: frameSummary(pcb.child),
+      context: { id: selected.context["id"], uniqueId: selected.context["uniqueId"] }, scriptId: selected.scriptId,
+      projectWorkerAssociationVerified: false, compilerOwnerVerified: false, startupQualified: false,
+      executionAuthorized: false, continuousObservation: false });
+  }
+  /** Owner calls only after the fixed native-identity observation and all
+   * original process/installation/frame postchecks have succeeded. Source
+   * identity alone must not expose the model receiver. */
+  public completePcbOpening(): void {
+    this.pcbOpeningContext();
+    const pcb = this.#pcbOpening;
+    if (pcb === null || pcb.completed || pcb.child === null || pcb.profile === null || pcb.sourceIdentity === null ||
+        pcb.domBackendNodeId === null) { this.#refuse(); }
+    const selected = this.#scriptFor(pcb.child, pcb.profile);
+    if (selected.scriptId !== pcb.sourceIdentity.scriptId || selected.context["id"] !== pcb.sourceIdentity.contextId ||
+        selected.context["uniqueId"] !== pcb.sourceIdentity.uniqueContextId) { this.#refuse(); }
+    pcb.completed = true;
   }
   public assertCurrent(): void { if (this.#failed || this.#sessionId === null) { this.#refuse(); } }
   #refuse(): never { this.#failed = true; return refuse(); }

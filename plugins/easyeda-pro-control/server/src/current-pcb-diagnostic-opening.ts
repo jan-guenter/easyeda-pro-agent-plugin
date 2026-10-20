@@ -20,7 +20,7 @@ const phaseSchema = z.enum(CURRENT_PCB_DIAGNOSTIC_OPENING_PHASES);
 const stages = ["setup", "registration-before", "subscribe", "dispatch", "acknowledgement",
   "prefix", "registration-after", "observe", "output", "cleanup"] as const;
 const codes = ["GUARD", "FIELD", "OBJECT", "ARRAY", "TEXT", "METHOD", "BINDING", "URL", "PROJECT",
-  "BRANCH", "FORMAT", "HISTORY", "TAB", "REGISTRY", "OWNERS", "PREFIX", "ACK", "TIMEOUT", "EXCEPTION", "CLEANUP"] as const;
+  "BRANCH", "FORMAT", "HISTORY", "TAB", "REGISTRY", "OWNERS", "PREFIX", "TITLE", "ACK", "TIMEOUT", "EXCEPTION", "CLEANUP"] as const;
 
 /** Immutable function text. Only the two validated by-value arguments vary.
  * Runtime.callFunctionOn: uniqueContextId, returnByValue:true, awaitPromise:true,
@@ -51,6 +51,11 @@ if(!initialUrl.empty)bad("URL");
 let retainedHref=initialHref,prefixCheck;
 const ui=own(root,"UI"),host=own(root,"gVars"),tabs=own(ui,"tabBar"),mode=own(root,"PRO_EDITOR_MODE"),windowTabId=own(root,"_TAB_ID_");
 if(typeof tabs!=="function"||Object.getPrototypeOf(tabs)!==Function.prototype||!matches(windowTabId,/^[A-Za-z0-9_-]{1,128}$/))bad();
+const client=plain(own(host,"client")),initialTitle=text(document?.title,512),query=method(document,"querySelector"),meta=apply(query.fn,document,['meta[name="editorMainVersion"]']);
+if(meta?.ownerDocument!==document||meta?.nodeType!==1||meta?.localName!=="meta")bad("TITLE");
+const attribute=method(meta,"getAttribute"),version=text(apply(attribute.fn,meta,["content"]),64),versionSuffix=" - V"+version;
+if(!matches(version,/^\d+(?:\.\d+){1,7}$/)||initialTitle.includes(" | ")||!initialTitle.endsWith(versionSuffix)||initialTitle.length<=versionSuffix.length)bad("TITLE");
+const projectName=text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\")+1,target.rawWindowsPath.indexOf(".eprj2")),256),expectedOpenedTitle=text(projectName+" | "+initialTitle,512);
 const active=method(tabs,"getActiveTab"),container=method(tabs,"getContainerInfo"),getTab=method(tabs,"getTabById");
 const bus=own(host,"messageBus"),registryCall=method(bus,"rpcCall"),subscribe=method(bus,"subscribe");
 const apiBus=own(host,"extensionApiMessageBus2"),openCall=method(apiBus,"rpcCall");
@@ -60,14 +65,17 @@ const check=()=>{
  if(root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==retainedHref||location?.href!==retainedHref||location?.origin!=="https://client")bad("URL");
  if(parseProjectUrl(retainedHref,target.projectUuid).base!==initialUrl.base)bad("URL");
  if(own(root,"PRO_EDITOR_MODE")!==mode||(mode!=="CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"&&mode!=="CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"))bad();
- if(own(root,"UI")!==ui||own(root,"gVars")!==host||own(ui,"gVars")!==host||own(ui,"tabBar")!==tabs||own(host,"messageBus")!==bus||own(host,"extensionApiMessageBus2")!==apiBus||own(root,"_MSG_BUS2_EXTAPI_")!==apiBus||own(root,"_TAB_ID_")!==windowTabId||own(root,"setTimeout")!==set||own(root,"clearTimeout")!==clear)bad("BINDING");
- for(const binding of [active,container,getTab,registryCall,subscribe,openCall])methodCheck(binding);
+ if(own(root,"UI")!==ui||own(root,"gVars")!==host||own(ui,"gVars")!==host||own(ui,"tabBar")!==tabs||own(host,"client")!==client||own(host,"messageBus")!==bus||own(host,"extensionApiMessageBus2")!==apiBus||own(root,"_MSG_BUS2_EXTAPI_")!==apiBus||own(root,"_TAB_ID_")!==windowTabId||own(root,"setTimeout")!==set||own(root,"clearTimeout")!==clear)bad("BINDING");
+ for(const binding of [active,container,getTab,registryCall,subscribe,openCall,query,attribute])methodCheck(binding);
+ if(apply(query.fn,document,['meta[name="editorMainVersion"]'])!==meta||meta.ownerDocument!==document||apply(attribute.fn,meta,["content"])!==version)bad("TITLE");
  if(prefixCheck!==undefined)prefixCheck();
 };
 const sample=()=>{
  check();const owners=[],project=plain(own(host,"currentProject"));owners.push(project);const pid=own(project,"projectId",true),branch=own(project,"branchUuid",true),projectPresent=pid===target.projectUuid;
  if(pid!==undefined&&!projectPresent)bad("PROJECT");
  if(projectPresent){if(branch!==target.branchUuid)bad("BRANCH");if(own(project,"isV2Format")!==false)bad("FORMAT");}else if(branch!==undefined&&branch!=="")bad("BRANCH");
+ const documentTitle=text(document.title,512),clientName=own(client,"currentProjectName",true);
+ if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""))bad("TITLE");
  if(own(host,"isHistoryMode")!==false)bad("HISTORY");
  const ids=own(tabs,"containerIds"),n=dense(ids,128);if(n===0)bad("TAB");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad("TAB");registry.add(id);names.push(id);}
@@ -88,7 +96,7 @@ const sample=()=>{
  if(!projectPresent&&(start!==1||current!=="tab_page1"||count!==start+placeholder))bad("TAB");
  const url=parseProjectUrl(retainedHref,target.projectUuid,current);
  if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad("URL");check();
- return{owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),public:{projectPresent,branchUuid:projectPresent?branch:null,windowTabId,containerCount:n,tabIds:ordinaryIds,activeTabId:current}};
+ return{owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null,documentTitle,clientName??null]),public:{projectPresent,branchUuid:projectPresent?branch:null,windowTabId,containerCount:n,tabIds:ordinaryIds,activeTabId:current,initialTitle,expectedOpenedTitle,documentTitle}};
 };
 const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad("OWNERS");};
 const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,["/pro-mgr/api/client/getProjectPaths",{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,"message"));if(own(message,"success")!==true)bad("REGISTRY");const result=plain(own(message,"result")),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>!matches(key,/^[a-f0-9]{64}$/)))bad("REGISTRY");const selected=plain(own(result,target.projectUuid));if(text(own(selected,"path"),4096)!==target.rawWindowsPath||own(selected,"isCbb")!==false)bad("REGISTRY");return before;};
@@ -136,10 +144,13 @@ export function currentPcbDiagnosticOpeningArguments(target: unknown, phase: Cur
 
 const opaque = z.string().regex(/^[A-Za-z\d_-]{1,128}$/u);
 const tab = z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})@[a-f\d]{64}$/u);
+// oxlint-disable-next-line no-control-regex -- Reject control bytes in the exact observed title; they must never form an admitted target identity.
+const title = z.string().min(1).max(512).refine(value => value.isWellFormed() && !/[\u0000-\u001F\u007F]/u.test(value));
 const observationSchema = z.object({
   projectPresent: z.boolean(), branchUuid: z.string().regex(/^[a-f\d]{32}$/u).nullable(), windowTabId: opaque,
   containerCount: z.number().int().min(1).max(128), tabIds: z.array(tab).max(256),
   activeTabId: z.union([tab, z.literal(""), z.literal("0"), z.literal("tab_page1")]),
+  initialTitle: title, expectedOpenedTitle: title, documentTitle: title,
 }).strict();
 const resultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-opening.v1"), phase: phaseSchema,
@@ -188,11 +199,17 @@ export function decodeCurrentPcbDiagnosticOpeningReply(input: unknown, targetInp
         phase === "preflight" && result.dispatchAttempted || result.ok !== (result.failure === null) ||
         result.ok !== (result.status !== "refused")) { return refuse(); }
     const observed = result.observation;
+    const projectName = target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\") + 1,
+      target.rawWindowsPath.indexOf(".eprj2"));
     if (observed !== null && (new Set(observed.tabIds).size !== observed.tabIds.length ||
         observed.tabIds.some(id => !id.endsWith(`@${target.projectUuid}`)) ||
         observed.branchUuid !== (observed.projectPresent ? target.branchUuid : null) ||
         !observed.projectPresent && (observed.tabIds.length > 0 || observed.activeTabId !== "tab_page1") ||
-        observed.activeTabId.includes("@") && !observed.tabIds.includes(observed.activeTabId))) { return refuse(); }
+        observed.activeTabId.includes("@") && !observed.tabIds.includes(observed.activeTabId) ||
+        projectName.length === 0 || projectName.length > 256 || observed.initialTitle.includes(" | ") ||
+        !/^.+ - V\d+(?:\.\d+){1,7}$/u.test(observed.initialTitle) ||
+        observed.expectedOpenedTitle !== `${projectName} | ${observed.initialTitle}` ||
+        observed.documentTitle !== (observed.projectPresent ? observed.expectedOpenedTitle : observed.initialTitle))) { return refuse(); }
     if (result.ok && (observed === null || observed.projectPresent !== (phase === "open-project") ||
         phase === "preflight" && (result.status !== "ready" || result.publicResult !== null || result.prefixObserved) ||
         phase === "open-project" && (result.status !== "opened-prefix-observed" || !result.dispatchAttempted ||

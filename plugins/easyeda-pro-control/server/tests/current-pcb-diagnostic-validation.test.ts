@@ -46,6 +46,17 @@ void test("diagnostic request grammar rejects arbitrary executables, hashes, CDP
     assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...model, ...fields }).success, false);
   }
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ action: "inspect", operationId: "validation-test", observation: "model-state" }).success, true);
+  for (const action of ["open-pcb", "observe-pcb-opening"]) {
+    const pcb = { action, operationId: "validation-test", expectedBindingSha256: "a".repeat(64),
+      ...(action === "open-pcb" ? { acceptNormalOpenEffects: true } : {}) };
+    assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(pcb).success, true);
+    for (const fields of [{ target: {} }, { documentUuid: "a".repeat(16) }, { rawWindowsPath: "C:\\Other.eprj2" },
+      { frameId: "frame-1" }, { expression: "1+1" }, { scriptSha256: "a".repeat(64) }]) {
+      assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...pcb, ...fields }).success, false);
+    }
+  }
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ action: "open-pcb",
+    operationId: "validation-test", expectedBindingSha256: "a".repeat(64) }).success, false);
   const cleanup = { action: "cleanup-no-process", operationId: "validation-test", expectedIntentSha256: "a".repeat(64) };
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(cleanup).success, true);
   for (const fields of [{ pid: 123 }, { executable: "C:\\Other.exe" }, { processCreated: false }, { creationState: "not-entered" }]) {

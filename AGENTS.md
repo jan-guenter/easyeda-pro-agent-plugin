@@ -4,6 +4,121 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020093241` is in final review/verification.
+This combined batch fixes actual PowerShell optional-string binding, retains
+native send diagnostics, adds diagnostic-owned PCB opening with exact title/
+frame/DOM/source/identity proof, and integrates compiler/pending/raw-String
+samples. Historical checkpoint verification after navigation checks the retained
+artifact, not unchanged live storage. No writer is enabled.
+Main and independent review fixed the PCB request bound for long paths and
+rejected a second committed child navigation. Final native helper6c787263/
+130,792bytes passed Windows CompileOnly/binder/emptyJob/pipes, no app launch.
+First frozen verify30894 PASSED, but separate repository validation58563 found
+two missing disclosure phrases in the shortened marketplace description.
+Privacy checks passed. Only that manifest copy and an opening-source note were
+corrected afterward; no runtime source/bundle/external pin changed.
+Final unchanged-payload verify, protected CI/publication and official Git
+marketplace installation are pending.
+Release evidence: `/root/.cache/easyeda-pcb-frame-model-release-LwjVijkD`.
+Details: `docs/current-pcb-frame-model-batch-2026-10-20.md`.
+
+081744 continuation on2026-10-20:
+Post-main Linux39395211732 PASSED on exact67a1097. Actual fresh facade836356/
+start46193649, parent834704/start46187784, pinnedNode24.18.0/core0 admitted
+independently and by main. All524source/3runtime/manifest and full installed
+1,573files/42directories/32,460,324bytes/modes match the immutable release.
+Admission proof3ae56349:
+`/root/.cache/easyeda-081744-independent-admission-YHEr9x7F/proof.json`.
+
+One actual diagnostic `diag-native-081744-20261020-01` successfully launched
+original EasyEDA35468/created134369608468935587, binding9338e34f. First browser
+observation failed `PCB_DIAGNOSTIC_PIPE_OUTPUT`, consumed without a result.
+No frame/script/project opening or CAD/Save was dispatched. Original window
+2032458 received one normal-close request; original root/whole Job termination
+was proved and `release-closed` reached terminal `released`. No Save/Discard
+choice, forced exit, adoption or replay. Receipts:
+`/root/.cache/easyeda-081744-native-diagnostic-live-RpE8bmcH`.
+This qualifies launch and normal cleanup only, not browser/worker/model support.
+No production design files or records were accessed.
+
+Current source batch: fixed pending-producer and raw-String model observations,
+their original-scope/native integration, and the observed PowerShell optional-
+string dispatch boundary. Preserve missing/null/zero field distinctions and
+the unchanged128KiB aggregate/64request bounds. These are sampled diagnostics,
+not a complete baseline or writer authority. Source work remains separate from
+the immutable running081744 host; no hotpatch/cache edits or new live attempt.
+Finish and review the useful batch before publishing/installing another version.
+
+### Delivered081744 checkpoint (historical)
+
+Delivered `0.3.0+codex.20261020081744` through protected PR84 on2026-10-20.
+Payloadd689b7fa, finalhead `911c246ef05b17ff1a220a5431e229dcce8729d3`,
+merged main `67a1097682796412aa355e657b508c99af425de2`; finalhead/main
+complete tree37e037cb identical. The follow-up commit removes a production
+project name from a new research note; the plugin subtree73124816 is unchanged
+from the original payload. No design contents or production records were read.
+The earlier Linux39393002698 failed its tracked-document privacy check and was
+superseded/cancelled; it is not passing release evidence. Run repository/privacy
+validation after adding new files, since the tracked-file scan excludes untracked
+research notes.
+
+Local required verify45693 PASSED:11,811facade/4platformskips/0failures and
+424bridge tests; strict types/type-aware lint, package/MCP and seven skills pass.
+Log3037be27, original freeze8a273115, final frozen-input comparison records only
+the documentation-only privacy correction; every plugin input and both rebuilt
+bundles remained exact. Tracked repository/privacy check9d3c734b and seven-skills
+33066965 pass. Source524/5d5f577c, runtime3/f64f4f95, manifest89b78e1a;
+only facade projections/review time changed, no external compatibility pins.
+Exact-final-head Linux39393502361 PASSED all8shards/build/finalgate:
+11,810facade/5platformskips/0failures and424bridge. Windows39393502371 PASSED
+native compile/emptyJob/pipes and the shared suspended-image synthetic lifecycle.
+Post-main Windows39395211821 PASSED; automatic Linux39395211732 remains running.
+Check that result next session; no re-run or extra validation campaign is needed.
+
+Official named Git marketplace upgrade75120 completed with no errors/stderr.
+List20226 confirms installed/enabled081744 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, marketplace HEAD
+exact merged main. Maintained comparison20226 PASSED1,573files/42directories/
+32,460,324bytes and modes; inventory03f932f6, plugin tree73124816, receipt55a2ac5a.
+Exact-main worktree:
+`/root/.cache/easyeda-081744-merged-main-igE83PPc/worktree`.
+Release evidence: `/root/.cache/easyeda-opening-model-release-6LK1HWuq`.
+This comparison proves installation, not actual loaded-runtime admission.
+
+This combined batch implements suspended native-image verification, retained
+disposable project opening, and fixed nonpausing PCB compiler-state observation.
+The opener is worker-only; it does not supply the already-qualified PCB frame
+needed by the separate model reader. Skills and tool descriptions distinguish
+these implementations/synthetic results from live validation and writer support.
+No new connected EasyEDA launch/open/model qualification is claimed.
+The installed053706 attempt below is terminal no-process-released; never replay.
+EasyEDA remains closed, no outstanding original native helper, no CAD/Save or
+production-file/record access. Running053706 host719505 was not killed, rebound
+or hotpatched. A fresh Codex session must load/admit081744 before further live
+calls; no old-host calls after the official upgrade.
+
+Next work:
+
+1. Check automatic merged-main Linux CI, admit the fresh081744 host, and qualify
+   one new original-owned native launch/browser/frame/source/normal-cleanup case.
+2. Qualify the exact disposable opener and worker state. Separately qualify the
+   existing-PCB-frame model observer; never use restored production tabs or
+   weaken the worker-only opening frame checks.
+3. Complete target/String/raw-model and pending-producer observations, then the
+   one-shot PCB String writer and full closed/reopened SQL/content proof.
+4. Qualify populated Image/Dimension/polygon-Pad readers. Remaining schematic/
+   connectivity/structure, libraries/3D, PCB placement/routing/copper/rules/
+   stackup, ECO/ERC/DRC and manufacturing/export remain implementation backlog.
+5. Portable upstream bootstrap and additional independently admitted platforms.
+
+Inventory remains774:212public subsets/33native equivalents/79blocked/450omitted.
+Batch further useful implementation before the next version; do not mistake
+this internal diagnostic batch for expanded SDK coverage.
+This post-delivery handoff is local documentation, not part of the immutable
+installed PR84 payload.
+
+### Completed053706 continuation and081744 release preparation (historical)
+
 Candidate `0.3.0+codex.20261020081744` batches three substantive changes:
 suspended native-image verification before the sole resume, a retained-owner
 disposable project opener, and a fixed nonpausing PCB compiler-state observer.

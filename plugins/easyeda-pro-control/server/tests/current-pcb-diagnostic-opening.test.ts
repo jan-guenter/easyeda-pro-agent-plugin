@@ -17,7 +17,8 @@ function fixture(options: Options = {}): { run: (phase: CurrentPcbDiagnosticOpen
     ? (callback: () => void): ReturnType<typeof setTimeout> => setTimeout(callback, 1) : setTimeout });
   runInContext(`globalThis.window=globalThis;globalThis.top=globalThis;globalThis.target=${JSON.stringify(target)};
 globalThis.location={href:'https://client/editor?cll=warn#',origin:'https://client'};
-globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href};
+globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href,title:'EasyEDA Pro - V3.2.196',querySelector(selector){if(selector!=='meta[name="editorMainVersion"]')throw new Error('PRIVATE_SELECTOR');return meta;}};
+globalThis.meta={ownerDocument:document,nodeType:1,localName:'meta',getAttribute(name){if(name!=='content')throw new Error('PRIVATE_ATTRIBUTE');return '3.2.196';}};
 globalThis.PRO_EDITOR_MODE='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM';globalThis._TAB_ID_='original-window';
 globalThis.start={tabId:'tab_page1',data:{doctype:-1},isAbleDelete:false,group:'start_blank',draggable:true,isDisplayNone:false};
 globalThis.info={id:'editor-window-main',belong:'editor-window-main',tabs:[start],activeTabId:'tab_page1'};
@@ -28,9 +29,9 @@ globalThis.publish=(...args)=>{for(const task of listeners)if(task.isRunning)tas
 globalThis.registration={[target.projectUuid]:{path:target.rawWindowsPath,isCbb:false}};
 class Registry{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||topic!=='/pro-mgr/api/client/getProjectPaths'||Object.keys(args).length||timeout!==0)throw new Error('PRIVATE_REGISTRY');registryCalls++;await Promise.resolve();${options.afterRegistry ?? ""}return {message:{success:true,result:registration},bridge:undefined,source:undefined};}subscribe(topic,callback){if(this!==gVars.messageBus||topic!=='loadProjectCompleted')throw new Error('PRIVATE_SUBSCRIPTION');const task=new Task(callback);listeners.push(task);${options.subscriptionBody ?? ""}return task;}}
 class Api{async rpcCall(topic,id){if(this!==gVars.extensionApiMessageBus2||arguments.length!==2||topic!=='extensionApi.DMT_Project.openProject'||id!==target.projectUuid)throw new Error('PRIVATE_OPEN');projectCalls++;await Promise.resolve();const result=await(async()=>{${options.projectBody ?? "openedProject();return true;"}})();${options.projectEvent ?? "if(result===true)publish(null,undefined,undefined);"}return result;}}
-globalThis.gVars={currentProject:{projectId:undefined,branchUuid:''},isHistoryMode:false,messageBus:new Registry(),extensionApiMessageBus2:new Api()};
+globalThis.gVars={client:{},currentProject:{projectId:undefined,branchUuid:''},isHistoryMode:false,messageBus:new Registry(),extensionApiMessageBus2:new Api()};
 globalThis._MSG_BUS2_EXTAPI_=gVars.extensionApiMessageBus2;globalThis.UI={gVars,tabBar:Tabs};
-globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};location.href=location.href.split('#')[0]+'#id='+target.projectUuid;document.URL=location.href;};
+globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};gVars.client.currentProjectName='Selected';document.title='Selected | EasyEDA Pro - V3.2.196';location.href=location.href.split('#')[0]+'#id='+target.projectUuid;document.URL=location.href;};
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return {
     run: async (phase): Promise<CurrentPcbDiagnosticOpeningResult> => {
@@ -52,6 +53,9 @@ void test("fixed opening preflight validates the registered disposable without o
   const env = fixture(), result = await env.run("preflight");
   assert.equal(result.ok, true); assert.equal(result.status, "ready"); assert.equal(result.dispatchAttempted, false);
   assert.equal(result.observation?.projectPresent, false); assert.equal(result.nativeWorkMayRemain, false);
+  assert.equal(result.observation.initialTitle, "EasyEDA Pro - V3.2.196");
+  assert.equal(result.observation.expectedOpenedTitle, "Selected | EasyEDA Pro - V3.2.196");
+  assert.equal(result.observation.documentTitle, "EasyEDA Pro - V3.2.196");
   assert.equal(env.evaluate("projectCalls"), 0); assert.equal(env.evaluate("registryCalls"), 2);
   assert.equal(env.evaluate("listeners.length"), 0); assert.equal(env.evaluate("cancelCalls"), 0);
   assert.equal(result.startupQualified, false); assert.equal(result.persistenceVerified, false);
@@ -69,6 +73,7 @@ void test("fixed project service is called once and waits for one contextual pre
   assert.equal(result.ok, true); assert.equal(result.status, "opened-prefix-observed");
   assert.equal(result.publicResult, true); assert.equal(result.prefixObserved, true);
   assert.equal(result.observation?.projectPresent, true); assert.equal(result.observation.branchUuid, target.branchUuid);
+  assert.equal(result.observation.documentTitle, "Selected | EasyEDA Pro - V3.2.196");
   assert.equal(result.nativeWorkMayRemain, true); assert.equal(result.restorationCompletionVerified, false);
   assert.equal(result.compilerOwnerVerified, false); assert.equal(result.queueCompletionVerified, false);
   assert.equal(env.evaluate("projectCalls"), 1); assert.equal(env.evaluate("registryCalls"), 2);
@@ -84,6 +89,10 @@ void test("pre-dispatch authority, accessor and registration failures never call
     "registration[target.projectUuid].isCbb=true;",
     "Object.defineProperty(start.data,'pid',{get(){getterCalls++;return 'private';}});",
     "gVars.isHistoryMode=true;", "globalThis._MSG_BUS2_EXTAPI_={};",
+    "gVars.client.currentProjectName='Other';", "document.title='Other | EasyEDA Pro - V3.2.196';",
+    "document.title='EasyEDA Pro - V0.0.0';", "meta.localName='div';",
+    "meta.getAttribute=()=> 'private-version';",
+    "Object.defineProperty(gVars.client,'currentProjectName',{get(){getterCalls++;return 'private';}});",
   ]) {
     const env = fixture({ before }), result = await env.run("open-project");
     assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, false);
@@ -118,6 +127,14 @@ void test("post-dispatch observations refuse owner, URL and registration drift",
     const env = fixture({ afterRegistry: `if(registryCalls===2){${afterRegistry}}` }), result = await env.run("open-project");
     assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, true); assert.equal(env.evaluate("projectCalls"), 1);
     assert.equal(env.evaluate("cancelCalls"), 1);
+  }
+  for (const projectEvent of ["document.title='EasyEDA Pro - V3.2.196';publish(null,undefined,undefined);",
+    "document.title='Arbitrary title';publish(null,undefined,undefined);",
+    "gVars.client.currentProjectName='Other';publish(null,undefined,undefined);",
+    "gVars.client={...gVars.client};publish(null,undefined,undefined);"]) {
+    const env = fixture({ projectEvent }), result = await env.run("open-project");
+    assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, true);
+    assert.equal(env.evaluate("projectCalls"), 1);
   }
   for (const change of ["location.href=location.href.replace('cll=warn','cll=info');",
     "location.href+='&cmd=private';", "location.href=location.href.replace(target.projectUuid,'f'.repeat(64));"]) {
@@ -168,6 +185,8 @@ void test("strict typed arguments and exact remote results cannot supply code or
     { nativeWorkMayRemain: true }, { dispatchAttempted: true }, { phase: "open-project" },
     { projectUuid: "f".repeat(64) }, { publicResult: true }, { prefixObserved: true },
     { observation: { ...result.observation, tabIds: [`${target.documentUuid}@${target.projectUuid}`] } },
+    { observation: { ...result.observation, expectedOpenedTitle: "Other | EasyEDA Pro - V3.2.196" } },
+    { observation: { ...result.observation, documentTitle: "Selected | EasyEDA Pro - V3.2.196" } },
     { rawWindowsPath }, { failure: { stage: "output", code: "EXCEPTION" } }]) {
     assert.throws(() => decodeCurrentPcbDiagnosticOpeningReply(resultReply(result, change), target, "preflight"), /PCB_DIAGNOSTIC_OPENING_REPLY/u);
   }

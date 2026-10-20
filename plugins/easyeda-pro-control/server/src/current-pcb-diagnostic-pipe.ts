@@ -8,12 +8,13 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
-  diagnosticExact, diagnosticOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+  diagnosticExact, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
+import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -108,6 +109,20 @@ export class CurrentPcbDiagnosticPipe {
     if (this.#sessionId === null || !diagnosticToken(scriptId)) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_SCRIPT_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Debugger.getScriptSource", params: { scriptId }, sessionId: this.#sessionId });
   }
+  /** Original newly observed child frame only. The owner/context validates the
+   * reciprocal DOM node; no caller selectors or recursive DOM traversal. */
+  public getFrameOwner(frameId: string): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null || !diagnosticToken(frameId)) {
+      return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT"));
+    }
+    return this.#request({ id: this.#nextId, method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#sessionId });
+  }
+  public describeFrameOwner(backendNodeId: number): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null || !Number.isSafeInteger(backendNodeId) ||
+        backendNodeId < 1 || backendNodeId > 2_147_483_647) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_FRAME_OWNER_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "DOM.describeNode",
+      params: { backendNodeId, depth: 0, pierce: false }, sessionId: this.#sessionId });
+  }
   /** One fixed direct-child discovery on the original page. No recursive
    * autoattachment, debugger waiting, detached adoption or caller target URL. */
   public async enableWorkerDiscovery(event: (value: DiagnosticEvent) => void): Promise<Reply> {
@@ -154,6 +169,12 @@ export class CurrentPcbDiagnosticPipe {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
     const { modelPhase: _modelPhase, ...wire } = command;
     return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId });
+  }
+  public observePcbOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+    phase: CurrentPcbDiagnosticPcbOpeningPhase): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticPcbOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId });
   }
   #workerSession(): string {
     if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||

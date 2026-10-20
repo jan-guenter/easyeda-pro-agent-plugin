@@ -8,9 +8,14 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTI
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "./current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "./current-pcb-diagnostic-model-runner.ts";
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "./current-pcb-diagnostic-pending-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "./current-pcb-diagnostic-raw-strings.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, currentPcbDiagnosticPcbOpeningArguments } from "./current-pcb-diagnostic-pcb-opening.ts";
+import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 
-// The original complete worker path uses32 requests. Opening adds at most8,
-// And the separate fixed model path adds at most12. No caller budget override.
+// The original complete worker path uses32 requests. Project opening adds8.
+// The existing-PCB model path uses29; the complete project/PCB opening and
+// Model observation path uses53. Those branches are exclusive; no override.
 export const DIAGNOSTIC_REQUEST_LIMIT = 64;
 export function diagnosticOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
   phase: CurrentPcbDiagnosticOpeningPhase): Readonly<{
@@ -20,6 +25,13 @@ export function diagnosticOpeningParams(uniqueContextId: string, target: Current
   if (!diagnosticToken(uniqueContextId) || !target.rawWindowsPath.isWellFormed()) { return fail(); }
   return Object.freeze({ functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, uniqueContextId,
     arguments: currentPcbDiagnosticOpeningArguments(target, phase), returnByValue: true, awaitPromise: true, silent: true,
+    generatePreview: false, userGesture: false, throwOnSideEffect: false });
+}
+export function diagnosticPcbOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+  phase: CurrentPcbDiagnosticPcbOpeningPhase): ReturnType<typeof diagnosticOpeningParams> {
+  if (!diagnosticToken(uniqueContextId) || !target.rawWindowsPath.isWellFormed()) { return fail(); }
+  return Object.freeze({ functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, uniqueContextId,
+    arguments: currentPcbDiagnosticPcbOpeningArguments(target, phase), returnByValue: true, awaitPromise: true, silent: true,
     generatePreview: false, userGesture: false, throwOnSideEffect: false });
 }
 
@@ -41,6 +53,8 @@ export type DiagnosticCommand =
   | Readonly<{ id: number; method: "Page.enable" | "Page.getFrameTree" | "Runtime.enable"; params: Readonly<Record<string, never>>; sessionId: string }>
   | Readonly<{ id: number; method: "Debugger.enable"; params: Readonly<{ maxScriptsCacheSize: 33_554_432 }>; sessionId: string }>
   | Readonly<{ id: number; method: "Debugger.getScriptSource"; params: Readonly<{ scriptId: string }>; sessionId: string }>
+  | Readonly<{ id: number; method: "DOM.getFrameOwner"; params: Readonly<{ frameId: string }>; sessionId: string }>
+  | Readonly<{ id: number; method: "DOM.describeNode"; params: Readonly<{ backendNodeId: number; depth: 0; pierce: false }>; sessionId: string }>
   | Readonly<{ id: number; method: "Target.setAutoAttach"; params: typeof DIAGNOSTIC_WORKER_ATTACH_PARAMS; sessionId: string }>
   | Readonly<{ id: number; method: "Runtime.evaluate"; params: ReturnType<typeof diagnosticWorkerEvaluationParams>; sessionId: string }>
   | Readonly<{ id: number; method: "Runtime.callFunctionOn"; params: ReturnType<typeof diagnosticOpeningParams>; sessionId: string }>
@@ -80,13 +94,24 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     const objectId = modelHandle(params["objectId"]);
     command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, returnByValue: false }, sessionId };
     request = { ...base, modelPhase: "handler", objectId };
-  } else if (method === "Runtime.callFunctionOn" && params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION) {
+  } else if (method === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION ||
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION)) {
     const args = params["arguments"];
     if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["objectId"])) { return fail(); }
     const callbackObjectId = modelHandle(args[0]["objectId"]), objectId = modelHandle(params["objectId"]);
-    command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
-      returnByValue: true, arguments: [{ objectId: callbackObjectId }] }, sessionId };
-    request = { ...base, modelPhase: "snapshot", objectId, callbackObjectId };
+    const callParams = { returnByValue: true, arguments: [{ objectId: callbackObjectId }] as const } as const;
+    let modelPhase = "snapshot";
+    if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION) {
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ...callParams }, sessionId };
+      modelPhase = "pending";
+    } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION) {
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...callParams }, sessionId };
+      modelPhase = "raw-strings";
+    } else {
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
+    }
+    request = { ...base, modelPhase, objectId, callbackObjectId };
   } else if (method === "Runtime.releaseObjectGroup") {
     command = { id, method, params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP }, sessionId };
     request = { ...base, modelPhase: "release" };
@@ -128,6 +153,17 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
       if (!diagnosticExact(params, ["scriptId"]) || !diagnosticToken(params["scriptId"])) { return fail(); }
       command = { id, method, params: { scriptId: params["scriptId"] }, sessionId };
       request = { action: "send", requestId: id, method, sessionId, scriptId: params["scriptId"] };
+    } else if (method === "DOM.getFrameOwner") {
+      if (!diagnosticExact(params, ["frameId"]) || !diagnosticToken(params["frameId"])) { return fail(); }
+      command = { id, method, params: { frameId: params["frameId"] }, sessionId };
+      request = { action: "send", requestId: id, method, sessionId, frameId: params["frameId"] };
+    } else if (method === "DOM.describeNode") {
+      const backendNodeId = params["backendNodeId"];
+      if (!diagnosticExact(params, ["backendNodeId", "depth", "pierce"]) || typeof backendNodeId !== "number" ||
+          !Number.isSafeInteger(backendNodeId) || backendNodeId < 1 || backendNodeId > 2_147_483_647 ||
+          params["depth"] !== 0 || params["pierce"] !== false) { return fail(); }
+      command = { id, method, params: { backendNodeId, depth: 0, pierce: false }, sessionId };
+      request = { action: "send", requestId: id, method, sessionId, backendNodeId };
     } else if (method === "Target.setAutoAttach") {
       if (JSON.stringify(params) !== JSON.stringify(DIAGNOSTIC_WORKER_ATTACH_PARAMS)) { return fail(); }
       command = { id, method, params: DIAGNOSTIC_WORKER_ATTACH_PARAMS, sessionId };
@@ -146,13 +182,22 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
           !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["value"]) ||
           !diagnosticRecord(args[1]) || !diagnosticExact(args[1], ["value"])) { return fail(); }
       const phase = args[1]["value"], target = args[0]["value"];
-      if (!diagnosticRecord(target) || phase !== "preflight" && phase !== "open-project") { return fail(); }
+      if (!diagnosticRecord(target)) { return fail(); }
       const selected = currentDisposableOpenSealedTargetSchema.parse(target);
-      const fixed = diagnosticOpeningParams(params["uniqueContextId"], selected, phase);
+      const pcb = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION;
+      let fixed: ReturnType<typeof diagnosticOpeningParams>;
+      if (pcb) {
+        if (phase !== "preflight" && phase !== "open-document" && phase !== "observe") { return fail(); }
+        fixed = diagnosticPcbOpeningParams(params["uniqueContextId"], selected, phase);
+      } else {
+        if (phase !== "preflight" && phase !== "open-project") { return fail(); }
+        fixed = diagnosticOpeningParams(params["uniqueContextId"], selected, phase);
+      }
       if (JSON.stringify(params) !== JSON.stringify(fixed)) { return fail(); }
       command = { id, method, params: fixed, sessionId };
       request = { action: "send", requestId: id, method, sessionId, uniqueContextId: params["uniqueContextId"],
-        openingPhase: phase, targetRawWindowsPath: selected.rawWindowsPath, targetProjectUuid: selected.projectUuid,
+        ...(pcb ? { pcbOpeningPhase: phase } : { openingPhase: phase }),
+        targetRawWindowsPath: selected.rawWindowsPath, targetProjectUuid: selected.projectUuid,
         targetBranchUuid: selected.branchUuid, targetDocumentUuid: selected.documentUuid, targetExpectedSourceSha256: selected.expectedSourceSha256 };
     } else { return fail(); }
   }

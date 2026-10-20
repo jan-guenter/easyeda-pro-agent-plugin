@@ -15,10 +15,11 @@ const SOURCE = "const syntheticIdentity = true;\n";
 const SCRIPT_PROFILE = { family: "pcb", relativePath: "pro-pcb/test-version/js/pcb.js",
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
 function fixture(context: TestContext, scenario = "normal"): Readonly<{
-  owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean }; actions: string[]; openingPhases: string[];
+  owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean };
+  actions: string[]; openingPhases: string[]; pcbPhases: string[];
 }> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario], { stdio: ["pipe", "pipe", "pipe"] });
-  const actions: string[] = [], installation = { valid: true }, openingPhases: string[] = [], source = { valid: true };
+  const actions: string[] = [], installation = { valid: true }, openingPhases: string[] = [], pcbPhases: string[] = [], source = { valid: true };
   const originalWrite = child.stdin.write.bind(child.stdin);
   // Keep actual child pipes and callbacks; observe only the generated wire data.
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
@@ -27,6 +28,7 @@ function fixture(context: TestContext, scenario = "normal"): Readonly<{
       const parsed: unknown = JSON.parse(first); assert.ok(parsed !== null && typeof parsed === "object" && "action" in parsed);
       actions.push(String(parsed["action"]));
       if ("openingPhase" in parsed) { openingPhases.push(String(parsed["openingPhase"])); }
+      if ("pcbOpeningPhase" in parsed) { pcbPhases.push(String(parsed["pcbOpeningPhase"])); }
     }
     return originalWrite(...args);
   });
@@ -40,7 +42,7 @@ function fixture(context: TestContext, scenario = "normal"): Readonly<{
       child.stdin.end(); await closed;
     }
   });
-  return { owner, child, source, installation, actions, openingPhases };
+  return { owner, child, source, installation, actions, openingPhases, pcbPhases };
 }
 async function close(value: ReturnType<typeof fixture>): Promise<void> {
   assert.equal(await value.owner.observeApplicationWindow(), "456");
@@ -188,8 +190,22 @@ void test("diagnostic protocol failure preserves normal-close access and origina
 });
 void test("native write refusal preserves helper and never retries discovery", async context => {
   const value = fixture(context, "native-send-failed"); await value.owner.launch(LAUNCH);
-  await assert.rejects(value.owner.getVersion(), /PIPE_OUTPUT/u);
+  await assert.rejects(value.owner.getVersion(), { message: "PCB_DIAGNOSTIC_PIPE_OUTPUT:pcb-diagnostic-partial-write" });
+  // The retained bounded cause diagnoses the original failure. It grants no
+  // Retry and does not claim the native write had no effect.
+  await assert.rejects(value.owner.getTargets(), { message: "PCB_DIAGNOSTIC_PIPE_OUTPUT:pcb-diagnostic-partial-write" });
+  assert.equal(value.owner.status().nativeSendError, "pcb-diagnostic-partial-write");
   assert.equal(value.child.stdin?.writableEnded, false); await close(value);
+  assert.equal(value.actions.filter(action => action === "send").length, 1);
+});
+void test("native send diagnostics exclude untrusted exception text and preserve the original helper", async context => {
+  const value = fixture(context, "native-send-private-error"); await value.owner.launch(LAUNCH);
+  await assert.rejects(value.owner.getVersion(), { message: "PCB_DIAGNOSTIC_PIPE_OUTPUT" });
+  assert.equal(value.owner.status().failure, "HELPER_REPLY");
+  assert.equal(value.owner.status().nativeSendError, null);
+  assert.equal(value.child.stdin?.writableEnded, false); assert.equal(value.child.exitCode, null);
+  assert.equal(value.actions.filter(action => action === "send").length, 1);
+  await assert.rejects(value.owner.getTargets(), { message: "PCB_DIAGNOSTIC_OWNER_HELPER_REPLY" });
   assert.equal(value.actions.filter(action => action === "send").length, 1);
 });
 void test("malformed helper chunk immediately poisons discovery without another poll or send", async context => {
@@ -420,7 +436,7 @@ void test("diagnostic project opening retains exact source and one-shot transiti
 });
 void test("fixed diagnostic opening may carry a validated long path without widening unrelated requests", async context => {
   const value = await openingFixture(context);
-  const rawWindowsPath = `C:\\${"界".repeat(2000)}.eprj2`;
+  const rawWindowsPath = `C:\\${"界".repeat(2000)}\\Selected.eprj2`;
   const result = await value.owner.openProject({ ...OPEN_TARGET, rawWindowsPath,
     projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex") }, () => Promise.resolve());
   assert.equal(result.ok, true); assert.deepEqual(value.openingPhases, ["preflight", "open-project"]); await close(value);
@@ -476,9 +492,11 @@ void test("fixed model observation stays in the source-admitted PCB session and 
   await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
   await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
   const result = await value.owner.observeModelState();
-  assert.equal(result.main.headType, "PCB"); assert.equal(result.queueCompletionVerified, false);
+  assert.equal(result.compilerState.main.headType, "PCB"); assert.equal(result.queueCompletionVerified, false);
+  assert.equal(result.pendingProducers.documentUuid, result.documentUuid); assert.equal(result.rawStrings.documentUuid, result.documentUuid);
+  assert.equal(result.atomicSnapshotVerified, false);
   assert.equal(result.saveAuthorized, false); assert.equal(value.owner.status().modelObservationConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 27);
+  assert.equal(value.actions.filter(action => action === "send").length, 29);
   assert.ok(!JSON.stringify(result).includes("synthetic private"));
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -486,7 +504,7 @@ void test("fixed model observation stays in the source-admitted PCB session and 
   await close(value);
 });
 void test("model source, scope cleanup and context failures retain the original process cleanup", async context => {
-  for (const scenario of ["staged-model-source-refused", "staged-model-release-refused", "staged-model-context-lost"]) {
+  for (const scenario of ["staged-model-source-refused", "staged-model-release-refused", "staged-model-context-lost", "staged-model-document-drift"]) {
     const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
     await value.owner.browserObservation(); await value.owner.inspectFrames("target-1"); await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
     await assert.rejects(value.owner.observeModelState(), /MODEL_SCOPE|MODEL_OBSERVATION|PIPE_REPLY/u);
@@ -497,4 +515,71 @@ void test("model source, scope cleanup and context failures retain the original 
   const opened = await openingFixture(context);
   await opened.owner.openProject(OPEN_TARGET, () => Promise.resolve());
   await assert.rejects(opened.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u); await close(opened);
+});
+
+void test("disposable PCB opening admits original child DOM and source before its identity RPC and model samples", async context => {
+  const value = await openingFixture(context, "opening-pcb");
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  let reproofs = 0;
+  const opened = await value.owner.openPcb(OPEN_TARGET, () => { reproofs += 1; return Promise.resolve(); });
+  assert.equal(opened.ok, true); assert.equal(opened.status, "opened"); assert.equal(reproofs, 1);
+  assert.equal(value.owner.status().pcbSourceQualified, false);
+  await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
+  const observed = await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+  assert.equal(observed["sourceVerified"], true); assert.equal(observed["domOwnerVerified"], true);
+  assert.equal(value.owner.status().pcbSourceQualified, true);
+  const model = await value.owner.observeModelState();
+  assert.equal(model.documentUuid, OPEN_TARGET.documentUuid); assert.equal(model.executionAuthorized, false);
+  assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
+  assert.equal(value.actions.filter(action => action === "send").length, 53);
+  await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.resolve()), /PCB_OPENING_UNAVAILABLE/u);
+  await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /PCB_OBSERVATION_UNAVAILABLE/u);
+  await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
+  await close(value);
+});
+void test("all fixed PCB phases carry the original maximum-width Unicode path within the bounded native request", async context => {
+  const value = await openingFixture(context, "opening-pcb");
+  const rawWindowsPath = `C:\\${"界".repeat(4096 - String.raw`C:\\Selected.eprj2`.length)}\\Selected.eprj2`;
+  assert.equal(rawWindowsPath.length, 4096); assert.ok(Buffer.byteLength(rawWindowsPath) > 4096);
+  const target = { ...OPEN_TARGET, rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex") };
+  await value.owner.openProject(target, () => Promise.resolve());
+  const opened = await value.owner.openPcb(target, () => Promise.resolve());
+  assert.equal(opened.ok, true);
+  const observed = await value.owner.observePcbOpening(target, SCRIPT_PROFILE);
+  assert.equal(observed["sourceVerified"], true);
+  assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
+  assert.equal(value.owner.status().failure, null); await close(value);
+});
+
+void test("PCB-opening refuses a foreign sealed target and failed reproof before navigation", async context => {
+  const value = await openingFixture(context, "opening-pcb");
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await assert.rejects(value.owner.openPcb({ ...OPEN_TARGET, documentUuid: "f".repeat(16) }, () => Promise.resolve()), /PCB_OPENING_UNAVAILABLE/u);
+  assert.equal(value.owner.status().pcbOpeningConsumed, false);
+  await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.reject(new Error("synthetic reproof drift"))), /reproof drift/u);
+  assert.deepEqual(value.pcbPhases, ["preflight"]); assert.equal(value.owner.status().pcbOpeningConsumed, true);
+  await close(value);
+});
+
+void test("PCB DOM/source/identity failures retain cleanup and never turn acknowledgment into model authority", async context => {
+  for (const scenario of ["opening-pcb-dom-drift", "opening-pcb-source-drift", "opening-pcb-observe-refused"]) {
+    const value = await openingFixture(context, scenario);
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /CONTEXT_IDENTITY|PCB_FRAME_REFUSED/u);
+    assert.equal(value.owner.status().pcbSourceQualified, false);
+    assert.deepEqual(value.pcbPhases, scenario === "opening-pcb-observe-refused" ?
+      ["preflight", "open-document", "observe"] : ["preflight", "open-document"]);
+    await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
+    await close(value);
+  }
+});
+
+void test("all model leaves agreeing on a foreign document still fail original sealed PCB identity", async context => {
+  const value = await openingFixture(context, "opening-pcb-model-document-drift");
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+  await assert.rejects(value.owner.observeModelState(), /MODEL_DOCUMENT_CHANGED/u);
+  assert.equal(value.owner.status().modelObservationConsumed, true); await close(value);
 });
