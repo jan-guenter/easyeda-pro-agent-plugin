@@ -4,14 +4,67 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate `0.3.0+codex.20261020155927` batches root/child navigation tracking,
+Delivered `0.3.0+codex.20261020155927` through protected PR88 on2026-10-20.
+Final payload `9797a4d69264951959ae0916ba6fd930eba498e8`, merged main
+`7adb2453ffa9d7a0880567e2e63e41452740d19c`; complete treea0bbeb02 and plugin
+tree5a43b6c6 are identical between final PR head and merged main.
+
+One batch combines root/child navigation tracking,
 expanded bounded event labels, pure String empty-baseline/post-create
 composition and skill-reference updates. No new writer authority or SDK coverage.
-Combined focused99 tests, strict types/targeted type-aware lint and independent
-navigation/reciprocal composition reviews pass. Frozen full verification,
-publication and installation remain pending. Release evidence:
+SDK coverage remains774:212public subsets/33native equivalents/79blocked/450omitted.
+Independent navigation and reciprocal String composition reviews pass.
+
+Final frozen verify83506 PASSED:11,925facade tests/11,921passed/4platformskips/
+0failures;424bridge; strict types/type-aware lint, build, compatibility, API
+coverage, package/MCP and seven skills. Log5dd5d7ff; all1,598 packaged files/
+modes unchanged, fingerprintf7e93b5f. Repository/privacy93455 passedc591c113;
+seven installed skill-creator checks33066965. External plugin validator absent.
+Dependency signatures151/attestations40/audit pass, zero vulnerabilities.
+Source534/47c8a472, runtime3/915ba71a, compatibility manifestcd99acef,
+plugin manifest15fd7ba9. Only facade projections/review time changed; external
+compatibility pins and native helpers are unchanged.
+
+Exact-head Linux39454871300 PASSED all8shards/build/finalgate; Windows
+39454871124 PASSED. Automatic post-main Windows39456990282 PASSED.
+Post-main Linux39456990180 still runs on exact7adb245; check its completion
+next session, not another broad local verification campaign.
+
+Official named Git marketplace upgrade73678 completed with no errors/stderr;
+list/comparison23747 confirms installed/enabled155927 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison PASSED all
+1,598files/42directories/33,063,070bytes and exact modes, inventorye9545d98;
+receipt09a5776b. Exact-main worktree:
+`/root/.cache/easyeda-155927-merged-main-o6ah0pzD/worktree`.
+Installed offline checker9038 PASSED:25restricted tools/50configured policies,
+seven discovery/schema queries, nineJSON-RPCrequests, Node24.18.0,0stderr and
+normalEOF/exit0 of its own child. Post-close marker/control-roster checks and
+two no-descendant/socket samples pass; continuous isolation and connected
+execution are not claimed. Receipt0011c513, synthetic liveControlRootSelectedfalse.
+Loaded host1295250 remains120717; it was not terminated, rebound or hotpatched.
+
+Release evidence:
 `/root/.cache/easyeda-opening-writer-release-ULwvkZAy`.
 Details/backlog: `docs/current-pcb-opening-writer-batch-2026-10-20.md`.
+Next source-batch plan (main read completely):
+`/root/.cache/easyeda-opening-writer-release-ULwvkZAy/next-writer-batch.md`,
+SHA96eff93e8439af5b6ed93d66c31604eb4feb0f6db015de306fe169a579fe53bc.
+
+Next: fresh actual155927 host admission, then ONE NEW original-owned disposable
+case to qualify project/PCB opening and model observation; a separate worker
+branch cannot be combined with it as a writer baseline. If opening fails, retain
+and normally clean up that consumed case; batch the fix with end-to-end String
+source work instead of another diagnostics-only release. Implement one coherent
+String-purpose joined owner, complete source/producer baseline, one-shot create/
+publication and Save/full-SQL/fresh-reopen/visual continuation. Current diagnostic
+uses all64requests; derive a separate fixed owner budget instead of deleting its
+exclusive branch guards. Populated geometry, other design/library/manufacturing
+families and portability remain backlog. No production-design access, geometry
+edit, explicit Save or prompt choice occurred.
+This local documentation handoff is beyond the immutable PR88 payload.
+
+### Completed120717 continuation
 
 Actual120717 admission passed independently and by main: facade1295250/
 start48602126, parent1293563/start48596256, exact argv/cwd/Node24.18.0/core0.
