@@ -83,8 +83,8 @@ unregistered; the installed schematic route remains disposable-validation-only.
 Details: `docs/current-ordinary-schematic-polygon-diagnostic-batch-2026-10-19.md`.
 Source work on `feature/203733-live-continuation` now includes a validation-only
 public diagnostic tool, native installation admission, staged fixed frame/script/
-context inspection and original-owner lifecycle journals. This batch is not built,
-frozen or published;
+context inspection and original-owner lifecycle journals. This batch is built
+and frozen for final verification, but not published;
 the installed payload remains byte-exact and separate from source changes.
 Root launch-exclusion focused45tests and strict lint pass; the new central gate
 covers every WindowsControlRuntime launch/replacement. Known diagnostic blockers
