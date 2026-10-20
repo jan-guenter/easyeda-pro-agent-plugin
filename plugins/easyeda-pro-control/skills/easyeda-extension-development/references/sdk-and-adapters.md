@@ -337,27 +337,36 @@ PCB text observers, writers and saved/reopened proof remain unfinished.
 The diagnostic opener retains a complete pre-navigation checkpoint, registered
 raw-path identity and default-branch PCB membership. It uses the same pinned
 public project-open service through the original UI context, not arbitrary SDK
-dispatch. Only one top-level frame and the selected project fragment transition
-are admitted. Restored editor frames still refuse; opening may already have
+dispatch. It admits one top-level frame, the selected project fragment transition
+and optionally one unchanged source-shaped `OBJECT` resize-sensor child.
+Fixed DOM-owner reads must prove the child's exact frame/backend identity and
+closed attribute shape at five project/PCB boundaries. A blank URL is not
+enough; direct DOM-parent and private observer-registry ownership remain
+unverified. Restored editor frames still refuse; opening may already have
 persisted data by then. Never equate prefix acknowledgment with completed startup.
 
 The separate PCB model reader follows the source/location-admitted
 `pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.
-Ten fixed requests sample main/custom-footprint compiler queues, selected pending
-producers and raw String-manager membership, then release the original remote-
-object group. The three samples must share a document identity but are not
+Eleven fixed requests sample main/custom-footprint compiler queues, selected pending
+producers, raw String-manager membership and a populated-safe root census, then
+release the original remote-object group. The four samples must share a document identity but are not
 atomic. Raw absent/undefined/null/zero fields remain distinct, and models without
 view watchers are included. All effect checks remain enabled; caller object
 handles, code and arbitrary scope enumeration are unavailable. The raw String
 subset is not whole-PCB membership, and local copper-worker reference equality
-is not a CDP/project-worker association or completion evidence. Neither counts
+is not a CDP/project-worker association or completion evidence. The census
+includes seventeen managers, board/panelization roots and three spatial-index
+branches, but not complete ownership, secondary indexes, active tools or
+geometry. Zero counts and absent/undefined owners are not empty-board proof.
+Neither counts
 nor raw fields establish Save eligibility. This PCB-frame branch is not
 reachable through project-only opening alone. A separate one-shot `open-pcb`
 stage derives the original sealed target; `observe-pcb-opening` then binds the
 new child frame through its DOM owner, complete pinned source and default
 context before the fixed native identity observation. Preserve the original UI
 identity and source throughout. This branch excludes worker discovery and
-stays within the same64request budget. It does not validate writes or saved state.
+stays within the same64request budget, including all five ancillary checks and
+object-group release. It does not validate writes or saved state.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

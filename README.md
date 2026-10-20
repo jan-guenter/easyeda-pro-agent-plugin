@@ -82,8 +82,18 @@ frame/DOM/source checks. It also fixes the
 and integrates [pending-producer samples](docs/current-pcb-pending-producers-2026-10-20.md)
 with [bounded raw String observations](docs/current-pcb-raw-string-observation-2026-10-20.md).
 These are fixed diagnostic operations, not a complete PCB baseline or a writer.
-Connected qualification remains pending. See the
+Its installed continuation passed native browser/frame/UI-source reads and
+normal cleanup. Project/PCB/model qualification remains pending: the Start Page
+contained an extra blank child whose DOM owner was not inspected. See the
 [combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
+
+Update `0.3.0+codex.20261020105401` adds strict
+[Start Page ancillary-object admission](docs/current-pcb-start-placeholder-2026-10-20.md),
+a [populated PCB root inventory](docs/current-pcb-root-membership-2026-10-20.md)
+and two String input-walker Proxy fixes. Four diagnostic samples retain the
+same64-request and128KiB aggregate bounds. They do not establish an empty board,
+complete ownership, queue completion, saved contents or writer eligibility.
+See the [batch record and remaining work](docs/current-pcb-start-page-inventory-batch-2026-10-20.md).
 
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are

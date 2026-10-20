@@ -30,8 +30,8 @@ import type { CurrentPcbDiagnosticModelObservation } from "./current-pcb-diagnos
 import { currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 
-const HELPER_SHA256 = "6c7872630490658868170a1403a8087bc6ed4b1aeb7a68ecdf207a5caa1a3080";
-const HELPER_BYTES = 130_792;
+const HELPER_SHA256 = "e315c83350188bdcd4a6de4221098e2539c073b4378fa9d134329db5da838a1f";
+const HELPER_BYTES = 144_881;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -275,6 +275,7 @@ export class CurrentPcbDiagnosticOwner {
     this.#enter(true); this.#projectOpeningConsumed = true; this.#projectOpeningTarget = Object.freeze(target);
     try {
       await this.#verifyInstallation(); await this.#verify(); this.#available();
+      await this.#observeOpeningAncillary();
       const selected = context.openingContext();
       await this.#observeParent(); context.openingContext();
       const preflight = decodeCurrentPcbDiagnosticOpeningReply(
@@ -286,6 +287,7 @@ export class CurrentPcbDiagnosticOwner {
       await reverify(); context.openingContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       await this.#observeParent(); context.openingContext();
+      await this.#observeOpeningAncillary(); context.openingContext();
       const titleProof = preflight.observation;
       if (titleProof === null) { throw error("PROJECT_TITLE_PROOF"); }
       const opening = context.beginOpeningTransition(target.projectUuid,
@@ -305,8 +307,11 @@ export class CurrentPcbDiagnosticOwner {
       context.openingContext();
       const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
       context.finishOpeningTransition(targets, frameTree);
+      await this.#observeOpeningAncillary(); context.openingContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available(); context.openingContext();
-      return result;
+      const ancillaryFrame = context.ancillaryObservation();
+      this.#projectOpeningResult = ancillaryFrame === null ? result : Object.freeze({ ...result, ancillaryFrame });
+      return this.#projectOpeningResult;
     } catch (caughtError) { this.#input.emit("error", error("PROJECT_OPENING_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
@@ -333,6 +338,7 @@ export class CurrentPcbDiagnosticOwner {
       await reverify(); context.openingContext();
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       await this.#observeParent(); context.openingContext();
+      await this.#observeOpeningAncillary(); context.openingContext();
       const opening = context.beginPcbOpeningTransition(target.projectUuid, target.documentUuid);
       const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
         await this.#transfer(() => this.#pipe.observePcbOpening(opening.uniqueContextId, target, "open-document")), target, "open-document");
@@ -360,6 +366,7 @@ export class CurrentPcbDiagnosticOwner {
       const targets = await this.#transfer(() => this.#pipe.getTargets()); context.pcbOpeningContext();
       const frameTree = await this.#transfer(() => this.#pipe.getFrameTree()); context.pcbOpeningContext();
       const child = context.observePcbOpeningFrames(targets, frameTree);
+      await this.#observeOpeningAncillary(); context.pcbOpeningContext();
       const frameOwner = await this.#transfer(() => this.#pipe.getFrameOwner(child.frameId)); context.pcbOpeningContext();
       const backend = frameOwner["backendNodeId"];
       if (typeof backend !== "number" || !Number.isSafeInteger(backend) || backend < 1 || backend > 2_147_483_647) { throw error("PCB_FRAME_OWNER"); }
@@ -380,7 +387,7 @@ export class CurrentPcbDiagnosticOwner {
       await this.#verifyInstallation(); context.pcbScript(profile);
       await this.#verify(); this.#available(); context.pcbScript(profile);
       context.completePcbOpening(); context.modelContext();
-      const result = diagnosticBoundedObservation({ ...proof, openingObservation: observed });
+      const result = diagnosticBoundedObservation({ ...proof, openingObservation: observed, ancillaryFrame: context.ancillaryObservation() });
       this.#pcbSourceQualified = true;
       return result;
     } catch (caughtError) { this.#input.emit("error", error("PCB_OBSERVATION_FAILED")); throw caughtError; }
@@ -477,6 +484,22 @@ export class CurrentPcbDiagnosticOwner {
     context.observeFrames(await this.#transfer(() => this.#pipe.getFrameTree()));
     context.assertCurrent(); this.#workerContext?.assertCurrent();
     return targets;
+  }
+
+  /** Five bounded samples at original project/PCB boundaries. The native
+   * protocol already supports these two fixed DOM reads. No caller selector,
+   * source execution, editor-frame exception or native registry claim follows. */
+  async #observeOpeningAncillary(): Promise<void> {
+    const context = this.#stagedContext;
+    if (context === null) { throw error("ANCILLARY_UNAVAILABLE"); }
+    const frameId = context.openingAncillaryFrame();
+    if (frameId === null) { return; }
+    const owner = await this.#transfer(() => this.#pipe.getFrameOwner(frameId));
+    if (context.openingAncillaryFrame() !== frameId) { throw error("ANCILLARY_CHANGED"); }
+    const backend = owner["backendNodeId"];
+    if (typeof backend !== "number" || !Number.isSafeInteger(backend) || backend < 1 || backend > 2_147_483_647) { throw error("ANCILLARY_BACKEND"); }
+    const node = await this.#transfer(() => this.#pipe.describeFrameOwner(backend));
+    context.observeOpeningAncillaryOwner(owner, node);
   }
 
   async #attach(context: CurrentPcbDiagnosticContext, targetId: string): Promise<void> {

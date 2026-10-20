@@ -14,6 +14,8 @@ import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, decodeCurrentPcbDiagnost
 import type { CurrentPcbDiagnosticPendingState } from "./current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, decodeCurrentPcbDiagnosticRawStringsReply } from "./current-pcb-diagnostic-raw-strings.ts";
 import type { CurrentPcbDiagnosticRawStrings } from "./current-pcb-diagnostic-raw-strings.ts";
+import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, decodeCurrentPcbDiagnosticRootInventoryReply } from "./current-pcb-diagnostic-root-inventory.ts";
+import type { CurrentPcbDiagnosticRootInventory } from "./current-pcb-diagnostic-root-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP = "easyeda-pro-control-pcb-model-v1";
@@ -24,6 +26,7 @@ export type CurrentPcbDiagnosticModelObservation = Readonly<{
   readonly compilerState: CurrentPcbDiagnosticModelState;
   readonly pendingProducers: CurrentPcbDiagnosticPendingState;
   readonly rawStrings: CurrentPcbDiagnosticRawStrings;
+  readonly rootInventory: CurrentPcbDiagnosticRootInventory;
   readonly atomicSnapshotVerified: false;
   readonly continuousObservation: false;
   readonly completeModelMembershipVerified: false;
@@ -60,6 +63,10 @@ export type CurrentPcbDiagnosticModelCommand =
   }> }>
   | Readonly<{ modelPhase: "raw-strings"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION; returnByValue: true;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ modelPhase: "root-inventory"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION; returnByValue: true;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "release"; method: "Runtime.releaseObjectGroup"; params: Readonly<{
@@ -144,12 +151,18 @@ export class CurrentPcbDiagnosticModelRunner {
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
           returnByValue: true, arguments: [{ objectId: wrapper }] },
       }));
-      if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid) { return refuse(); }
+      const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(await this.#request({
+        modelPhase: "root-inventory", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
+          objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
+          returnByValue: true, arguments: [{ objectId: wrapper }] },
+      }));
+      if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid ||
+          compilerState.main.uuid !== rootInventory.documentUuid) { return refuse(); }
       // Separate synchronous samples remain non-atomic across these CDP calls.
       // They do not establish a writer baseline or pending-producer completion.
       const observation: CurrentPcbDiagnosticModelObservation = freezeDeep({
         schema: "easyeda-pro-control.pcb-diagnostic-model-observation.v1", documentUuid: compilerState.main.uuid,
-        compilerState, pendingProducers, rawStrings, atomicSnapshotVerified: false, continuousObservation: false,
+        compilerState, pendingProducers, rawStrings, rootInventory, atomicSnapshotVerified: false, continuousObservation: false,
         completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false,
         queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false,
       });

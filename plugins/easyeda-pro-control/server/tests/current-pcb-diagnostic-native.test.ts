@@ -8,6 +8,8 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTI
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
+import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
+// oxlint-disable-next-line import/max-dependencies -- Native parity needs each fixed program from its independently reviewed implementation.
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
@@ -59,7 +61,8 @@ void test("native opening and model programs are byte-exact fixed commands, not 
   for (const [name, expected] of Object.entries({ OpeningFunction: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION,
     ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
     ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
-    ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, PcbOpeningFunction: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION })) {
+    ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
+    ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, PcbOpeningFunction: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), expected, name);
     assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);
@@ -67,7 +70,7 @@ void test("native opening and model programs are byte-exact fixed commands, not 
   assert.ok(source.includes("new UTF8Encoding(false,true).GetBytes(path)"));
   assert.ok(source.includes('if(observed!=project) throw Error("opening-project")'));
   assert.ok(source.includes('if(Encoding.UTF8.GetByteCount(message)>65536)'));
-  assert.ok(source.includes('if((phase=="snapshot" || phase=="pending" || phase=="raw-strings") && method=="Runtime.callFunctionOn")'));
+  assert.ok(source.includes('if((phase=="snapshot" || phase=="pending" || phase=="raw-strings" || phase=="root-inventory") && method=="Runtime.callFunctionOn")'));
   assert.ok(source.includes('if(objectId!=null || callbackObjectId!=null)'));
   for (const forbidden of ["$request.functionDeclaration", "$request.expression", "$request.objectGroup", "$request.arguments"]) {
     assert.ok(!source.includes(forbidden), forbidden);
@@ -85,6 +88,7 @@ void test("native dispatch preserves missing PowerShell fields through object-ty
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,$null,$null)"));
   assert.ok(source.includes("foreach ($value in @('',7))"));
   assert.ok(source.includes("'pcb-diagnostic-bound-model-extra-field'"));
+  assert.ok(source.includes("foreach ($phase in @('snapshot','pending','raw-strings','root-inventory'))"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::DomProtocolMessage(5,'DOM.getFrameOwner','s','original-frame',$null)"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::DomProtocolMessage(6,'DOM.describeNode','s',$null,1234)"));
 });

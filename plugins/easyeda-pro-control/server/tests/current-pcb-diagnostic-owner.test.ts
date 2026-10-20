@@ -494,9 +494,10 @@ void test("fixed model observation stays in the source-admitted PCB session and 
   const result = await value.owner.observeModelState();
   assert.equal(result.compilerState.main.headType, "PCB"); assert.equal(result.queueCompletionVerified, false);
   assert.equal(result.pendingProducers.documentUuid, result.documentUuid); assert.equal(result.rawStrings.documentUuid, result.documentUuid);
+  assert.equal(result.rootInventory.documentUuid, result.documentUuid); assert.equal(result.rootInventory.emptyRootPcbVerified, false);
   assert.equal(result.atomicSnapshotVerified, false);
   assert.equal(result.saveAuthorized, false); assert.equal(value.owner.status().modelObservationConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 29);
+  assert.equal(value.actions.filter(action => action === "send").length, 30);
   assert.ok(!JSON.stringify(result).includes("synthetic private"));
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -531,7 +532,7 @@ void test("disposable PCB opening admits original child DOM and source before it
   const model = await value.owner.observeModelState();
   assert.equal(model.documentUuid, OPEN_TARGET.documentUuid); assert.equal(model.executionAuthorized, false);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
-  assert.equal(value.actions.filter(action => action === "send").length, 53);
+  assert.equal(value.actions.filter(action => action === "send").length, 54);
   await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.resolve()), /PCB_OPENING_UNAVAILABLE/u);
   await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /PCB_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -549,6 +550,52 @@ void test("all fixed PCB phases carry the original maximum-width Unicode path wi
   assert.equal(observed["sourceVerified"], true);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
   assert.equal(value.owner.status().failure, null); await close(value);
+});
+
+void test("original source-shaped ancillary OBJECT is rechecked at five project/PCB boundaries within the64-command budget", async context => {
+  const value = await openingFixture(context, "opening-pcb-ancillary");
+  await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+  await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+  const result = await value.owner.observeModelState();
+  assert.equal(result.executionAuthorized, false);
+  assert.equal(value.actions.filter(action => action === "send").length, 64);
+  assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
+  assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
+  await close(value);
+});
+
+void test("ancillary DOM refusal consumes the original opening without preflight or navigation", async context => {
+  const value = await openingFixture(context, "opening-ancillary-refused");
+  await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /CONTEXT_IDENTITY/u);
+  assert.equal(value.owner.status().projectOpeningConsumed, true);
+  assert.deepEqual(value.openingPhases, []);
+  await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u);
+  await close(value);
+});
+
+void test("ancillary DOM drift at each later boundary prevents downstream opening or model admission", async context => {
+  for (const index of [2, 3, 4, 5]) {
+    const value = await openingFixture(context, `opening-pcb-ancillary-drift-${index}`);
+    if (index <= 3) {
+      await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /CONTEXT_IDENTITY/u);
+      assert.deepEqual(value.openingPhases, index === 2 ? ["preflight"] : ["preflight", "open-project"]);
+      assert.deepEqual(value.pcbPhases, []);
+    } else {
+      await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+      if (index === 4) {
+        await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.resolve()), /CONTEXT_IDENTITY/u);
+        assert.deepEqual(value.pcbPhases, ["preflight"]);
+      } else {
+        await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+        await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /CONTEXT_IDENTITY/u);
+        assert.deepEqual(value.pcbPhases, ["preflight", "open-document"]);
+      }
+    }
+    assert.equal(value.owner.status().pcbSourceQualified, false);
+    await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
+    await close(value);
+  }
 });
 
 void test("PCB-opening refuses a foreign sealed target and failed reproof before navigation", async context => {

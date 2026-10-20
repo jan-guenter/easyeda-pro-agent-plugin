@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticToken } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
+import { diagnosticAncillaryOwner } from "./current-pcb-diagnostic-ancillary.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 export interface DiagnosticFrameExpectation {
@@ -135,6 +136,8 @@ export class CurrentPcbDiagnosticContext {
   #openingConsumed = false;
   #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null; events: number } | null = null;
   #pcbOpening: PcbOpeningTransition | null = null;
+  #ancillaryFrame: Row | null = null;
+  #ancillaryOwner: ReturnType<typeof diagnosticAncillaryOwner> | null = null;
 
   public constructor(expected: DiagnosticFrameExpectation | string) {
     if (typeof expected === "string") {
@@ -282,15 +285,63 @@ export class CurrentPcbDiagnosticContext {
   /** An internal selector for the one fixed opening function, not generic eval
    * authority. Exact source admission must precede this call. The caller still
    * owns checkpoint reproof, durable intent and one-shot request consumption. */
-  public openingContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
+  #uiSourceContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
     this.assertCurrent();
     const selected = this.script(), source = this.#sourceIdentity;
-    if (this.#expected !== null || this.#profile?.family !== "ui" || this.#frame === null ||
-        this.#frames?.length !== 1 || this.#frame["parentId"] !== undefined ||
+    if (this.#expected !== null || this.#profile?.family !== "ui" || this.#frame === null || this.#frames === null ||
+        this.#frame["parentId"] !== undefined ||
         this.#frames[0]?.["id"] !== this.#frame["id"] || source === null || this.#sessionId === null ||
         selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
         selected.context["uniqueId"] !== source.uniqueContextId) { return this.#refuse(); }
     return Object.freeze({ sessionId: this.#sessionId, uniqueContextId: source.uniqueContextId });
+  }
+  /** Derive only the optional original blank child. This selector grants no
+   * opening: the original CDP DOM-owner replies must establish its closed
+   * source-shaped OBJECT contract first. Never infer an iframe from its URL. */
+  public openingAncillaryFrame(): string | null {
+    this.#uiSourceContext();
+    if (this.#frames === null || this.#frame === null) { return this.#refuse(); }
+    if (this.#pcbOpening !== null) {
+      if (this.#ancillaryFrame !== null && !this.#frames.some(row => equal(row, this.#ancillaryFrame))) { return this.#refuse(); }
+      return this.#ancillaryFrame === null ? null : String(this.#ancillaryFrame["id"]);
+    }
+    const other = this.#frames.filter(row => row["id"] !== this.#frame?.["id"]);
+    if (other.length === 0) {
+      if (this.#ancillaryFrame !== null || this.#ancillaryOwner !== null) { return this.#refuse(); }
+      return null;
+    }
+    const child = other[0];
+    if (other.length !== 1 || child === undefined || child["parentId"] !== this.#frame["id"] ||
+        child["url"] !== "about:blank" || child["urlFragment"] !== undefined || child["securityOrigin"] !== "://" ||
+        this.#ancillaryFrame !== null && !equal(child, this.#ancillaryFrame)) { return this.#refuse(); }
+    this.#ancillaryFrame = child;
+    return String(child["id"]);
+  }
+  public observeOpeningAncillaryOwner(ownerReply: Row, describeReply: Row): void {
+    try {
+      const frameId = this.openingAncillaryFrame();
+      if (frameId === null) { this.#refuse(); }
+      const proof = diagnosticAncillaryOwner(frameId, ownerReply, describeReply);
+      if (this.#ancillaryOwner !== null && !equal(this.#ancillaryOwner, proof)) { this.#refuse(); }
+      this.#ancillaryOwner = proof;
+    } catch { this.#refuse(); }
+  }
+  /** Retained structural evidence only. The two fixed DOM calls cannot prove
+   * the direct DOM parent, private observer registry or future inactivity. */
+  public ancillaryObservation(): Row | null {
+    const frameId = this.openingAncillaryFrame();
+    if (frameId === null) { return null; }
+    if (this.#ancillaryFrame === null || this.#ancillaryOwner === null) { return this.#refuse(); }
+    return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-ancillary-frame.v1",
+      frame: frameSummary(this.#ancillaryFrame), backendNodeId: this.#ancillaryOwner.backendNodeId,
+      attributes: this.#ancillaryOwner.attributes, shape: "source-shaped-ui-resize-sensor-object",
+      domParentVerified: false, observerRegistryOwnershipVerified: false, continuousObservation: false, executionAuthorized: false });
+  }
+  public openingContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    const selected = this.#uiSourceContext();
+    const ancillary = this.openingAncillaryFrame();
+    if (this.#frames?.length !== (ancillary === null ? 1 : 2) || ancillary !== null && this.#ancillaryOwner === null) { return this.#refuse(); }
+    return selected;
   }
   /** Fixed model observer only, after the existing PCB frame's complete source
    * was admitted. UI opening and model inspection are intentionally disjoint;
@@ -344,7 +395,8 @@ export class CurrentPcbDiagnosticContext {
       if (opening === null || opening.events === 0 || original === null || this.#target === null) { this.#refuse(); }
       const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true);
       const currentFrame = currentFrames[0];
-      if (currentFrames.length !== 1 || currentFrame === undefined) { this.#refuse(); }
+      if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === undefined ||
+          this.#ancillaryFrame !== null && !currentFrames.some(row => equal(row, this.#ancillaryFrame))) { this.#refuse(); }
       const { urlFragment: currentFragment, ...currentFields } = currentFrame;
       const { urlFragment: _originalFragment, ...originalFields } = original;
       if (currentFragment !== opening.url.slice(opening.base.length) || !equal(originalFields, currentFields) ||
@@ -356,8 +408,8 @@ export class CurrentPcbDiagnosticContext {
       this.#opening = null;
     } catch { this.#refuse(); }
   }
-  /** Separate document-opening branch. The project-only transition above stays
-   * single-frame. Only this one-shot branch can provisionally observe a child. */
+  /** Separate document-opening branch. The original source-shaped ancillary
+   * child stays unchanged. Only this one-shot branch can add an editor child. */
   public beginPcbOpeningTransition(projectUuid: string, documentUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
     const selected = this.openingContext();
     if (this.#pcbOpening !== null || !this.#openingConsumed || this.#opening !== null || this.#frame === null ||
@@ -393,7 +445,8 @@ export class CurrentPcbDiagnosticContext {
     }
     if (event.method === "Page.frameAttached") {
       if (pcb.child !== null || pcb.childId !== null || !diagnosticToken(params["frameId"]) ||
-          params["frameId"] === pcb.originalRoot["id"] || params["parentFrameId"] !== pcb.originalRoot["id"] ||
+          params["frameId"] === pcb.originalRoot["id"] || params["frameId"] === this.#ancillaryFrame?.["id"] ||
+          params["parentFrameId"] !== pcb.originalRoot["id"] ||
           !diagnosticExact(params, params["stack"] === undefined ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) { this.#refuse(); }
       pcb.childId = params["frameId"]; return true;
     }
@@ -427,7 +480,8 @@ export class CurrentPcbDiagnosticContext {
     try {
       const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true), pcb = this.#pcbOpening;
       if (pcb === null || pcb.childId === null || pcb.childLoaderId === null || pcb.child !== null || pcb.fragmentEvents === 0 || pcb.navigationCount === 0 ||
-          this.#target === null || currentFrames.length !== 2) { this.#refuse(); }
+          this.#target === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) ||
+          this.#ancillaryFrame !== null && !currentFrames.some(row => equal(row, this.#ancillaryFrame))) { this.#refuse(); }
       const root = currentFrames.find(frame => frame["id"] === pcb.originalRoot["id"]);
       const child = currentFrames.find(frame => frame["id"] === pcb.childId);
       if (root === undefined || child === undefined) { this.#refuse(); }

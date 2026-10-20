@@ -1,5 +1,6 @@
 /** Offline current STRING encoding relation only. No native receiver, file read,
  * lifecycle token, writer, source reconstruction or compatibility admission. */
+import { types } from "node:util";
 import { z } from "zod";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { currentPcbGeometryResultSchema, validateCurrentPcbGeometryResult } from "./current-pcb-geometry.ts";
@@ -62,7 +63,7 @@ function visitJson(step: JsonStep, pending: JsonStep[], seen: Set<object>, budge
   const { value, depth } = step;
   if (value === null || typeof value === "boolean" || typeof value === "string") { chargeScalar(budget, value); return; }
   if (typeof value === "number") { need(Number.isFinite(value) && !Object.is(value, -0), "lossy JSON number"); chargeScalar(budget, value); return; }
-  need(typeof value === "object" && !seen.has(value), "non-JSON value or cycle"); seen.add(value);
+  need(typeof value === "object" && !types.isProxy(value) && !seen.has(value), "non-JSON value or cycle"); seen.add(value);
   pending.push({ value, depth, exit: true });
   const array = Array.isArray(value), prototype: unknown = Object.getPrototypeOf(value);
   need(prototype === (array ? Array.prototype : Object.prototype) || !array && prototype === null, "non-plain JSON object");
@@ -86,7 +87,7 @@ function visitJson(step: JsonStep, pending: JsonStep[], seen: Set<object>, budge
   }
 }
 
-/** Inspect own data before serializing supplied observations. Getters, toJSON,
+/** Inspect own data before serializing supplied observations. Proxy traps, getters, toJSON,
  * sparse arrays, cycles and lossy numeric values are never invoked/coerced. */
 function jsonText(input: unknown, maximum: number): string {
   const pending: JsonStep[] = [{ value: input, depth: 0 }];

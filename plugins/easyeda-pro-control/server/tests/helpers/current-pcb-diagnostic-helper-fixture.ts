@@ -2,13 +2,14 @@
 import assert from "node:assert/strict";
 import process from "node:process";
 import { createInterface } from "node:readline";
-import { pendingModelReply, rawStringsModelReply } from "./current-pcb-diagnostic-model-replies.ts";
+import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./current-pcb-diagnostic-model-replies.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
 const staged = scenario?.startsWith("staged") === true;
 const openingCase = scenario?.startsWith("opening") === true;
 const pcbCase = scenario?.startsWith("opening-pcb") === true;
+const ancillaryCase = scenario?.includes("ancillary") === true;
 const modelCase = scenario?.startsWith("staged-model") === true || pcbCase;
 const workerCase = scenario?.startsWith("staged-worker") === true;
 const identityCase = staged || openingCase || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
@@ -27,6 +28,7 @@ let pcbOpened = false, pcbSourceRead = false;
 let pcbDocumentUuid = "", pcbTabId = "";
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
+let ancillaryReads = 0;
 let sent = Buffer.alloc(0), terminated = false;
 const lines = createInterface({ input: process.stdin });
 lines.on("line", line => {
@@ -102,13 +104,9 @@ lines.on("line", line => {
           payload = { scriptSource: pcbOpened && scenario === "opening-pcb-source-drift" ? "changed source" : sourcePayload() };
           events.push(...navigationEvent());
         } else if (request["method"] === "DOM.getFrameOwner") {
-          assert.equal(pcbOpened, true); assert.ok("frameId" in request); assert.equal(request.frameId, "pcb-frame");
-          payload = { backendNodeId: 1234 };
+          payload = frameOwnerResponse(request);
         } else if (request["method"] === "DOM.describeNode") {
-          assert.equal(pcbOpened, true); assert.ok("backendNodeId" in request); assert.equal(request.backendNodeId, 1234);
-          payload = { node: { backendNodeId: 1234, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
-            attributes: ["id", `frame_${pcbTabId}`, "c_dbid", scenario === "opening-pcb-dom-drift" ? "foreign" : pcbTabId,
-              "c_doctype", "3", "src", "editor?entry=pcb", "pcb-canvas", "true", "class", "editframe"] } };
+          payload = describeOwnerResponse(request);
         } else if (request["method"] === "Runtime.callFunctionOn") {
           assert.equal(openingCase, true);
           payload = "pcbOpeningPhase" in request ? pcbOpeningResponse(request, events) : openingResponse(request, events);
@@ -174,14 +172,41 @@ function workerAttachment(): readonly unknown[] {
 }
 function frameTree(frame: Record<string, unknown>): unknown {
   if (openingCase) {
-    let childFrames: { childFrames: { frame: Record<string, unknown> }[] } | Record<string, never> = {};
-    if (pcbOpened) { childFrames = { childFrames: [{ frame: pcbFrame() }] }; }
-    else if (opened && scenario === "opening-child-frame") { childFrames = { childFrames: [{ frame: { ...frame, id: "child", parentId: "frame-1" } }] }; }
+    const children: { frame: Record<string, unknown> }[] = [];
+    if (ancillaryCase) {
+      children.push({ frame: { id: "ancillary-frame", parentId: "frame-1", loaderId: "ancillary-loader", url: "about:blank", securityOrigin: "://" } });
+    }
+    if (pcbOpened) { children.push({ frame: pcbFrame() }); }
+    else if (opened && scenario === "opening-child-frame") { children.push({ frame: { ...frame, id: "child", parentId: "frame-1" } }); }
     return { frame: { ...frame, url: uiBase, urlFragment: target.url.slice(uiBase.length), securityOrigin: "https://client" },
-      ...childFrames };
+      ...(children.length === 0 ? {} : { childFrames: children }) };
   }
   if (staged) { return { frame: { ...frame, id: "ui-root", loaderId: "root-loader" }, childFrames: [{ frame: { ...frame, parentId: "ui-root" } }] }; }
   return { frame };
+}
+function ancillaryNode(): unknown {
+  assert.equal(ancillaryCase, true);
+  const refusalAt = Number(scenario?.split("ancillary-drift-")[1]);
+  const drift = ancillaryReads === refusalAt || scenario === "opening-ancillary-refused";
+  return { backendNodeId: 4321, nodeType: 1, nodeName: "OBJECT", localName: "object", frameId: "ancillary-frame",
+    attributes: ["style", `display: block; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; border: none; padding: 0px; margin: 0px; opacity: ${drift ? "1" : "0"}; z-index: -1000; pointer-events: none;`,
+      "tabindex", "-1", "type", "text/html", "aria-hidden", "true", "data", "about:blank"] };
+}
+function frameOwnerResponse(request: object): unknown {
+  assert.ok("frameId" in request);
+  if (request.frameId === "ancillary-frame") {
+    assert.equal(ancillaryCase, true); ancillaryReads += 1; return { backendNodeId: 4321 };
+  }
+  assert.equal(pcbOpened, true); assert.equal(request.frameId, "pcb-frame");
+  return { backendNodeId: 1234 };
+}
+function describeOwnerResponse(request: object): unknown {
+  assert.ok("backendNodeId" in request);
+  if (request.backendNodeId === 4321) { return { node: ancillaryNode() }; }
+  assert.equal(pcbOpened, true); assert.equal(request.backendNodeId, 1234);
+  return { node: { backendNodeId: 1234, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
+    attributes: ["id", `frame_${pcbTabId}`, "c_dbid", scenario === "opening-pcb-dom-drift" ? "foreign" : pcbTabId,
+      "c_doctype", "3", "src", "editor?entry=pcb", "pcb-canvas", "true", "class", "editframe"] } };
 }
 function sourceScriptUrl(): string {
   if (openingCase) { return "https://client/pro-ui/test-version/js/ui.js"; }
@@ -226,6 +251,7 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
     return pendingModelReply(scenario === "staged-model-document-drift" ? "f".repeat(32) : documentUuid);
   }
   if (phase === "raw-strings") { return rawStringsModelReply(documentUuid); }
+  if (phase === "root-inventory") { return rootInventoryModelReply(documentUuid); }
   assert.equal(phase, "snapshot");
   return { result: { type: "string", value: JSON.stringify({
     schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
