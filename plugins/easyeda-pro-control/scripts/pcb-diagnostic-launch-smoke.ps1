@@ -32,11 +32,11 @@ $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 # retains64 requests/128KiB observations; the separate String profile has90
 # requests and its own bounded paired result. Transport remains64MiB.
 $bytes = Read-BoundedFile $helper 196608
-if ($bytes.Length -ne 185043) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 185280) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne '810ebda1a3dca5107b15eafca021bff00c0d964f5a6f841deeb47439cec171b8') {
+if ($helperHash -cne '2adfd78eaf1d1783fa6b3b45eafefbc36c410bed5409668ea3b8b2027de22e67') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)

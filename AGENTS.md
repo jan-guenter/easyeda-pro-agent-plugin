@@ -4,6 +4,40 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Active185144 continuation
+
+Actual185144 admission passed main and independent checks: facade1534112/
+start50167713, parent1532634/start50165334, exact installed cwd/argv,
+Node24.18.0/core0, source545/eb07e457, runtime3/fe30aa7f and manifestd0a50c26.
+All1,620files/42directories/33,440,744bytes/modes match merged main1cd7b503.
+Post-main Linux39482902791 completed SUCCESS; both platforms are green.
+Independent receipt da010441 in
+`/root/.cache/easyeda-185144-independent-admission-UpNb99Fa`.
+Main live evidence: `/root/.cache/easyeda-185144-live-juvcqCjB`.
+
+NEW `string-precreate-185144-20261020-01` is terminal released. Launch,
+browser/frames/fullUI-source and initialization prefix passed. One project-open
+returned publicResulttrue/prefixObservedtrue, then refused at
+registration-after/TITLE/title. No PCB/worker/model stage, edit or explicitSave.
+Original51720/created134370004263803772, bindingd201f7e0 and hwnd26875072
+were normally closed. Root/whole-Job termination and helper release passed;
+All dispatched calls completed. Closed disposable remains exact
+598016/e620d21a. NEVER replay this terminal case. No prompt choice occurred.
+Candidate20202000 batches the UUID-only title contract, duplicate launch-scan
+removal, primary/cleanup error retention, four common-state/assets readers and
+their fixed11-command runner, plus selected latent producer closures and their
+fixed34-command runner. New runners remain private; no public writer or native
+budget expansion. Source review found FileSource's previous-width getter also
+mutates its backing field; internal V8 scope wrappers require fresh acquisition
+for scalar bindings. Both actual Windows CompileOnly profiles pass final helper
+185280/2adfd78e without app launch. The initial compile caught a stale embedded
+opening digest, corrected before the passing reruns. The initially attempted
+Ubuntu UNC path did not exist and did not execute the helper.
+Installed files and production designs remain untouched. Frozen verification,
+protected publication and official installation of this larger batch are pending.
+
+### Delivered185144 checkpoint
+
 Delivered `0.3.0+codex.20261020185144` through protected PR89 on2026-10-20.
 Final payload `bde209fe16dca8f2756184b66cc42052655fb8c0`, merged main
 `1cd7b5035217fde2c0fc76760ff5f09d83a769bf`; complete treecdc35727 and
@@ -53,8 +87,7 @@ strict targeted lint, all skills, package/MCP and repository/privacy checks.
 The original failure log is retained; do not report a fully green local verify.
 Exact-head Linux39481300245 PASSED build, all8facade shards and finaltest-build;
 Windows39481300218 PASSED. Main and independent release reviews passed.
-Post-main Windows39482902763 PASSED; Linux39482902791 still runs on exact
-1cd7b503. Check its completion next session; do not repeat broad local suites.
+Post-main Windows39482902763 and Linux39482902791 PASSED on exact1cd7b503.
 
 Official named Git marketplace upgrade23700 completed without errors/stderr.
 CLI list confirms185144 installed/enabled from

@@ -19,6 +19,8 @@ import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-comm
 import { inspectCurrentPcbStringEmptyBaseline } from "./current-pcb-string-empty-baseline.ts";
 import { decodeCurrentPcbStringEmptyProducers } from "./current-pcb-string-empty-producers.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { currentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
+import type { CurrentPcbObservationPhase } from "./current-pcb-observation-failure.ts";
 
 export type CurrentPcbStringObservationCommand = CurrentPcbDiagnosticModelCommand | CurrentPcbStringPrecreateCommand;
 export interface CurrentPcbStringPrecreateTransport {
@@ -45,6 +47,7 @@ export class CurrentPcbStringPrecreateRunner {
   readonly #worker: string;
   readonly #target: Target;
   #consumed = false;
+  #phase: CurrentPcbObservationPhase = "owner";
   public constructor(transport: CurrentPcbStringPrecreateTransport, script: string, context: string,
     workerContext: string, target: Target) {
     this.#transport = Object.freeze({ ...transport }); this.#script = handle(script); this.#context = handle(context);
@@ -56,6 +59,7 @@ export class CurrentPcbStringPrecreateRunner {
       documentUuid: target.documentUuid, windowTabId: target.windowTabId });
   }
   async #request(command: CurrentPcbStringObservationCommand): Promise<unknown> {
+    this.#phase = "stringPhase" in command ? command.stringPhase : command.modelPhase;
     this.#transport.assertCurrent();
     const reply = await this.#transport.request(freezeDeep(command));
     this.#transport.assertCurrent(); return reply;
@@ -65,47 +69,54 @@ export class CurrentPcbStringPrecreateRunner {
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
   async #sweep(scope: string, wrapper: string): Promise<Readonly<Record<string, unknown>>> {
+    this.#phase = "owner-observation";
     this.#transport.assertCurrent(); await this.#transport.observeCurrent(); this.#transport.assertCurrent();
     const args = Object.freeze([{ objectId: wrapper }] as const);
     const params = { ...EFFECTS, objectId: scope } as const;
     const call = { returnByValue: true, arguments: args } as const;
     const modelReply = await this.#request({ modelPhase: "snapshot", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...call } });
+    const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
     const pendingReply = await this.#request({ modelPhase: "pending", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ...call } });
+    const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
     const stringsReply = await this.#request({ modelPhase: "raw-strings", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...call } });
+    const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(stringsReply);
     const rootReply = await this.#request({ modelPhase: "root-inventory", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...call } });
-    const rendererReply = await this.#request(currentPcbStringScopeCommand("renderer-association", scope, wrapper));
-    const workerReply = await this.#request(currentPcbStringWorkerCommand(this.#worker));
-    const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope, wrapper));
-    const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
-    const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
-    const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(stringsReply);
     const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(rootReply);
+    const rendererReply = await this.#request(currentPcbStringScopeCommand("renderer-association", scope, wrapper));
     const rendererAssociation = decodeCurrentPcbStringRendererAssociation(rendererReply);
+    const workerReply = await this.#request(currentPcbStringWorkerCommand(this.#worker));
     const workerAssociation = decodeCurrentPcbStringWorkerAssociation(workerReply);
+    const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope, wrapper));
     const emptyProducers = decodeCurrentPcbStringEmptyProducers(producersReply);
+    this.#phase = "identity";
     const channelAssociation = compareCurrentPcbStringChannelAssociation(rendererReply, workerReply);
     const identity = channelAssociation.identity;
     if (identity.projectUuid !== this.#target.projectUuid || identity.branchUuid !== this.#target.branchUuid ||
         identity.windowTabId !== this.#target.windowTabId || identity.uniqueId !== compilerState.main.uniqueId ||
         [compilerState.main.uuid, pendingProducers.documentUuid, rawStrings.documentUuid, rootInventory.documentUuid,
           identity.documentUuid, emptyProducers.documentUuid].some(value => value !== this.#target.documentUuid)) { return refuse(); }
+    this.#phase = "empty-baseline";
     const emptyBaseline = inspectCurrentPcbStringEmptyBaseline(this.#target.documentUuid, { modelReply, pendingReply, stringsReply, rootReply });
     const sample = freezeDeep({ compilerState, pendingProducers, rawStrings, rootInventory, rendererAssociation,
       workerAssociation, emptyProducers, channelAssociation, emptyBaseline });
     // Four diagnostic samples retain their combined128KiB limit; three added
     // Readers each retain16KiB. Composition metadata has a separate8KiB reserve.
+    this.#phase = "bounds";
     if (Buffer.byteLength(canonicalJson({ compilerState, pendingProducers, rawStrings, rootInventory })) > 131_072 ||
         Buffer.byteLength(canonicalJson(sample)) > 188_416) { return refuse(); }
+    this.#phase = "owner-observation";
     this.#transport.assertCurrent(); await this.#transport.observeCurrent(); this.#transport.assertCurrent();
     return sample;
   }
   public async observe(): Promise<Readonly<Record<string, unknown>>> {
     if (this.#consumed) { return refuse(); }
-    this.#consumed = true; let started = false;
+    this.#consumed = true; let cleanupFailed = false, started = false;
+    const failures: unknown[] = [];
+    let result: Readonly<Record<string, unknown>> | undefined;
     try {
       this.#transport.assertCurrent(); started = true;
       const wrapper = decodeCurrentPcbDiagnosticModelFunction(await this.#request({
@@ -123,20 +134,26 @@ export class CurrentPcbStringPrecreateRunner {
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#script, "save-handler");
       const scope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
       const first = await this.#sweep(scope, wrapper), second = await this.#sweep(scope, wrapper);
+      this.#phase = "sample-match";
       if (canonicalJson(first) !== canonicalJson(second)) { return refuse(); }
-      return freezeDeep({ schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
+      result = freezeDeep({ schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
         target: this.#target, first, second, matchingSamples: true, atomicSnapshotVerified: false,
         originalContextsRechecked: true, projectWorkerAssociationVerified: false, publicationCaptureVerified: false,
         completeLiveSourceVerified: false, continuousObservation: false, queueCompletionVerified: false,
         saveAuthorized: false, executionAuthorized: false });
-    } finally {
-      if (started) {
+    } catch (caughtError) { failures.push(caughtError); }
+    const failurePhase = this.#phase;
+    if (started) {
+      try {
         const reply = await this.#transport.request(freezeDeep({ modelPhase: "release", method: "Runtime.releaseObjectGroup",
           params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } }));
         if (reply === null || typeof reply !== "object" || types.isProxy(reply) || Array.isArray(reply) ||
             Object.getPrototypeOf(reply) !== Object.prototype && Object.getPrototypeOf(reply) !== null ||
             Reflect.ownKeys(reply).length > 0) { refuse(); }
-      }
+      } catch (caughtError) { cleanupFailed = true; failures.push(caughtError); }
     }
+    if (failures.length > 0) { throw currentPcbObservationFailure("STRING_PRECREATE", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed); }
+    if (result === undefined) { return refuse(); }
+    return result;
   }
 }

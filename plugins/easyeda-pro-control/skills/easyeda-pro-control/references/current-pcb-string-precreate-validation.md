@@ -92,7 +92,20 @@ All complete-source, publication, Save and execution authority flags stay false.
 
 The package contains dormant fixed create/Save programs, publication-capture
 instrumentation, post-create/post-Save readers and supplied-data SQL/history
-comparators. This tool does not dispatch any of them.
+comparators. Separate private runners now collect raw common presentation,
+rules, routing preferences and empty font/blob holders, and inspect selected
+move, structure, debounce, cooperation and upload producer closures. This tool
+does not dispatch those runners or any writer program. The common-state graph
+preserves aliases, field order, undefined and signed zero; it is not the saved
+format or proof that stored and live state match.
+
+V8's retained internal scope wrappers can contain stale primitive bindings.
+Producer sampling must reacquire the original function's scope list and selected
+scope wrappers for each sample, especially across create or Save. Inspecting a
+timer or promise does not establish queue completion: some wrappers retain them
+after completion, while the buffered uploader clears them before upload finishes.
+PCB and worker handles belong to distinct sessions; cleanup releases the private
+object group separately in both, including after partial failure.
 
 The complete writer still needs an original-owner lifecycle that joins a full
 baseline and producer inventory, one consumed create, actual publication,
@@ -101,6 +114,9 @@ acceptance. A canvas Save acknowledgment can precede backend persistence.
 Do not treat it as saved-file proof.
 
 The legacy FileSource exporter is not an innocent read: its rule-preference
-fallback can repair live rules, and it does not supply every required record
-family. Do not call it as a shortcut to complete-source admission. Unsupported
+fallback can repair live rules, its previous-track-width getter can assign a
+default into the live model, and it does not supply every required record family.
+The private preference reader preserves raw backing inputs without invoking
+those getters or encoding their fallbacks. Do not call FileSource as a shortcut
+to complete-source admission. Unsupported
 baseline or callback conditions require a new implementation, not relaxed guards.

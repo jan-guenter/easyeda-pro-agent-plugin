@@ -29,9 +29,9 @@ globalThis.publish=(...args)=>{for(const task of listeners)if(task.isRunning)tas
 globalThis.registration={[target.projectUuid]:{path:target.rawWindowsPath,isCbb:false}};
 class Registry{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||topic!=='/pro-mgr/api/client/getProjectPaths'||Object.keys(args).length||timeout!==0)throw new Error('PRIVATE_REGISTRY');registryCalls++;await Promise.resolve();${options.afterRegistry ?? ""}return {message:{success:true,result:registration},bridge:undefined,source:undefined};}subscribe(topic,callback){if(this!==gVars.messageBus||topic!=='loadProjectCompleted')throw new Error('PRIVATE_SUBSCRIPTION');const task=new Task(callback);listeners.push(task);${options.subscriptionBody ?? ""}return task;}}
 class Api{async rpcCall(topic,id){if(this!==gVars.extensionApiMessageBus2||arguments.length!==2||topic!=='extensionApi.DMT_Project.openProject'||id!==target.projectUuid)throw new Error('PRIVATE_OPEN');projectCalls++;await Promise.resolve();const result=await(async()=>{${options.projectBody ?? "openedProject();return true;"}})();${options.projectEvent ?? "if(result===true)publish(null,undefined,undefined);"}return result;}}
-globalThis.gVars={client:{},currentProject:{projectId:undefined,branchUuid:''},isHistoryMode:false,messageBus:new Registry(),extensionApiMessageBus2:new Api()};
+globalThis.gVars={client:{currentProjectName:''},currentProject:{projectId:undefined,branchUuid:''},isHistoryMode:false,messageBus:new Registry(),extensionApiMessageBus2:new Api()};
 globalThis._MSG_BUS2_EXTAPI_=gVars.extensionApiMessageBus2;globalThis.UI={gVars,tabBar:Tabs};
-globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};gVars.client.currentProjectName='Selected';document.title='Selected | EasyEDA Pro - V3.2.196';location.href=location.href.split('#')[0]+'#id='+target.projectUuid;document.URL=location.href;};
+globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};location.href=location.href.split('#')[0]+'#id='+target.projectUuid;document.URL=location.href;};
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return {
     run: async (phase): Promise<CurrentPcbDiagnosticOpeningResult> => {
@@ -54,7 +54,7 @@ void test("fixed opening preflight validates the registered disposable without o
   assert.equal(result.ok, true); assert.equal(result.status, "ready"); assert.equal(result.dispatchAttempted, false);
   assert.equal(result.observation?.projectPresent, false); assert.equal(result.nativeWorkMayRemain, false);
   assert.equal(result.observation.initialTitle, "EasyEDA Pro - V3.2.196");
-  assert.equal(result.observation.expectedOpenedTitle, "Selected | EasyEDA Pro - V3.2.196");
+  assert.equal(result.observation.expectedOpenedTitle, "EasyEDA Pro - V3.2.196");
   assert.equal(result.observation.documentTitle, "EasyEDA Pro - V3.2.196");
   assert.equal(env.evaluate("projectCalls"), 0); assert.equal(env.evaluate("registryCalls"), 2);
   assert.equal(env.evaluate("listeners.length"), 0); assert.equal(env.evaluate("cancelCalls"), 0);
@@ -73,7 +73,7 @@ void test("fixed project service is called once and waits for one contextual pre
   assert.equal(result.ok, true); assert.equal(result.status, "opened-prefix-observed");
   assert.equal(result.publicResult, true); assert.equal(result.prefixObserved, true);
   assert.equal(result.observation?.projectPresent, true); assert.equal(result.observation.branchUuid, target.branchUuid);
-  assert.equal(result.observation.documentTitle, "Selected | EasyEDA Pro - V3.2.196");
+  assert.equal(result.observation.documentTitle, "EasyEDA Pro - V3.2.196");
   assert.equal(result.nativeWorkMayRemain, true); assert.equal(result.restorationCompletionVerified, false);
   assert.equal(result.compilerOwnerVerified, false); assert.equal(result.queueCompletionVerified, false);
   assert.equal(env.evaluate("projectCalls"), 1); assert.equal(env.evaluate("registryCalls"), 2);
@@ -84,15 +84,15 @@ void test("project prefix permits unfinished blank-tab rendering but requires th
   const transition = "document.title='EasyEDA Pro - V3.2.196';" +
     "info.tabs.push({tabId:'0',data:{doctype:0},isAbleDelete:false,group:'start_blank',draggable:false,isDisplayNone:true});" +
     "info.activeTabId='0';publish(null,undefined,undefined);await Promise.resolve();";
-  const complete = fixture({ projectEvent: `${transition}Tabs.currentTabId='0';document.title='Selected | EasyEDA Pro - V3.2.196';` });
+  const complete = fixture({ projectEvent: `${transition}Tabs.currentTabId='0';` });
   const result = await complete.run("open-project");
   assert.equal(result.ok, true); assert.equal(result.prefixObserved, true);
   assert.equal(result.observation?.activeTabId, "0"); assert.equal(complete.evaluate("projectCalls"), 1);
   const unfinished = fixture({ projectEvent: transition });
   const refused = await unfinished.run("open-project");
   assert.equal(refused.ok, false); assert.equal(refused.prefixObserved, true);
-  assert.equal(refused.failure?.stage, "registration-after"); assert.equal(refused.failure.code, "TITLE");
-  assert.equal(refused.failure.substage, "title"); assert.equal(unfinished.evaluate("projectCalls"), 1);
+  assert.equal(refused.failure?.stage, "registration-after"); assert.equal(refused.failure.code, "TAB");
+  assert.equal(refused.failure.substage, "tab-roster"); assert.equal(unfinished.evaluate("projectCalls"), 1);
 });
 
 void test("prefix first failure survives later PREFIX and separate cleanup failure without private payload", async () => {
@@ -153,7 +153,7 @@ void test("post-dispatch observations refuse owner, URL and registration drift",
     assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, true); assert.equal(env.evaluate("projectCalls"), 1);
     assert.equal(env.evaluate("cancelCalls"), 1);
   }
-  for (const projectEvent of ["document.title='EasyEDA Pro - V3.2.196';publish(null,undefined,undefined);",
+  for (const projectEvent of ["document.title='Selected | EasyEDA Pro - V3.2.196';publish(null,undefined,undefined);",
     "document.title='Arbitrary title';publish(null,undefined,undefined);",
     "gVars.client.currentProjectName='Other';publish(null,undefined,undefined);",
     "gVars.client={...gVars.client};publish(null,undefined,undefined);"]) {

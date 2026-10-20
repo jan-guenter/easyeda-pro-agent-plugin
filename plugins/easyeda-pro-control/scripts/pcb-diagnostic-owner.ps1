@@ -434,7 +434,12 @@ const client=plain(own(host,""client"")),initialTitle=text(document?.title,512),
 if(meta?.ownerDocument!==document||meta?.nodeType!==1||meta?.localName!==""meta"")bad(""TITLE"");
 const attribute=method(meta,""getAttribute""),version=text(apply(attribute.fn,meta,[""content""]),64),versionSuffix="" - V""+version;
 if(!matches(version,/^\d+(?:\.\d+){1,7}$/)||initialTitle.includes("" | "")||!initialTitle.endsWith(versionSuffix)||initialTitle.length<=versionSuffix.length)bad(""TITLE"");
-const projectName=text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf(""\\"")+1,target.rawWindowsPath.indexOf("".eprj2"")),256),expectedOpenedTitle=text(projectName+"" | ""+initialTitle,512);
+text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf(""\\"")+1,target.rawWindowsPath.indexOf("".eprj2"")),256);
+// The SDK calls Fs({uuid}), not Fs({cPath}). ZDe keeps cPath undefined;
+// U9o therefore leaves the empty client name unchanged and LJ keeps the base
+// Title. A filename-prefixed title would belong to a different opening route.
+const expectedOpenedTitle=initialTitle,initialClientName=own(client,""currentProjectName"",true);
+if(initialClientName!==undefined&&initialClientName!=="""")bad(""TITLE"");
 const active=method(tabs,""getActiveTab""),container=method(tabs,""getContainerInfo""),getTab=method(tabs,""getTabById"");
 const bus=own(host,""messageBus""),registryCall=method(bus,""rpcCall""),subscribe=method(bus,""subscribe"");
 const apiBus=own(host,""extensionApiMessageBus2""),openCall=method(apiBus,""rpcCall"");
@@ -459,7 +464,7 @@ const projectIdentity=()=>{
 const sample=()=>{
  const {project,pid,branch,projectPresent}=projectIdentity(),owners=[project];substage=""title"";
  const documentTitle=text(document.title,512),clientName=own(client,""currentProjectName"",true);
- if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""""))bad(""TITLE"");
+ if(documentTitle!==expectedOpenedTitle||clientName!==initialClientName)bad(""TITLE"");
  substage=""container-roster"";
  const ids=own(tabs,""containerIds""),n=dense(ids,128);if(n===0)bad(""TAB"");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad(""TAB"");registry.add(id);names.push(id);}
@@ -1555,8 +1560,8 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
     }
     string[] programs={OpeningFunction,ModelCallbackExpression,ModelHandlerFunction,ModelStateFunction,ModelPendingFunction,ModelRawStringsFunction,ModelRootInventoryFunction,PcbOpeningFunction};
-    int[] lengths={16768,2204,1730,7741,10692,8313,19842,13044};
-    string[] digests={"414f7d97b46e650aabeae7874560d3c6fca3783fd4eed495e1fe1249b5763625",
+    int[] lengths={17003,2204,1730,7741,10692,8313,19842,13044};
+    string[] digests={"186b6756f5a8b261ef225ac54202c4b9a9a8ccf65e9f30da537886779111d044",
       "f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e",
       "548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591",
       "67d4081399cdc22be17e2e1ddd0be234290092a2c5287f629fc2de9be16b85a5",

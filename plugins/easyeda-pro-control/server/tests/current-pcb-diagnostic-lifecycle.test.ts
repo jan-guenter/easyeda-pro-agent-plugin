@@ -38,7 +38,7 @@ const OPEN_RESULT: CurrentPcbDiagnosticOpeningResult = { schema: "easyeda-pro-co
   prefixObserved: true, nativeWorkMayRemain: true,
   observation: { projectPresent: true, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, windowTabId: "fixture-tab",
     containerCount: 1, tabIds: [], activeTabId: "tab_page1", initialTitle: "EasyEDA Pro - V3.2",
-    expectedOpenedTitle: "Diagnostic | EasyEDA Pro - V3.2", documentTitle: "Diagnostic | EasyEDA Pro - V3.2" },
+    expectedOpenedTitle: "EasyEDA Pro - V3.2", documentTitle: "EasyEDA Pro - V3.2" },
   startupQualified: false, restorationCompletionVerified: false, persistenceVerified: false, compilerOwnerVerified: false,
   queueCompletionVerified: false, executionAuthorized: false, nativeIntrinsicsVerified: false };
 const OPEN_INPUT = { target: OPEN_TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true };
@@ -63,7 +63,7 @@ function directory(id: string): string {
 function launch(id: string): Record<string, unknown> {
   return { action: "launch", operationId: id, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 }
-function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}): {
+function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}, sharedAdmission?: () => Promise<void>): {
   coordinator: CurrentPcbDiagnosticLifecycle; owner: CurrentPcbStringPrecreateLifecycleOwner;
   options: CurrentPcbDiagnosticLifecycleOptions; calls: string[];
   state: { bound: boolean; closed: boolean; terminated: boolean; released: boolean; failLaunch: boolean;
@@ -191,6 +191,7 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     },
     assertAllowed: (): Promise<void> => state.failAllowed ? Promise.reject(new Error("synthetic admission refused")) : Promise.resolve(),
     assertOtherLaunchesSettled: (): Promise<void> => state.failOther ? Promise.reject(new Error("synthetic unresolved project")) : Promise.resolve(),
+    ...(sharedAdmission === undefined ? {} : { assertAllowed: sharedAdmission, assertOtherLaunchesSettled: sharedAdmission }),
   };
   const commonDependencies: CurrentPcbDiagnosticLifecycleDependencies = {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
@@ -890,6 +891,33 @@ void test("request schemas and prelaunch guards reject caller executable paths a
   const inspected = await value.coordinator.run({ action: "inspect", operationId: id }); assert.equal(inspected["state"], "not-found");
   assert.deepEqual(value.calls, []);
   await value.coordinator.run(launch(id));
+});
+
+void test("one shared admission scan per boundary remains fresh across installation, intent and allocation", async context => {
+  for (const prefix of ["diagnostic-test", "string-precreate-test"]) {
+    const events: string[] = [], id = `${prefix}-shared-admission`;
+    const value = fixture(context, id, { verifyInstallation: options => {
+      events.push("installation");
+      return Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: "a".repeat(64) });
+    } }, () => { events.push("admission"); return Promise.resolve(); });
+    await value.coordinator.run(launch(id));
+    assert.deepEqual(events, ["admission", "installation", "admission", "installation", "admission"]);
+    value.state.terminated = true;
+    await value.request("observe-termination"); await value.request("release-closed");
+  }
+});
+
+void test("shared scan still refuses newly blocked evidence after helper allocation without launching", async context => {
+  const id = "diagnostic-test-shared-admission-drift"; let scans = 0;
+  const value = fixture(context, id, {}, () => {
+    scans += 1;
+    return scans === 3 ? Promise.reject(new Error("synthetic new blocker after allocation")) : Promise.resolve();
+  });
+  await assert.rejects(value.coordinator.run(launch(id)), /new blocker after allocation/u);
+  assert.equal(scans, 3); assert.deepEqual(value.calls, ["allocate"]);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  await value.coordinator.run({ action: "cleanup-unlaunched", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  assert.deepEqual(value.calls, ["allocate", "release-unlaunched"]);
 });
 
 void test("mandatory ordinary-launch inventory blocks diagnostic allocation even when supplied project guard passes", async context => {

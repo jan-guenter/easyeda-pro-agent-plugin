@@ -33,8 +33,8 @@ import { currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbO
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-runner.ts";
 
-const HELPER_SHA256 = "810ebda1a3dca5107b15eafca021bff00c0d964f5a6f841deeb47439cec171b8";
-const HELPER_BYTES = 185_043;
+const HELPER_SHA256 = "2adfd78eaf1d1783fa6b3b45eafefbc36c410bed5409668ea3b8b2027de22e67";
+const HELPER_BYTES = 185_280;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
