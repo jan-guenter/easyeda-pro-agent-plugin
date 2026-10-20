@@ -2,14 +2,15 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../src/current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256 } from "../src/current-pcb-diagnostic-worker-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
-import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
 // oxlint-disable-next-line import/max-dependencies -- Native parity needs each fixed program from its independently reviewed implementation.
+import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
@@ -36,7 +37,7 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
-  assert.ok(source.includes('if(id<1 || id>(stringPurpose?90:64) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes('if(id<1 || id>(stringPurpose?112:82) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
   assert.ok(source.includes("return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);"));
   assert.ok(source.includes('if(scriptId!=null || !token(uniqueContextId))'));
   assert.ok(source.includes(String.raw`\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]`));
@@ -65,7 +66,9 @@ void test("native opening and model programs are byte-exact fixed commands, not 
     ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
     ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ModelPendingFunction: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
     ModelRawStringsFunction: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
-    ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, PcbOpeningFunction: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION })) {
+    ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, PcbOpeningFunction: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
+    ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
+    ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), expected, name);
     assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);
@@ -83,17 +86,39 @@ void test("native opening and model programs are byte-exact fixed commands, not 
 void test("native dispatch preserves missing PowerShell fields through object-typed boundaries without accepting supplied empties", async () => {
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("public void Send(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId)"));
-  assert.ok(source.includes("public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId)"));
+  assert.ok(source.includes("public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId)"));
   assert.ok(source.includes("if(value==null) return null;"));
   assert.ok(source.includes('string text=value as string; if(text==null) throw Error("optional-text-type");'));
   assert.ok(source.includes('if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields")'));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::BoundProtocolMessage(1,'Browser.getVersion',$null,$null,$null,$null)"));
-  assert.ok(source.includes("[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,$null,$null)"));
+  assert.ok(source.includes("[EasyedaDiagnosticOwner]::BoundModelProtocolMessage(2,'Runtime.releaseObjectGroup','s','release',$null,$null,$null,$null)"));
   assert.ok(source.includes("foreach ($value in @('',7))"));
   assert.ok(source.includes("'pcb-diagnostic-bound-model-extra-field'"));
   assert.ok(source.includes("foreach ($phase in @('snapshot','pending','raw-strings','root-inventory'))"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::DomProtocolMessage(5,'DOM.getFrameOwner','s','original-frame',$null)"));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::DomProtocolMessage(6,'DOM.describeNode','s',$null,1234)"));
+});
+
+void test("native constructor grammar admits only purpose-matched fixed selectors and exact required tuple handles", async () => {
+  const source = await readFile(sourcePath, "utf8");
+  assert.ok(source.includes('(phase=="constructors-precreate")!=stringPurpose'));
+  assert.ok(source.includes('if(phase!="pending" && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object")'));
+  assert.ok(source.includes('((phase=="pending" || phase=="root-inventory") && !handle(constructorObjectId))'));
+  assert.ok(source.includes('if(phase!="empty-producers" && constructors!=null) throw Error("string-scope")'));
+  assert.ok(source.includes('(phase=="empty-producers" && !handle(constructors))'));
+  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
+  assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
+  assert.ok(source.includes("'empty-producers' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
+  assert.ok(source.includes("'constructors-diagnostic' {if ($StringPrecreate) {throw 'pcb-diagnostic-model-constructors'}"));
+  assert.ok(source.includes("'constructors-precreate' {if (-not $StringPrecreate) {throw 'pcb-diagnostic-model-constructors'}"));
+  for (const check of ["constructors-selector-smoke", "constructors-purpose-smoke", "constructors-required-smoke", "root-constructors-smoke",
+    "constructors-extra-smoke", "string-constructors-extra-smoke", "pcb-diagnostic-bound-constructor-field"]) {
+    assert.ok(source.includes(check), check);
+  }
+  assert.ok(source.includes('ProtocolMessage(82,"Browser.getVersion",null,null,null,null)'));
+  assert.ok(source.includes('ProtocolMessage(83,"Browser.getVersion",null,null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(112,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(113,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
 });
 
 void test("native creation failure captures numeric error before cleanup while preserving unknown-creation refusal", async () => {

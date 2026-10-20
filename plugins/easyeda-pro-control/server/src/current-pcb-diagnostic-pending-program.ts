@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
+import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
 import { currentPcbPendingFailure, currentPcbPendingFailureDetail, currentPcbPendingFailureSchema } from "./current-pcb-observation-failure.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -30,15 +31,16 @@ const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownK
 `;
 
 /** Runtime.callFunctionOn, on the retained original Save-handler scope zero.
- * Sole argument: original callback remote handle. Require throwOnSideEffect,
+ * Arguments: original callback and admitted constructor tuple remote handles. Require throwOnSideEffect,
  * silent and returnByValue true; awaitPromise, preview and userGesture false.
  * No source, selectors, remote handles or optional flags come from the caller.
  */
-export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback){${GUARDS}
+export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback,constructors){${GUARDS}
 try{
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 stage="scope";
 const scope=object(own(this,"object")),retained=[];
+${CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS.diagnostic}
 const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
 const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad("instance");return o;};
 const keep=(o,k)=>{const v=optional(o,k);retained.push([o,k,v.marker,v.value]);return v;};
@@ -50,7 +52,7 @@ const owner=instance(v.value,c),data=keep(owner,"data").value;return {marker:"pr
 stage="copper-uploads";const copperUploads=upload("qI");stage="plane-uploads";const planeUploads=upload("e5");
 stage="board-upload";const boardClass=klass("pE"),boardOwner=keep(boardClass,"proxy");
 const boardUpload={marker:boardOwner.marker,flag:boardOwner.marker==="present"?flag(own(instance(boardOwner.value,boardClass),"flag")):null};
-stage="commands";const commands=instance(keep(scope,"Xe").value,klass("kde")),undo=keep(commands,"undoCommand").value,redo=keep(commands,"redoCommand").value;
+stage="commands";const commands=constructorInstance(keep(scope,"Xe").value,"kde"),undo=keep(commands,"undoCommand").value,redo=keep(commands,"redoCommand").value;
 const undoCount=arrayCount(undo),redoCount=arrayCount(redo);if(undoCount>50||redoCount>50)bad();
 const active=keep(commands,"stack");if(active.marker!=="null"&&active.marker!=="present")bad();
 let activeStack=null;
@@ -62,7 +64,7 @@ idMapCount:collection(keep(stack,"idMap").value,Map.prototype),refreshService:fl
 needCheckFilterCommand:flag(own(stack,"needCheckFilterCommand")),partitionNeedAskBeforeDelete:flag(own(stack,"_partitionNeedAskBeforeDelete")),
 createPartitionFile:flag(own(stack,"createPartitionFile")),sendCopperOrderChange:flag(own(stack,"sendCopperOrderChange"))};
 }
-stage="teardrops";const tears=instance(keep(scope,"Zec").value,klass("Sfe"));
+stage="teardrops";const tears=constructorInstance(keep(scope,"Zec").value,"Sfe");
 const teardrops={isMove:flag(own(tears,"isMove")),suspend:flag(own(tears,"suspend")),
 modifyCount:collection(keep(tears,"modify").value,Set.prototype),taskCount:collection(keep(tears,"task").value,Set.prototype),
 modifyTearsCount:collection(keep(tears,"modifyTears").value,Set.prototype),timer:keep(tears,"timeoutId").marker};
@@ -92,7 +94,7 @@ else association="matched";
 }
 }
 }
-stage="reproof";if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
+stage="reproof";verifyConstructorAssociations();if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
 for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 stage="serialize";return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v1",documentUuid,copperUploads,planeUploads,boardUpload,

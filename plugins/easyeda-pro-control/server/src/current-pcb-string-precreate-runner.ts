@@ -3,6 +3,8 @@
 /* oxlint-disable import/max-dependencies -- The joined runner retains seven independently audited fixed readers and their strict decoders rather than merging their trust boundaries. */
 import { types } from "node:util";
 import { canonicalJson } from "./core.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS,
+  decodeCurrentPcbConstructorBundle, decodeCurrentPcbConstructorProperties, decodeCurrentPcbConstructorTuple } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, decodeCurrentPcbDiagnosticModelReply } from "./current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "./current-pcb-diagnostic-model-runner.ts";
@@ -68,7 +70,20 @@ export class CurrentPcbStringPrecreateRunner {
     return this.#request({ modelPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  async #sweep(scope: string, wrapper: string): Promise<Readonly<Record<string, unknown>>> {
+  async #constructors(scope: string, wrapper: string): Promise<string> {
+    const bundle = decodeCurrentPcbConstructorBundle(await this.#request({ modelPhase: "constructors-precreate",
+      method: "Runtime.callFunctionOn", params: { ...EFFECTS, objectId: scope,
+        functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate, returnByValue: false,
+        arguments: [{ objectId: wrapper }] } }), "precreate");
+    const handles = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "precreate"), prototypes = new Set<string>();
+    for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.precreate.entries()) {
+      const selected = handles[index]; if (selected === undefined) { return refuse(); }
+      const qualified = decodeCurrentPcbConstructorProperties(await this.#properties(selected), this.#script, name);
+      if (prototypes.has(qualified.prototypeId)) { return refuse(); } prototypes.add(qualified.prototypeId);
+    }
+    return bundle;
+  }
+  async #sweep(scope: string, wrapper: string, constructors: string): Promise<Readonly<Record<string, unknown>>> {
     this.#phase = "owner-observation";
     this.#transport.assertCurrent(); await this.#transport.observeCurrent(); this.#transport.assertCurrent();
     const args = Object.freeze([{ objectId: wrapper }] as const);
@@ -78,19 +93,21 @@ export class CurrentPcbStringPrecreateRunner {
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...call } });
     const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
     const pendingReply = await this.#request({ modelPhase: "pending", method: "Runtime.callFunctionOn",
-      params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ...call } });
+      params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true,
+        arguments: [{ objectId: wrapper }, { objectId: constructors }] } });
     const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
     const stringsReply = await this.#request({ modelPhase: "raw-strings", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...call } });
     const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(stringsReply);
     const rootReply = await this.#request({ modelPhase: "root-inventory", method: "Runtime.callFunctionOn",
-      params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...call } });
+      params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, returnByValue: true,
+        arguments: [{ objectId: wrapper }, { objectId: constructors }] } });
     const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(rootReply);
     const rendererReply = await this.#request(currentPcbStringScopeCommand("renderer-association", scope, wrapper));
     const rendererAssociation = decodeCurrentPcbStringRendererAssociation(rendererReply);
     const workerReply = await this.#request(currentPcbStringWorkerCommand(this.#worker));
     const workerAssociation = decodeCurrentPcbStringWorkerAssociation(workerReply);
-    const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope, wrapper));
+    const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope, wrapper, constructors));
     const emptyProducers = decodeCurrentPcbStringEmptyProducers(producersReply);
     this.#phase = "identity";
     const channelAssociation = compareCurrentPcbStringChannelAssociation(rendererReply, workerReply);
@@ -133,7 +150,8 @@ export class CurrentPcbStringPrecreateRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#script, "save-handler");
       const scope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
-      const first = await this.#sweep(scope, wrapper), second = await this.#sweep(scope, wrapper);
+      const constructors = await this.#constructors(scope, wrapper);
+      const first = await this.#sweep(scope, wrapper, constructors), second = await this.#sweep(scope, wrapper, constructors);
       this.#phase = "sample-match";
       if (canonicalJson(first) !== canonicalJson(second)) { return refuse(); }
       result = freezeDeep({ schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
@@ -142,7 +160,7 @@ export class CurrentPcbStringPrecreateRunner {
         completeLiveSourceVerified: false, continuousObservation: false, queueCompletionVerified: false,
         saveAuthorized: false, executionAuthorized: false });
     } catch (caughtError) { failures.push(caughtError); }
-    const failurePhase = this.#phase;
+    let failurePhase = this.#phase;
     if (started) {
       try {
         const reply = await this.#transport.request(freezeDeep({ modelPhase: "release", method: "Runtime.releaseObjectGroup",
@@ -151,6 +169,10 @@ export class CurrentPcbStringPrecreateRunner {
             Object.getPrototypeOf(reply) !== Object.prototype && Object.getPrototypeOf(reply) !== null ||
             Reflect.ownKeys(reply).length > 0) { refuse(); }
       } catch (caughtError) { cleanupFailed = true; failures.push(caughtError); }
+    }
+    if (failures.length === 0) {
+      failurePhase = "owner-final";
+      try { this.#transport.assertCurrent(); } catch (caughtError) { failures.push(caughtError); }
     }
     if (failures.length > 0) { throw currentPcbObservationFailure("STRING_PRECREATE", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed); }
     if (result === undefined) { return refuse(); }

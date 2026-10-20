@@ -82,7 +82,7 @@ void test("serializer prototype exclusion and Proxy checks run under V8 without 
       'Object.setPrototypeOf(scope.object.S.prototype,new Proxy(Object.prototype,{getOwnPropertyDescriptor(o,k){getterReads++;return Reflect.getOwnPropertyDescriptor(o,k);}}));',
     ]) {
       const context = pcbCommonFixture(change); assert.notEqual(uniqueContextId, "");
-      const expression = `(${CURRENT_PCB_COMMON_PRESENTATION_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+      const expression = `(${CURRENT_PCB_COMMON_PRESENTATION_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,globalThis.producerConstructors)`;
       const parameters = { expression, uniqueContextId, returnByValue: true, throwOnSideEffect: true, silent: true,
         awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
         userGesture: false, generatePreview: false, timeout: 1000 };

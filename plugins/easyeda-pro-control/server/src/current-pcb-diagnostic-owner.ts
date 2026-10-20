@@ -35,8 +35,8 @@ import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-
 import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
 import type { CurrentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
 
-const HELPER_SHA256 = "39bcb93312146c74da9c6333968bdb2347a8065d914e00b2a33eb679a08c3157";
-const HELPER_BYTES = 185_849;
+const HELPER_SHA256 = "3c5d875e3980df13f9551aed25af87b323fce6ea265928729395bacdf0427731";
+const HELPER_BYTES = 212_714;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -168,7 +168,7 @@ class CurrentPcbRetainedOwnerCore {
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
-    stringPrecreateConsumed: boolean; profile: "diagnostic64" | "string-precreate90" }> {
+    stringPrecreateConsumed: boolean; profile: "diagnostic" | "string-precreate" }> {
     return Object.freeze({ helperPid: this.#child.pid ?? null, binding: this.#binding, failure: this.#failure,
       busy: this.#busy, launchConsumed: this.#launchConsumed, closeConsumed: this.#closeConsumed,
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
@@ -180,7 +180,7 @@ class CurrentPcbRetainedOwnerCore {
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
-      stringPrecreateConsumed: this.#stringPrecreateConsumed, profile: this.#stringPurpose ? "string-precreate90" : "diagnostic64" });
+      stringPrecreateConsumed: this.#stringPrecreateConsumed, profile: this.#stringPurpose ? "string-precreate" : "diagnostic" });
   }
 
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
@@ -831,7 +831,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #childClose = (): void => { this.#childClosed = true; if (!this.#released) { this.#fail("HELPER_CLOSED"); } this.#closed.resolve(null); };
 }
 
-/** Existing diagnostic facade retains64 requests and mutually exclusive
+/** Existing diagnostic facade retains82 requests and mutually exclusive
  * worker/PCB-model branches. Callers cannot select another purpose. */
 export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,

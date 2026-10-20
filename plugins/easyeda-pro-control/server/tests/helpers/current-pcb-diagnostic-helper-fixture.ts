@@ -6,6 +6,8 @@ import { runInContext } from "node:vm";
 import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION, CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION } from "../../src/current-pcb-string-association.ts";
 import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION } from "../../src/current-pcb-string-empty-producers.ts";
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./current-pcb-diagnostic-model-replies.ts";
+import { constructorBundleReply, constructorHandle, constructorPropertiesReply, constructorTupleReply } from "./current-pcb-constructor-replies.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../../src/current-pcb-constructor-scope.ts";
 import { callPcbStringObservation, pcbStringObservationFixture, pcbStringReply } from "./current-pcb-string-observation-fixture.ts";
 
 const scenario = process.argv[2];
@@ -229,7 +231,18 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   if (phase === "release") { return scenario === "staged-model-release-refused" ? { extra: true } : {}; }
   assert.ok("objectId" in request);
   const id = request.objectId;
+  if (phase === "constructors-diagnostic" || phase === "constructors-precreate") {
+    assert.equal(id, "handler-scopes-zero");
+    assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
+    assert.equal(phase, stringCase ? "constructors-precreate" : "constructors-diagnostic");
+    return constructorBundleReply(stringCase ? "precreate" : "diagnostic");
+  }
   if (phase === "properties") {
+    const kind = stringCase ? "precreate" : "diagnostic";
+    if (id === "constructors") { return constructorTupleReply(kind); }
+    for (const name of CURRENT_PCB_CONSTRUCTOR_BUNDLES[kind]) {
+      if (id === constructorHandle(name)) { return constructorPropertiesReply(name, pcbCase ? "pcb-script-1" : "script-1"); }
+    }
     if (scenario === "staged-model-context-lost") {
       events.push({ method: "Runtime.executionContextsCleared", sessionId: "session-1", params: {} });
     }
@@ -256,6 +269,7 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
   const documentUuid = pcbCase && scenario !== "opening-pcb-model-document-drift" ? pcbDocumentUuid : "a".repeat(32);
   if (phase === "pending") {
+    assert.ok("constructorObjectId" in request); assert.equal(request.constructorObjectId, "constructors");
     if (scenario === "opening-pcb-string-pending-refused") {
       return { result: { type: "string", value: JSON.stringify({
         schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",
@@ -264,7 +278,10 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
     return pendingModelReply(scenario === "staged-model-document-drift" ? "f".repeat(32) : documentUuid);
   }
   if (phase === "raw-strings") { return rawStringsModelReply(documentUuid); }
-  if (phase === "root-inventory") { return rootInventoryModelReply(documentUuid); }
+  if (phase === "root-inventory") {
+    assert.ok("constructorObjectId" in request); assert.equal(request.constructorObjectId, "constructors");
+    return rootInventoryModelReply(documentUuid);
+  }
   assert.equal(phase, "snapshot");
   return { result: { type: "string", value: JSON.stringify({
     schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",

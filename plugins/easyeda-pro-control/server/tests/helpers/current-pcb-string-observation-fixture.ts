@@ -28,8 +28,10 @@ this.rubbish=new Set();this.netOptions=[];this.updateNets={addNet:[],deleteNet:[
 this.ratlineVisibleBeforeGray={};this.debounce=new U5();}}
 class HSe{constructor(){this.map=new Map();}}class USe{constructor(){this.map=new Map();}}
 class pP{}pP.map=new Map();class h0{}h0.useWireClusterCache=false;h0.emptyNetChange=true;
-globalThis.scope={object:{x,wi,mCe,sCe,A8e,Zu,MI,mpe,U5,Yde,HSe,USe,pP,h0,
+globalThis.scope={object:{x,wi,mCe,sCe,A8e,Zu,MI,mpe,U5,Yde,HSe,USe,pP,Xh:pP,h0,
 jo:new mpe(),ze:new Yde(),h_:new HSe(),aE:new USe()}};
+globalThis.producerConstructors=[class kde{},class Sfe{},mpe,Yde,HSe,USe,
+class Jse{},class Lpe{},class Kme{},class fpe{},class P1e{},class mge{},class tge{},class Sy{},class Spe{},class Ume{},class cge{},class Tfe{},class Qme{},class jde{}];
 const name="/window_1/project/"+"a".repeat(64);globalThis[name]=new J(name);x.env._compiler.base.dataBus=globalThis[name];
 class Gd{}class Lg extends Gd{}class ja{}
 globalThis.PROJECT=new Lg();globalThis._TAB_ID_="window_1";
@@ -49,7 +51,7 @@ export function pcbStringObservationFixture(worker = false, change = ""): Contex
 }
 
 export function callPcbStringObservation(context: Context, source: string): unknown {
-  return runInContext(`(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`,
+  return runInContext(`(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,producerConstructors)`,
     context, { timeout: 1000 }) as unknown;
 }
 export function pcbStringReply(value: unknown): Readonly<{ result: Readonly<{ type: "string"; value: unknown }> }> {

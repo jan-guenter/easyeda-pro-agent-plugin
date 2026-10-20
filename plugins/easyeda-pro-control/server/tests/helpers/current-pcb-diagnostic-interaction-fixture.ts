@@ -6,7 +6,7 @@ class Fo extends kF{constructor(){super();this.drawing=false;this.filterItems=ne
 class Eh extends Fo{}
 class m0e extends Fo{constructor(){super();this.nextTool=new Eh();this.isMouseRightDown=false;this.isMouseMidDown=false;
 this.mark=[];this.shiftMoveHelpLine=null;this.wheelData={clearTime:null};}}
-class Lpe extends kF{constructor(){super();this.nextTool=new m0e();this.mouseRightDownTimer=null;this.mouseDownStatus=null;}}
+class Lpe extends kF{constructor(_parent){super();this.nextTool=new m0e();this.mouseRightDownTimer=null;this.mouseDownStatus=null;}}
 class Kme{constructor(){this.scene=[3];this._dropDrag=true;this.needHistoryTool=new Set();}}
 class XU{constructor(){
 for(const key of ["items","selections","components","tracks","currentPointSelectedItems","selectAnnotations"])this[key]=[];
@@ -23,6 +23,7 @@ class De{constructor(){this._commands=[];this.waitingUploadStack=[];this.idMap=n
 class tge{constructor(){this._control=null;this.dimension=null;this.start=null;this.end=null;
 this.startSpots=[];this.highlightedSpots=[];this._historyItems=new Set();this.command=new De();this.initCommandFromOutside=false;}}
 class Sy{constructor(){this.currTool=null;this.items=[];this._flipQueue=[];this._onSettleCallbacks=[];this._isProcessingFlip=false;}}
+Object.assign(Sy,{FLIP_PROGRESS_RANGE:.8,FLIP_PROGRESS_START:.1,MAX_QUEUE_SIZE:20,PROGRESS_UPDATE_INTERVAL:10});
 class p_{constructor(){this.items=new Map();}}p_.manager=null;
 class KN{constructor(){this.map=new Map();this.updateIds=new Set();}}KN.manager=null;
 class Tfe{constructor(){this.mgr=scope.object.zo.manager;this.layerMapSet={};}}

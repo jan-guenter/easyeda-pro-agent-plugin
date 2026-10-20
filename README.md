@@ -9,12 +9,25 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Candidate `0.3.0+codex.20261020211943` combines [common-record and rule encoding,
+Update `0.3.0+codex.20261020233238` batches [constructor admission, compiler metadata,
+saved common-record/history matching and producer markers](docs/current-pcb-constructor-baseline-batch-2026-10-21.md).
+It handles24 pinned constructor profiles and one captured alias across the
+reviewed readers, and rechecks ownership after cleanup. It does not enable a PCB
+writer. The common-baseline and producer-marker components remain private;
+complete original-owner baseline, callback/effect/clock and saved/reopened writer
+integration are still pending.
+
+Installed211943 passed opening and original PCB/project-worker source checks,
+then stopped at `pending/commands/own`. This grouped label does not identify the
+missing descriptor. Original normal closure and release passed, with the closed
+disposable unchanged. The new source correction still needs connected validation.
+
+The preceding `0.3.0+codex.20261020211943` combines [common-record and rule encoding,
 callback profiles, text-base/cache phases, default-font geometry and retained
 failure diagnostics](docs/current-pcb-common-effects-batch-2026-10-20.md).
 These components support further integration; no new writer is registered.
 
-Published and installed `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
+The preceding `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
 duplicate startup-scan removal, preserved observation/cleanup errors, and
 [common-state and latent-producer runners](docs/current-pcb-baseline-producers-batch-2026-10-20.md).
 The new private runners preserve raw common state and inspect selected deferred
@@ -38,7 +51,7 @@ project opening has now passed on installed20202000, followed by exact PCB-frame
 and project-worker source qualification. Its combined observation stopped at the
 pending-work reader before any create or explicit Save. Original normal closure,
 whole-Job termination and release passed; the disposable file remained unchanged.
-The candidate batch combines reader diagnostics with common-record encoding,
+The 211943 batch combines reader diagnostics with common-record encoding,
 callback profiles, text-base/cache phases and default-font geometry checks.
 The complete writer and saved/reopened lifecycle remain unfinished.
 

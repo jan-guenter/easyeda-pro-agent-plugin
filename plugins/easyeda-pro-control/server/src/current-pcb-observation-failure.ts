@@ -10,7 +10,7 @@ export const currentPcbPendingFailureReasonSchema = z.enum(["guard", "object", "
   "collection", "unexpected", "reply"]);
 export const currentPcbPendingFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-pending-failure.v1"),
   stage: currentPcbPendingFailureStageSchema, reason: currentPcbPendingFailureReasonSchema }).strict();
-const phaseSchema = z.enum(["owner", "wrapper", "properties", "handler", "snapshot", "pending", "raw-strings", "root-inventory",
+const phaseSchema = z.enum(["owner", "owner-final", "wrapper", "properties", "handler", "constructors-diagnostic", "constructors-precreate", "snapshot", "pending", "raw-strings", "root-inventory",
   "renderer-association", "worker-association", "empty-producers", "identity", "empty-baseline", "bounds", "sample-match", "owner-observation", "release"]);
 export type CurrentPcbObservationPhase = z.infer<typeof phaseSchema>;
 export const currentPcbObservationFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-observation-failure.v1"),

@@ -91,8 +91,13 @@ root inventory, renderer/channel identity, worker/channel identity and selected
 empty producer memberships. The runner compares the exact sealed project,
 branch, PCB and original window, and the compiler's unique token. It checks
 target/frame identity around each sweep and releases its private object group.
-The full supported route has a fixed 90-request limit; the diagnostic route
-remains at 64. There is no caller-controlled extension.
+The full supported route has a fixed 112-request limit; the diagnostic route
+has 82. The added requests qualify fixed source-owned instance constructors
+against the already-admitted original script, exact function location and own
+class metadata. V8 can omit top-level-only class bindings from a retained closure;
+do not retry an absent binding or replace the check with a matching class name.
+Each leaf rechecks its instance/prototype/constructor association. This is not
+proof of the original lexical binding. There is no caller-controlled extension.
 
 The four existing diagnostic samples retain their combined 128 KiB limit.
 Each complete sweep is bounded to 184 KiB; the paired result is bounded to
@@ -114,7 +119,16 @@ rules, routing preferences and empty font/blob holders, and inspect selected
 move, structure, debounce, cooperation and upload producer closures. This tool
 does not dispatch those runners or any writer program. The common-state graph
 preserves aliases, field order, undefined and signed zero; it is not the saved
-format or proof that stored and live state match.
+format or proof that stored and live state match. The private common runner also
+retains compiler document metadata and original reply text. Its supplied-data
+relation accounts for every surviving target common/META row, raw winning clocks
+and history occurrences, and project-tree metadata. Missing stored defaults or
+unmodeled rows refuse. This relation does not establish live ownership, complete
+asset ownership or an atomic baseline.
+
+Separate raw producer markers preserve null lazy managers and timer/notification
+state without calling them empty or complete. They are not dispatched by this
+tool and must not be substituted for its strict empty-producer checks.
 
 Pure host encoders now model selected native common-record bodies without calling
 FileSource. Encoding can omit raw fields; compare the preserved raw graph as well

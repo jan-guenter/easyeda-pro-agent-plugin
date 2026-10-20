@@ -78,7 +78,7 @@ void test("fixed raw common readers pass V8 side-effect checks over synthetic or
     ] as const) {
       const context = pcbCommonFixture();
       assert.notEqual(uniqueContextId, "");
-      const expression = `(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+      const expression = `(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,globalThis.producerConstructors)`;
       const parameters = { expression, uniqueContextId, returnByValue: true, throwOnSideEffect: true, silent: true,
         awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
         userGesture: false, generatePreview: false, timeout: 1000 };

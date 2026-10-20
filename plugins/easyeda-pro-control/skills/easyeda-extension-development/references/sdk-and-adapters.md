@@ -346,7 +346,7 @@ Protocol failure must not close a live diagnostic pipe: Electron can quit when
 it disconnects. Normal closure, original root/Job termination and helper release
 are separate steps, without Save/Discard choice or forced exit. Never infer
 debugger-socket absence from pipe flags. Discovery stays bounded to 8 MiB;
-attached transport permits 64 MiB total, 64 requests and 4096 events/8 MiB.
+attached diagnostic transport permits 64 MiB total, 82 requests and 4096 events/8 MiB.
 Ordinary frames stay at 1 MiB. Only script-source replies allow 32 MiB encoded
 JSON and 20 MiB decoded UTF-8, enough for the pinned UI asset. Synthetic tests
 and empty-Job construction do not qualify the custom EasyEDA build. Actual
@@ -375,7 +375,7 @@ corrections and synthetic sequences are not captured EasyEDA navigation evidence
 
 The separate PCB model reader follows the source/location-admitted
 `pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.
-Eleven fixed requests sample main/custom-footprint compiler queues, selected pending
+Twenty-nine fixed requests qualify constructors and sample main/custom-footprint compiler queues, selected pending
 producers, raw String-manager membership and a populated-safe root census, then
 release the original remote-object group. The four samples must share a document identity but are not
 atomic. Raw absent/undefined/null/zero fields remain distinct, and models without
@@ -396,8 +396,21 @@ stage derives the original sealed target; `observe-pcb-opening` then binds the
 new child frame through its DOM owner, complete pinned source and default
 context before the fixed native identity observation. Preserve the original UI
 identity and source throughout. This branch excludes worker discovery and
-stays within the same64request budget, including all five ancillary checks and
+stays within the82request budget, including all five ancillary checks and
 object-group release. It does not validate writes or saved state.
+
+V8 can elide a class binding used only to initialize a top-level instance, even
+when the instance remains in the Save handler's closure. Fixed constructor
+bundles follow only reviewed instance/prototype/constructor descriptors, then
+qualify each function's exact location, name, arity and prototype against the
+already-admitted script. Leaves recheck those associations. No constructor runs;
+no name-only fallback or arbitrary scope lookup is allowed. This proves a
+source-associated constructor, not the original lexical binding. The separate
+precreate profile has twenty such constructors and a112request total; the dormant
+common reader has four. Lpe has arity1; the source alias $me points to named Sy
+with four exact numeric statics. Preserve these profile differences. For the
+static-map owner pP, the captured native alias is Xh; class self-references do
+not prove an outer pP closure binding. These observation budgets do not admit a writer.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

@@ -5,6 +5,8 @@
  */
 import { types } from "node:util";
 import { canonicalJson } from "./core.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS,
+  decodeCurrentPcbConstructorBundle, decodeCurrentPcbConstructorProperties, decodeCurrentPcbConstructorTuple } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, decodeCurrentPcbDiagnosticModelReply } from "./current-pcb-diagnostic-model-program.ts";
 import type { CurrentPcbDiagnosticModelState } from "./current-pcb-diagnostic-model-program.ts";
@@ -55,13 +57,17 @@ export type CurrentPcbDiagnosticModelCommand =
   | Readonly<{ modelPhase: "handler"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION; returnByValue: false;
   }> }>
+  | Readonly<{ modelPhase: "constructors-diagnostic" | "constructors-precreate"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: string; returnByValue: false;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
   | Readonly<{ modelPhase: "snapshot"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION; returnByValue: true;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "pending"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION; returnByValue: true;
-    arguments: readonly [Readonly<{ objectId: string }>];
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "raw-strings"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION; returnByValue: true;
@@ -69,7 +75,7 @@ export type CurrentPcbDiagnosticModelCommand =
   }> }>
   | Readonly<{ modelPhase: "root-inventory"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION; returnByValue: true;
-    arguments: readonly [Readonly<{ objectId: string }>];
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "release"; method: "Runtime.releaseObjectGroup"; params: Readonly<{
     objectGroup: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP;
@@ -120,6 +126,19 @@ export class CurrentPcbDiagnosticModelRunner {
     return this.#request({ modelPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
+  async #constructors(scope: string, wrapper: string): Promise<string> {
+    const bundle = decodeCurrentPcbConstructorBundle(await this.#request({ modelPhase: "constructors-diagnostic",
+      method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS, objectId: scope,
+        functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic, returnByValue: false,
+        arguments: [{ objectId: wrapper }] } }), "diagnostic");
+    const handles = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "diagnostic"), prototypes = new Set<string>();
+    for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic.entries()) {
+      const selected = handles[index]; if (selected === undefined) { return refuse(); }
+      const qualified = decodeCurrentPcbConstructorProperties(await this.#properties(selected), this.#scriptId, name);
+      if (prototypes.has(qualified.prototypeId)) { return refuse(); } prototypes.add(qualified.prototypeId);
+    }
+    return bundle;
+  }
   public async observe(): Promise<CurrentPcbDiagnosticModelObservation> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;
@@ -142,6 +161,7 @@ export class CurrentPcbDiagnosticModelRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#scriptId, "save-handler");
       const handlerScope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
+      const constructors = await this.#constructors(handlerScope, wrapper);
       const compilerState = decodeCurrentPcbDiagnosticModelReply(await this.#request({
         modelPhase: "snapshot", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
@@ -150,7 +170,7 @@ export class CurrentPcbDiagnosticModelRunner {
       const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(await this.#request({
         modelPhase: "pending", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
-          returnByValue: true, arguments: [{ objectId: wrapper }] },
+          returnByValue: true, arguments: [{ objectId: wrapper }, { objectId: constructors }] },
       }));
       const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(await this.#request({
         modelPhase: "raw-strings", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
@@ -160,7 +180,7 @@ export class CurrentPcbDiagnosticModelRunner {
       const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(await this.#request({
         modelPhase: "root-inventory", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
-          returnByValue: true, arguments: [{ objectId: wrapper }] },
+          returnByValue: true, arguments: [{ objectId: wrapper }, { objectId: constructors }] },
       }));
       this.#phase = "identity";
       if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid ||
@@ -177,7 +197,7 @@ export class CurrentPcbDiagnosticModelRunner {
       if (Buffer.byteLength(canonicalJson(observation), "utf8") > OBSERVATION_BYTES) { return refuse(); }
       result = observation;
     } catch (caughtError) { failures.push(caughtError); }
-    const failurePhase = this.#phase;
+    let failurePhase = this.#phase;
     if (started) {
       try {
         // Release only this original object group, even after context rejection.
@@ -186,6 +206,10 @@ export class CurrentPcbDiagnosticModelRunner {
         emptyReply(await this.#transport.request(freezeDeep({ modelPhase: "release", method: "Runtime.releaseObjectGroup",
           params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } })));
       } catch (caughtError) { cleanupFailed = true; failures.push(caughtError); }
+    }
+    if (failures.length === 0) {
+      failurePhase = "owner-final";
+      try { this.#transport.assertCurrent(); } catch (caughtError) { failures.push(caughtError); }
     }
     if (failures.length > 0) { throw currentPcbObservationFailure("MODEL", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed); }
     if (result === undefined) { return refuse(); }

@@ -4,7 +4,100 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-### Active baseline/effect batch after20202000 admission
+### Active211943 continuation, 2026-10-21
+
+Actual211943 admission passed main and independent checks: facade1778507/
+start51206168, parent1776835/start51200437, Node24.18.0/core0, installed cwd/argv,
+source560/c45702a0, runtime3/020a0ca5 and manifestcb50dd7f. All1652 installed files/
+modes equal merged main4d9ed12e. Post-main Linux39503077910 is SUCCESS; both
+platforms are green. Main evidence `/root/.cache/easyeda-211943-live-2zUiRQNe`;
+independent receipt df58d128 in
+`/root/.cache/easyeda-211943-independent-admission-9fFcli2C/admission.json`.
+
+NEW `string-precreate-211943-20261021-01` is terminal released. Original launch,
+UI source, disposable project/PCB opening, PCB source and direct-child worker
+source passed. The combined observation stopped at
+`PCB_STRING_PRECREATE_OBSERVATION_FAILED_PENDING_LEAF_COMMANDS_OWN`.
+The published primary failure is pending/commands/own, cleanupFailedfalse,
+failureCount1. Later request72/model-release input failure is synthetic owner
+invalidation, not a failed cleanup. Original root48988/created134370107320715814,
+binding6b56984c, hwnd44437184 closed normally; retained root/whole-Job exit and
+helper release passed. Closed disposable remains598016/e620d21a. No create,
+explicit Save, prompt choice or production-design access. NEVER replay this case.
+
+Working branch `feature/pcb-baseline-markers-batch-20261021` batches a complete
+supplied common-record/history relation, descriptor-only compiler metadata,
+raw lazy-manager/notification markers and a source-backed command-owner fix.
+The commands/own failure identifies a guard group, not the exact field. Synthetic
+V8 reproduces omission of top-level-only constructor bindings while retaining
+their instances; the exact missing live descriptor was not recorded. The wider
+audit also found14 affected root/interaction classes. One batch now adds fixed
+source-qualified constructor tuples across pending/root/empty/common readers,
+with82/112 observation ceilings (not writer authority). Original empty-state
+refusals remain. The private common runner now has18 requests and five retained
+raw replies including metadata. Main and independent common/metadata reviews
+pass; expanded constructor/native review and both actual Windows no-app compile
+profiles pass. Candidate `0.3.0+codex.20261020233238` now enters frozen release
+verification. Installed payload/host stay unchanged; publication/install pending.
+Current backlog:
+`docs/current-pcb-constructor-baseline-batch-2026-10-21.md`.
+
+### Delivered211943 checkpoint
+
+Delivered `0.3.0+codex.20261020211943` through protected PR91 on2026-10-20.
+Exact tested head `4dad477c102f95fbf25512b24bc279766370cd37`, merged main
+`4d9ed12e85cc7abc4e7a58e22e5b387564511bd7`; complete tree947de9c3 and plugin
+tree51ea70ad are identical. Batch: common/rule/filter encoding, explicit descriptor
+and own-shadow evidence, callback profiles with receiver limits, phase-specific
+text-base/cache checks, exact default-font rectangles and retained primary-reader
+failure diagnostics. Operational skill references were updated. No added SDK
+coverage, public writer authority or native64/90 budget expansion.
+
+Frozen source560/c45702a0, runtime3/020a0ca5, manifestcb50dd7f. Only facade
+projections/review time changed; external pins unchanged. Independent final
+freeze/pin/helper/source reviews pass. Dependency/tree/signature/audit/sanitizer
+checks pass. Frozen verify71088 PASSED:12061facade tests/12057passed/4platformskips/
+0failures,424bridge tests, strict lint/types, API/build/compatibility/package/MCP
+checks. Rebuilt committed bundles are exact. Root repository/privacy and all7
+skill-creator checks7446 pass. Do not repeat these broad suites for delivery notes.
+Exact-head Linux39501026564(all10jobs) and Windows39501026676 PASSED. The watch
+client exited1 on an annotations connection reset; direct workflow/check results
+confirm success. Post-main Windows39503077953 PASSED; Linux39503077910 is running
+on the identical merged tree. Check its completion next session.
+
+Official named Git marketplace upgrade84646 completed with no errors/stderr;
+CLI lists211943 installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+is merged main. Maintained exact-main comparison38548 passes1652files/42directories/
+33768637bytes/modes, inventory7efbb62c, receipt937858ec. Exact-main worktree:
+`/root/.cache/easyeda-211943-merged-main-EHOIuZjc/worktree`.
+Installed offline probe38548 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0,0stderr and normal EOF/exit0. Post-close marker/
+control checks and no-descendant/socket samples pass; continuous isolation and
+connected execution are not claimed. Receipt918a6223, liveControlRootSelectedfalse.
+Independent delivery review53061a65 repeated only the maintained read-only file/
+mode comparison and inspected all receipts; it passed. Evidence:
+`/root/.cache/easyeda-211943-independent-freeze-Rvv6E4Ad/installed-review.json`.
+Delivery-note repository/privacy validation28130 and whitespace checks pass;
+the packaged plugin diff remains empty.
+
+Loaded host1653522/start50499364 remains20202000, parent1651779/start50493900.
+It was not killed/rebound/hotpatched; no live call after installation. Fresh Codex
+session and actual211943 admission are required before a NEW disposable case.
+Terminal20202000 below is NEVER replayed; no pending CAD/native owner, edit or
+Save. Production designs untouched. Full remaining backlog:
+`docs/current-pcb-common-effects-batch-2026-10-20.md`.
+
+Release evidence: `/root/.cache/easyeda-common-effects-release-llsad1tM`.
+Main fully read private `common-join-next.md` SHAa7c1b6ae and `pending-next.md`
+SHA84749e5b there. Next batch should combine complete SQL/history/live joining,
+explicit null-manager/debounce diagnostics (not empty-state coercion), callback/
+effect/clock proof and writer-owner integration where feasible. Missing pending
+manager is not evidence of quiescence; no null-state guard was weakened. Existing
+64/90 budgets are observations, not writer budgets;607+ is not an approved minimum.
+These local delivery notes are beyond immutable PR91; packaged plugin unchanged.
+
+### Completed20202000 continuation
 
 Actual20202000 admission passed main and independent checks: facade1653522/
 start50499364, parent1651779/start50493900, Node24.18.0/core0, installed
@@ -39,9 +132,10 @@ Both actual Windows CompileOnly profiles were reported passing; helper185849/
 39bcb933 bytes and pins independently verified. Execution outputs were direct
 tool results, not independently retained receipt files. No app was launched.
 Dependency/tree/signature/audit/sanitizer precheck14892 passes. Frozen build,
-verification, protected publication and official installation are next.
+verification, protected publication and official installation subsequently passed
+as recorded in Delivered211943 above.
 Release evidence: `/root/.cache/easyeda-common-effects-release-llsad1tM`.
-Installed20202000 and its host remain unchanged. Production designs untouched.
+The loaded20202000 host remains unchanged. Production designs untouched.
 
 ### Delivered20202000 checkpoint
 

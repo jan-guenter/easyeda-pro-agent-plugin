@@ -124,7 +124,7 @@ void test("fixed association and empty observations survive V8 effect checking a
       const context = pcbStringObservationFixture(workerRole, setup);
       assert.notEqual(uniqueContextId, "");
       const expression = workerRole ? source :
-        `(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+        `(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,producerConstructors)`;
       const parameters = { expression, uniqueContextId, returnByValue: true, throwOnSideEffect: true, silent: true,
         awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
         userGesture: false, generatePreview: false, timeout: 1000 };

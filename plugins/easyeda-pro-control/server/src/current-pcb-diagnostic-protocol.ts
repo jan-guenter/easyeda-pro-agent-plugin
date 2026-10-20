@@ -1,4 +1,6 @@
 /** Fixed private CDP vocabulary. No generic method, caller code or pause. */
+/* oxlint-disable import/max-dependencies -- Exact native parity retains each independently reviewed fixed reader and constructor selector. */
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION } from "./current-pcb-diagnostic-worker-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, currentPcbDiagnosticOpeningArguments } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
@@ -17,10 +19,11 @@ import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringScopeComman
 import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
-// The existing-PCB model path uses30; the complete project/PCB opening and
-// Model observation path uses54, or64 with the original ancillary OBJECT's
-// Five DOM reproofs. Those branches are exclusive; no override.
-export const DIAGNOSTIC_REQUEST_LIMIT = 64;
+// The existing-PCB model path uses48; the complete project/PCB opening and
+// Model observation path uses72, or82 with the original ancillary OBJECT's
+// Five DOM reproofs. These totals include18 fixed constructor-bundle/source
+// Checks. No writer or caller override is admitted.
+export const DIAGNOSTIC_REQUEST_LIMIT = 82;
 export function diagnosticOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
   phase: CurrentPcbDiagnosticOpeningPhase): Readonly<{
     functionDeclaration: string; uniqueContextId: string; arguments: readonly Readonly<{ value: unknown }>[];
@@ -79,7 +82,7 @@ function modelHandle(value: unknown): string {
 }
 /** Derive a fixed private model phase from the exact wire function/options.
  * No model phase or raw expression is accepted from a public request. */
-function modelWire(id: number, method: unknown, params: Record<string, unknown>, sessionId: string):
+function modelWire(id: number, method: unknown, params: Record<string, unknown>, sessionId: string, stringPurpose: boolean):
   Readonly<{ command: DiagnosticCommand; request: Readonly<Record<string, unknown>> }> | null {
   const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const;
   const base = { action: "send", requestId: id, method, sessionId };
@@ -98,28 +101,48 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     const objectId = modelHandle(params["objectId"]);
     command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, returnByValue: false }, sessionId };
     request = { ...base, modelPhase: "handler", objectId };
+  } else if (method === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic ||
+    params["functionDeclaration"] === CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate)) {
+    const functionDeclaration = stringPurpose ? CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate : CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic;
+    if (params["functionDeclaration"] !== functionDeclaration) { return fail(); }
+    const args = params["arguments"];
+    if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["objectId"])) { return fail(); }
+    const callbackObjectId = modelHandle(args[0]["objectId"]), objectId = modelHandle(params["objectId"]);
+    command = { id, method, params: { ...effects, objectId, functionDeclaration, returnByValue: false,
+      arguments: [{ objectId: callbackObjectId }] }, sessionId };
+    request = { ...base, modelPhase: stringPurpose ? "constructors-precreate" : "constructors-diagnostic", objectId, callbackObjectId };
   } else if (method === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION)) {
     const args = params["arguments"];
-    if (!Array.isArray(args) || args.length !== 1 || !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["objectId"])) { return fail(); }
-    const callbackObjectId = modelHandle(args[0]["objectId"]), objectId = modelHandle(params["objectId"]);
+    const withConstructors = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
+      params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION;
+    if (!Array.isArray(args) || args.length !== (withConstructors ? 2 : 1) ||
+        args.some(arg => !diagnosticRecord(arg) || !diagnosticExact(arg, ["objectId"]))) { return fail(); }
+    const first: unknown = args[0], second: unknown = args[1];
+    if (!diagnosticRecord(first) || withConstructors && !diagnosticRecord(second)) { return fail(); }
+    const callbackObjectId = modelHandle(first["objectId"]), objectId = modelHandle(params["objectId"]);
     const callParams = { returnByValue: true, arguments: [{ objectId: callbackObjectId }] as const } as const;
+    const constructorObjectId = diagnosticRecord(second) ? modelHandle(second["objectId"]) : undefined;
     let modelPhase = "snapshot";
     if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION) {
-      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ...callParams }, sessionId };
+      if (constructorObjectId === undefined) { return fail(); }
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
+        returnByValue: true, arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId };
       modelPhase = "pending";
     } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION) {
       command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...callParams }, sessionId };
       modelPhase = "raw-strings";
     } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION) {
-      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...callParams }, sessionId };
+      if (constructorObjectId === undefined) { return fail(); }
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
+        returnByValue: true, arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId };
       modelPhase = "root-inventory";
     } else {
       command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
     }
-    request = { ...base, modelPhase, objectId, callbackObjectId };
+    request = { ...base, modelPhase, objectId, callbackObjectId, ...(constructorObjectId === undefined ? {} : { constructorObjectId }) };
   } else if (method === "Runtime.releaseObjectGroup") {
     command = { id, method, params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP }, sessionId };
     request = { ...base, modelPhase: "release" };
@@ -146,12 +169,14 @@ function stringWire(id: number, method: unknown, params: Record<string, unknown>
     if ("expression" in candidate.params && params["expression"] === candidate.params.expression) { fixed = candidate; }
   } else if (method === "Runtime.callFunctionOn") {
     const args = params["arguments"];
-    if (Array.isArray(args) && args.length === 1 && diagnosticRecord(args[0]) && diagnosticExact(args[0], ["objectId"]) &&
-        typeof params["objectId"] === "string" && typeof args[0]["objectId"] === "string") {
-      for (const phase of ["renderer-association", "empty-producers"] as const) {
-        const candidate = currentPcbStringScopeCommand(phase, params["objectId"], args[0]["objectId"]);
-        if ("functionDeclaration" in candidate.params && params["functionDeclaration"] === candidate.params.functionDeclaration) { fixed = candidate; }
-      }
+    if (Array.isArray(args) && (args.length === 1 || args.length === 2) && typeof params["objectId"] === "string" &&
+        args.every(arg => diagnosticRecord(arg) && diagnosticExact(arg, ["objectId"]) && typeof arg["objectId"] === "string")) {
+      const first: unknown = args[0], second: unknown = args[1];
+      if (!diagnosticRecord(first)) { return fail(); }
+      const callback = modelHandle(first["objectId"]);
+      const candidate = args.length === 1 ? currentPcbStringScopeCommand("renderer-association", params["objectId"], callback) :
+        currentPcbStringScopeCommand("empty-producers", params["objectId"], callback, modelHandle(diagnosticRecord(second) ? second["objectId"] : undefined));
+      if ("functionDeclaration" in candidate.params && params["functionDeclaration"] === candidate.params.functionDeclaration) { fixed = candidate; }
     }
   }
   if (fixed === null) { return null; }
@@ -159,7 +184,8 @@ function stringWire(id: number, method: unknown, params: Record<string, unknown>
   const { stringPhase, ...wire } = fixed;
   return { command: { id, ...wire, sessionId }, request: { action: "send", requestId: id, method, sessionId, stringPhase,
     ...("uniqueContextId" in fixed.params ? { uniqueContextId: fixed.params.uniqueContextId } :
-      { objectId: fixed.params.objectId, callbackObjectId: fixed.params.arguments[0].objectId }) } };
+      { objectId: fixed.params.objectId, callbackObjectId: fixed.params.arguments[0].objectId,
+        ...(fixed.stringPhase === "empty-producers" ? { constructorObjectId: fixed.params.arguments[1].objectId } : {}) }) } };
 }
 function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Record<string, unknown>> {
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { return fail(); }
@@ -182,7 +208,7 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
   } else {
     if (!diagnosticExact(raw, ["id", "method", "params", "sessionId"]) || !diagnosticToken(sessionId) || !diagnosticRecord(params)) { return fail(); }
     const string = stringPurpose ? stringWire(id, method, params, sessionId) : null;
-    const model = string === null ? modelWire(id, method, params, sessionId) : null;
+    const model = string === null ? modelWire(id, method, params, sessionId, stringPurpose) : null;
     if (string !== null) { command = string.command; request = string.request; }
     else if (model !== null) { command = model.command; request = model.request; }
     else if (method === "Page.enable" || method === "Page.getFrameTree" || method === "Runtime.enable") {

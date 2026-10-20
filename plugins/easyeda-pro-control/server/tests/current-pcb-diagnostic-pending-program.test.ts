@@ -37,7 +37,7 @@ FP.manager=new FP();
 Of.manager.map.set(0,FP.manager._bus.worker);Of.manager.busMap["0"]=FP.manager._bus;
 globalThis.scope={object:{x,qI,e5,pE,De,kde,Xe:new kde(),Sfe,Zec:new Sfe(),Of,FP}};
 `;
-const READ = `(${CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+const READ = `(${CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,[kde,Sfe,...Array(14).fill(class{})])`;
 function snapshot(change = ""): Readonly<{ raw: string; reads: unknown }> {
   const context = createContext({});
   runInContext(FIXTURE + change, context, { timeout: 1000 });
