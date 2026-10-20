@@ -4,25 +4,72 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate `0.3.0+codex.20261020120717` combines bounded first-failure diagnostics,
-interaction/secondary-index observations within the same root request, an
-offline installed-catalog checker and operational skill updates. No writer
-authority or SDK-method coverage added. Focused diagnostic tests125,
-interaction/root13 and native/protocol14 pass; strict targeted lint/types pass.
+Delivered `0.3.0+codex.20261020120717` through protected PR87 on2026-10-20.
+Final payload `87419e16c47ead3a4cc14de36f21ac8bedf596ab`, merged main
+`b60c34f4c04485347d5960afb32fbb683c01c75f`; complete treefa10537a and plugin
+tree21352f81 are identical between final PR head and merged main.
+
+One batch combines bounded first-failure diagnostics, interaction/secondary-index
+observations within the same root request, a dependency-free offline installed-
+catalog checker and operational skill updates. No writer authority or SDK-method
+coverage added. Four non-atomic samples retain64requests/8KiBroot/128KiBaggregate;
+no complete ownership, empty-board, renderer-worker join or Save proof follows.
+SDK coverage remains774:212public subsets/33native equivalents/79blocked/450omitted.
+
+Final frozen verify80903 PASSED:11,890facade tests/11,886passed/4platformskips/
+0failures;424bridge; strict types/type-aware lint, build, compatibility, API
+coverage, package/MCP and seven skills. Log7074e8c9; all1,590 packaged inputs
+unchanged, fingerprinta24bbefd. Repository/privacy2609 passed69200f94; seven
+skill-creator checks33066965. Dependency signatures151/attestations40/audit pass,
+zero vulnerabilities. Source530/66ff5ff3, runtime3/1bdd2d6b, compatibility
+manifestf6b8343c, plugin manifest24b75371. External compatibility pins unchanged.
+Exact-head Linux39421183176 PASSED all8shards/build/finalgate; Windows39421183173
+PASSED. Post-main Windows39423159896 PASSED; automatic Linux39423159866 still
+runs on exactb60c34f. Check that result next session; no new broad test campaign.
+
+Official named Git marketplace upgrade77247 completed with no errors/stderr;
+list59402 confirms installed/enabled120717 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison49941 PASSED all
+1,590files/42directories/32,964,904bytes and exact modes, inventory5f4e7bbe;
+receipta571a4e5. Exact-main worktree:
+`/root/.cache/easyeda-120717-merged-main-BUlXSYRd/worktree`.
+The installed offline checker93475 PASSED against that installed copy:
+25restricted tools/50configured policies, seven discovery/schema queries,
+nineJSON-RPCrequests, Node24.18.0,0stderr and normalEOF/exit0 of its own child.
+Post-close forbidden-marker/control-roster checks and two no-descendant/socket
+samples pass; continuous isolation and connected execution are not claimed.
+Receipta42d9c38; its synthetic profile never selected the live control root.
+Loaded host1149806 remains105401 and was not terminated or hotpatched.
+Fresh Codex session and actual120717 process admission are required before live calls.
+
 Independent root/source, diagnostic integration and offline-probe reviews pass.
-The probe now checks forbidden shutdown effects after EOF; six focused tests
-and final types/strict lint pass. No connected writer claim follows.
-Native CompileOnly passed actual helper152165/555146fd, emptyJob/pipes and
-processLaunchedfalse. Evidence:
+Native CompileOnly passed helper152165/555146fd, emptyJob/pipes and
+processLaunchedfalse; receipt8e2d56fd. Shared production native-launch code also
+passed the no-op-child suspended-image/resume/natural-root-and-Job-exit test,
+receipt16fe12f7, without EasyEDA launch or forced termination. Evidence:
 `/root/.cache/easyeda-pcb-live-model-release-KEPZgePX`.
-Final freeze/verification, CI/publication and installation remain pending.
+
+Next: admit actual120717 and qualify a NEW original-owned disposable diagnostic
+case, project/PCB/model and exclusive worker branch. The105401 opener failure
+is not proved fixed; the new bounded first-failure field should identify the next
+failure without replaying consumed requests. Then compose String writer/source/
+producer and saved/reopened/visual proof. Populated geometry readers, remaining
+design/library/manufacturing families and portability remain backlog.
+PianoPi was not opened or inspected. No edit, explicit Save or prompt choice.
+This local documentation handoff is beyond the immutable PR87 payload.
+
+### Retained superseded120717 verification
+
 PR87 initially failed Windows synthetic-launch validation because its separate
 test fixture still pinned the old helper. Corrected only that fixture's exact
 size/hash. The shared native suspended-image/no-op-child test now passes:
 root/Job natural exit and release, no EasyEDA process or forced termination.
 The superseded local full run1025 was stopped through its own verified test
-process group; its log is retained and is not passing evidence. A new final
-unchanged-payload verification is required. No host-owned gateway was signaled.
+process group; its log is retained and is not passing evidence. Final unchanged-
+payload verify80903 supersedes it. No host-owned gateway was signaled.
+
+### Delivered105401 and completed live continuation
 
 Delivered `0.3.0+codex.20261020105401` through protected PR86 on2026-10-20.
 Final payload `162e2d0a0d8357c9a076943c35d5254f6c813537`, merged main
@@ -82,15 +129,9 @@ Closed disposable fixture remains exacte620d21a/598016bytes. This is file
 invariance, not a claim of absent startup/profile effects.
 Receipts: `/root/.cache/easyeda-105401-native-diagnostic-live-cF32iVUP`.
 
-Current source batch on `feature/pcb-live-model-batch-20261020`: retain bounded
-first-failure request/event diagnostics; extend the same root observation with
-source-derived idle interaction and secondary-index state; add a dependency-free
-offline installed-catalog checker. None is published or connected-validated yet.
-Next live work remains project/PCB/model qualification and the exclusive worker
-path, then String writer/source/producer and saved/reopened/visual proof.
-Populated geometry readers, remaining design/library/manufacturing families and
-portability remain backlog. Batch useful work before another release.
-This continuation is beyond the immutable PR86 payload.
+The subsequent combined120717 release is delivered as recorded above; its
+connected diagnostic and writer paths remain unqualified. This105401 live
+continuation is beyond the immutable PR86 payload.
 
 ### Completed105401 preparation
 
