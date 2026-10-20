@@ -20,7 +20,7 @@ import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./curr
 import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 
-const HELPER_SHA256 = "54fb52f696ee885d7c16044e9b61fae183818fdfef6ad7b1f96f77eb0f16e088";
+const HELPER_SHA256 = "c4ca248d6a4346a0fd38ef5befbbb65a75d24255bc5bfca8c9e20f1c00d15547";
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;

@@ -33,6 +33,7 @@ public sealed class EasyedaDiagnosticInstallation {
   bool consumed,admitted,released;
   public string Executable { get; private set; }
   public string ExecutableNativePath { get; private set; }
+  public string ExecutableNativeDirectory { get; private set; }
   public string ExecutableHash { get; private set; }
   static Exception Error(string reason) { return new InvalidOperationException("pcb-diagnostic-installation-"+reason); }
   static void Need(bool value,string reason) { if(!value) throw Error(reason); }
@@ -104,6 +105,16 @@ public sealed class EasyedaDiagnosticInstallation {
     }
     Same(lease.Before,Facts(lease),false);
   }
+  void BindNativePaths(string executable,string directory) {
+    Need(ExecutableNativePath==null && ExecutableNativeDirectory==null,"native-paths-bound");
+    foreach(Lease lease in leases) {
+      if(!lease.Directory && String.Equals(lease.Path,executable,StringComparison.OrdinalIgnoreCase)) ExecutableNativePath=lease.GuidPath;
+      if(lease.Directory && String.Equals(lease.Path,directory,StringComparison.OrdinalIgnoreCase)) ExecutableNativeDirectory=lease.GuidPath;
+    }
+    // Both values come from retained kernel handles. Do not feed a volume-GUID
+    // path through .NET Framework's target-dependent legacy Path normalizer.
+    Need(ExecutableNativePath!=null && ExecutableNativeDirectory!=null,"executable-lease");
+  }
   public void Admit(string[] paths,long[] sizes,string[] hashes) {
     Need(!consumed,"consumed"); consumed=true;
     Need(Environment.OSVersion.Platform==PlatformID.Win32NT && IntPtr.Size==8 && BitConverter.IsLittleEndian,"host");
@@ -120,8 +131,7 @@ public sealed class EasyedaDiagnosticInstallation {
       Need(QueryFullProcessImageName(self.Handle,0,image,ref count) && count==image.Length && String.Equals(image.ToString(),paths[4],StringComparison.OrdinalIgnoreCase),"powershell-image");
     }
     Executable=paths[0]; ExecutableHash=hashes[0];
-    foreach(Lease lease in leases) if(lease.Path==Executable) ExecutableNativePath=lease.GuidPath;
-    Need(ExecutableNativePath!=null,"executable-lease"); admitted=true; AssertCurrent();
+    BindNativePaths(Executable,root); admitted=true; AssertCurrent();
   }
   public void AssertCurrent() {
     Need(admitted && !released,"not-admitted");
@@ -137,17 +147,31 @@ public sealed class EasyedaDiagnosticInstallation {
   public static void VerifyLeaseSmoke() {
     foreach(string invalid in new string[] { @"C:\CON\a", @"C:\bad.\a", @"C:\bad \a", @"C:\bad:stream\a", @"C:\a\..\b", @"\\server\share\a" }) {
       bool refused=false; try { ValidatePath(invalid); } catch(InvalidOperationException) { refused=true; }
+      // .NET Framework rejects this colon during GetFullPath, before our
+      // component check. This is an expected refusal of this synthetic path.
+      catch(NotSupportedException) { refused=invalid==@"C:\bad:stream\a"; }
       Need(refused,"smoke-invalid-path");
     }
     string directory=Path.Combine(Path.GetTempPath(),"easyeda-native-lease-"+Guid.NewGuid().ToString("N"));
     Need(!Directory.Exists(directory),"smoke-directory"); Directory.CreateDirectory(directory);
-    string file=Path.Combine(directory,"synthetic.bin");
+    string file=null;
     EasyedaDiagnosticInstallation owner=new EasyedaDiagnosticInstallation();
     try {
+      // Hosted TEMP can use an 8.3 alias. Resolve only this freshly created
+      // fixture to its normalized DOS name; production admission stays strict.
+      IntPtr fixture=CreateFile(directory,0x80u,7u,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+      Need(fixture!=IntPtr.Zero && fixture!=new IntPtr(-1),"smoke-directory-open");
+      try {
+        string normalized=FinalPath(fixture,0);
+        Need(normalized.StartsWith(@"\\?\",StringComparison.Ordinal),"smoke-directory-prefix");
+        string canonical=normalized.Substring(4); ValidatePath(canonical); directory=canonical;
+      } finally { Need(CloseHandle(fixture),"smoke-directory-close"); }
+      file=Path.Combine(directory,"synthetic.bin");
       byte[] bytes=Encoding.UTF8.GetBytes("Synthetic native lease test. No application launch.");
       using(FileStream output=new FileStream(file,FileMode.CreateNew,FileAccess.Write,FileShare.None)) output.Write(bytes,0,bytes.Length);
       string hash; using(SHA256 digest=SHA256.Create()) hash=BitConverter.ToString(digest.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();
-      owner.Pin(file,bytes.Length,hash); owner.admitted=true; owner.AssertCurrent();
+      owner.Pin(file,bytes.Length,hash); owner.BindNativePaths(file,directory); owner.admitted=true; owner.AssertCurrent();
+      Need(owner.ExecutableNativePath==owner.ExecutableNativeDirectory+"\\synthetic.bin","smoke-native-directory");
       string peer=Path.Combine(directory,"peer.bin");
       using(FileStream output=new FileStream(peer,FileMode.CreateNew,FileAccess.Write,FileShare.None)) output.WriteByte(1);
       File.Delete(peer); // Holding the parent must not forbid ordinary children.
@@ -157,7 +181,7 @@ public sealed class EasyedaDiagnosticInstallation {
       Need(writeRefused && renameRefused,"smoke-sharing"); owner.AssertCurrent();
     } finally {
       owner.Release();
-      if(File.Exists(file)) File.Delete(file);
+      if(file!=null && File.Exists(file)) File.Delete(file);
       if(Directory.Exists(directory)) Directory.Delete(directory);
     }
   }
@@ -284,7 +308,7 @@ public sealed class EasyedaDiagnosticOwner {
         // Any P/Invoke exception leaves Unknown. Only a normal false return
         // with entirely empty outputs proves the narrow failed-creation case.
         creationPhase=CreationPhase.Unknown;
-        bool createdProcess=CreateProcess(installation.ExecutableNativePath,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080000,IntPtr.Zero,Path.GetDirectoryName(installation.ExecutableNativePath),ref startup,out info);
+        bool createdProcess=CreateProcess(installation.ExecutableNativePath,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080000,IntPtr.Zero,installation.ExecutableNativeDirectory,ref startup,out info);
         if(!createdProcess) {
           if(info.process==IntPtr.Zero && info.thread==IntPtr.Zero && info.processId==0 && info.threadId==0) creationPhase=CreationPhase.ReturnedFalse;
           throw Error("create-process-refused");

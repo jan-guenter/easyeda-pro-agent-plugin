@@ -117,8 +117,8 @@ checks. Do not request a new Codex session merely to test each source increment.
 
 ## Candidate verification
 
-Candidate `0.3.0+codex.20261020041000` has517 source files (`568f2973`), three
-runtime artifacts (`4de0c8a9`) and manifest`02c616ed`; external pins are unchanged.
+Candidate `0.3.0+codex.20261020041000` has517 source files (`da0b4f52`), three
+runtime artifacts (`c7131a75`) and manifest`97096336`; external pins are unchanged.
 The first full run retained11702passes/31failures/4skips. One synchronous-state
 test skipped cleanup after the new asynchronous journal gate, causing28failures;
 a VM fixture omitted the new real exclusion imports, causing3ReferenceErrors.
@@ -126,3 +126,13 @@ Only those fixtures changed; their44tests/types/strict lint pass. A separate
 synthetic-credential URL fixture was rewritten through URL fields without a
 secret-scanner exception; its15tests pass. The first log and frozen-input proof
 are retained. Final full verification/CI and installation are still pending.
+
+The first Windows CI run compiled the helper but exposed a synthetic-smoke
+exception mismatch: Framework rejects the colon path before the custom check.
+The correction accepts that exception only for the exact synthetic path. A
+related native-path correction takes cwd directly from the retained parent
+directory's volume-GUID path, avoiding Framework target-dependent normalization.
+Smoke fixtures alone normalize their freshly created TEMP directory's short
+alias before strict admission. Production path and ownership checks are intact.
+Root/independent review and45focused tests/types/strict lint pass. The interrupted
+outdated local suite is retained as interrupted evidence, not a passing result.

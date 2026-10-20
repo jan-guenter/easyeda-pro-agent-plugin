@@ -97,7 +97,7 @@ proof and distinct durable settlement, never timeout/PID absence inference.
 Root and independent review accepted the final native/owner/lifecycle source.
 Candidate `0.3.0+codex.20261020041000` freezes this combined batch for required
 build, compatibility projection, full local verification and protected CI.
-Source517/568f2973, runtime3/4de0c8a9, manifest02c616ed; external pins unchanged.
+Final source517/da0b4f52, runtime3/c7131a75, manifest97096336; external pins unchanged.
 Initial verify38758 completed11702passes/31failures/4skips, no cancellations;
 log359c122f and exact frozen-input comparison retained. All31 failures are in
 two fixtures: a synchronous launch-state assumption skipped cleanup and caused
@@ -109,6 +109,19 @@ No scanner weakening. Root-reviewed fixture corrections passed all44tests in
 the two affected launch files, full types and strict targeted lint. The VM now
 uses the real shared exclusion functions, not stubs. No runtime/bundle/pin change.
 Final frozen full verification and exact-payload GitHub CI remain required.
+PR82 head51f0a87 opened for parallel checks. Linux39369603080 build gate passed;
+Windows39369603153 compiled the helper but synthetic invalid-path smoke failed:
+Framework Path.GetFullPath rejects the colon fixture with NotSupportedException,
+while the smoke expected only InvalidOperationException. Native validation still
+refuses it. Root normally interrupted the now-outdated private final-test group
+493968 with SIGINT after exact shell/npm/test identity checks; session17824 is
+terminal and that group is empty. Log6cdadaf8 is retained, not passing evidence.
+Root and independent review accepted the final correction: the smoke accepts
+Framework's exact synthetic colon-path refusal, and native cwd comes directly
+from its retained parent-directory lease rather than legacy path parsing.
+Only the smoke normalizes its own freshly created TEMP directory's short alias;
+production admission stays strict. Helperc4ca248d and owner90f56bc5 match;
+45focused tests/full types/strict lint pass. Windows execution remains a CI gate.
 The new diagnostic route has not been
 loaded or exercised live. Details:
 `docs/current-schematic-native-diagnostics-2026-10-20.md`.
