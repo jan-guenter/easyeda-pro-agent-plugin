@@ -1,0 +1,8 @@
+/** Exact small returned-function excerpts, used only by synthetic tests. */
+export const currentPcbStringProducerSources = {
+  move: 'function(i,n){o||(t=Fe.getSelects());let s=DLt(t),a=new ml(t);os.getInstance().init(a.items,"offset Items",(l,c)=>{o&&window.clearTimeout(o),o||(e=new ml(l),r=c,e.items.forEach(d=>{c.addCommand4Item(d,"modify")}),e.getAllRepairTracks().forEach(d=>{c.addCommand4Item(d,"modify")})),e.setUpConnectTrack(),e.moveConnectTrack(n);let h=e.itemConnectTrack;e.items.forEach(u=>{h.tracks.has(u.globalIndex)||u.transform(n)}),e.items.forEach(u=>{ie.publish("hasModifyPcbItem",u)}),o=setTimeout(()=>{if(s){let u=l.filter(g=>g instanceof Ve),d=new kr,p=TO(u,d,void 0,!0);ac.getInstance().init();let m=nr.getInstance().mode;["WIRING_MODE_SURROUND","WIRING_MODE_OBSTRUCT"].includes(m)?n1("freeArc"):n1("45"),jE(p,d,!1),o1(),ji.getInstance().complete(r.getCommand()),CO()}o=null,e.complete(r.getCommand()),r.execute(),c.checkOutlinesNoExecute(Array.from(e.items),new Set),l=[],e=null,r=null,ie.publish("autoFill",""),ie.publish("flushService",""),ie.publish("flushSelectingInfo","")},200)})}',
+  serial: '(...i)=>(r=i,t?(s||(s=(async()=>{try{await t,t=s,s=null,await e(...r)}finally{t=null}})()),s):(t=(async()=>{try{await e(...r)}finally{t=null}})(),t))',
+  debounce: 'function(...n){return s?(clearTimeout(r),i&&i(),s=!1,e.apply(this,n)):(clearTimeout(r),i&&i(),new Promise(a=>{i=a,r=setTimeout(async()=>{let o=await e.apply(this,n);a(o)},t)}))}',
+  cooperation: 'n=>{s.push(n),r||(r=setTimeout(()=>{r=null,i&&clearTimeout(i),i=setTimeout(()=>{e(s),s.length=0,i=null},t)},0))}',
+  upload: 'l=>{r&&(clearTimeout(r),r=null),n&&n(),i&&a.task1.delete(i),i=new Promise(u=>n=u),a.task1.add(i),o(l),r=setTimeout(()=>c(),s)}',
+};

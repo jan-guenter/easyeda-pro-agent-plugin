@@ -4,7 +4,46 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-Candidate `0.3.0+codex.20261020185144` batches a callable, launch-sealed
+### Active185144 continuation
+
+Actual185144 admission passed main and independent checks: facade1534112/
+start50167713, parent1532634/start50165334, exact installed cwd/argv,
+Node24.18.0/core0, source545/eb07e457, runtime3/fe30aa7f and manifestd0a50c26.
+All1,620files/42directories/33,440,744bytes/modes match merged main1cd7b503.
+Post-main Linux39482902791 completed SUCCESS; both platforms are green.
+Independent receipt da010441 in
+`/root/.cache/easyeda-185144-independent-admission-UpNb99Fa`.
+Main live evidence: `/root/.cache/easyeda-185144-live-juvcqCjB`.
+
+NEW `string-precreate-185144-20261020-01` is terminal released. Launch,
+browser/frames/fullUI-source and initialization prefix passed. One project-open
+returned publicResulttrue/prefixObservedtrue, then refused at
+registration-after/TITLE/title. No PCB/worker/model stage, edit or explicitSave.
+Original51720/created134370004263803772, bindingd201f7e0 and hwnd26875072
+were normally closed. Root/whole-Job termination and helper release passed;
+All dispatched calls completed. Closed disposable remains exact
+598016/e620d21a. NEVER replay this terminal case. No prompt choice occurred.
+Candidate20202000 batches the UUID-only title contract, duplicate launch-scan
+removal, primary/cleanup error retention, four common-state/assets readers and
+their fixed11-command runner, plus selected latent producer closures and their
+fixed34-command runner. New runners remain private; no public writer or native
+budget expansion. Source review found FileSource's previous-width getter also
+mutates its backing field; internal V8 scope wrappers require fresh acquisition
+for scalar bindings. Both actual Windows CompileOnly profiles pass final helper
+185280/2adfd78e without app launch. The initial compile caught a stale embedded
+opening digest, corrected before the passing reruns. The initially attempted
+Ubuntu UNC path did not exist and did not execute the helper.
+Installed files and production designs remain untouched. Frozen verification,
+protected publication and official installation of this larger batch are pending.
+
+### Delivered185144 checkpoint
+
+Delivered `0.3.0+codex.20261020185144` through protected PR89 on2026-10-20.
+Final payload `bde209fe16dca8f2756184b66cc42052655fb8c0`, merged main
+`1cd7b5035217fde2c0fc76760ff5f09d83a769bf`; complete treecdc35727 and
+plugin treeb0361791 are identical between final PR head and merged main.
+
+This batch adds a callable, launch-sealed
 String-precreate observation lifecycle with the project-opening correction,
 native create/Save building blocks, bounded publication capture, post-phase
 readers, full supplied history/SQL comparisons and operational skill updates.
@@ -34,7 +73,7 @@ window binding, capture task-method overrides and late-callback counting.
 Both actual Windows CompileOnly profiles pass; shared native no-op child90993
 proves image admission/resume, normal exit, empty Job and release without
 EasyEDA or production access. Helper185043bytes/810ebda1.
-Candidate source545/eb07e457, runtime3/fe30aa7f, manifestd0a50c26.
+Delivered source545/eb07e457, runtime3/fe30aa7f, manifestd0a50c26.
 Only facade projections/review time refreshed; external pins are unchanged.
 Dependency install/tree/signatures/audit, sanitizer and build/compatibility pass.
 Package-focused17tests pass:26restricted/51configured tools,10offlinequeries.
@@ -46,18 +85,42 @@ wording was restored after the run. Neither correction changes implementation,
 runtime bundles or compatibility pins. Final38985 passes424bridge tests,
 strict targeted lint, all skills, package/MCP and repository/privacy checks.
 The original failure log is retained; do not report a fully green local verify.
-Exact-head CI must pass the complete final payload before merge and installation.
+Exact-head Linux39481300245 PASSED build, all8facade shards and finaltest-build;
+Windows39481300218 PASSED. Main and independent release reviews passed.
+Post-main Windows39482902763 and Linux39482902791 PASSED on exact1cd7b503.
+
+Official named Git marketplace upgrade23700 completed without errors/stderr.
+CLI list confirms185144 installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison35770 PASSED all
+1,620files/42directories/33,440,744bytes and exact modes, inventoryf3bffd63;
+receipt2a74593f. Exact-main worktree:
+`/root/.cache/easyeda-185144-merged-main-V9rpIngS/worktree`.
+Installed offline checker35770 PASSED26restricted tools/51configured policies,
+10offlinequeries/12JSON-RPCrequests, Node24.18.0,0stderr and normalEOF/exit0.
+Post-close marker/control-roster checks and no-descendant/socket samples pass;
+continuous isolation and connected execution are not claimed. Receiptd74f1609,
+synthetic liveControlRootSelectedfalse. Loaded host1404835 remains155927;
+it was not terminated, rebound or hotpatched. A fresh Codex session is required
+to load the new registered tool.
 
 Release evidence: `/root/.cache/easyeda-string-lifecycle-release-2mMm3lmA`.
 Scope and complete remaining work:
 `docs/current-pcb-string-lifecycle-batch-2026-10-20.md`.
-After actual publication/installation, fresh host admission and one NEW
+Next writer-stage plan, main read completely:
+`/root/.cache/easyeda-string-lifecycle-release-2mMm3lmA/next-writer-stage.md`,
+SHA41cc1418fe637e4e97d47f14e96aeb537c4a0222208e815c6075889a3fa1c8bb.
+It identifies the complete raw PCB/asset collectors, latent move and worker
+closure observations, and separate writer-owner budget still needed.
+After a fresh session, actual185144 host admission and one NEW
 `string-precreate-*` disposable case are next. Complete live source/latent
 producer admission, publisher/Proxy checks, integrated one-create/one-Save,
 closed SQL/fresh reopen/visual acceptance remain unfinished. FileSource can
 repair rules and is not a complete read-only shortcut. Populated geometry,
 remaining schematic/library/layout/manufacturing families and portability
 remain backlog. Production designs stay excluded.
+This local documentation handoff is beyond the immutable PR89 payload;
+the packaged plugin is unchanged.
 
 ### Delivered155927 checkpoint
 

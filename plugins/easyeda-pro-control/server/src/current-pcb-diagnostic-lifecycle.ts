@@ -250,6 +250,13 @@ class CurrentPcbLifecycleCore {
   async #otherLaunches(): Promise<void> {
     await assertNoUnresolvedOrdinaryLaunches(); await this.#options.assertOtherLaunchesSettled();
   }
+  async #launchAdmission(): Promise<void> {
+    // Production supplies the same combined guard for both contracts. Run it
+    // Once, after the mandatory ordinary inventory, at this boundary. Distinct
+    // Guards still both run; no result is retained across another await/boundary.
+    if (this.#options.assertAllowed !== this.#options.assertOtherLaunchesSettled) { await this.#options.assertAllowed(); }
+    await this.#otherLaunches();
+  }
   async #record<Key extends DiagnosticLifecycleRecordName>(operationId: string, name: Key,
     record: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]>): Promise<void> {
     this.#retainRecord(name, record); await this.#publish(operationId, name, record);
@@ -372,7 +379,7 @@ class CurrentPcbLifecycleCore {
   async #launch(request: Extract<LifecycleRequest, { action: "launch" }>): Promise<Record<string, unknown>> {
     requireValue(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
     this.#assertPurpose(request.operationId);
-    await this.#options.assertAllowed(); await this.#otherLaunches();
+    await this.#launchAdmission();
     await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     const before = await readCurrentPcbDiagnosticLifecycles();
     requireValue(!before.some(value => value.operationId === request.operationId), "OPERATION_CONSUMED");
@@ -410,7 +417,7 @@ class CurrentPcbLifecycleCore {
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
       intentSha256: sha256Json(intent), binding: null };
     this.#retained = retained;
-    await this.#installation(retained); await this.#options.assertAllowed(); await this.#otherLaunches();
+    await this.#installation(retained); await this.#launchAdmission();
     await assertSnapshot(expected); this.#assertOwner(retained);
     let acknowledged = false; let failure: unknown;
     try {

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "12152d48b7f3d36b922cc98da263c065e00dce8494c853442009357624e02e1a";
+const __easyedaBundlePairId = "eaa60ef3c19417ac1342b29a82b03acd7887cacd08152390c1f2bd656b3a7db4";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -126488,7 +126488,7 @@ function decodeCurrentPcbDiagnosticOpeningReply(input, targetInput3, phaseInput)
       target9.rawWindowsPath.lastIndexOf("\\") + 1,
       target9.rawWindowsPath.indexOf(".eprj2")
     );
-    if (observed2 !== null && (new Set(observed2.tabIds).size !== observed2.tabIds.length || observed2.tabIds.some((id14) => !id14.endsWith(`@${target9.projectUuid}`)) || observed2.branchUuid !== (observed2.projectPresent ? target9.branchUuid : null) || !observed2.projectPresent && (observed2.tabIds.length > 0 || observed2.activeTabId !== "tab_page1") || observed2.activeTabId.includes("@") && !observed2.tabIds.includes(observed2.activeTabId) || projectName.length === 0 || projectName.length > 256 || observed2.initialTitle.includes(" | ") || !/^.+ - V\d+(?:\.\d+){1,7}$/u.test(observed2.initialTitle) || observed2.expectedOpenedTitle !== `${projectName} | ${observed2.initialTitle}` || observed2.documentTitle !== (observed2.projectPresent ? observed2.expectedOpenedTitle : observed2.initialTitle))) {
+    if (observed2 !== null && (new Set(observed2.tabIds).size !== observed2.tabIds.length || observed2.tabIds.some((id14) => !id14.endsWith(`@${target9.projectUuid}`)) || observed2.branchUuid !== (observed2.projectPresent ? target9.branchUuid : null) || !observed2.projectPresent && (observed2.tabIds.length > 0 || observed2.activeTabId !== "tab_page1") || observed2.activeTabId.includes("@") && !observed2.tabIds.includes(observed2.activeTabId) || projectName.length === 0 || projectName.length > 256 || observed2.initialTitle.includes(" | ") || !/^.+ - V\d+(?:\.\d+){1,7}$/u.test(observed2.initialTitle) || observed2.expectedOpenedTitle !== observed2.initialTitle || observed2.documentTitle !== (observed2.projectPresent ? observed2.expectedOpenedTitle : observed2.initialTitle))) {
       return refuse3();
     }
     if (result.ok && (observed2 === null || observed2.projectPresent !== (phase5 === "open-project") || phase5 === "preflight" && (result.status !== "ready" || result.publicResult !== null || result.prefixObserved) || phase5 === "open-project" && (result.status !== "opened-prefix-observed" || !result.dispatchAttempted || result.publicResult !== true || !result.prefixObserved))) {
@@ -126589,7 +126589,12 @@ const client=plain(own(host,"client")),initialTitle=text(document?.title,512),qu
 if(meta?.ownerDocument!==document||meta?.nodeType!==1||meta?.localName!=="meta")bad("TITLE");
 const attribute=method(meta,"getAttribute"),version=text(apply(attribute.fn,meta,["content"]),64),versionSuffix=" - V"+version;
 if(!matches(version,/^\d+(?:\.\d+){1,7}$/)||initialTitle.includes(" | ")||!initialTitle.endsWith(versionSuffix)||initialTitle.length<=versionSuffix.length)bad("TITLE");
-const projectName=text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\")+1,target.rawWindowsPath.indexOf(".eprj2")),256),expectedOpenedTitle=text(projectName+" | "+initialTitle,512);
+text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\")+1,target.rawWindowsPath.indexOf(".eprj2")),256);
+// The SDK calls Fs({uuid}), not Fs({cPath}). ZDe keeps cPath undefined;
+// U9o therefore leaves the empty client name unchanged and LJ keeps the base
+// Title. A filename-prefixed title would belong to a different opening route.
+const expectedOpenedTitle=initialTitle,initialClientName=own(client,"currentProjectName",true);
+if(initialClientName!==undefined&&initialClientName!=="")bad("TITLE");
 const active=method(tabs,"getActiveTab"),container=method(tabs,"getContainerInfo"),getTab=method(tabs,"getTabById");
 const bus=own(host,"messageBus"),registryCall=method(bus,"rpcCall"),subscribe=method(bus,"subscribe");
 const apiBus=own(host,"extensionApiMessageBus2"),openCall=method(apiBus,"rpcCall");
@@ -126614,7 +126619,7 @@ const projectIdentity=()=>{
 const sample=()=>{
  const {project,pid,branch,projectPresent}=projectIdentity(),owners=[project];substage="title";
  const documentTitle=text(document.title,512),clientName=own(client,"currentProjectName",true);
- if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""))bad("TITLE");
+ if(documentTitle!==expectedOpenedTitle||clientName!==initialClientName)bad("TITLE");
  substage="container-roster";
  const ids=own(tabs,"containerIds"),n=dense(ids,128);if(n===0)bad("TAB");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad("TAB");registry.add(id);names.push(id);}
@@ -127913,6 +127918,19 @@ return output;
   }
 });
 
+// server/src/current-pcb-observation-failure.ts
+function currentPcbObservationFailure(family2, phase5, failures, cleanupFailed) {
+  return new AggregateError(
+    failures,
+    `PCB_${family2 === "MODEL" ? "DIAGNOSTIC_MODEL" : family2}_OBSERVATION_FAILED_${phase5.toUpperCase().replaceAll("-", "_")}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
+    { cause: failures[0] }
+  );
+}
+var init_current_pcb_observation_failure = __esm({
+  "server/src/current-pcb-observation-failure.ts"() {
+  }
+});
+
 // server/src/current-pcb-diagnostic-model-runner.ts
 import { types as types14 } from "node:util";
 function refuse9() {
@@ -127939,6 +127957,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
     init_current_pcb_diagnostic_raw_strings();
     init_current_pcb_diagnostic_root_inventory();
     init_sqlite_inventory_core();
+    init_current_pcb_observation_failure();
     CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP = "easyeda-pro-control-pcb-model-v1";
     OBSERVATION_BYTES = 131072;
     EFFECT_FLAGS = Object.freeze({
@@ -127953,6 +127972,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
       #scriptId;
       #uniqueContextId;
       #consumed = false;
+      #phase = "owner";
       /** These identities come from the original source-admitted context object,
        * never public tool arguments. A matching supplied ID is not source proof. */
       constructor(transport2, scriptId, uniqueContextId) {
@@ -127961,6 +127981,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
         this.#uniqueContextId = handle(uniqueContextId);
       }
       async #request(command) {
+        this.#phase = command.modelPhase;
         this.#transport.assertCurrent();
         const reply = await this.#transport.request(freezeDeep(command));
         this.#transport.assertCurrent();
@@ -127978,7 +127999,9 @@ var init_current_pcb_diagnostic_model_runner = __esm({
           return refuse9();
         }
         this.#consumed = true;
-        let started = false;
+        let cleanupFailed = false, started = false;
+        const failures = [];
+        let result;
         try {
           this.#transport.assertCurrent();
           started = true;
@@ -128054,6 +128077,7 @@ var init_current_pcb_diagnostic_model_runner = __esm({
               arguments: [{ objectId: wrapper }]
             }
           }));
+          this.#phase = "identity";
           if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid || compilerState.main.uuid !== rootInventory.documentUuid) {
             return refuse9();
           }
@@ -128072,19 +128096,34 @@ var init_current_pcb_diagnostic_model_runner = __esm({
             saveAuthorized: false,
             executionAuthorized: false
           });
+          this.#phase = "bounds";
           if (Buffer.byteLength(canonicalJson(observation2), "utf8") > OBSERVATION_BYTES) {
             return refuse9();
           }
-          return observation2;
-        } finally {
-          if (started) {
+          result = observation2;
+        } catch (caughtError) {
+          failures.push(caughtError);
+        }
+        const failurePhase = this.#phase;
+        if (started) {
+          try {
             emptyReply(await this.#transport.request(freezeDeep({
               modelPhase: "release",
               method: "Runtime.releaseObjectGroup",
               params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP }
             })));
+          } catch (caughtError) {
+            cleanupFailed = true;
+            failures.push(caughtError);
           }
         }
+        if (failures.length > 0) {
+          throw currentPcbObservationFailure("MODEL", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed);
+        }
+        if (result === void 0) {
+          return refuse9();
+        }
+        return result;
       }
     };
   }
@@ -131244,6 +131283,7 @@ var init_current_pcb_string_precreate_runner = __esm({
     init_current_pcb_string_empty_baseline();
     init_current_pcb_string_empty_producers();
     init_sqlite_inventory_core();
+    init_current_pcb_observation_failure();
     EFFECTS2 = Object.freeze({
       throwOnSideEffect: true,
       silent: true,
@@ -131258,6 +131298,7 @@ var init_current_pcb_string_precreate_runner = __esm({
       #worker;
       #target;
       #consumed = false;
+      #phase = "owner";
       constructor(transport2, script, context3, workerContext, target9) {
         this.#transport = Object.freeze({ ...transport2 });
         this.#script = handle2(script);
@@ -131274,6 +131315,7 @@ var init_current_pcb_string_precreate_runner = __esm({
         });
       }
       async #request(command) {
+        this.#phase = "stringPhase" in command ? command.stringPhase : command.modelPhase;
         this.#transport.assertCurrent();
         const reply = await this.#transport.request(freezeDeep(command));
         this.#transport.assertCurrent();
@@ -131287,6 +131329,7 @@ var init_current_pcb_string_precreate_runner = __esm({
         });
       }
       async #sweep(scope6, wrapper) {
+        this.#phase = "owner-observation";
         this.#transport.assertCurrent();
         await this.#transport.observeCurrent();
         this.#transport.assertCurrent();
@@ -131298,31 +131341,32 @@ var init_current_pcb_string_precreate_runner = __esm({
           method: "Runtime.callFunctionOn",
           params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...call }
         });
+        const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
         const pendingReply = await this.#request({
           modelPhase: "pending",
           method: "Runtime.callFunctionOn",
           params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, ...call }
         });
+        const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
         const stringsReply = await this.#request({
           modelPhase: "raw-strings",
           method: "Runtime.callFunctionOn",
           params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...call }
         });
+        const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(stringsReply);
         const rootReply = await this.#request({
           modelPhase: "root-inventory",
           method: "Runtime.callFunctionOn",
           params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, ...call }
         });
-        const rendererReply = await this.#request(currentPcbStringScopeCommand("renderer-association", scope6, wrapper));
-        const workerReply = await this.#request(currentPcbStringWorkerCommand(this.#worker));
-        const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope6, wrapper));
-        const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
-        const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
-        const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(stringsReply);
         const rootInventory = decodeCurrentPcbDiagnosticRootInventoryReply(rootReply);
+        const rendererReply = await this.#request(currentPcbStringScopeCommand("renderer-association", scope6, wrapper));
         const rendererAssociation = decodeCurrentPcbStringRendererAssociation(rendererReply);
+        const workerReply = await this.#request(currentPcbStringWorkerCommand(this.#worker));
         const workerAssociation = decodeCurrentPcbStringWorkerAssociation(workerReply);
+        const producersReply = await this.#request(currentPcbStringScopeCommand("empty-producers", scope6, wrapper));
         const emptyProducers = decodeCurrentPcbStringEmptyProducers(producersReply);
+        this.#phase = "identity";
         const channelAssociation = compareCurrentPcbStringChannelAssociation(rendererReply, workerReply);
         const identity32 = channelAssociation.identity;
         if (identity32.projectUuid !== this.#target.projectUuid || identity32.branchUuid !== this.#target.branchUuid || identity32.windowTabId !== this.#target.windowTabId || identity32.uniqueId !== compilerState.main.uniqueId || [
@@ -131335,6 +131379,7 @@ var init_current_pcb_string_precreate_runner = __esm({
         ].some((value2) => value2 !== this.#target.documentUuid)) {
           return refuse18();
         }
+        this.#phase = "empty-baseline";
         const emptyBaseline = inspectCurrentPcbStringEmptyBaseline(this.#target.documentUuid, { modelReply, pendingReply, stringsReply, rootReply });
         const sample4 = freezeDeep({
           compilerState,
@@ -131347,9 +131392,11 @@ var init_current_pcb_string_precreate_runner = __esm({
           channelAssociation,
           emptyBaseline
         });
+        this.#phase = "bounds";
         if (Buffer.byteLength(canonicalJson({ compilerState, pendingProducers, rawStrings, rootInventory })) > 131072 || Buffer.byteLength(canonicalJson(sample4)) > 188416) {
           return refuse18();
         }
+        this.#phase = "owner-observation";
         this.#transport.assertCurrent();
         await this.#transport.observeCurrent();
         this.#transport.assertCurrent();
@@ -131360,7 +131407,9 @@ var init_current_pcb_string_precreate_runner = __esm({
           return refuse18();
         }
         this.#consumed = true;
-        let started = false;
+        let cleanupFailed = false, started = false;
+        const failures = [];
+        let result;
         try {
           this.#transport.assertCurrent();
           started = true;
@@ -131388,10 +131437,11 @@ var init_current_pcb_string_precreate_runner = __esm({
           const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#script, "save-handler");
           const scope6 = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
           const first = await this.#sweep(scope6, wrapper), second = await this.#sweep(scope6, wrapper);
+          this.#phase = "sample-match";
           if (canonicalJson(first) !== canonicalJson(second)) {
             return refuse18();
           }
-          return freezeDeep({
+          result = freezeDeep({
             schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
             target: this.#target,
             first,
@@ -131407,8 +131457,12 @@ var init_current_pcb_string_precreate_runner = __esm({
             saveAuthorized: false,
             executionAuthorized: false
           });
-        } finally {
-          if (started) {
+        } catch (caughtError) {
+          failures.push(caughtError);
+        }
+        const failurePhase = this.#phase;
+        if (started) {
+          try {
             const reply = await this.#transport.request(freezeDeep({
               modelPhase: "release",
               method: "Runtime.releaseObjectGroup",
@@ -131417,8 +131471,18 @@ var init_current_pcb_string_precreate_runner = __esm({
             if (reply === null || typeof reply !== "object" || types18.isProxy(reply) || Array.isArray(reply) || Object.getPrototypeOf(reply) !== Object.prototype && Object.getPrototypeOf(reply) !== null || Reflect.ownKeys(reply).length > 0) {
               refuse18();
             }
+          } catch (caughtError) {
+            cleanupFailed = true;
+            failures.push(caughtError);
           }
         }
+        if (failures.length > 0) {
+          throw currentPcbObservationFailure("STRING_PRECREATE", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed);
+        }
+        if (result === void 0) {
+          return refuse18();
+        }
+        return result;
       }
     };
   }
@@ -131524,8 +131588,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_diagnostic_model_runner();
     init_current_pcb_diagnostic_pcb_opening();
     init_current_pcb_string_precreate_runner();
-    HELPER_SHA256 = "810ebda1a3dca5107b15eafca021bff00c0d964f5a6f841deeb47439cec171b8";
-    HELPER_BYTES = 185043;
+    HELPER_SHA256 = "2adfd78eaf1d1783fa6b3b45eafefbc36c410bed5409668ea3b8b2027de22e67";
+    HELPER_BYTES = 185280;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -132917,6 +132981,12 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         await assertNoUnresolvedOrdinaryLaunches();
         await this.#options.assertOtherLaunchesSettled();
       }
+      async #launchAdmission() {
+        if (this.#options.assertAllowed !== this.#options.assertOtherLaunchesSettled) {
+          await this.#options.assertAllowed();
+        }
+        await this.#otherLaunches();
+      }
       async #record(operationId12, name6, record15) {
         this.#retainRecord(name6, record15);
         await this.#publish(operationId12, name6, record15);
@@ -133073,8 +133143,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       async #launch(request13) {
         requireValue16(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
         this.#assertPurpose(request13.operationId);
-        await this.#options.assertAllowed();
-        await this.#otherLaunches();
+        await this.#launchAdmission();
         await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
         const before = await readCurrentPcbDiagnosticLifecycles();
         requireValue16(!before.some((value2) => value2.operationId === request13.operationId), "OPERATION_CONSUMED");
@@ -133134,8 +133203,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         };
         this.#retained = retained2;
         await this.#installation(retained2);
-        await this.#options.assertAllowed();
-        await this.#otherLaunches();
+        await this.#launchAdmission();
         await assertSnapshot(expected3);
         this.#assertOwner(retained2);
         let acknowledged = false;

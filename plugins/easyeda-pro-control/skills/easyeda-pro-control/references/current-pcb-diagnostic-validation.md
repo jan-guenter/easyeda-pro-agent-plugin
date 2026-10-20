@@ -144,10 +144,11 @@ DOM parent, private observer-registry ownership or continuous inactivity.
 Do not manufacture this shape, remove the child, navigate it or relax the
 check for an unsupported owner.
 
-Only the selected project's same-document fragment
-transition and the source-derived project-name window-title prefix are admitted.
-The original product/version title must match the retained target; arbitrary
-title changes are not accepted. Added/restored editor frames, a changed loader/default
+Only the selected project's same-document fragment transition is admitted.
+The SDK's UUID-only opening route leaves the empty client project name and
+original product/version title unchanged. The filename-prefixed title belongs
+to the separate path-based route and is not accepted here. The initially empty
+client-name field and title must remain exact. Added/restored editor frames, a changed loader/default
 context, unrelated URLs or full navigation stop the branch. Do not remove those
 guards to accommodate an unsupported project. A failed or uncertain stage is
 consumed, including its preflight; inspect and clean up without replay.

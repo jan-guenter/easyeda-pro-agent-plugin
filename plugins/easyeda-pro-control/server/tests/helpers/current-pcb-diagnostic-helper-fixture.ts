@@ -322,9 +322,8 @@ function openingResponse(request: object, events: unknown[]): unknown {
   const dispatchAttempted = phase === "open-project";
   const ok = scenario !== (dispatchAttempted ? "opening-open-refused" : "opening-preflight-refused");
   assert.equal(typeof request.targetRawWindowsPath, "string");
-  const path = String(request.targetRawWindowsPath);
-  const projectName = path.slice(path.lastIndexOf("\\") + 1, path.indexOf(".eprj2"));
-  const expectedOpenedTitle = `${projectName} | ${initialTitle}`;
+  // The UUID-only API leaves the original empty client name and base title.
+  const expectedOpenedTitle = initialTitle;
   if (dispatchAttempted && ok) {
     opened = true; target.url = `${uiBase}#id=${String(request.targetProjectUuid)}`; target.title = expectedOpenedTitle;
     projectUuid = String(request.targetProjectUuid); branchUuid = String(request.targetBranchUuid);

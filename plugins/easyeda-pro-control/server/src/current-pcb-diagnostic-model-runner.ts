@@ -17,6 +17,8 @@ import type { CurrentPcbDiagnosticRawStrings } from "./current-pcb-diagnostic-ra
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, decodeCurrentPcbDiagnosticRootInventoryReply } from "./current-pcb-diagnostic-root-inventory.ts";
 import type { CurrentPcbDiagnosticRootInventory } from "./current-pcb-diagnostic-root-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { currentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
+import type { CurrentPcbObservationPhase } from "./current-pcb-observation-failure.ts";
 
 export const CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP = "easyeda-pro-control-pcb-model-v1";
 const OBSERVATION_BYTES = 131_072;
@@ -99,6 +101,7 @@ export class CurrentPcbDiagnosticModelRunner {
   readonly #scriptId: string;
   readonly #uniqueContextId: string;
   #consumed = false;
+  #phase: CurrentPcbObservationPhase = "owner";
 
   /** These identities come from the original source-admitted context object,
    * never public tool arguments. A matching supplied ID is not source proof. */
@@ -107,6 +110,7 @@ export class CurrentPcbDiagnosticModelRunner {
     this.#scriptId = handle(scriptId); this.#uniqueContextId = handle(uniqueContextId);
   }
   async #request(command: CurrentPcbDiagnosticModelCommand): Promise<unknown> {
+    this.#phase = command.modelPhase;
     this.#transport.assertCurrent();
     const reply = await this.#transport.request(freezeDeep(command));
     this.#transport.assertCurrent();
@@ -119,7 +123,9 @@ export class CurrentPcbDiagnosticModelRunner {
   public async observe(): Promise<CurrentPcbDiagnosticModelObservation> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;
-    let started = false;
+    let cleanupFailed = false, started = false;
+    const failures: unknown[] = [];
+    let result: CurrentPcbDiagnosticModelObservation | undefined;
     try {
       this.#transport.assertCurrent(); started = true;
       const wrapper = decodeCurrentPcbDiagnosticModelFunction(await this.#request({
@@ -156,6 +162,7 @@ export class CurrentPcbDiagnosticModelRunner {
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
           returnByValue: true, arguments: [{ objectId: wrapper }] },
       }));
+      this.#phase = "identity";
       if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid ||
           compilerState.main.uuid !== rootInventory.documentUuid) { return refuse(); }
       // Separate synchronous samples remain non-atomic across these CDP calls.
@@ -166,16 +173,22 @@ export class CurrentPcbDiagnosticModelRunner {
         completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false,
         queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false,
       });
+      this.#phase = "bounds";
       if (Buffer.byteLength(canonicalJson(observation), "utf8") > OBSERVATION_BYTES) { return refuse(); }
-      return observation;
-    } finally {
-      if (started) {
+      result = observation;
+    } catch (caughtError) { failures.push(caughtError); }
+    const failurePhase = this.#phase;
+    if (started) {
+      try {
         // Release only this original object group, even after context rejection.
         // A failed/poisoned transport must reject without dispatching another
         // Request. Release failure withholds the observation; no fallback pipe.
         emptyReply(await this.#transport.request(freezeDeep({ modelPhase: "release", method: "Runtime.releaseObjectGroup",
           params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } })));
-      }
+      } catch (caughtError) { cleanupFailed = true; failures.push(caughtError); }
     }
+    if (failures.length > 0) { throw currentPcbObservationFailure("MODEL", failures.length === 1 && cleanupFailed ? "release" : failurePhase, failures, cleanupFailed); }
+    if (result === undefined) { return refuse(); }
+    return result;
   }
 }

@@ -9,6 +9,8 @@ import type { CurrentPcbDiagnosticModelCommand } from "../src/current-pcb-diagno
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_LOCATIONS, decodeCurrentPcbDiagnosticModelFunction,
   decodeCurrentPcbDiagnosticModelScope, decodeCurrentPcbDiagnosticModelScopeList } from "../src/current-pcb-diagnostic-model-scope.ts";
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./helpers/current-pcb-diagnostic-model-replies.ts";
+import { CurrentPcbStringPrecreateRunner } from "../src/current-pcb-string-precreate-runner.ts";
+import type { CurrentPcbStringPrecreateTransport } from "../src/current-pcb-string-precreate-runner.ts";
 
 const SETUP = `(()=>{
 globalThis.vendorCalls=0;globalThis.getterReads=0;
@@ -248,7 +250,11 @@ void test("failed model reads cannot continue to a snapshot, retry, or publish b
         return Promise.resolve(command.modelPhase === "release" ? {} : replies[commands.length - 1]);
       },
     }, "pcb", "original-context");
-    await assert.rejects(runner.observe(), /SYNTHETIC_TRANSPORT_FAILURE/u);
+    await assert.rejects(runner.observe(), (caughtError: unknown) => {
+      assert.ok(caughtError instanceof AggregateError && caughtError.cause instanceof Error);
+      assert.equal(caughtError.cause.message, "SYNTHETIC_TRANSPORT_FAILURE");
+      assert.match(caughtError.message, /MODEL_OBSERVATION_FAILED/u); return true;
+    });
     assert.equal(commands.at(-1)?.modelPhase, "release");
     assert.equal(commands.filter(command => command.modelPhase === "release").length, 1);
     if (failure === "handler") { assert.equal(commands.some(command => command.modelPhase === "snapshot"), false); }
@@ -259,7 +265,65 @@ void test("failed model reads cannot continue to a snapshot, retry, or publish b
     assertCurrent: (): never => { throw new Error("STALE_OWNER"); },
     request: (): Promise<unknown> => { requests += 1; return Promise.resolve({}); },
   }, "pcb", "original-context");
-  await assert.rejects(stale.observe(), /STALE_OWNER/u); assert.equal(requests, 0);
+  await assert.rejects(stale.observe(), (caughtError: unknown) => {
+    assert.ok(caughtError instanceof AggregateError && caughtError.cause instanceof Error);
+    assert.equal(caughtError.cause.message, "STALE_OWNER");
+    assert.equal(caughtError.message, "PCB_DIAGNOSTIC_MODEL_OBSERVATION_FAILED_OWNER"); return true;
+  }); assert.equal(requests, 0);
+});
+
+function stringRunner(transport: CurrentPcbStringPrecreateTransport): CurrentPcbStringPrecreateRunner {
+  return new CurrentPcbStringPrecreateRunner(transport, "pcb", "original-context", "worker-context", {
+    projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), windowTabId: "fixture-tab",
+  });
+}
+
+void test("both observation runners preserve primary and cleanup failures with bounded phase labels", async () => {
+  for (const family of ["model", "string"] as const) {
+    for (const cleanupFails of [false, true]) {
+      const cleanup = new Error("private cleanup text"), phases: string[] = [], primary = new Error("private primary text");
+      const transport: CurrentPcbStringPrecreateTransport = {
+        assertCurrent: (): void => {
+          // Synthetic owner remains current.
+        },
+        observeCurrent: (): Promise<void> => Promise.resolve(),
+        request: command => {
+          assert.ok("modelPhase" in command); phases.push(command.modelPhase);
+          if (command.modelPhase === "release") { return cleanupFails ? Promise.reject(cleanup) : Promise.resolve({}); }
+          return Promise.reject(primary);
+        },
+      };
+      const runner = family === "model" ? new CurrentPcbDiagnosticModelRunner(transport, "pcb", "original-context") : stringRunner(transport);
+      await assert.rejects(runner.observe(), (caughtError: unknown) => {
+        assert.ok(caughtError instanceof AggregateError);
+        assert.equal(caughtError.cause, primary);
+        assert.deepEqual(caughtError.errors, cleanupFails ? [primary, cleanup] : [primary]);
+        assert.match(caughtError.message, /_OBSERVATION_FAILED_WRAPPER/u);
+        assert.equal(caughtError.message.endsWith("_RELEASE_FAILED"), cleanupFails);
+        assert.equal(caughtError.message.includes("private"), false); return true;
+      });
+      assert.deepEqual(phases, ["wrapper", "release"]);
+      await assert.rejects(runner.observe(), /OBSERVATION/u);
+      assert.deepEqual(phases, ["wrapper", "release"]);
+    }
+  }
+});
+
+void test("String sweep stops at its first malformed reply and reports that phase before releasing", async () => {
+  const phases: string[] = [], replies = runnerReplies();
+  const runner = stringRunner({
+    assertCurrent: (): void => {
+      // Synthetic owner remains current.
+    },
+    observeCurrent: (): Promise<void> => Promise.resolve(),
+    request: command => {
+      assert.ok("modelPhase" in command); phases.push(command.modelPhase);
+      if (command.modelPhase === "release") { return Promise.resolve({}); }
+      return Promise.resolve(command.modelPhase === "snapshot" ? replyWithException() : replies[phases.length - 1]);
+    },
+  });
+  await assert.rejects(runner.observe(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_SNAPSHOT/u);
+  assert.deepEqual(phases, ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "release"]);
 });
 
 void test("composite model observation rejects mixed documents and malformed leaves without partial acceptance", async () => {

@@ -219,6 +219,16 @@ void test("project title transition requires original CDP initial title and one 
   const wrongFinal = openingFixture(); wrongFinal.beginOpeningTransition(PROJECT_UUID, titleProof); within(wrongFinal);
   assert.throws(() => { wrongFinal.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY); }, /IDENTITY/u);
 });
+void test("UUID-only project opening retains the exact base title through native context completion", () => {
+  const proof = { initialTitle: TARGET.title, expectedOpenedTitle: TARGET.title };
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID, proof); within(context);
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY);
+  context.observeTarget(OPEN_TARGET_REPLY); context.openingContext();
+  const prefixed = openingFixture(); prefixed.beginOpeningTransition(PROJECT_UUID, proof); within(prefixed);
+  assert.throws(() => { prefixed.finishOpeningTransition({ targetInfos: [
+    { ...OPEN_TARGET_REPLY.targetInfos[0], title: `Diagnostic | ${TARGET.title}` },
+  ] }, OPEN_FRAME_REPLY); }, /IDENTITY/u);
+});
 void test("opening selector requires source-proved top-level UI and never revives failed identity", () => {
   for (const context of [openingFixture(false), fixture(), staged()]) {
     assert.throws(() => context.openingContext(), /IDENTITY/u);

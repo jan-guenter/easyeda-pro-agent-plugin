@@ -16,7 +16,8 @@ the six-request original Save-scope acquisition. All reads require
 `throwOnSideEffect:true`; no selector, expression or native method comes from
 the caller. Replies have a 16 KiB bound and strict wrappers. All ownership,
 complete-baseline, completion, delivery, execution and Save claims stay false.
-They are not registered live routes.
+They are not individually exposed. The separate registered String-precreate
+workflow invokes them within its fixed90-request owner; diagnostic64 is unchanged.
 
 The empty observations reject occupied selected collections rather than
 discarding their contents. The selected registry and empty collections are

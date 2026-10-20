@@ -59,7 +59,12 @@ const client=plain(own(host,"client")),initialTitle=text(document?.title,512),qu
 if(meta?.ownerDocument!==document||meta?.nodeType!==1||meta?.localName!=="meta")bad("TITLE");
 const attribute=method(meta,"getAttribute"),version=text(apply(attribute.fn,meta,["content"]),64),versionSuffix=" - V"+version;
 if(!matches(version,/^\d+(?:\.\d+){1,7}$/)||initialTitle.includes(" | ")||!initialTitle.endsWith(versionSuffix)||initialTitle.length<=versionSuffix.length)bad("TITLE");
-const projectName=text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\")+1,target.rawWindowsPath.indexOf(".eprj2")),256),expectedOpenedTitle=text(projectName+" | "+initialTitle,512);
+text(target.rawWindowsPath.slice(target.rawWindowsPath.lastIndexOf("\\")+1,target.rawWindowsPath.indexOf(".eprj2")),256);
+// The SDK calls Fs({uuid}), not Fs({cPath}). ZDe keeps cPath undefined;
+// U9o therefore leaves the empty client name unchanged and LJ keeps the base
+// Title. A filename-prefixed title would belong to a different opening route.
+const expectedOpenedTitle=initialTitle,initialClientName=own(client,"currentProjectName",true);
+if(initialClientName!==undefined&&initialClientName!=="")bad("TITLE");
 const active=method(tabs,"getActiveTab"),container=method(tabs,"getContainerInfo"),getTab=method(tabs,"getTabById");
 const bus=own(host,"messageBus"),registryCall=method(bus,"rpcCall"),subscribe=method(bus,"subscribe");
 const apiBus=own(host,"extensionApiMessageBus2"),openCall=method(apiBus,"rpcCall");
@@ -84,7 +89,7 @@ const projectIdentity=()=>{
 const sample=()=>{
  const {project,pid,branch,projectPresent}=projectIdentity(),owners=[project];substage="title";
  const documentTitle=text(document.title,512),clientName=own(client,"currentProjectName",true);
- if(projectPresent?(documentTitle!==expectedOpenedTitle||clientName!==projectName):(documentTitle!==initialTitle||clientName!==undefined&&clientName!==""))bad("TITLE");
+ if(documentTitle!==expectedOpenedTitle||clientName!==initialClientName)bad("TITLE");
  substage="container-roster";
  const ids=own(tabs,"containerIds"),n=dense(ids,128);if(n===0)bad("TAB");owners.push(ids);const names=[],registry=new Set();
  for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad("TAB");registry.add(id);names.push(id);}
@@ -224,7 +229,7 @@ export function decodeCurrentPcbDiagnosticOpeningReply(input: unknown, targetInp
         observed.activeTabId.includes("@") && !observed.tabIds.includes(observed.activeTabId) ||
         projectName.length === 0 || projectName.length > 256 || observed.initialTitle.includes(" | ") ||
         !/^.+ - V\d+(?:\.\d+){1,7}$/u.test(observed.initialTitle) ||
-        observed.expectedOpenedTitle !== `${projectName} | ${observed.initialTitle}` ||
+        observed.expectedOpenedTitle !== observed.initialTitle ||
         observed.documentTitle !== (observed.projectPresent ? observed.expectedOpenedTitle : observed.initialTitle))) { return refuse(); }
     if (result.ok && (observed === null || observed.projectPresent !== (phase === "open-project") ||
         phase === "preflight" && (result.status !== "ready" || result.publicResult !== null || result.prefixObserved) ||
