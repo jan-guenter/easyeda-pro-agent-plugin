@@ -9,7 +9,7 @@ import type { TestContext } from "node:test";
 import { gzipSync } from "node:zlib";
 import { sha256Text } from "../src/core.ts";
 import { prepareCurrentDisposableOpenCheckpoint, prepareCurrentSymbolOperationCheckpoint,
-  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSymbolOperationCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
+  verifyCurrentDisposableOpenCheckpoint, verifyCurrentSymbolOperationCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
 
 const BRANCH = "22".repeat(16), DOCUMENT = "66".repeat(8), HISTORY = "33".repeat(16);
 const digest = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
@@ -103,6 +103,10 @@ void test("disposable checkpoint uses real private backup and preserved imported
   const database = new DatabaseSync(f.source);
   try { database.exec("CREATE TABLE later_change(id INTEGER)"); } finally { database.close(); }
   await assert.rejects(verifyCurrentDisposableOpenCheckpoint(prepared, f.target), /changed before navigation/u);
+  await verifyHistoricalCurrentDisposableOpenCheckpoint(prepared, f.target);
+  await assert.rejects(verifyHistoricalCurrentDisposableOpenCheckpoint({ ...prepared,
+    targetEvidence: { ...prepared.targetEvidence, branchUuid: "88".repeat(16) } }, f.target), /target evidence changed/u);
+  await assert.rejects(verifyHistoricalCurrentDisposableOpenCheckpoint(legacy, f.target), /original managed preparation/u);
   assert.equal(digest(await readFile(prepared.checkpoint.checkpoint)), prepared.checkpoint.checkpointSha256);
 });
 

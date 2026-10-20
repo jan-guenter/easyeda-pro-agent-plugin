@@ -1,5 +1,10 @@
 # Diagnostic-owned disposable project opening
 
+Historical baseline: this note records the081744 implementation. The later
+[PCB-frame opening batch](current-pcb-diagnostic-pcb-opening-2026-10-20.md)
+adds the exact source-derived project-title transition and a separate PCB
+branch. Preserve the original program pins below as historical evidence.
+
 Status: fixed source implementation, retained-owner integration and focused
 synthetic tests pass. Native integration and connected qualification are separate work. No
 application, project, existing journal or installed plugin has been changed

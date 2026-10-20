@@ -8,6 +8,7 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP, CurrentPcbDiagnosticModelRun
 import type { CurrentPcbDiagnosticModelCommand } from "../src/current-pcb-diagnostic-model-runner.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_LOCATIONS, decodeCurrentPcbDiagnosticModelFunction,
   decodeCurrentPcbDiagnosticModelScope, decodeCurrentPcbDiagnosticModelScopeList } from "../src/current-pcb-diagnostic-model-scope.ts";
+import { pendingModelReply, rawStringsModelReply } from "./helpers/current-pcb-diagnostic-model-replies.ts";
 
 const SETUP = `(()=>{
 globalThis.vendorCalls=0;globalThis.getterReads=0;
@@ -196,11 +197,11 @@ function runnerReplies(): readonly unknown[] {
     functionProperties("rpc-wrapper", "wrapper-scopes"), scopesReply("rpc-wrapper", "wrapper-scope"),
     { result: { type: "function", className: "AsyncFunction", description: "original handler", objectId: "handler" } },
     functionProperties("save-handler", "handler-scopes"), scopesReply("save-handler", "handler-scope"),
-    result(snapshot().raw), {},
+    result(snapshot().raw), pendingModelReply(), rawStringsModelReply(), {},
   ];
 }
 
-void test("one-shot model runner emits eight fixed commands and releases only its original group", async () => {
+void test("one-shot model runner emits ten fixed commands and releases only its original group", async () => {
   const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = runnerReplies();
   let guards = 0;
   const runner = new CurrentPcbDiagnosticModelRunner({
@@ -211,21 +212,29 @@ void test("one-shot model runner emits eight fixed commands and releases only it
     },
   }, "pcb", "original-context");
   const state = await runner.observe();
-  assert.equal(state.customFootprints.length, 1); assert.equal(guards, 15);
+  assert.equal(state.compilerState.customFootprints.length, 1); assert.equal(guards, 19);
+  assert.equal(state.schema, "easyeda-pro-control.pcb-diagnostic-model-observation.v1");
+  assert.equal(state.documentUuid, state.pendingProducers.documentUuid); assert.equal(state.documentUuid, state.rawStrings.documentUuid);
+  assert.equal(state.atomicSnapshotVerified, false); assert.equal(state.executionAuthorized, false);
   assert.deepEqual(commands.map(command => command.modelPhase),
-    ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "release"]);
+    ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "pending", "raw-strings", "release"]);
   const first = commands[0], last = commands.at(-1), snapshotCommand = commands[6];
   assert.ok(first?.modelPhase === "wrapper"); assert.equal(first.params.uniqueContextId, "original-context");
   assert.equal(first.params.objectGroup, CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP);
   assert.ok(snapshotCommand?.modelPhase === "snapshot"); assert.deepEqual(snapshotCommand.params.arguments, [{ objectId: "wrapper" }]);
   assert.equal(snapshotCommand.params.objectId, "handler-scope");
   assert.equal(Object.hasOwn(snapshotCommand.params, "timeout"), false);
+  for (const command of commands.slice(7, 9)) {
+    assert.ok(command.modelPhase === "pending" || command.modelPhase === "raw-strings");
+    assert.deepEqual(command.params.arguments, [{ objectId: "wrapper" }]); assert.equal(command.params.objectId, "handler-scope");
+    assert.equal(command.params.throwOnSideEffect, true); assert.equal(command.params.awaitPromise, false);
+  }
   assert.ok(last?.modelPhase === "release"); assert.equal(last.params.objectGroup, CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP);
-  await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u); assert.equal(commands.length, 8);
+  await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u); assert.equal(commands.length, 10);
 });
 
 void test("failed model reads cannot continue to a snapshot, retry, or publish before successful release", async () => {
-  for (const failure of ["handler", "release"] as const) {
+  for (const failure of ["handler", "pending", "raw-strings", "release"] as const) {
     const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = runnerReplies();
     const runner = new CurrentPcbDiagnosticModelRunner({
       assertCurrent: (): void => {
@@ -249,4 +258,27 @@ void test("failed model reads cannot continue to a snapshot, retry, or publish b
     request: (): Promise<unknown> => { requests += 1; return Promise.resolve({}); },
   }, "pcb", "original-context");
   await assert.rejects(stale.observe(), /STALE_OWNER/u); assert.equal(requests, 0);
+});
+
+void test("composite model observation rejects mixed documents and malformed leaves without partial acceptance", async () => {
+  for (const [index, replacement] of [
+    [7, pendingModelReply("f".repeat(32))], [8, rawStringsModelReply("f".repeat(32))],
+    [7, replyWithException()], [8, replyWithException()],
+  ] as const) {
+    const commands: CurrentPcbDiagnosticModelCommand[] = [], replies = [...runnerReplies()];
+    replies[index] = replacement;
+    const runner = new CurrentPcbDiagnosticModelRunner({
+      assertCurrent: (): void => {
+        // Synthetic retained owner remains current.
+      },
+      request: (command): Promise<unknown> => {
+        commands.push(command);
+        return Promise.resolve(command.modelPhase === "release" ? {} : replies[commands.length - 1]);
+      },
+    }, "pcb", "original-context");
+    await assert.rejects(runner.observe(), /MODEL_OBSERVATION|PENDING_REPLY|RAW_STRINGS_REPLY/u);
+    assert.equal(commands.at(-1)?.modelPhase, "release");
+    assert.equal(commands.filter(command => command.modelPhase === "release").length, 1);
+    await assert.rejects(runner.observe(), /MODEL_OBSERVATION/u);
+  }
 });

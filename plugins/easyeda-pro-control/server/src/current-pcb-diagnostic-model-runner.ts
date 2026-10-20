@@ -1,17 +1,37 @@
-/** One retained-source PCB observation. Not reachable through the worker-only
- * opener: the owner must already have admitted an existing PCB default frame,
+/** One retained-source PCB observation. The owner must already have admitted
+ * an existing PCB default frame or the sealed opener's verified PCB child,
  * its exact source bytes, session/context and original native lifecycle.
  * This module has no public caller-JavaScript or remote-object selector input.
  */
 import { types } from "node:util";
+import { canonicalJson } from "./core.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
   CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, decodeCurrentPcbDiagnosticModelReply } from "./current-pcb-diagnostic-model-program.ts";
 import type { CurrentPcbDiagnosticModelState } from "./current-pcb-diagnostic-model-program.ts";
 import { decodeCurrentPcbDiagnosticModelFunction, decodeCurrentPcbDiagnosticModelScope,
   decodeCurrentPcbDiagnosticModelScopeList } from "./current-pcb-diagnostic-model-scope.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, decodeCurrentPcbDiagnosticPendingReply } from "./current-pcb-diagnostic-pending-program.ts";
+import type { CurrentPcbDiagnosticPendingState } from "./current-pcb-diagnostic-pending-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, decodeCurrentPcbDiagnosticRawStringsReply } from "./current-pcb-diagnostic-raw-strings.ts";
+import type { CurrentPcbDiagnosticRawStrings } from "./current-pcb-diagnostic-raw-strings.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP = "easyeda-pro-control-pcb-model-v1";
+const OBSERVATION_BYTES = 131_072;
+export type CurrentPcbDiagnosticModelObservation = Readonly<{
+  readonly schema: "easyeda-pro-control.pcb-diagnostic-model-observation.v1";
+  readonly documentUuid: string;
+  readonly compilerState: CurrentPcbDiagnosticModelState;
+  readonly pendingProducers: CurrentPcbDiagnosticPendingState;
+  readonly rawStrings: CurrentPcbDiagnosticRawStrings;
+  readonly atomicSnapshotVerified: false;
+  readonly continuousObservation: false;
+  readonly completeModelMembershipVerified: false;
+  readonly completePendingProducerInventoryVerified: false;
+  readonly queueCompletionVerified: false;
+  readonly saveAuthorized: false;
+  readonly executionAuthorized: false;
+}>;
 const EFFECT_FLAGS = Object.freeze({ throwOnSideEffect: true, silent: true, awaitPromise: false,
   generatePreview: false, userGesture: false } as const);
 interface EffectFlags {
@@ -32,6 +52,14 @@ export type CurrentPcbDiagnosticModelCommand =
   }> }>
   | Readonly<{ modelPhase: "snapshot"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION; returnByValue: true;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ modelPhase: "pending"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION; returnByValue: true;
+    arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ modelPhase: "raw-strings"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION; returnByValue: true;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "release"; method: "Runtime.releaseObjectGroup"; params: Readonly<{
@@ -81,7 +109,7 @@ export class CurrentPcbDiagnosticModelRunner {
     return this.#request({ modelPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  public async observe(): Promise<CurrentPcbDiagnosticModelState> {
+  public async observe(): Promise<CurrentPcbDiagnosticModelObservation> {
     if (this.#consumed) { return refuse(); }
     this.#consumed = true;
     let started = false;
@@ -101,12 +129,32 @@ export class CurrentPcbDiagnosticModelRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#scriptId, "save-handler");
       const handlerScope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
-      const state = decodeCurrentPcbDiagnosticModelReply(await this.#request({
+      const compilerState = decodeCurrentPcbDiagnosticModelReply(await this.#request({
         modelPhase: "snapshot", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
           returnByValue: true, arguments: [{ objectId: wrapper }] },
       }));
-      return state;
+      const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(await this.#request({
+        modelPhase: "pending", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
+          objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
+          returnByValue: true, arguments: [{ objectId: wrapper }] },
+      }));
+      const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(await this.#request({
+        modelPhase: "raw-strings", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
+          objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION,
+          returnByValue: true, arguments: [{ objectId: wrapper }] },
+      }));
+      if (compilerState.main.uuid !== pendingProducers.documentUuid || compilerState.main.uuid !== rawStrings.documentUuid) { return refuse(); }
+      // Separate synchronous samples remain non-atomic across these CDP calls.
+      // They do not establish a writer baseline or pending-producer completion.
+      const observation: CurrentPcbDiagnosticModelObservation = freezeDeep({
+        schema: "easyeda-pro-control.pcb-diagnostic-model-observation.v1", documentUuid: compilerState.main.uuid,
+        compilerState, pendingProducers, rawStrings, atomicSnapshotVerified: false, continuousObservation: false,
+        completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false,
+        queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false,
+      });
+      if (Buffer.byteLength(canonicalJson(observation), "utf8") > OBSERVATION_BYTES) { return refuse(); }
+      return observation;
     } finally {
       if (started) {
         // Release only this original object group, even after context rejection.

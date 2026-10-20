@@ -4,6 +4,53 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020093241` is in final review/verification.
+This combined batch fixes actual PowerShell optional-string binding, retains
+native send diagnostics, adds diagnostic-owned PCB opening with exact title/
+frame/DOM/source/identity proof, and integrates compiler/pending/raw-String
+samples. Historical checkpoint verification after navigation checks the retained
+artifact, not unchanged live storage. No writer is enabled.
+Main and independent review fixed the PCB request bound for long paths and
+rejected a second committed child navigation. Final native helper6c787263/
+130,792bytes passed Windows CompileOnly/binder/emptyJob/pipes, no app launch.
+First frozen verify30894 PASSED, but separate repository validation58563 found
+two missing disclosure phrases in the shortened marketplace description.
+Privacy checks passed. Only that manifest copy and an opening-source note were
+corrected afterward; no runtime source/bundle/external pin changed.
+Final unchanged-payload verify, protected CI/publication and official Git
+marketplace installation are pending.
+Release evidence: `/root/.cache/easyeda-pcb-frame-model-release-LwjVijkD`.
+Details: `docs/current-pcb-frame-model-batch-2026-10-20.md`.
+
+081744 continuation on2026-10-20:
+Post-main Linux39395211732 PASSED on exact67a1097. Actual fresh facade836356/
+start46193649, parent834704/start46187784, pinnedNode24.18.0/core0 admitted
+independently and by main. All524source/3runtime/manifest and full installed
+1,573files/42directories/32,460,324bytes/modes match the immutable release.
+Admission proof3ae56349:
+`/root/.cache/easyeda-081744-independent-admission-YHEr9x7F/proof.json`.
+
+One actual diagnostic `diag-native-081744-20261020-01` successfully launched
+original EasyEDA35468/created134369608468935587, binding9338e34f. First browser
+observation failed `PCB_DIAGNOSTIC_PIPE_OUTPUT`, consumed without a result.
+No frame/script/project opening or CAD/Save was dispatched. Original window
+2032458 received one normal-close request; original root/whole Job termination
+was proved and `release-closed` reached terminal `released`. No Save/Discard
+choice, forced exit, adoption or replay. Receipts:
+`/root/.cache/easyeda-081744-native-diagnostic-live-RpE8bmcH`.
+This qualifies launch and normal cleanup only, not browser/worker/model support.
+No production design files or records were accessed.
+
+Current source batch: fixed pending-producer and raw-String model observations,
+their original-scope/native integration, and the observed PowerShell optional-
+string dispatch boundary. Preserve missing/null/zero field distinctions and
+the unchanged128KiB aggregate/64request bounds. These are sampled diagnostics,
+not a complete baseline or writer authority. Source work remains separate from
+the immutable running081744 host; no hotpatch/cache edits or new live attempt.
+Finish and review the useful batch before publishing/installing another version.
+
+### Delivered081744 checkpoint (historical)
+
 Delivered `0.3.0+codex.20261020081744` through protected PR84 on2026-10-20.
 Payloadd689b7fa, finalhead `911c246ef05b17ff1a220a5431e229dcce8729d3`,
 merged main `67a1097682796412aa355e657b508c99af425de2`; finalhead/main

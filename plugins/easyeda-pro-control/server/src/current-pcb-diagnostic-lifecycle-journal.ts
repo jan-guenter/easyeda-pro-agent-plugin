@@ -14,6 +14,23 @@ const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
 const MAX_OPERATIONS = 4096;
+const qualifiedPcbOpeningSchema = z.looseObject({
+  family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
+  projectUuid: z.string(), documentUuid: z.string(), tabId: z.string(),
+  openingObservation: z.looseObject({ phase: z.literal("observe"), ok: z.literal(true), status: z.literal("frame-observed"),
+    failure: z.null(), frameObserved: z.literal(true), projectUuid: z.string(), branchUuid: z.string(),
+    documentUuid: z.string(), tabId: z.string() }),
+});
+export function diagnosticPcbOpeningSourceAccepted(result: Readonly<Record<string, unknown>>,
+  target: Readonly<{ projectUuid: string; branchUuid: string; documentUuid: string }>): boolean {
+  const parsed = qualifiedPcbOpeningSchema.safeParse(result);
+  if (!parsed.success) { return false; }
+  const value = parsed.data;
+  const observed = value.openingObservation, tabId = `${target.documentUuid}@${target.projectUuid}`;
+  return value.projectUuid === target.projectUuid && value.documentUuid === target.documentUuid && value.tabId === tabId &&
+    observed.projectUuid === target.projectUuid && observed.branchUuid === target.branchUuid &&
+    observed.documentUuid === target.documentUuid && observed.tabId === tabId;
+}
 export const diagnosticLifecycleIdSchema = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
 export const diagnosticLifecycleDigestSchema = z.string().regex(/^[a-f0-9]{64}$/u);
 export const diagnosticLifecycleWindowSchema = z.string().regex(/^[1-9]\d{0,18}$/u);
@@ -66,13 +83,13 @@ const noProcessIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.
 const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-no-process-released.v1"), ...base,
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
-export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "model-state"]);
+export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
 }).strict().refine(value => {
-  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state") {
+  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening") {
     return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
   if (value.stage === "frames" || value.stage === "worker-script") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
@@ -93,6 +110,15 @@ const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
+const pcbOpenIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
+  bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
+  projectOpeningResultSha256: diagnosticLifecycleDigestSchema, acceptNormalOpenEffects: z.literal(true),
+}).strict();
+const pcbOpenResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-result.v1"), ...base,
+  intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "PCB opening result exceeds its bound.");
 export const diagnosticLifecycleRecordSchemas = {
   "intent.json": intentSchema, "binding.json": bindingSchema, "close-intent.json": closeIntentSchema,
   "close-acknowledged.json": closeAcknowledgmentSchema, "terminated.json": terminationSchema,
@@ -107,6 +133,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-state-intent.json": observationIntentSchema, "worker-state-result.json": observationResultSchema,
   "model-state-intent.json": observationIntentSchema, "model-state-result.json": observationResultSchema,
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
+  "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
+  "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
 export interface DiagnosticLifecycleOperation { readonly operationId: string; readonly records: DiagnosticLifecycleRecords }
@@ -196,8 +224,19 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-script-intent.json"] === undefined || records["workers-result.json"] !== undefined, "WORKER_SCRIPT_CHAIN");
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
-  requireValue(records["model-state-intent.json"] === undefined || script !== undefined && script.result["family"] === "pcb" &&
-    script.result["sourceVerified"] === true && records["script-intent.json"]?.family === "pcb", "MODEL_STATE_SOURCE_CHAIN");
+  const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
+  requireValue(pcbOpen === undefined || binding !== undefined && pcbOpen.bindingSha256 === sha256Json(binding) &&
+    opening !== undefined && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== undefined &&
+    pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true &&
+    opened.result["status"] === "opened-prefix-observed" && opened.result["failure"] === null &&
+    records["workers-intent.json"] === undefined, "PCB_OPEN_CHAIN");
+  requireValue(pcbOpened === undefined || pcbOpen !== undefined && pcbOpened.intentSha256 === sha256Json(pcbOpen), "PCB_OPEN_RESULT_CHAIN");
+  requireValue(records["pcb-opening-intent.json"] === undefined || pcbOpened !== undefined &&
+    pcbOpened.result["ok"] === true && pcbOpened.result["status"] === "opened" && pcbOpened.result["failure"] === null, "PCB_OPEN_OBSERVATION_CHAIN");
+  requireValue(records["model-state-intent.json"] === undefined ||
+    script !== undefined && script.result["family"] === "pcb" && script.result["sourceVerified"] === true &&
+      records["script-intent.json"]?.family === "pcb" ||
+    pcbObserved !== undefined && opening !== undefined && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target), "MODEL_STATE_SOURCE_CHAIN");
   requireValue(opening === undefined || binding !== undefined && binding.launchAcknowledged && binding.binding.rootCreated !== "0" &&
     opening.bindingSha256 === sha256Json(binding) && script !== undefined &&
     opening.scriptResultSha256 === sha256Json(script) && script.result["family"] === "ui" && script.result["sourceVerified"] === true &&

@@ -4,19 +4,21 @@ import { join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { sha256Json, sha256Text } from "../src/core.ts";
-import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
 import type { CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { LIFECYCLE_MODEL_RESULT as MODEL_RESULT } from "./helpers/current-pcb-diagnostic-lifecycle-model.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertNoUnresolvedCurrentPcbDiagnosticLaunches,
-  diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas,
+  diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticPcbOpeningSourceAccepted,
   publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle, withCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
 const RAW_PATH = String.raw`C:\Fixtures\Diagnostic.eprj2`;
+type CurrentDisposableOpenCheckpoint = Awaited<ReturnType<NonNullable<CurrentPcbDiagnosticLifecycleDependencies["prepareCheckpoint"]>>>;
 type CurrentPcbDiagnosticModelState = Awaited<ReturnType<CurrentPcbDiagnosticLifecycleOwner["observeModelState"]>>;
+type CurrentPcbDiagnosticPcbOpeningResult = Awaited<ReturnType<CurrentPcbDiagnosticLifecycleOwner["openPcb"]>>;
 const OPEN_TARGET = { rawWindowsPath: RAW_PATH, projectUuid: sha256Text(RAW_PATH), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) };
 const OPEN_CHECKPOINT: CurrentDisposableOpenCheckpoint = {
   profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1",
@@ -34,20 +36,23 @@ const OPEN_RESULT: CurrentPcbDiagnosticOpeningResult = { schema: "easyeda-pro-co
   ok: true, status: "opened-prefix-observed", failure: null, dispatchAttempted: true, publicResult: true,
   prefixObserved: true, nativeWorkMayRemain: true,
   observation: { projectPresent: true, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, windowTabId: "fixture-tab",
-    containerCount: 1, tabIds: [], activeTabId: "tab_page1" },
+    containerCount: 1, tabIds: [], activeTabId: "tab_page1", initialTitle: "EasyEDA Pro - V3.2",
+    expectedOpenedTitle: "Diagnostic | EasyEDA Pro - V3.2", documentTitle: "Diagnostic | EasyEDA Pro - V3.2" },
   startupQualified: false, restorationCompletionVerified: false, persistenceVerified: false, compilerOwnerVerified: false,
   queueCompletionVerified: false, executionAuthorized: false, nativeIntrinsicsVerified: false };
 const OPEN_INPUT = { target: OPEN_TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true };
-const MODEL_RESULT: CurrentPcbDiagnosticModelState = {
-  schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
-  main: { uuid: "a".repeat(32), uniqueId: "b".repeat(16), headType: "PCB", isProject: true, isInit: true, canSave: true, isInitIng: false,
-    pendCacheLength: 0, pendingDocumentKeyCount: 0, cacheKeyCount: 0, deleteCacheCount: 0, subscriptionCount: 0, pendTimer: "null",
-    pendPromise: "null", maxTicket: 0, pendingChange: false, localChange: false },
-  loadedFootprintCount: 0, customFootprints: [],
-  dynamicCopper: { openPcb: false, workerNameMarker: "absent", workerName: null, timer: "absent", bus: "absent" },
-  completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false, projectWorkerAssociationVerified: false,
-  queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false, continuousObservation: false, nativeIntrinsicsVerified: false,
+const PCB_OPEN_RESULT: CurrentPcbDiagnosticPcbOpeningResult = {
+  schema: "easyeda-pro-control.pcb-diagnostic-pcb-opening.v1", phase: "open-document",
+  projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, documentUuid: OPEN_TARGET.documentUuid,
+  tabId: `${OPEN_TARGET.documentUuid}@${OPEN_TARGET.projectUuid}`, ok: true, status: "opened", failure: null,
+  dispatchAttempted: true, publicResult: `${OPEN_TARGET.documentUuid}@${OPEN_TARGET.projectUuid}`, nativeWorkMayRemain: true,
+  frameObserved: false, windowTabId: "fixture-tab", frameSourceVerified: false, restorationCompletionVerified: false,
+  startupQualified: false, persistenceVerified: false, queueCompletionVerified: false, executionAuthorized: false, nativeIntrinsicsVerified: false,
 };
+const PCB_OBSERVATION: CurrentPcbDiagnosticPcbOpeningResult = { ...PCB_OPEN_RESULT, phase: "observe", status: "frame-observed",
+  dispatchAttempted: false, publicResult: null, nativeWorkMayRemain: false, frameObserved: true };
+const PCB_SOURCE_RESULT = { family: "pcb", projectUuid: OPEN_TARGET.projectUuid, documentUuid: OPEN_TARGET.documentUuid,
+  tabId: PCB_OPEN_RESULT.tabId, sourceVerified: true, domOwnerVerified: true, openingObservation: PCB_OBSERVATION, executionAuthorized: false };
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -83,7 +88,9 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       scriptInspectionConsumed: calls.includes("script"), diagnosticFailure: null,
       projectOpeningConsumed: calls.includes("open-preflight"), projectOpeningResult: calls.includes("native-opening-reply") ? OPEN_RESULT : null,
       modelObservationConsumed: calls.includes("model-state"),
-      nativeLaunchError: null, createProcessError: null,
+      pcbOpeningConsumed: calls.includes("pcb-preflight"), pcbOpeningResult: calls.includes("native-pcb-reply") ? PCB_OPEN_RESULT : null,
+      pcbObservationConsumed: calls.includes("pcb-observation"), pcbFrameObservation: calls.includes("pcb-observation") ? PCB_OBSERVATION : null,
+      pcbSourceQualified: calls.includes("pcb-observation"), nativeLaunchError: null, nativeSendError: null, createProcessError: null,
       noProcessCleanupAvailable: state.rootless !== null && calls.includes("launch") && state.noProcessHealthy && !state.released,
       cleanupOnly: state.cleanupOnly, frameWorkerVerified: false, executionAuthorized: false }),
     launch: async () => {
@@ -148,6 +155,19 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       await reverify(); calls.push("open-dispatch", "native-opening-reply");
       return structuredClone(OPEN_RESULT);
     },
+    openPcb: async (target, reverify) => {
+      calls.push("pcb-preflight");
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intent = await readFile(join(directory(id), "pcb-open-intent.json"), "utf8");
+      assert.match(intent, /diagnostic-pcb-open-intent/u);
+      await reverify(); calls.push("pcb-dispatch", "native-pcb-reply");
+      return structuredClone(PCB_OPEN_RESULT);
+    },
+    observePcbOpening: (target, profile) => {
+      calls.push("pcb-observation");
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid }); assert.equal(profile.family, "pcb");
+      return Promise.resolve(structuredClone(PCB_SOURCE_RESULT));
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
@@ -167,6 +187,10 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     },
     verifyCheckpoint: (prepared, target): Promise<void> => {
       calls.push("verify-checkpoint"); assert.deepEqual(prepared, OPEN_CHECKPOINT); assert.deepEqual(target, OPEN_TARGET);
+      return Promise.resolve();
+    },
+    verifyHistoricalCheckpoint: (prepared, target): Promise<void> => {
+      calls.push("verify-historical-checkpoint"); assert.deepEqual(prepared, OPEN_CHECKPOINT); assert.deepEqual(target, OPEN_TARGET);
       return Promise.resolve();
     },
     ...dependencies,
@@ -200,6 +224,67 @@ async function readyForOpening(id: string, value: ReturnType<typeof fixture>): P
   await value.request("inspect-frames", { targetId: "target-1" });
   await value.request("inspect-script", { frameId: "frame-1", family: "ui" });
 }
+void test("PCB source proof requires matching original target and accepted native readiness, not DOM/source alone", () => {
+  const target = { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid };
+  assert.equal(diagnosticPcbOpeningSourceAccepted(PCB_SOURCE_RESULT, target), true);
+  for (const result of [{ ...PCB_SOURCE_RESULT, openingObservation: undefined },
+    { ...PCB_SOURCE_RESULT, openingObservation: { ...PCB_OBSERVATION, ok: false } },
+    { ...PCB_SOURCE_RESULT, openingObservation: { ...PCB_OBSERVATION, frameObserved: false } },
+    { ...PCB_SOURCE_RESULT, openingObservation: { ...PCB_OBSERVATION, documentUuid: "a".repeat(16) } },
+    { ...PCB_SOURCE_RESULT, openingObservation: { ...PCB_OBSERVATION, branchUuid: "a".repeat(32) } },
+    { ...PCB_SOURCE_RESULT, documentUuid: "a".repeat(16) }]) {
+    assert.equal(diagnosticPcbOpeningSourceAccepted(result, target), false);
+  }
+});
+void test("original PCB opening is two one-shot stages before separate model observation", async context => {
+  const id = "diagnostic-test-pcb-open", value = fixture(context, id);
+  await readyForOpening(id, value);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PROJECT_OPENING_UNCONFIRMED/u);
+  await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("observe-pcb-opening"), /PCB_OPENING_UNCONFIRMED/u);
+  const opened = await value.request("open-pcb", { acceptNormalOpenEffects: true });
+  assert.deepEqual(opened["result"], PCB_OPEN_RESULT);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("observe-model-state"), /ORIGINAL_PCB_SOURCE_REQUIRED/u);
+  await assert.rejects(value.request("inspect-workers"), /PCB_BRANCH_SELECTED/u);
+  const observed = await value.request("observe-pcb-opening");
+  assert.deepEqual(observed["result"], PCB_SOURCE_RESULT);
+  await assert.rejects(value.request("observe-pcb-opening"), /OBSERVATION_CONSUMED/u);
+  await value.request("observe-model-state");
+  assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
+  assert.equal(value.calls.filter(action => action === "verify-checkpoint").length, 2);
+  assert.equal(value.calls.filter(action => action === "verify-historical-checkpoint").length, 1);
+});
+void test("worker inspection excludes the PCB document branch", async context => {
+  const id = "diagnostic-test-pcb-worker-exclusive", value = fixture(context, id);
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT); await value.request("inspect-workers");
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB_OPENING_UNAVAILABLE/u);
+  assert.equal(value.calls.includes("pcb-preflight"), false);
+});
+void test("lost PCB result publication settles original result without dispatch replay", async context => {
+  const id = "diagnostic-test-pcb-settlement"; let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "pcb-open-result.json" && fail) { fail = false; throw new Error("synthetic PCB publication failure"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB publication failure/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(inspected["pcbOpeningResultRetained"], true); assert.deepEqual(inspected["pcbOpeningResult"], PCB_OPEN_RESULT);
+  await assert.rejects(value.request("observe-pcb-opening"), /PCB_OPENING_UNCONFIRMED/u);
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await value.request("observe-pcb-opening");
+  assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
+});
+void test("PCB opening reuses original checkpoint and failure consumes without native replay", async context => {
+  const id = "diagnostic-test-pcb-checkpoint";
+  const value = fixture(context, id, { verifyHistoricalCheckpoint: () => Promise.reject(new Error("synthetic original checkpoint changed")) });
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /original checkpoint changed/u);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB_OPENING_CONSUMED/u);
+  assert.equal(value.calls.includes("pcb-dispatch"), false);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+});
 
 void test("model observation requires original PCB source, preserves exact results and consumes once", async context => {
   const id = "diagnostic-test-model-state", value = fixture(context, id);

@@ -68,9 +68,22 @@ The opener is worker-only: it does not create PCB-frame authority for the observ
 Neither enables PCB writing or proves saved state. A
 [native launch correction](docs/current-pcb-native-launch-2026-10-20.md)
 verifies the suspended process image before its single resume. The shared launch
-code passed a synthetic Windows no-op child test; actual EasyEDA launch,
-opening and model-observer qualification remain pending. Windows CI now runs
-the same synthetic launch test.
+code passed a synthetic Windows no-op child test. The installed081744 continuation
+also launched EasyEDA and completed original-owned normal closure and release.
+Browser inspection stopped at the native dispatch boundary before any project
+opening; opening and model-observer qualification remain pending. Windows CI
+runs the shared synthetic launch test.
+
+Update `0.3.0+codex.20261020093241` adds a separate
+[disposable PCB-frame opening](docs/current-pcb-diagnostic-pcb-opening-2026-10-20.md)
+after project opening, including the expected title transition and exact child
+frame/DOM/source checks. It also fixes the
+[PowerShell dispatch boundary](docs/current-pcb-diagnostic-dispatch-2026-10-20.md)
+and integrates [pending-producer samples](docs/current-pcb-pending-producers-2026-10-20.md)
+with [bounded raw String observations](docs/current-pcb-raw-string-observation-2026-10-20.md).
+These are fixed diagnostic operations, not a complete PCB baseline or a writer.
+Connected qualification remains pending. See the
+[combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
 
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are

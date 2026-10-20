@@ -180,6 +180,16 @@ void test("source-admitted UI allows exactly one selected worker-only same-docum
     assert.throws(() => context.openingContext(), /IDENTITY/u);
   }
 });
+void test("project title transition requires original CDP initial title and one exact source-derived opened title", () => {
+  const titleProof = { initialTitle: TARGET.title, expectedOpenedTitle: `Diagnostic | ${TARGET.title}` };
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID, titleProof); within(context);
+  const opened = { targetInfos: [{ ...OPEN_TARGET_REPLY.targetInfos[0], title: titleProof.expectedOpenedTitle }] };
+  context.finishOpeningTransition(opened, OPEN_FRAME_REPLY); context.observeTarget(opened);
+  const wrongInitial = openingFixture();
+  assert.throws(() => wrongInitial.beginOpeningTransition(PROJECT_UUID, { ...titleProof, initialTitle: "foreign" }), /IDENTITY/u);
+  const wrongFinal = openingFixture(); wrongFinal.beginOpeningTransition(PROJECT_UUID, titleProof); within(wrongFinal);
+  assert.throws(() => { wrongFinal.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY); }, /IDENTITY/u);
+});
 void test("opening selector requires source-proved top-level UI and never revives failed identity", () => {
   for (const context of [openingFixture(false), fixture(), staged()]) {
     assert.throws(() => context.openingContext(), /IDENTITY/u);
@@ -234,4 +244,96 @@ void test("fixed model selector retains only an already source-qualified PCB fra
   }
   assert.throws(() => { context.observeEvent(event("Runtime.executionContextsCleared", {})); }, /INVALIDATED/u);
   assert.throws(() => context.modelContext(), /IDENTITY/u);
+});
+const PCB_DOCUMENT = "b".repeat(16), PCB_TAB = `${PCB_DOCUMENT}@${PROJECT_UUID}`;
+const PCB_URL = `${OPEN_URL},tab=*${PCB_TAB}`;
+const PCB_CHILD = { id: "pcb-frame", parentId: "frame-1", loaderId: "pcb-loader", url: "https://client/editor?entry=pcb",
+  securityOrigin: "https://client", mimeType: "text/html" };
+const PCB_TARGET_REPLY = { targetInfos: [{ ...UI_TARGET, url: PCB_URL, attached: true }] };
+const PCB_FRAME_REPLY = { frameTree: { frame: { ...UI_FRAME, urlFragment: `#id=${PROJECT_UUID},tab=*${PCB_TAB}` }, childFrames: [{ frame: PCB_CHILD }] } };
+const PCB_NODE = { nodeType: 1, nodeName: "IFRAME", localName: "iframe", backendNodeId: 42, frameId: "pcb-frame",
+  attributes: ["id", `frame_${PCB_TAB}`, "c_dbid", PCB_TAB, "c_doctype", "3", "src", "editor?entry=pcb",
+    "pcb-canvas", "true", "class", "editframe selected"] };
+function pcbOpeningFixture(): CurrentPcbDiagnosticContext {
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID); within(context);
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY);
+  context.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT);
+  return context;
+}
+function pcbChild(context: CurrentPcbDiagnosticContext): void {
+  within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "pcb-context",
+    auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" } } }));
+  context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, scriptId: "pcb-script", executionContextId: 8,
+    url: `https://client/${PROFILE.relativePath}` }));
+}
+function pcbSource(context: CurrentPcbDiagnosticContext): Readonly<Record<string, unknown>> {
+  pcbChild(context); context.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  context.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE }); context.pcbScript(PROFILE);
+  return context.finishPcbOpening({ scriptSource: SOURCE }, PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+}
+void test("separate PCB branch binds original UI, one DOM-owned child and separate complete source before commit", () => {
+  const context = pcbOpeningFixture(), result = pcbSource(context);
+  assert.equal(result["sourceVerified"], true); assert.equal(result["domOwnerVerified"], true);
+  assert.equal(result["documentUuid"], PCB_DOCUMENT); assert.equal(result["executionAuthorized"], false);
+  assert.deepEqual(context.pcbOpeningContext(), { sessionId: "session-1", uniqueContextId: UI_CONTEXT.uniqueId });
+  context.completePcbOpening();
+  assert.deepEqual(context.modelContext(), { sessionId: "session-1", scriptId: "pcb-script", uniqueContextId: "pcb-context" });
+  assert.throws(() => { context.completePcbOpening(); }, /IDENTITY/u);
+});
+void test("PCB source alone never admits model and native completion cannot precede source", () => {
+  const sourceOnly = pcbOpeningFixture(); pcbSource(sourceOnly);
+  assert.throws(() => sourceOnly.modelContext(), /IDENTITY/u);
+  const noSource = pcbOpeningFixture(); pcbChild(noSource);
+  noSource.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  noSource.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE });
+  assert.throws(() => { noSource.completePcbOpening(); }, /IDENTITY/u);
+});
+void test("PCB opening allows initial blank transition but refuses any second committed navigation", () => {
+  const context = pcbOpeningFixture(); within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  context.observeEvent(event("Page.frameNavigated", { frame: { ...PCB_CHILD, url: "about:blank", loaderId: "blank-loader" }, type: "Navigation" }));
+  context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  assert.deepEqual(context.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY), { frameId: "pcb-frame", rootFrameId: "frame-1" });
+  for (const frame of [PCB_CHILD, { ...PCB_CHILD, loaderId: "reloaded-pcb" },
+    { ...PCB_CHILD, url: "about:blank", loaderId: "replacement-blank" }]) {
+    const changed = pcbOpeningFixture(); pcbChild(changed);
+    assert.throws(() => { changed.observeEvent(event("Page.frameNavigated", { frame, type: "Navigation" })); }, /INVALIDATED/u);
+    assert.throws(() => changed.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY), /IDENTITY/u);
+  }
+});
+void test("PCB branch rejects second child, root replacement and foreign navigation", () => {
+  for (const item of [
+    event("Page.frameAttached", { frameId: "another", parentFrameId: "frame-1" }),
+    event("Page.frameNavigated", { frame: { ...PCB_CHILD, id: "frame-1" }, type: "Navigation" }),
+    event("Page.frameNavigated", { frame: { ...PCB_CHILD, url: "https://foreign/editor?entry=pcb" }, type: "Navigation" }),
+    event("Runtime.executionContextDestroyed", { executionContextId: 7 }),
+  ]) {
+    const context = pcbOpeningFixture(); pcbChild(context);
+    assert.throws(() => { context.observeEvent(item); }, /INVALIDATED/u);
+  }
+  for (const target of [{ ...PCB_TARGET_REPLY.targetInfos[0], title: "foreign" }, { ...PCB_TARGET_REPLY.targetInfos[0], targetId: "other" }]) {
+    const context = pcbOpeningFixture(); pcbChild(context);
+    assert.throws(() => context.observePcbOpeningFrames({ targetInfos: [target] }, PCB_FRAME_REPLY), /IDENTITY/u);
+  }
+});
+void test("PCB frame owner requires reciprocal backend/frame identity and exact attributes", () => {
+  for (const node of [{ ...PCB_NODE, backendNodeId: 43 }, { ...PCB_NODE, frameId: "other" },
+    { ...PCB_NODE, attributes: [...PCB_NODE.attributes, "id", `frame_${PCB_TAB}`] },
+    { ...PCB_NODE, attributes: [...PCB_NODE.attributes, "blankiframe", "true"] },
+    { ...PCB_NODE, attributes: PCB_NODE.attributes.map(value => value === "3" ? "1" : value) },
+    { ...PCB_NODE, attributes: PCB_NODE.attributes.map(value => value === "editor?entry=pcb" ? "editor?entry=sch" : value) }]) {
+    const context = pcbOpeningFixture(); pcbChild(context); context.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+    assert.throws(() => { context.observePcbFrameOwner({ backendNodeId: 42 }, { node }); }, /IDENTITY/u);
+  }
+});
+void test("PCB admission refuses changed source and post-source context loss", () => {
+  const changed = pcbOpeningFixture(); pcbChild(changed); changed.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  changed.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE }); changed.pcbScript(PROFILE);
+  assert.throws(() => changed.finishPcbOpening({ scriptSource: SOURCE.replace("true", "null") }, PCB_TARGET_REPLY, PCB_FRAME_REPLY), /IDENTITY/u);
+  const lost = pcbOpeningFixture(); pcbSource(lost);
+  assert.throws(() => { lost.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8 })); }, /INVALIDATED/u);
+  assert.throws(() => { lost.completePcbOpening(); }, /IDENTITY/u);
 });

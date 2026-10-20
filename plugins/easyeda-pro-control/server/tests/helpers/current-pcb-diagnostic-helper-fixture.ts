@@ -2,23 +2,29 @@
 import assert from "node:assert/strict";
 import process from "node:process";
 import { createInterface } from "node:readline";
+import { pendingModelReply, rawStringsModelReply } from "./current-pcb-diagnostic-model-replies.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
 const staged = scenario?.startsWith("staged") === true;
 const openingCase = scenario?.startsWith("opening") === true;
-const modelCase = scenario?.startsWith("staged-model") === true;
+const pcbCase = scenario?.startsWith("opening-pcb") === true;
+const modelCase = scenario?.startsWith("staged-model") === true || pcbCase;
 const workerCase = scenario?.startsWith("staged-worker") === true;
 const identityCase = staged || openingCase || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
 const noProcessCase = scenario?.startsWith("no-process-") === true;
 const creationState = scenario === "no-process-create-refused" || scenario?.startsWith("no-process-win32") === true ? "returned-false" : "not-entered";
 const uiBase = "https://client/editor?cll=warn";
-const target = { targetId: "target-1", type: "page", title: "synthetic", url: openingCase ? `${uiBase}#` : "file:///synthetic/ui.html" };
+const initialTitle = "Synthetic Pro - V3.2.206";
+const target = { targetId: "target-1", type: "page", title: openingCase ? initialTitle : "synthetic",
+  url: openingCase ? `${uiBase}#` : "file:///synthetic/ui.html" };
 const worker = { targetId: "worker-1", type: "worker", title: `project_${"a".repeat(64)}_window_1`,
   url: "file:///synthetic/editor?entry=mgr-project-worker.js", attached: true };
 let attached = false;
 let workerAttached = false;
 let opened = false;
+let pcbOpened = false, pcbSourceRead = false;
+let pcbDocumentUuid = "", pcbTabId = "";
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let sent = Buffer.alloc(0), terminated = false;
@@ -46,6 +52,9 @@ lines.on("line", line => {
     if (scenario === "duplicate") { process.stdout.write(`{"id":"${String(request["id"])}","ok":true,"result":{},"result":{"written":true}}\n`); return; }
     if (scenario === "native-send-failed") {
       process.stdout.write(`${JSON.stringify({ id: request["id"], ok: false, error: "pcb-diagnostic-partial-write" })}\n`); return;
+    }
+    if (scenario === "native-send-private-error") {
+      process.stdout.write(`${JSON.stringify({ id: request["id"], ok: false, error: "private native exception C:\\private\\synthetic" })}\n`); return;
     }
     assert.ok("method" in request && "requestId" in request);
     let payload: unknown = request["method"] === "Browser.getVersion" ? { product: "synthetic", protocolVersion: "1.3" } : { targetInfos: [] };
@@ -88,11 +97,21 @@ lines.on("line", line => {
               executionContextId: 7, hasSourceURL: false, scriptLanguage: "JavaScript" } });
         } else if (request["method"] === "Debugger.getScriptSource") {
           assert.ok("scriptId" in request);
-          assert.equal(request["scriptId"], "script-1");
-          payload = { scriptSource: sourcePayload() };
+          assert.equal(request["scriptId"], pcbOpened ? "pcb-script-1" : "script-1");
+          pcbSourceRead = pcbOpened;
+          payload = { scriptSource: pcbOpened && scenario === "opening-pcb-source-drift" ? "changed source" : sourcePayload() };
           events.push(...navigationEvent());
+        } else if (request["method"] === "DOM.getFrameOwner") {
+          assert.equal(pcbOpened, true); assert.ok("frameId" in request); assert.equal(request.frameId, "pcb-frame");
+          payload = { backendNodeId: 1234 };
+        } else if (request["method"] === "DOM.describeNode") {
+          assert.equal(pcbOpened, true); assert.ok("backendNodeId" in request); assert.equal(request.backendNodeId, 1234);
+          payload = { node: { backendNodeId: 1234, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
+            attributes: ["id", `frame_${pcbTabId}`, "c_dbid", scenario === "opening-pcb-dom-drift" ? "foreign" : pcbTabId,
+              "c_doctype", "3", "src", "editor?entry=pcb", "pcb-canvas", "true", "class", "editframe"] } };
         } else if (request["method"] === "Runtime.callFunctionOn") {
-          assert.equal(openingCase, true); payload = openingResponse(request, events);
+          assert.equal(openingCase, true);
+          payload = "pcbOpeningPhase" in request ? pcbOpeningResponse(request, events) : openingResponse(request, events);
         } else { throw new Error("unexpected synthetic method"); }
       }
     }
@@ -155,8 +174,11 @@ function workerAttachment(): readonly unknown[] {
 }
 function frameTree(frame: Record<string, unknown>): unknown {
   if (openingCase) {
+    let childFrames: { childFrames: { frame: Record<string, unknown> }[] } | Record<string, never> = {};
+    if (pcbOpened) { childFrames = { childFrames: [{ frame: pcbFrame() }] }; }
+    else if (opened && scenario === "opening-child-frame") { childFrames = { childFrames: [{ frame: { ...frame, id: "child", parentId: "frame-1" } }] }; }
     return { frame: { ...frame, url: uiBase, urlFragment: target.url.slice(uiBase.length), securityOrigin: "https://client" },
-      ...(opened && scenario === "opening-child-frame" ? { childFrames: [{ frame: { ...frame, id: "child", parentId: "frame-1" } }] } : {}) };
+      ...childFrames };
   }
   if (staged) { return { frame: { ...frame, id: "ui-root", loaderId: "root-loader" }, childFrames: [{ frame: { ...frame, parentId: "ui-root" } }] }; }
   return { frame };
@@ -179,11 +201,13 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
       events.push({ method: "Runtime.executionContextsCleared", sessionId: "session-1", params: {} });
     }
     if (id === "wrapper" || id === "handler") {
+      let scriptId = pcbCase ? "pcb-script-1" : "script-1";
+      if (scenario === "staged-model-source-refused") { scriptId = "foreign-script"; }
       return { result: [modelProperty("length", { type: "number", value: id === "wrapper" ? 3 : 1 }),
         modelProperty("name", { type: "string", value: "" })], internalProperties: [
         { name: "[[Prototype]]", value: { type: "function", objectId: "function-prototype" } },
         { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: {
-          scriptId: scenario === "staged-model-source-refused" ? "foreign-script" : "script-1",
+          scriptId,
           lineNumber: id === "wrapper" ? 30 : 91_968, columnNumber: id === "wrapper" ? 14_676 : 9858,
         } } },
         { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array",
@@ -195,15 +219,58 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
       description: id === "wrapper-scopes" ? "Closure (rpcService)" : "Closure", objectId: `${id}-zero` }),
     modelProperty("1", { type: "object", subtype: "internal#scope", className: "Object", description: "Global", objectId: "global-scope" })] };
   }
-  assert.equal(phase, "snapshot"); assert.equal(id, "handler-scopes-zero");
+  assert.equal(id, "handler-scopes-zero");
   assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
+  const documentUuid = pcbCase && scenario !== "opening-pcb-model-document-drift" ? pcbDocumentUuid : "a".repeat(32);
+  if (phase === "pending") {
+    return pendingModelReply(scenario === "staged-model-document-drift" ? "f".repeat(32) : documentUuid);
+  }
+  if (phase === "raw-strings") { return rawStringsModelReply(documentUuid); }
+  assert.equal(phase, "snapshot");
   return { result: { type: "string", value: JSON.stringify({
     schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
-    main: { uuid: "a".repeat(32), uniqueId: "b".repeat(32), headType: "PCB", isProject: true, isInit: true, canSave: true,
+    main: { uuid: documentUuid, uniqueId: "b".repeat(32), headType: "PCB", isProject: true, isInit: true, canSave: true,
       isInitIng: false, pendCacheLength: 0, pendingDocumentKeyCount: 0, cacheKeyCount: 0, deleteCacheCount: 0,
       subscriptionCount: 0, pendTimer: "absent", pendPromise: "absent", maxTicket: 0, pendingChange: false, localChange: false },
     loadedFootprintCount: 0, customFootprints: [],
     dynamicCopper: { openPcb: true, workerNameMarker: "absent", workerName: null, timer: "absent", bus: "present" },
+  }) } };
+}
+function pcbFrame(): Record<string, unknown> {
+  return { id: "pcb-frame", parentId: "frame-1", loaderId: "pcb-loader",
+    url: "https://client/editor?entry=pcb", securityOrigin: "https://client" };
+}
+function pcbOpeningResponse(request: object & Record<"pcbOpeningPhase", unknown>, events: unknown[]): unknown {
+  assert.equal(pcbCase, true);
+  assert.ok("uniqueContextId" in request && "targetProjectUuid" in request && "targetBranchUuid" in request && "targetDocumentUuid" in request);
+  assert.equal(request.uniqueContextId, "unique-context-1");
+  const phase = request.pcbOpeningPhase;
+  const dispatchAttempted = phase === "open-document";
+  assert.ok(phase === "preflight" || phase === "open-document" || phase === "observe");
+  const ok = scenario !== `opening-pcb-${phase}-refused`;
+  const tabId = `${String(request.targetDocumentUuid)}@${String(request.targetProjectUuid)}`;
+  if (dispatchAttempted && ok) {
+    pcbOpened = true; pcbTabId = tabId; pcbDocumentUuid = String(request.targetDocumentUuid);
+    target.url = `${uiBase}#id=${String(request.targetProjectUuid)},tab=*${tabId}`;
+    events.push(
+      { method: "Page.navigatedWithinDocument", sessionId: "session-1", params: { frameId: "frame-1", url: target.url, navigationType: "fragment" } },
+      { method: "Page.frameAttached", sessionId: "session-1", params: { frameId: "pcb-frame", parentFrameId: "frame-1" } },
+      { method: "Page.frameNavigated", sessionId: "session-1", params: { frame: pcbFrame(), type: "Navigation" } },
+      { method: "Runtime.executionContextCreated", sessionId: "session-1", params: { context: { id: 9, uniqueId: "pcb-context",
+        origin: "https://client", name: "", auxData: { frameId: "pcb-frame", isDefault: true, type: "default" } } } },
+      { method: "Debugger.scriptParsed", sessionId: "session-1", params: { scriptId: "pcb-script-1",
+        url: "https://client/pro-pcb/test-version/js/pcb.js", executionContextId: 9, hasSourceURL: false, scriptLanguage: "JavaScript" } },
+    );
+  }
+  if (phase === "observe") { assert.equal(pcbSourceRead, true, "Child RPC observation must follow child source admission."); }
+  let status = "ready";
+  if (!ok) { status = "refused"; } else if (dispatchAttempted) { status = "opened"; } else if (phase === "observe") { status = "frame-observed"; }
+  return { result: { type: "string", value: JSON.stringify({
+    schema: "easyeda-pro-control.pcb-diagnostic-pcb-opening.v1", phase,
+    projectUuid: request.targetProjectUuid, branchUuid: request.targetBranchUuid, documentUuid: request.targetDocumentUuid, tabId,
+    ok, status, failure: ok ? null : { stage: "registration-before", code: "REGISTRY" }, dispatchAttempted,
+    publicResult: dispatchAttempted && ok ? tabId : null, nativeWorkMayRemain: dispatchAttempted,
+    frameObserved: phase === "observe" && ok, windowTabId: "original-window",
   }) } };
 }
 function modelProperty(name: string, value: unknown): unknown {
@@ -219,8 +286,12 @@ function openingResponse(request: object, events: unknown[]): unknown {
   assert.ok(phase === "preflight" || phase === "open-project");
   const dispatchAttempted = phase === "open-project";
   const ok = scenario !== (dispatchAttempted ? "opening-open-refused" : "opening-preflight-refused");
+  assert.equal(typeof request.targetRawWindowsPath, "string");
+  const path = String(request.targetRawWindowsPath);
+  const projectName = path.slice(path.lastIndexOf("\\") + 1, path.indexOf(".eprj2"));
+  const expectedOpenedTitle = `${projectName} | ${initialTitle}`;
   if (dispatchAttempted && ok) {
-    opened = true; target.url = `${uiBase}#id=${String(request.targetProjectUuid)}`;
+    opened = true; target.url = `${uiBase}#id=${String(request.targetProjectUuid)}`; target.title = expectedOpenedTitle;
     if (scenario !== "opening-no-event") {
       events.push({ method: scenario === "opening-context-lost" ? "Runtime.executionContextsCleared" : "Page.navigatedWithinDocument",
         sessionId: "session-1", params: scenario === "opening-context-lost" ? {} :
@@ -237,7 +308,8 @@ function openingResponse(request: object, events: unknown[]): unknown {
     dispatchAttempted, publicResult: dispatchAttempted ? ok : null, prefixObserved: dispatchAttempted && ok,
     nativeWorkMayRemain: dispatchAttempted,
     observation: ok ? { projectPresent: dispatchAttempted, branchUuid: dispatchAttempted ? request.targetBranchUuid : null,
-      windowTabId: "original-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1" } : null,
+      windowTabId: "original-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1",
+      initialTitle, expectedOpenedTitle, documentTitle: dispatchAttempted ? expectedOpenedTitle : initialTitle } : null,
   }) } };
 }
 function workerEvent(method: string, params: unknown): unknown { return { method, params, sessionId: "worker-session-1" }; }

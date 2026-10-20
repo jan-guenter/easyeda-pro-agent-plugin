@@ -29,11 +29,11 @@ function Read-BoundedFile([string]$Path,[int]$MaximumBytes) {
 }
 $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 $bytes = Read-BoundedFile $helper 131072
-if ($bytes.Length -ne 87523) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 130792) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne 'c56ff031fc7b4f92163f1e5f53d58146763adea6f2284ffdd8430edef582e09c') {
+if ($helperHash -cne '6c7872630490658868170a1403a8087bc6ed4b1aeb7a68ecdf207a5caa1a3080') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)
