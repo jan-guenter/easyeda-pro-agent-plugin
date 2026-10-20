@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticToken } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticAncillaryOwner } from "./current-pcb-diagnostic-ancillary.ts";
+import { CurrentPcbDiagnosticSameDocument } from "./current-pcb-diagnostic-same-document.ts";
+import { CurrentPcbDiagnosticChildNavigation } from "./current-pcb-diagnostic-child-navigation.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 export interface DiagnosticFrameExpectation {
@@ -20,7 +22,8 @@ export interface DiagnosticScriptProfile {
 interface PcbOpeningTransition {
   readonly projectUuid: string; readonly documentUuid: string; readonly tabId: string; readonly url: string;
   readonly originalRoot: Row; readonly uiIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }>;
-  childId: string | null; childLoaderId: string | null; child: Row | null; navigationCount: number; fragmentEvents: number;
+  childId: string | null; child: Row | null; navigation: CurrentPcbDiagnosticChildNavigation | null;
+  readonly initialChildContexts: Set<number>;
   domBackendNodeId: number | null; profile: DiagnosticScriptProfile | null;
   sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null;
   completed: boolean;
@@ -134,7 +137,9 @@ export class CurrentPcbDiagnosticContext {
   #attachmentEvent: Row | null = null;
   #sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null = null;
   #openingConsumed = false;
-  #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null; events: number } | null = null;
+  #opening: { readonly base: string; readonly url: string; readonly expectedTitle: string | null } | null = null;
+  #rootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
+  #priorRootNavigation: CurrentPcbDiagnosticSameDocument | null = null;
   #pcbOpening: PcbOpeningTransition | null = null;
   #ancillaryFrame: Row | null = null;
   #ancillaryOwner: ReturnType<typeof diagnosticAncillaryOwner> | null = null;
@@ -207,22 +212,23 @@ export class CurrentPcbDiagnosticContext {
       this.#attachmentEvent = clone(params); return;
     }
     if (event.sessionId !== this.#sessionId) { this.#refuse(); }
+    if (this.#priorRootNavigation?.acceptLateNavigation(event) === true ||
+        this.#rootNavigation?.accept(event) === true) { this.#uiSourceContext(); return; }
     if (this.#pcbOpening !== null && this.#pcbEvent(event)) { return; }
-    if (event.method === "Page.navigatedWithinDocument") {
-      const opening = this.#opening;
-      if (opening === null || opening.events >= 8 || this.#frame === null ||
-          !diagnosticExact(params, ["frameId", "url", "navigationType"]) ||
-          params["frameId"] !== this.#frame["id"] || params["url"] !== opening.url ||
-          (params["navigationType"] !== "fragment" && params["navigationType"] !== "historyApi")) { this.#refuse(); }
-      opening.events += 1;
-      this.openingContext(); return;
-    }
+    if (this.#rootNavigation !== null &&
+        (event.method === "Page.frameStartedLoading" || event.method === "Page.frameStoppedLoading")) { this.#refuse(); }
     if (event.method === "Runtime.executionContextCreated") {
       const context = params["context"];
       if (!diagnosticRecord(context) || !integer(context["id"]) || !diagnosticToken(context["uniqueId"]) ||
           !text(context["origin"]) || !text(context["name"]) || !diagnosticRecord(context["auxData"]) ||
           this.#contexts.has(context["id"]) || [...this.#contexts.values()].some(value => value["uniqueId"] === context["uniqueId"])) { this.#refuse(); }
-      this.#contexts.set(context["id"], clone(context)); return;
+      this.#contexts.set(context["id"], clone(context));
+      const pcb = this.#pcbOpening;
+      if (pcb !== null && pcb.childId !== null && pcb.navigation !== null &&
+          context["auxData"]["frameId"] === pcb.childId && pcb.navigation.committedLoader === null) {
+        pcb.initialChildContexts.add(context["id"]);
+      }
+      return;
     }
     if (event.method === "Debugger.scriptParsed") {
       if (!diagnosticToken(params["scriptId"]) || !integer(params["executionContextId"]) || !text(params["url"]) ||
@@ -380,7 +386,8 @@ export class CurrentPcbDiagnosticContext {
       if (titleProof !== undefined && (!diagnosticExact(titleProof, ["initialTitle", "expectedOpenedTitle"]) ||
           !text(titleProof.initialTitle, 512) || !text(titleProof.expectedOpenedTitle, 512) || titleProof.initialTitle.length === 0 ||
           titleProof.expectedOpenedTitle.length === 0 || this.#target["title"] !== titleProof.initialTitle)) { this.#refuse(); }
-      this.#opening = { base, url: `${base}#id=${projectUuid}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null, events: 0 };
+      this.#opening = { base, url: `${base}#id=${projectUuid}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null };
+      this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#opening.url);
       return selected;
     } catch { return this.#refuse(); }
   }
@@ -392,7 +399,8 @@ export class CurrentPcbDiagnosticContext {
     this.openingContext();
     try {
       const opening = this.#opening, original = this.#frame;
-      if (opening === null || opening.events === 0 || original === null || this.#target === null) { this.#refuse(); }
+      if (opening === null || original === null || this.#target === null || this.#rootNavigation === null) { this.#refuse(); }
+      this.#rootNavigation.seal();
       const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true);
       const currentFrame = currentFrames[0];
       if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === undefined ||
@@ -420,8 +428,10 @@ export class CurrentPcbDiagnosticContext {
     if (typeof base !== "string" || this.#target["url"] !== `${base}#id=${projectUuid}`) { return this.#refuse(); }
     const tabId = `${documentUuid}@${projectUuid}`;
     this.#pcbOpening = { projectUuid, documentUuid, tabId, url: `${base}#id=${projectUuid},tab=*${tabId}`,
-      originalRoot: this.#frame, uiIdentity: this.#sourceIdentity, childId: null, childLoaderId: null, child: null, navigationCount: 0,
-      fragmentEvents: 0, domBackendNodeId: null, profile: null, sourceIdentity: null, completed: false };
+      originalRoot: this.#frame, uiIdentity: this.#sourceIdentity, childId: null, child: null, navigation: null, initialChildContexts: new Set(),
+      domBackendNodeId: null, profile: null, sourceIdentity: null, completed: false };
+    this.#priorRootNavigation = this.#rootNavigation;
+    this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#pcbOpening.url);
     return selected;
   }
   public pcbOpeningContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
@@ -437,39 +447,32 @@ export class CurrentPcbDiagnosticContext {
     const pcb = this.#pcbOpening;
     if (pcb === null) { return false; }
     const params = event.params;
-    if (event.method === "Page.navigatedWithinDocument") {
-      if (pcb.child !== null || pcb.fragmentEvents >= 8 || !diagnosticExact(params, ["frameId", "url", "navigationType"]) ||
-          params["frameId"] !== pcb.originalRoot["id"] || params["url"] !== pcb.url ||
-          !["fragment", "historyApi"].includes(String(params["navigationType"]))) { this.#refuse(); }
-      pcb.fragmentEvents += 1; this.pcbOpeningContext(); return true;
-    }
     if (event.method === "Page.frameAttached") {
       if (pcb.child !== null || pcb.childId !== null || !diagnosticToken(params["frameId"]) ||
           params["frameId"] === pcb.originalRoot["id"] || params["frameId"] === this.#ancillaryFrame?.["id"] ||
           params["parentFrameId"] !== pcb.originalRoot["id"] ||
           !diagnosticExact(params, params["stack"] === undefined ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) { this.#refuse(); }
-      pcb.childId = params["frameId"]; return true;
+      pcb.childId = params["frameId"];
+      pcb.navigation = new CurrentPcbDiagnosticChildNavigation(pcb.childId, String(pcb.originalRoot["id"]));
+      return true;
     }
-    if (["Page.frameNavigated", "Page.frameStartedLoading", "Page.frameStartedNavigating", "Page.frameRequestedNavigation"].includes(event.method)) {
-      if (pcb.child !== null || pcb.childId === null || pcb.navigationCount >= 8) { this.#refuse(); }
-      if (event.method === "Page.frameNavigated") {
-        const frame = params["frame"];
-        // Only the initial blank document may precede the one PCB commit.
-        // Once retained, its loader cannot be replaced or reset before sampling.
-        if (pcb.childLoaderId !== null || !diagnosticRecord(frame) || frame["id"] !== pcb.childId || frame["parentId"] !== pcb.originalRoot["id"] ||
-            !diagnosticToken(frame["loaderId"]) || !["about:blank", "https://client/editor?entry=pcb"].includes(String(frame["url"])) ||
-            (params["type"] !== undefined && params["type"] !== "Navigation")) { this.#refuse(); }
-        pcb.childLoaderId = frame["url"] === "https://client/editor?entry=pcb" ? frame["loaderId"] : null;
-      } else if (params["frameId"] !== pcb.childId || event.method !== "Page.frameStartedLoading" &&
-          params["url"] !== "https://client/editor?entry=pcb") { this.#refuse(); }
-      pcb.navigationCount += 1; return true;
+    if (pcb.navigation?.accept(event) === true) {
+      // Chromium clears old window contexts before emitting this commit.
+      // A same-origin context may be reused; it must no longer be eligible
+      // For initial-blank teardown after becoming the actual PCB context.
+      if (event.method === "Page.frameNavigated" && pcb.navigation.committedLoader !== null) { pcb.initialChildContexts.clear(); }
+      return true;
     }
     if (event.method === "Runtime.executionContextDestroyed") {
       const id = params["executionContextId"];
       const context = typeof id === "number" ? this.#contexts.get(id) : undefined;
       const aux = context?.["auxData"];
-      if (pcb.child !== null || pcb.childId === null || !diagnosticRecord(aux) || aux["frameId"] !== pcb.childId) { this.#refuse(); }
-      this.#contexts.delete(Number(id));
+      if (pcb.child !== null || pcb.childId === null || typeof id !== "number" || !pcb.initialChildContexts.has(id) ||
+          !diagnosticExact(params, ["executionContextId", "executionContextUniqueId"]) ||
+          params["executionContextUniqueId"] !== context?.["uniqueId"] ||
+          !diagnosticRecord(aux) || aux["frameId"] !== pcb.childId) { this.#refuse(); }
+      pcb.initialChildContexts.delete(id);
+      this.#contexts.delete(id);
       for (const [scriptId, row] of this.#scripts) { if (row["executionContextId"] === id) { this.#scripts.delete(scriptId); } }
       return true;
     }
@@ -479,9 +482,12 @@ export class CurrentPcbDiagnosticContext {
     this.pcbOpeningContext();
     try {
       const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true), pcb = this.#pcbOpening;
-      if (pcb === null || pcb.childId === null || pcb.childLoaderId === null || pcb.child !== null || pcb.fragmentEvents === 0 || pcb.navigationCount === 0 ||
+      if (pcb === null || pcb.childId === null || pcb.navigation === null || pcb.navigation.committedLoader === null ||
+          pcb.child !== null || this.#rootNavigation === null ||
           this.#target === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) ||
           this.#ancillaryFrame !== null && !currentFrames.some(row => equal(row, this.#ancillaryFrame))) { this.#refuse(); }
+      this.#rootNavigation.seal();
+      pcb.navigation.assertReady();
       const root = currentFrames.find(frame => frame["id"] === pcb.originalRoot["id"]);
       const child = currentFrames.find(frame => frame["id"] === pcb.childId);
       if (root === undefined || child === undefined) { this.#refuse(); }
@@ -489,7 +495,7 @@ export class CurrentPcbDiagnosticContext {
       const { urlFragment, ...currentFields } = root;
       if (!equal(originalFields, currentFields) || urlFragment !== pcb.url.slice(String(root["url"]).length) ||
           !equal({ ...this.#target, url: pcb.url, attached: true }, currentTarget) ||
-          child["parentId"] !== root["id"] || child["loaderId"] !== pcb.childLoaderId || child["url"] !== "https://client/editor?entry=pcb" ||
+          child["parentId"] !== root["id"] || child["loaderId"] !== pcb.navigation.committedLoader || child["url"] !== "https://client/editor?entry=pcb" ||
           child["securityOrigin"] !== "https://client" || child["urlFragment"] !== undefined) { this.#refuse(); }
       pcb.child = child; this.#frames = currentFrames; this.#frame = root;
       this.#target = Object.freeze({ ...currentTarget, attached: false });

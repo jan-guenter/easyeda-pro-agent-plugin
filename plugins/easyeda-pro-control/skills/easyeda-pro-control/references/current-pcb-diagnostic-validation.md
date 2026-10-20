@@ -7,16 +7,15 @@ that original process. Separate branches support a one-shot disposable project
 opening followed by either direct-child worker inspection or a separately
 admitted disposable PCB-frame opening and model observation. An already admitted
 PCB frame can also supply model observation. None enables CAD editing.
-Installed093241 completed original-owned native launch, browser/frame
-observations, complete UI-source admission and normal closure, including
-root/whole-Job termination and helper release. Its observed Start Page had an
-additional blank child that its opener did not support; no project opening was
-attempted. This does not validate project/PCB opening, worker or model samples.
-Older snapshots may lack the tool or the additional fields described below.
-Installed105401 reached a successful project-opening preflight, then stopped
-with an opaque pipe-reply error. Its original normal cleanup completed, but
-actual project dispatch remained ambiguous. Do not treat that preflight or
-the unchanged closed fixture as completed project/PCB qualification.
+Installed120717 retained `reason:"event-callback"` and `eventKind:"unknown"`
+while its project-open request was pending. That identifies a refused event
+callback, not the event name or whether opening completed. Original normal
+closure, root/whole-Job termination and terminal helper release passed; the
+closed disposable fixture remained unchanged. The case is consumed.
+The source-derived navigation-policy corrections below have no connected
+qualification yet. Earlier launch/browser/frame/source evidence and unchanged
+fixture bytes do not validate project/PCB opening, worker or model samples.
+Older snapshots may lack this tool or the additional fields described below.
 
 Existing-profile startup can restore projects, run extensions, contact services,
 migrate data or persist preferences/cache. It is neither isolated nor guaranteed
@@ -141,6 +140,14 @@ context, unrelated URLs or full navigation stop the branch. Do not remove those
 guards to accommodate an unsupported project. A failed or uncertain stage is
 consumed, including its preflight; inspect and clean up without replay.
 
+The root transition also accounts for bounded CDP scheduling, clearing,
+same-document start and loading notifications. Scheduling is bound to the
+selected root, exact selected URL, zero delay and script-initiated reason.
+A pending start's loader token does not replace the committed root loader.
+Browser and renderer notifications need not arrive in one total order; loading
+counts do not prove editor readiness. The original full frame/target comparison
+and source/context checks still decide whether the transition is accepted.
+
 ## Optional disposable PCB-frame opening
 
 After accepted `open-project`, choose either this branch or worker discovery,
@@ -159,6 +166,13 @@ admits the complete pinned PCB source and default execution context, then
 observes native tab/document identity through the fixed UI program. It preserves
 the original UI source/context; unrelated frames, navigation, mixed tabs,
 replacement owners or conflicting identity refuse.
+
+The child policy permits at most one optional initial blank commit followed by
+one distinct PCB commit. It checks navigation type, reason, disposition and
+pending-to-committed loader agreement. Exact initial-child context teardown is
+allowed only before the PCB commit and must match its retained unique context
+ID. Later context destruction, repeated commits and unrelated loading events
+remain failures. Matching event counts are not completed-load evidence.
 
 Only the complete accepted observation permits `observe-model-state`. The
 composite's document identity must still match the original sealed PCB target.
@@ -216,6 +230,15 @@ No queue payloads are returned. This is not a complete pending-producer inventor
 queue barrier, saved-state comparison or writer/Save authority. The original
 object group's release must succeed before the composite is accepted.
 
+Two offline String models consume supplied observations without adding a tool
+or write token. `current-pcb-string-empty-baseline.ts` reports named unmet
+conditions for the first fixture, while retaining unobserved producer/source
+requirements. `current-pcb-string-postcreate.ts` joins original inert plans,
+a supplied create acknowledgment, raw zero-to-one String samples and one exact
+publication. Even a matching relation leaves ownership, complete effect, Save,
+rendering and persistence unverified. Do not treat these results as instructions
+to call the dormant create program.
+
 ## Lost replies and failures
 
 - `inspect` is local and does not replay native actions. Supply
@@ -240,6 +263,8 @@ object group's release must succeed before the composite is accepted.
   This distinguishes a malformed reply from an event-policy refusal without
   extra protocol requests. It does not prove dispatch absence, authorize a
   retry or recover the cause of an older opaque failure.
+  More known navigation and identity-loss event names now have fixed labels;
+  adding a label does not admit that event or identify the older `unknown`.
 - If publication failed, keep the original facade alive. When offered,
   `settle-records` takes the inspected `intentSha256` as `expectedIntentSha256`.
   It publishes only absent records from the original retained bytes. It neither

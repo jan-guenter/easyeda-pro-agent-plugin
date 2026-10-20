@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "23040adb0e40589b4ffa6f1fc6cb4e03d9a14d7a72812d6a9248395af6f1f933";
+const __easyedaBundlePairId = "e7e3cd6db7a0482ab5f95cd4706c95ae70fa32c9a6a6b1a24ecd00a7a6912d76";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -75147,7 +75147,7 @@ async function prepareRecoveryNavigation(input) {
     { checkpointSha256: verified.checkpointSha256, projectUuid: projectUuid4 }
   ) : void 0;
   const target9 = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
-  const navigation2 = {
+  const navigation3 = {
     ...captured.navigation?.navigate === void 0 ? {} : { navigate: captured.navigation.navigate },
     ...captured.navigation?.requireExclusiveTabs === void 0 ? {} : { requireExclusiveTabs: captured.navigation.requireExclusiveTabs },
     ...captured.navigation?.requireEditorReadiness === void 0 ? {} : { requireEditorReadiness: captured.navigation.requireEditorReadiness },
@@ -75155,7 +75155,7 @@ async function prepareRecoveryNavigation(input) {
   };
   return {
     target: target9,
-    code: buildRecoveryNavigationCode(target9, navigation2),
+    code: buildRecoveryNavigationCode(target9, navigation3),
     checkpointSha256: verified.checkpointSha256,
     ...libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence }
   };
@@ -78384,14 +78384,14 @@ var init_closed_symbol_saved_read = __esm({
       returns = /* @__PURE__ */ new Map();
       captures = /* @__PURE__ */ new Map();
       released = /* @__PURE__ */ new Set();
-      constructor(engine2, runtime, admission, relaunch, startup2, navigation2, fingerprint) {
+      constructor(engine2, runtime, admission, relaunch, startup2, navigation3, fingerprint) {
         validatePrivateFingerprint(fingerprint);
         this.engine = engine2;
         this.runtime = runtime;
         this.admission = admission;
         this.relaunch = relaunch;
         this.startup = startup2;
-        this.navigation = navigation2;
+        this.navigation = navigation3;
         this.fingerprint = structuredClone(fingerprint);
       }
       originalReturn(operationId11) {
@@ -80485,7 +80485,7 @@ async function replay(loaded, evidence2, runtime) {
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
   current10();
-  const navigation2 = await recordedNavigationBinding(journal, events, "verify-open");
+  const navigation3 = await recordedNavigationBinding(journal, events, "verify-open");
   current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
@@ -80512,7 +80512,7 @@ async function replay(loaded, evidence2, runtime) {
     ...sql3.resultHashes,
     writeResultSha256: sha256Json(write),
     savedReadResultSha256: sha256Json(savedRead),
-    verificationNavigationBindingSha256: sha256Json(navigation2)
+    verificationNavigationBindingSha256: sha256Json(navigation3)
   });
   const values2 = Object.freeze({
     witness: witness.result,
@@ -82205,7 +82205,7 @@ async function replay2(loaded, evidence2, runtime) {
   const write = reconstructRecordedWrite({ journal, events, witness: witness.result, preparation: sql3.preparation });
   await recordedNavigationBinding(journal, events, "edit-open");
   current10();
-  const navigation2 = await recordedNavigationBinding(journal, events, "verify-open");
+  const navigation3 = await recordedNavigationBinding(journal, events, "verify-open");
   current10();
   const savedRead = await reconstructRecordedSavedRead({
     journal,
@@ -82233,7 +82233,7 @@ async function replay2(loaded, evidence2, runtime) {
     ...sql3.resultHashes,
     writeResultSha256: sha256Json(write),
     savedReadResultSha256: sha256Json(savedRead),
-    verificationNavigationBindingSha256: sha256Json(navigation2)
+    verificationNavigationBindingSha256: sha256Json(navigation3)
   });
   const values2 = Object.freeze({
     mainReference: mainReference.result,
@@ -90366,7 +90366,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const intent = await _DesignExecutor.phase(journal, "library-reopen-recovery-intent", true);
         const noDispatch = await _DesignExecutor.phase(journal, "library-reopen-recovery-not-dispatched", true);
         const outstandingDispatch = intent !== void 0 && (!isRecord(noDispatch) || noDispatch["dispatched"] !== false || noDispatch["intentSha256"] !== sha256Text(canonicalJson(intent)));
-        const navigation2 = selectSavedLibraryReopen({
+        const navigation3 = selectSavedLibraryReopen({
           documentUuid: documentUuid5,
           documentType: documentType3,
           tabId,
@@ -90374,7 +90374,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           outstandingDispatch
         });
         await verifyLibraryNativeProfile(installed.assetsRoot);
-        return { lifecycle, navigation: navigation2, evidence: {
+        return { lifecycle, navigation: navigation3, evidence: {
           schema: "easyeda-pro-control.saved-library-recovery.v1",
           saveRepeated: false,
           sourceSha256: journal.after.sha256,
@@ -90383,7 +90383,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           effect,
           retainedPersistence,
           persistence,
-          navigation: navigation2.action
+          navigation: navigation3.action
         } };
       }
       async resumeSavedLibraryReopen(journal, current10) {
@@ -95262,7 +95262,7 @@ function validateCurrentDisposableOpenArguments(input) {
 function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
   const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
-  const navigation2 = phase5 === "open-project" || phase5 === "open-document";
+  const navigation3 = phase5 === "open-project" || phase5 === "open-document";
   return `let timer,clear,cleanup,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target9)},phase=${JSON.stringify(phase5)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false,prefixCheck;
@@ -95364,7 +95364,7 @@ const run=async()=>{
  const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad('OUTPUT');return envelope;
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation2 ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation3 ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
 }catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
 finally{let cleanupFailed=false;try{if(cleanup!==undefined)cleanup();}catch{cleanupFailed=true;}if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{cleanupFailed=true;}}if(cleanupFailed)throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}`;
 }
@@ -95373,8 +95373,8 @@ function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   const phase5 = external_exports.enum(phases3).parse(phaseInput);
   const result = currentDisposableOpenResultSchema.parse(raw);
   const expectedTab = `${target9.documentUuid}@${target9.projectUuid}`;
-  const navigation2 = phase5 === "open-project" || phase5 === "open-document";
-  if (result.phase !== phase5 || result.projectUuid !== target9.projectUuid || result.documentUuid !== target9.documentUuid || result.dispatchAttempted !== navigation2 || result.branchUuid !== (result.projectPresent ? target9.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
+  const navigation3 = phase5 === "open-project" || phase5 === "open-document";
+  if (result.phase !== phase5 || result.projectUuid !== target9.projectUuid || result.documentUuid !== target9.documentUuid || result.dispatchAttempted !== navigation3 || result.branchUuid !== (result.projectPresent ? target9.branchUuid : null) || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent || result.nativeIdentityVerified && !result.documentPresent || phase5 === "preflight" && result.projectPresent) {
     throw new Error("Disposable opening result contradicts its exact target and phase.");
   }
   let validAcknowledgement = result.publicResult === null;
@@ -128412,10 +128412,13 @@ var init_current_pcb_diagnostic_pipe = __esm({
       "Runtime.exceptionThrown",
       "Runtime.exceptionRevoked",
       "Runtime.inspectRequested",
+      "Runtime.bindingCalled",
       "Debugger.scriptParsed",
       "Debugger.scriptFailedToParse",
       "Debugger.paused",
       "Debugger.resumed",
+      "Debugger.breakpointResolved",
+      "Debugger.globalObjectCleared",
       "Page.navigatedWithinDocument",
       "Page.frameAttached",
       "Page.frameDetached",
@@ -128424,6 +128427,21 @@ var init_current_pcb_diagnostic_pipe = __esm({
       "Page.frameStoppedLoading",
       "Page.frameStartedNavigating",
       "Page.frameRequestedNavigation",
+      "Page.frameScheduledNavigation",
+      "Page.frameClearedScheduledNavigation",
+      "Page.frameSubtreeWillBeDetached",
+      "Page.documentOpened",
+      "Page.windowOpen",
+      "Page.javascriptDialogOpening",
+      "Page.javascriptDialogClosed",
+      "Page.backForwardCacheNotUsed",
+      "Page.interstitialShown",
+      "Page.interstitialHidden",
+      "Page.compilationCacheProduced",
+      "Page.downloadWillBegin",
+      "Page.downloadProgress",
+      "Page.screencastFrame",
+      "Page.screencastVisibilityChanged",
       "Page.domContentEventFired",
       "Page.loadEventFired",
       "Page.frameResized",
@@ -128974,9 +128992,275 @@ var init_current_pcb_diagnostic_ancillary = __esm({
   }
 });
 
+// server/src/current-pcb-diagnostic-same-document.ts
+function refuse12() {
+  throw new Error("PCB_DIAGNOSTIC_SAME_DOCUMENT");
+}
+function loading(params, count3) {
+  if (count3 >= 8 || !diagnosticExact(params, ["frameId"])) {
+    refuse12();
+  }
+}
+var CurrentPcbDiagnosticSameDocument;
+var init_current_pcb_diagnostic_same_document = __esm({
+  "server/src/current-pcb-diagnostic-same-document.ts"() {
+    init_current_pcb_diagnostic_protocol();
+    CurrentPcbDiagnosticSameDocument = class {
+      #frameId;
+      #url;
+      #scheduled = false;
+      #scheduleCount = 0;
+      #fragmentCount = 0;
+      #startedCount = 0;
+      #loadingStartCount = 0;
+      #loadingStopCount = 0;
+      #sealed = false;
+      #failed = false;
+      constructor(frameId, url2) {
+        const match = /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)#id=([a-f\d]{64})(?:,tab=\*(?:[a-f\d]{16}|[a-f\d]{32})@([a-f\d]{64}))?$/u.exec(url2);
+        if (!diagnosticToken(frameId) || match === null || match[0] !== url2 || match[2] !== void 0 && match[2] !== match[1]) {
+          refuse12();
+        }
+        this.#frameId = frameId;
+        this.#url = url2;
+      }
+      /** False means this is not one of this root's supported event kinds.
+       * The context must still reject unsupported events or route the selected child.
+       * No method mutates the retained committed loader or execution context.
+       */
+      accept(event3) {
+        if (this.#failed) {
+          return refuse12();
+        }
+        try {
+          return this.#accept(event3);
+        } catch {
+          this.#failed = true;
+          return refuse12();
+        }
+      }
+      /** A browser start for the completed project fragment can arrive after the
+       * PCB fragment phase is armed. Match only that old exact URL; never accept
+       * another renderer schedule or commit through this historical phase. */
+      acceptLateNavigation(event3) {
+        if (this.#failed) {
+          return refuse12();
+        }
+        if (!this.#sealed || event3.method !== "Page.frameStartedNavigating" || event3.params["frameId"] !== this.#frameId || event3.params["url"] !== this.#url) {
+          return false;
+        }
+        return this.accept(event3);
+      }
+      #accept(event3) {
+        const params = event3.params;
+        if (params["frameId"] !== this.#frameId) {
+          return false;
+        }
+        switch (event3.method) {
+          case "Page.frameScheduledNavigation": {
+            if (this.#sealed || this.#scheduled || this.#scheduleCount >= 8 || !diagnosticExact(params, ["frameId", "delay", "reason", "url"]) || !Object.is(params["delay"], 0) || params["reason"] !== "scriptInitiated" || params["url"] !== this.#url) {
+              refuse12();
+            }
+            this.#scheduled = true;
+            this.#scheduleCount += 1;
+            return true;
+          }
+          case "Page.frameClearedScheduledNavigation": {
+            if (this.#sealed || !this.#scheduled || !diagnosticExact(params, ["frameId"])) {
+              refuse12();
+            }
+            this.#scheduled = false;
+            return true;
+          }
+          case "Page.navigatedWithinDocument": {
+            if (this.#sealed || this.#fragmentCount >= 8 || !diagnosticExact(params, ["frameId", "url", "navigationType"]) || params["url"] !== this.#url || params["navigationType"] !== "fragment" && params["navigationType"] !== "historyApi") {
+              refuse12();
+            }
+            this.#fragmentCount += 1;
+            return true;
+          }
+          case "Page.frameStartedNavigating": {
+            if (this.#startedCount >= 8 || !diagnosticExact(params, ["frameId", "url", "loaderId", "navigationType"]) || params["url"] !== this.#url || !diagnosticToken(params["loaderId"]) || params["navigationType"] !== "sameDocument") {
+              refuse12();
+            }
+            this.#startedCount += 1;
+            return true;
+          }
+          case "Page.frameStartedLoading": {
+            loading(params, this.#loadingStartCount);
+            this.#loadingStartCount += 1;
+            return true;
+          }
+          case "Page.frameStoppedLoading": {
+            loading(params, this.#loadingStopCount);
+            this.#loadingStopCount += 1;
+            return true;
+          }
+          default: {
+            return false;
+          }
+        }
+      }
+      seal() {
+        if (this.#failed || this.#sealed || this.#scheduled || this.#fragmentCount === 0) {
+          this.#failed = true;
+          refuse12();
+        }
+        this.#sealed = true;
+      }
+    };
+  }
+});
+
+// server/src/current-pcb-diagnostic-child-navigation.ts
+function navigation2() {
+  return { scheduled: false, requested: false, startedLoader: null, committedLoader: null };
+}
+function refuse13() {
+  throw new Error("PCB_DIAGNOSTIC_CHILD_NAVIGATION");
+}
+var PCB_URL, BLANK_URL, METHODS, CurrentPcbDiagnosticChildNavigation;
+var init_current_pcb_diagnostic_child_navigation = __esm({
+  "server/src/current-pcb-diagnostic-child-navigation.ts"() {
+    init_current_pcb_diagnostic_protocol();
+    PCB_URL = "https://client/editor?entry=pcb";
+    BLANK_URL = "about:blank";
+    METHODS = [
+      "Page.frameScheduledNavigation",
+      "Page.frameClearedScheduledNavigation",
+      "Page.frameRequestedNavigation",
+      "Page.frameStartedNavigating",
+      "Page.frameStartedLoading",
+      "Page.frameStoppedLoading",
+      "Page.frameNavigated"
+    ];
+    CurrentPcbDiagnosticChildNavigation = class {
+      #childId;
+      #rootId;
+      #blank = navigation2();
+      #pcb = navigation2();
+      #scheduled = null;
+      #loadingStarts = 0;
+      #loadingStops = 0;
+      #eventCount = 0;
+      #failed = false;
+      constructor(childId, rootId) {
+        if (!diagnosticToken(childId) || !diagnosticToken(rootId) || childId === rootId) {
+          refuse13();
+        }
+        this.#childId = childId;
+        this.#rootId = rootId;
+      }
+      get committedLoader() {
+        this.#assertCurrent();
+        return this.#pcb.committedLoader;
+      }
+      /** False means this class does not handle the event. A recognized invalid
+       * event poisons this tracker permanently; it cannot be retried or reset. */
+      accept(event3) {
+        this.#assertCurrent();
+        if (!METHODS.some((method6) => method6 === event3.method)) {
+          return false;
+        }
+        try {
+          this.#eventCount += 1;
+          if (this.#eventCount > 16) {
+            refuse13();
+          }
+          const params = event3.params;
+          if (event3.method === "Page.frameNavigated") {
+            this.#commit(params);
+            return true;
+          }
+          if (params["frameId"] !== this.#childId) {
+            refuse13();
+          }
+          if (event3.method === "Page.frameStartedLoading" || event3.method === "Page.frameStoppedLoading") {
+            if (!diagnosticExact(params, ["frameId"])) {
+              refuse13();
+            }
+            if (event3.method === "Page.frameStartedLoading") {
+              this.#loadingStarts += 1;
+            } else {
+              this.#loadingStops += 1;
+            }
+            if (this.#loadingStarts > 2 || this.#loadingStops > 2) {
+              refuse13();
+            }
+            return true;
+          }
+          if (event3.method === "Page.frameClearedScheduledNavigation") {
+            if (!diagnosticExact(params, ["frameId"]) || this.#scheduled === null) {
+              refuse13();
+            }
+            this.#scheduled = null;
+            return true;
+          }
+          const url2 = params["url"];
+          if (url2 !== BLANK_URL && url2 !== PCB_URL) {
+            refuse13();
+          }
+          const state4 = url2 === BLANK_URL ? this.#blank : this.#pcb;
+          if (event3.method === "Page.frameScheduledNavigation") {
+            if (!diagnosticExact(params, ["frameId", "delay", "reason", "url"]) || !Object.is(params["delay"], 0) || params["reason"] !== "scriptInitiated" || state4.scheduled || this.#scheduled !== null || state4.committedLoader !== null || this.#pcb.committedLoader !== null) {
+              refuse13();
+            }
+            state4.scheduled = true;
+            this.#scheduled = url2;
+            return true;
+          }
+          if (event3.method === "Page.frameRequestedNavigation") {
+            if (!diagnosticExact(params, ["frameId", "reason", "url", "disposition"]) || params["reason"] !== "initialFrameNavigation" && params["reason"] !== "scriptInitiated" || params["disposition"] !== "currentTab" || state4.requested || state4.committedLoader !== null || this.#pcb.committedLoader !== null) {
+              refuse13();
+            }
+            state4.requested = true;
+            return true;
+          }
+          if (!diagnosticExact(params, ["frameId", "url", "loaderId", "navigationType"]) || params["navigationType"] !== "differentDocument" || !diagnosticToken(params["loaderId"]) || state4.startedLoader !== null || state4.committedLoader !== null && params["loaderId"] !== state4.committedLoader || this.#pcb.committedLoader !== null && state4.committedLoader === null) {
+            refuse13();
+          }
+          state4.startedLoader = params["loaderId"];
+          return true;
+        } catch {
+          this.#failed = true;
+          return refuse13();
+        }
+      }
+      #commit(params) {
+        if (!diagnosticExact(params, ["frame", "type"]) || params["type"] !== "Navigation" || !diagnosticRecord2(params["frame"])) {
+          refuse13();
+        }
+        const frame = params["frame"], loader = frame["loaderId"], url2 = frame["url"];
+        if (frame["id"] !== this.#childId || frame["parentId"] !== this.#rootId || !diagnosticToken(loader) || frame["urlFragment"] !== void 0 || url2 !== BLANK_URL && url2 !== PCB_URL || this.#pcb.committedLoader !== null || url2 === PCB_URL && frame["securityOrigin"] !== "https://client" || url2 === BLANK_URL && frame["securityOrigin"] !== "https://client" && frame["securityOrigin"] !== "://") {
+          refuse13();
+        }
+        const state4 = url2 === BLANK_URL ? this.#blank : this.#pcb;
+        if (state4.committedLoader !== null || state4.startedLoader !== null && state4.startedLoader !== loader || url2 === PCB_URL && this.#blank.committedLoader === loader) {
+          refuse13();
+        }
+        state4.committedLoader = loader;
+      }
+      /** A selected committed PCB loader and no unmatched renderer scheduling.
+       * Loading counters are advisory, never a completion or queue-drain proof. */
+      assertReady() {
+        this.#assertCurrent();
+        if (this.#pcb.committedLoader === null || this.#scheduled !== null) {
+          this.#failed = true;
+          refuse13();
+        }
+      }
+      #assertCurrent() {
+        if (this.#failed) {
+          refuse13();
+        }
+      }
+    };
+  }
+});
+
 // server/src/current-pcb-diagnostic-context.ts
 import { createHash as createHash52 } from "node:crypto";
-function refuse12() {
+function refuse14() {
   throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY");
 }
 function text28(value2, maximum5 = 8192) {
@@ -128993,7 +129277,7 @@ function clone2(value2) {
 }
 function diagnosticBoundedObservation(value2) {
   if (Buffer.byteLength(JSON.stringify(value2), "utf8") > 128 * 1024) {
-    return refuse12();
+    return refuse14();
   }
   return Object.freeze(value2);
 }
@@ -129011,20 +129295,20 @@ function frameSummary(value2) {
 }
 function validateDiagnosticFrameExpectation(value2) {
   if (!diagnosticExact(value2, ["targetId", "frameId", "frameUrl", "scriptUrl", "scriptSha256", "scriptBytes"]) || !diagnosticToken(value2.targetId) || !diagnosticToken(value2.frameId) || !text28(value2.frameUrl) || value2.frameUrl.length === 0 || !text28(value2.scriptUrl) || value2.scriptUrl.length === 0 || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer13(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse12();
+    return refuse14();
   }
   return Object.freeze({ ...value2 });
 }
 function diagnosticTargetInventory(reply) {
   const rows2 = reply["targetInfos"];
   if (!diagnosticExact(reply, ["targetInfos"]) || !Array.isArray(rows2) || rows2.length > 256) {
-    return refuse12();
+    return refuse14();
   }
   const ids2 = /* @__PURE__ */ new Set();
   const result = [];
   for (const item2 of rows2) {
     if (!diagnosticRecord2(item2) || !diagnosticToken(item2["targetId"]) || ids2.has(item2["targetId"]) || !text28(item2["type"], 64) || !text28(item2["url"]) || typeof item2["attached"] !== "boolean") {
-      return refuse12();
+      return refuse14();
     }
     ids2.add(item2["targetId"]);
     result.push(clone2(item2));
@@ -129034,13 +129318,13 @@ function diagnosticTargetInventory(reply) {
 function target7(reply, targetId2, attached) {
   const found = diagnosticTargetInventory(reply).find((item2) => item2["targetId"] === targetId2);
   if (found?.["type"] !== "page" || found["attached"] !== attached) {
-    return refuse12();
+    return refuse14();
   }
-  return found ?? refuse12();
+  return found ?? refuse14();
 }
 function frames(reply) {
   if (!diagnosticExact(reply, ["frameTree"]) || !diagnosticRecord2(reply["frameTree"])) {
-    return refuse12();
+    return refuse14();
   }
   const pending = [{ node: reply["frameTree"], parent: null, depth: 0 }];
   const ids2 = /* @__PURE__ */ new Set();
@@ -129048,21 +129332,21 @@ function frames(reply) {
   while (pending.length > 0) {
     const current10 = pending.pop();
     if (current10 === void 0) {
-      return refuse12();
+      return refuse14();
     }
     const children2 = current10.node["childFrames"], item2 = current10.node["frame"];
     if (current10.depth > 16 || !diagnosticRecord2(item2) || !diagnosticToken(item2["id"]) || ids2.has(item2["id"]) || ids2.size >= 128 || !diagnosticToken(item2["loaderId"]) || !text28(item2["url"]) || !text28(item2["securityOrigin"]) || (current10.parent === null ? item2["parentId"] !== void 0 : item2["parentId"] !== current10.parent)) {
-      return refuse12();
+      return refuse14();
     }
     ids2.add(item2["id"]);
     result.push(clone2(item2));
     if (children2 !== void 0) {
       if (!Array.isArray(children2) || children2.length > 128) {
-        return refuse12();
+        return refuse14();
       }
       for (const child of children2) {
         if (!diagnosticRecord2(child)) {
-          return refuse12();
+          return refuse14();
         }
         pending.push({ node: child, parent: item2["id"], depth: current10.depth + 1 });
       }
@@ -129072,7 +129356,7 @@ function frames(reply) {
 }
 function validateDiagnosticScriptProfile(value2) {
   if (!diagnosticExact(value2, ["family", "relativePath", "scriptSha256", "scriptBytes"]) || !["ui", "pcb", "public-api"].includes(value2.family) || !text28(value2.relativePath, 512) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(value2.relativePath) || value2.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer13(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
-    return refuse12();
+    return refuse14();
   }
   return Object.freeze({ ...value2 });
 }
@@ -129090,7 +129374,7 @@ function scriptUrlMatches(value2, profile) {
 function startPageBase(frame) {
   const fragment = frame["urlFragment"], url2 = frame["url"];
   if (!text28(url2) || !/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/u.test(url2) || fragment !== void 0 && fragment !== "#" || frame["parentId"] !== void 0 || frame["securityOrigin"] !== "https://client") {
-    return refuse12();
+    return refuse14();
   }
   return url2;
 }
@@ -129099,6 +129383,8 @@ var init_current_pcb_diagnostic_context = __esm({
   "server/src/current-pcb-diagnostic-context.ts"() {
     init_current_pcb_diagnostic_protocol();
     init_current_pcb_diagnostic_ancillary();
+    init_current_pcb_diagnostic_same_document();
+    init_current_pcb_diagnostic_child_navigation();
     CurrentPcbDiagnosticContext = class {
       #expected;
       #targetId;
@@ -129115,13 +129401,15 @@ var init_current_pcb_diagnostic_context = __esm({
       #sourceIdentity = null;
       #openingConsumed = false;
       #opening = null;
+      #rootNavigation = null;
+      #priorRootNavigation = null;
       #pcbOpening = null;
       #ancillaryFrame = null;
       #ancillaryOwner = null;
       constructor(expected3) {
         if (typeof expected3 === "string") {
           if (!diagnosticToken(expected3)) {
-            refuse12();
+            refuse14();
           }
           this.#targetId = expected3;
           this.#expected = null;
@@ -129240,17 +129528,15 @@ var init_current_pcb_diagnostic_context = __esm({
         if (event3.sessionId !== this.#sessionId) {
           this.#refuse();
         }
+        if (this.#priorRootNavigation?.acceptLateNavigation(event3) === true || this.#rootNavigation?.accept(event3) === true) {
+          this.#uiSourceContext();
+          return;
+        }
         if (this.#pcbOpening !== null && this.#pcbEvent(event3)) {
           return;
         }
-        if (event3.method === "Page.navigatedWithinDocument") {
-          const opening = this.#opening;
-          if (opening === null || opening.events >= 8 || this.#frame === null || !diagnosticExact(params, ["frameId", "url", "navigationType"]) || params["frameId"] !== this.#frame["id"] || params["url"] !== opening.url || params["navigationType"] !== "fragment" && params["navigationType"] !== "historyApi") {
-            this.#refuse();
-          }
-          opening.events += 1;
-          this.openingContext();
-          return;
+        if (this.#rootNavigation !== null && (event3.method === "Page.frameStartedLoading" || event3.method === "Page.frameStoppedLoading")) {
+          this.#refuse();
         }
         if (event3.method === "Runtime.executionContextCreated") {
           const context3 = params["context"];
@@ -129258,6 +129544,10 @@ var init_current_pcb_diagnostic_context = __esm({
             this.#refuse();
           }
           this.#contexts.set(context3["id"], clone2(context3));
+          const pcb5 = this.#pcbOpening;
+          if (pcb5 !== null && pcb5.childId !== null && pcb5.navigation !== null && context3["auxData"]["frameId"] === pcb5.childId && pcb5.navigation.committedLoader === null) {
+            pcb5.initialChildContexts.add(context3["id"]);
+          }
           return;
         }
         if (event3.method === "Debugger.scriptParsed") {
@@ -129493,7 +129783,8 @@ var init_current_pcb_diagnostic_context = __esm({
           if (titleProof !== void 0 && (!diagnosticExact(titleProof, ["initialTitle", "expectedOpenedTitle"]) || !text28(titleProof.initialTitle, 512) || !text28(titleProof.expectedOpenedTitle, 512) || titleProof.initialTitle.length === 0 || titleProof.expectedOpenedTitle.length === 0 || this.#target["title"] !== titleProof.initialTitle)) {
             this.#refuse();
           }
-          this.#opening = { base: base7, url: `${base7}#id=${projectUuid4}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null, events: 0 };
+          this.#opening = { base: base7, url: `${base7}#id=${projectUuid4}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null };
+          this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#opening.url);
           return selected3;
         } catch {
           return this.#refuse();
@@ -129507,9 +129798,10 @@ var init_current_pcb_diagnostic_context = __esm({
         this.openingContext();
         try {
           const opening = this.#opening, original2 = this.#frame;
-          if (opening === null || opening.events === 0 || original2 === null || this.#target === null) {
+          if (opening === null || original2 === null || this.#target === null || this.#rootNavigation === null) {
             this.#refuse();
           }
+          this.#rootNavigation.seal();
           const currentFrames = frames(frameReply), currentTarget = target7(targetReply, this.#targetId, true);
           const currentFrame = currentFrames[0];
           if (currentFrames.length !== (this.#ancillaryFrame === null ? 1 : 2) || currentFrame === void 0 || this.#ancillaryFrame !== null && !currentFrames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
@@ -129554,15 +129846,16 @@ var init_current_pcb_diagnostic_context = __esm({
           originalRoot: this.#frame,
           uiIdentity: this.#sourceIdentity,
           childId: null,
-          childLoaderId: null,
           child: null,
-          navigationCount: 0,
-          fragmentEvents: 0,
+          navigation: null,
+          initialChildContexts: /* @__PURE__ */ new Set(),
           domBackendNodeId: null,
           profile: null,
           sourceIdentity: null,
           completed: false
         };
+        this.#priorRootNavigation = this.#rootNavigation;
+        this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#pcbOpening.url);
         return selected3;
       }
       pcbOpeningContext() {
@@ -129579,45 +129872,29 @@ var init_current_pcb_diagnostic_context = __esm({
           return false;
         }
         const params = event3.params;
-        if (event3.method === "Page.navigatedWithinDocument") {
-          if (pcb5.child !== null || pcb5.fragmentEvents >= 8 || !diagnosticExact(params, ["frameId", "url", "navigationType"]) || params["frameId"] !== pcb5.originalRoot["id"] || params["url"] !== pcb5.url || !["fragment", "historyApi"].includes(String(params["navigationType"]))) {
-            this.#refuse();
-          }
-          pcb5.fragmentEvents += 1;
-          this.pcbOpeningContext();
-          return true;
-        }
         if (event3.method === "Page.frameAttached") {
           if (pcb5.child !== null || pcb5.childId !== null || !diagnosticToken(params["frameId"]) || params["frameId"] === pcb5.originalRoot["id"] || params["frameId"] === this.#ancillaryFrame?.["id"] || params["parentFrameId"] !== pcb5.originalRoot["id"] || !diagnosticExact(params, params["stack"] === void 0 ? ["frameId", "parentFrameId"] : ["frameId", "parentFrameId", "stack"])) {
             this.#refuse();
           }
           pcb5.childId = params["frameId"];
+          pcb5.navigation = new CurrentPcbDiagnosticChildNavigation(pcb5.childId, String(pcb5.originalRoot["id"]));
           return true;
         }
-        if (["Page.frameNavigated", "Page.frameStartedLoading", "Page.frameStartedNavigating", "Page.frameRequestedNavigation"].includes(event3.method)) {
-          if (pcb5.child !== null || pcb5.childId === null || pcb5.navigationCount >= 8) {
-            this.#refuse();
+        if (pcb5.navigation?.accept(event3) === true) {
+          if (event3.method === "Page.frameNavigated" && pcb5.navigation.committedLoader !== null) {
+            pcb5.initialChildContexts.clear();
           }
-          if (event3.method === "Page.frameNavigated") {
-            const frame = params["frame"];
-            if (pcb5.childLoaderId !== null || !diagnosticRecord2(frame) || frame["id"] !== pcb5.childId || frame["parentId"] !== pcb5.originalRoot["id"] || !diagnosticToken(frame["loaderId"]) || !["about:blank", "https://client/editor?entry=pcb"].includes(String(frame["url"])) || params["type"] !== void 0 && params["type"] !== "Navigation") {
-              this.#refuse();
-            }
-            pcb5.childLoaderId = frame["url"] === "https://client/editor?entry=pcb" ? frame["loaderId"] : null;
-          } else if (params["frameId"] !== pcb5.childId || event3.method !== "Page.frameStartedLoading" && params["url"] !== "https://client/editor?entry=pcb") {
-            this.#refuse();
-          }
-          pcb5.navigationCount += 1;
           return true;
         }
         if (event3.method === "Runtime.executionContextDestroyed") {
           const id14 = params["executionContextId"];
           const context3 = typeof id14 === "number" ? this.#contexts.get(id14) : void 0;
           const aux = context3?.["auxData"];
-          if (pcb5.child !== null || pcb5.childId === null || !diagnosticRecord2(aux) || aux["frameId"] !== pcb5.childId) {
+          if (pcb5.child !== null || pcb5.childId === null || typeof id14 !== "number" || !pcb5.initialChildContexts.has(id14) || !diagnosticExact(params, ["executionContextId", "executionContextUniqueId"]) || params["executionContextUniqueId"] !== context3?.["uniqueId"] || !diagnosticRecord2(aux) || aux["frameId"] !== pcb5.childId) {
             this.#refuse();
           }
-          this.#contexts.delete(Number(id14));
+          pcb5.initialChildContexts.delete(id14);
+          this.#contexts.delete(id14);
           for (const [scriptId, row7] of this.#scripts) {
             if (row7["executionContextId"] === id14) {
               this.#scripts.delete(scriptId);
@@ -129631,9 +129908,11 @@ var init_current_pcb_diagnostic_context = __esm({
         this.pcbOpeningContext();
         try {
           const currentFrames = frames(frameReply), currentTarget = target7(targetReply, this.#targetId, true), pcb5 = this.#pcbOpening;
-          if (pcb5 === null || pcb5.childId === null || pcb5.childLoaderId === null || pcb5.child !== null || pcb5.fragmentEvents === 0 || pcb5.navigationCount === 0 || this.#target === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) || this.#ancillaryFrame !== null && !currentFrames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
+          if (pcb5 === null || pcb5.childId === null || pcb5.navigation === null || pcb5.navigation.committedLoader === null || pcb5.child !== null || this.#rootNavigation === null || this.#target === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) || this.#ancillaryFrame !== null && !currentFrames.some((row7) => equal6(row7, this.#ancillaryFrame))) {
             this.#refuse();
           }
+          this.#rootNavigation.seal();
+          pcb5.navigation.assertReady();
           const root = currentFrames.find((frame) => frame["id"] === pcb5.originalRoot["id"]);
           const child = currentFrames.find((frame) => frame["id"] === pcb5.childId);
           if (root === void 0 || child === void 0) {
@@ -129641,7 +129920,7 @@ var init_current_pcb_diagnostic_context = __esm({
           }
           const { urlFragment: _originalFragment, ...originalFields } = pcb5.originalRoot;
           const { urlFragment, ...currentFields } = root;
-          if (!equal6(originalFields, currentFields) || urlFragment !== pcb5.url.slice(String(root["url"]).length) || !equal6({ ...this.#target, url: pcb5.url, attached: true }, currentTarget) || child["parentId"] !== root["id"] || child["loaderId"] !== pcb5.childLoaderId || child["url"] !== "https://client/editor?entry=pcb" || child["securityOrigin"] !== "https://client" || child["urlFragment"] !== void 0) {
+          if (!equal6(originalFields, currentFields) || urlFragment !== pcb5.url.slice(String(root["url"]).length) || !equal6({ ...this.#target, url: pcb5.url, attached: true }, currentTarget) || child["parentId"] !== root["id"] || child["loaderId"] !== pcb5.navigation.committedLoader || child["url"] !== "https://client/editor?entry=pcb" || child["securityOrigin"] !== "https://client" || child["urlFragment"] !== void 0) {
             this.#refuse();
           }
           pcb5.child = child;
@@ -129742,7 +130021,7 @@ var init_current_pcb_diagnostic_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse12();
+        return refuse14();
       }
     };
   }
@@ -129750,7 +130029,7 @@ var init_current_pcb_diagnostic_context = __esm({
 
 // server/src/current-pcb-diagnostic-worker-context.ts
 import { createHash as createHash53 } from "node:crypto";
-function refuse13() {
+function refuse15() {
   throw new Error("PCB_DIAGNOSTIC_WORKER_IDENTITY");
 }
 function text29(value2, maximum5 = 8192) {
@@ -129812,7 +130091,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
        * the default compiled profile, never caller URL/hash/size expectations. */
       constructor(parentTargetId, parentSessionId, profile = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
         if (!diagnosticToken(parentTargetId) || !diagnosticToken(parentSessionId) || !diagnosticExact(profile, ["relativePath", "scriptSha256", "scriptBytes"]) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(profile.relativePath) || profile.relativePath.length > 512 || profile.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(profile.scriptSha256) || !positive3(profile.scriptBytes) || profile.scriptBytes > 4 * 1024 * 1024) {
-          refuse13();
+          refuse15();
         }
         this.#parentTargetId = parentTargetId;
         this.#parentSessionId = parentSessionId;
@@ -130015,7 +130294,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse13();
+        return refuse15();
       }
     };
   }
@@ -130026,27 +130305,27 @@ import { createHash as createHash54 } from "node:crypto";
 import { constants as constants26 } from "node:fs";
 import { lstat as lstat40, open as open38, realpath as realpath24 } from "node:fs/promises";
 import path5 from "node:path";
-function refuse14() {
+function refuse16() {
   throw new Error("PCB_DIAGNOSTIC_INSTALLATION_REFUSED");
 }
 function windowsPath3(host) {
   if (!/^\/mnt\/[a-z]\//u.test(host) || path5.posix.normalize(host) !== host) {
-    refuse14();
+    refuse16();
   }
   const components = host.slice(7).split("/");
   if (components.some((value2) => value2.length === 0 || value2.length > 120 || value2.trim() !== value2 || value2.endsWith(".") || // oxlint-disable-next-line no-control-regex -- Native command/path tokens exclude every control character explicitly.
   /[<>:"\\|?*\u0000-\u001F\u007F]/u.test(value2) || /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/iu.test(value2))) {
-    refuse14();
+    refuse16();
   }
   const result = `${host[5]?.toUpperCase()}:\\${components.join("\\")}`;
   if (result.length > 240) {
-    refuse14();
+    refuse16();
   }
   return result;
 }
 function createCurrentPcbDiagnosticInstallationPlan(options) {
   if (!/^[a-f\d]{64}$/u.test(options.powershellSha256) || !Number.isSafeInteger(options.powershellBytes) || options.powershellBytes < 1 || options.powershellBytes > 16777216) {
-    refuse14();
+    refuse16();
   }
   const paths = Object.freeze(deriveWindowsRuntimePaths({ ...options, powershellExecutable: POWERSHELL2 }));
   const files = ORDINARY_LAUNCH_PROFILE.installedFiles.map((pin4) => Object.freeze({
@@ -130063,27 +130342,27 @@ function same43(left, right) {
 }
 async function verifyCurrentPcbDiagnosticPowerShell(hostPath, expected3) {
   if (path5.posix.resolve(hostPath) !== hostPath || await realpath24(hostPath) !== hostPath || !Number.isSafeInteger(expected3.bytes) || expected3.bytes < 1 || expected3.bytes > 16777216 || !/^[a-f\d]{64}$/u.test(expected3.sha256)) {
-    refuse14();
+    refuse16();
   }
   const handle2 = await open38(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
   try {
     const before = await handle2.stat({ bigint: true });
     if (!before.isFile() || before.nlink < 1n || before.size !== BigInt(expected3.bytes)) {
-      refuse14();
+      refuse16();
     }
     const buffer = Buffer.alloc(65536), hash45 = createHash54("sha256");
     let total = 0;
     while (total < expected3.bytes) {
       const result = await handle2.read(buffer, 0, Math.min(buffer.length, expected3.bytes - total), total);
       if (result.bytesRead === 0) {
-        refuse14();
+        refuse16();
       }
       total += result.bytesRead;
       hash45.update(buffer.subarray(0, result.bytesRead));
     }
     const eof = await handle2.read(buffer, 0, 1, total);
     if (eof.bytesRead !== 0 || hash45.digest("hex") !== expected3.sha256 || !same43(before, await handle2.stat({ bigint: true })) || !same43(before, await lstat40(hostPath, { bigint: true })) || await realpath24(hostPath) !== hostPath) {
-      refuse14();
+      refuse16();
     }
   } finally {
     await handle2.close();

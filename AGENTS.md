@@ -4,6 +4,39 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Candidate `0.3.0+codex.20261020155927` batches root/child navigation tracking,
+expanded bounded event labels, pure String empty-baseline/post-create
+composition and skill-reference updates. No new writer authority or SDK coverage.
+Combined focused99 tests, strict types/targeted type-aware lint and independent
+navigation/reciprocal composition reviews pass. Frozen full verification,
+publication and installation remain pending. Release evidence:
+`/root/.cache/easyeda-opening-writer-release-ULwvkZAy`.
+Details/backlog: `docs/current-pcb-opening-writer-batch-2026-10-20.md`.
+
+Actual120717 admission passed independently and by main: facade1295250/
+start48602126, parent1293563/start48596256, exact argv/cwd/Node24.18.0/core0.
+Source530/66ff5ff3, runtime3/1bdd2d6b and manifestf6b8343c match;
+all1,590files/42directories/32,964,904bytes/modes match mainb60c34f.
+Independent proof07122f58 in
+`/root/.cache/easyeda-120717-independent-admission-DZTSqhKT`.
+Post-main Linux39423159866 PASSED; both delivered120717 platforms are green.
+
+NEW `diag-native-120717-20261020-01` is terminal released. Launch/browser/
+frames/completeUI-source passed; consumed project opening stopped on
+event-callback while request25/project-open-project was pending. Eventkind
+unknown: actual event cannot be named retrospectively; dispatch remains
+ambiguous. No retry, PCBopen, worker/model sample, CAD edit or explicitSave.
+Original18192/created134369848067145823, binding365f46fa, hwnd38997972
+received one normal-close; root/whole-Job termination and release proved.
+Closed disposable remains e620d21a/598016bytes. No promptchoice/forcedexit
+or production-design access. Evidence:
+`/root/.cache/easyeda-120717-native-diagnostic-live-18j2xUyQ`.
+Never replay that terminal case. Loaded1295250/120717 remains untouched.
+Fresh new-version host admission and NEW diagnostic case will be required
+after this combined release; connected navigation/writer paths remain unqualified.
+
+### Delivered120717 checkpoint
+
 Delivered `0.3.0+codex.20261020120717` through protected PR87 on2026-10-20.
 Final payload `87419e16c47ead3a4cc14de36f21ac8bedf596ab`, merged main
 `b60c34f4c04485347d5960afb32fbb683c01c75f`; complete treefa10537a and plugin
@@ -56,7 +89,7 @@ is not proved fixed; the new bounded first-failure field should identify the nex
 failure without replaying consumed requests. Then compose String writer/source/
 producer and saved/reopened/visual proof. Populated geometry readers, remaining
 design/library/manufacturing families and portability remain backlog.
-PianoPi was not opened or inspected. No edit, explicit Save or prompt choice.
+The production project was not opened or inspected. No edit, explicit Save or prompt choice.
 This local documentation handoff is beyond the immutable PR87 payload.
 
 ### Retained superseded120717 verification

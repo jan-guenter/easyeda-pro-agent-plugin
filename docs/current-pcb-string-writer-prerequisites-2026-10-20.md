@@ -8,6 +8,9 @@ chain, selection, partition index and selected pending interaction work.
 It returns valid nonempty observations. A separate empty-fixture predicate and
 writer lifecycle remain to be implemented.
 
+The subsequent pure predicate is now implemented as described below. The owned
+writer lifecycle and complete baseline remain unfinished.
+
 Do not postpone the empty-board String writer for populated Image, Dimension,
 polygon-Pad or routing geometry readers. A complete empty-root exclusion can
 reject those objects without decoding their geometry. Conversely, the current
@@ -276,3 +279,51 @@ the self-authored synthetic graph, and rejection of a mutating Proxy without
 running its trap. Targeted strict type-aware lint is clean. Full plugin
 typecheck passed. No installed EasyEDA qualification, native transport,
 generated bundle, compatibility refresh or release is claimed by this work.
+
+## Supplied first-fixture predicate
+
+`current-pcb-string-empty-baseline.ts` now composes the four existing diagnostic
+reply decoders. It checks 47 named conditions for a caller-supplied PCB identity.
+The result names each unmet condition, allowing a future owner to distinguish a
+nonempty model family, an unavailable manager, active interaction work or queued
+compiler work without executing a cleanup action.
+
+The predicate checks:
+
+- Equal document identities across root, compiler, pending-producer and raw
+  String replies; equal duplicated String count and dynamic-copper markers.
+- Seventeen observed empty family maps, absent BOARD geometry, disabled empty
+  panelization and empty spatial membership. Retained empty tree/layer keys are
+  permitted, but pending change/dead entries or tree discrepancies are not.
+- The source-defined `Lpe` → `m0e` → `Eh` idle chain, selection mode and empty
+  selection, tool/controller work, the existing empty smart command and turn
+  callbacks. A present timer marker fails the condition even if its original
+  timer might have completed.
+- Observed empty partition and retained-line indexes, reciprocal Inner manager/
+  view association, and empty dimension/group views.
+- Ready compiler state with no pending data, loaded footprints, dynamic-copper
+  participant, shared uploads, existing command history or observed worker work.
+
+An absent, undefined or null manager marker does not count as an observed empty
+map. Optional references retain their distinct raw marker in the observation
+digest. Malformed, missing or unknown fields refuse through the original strict
+decoders; valid nonempty observations return unmet conditions. This is a
+pre-create predicate only. A later create is expected to change command history
+and compiler queues, so this result is not a post-create Save predicate.
+
+Even when every supplied condition matches, eight residual prerequisites remain
+explicit: original renderer/worker association; complete stored source/history/
+assets; ratline and network secondary indexes; the latent `eL` closure or an owned
+fresh no-interaction lifecycle; complete compiler-channel registry/lock state;
+startup and extension subscribers; one-shot create membership/publication; and
+one-shot Save with closed SQL, fresh reopening and visual proof. All original
+scope, complete baseline, empty-root, queue-completion, Save, writer and execution
+authority flags remain false. Matching supplied non-atomic samples creates no
+live authority.
+
+Six focused synthetic tests pass on pinned Node 24.18.0. They cover the valid
+idle chain and smart command, hidden secondary work, unavailable managers,
+timer-marker preservation, identity conflicts, compiler/history exclusions and
+malformed or hostile envelopes. Strict type-aware lint and full typecheck pass.
+No live transport, runtime registration, compatibility pin or generated bundle
+was changed by this predicate work.
