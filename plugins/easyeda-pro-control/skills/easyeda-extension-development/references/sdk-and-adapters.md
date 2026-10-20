@@ -150,6 +150,19 @@ acknowledged ID through readback failure. It is exercised only in synthetic VMs,
 has no runtime registration or durable replay protection, and must not be invoked
 on EasyEDA before the remaining owner, eligibility, Save and reopen checks exist.
 
+Reuse the two pure compositions before adding that lifecycle.
+`current-pcb-string-empty-baseline.ts` decodes the four diagnostic replies and
+reports 47 supplied first-fixture conditions with eight residual prerequisites.
+Missing managers remain unmet, and the source-defined idle chain and empty
+smart command are not replaced by null assumptions.
+`current-pcb-string-postcreate.ts` joins original candidate/create/publication
+plans, a supplied completed acknowledgment, exact raw zero-to-one String
+samples and the one-record publication. It checks birth markers, raw scalars,
+color, document and ID together. Text-box geometry and data-state flags remain
+unmodeled; comparison digests are projection hashes, not raw artifact hashes.
+Both modules leave all ownership, complete-effect, Save and writer authority
+false. They do not observe the publication interval or join a project worker.
+
 The same current bundle's `FileSource({})` skips explicit compiler Save but can
 still mutate the design. Its preference getter can repair missing rule defaults
 and remove incomplete differential-pair selectors through the live compiler.
@@ -293,7 +306,10 @@ not a cast to ordinary Windows runtime authority. Read
 [its staged workflow](../../easyeda-pro-control/references/current-pcb-diagnostic-validation.md)
 before qualification. Existing-profile startup has no project arguments but can
 restore projects or persist application data. It is validation-only, not isolated
-or guaranteed project-free; connected native validation is not recorded.
+or guaranteed project-free. Installed120717 completed original normal cleanup
+and retained unchanged disposable-fixture bytes after an `event-callback`/
+`unknown` refusal during pending project opening. It did not qualify completed
+opening; the corrected event policy still requires connected evidence.
 
 One browser observation supplies the target selector. One retained flattened
 attachment supplies the actual reciprocal frame tree, rather than assuming
@@ -344,6 +360,15 @@ closed attribute shape at five project/PCB boundaries. A blank URL is not
 enough; direct DOM-parent and private observer-registry ownership remain
 unverified. Restored editor frames still refuse; opening may already have
 persisted data by then. Never equate prefix acknowledgment with completed startup.
+
+Keep root-fragment and PCB-child navigation models separate. Chromium's browser
+and renderer notifications need not share a total ordering. The fixed root
+tracker admits only the sealed URL and preserves its committed loader/context;
+the child tracker allows one optional blank commit and one distinct PCB commit,
+with exact loader and initial-context teardown checks. Scheduling must balance,
+but loading counters are not readiness proof. Broader diagnostic event labels
+do not broaden acceptance or identify an earlier unknown event. Source-derived
+corrections and synthetic sequences are not captured EasyEDA navigation evidence.
 
 The separate PCB model reader follows the source/location-admitted
 `pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.

@@ -87,7 +87,22 @@ normal cleanup. Project/PCB/model qualification remains pending: the Start Page
 contained an extra blank child whose DOM owner was not inspected. See the
 [combined release record](docs/current-pcb-frame-model-batch-2026-10-20.md).
 
-Candidate `0.3.0+codex.20261020120717` batches bounded first-failure diagnostics,
+Candidate `0.3.0+codex.20261020155927` combines source-derived root/child
+navigation-event corrections with two pure String-writer compositions.
+Installed120717 retained an `event-callback` refusal with event kind `unknown`
+while project opening was pending. It did not establish completed opening.
+Original normal closure, process/Job termination and terminal release passed;
+the closed disposable fixture remained unchanged. The corrected event policy
+still needs its own connected qualification.
+
+The new offline models check 47 first-fixture conditions and join a supplied
+create acknowledgment, raw String observations and one exact publication.
+All ownership, complete-effect, Save and writer authority stays false.
+See the [combined batch and backlog](docs/current-pcb-opening-writer-batch-2026-10-20.md),
+[navigation source audit](docs/current-pcb-cdp-navigation-audit-2026-10-20.md)
+and [String-writer prerequisites](docs/current-pcb-string-writer-prerequisites-2026-10-20.md).
+
+Update `0.3.0+codex.20261020120717` batches bounded first-failure diagnostics,
 selected PCB interaction/secondary-index observations and a dependency-free
 offline installed-catalog checker. The observations still grant no writer
 authority. Installed105401 reached project-opening preflight but stopped on an

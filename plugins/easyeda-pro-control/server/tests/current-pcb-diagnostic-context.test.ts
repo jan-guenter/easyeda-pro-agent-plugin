@@ -169,6 +169,33 @@ function openingFixture(verifySource = true, initialFragment: "#" | "" = "#",
 function within(context: CurrentPcbDiagnosticContext, change: Record<string, unknown> = {}): void {
   context.observeEvent(event("Page.navigatedWithinDocument", { frameId: "frame-1", url: OPEN_URL, navigationType: "fragment", ...change }));
 }
+void test("original project opening accepts the complete Chromium same-document event sequence", () => {
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+  context.observeEvent(event("Page.frameScheduledNavigation", { frameId: "frame-1", url: OPEN_URL, delay: 0, reason: "scriptInitiated" }));
+  context.observeEvent(event("Page.frameStartedLoading", { frameId: "frame-1" }));
+  within(context);
+  context.observeEvent(event("Page.frameClearedScheduledNavigation", { frameId: "frame-1" }));
+  context.finishOpeningTransition(OPEN_TARGET_REPLY, OPEN_FRAME_REPLY);
+  context.observeEvent(event("Page.frameStoppedLoading", { frameId: "frame-1" }));
+  assert.equal(context.openingContext().uniqueContextId, CONTEXT.uniqueId);
+});
+void test("same-document additions keep foreign events and committed-loader replacement terminal", () => {
+  for (const item of [
+    event("Page.frameScheduledNavigation", { frameId: "foreign", url: OPEN_URL, delay: 0, reason: "scriptInitiated" }),
+    event("Page.frameStoppedLoading", { frameId: "foreign" }),
+    event("Page.frameSubtreeWillBeDetached", { frameId: "frame-1" }),
+    event("Page.frameStartedNavigating", { frameId: "frame-1", url: OPEN_URL, loaderId: "pending", navigationType: "differentDocument" }),
+  ]) {
+    const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+    assert.throws(() => { context.observeEvent(item); }, /INVALIDATED/u);
+    assert.throws(() => context.openingContext(), /IDENTITY/u);
+  }
+  const context = openingFixture(); context.beginOpeningTransition(PROJECT_UUID);
+  context.observeEvent(event("Page.frameStartedNavigating", { frameId: "frame-1", url: OPEN_URL, loaderId: "pending", navigationType: "sameDocument" }));
+  within(context);
+  assert.throws(() => { context.finishOpeningTransition(OPEN_TARGET_REPLY,
+    { frameTree: { frame: { ...OPEN_FRAME_REPLY.frameTree.frame, loaderId: "pending" } } }); }, /IDENTITY/u);
+});
 void test("source-admitted UI allows exactly one selected worker-only same-document transition", () => {
   for (const fragment of ["#", ""] as const) {
     const context = openingFixture(true, fragment);
@@ -305,6 +332,55 @@ void test("PCB opening allows initial blank transition but refuses any second co
     assert.throws(() => { changed.observeEvent(event("Page.frameNavigated", { frame, type: "Navigation" })); }, /INVALIDATED/u);
     assert.throws(() => changed.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY), /IDENTITY/u);
   }
+});
+void test("PCB branch composes scheduled root and child events with original blank-context teardown", () => {
+  const context = pcbOpeningFixture();
+  context.observeEvent(event("Page.frameStartedNavigating", { frameId: "frame-1", url: OPEN_URL,
+    loaderId: "late-project-pending", navigationType: "sameDocument" }));
+  context.observeEvent(event("Page.frameScheduledNavigation", { frameId: "frame-1", delay: 0, reason: "scriptInitiated", url: PCB_URL }));
+  within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameClearedScheduledNavigation", { frameId: "frame-1" }));
+  context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "initial-blank",
+    auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" } } }));
+  context.observeEvent(event("Page.frameScheduledNavigation", { frameId: "pcb-frame", delay: 0, reason: "scriptInitiated", url: PCB_CHILD.url }));
+  context.observeEvent(event("Page.frameRequestedNavigation", { frameId: "pcb-frame", reason: "scriptInitiated", url: PCB_CHILD.url, disposition: "currentTab" }));
+  context.observeEvent(event("Page.frameClearedScheduledNavigation", { frameId: "pcb-frame" }));
+  context.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "initial-blank" }));
+  context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "pcb-context",
+    auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" } } }));
+  context.observeEvent(event("Debugger.scriptParsed", { ...SCRIPT, scriptId: "pcb-script", executionContextId: 8,
+    url: `https://client/${PROFILE.relativePath}` }));
+  context.observePcbOpeningFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  context.observeEvent(event("Page.frameStartedNavigating", { frameId: "pcb-frame", loaderId: PCB_CHILD.loaderId,
+    url: PCB_CHILD.url, navigationType: "differentDocument" }));
+  context.observeEvent(event("Page.frameStartedLoading", { frameId: "pcb-frame" }));
+  context.observeEvent(event("Page.frameStoppedLoading", { frameId: "pcb-frame" }));
+  context.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE }); context.pcbScript(PROFILE);
+  context.finishPcbOpening({ scriptSource: SOURCE }, PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  context.completePcbOpening();
+  assert.equal(context.modelContext().uniqueContextId, "pcb-context");
+});
+void test("child context destruction requires its original unique ID and excludes the committed PCB context", () => {
+  for (const patch of [{ executionContextUniqueId: "foreign" }, { executionContextId: 7 }, { extra: true }]) {
+    const context = pcbOpeningFixture();
+    context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+    context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "initial-blank",
+      auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" } } }));
+    assert.throws(() => { context.observeEvent(event("Runtime.executionContextDestroyed",
+      { executionContextId: 8, executionContextUniqueId: "initial-blank", ...patch })); }, /INVALIDATED/u);
+  }
+  const committed = pcbOpeningFixture(); pcbChild(committed);
+  assert.throws(() => { committed.observeEvent(event("Runtime.executionContextDestroyed",
+    { executionContextId: 8, executionContextUniqueId: "pcb-context" })); }, /INVALIDATED/u);
+  const reused = pcbOpeningFixture();
+  reused.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  reused.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "reused-child",
+    auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" } } }));
+  reused.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  assert.throws(() => { reused.observeEvent(event("Runtime.executionContextDestroyed",
+    { executionContextId: 8, executionContextUniqueId: "reused-child" })); }, /INVALIDATED/u);
 });
 void test("PCB branch rejects second child, root replacement and foreign navigation", () => {
   for (const item of [

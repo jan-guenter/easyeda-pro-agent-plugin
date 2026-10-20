@@ -228,6 +228,20 @@ void test("identity event rejection poisons transport but never closes the origi
   value.input.write(wire({ method: "Page.frameNavigated", params: {}, sessionId: "session-1" }));
   await rejected; retained(value);
 });
+void test("navigation event diagnostic labels survive rejection without retaining URLs or payload", async context => {
+  for (const method of ["Page.frameScheduledNavigation", "Page.frameClearedScheduledNavigation",
+    "Page.frameSubtreeWillBeDetached", "Page.documentOpened", "Debugger.globalObjectCleared"]) {
+    const value = fixture(context);
+    const attached = value.pipe.attachTarget("target-1", () => { throw new Error("private failure"); });
+    value.input.write(wire({ id: 1, result: { sessionId: "session-1" } })); await attached;
+    const rejected = assert.rejects(value.pipe.getFrameTree(), /PIPE_REPLY/u);
+    value.input.write(wire({ method, params: { url: "private project URL" }, sessionId: "session-1" }));
+    await rejected;
+    assert.equal(value.pipe.status().failureObservation?.eventKind, method);
+    assert.equal(JSON.stringify(value.pipe.status().failureObservation).includes("private"), false);
+    retained(value);
+  }
+});
 void test("first rejected event retains bounded request identity and survives later noise without private payload", async context => {
   const value = fixture(context);
   const result = value.pipe.attachTarget("target-1", () => { throw new Error("private exception URL and design data"); });
