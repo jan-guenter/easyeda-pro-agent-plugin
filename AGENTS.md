@@ -16,6 +16,13 @@ Native CompileOnly passed actual helper152165/555146fd, emptyJob/pipes and
 processLaunchedfalse. Evidence:
 `/root/.cache/easyeda-pcb-live-model-release-KEPZgePX`.
 Final freeze/verification, CI/publication and installation remain pending.
+PR87 initially failed Windows synthetic-launch validation because its separate
+test fixture still pinned the old helper. Corrected only that fixture's exact
+size/hash. The shared native suspended-image/no-op-child test now passes:
+root/Job natural exit and release, no EasyEDA process or forced termination.
+The superseded local full run1025 was stopped through its own verified test
+process group; its log is retained and is not passing evidence. A new final
+unchanged-payload verification is required. No host-owned gateway was signaled.
 
 Delivered `0.3.0+codex.20261020105401` through protected PR86 on2026-10-20.
 Final payload `162e2d0a0d8357c9a076943c35d5254f6c813537`, merged main

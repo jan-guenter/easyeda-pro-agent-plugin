@@ -68,6 +68,15 @@ application execution. The full release gate and installation are still pending.
 Release evidence directory:
 `/root/.cache/easyeda-pcb-live-model-release-KEPZgePX`.
 
+PR87's first Windows runs39420711736/39420765814 failed because the separate
+synthetic-launch fixture retained the previous helper's exact size/hash.
+The two fixture pins were corrected without changing the native helper or
+application admission. Existing four fixture-parity tests pass. The actual
+Windows no-op-child test then passed suspended-image verification, one resume,
+natural original root/Job exit and release, with no EasyEDA launch or forced
+termination. Superseded local verify1025 was interrupted and retained; it is
+not passing verification of the final payload.
+
 ## Remaining work
 
 - Qualify project opening, PCB-frame/model observation and the separate worker
