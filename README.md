@@ -9,12 +9,12 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Candidate `0.3.0+codex.20261020211943` combines [common-record and rule encoding,
+Published and installed `0.3.0+codex.20261020211943` combines [common-record and rule encoding,
 callback profiles, text-base/cache phases, default-font geometry and retained
 failure diagnostics](docs/current-pcb-common-effects-batch-2026-10-20.md).
 These components support further integration; no new writer is registered.
 
-Published and installed `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
+The preceding `0.3.0+codex.20261020202000` batches the UUID-only opener correction,
 duplicate startup-scan removal, preserved observation/cleanup errors, and
 [common-state and latent-producer runners](docs/current-pcb-baseline-producers-batch-2026-10-20.md).
 The new private runners preserve raw common state and inspect selected deferred
@@ -38,7 +38,7 @@ project opening has now passed on installed20202000, followed by exact PCB-frame
 and project-worker source qualification. Its combined observation stopped at the
 pending-work reader before any create or explicit Save. Original normal closure,
 whole-Job termination and release passed; the disposable file remained unchanged.
-The candidate batch combines reader diagnostics with common-record encoding,
+The 211943 batch combines reader diagnostics with common-record encoding,
 callback profiles, text-base/cache phases and default-font geometry checks.
 The complete writer and saved/reopened lifecycle remain unfinished.
 
