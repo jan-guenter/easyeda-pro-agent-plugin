@@ -7,16 +7,18 @@
  * The original native owner must retain both pipe handles until its reviewed
  * application-closure policy permits release. No TCP endpoint is supported. */
 import type { Readable, Writable } from "node:stream";
-import { DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
-  diagnosticExact, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
+  diagnosticExact, diagnosticOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
+import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
+import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
 const MAX_FRAME_BYTES = 1024 * 1024;
 const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
-const MAX_REQUESTS = 32;
 const DEADLINE_MS = 5000;
 type Reply = Readonly<Record<string, unknown>>;
 type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" | "reply" | "remote-error" | "deadline" | "budget";
@@ -140,6 +142,19 @@ export class CurrentPcbDiagnosticPipe {
     return this.#request({ id: this.#nextId, method: "Runtime.evaluate",
       params: diagnosticWorkerEvaluationParams(uniqueContextId), sessionId: this.#workerSession() });
   }
+  /** The native helper reconstructs this exact fixed service call. No caller
+   * function/options; source, checkpoint and one-shot admission live in owner. */
+  public observeProjectOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+    phase: CurrentPcbDiagnosticOpeningPhase): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId });
+  }
+  public observeModel(command: CurrentPcbDiagnosticModelCommand): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_MODEL_INPUT")); }
+    const { modelPhase: _modelPhase, ...wire } = command;
+    return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId });
+  }
   #workerSession(): string {
     if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||
         !this.#workerSessions.has(this.#selectedWorkerSession)) { throw new Error("PCB_DIAGNOSTIC_PIPE_NO_WORKER"); }
@@ -180,11 +195,14 @@ export class CurrentPcbDiagnosticPipe {
     if (!this.#started || this.#released) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
-    if (this.#nextId > MAX_REQUESTS) { this.#fail("budget"); throw failureError("budget"); }
+    if (this.#nextId > DIAGNOSTIC_REQUEST_LIMIT) { this.#fail("budget"); throw failureError("budget"); }
     const id = this.#nextId; this.#nextId += 1;
     const deferred = Promise.withResolvers<Reply>();
+    let deadline = DEADLINE_MS;
+    if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
+    else if (command.method === "Runtime.callFunctionOn" && command.params.awaitPromise) { deadline = 60_000; }
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
-      timer: setTimeout(() => { this.#fail("deadline"); }, command.method === "Debugger.getScriptSource" ? 30_000 : DEADLINE_MS), written: false, reply: null,
+      timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
       sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource" };
     this.#pending = pending;
     // Reserve before write, including synchronous throw and synchronous peer

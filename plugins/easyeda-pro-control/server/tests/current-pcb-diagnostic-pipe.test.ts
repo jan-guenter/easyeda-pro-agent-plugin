@@ -6,7 +6,7 @@ import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
-import { DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -176,13 +176,13 @@ void test("diagnostic pipe enforces frame and cumulative byte budgets before unb
   retained(value);
 });
 
-void test("diagnostic pipe consumes its fixed request budget without dispatching request 33", async context => {
+void test("diagnostic pipe consumes its fixed request budget without dispatching an extra request", async context => {
   const value = fixture(context);
-  for (let id = 1; id <= 32; id += 1) {
+  for (let id = 1; id <= DIAGNOSTIC_REQUEST_LIMIT; id += 1) {
     const reply = value.pipe.getVersion(); value.input.write(wire({ id, result: {} })); await reply;
   }
   await assert.rejects(value.pipe.getTargets(), /PIPE_BUDGET/u);
-  assert.equal(value.sent.length, 32); assert.equal(value.pipe.status().requestCount, 32); retained(value);
+  assert.equal(value.sent.length, DIAGNOSTIC_REQUEST_LIMIT); assert.equal(value.pipe.status().requestCount, DIAGNOSTIC_REQUEST_LIMIT); retained(value);
 });
 
 void test("diagnostic pipe reports remote errors without revealing the private vendor payload", async context => {

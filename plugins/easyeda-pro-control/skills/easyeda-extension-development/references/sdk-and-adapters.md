@@ -301,15 +301,23 @@ frame ID equals target ID. One script inspection then binds that frame/loader,
 the default context's unique ID and exact complete source bytes to a compiled
 UI/PCB/public-API family profile. No caller URL, source pin, method or code is
 accepted. Navigation, detach, context loss or unexpected pause invalidates
-inspection; there is no arbitrary CDP, evaluation, pause/resume, worker or
-compiler access. Identity summaries exclude raw console/exception payloads and
+inspection, except the sealed worker-only opener's exact same-document transition.
+There is no arbitrary CDP, caller evaluation or debugger pause/resume.
+Fixed worker and PCB compiler observations are separate original-source branches.
+Identity summaries exclude raw console/exception payloads and
 are bounded to 128 KiB. They are sampled evidence, not execution tokens.
 
 The native owner retains the original process/Job and two anonymous-pipe
 endpoints. File/ancestor leases bind the reviewed executable, bootstrap,
 package/configuration and fixed PowerShell comparison tuple. This is not complete
 OS/DLL/profile qualification or verified Windows catalog trust. Missing creation
-time or other post-create failure retains cleanup-only handles. Shared launch
+time or other post-create failure retains cleanup-only handles. Image creation
+uses the admitted DOS spelling with CREATE_SUSPENDED: compare the original
+created native image path with the retained executable's native file path before
+the sole primary-thread ResumeThread, requiring its previous suspend count1.
+There is no resume endpoint. Failed admission can leave a retained suspended root
+requiring manual intervention; it cannot claim no-process cleanup or GUI closure.
+Shared launch
 exclusion and fresh engine/ordinary/current-generation owner checks prevent
 competing launches; matching process names or historical JSON cannot replace
 those owners. Receipt settlement republishes only original retained bytes,
@@ -319,12 +327,27 @@ Protocol failure must not close a live diagnostic pipe: Electron can quit when
 it disconnects. Normal closure, original root/Job termination and helper release
 are separate steps, without Save/Discard choice or forced exit. Never infer
 debugger-socket absence from pipe flags. Discovery stays bounded to 8 MiB;
-attached transport permits 64 MiB total, 32 requests and 4096 events/8 MiB.
+attached transport permits 64 MiB total, 64 requests and 4096 events/8 MiB.
 Ordinary frames stay at 1 MiB. Only script-source replies allow 32 MiB encoded
 JSON and 20 MiB decoded UTF-8, enough for the pinned UI asset. Synthetic tests
 and empty-Job construction do not qualify the custom EasyEDA build. Actual
-project-worker/compiler/queue/Save-participant ownership, complete PCB text
-observers, writers and saved/reopened proof remain unfinished.
+connected project-worker/compiler qualification, complete pending producers and
+PCB text observers, writers and saved/reopened proof remain unfinished.
+
+The diagnostic opener retains a complete pre-navigation checkpoint, registered
+raw-path identity and default-branch PCB membership. It uses the same pinned
+public project-open service through the original UI context, not arbitrary SDK
+dispatch. Only one top-level frame and the selected project fragment transition
+are admitted. Restored editor frames still refuse; opening may already have
+persisted data by then. Never equate prefix acknowledgment with completed startup.
+
+The separate PCB model reader follows the source/location-admitted
+`pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.
+Eight fixed requests sample main/custom-footprint compiler queues and selected
+dynamic-copper markers, then release the original remote-object group. All
+effect checks remain enabled; caller object handles, code and arbitrary scope
+enumeration are unavailable. Counts are not full model membership or Save
+eligibility. This PCB-frame branch is not reachable through the worker-only opener.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

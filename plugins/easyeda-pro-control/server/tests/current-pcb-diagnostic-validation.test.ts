@@ -39,6 +39,13 @@ void test("diagnostic request grammar rejects arbitrary executables, hashes, CDP
     { method: "Runtime.evaluate" }, { targetId: "worker-1" }, { throwOnSideEffect: false }]) {
     assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...state, ...fields }).success, false);
   }
+  const model = { action: "observe-model-state", operationId: "validation-test", expectedBindingSha256: "a".repeat(64) };
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(model).success, true);
+  for (const fields of [{ expression: "1+1" }, { uniqueContextId: "supplied-context" }, { sourceHash: "b".repeat(64) },
+    { method: "Runtime.evaluate" }, { frameId: "frame-1" }, { objectId: "caller-object" }, { params: {} }]) {
+    assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ ...model, ...fields }).success, false);
+  }
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse({ action: "inspect", operationId: "validation-test", observation: "model-state" }).success, true);
   const cleanup = { action: "cleanup-no-process", operationId: "validation-test", expectedIntentSha256: "a".repeat(64) };
   assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(cleanup).success, true);
   for (const fields of [{ pid: 123 }, { executable: "C:\\Other.exe" }, { processCreated: false }, { creationState: "not-entered" }]) {

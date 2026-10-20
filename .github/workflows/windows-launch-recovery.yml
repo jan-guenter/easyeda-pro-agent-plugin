@@ -136,3 +136,45 @@ jobs:
             }
           } finally { $child.Dispose() }
           Write-Output 'Diagnostic helper compiled and checked an empty Job plus four anonymous pipe endpoints; no application launched.'
+
+      - name: Verify suspended image admission with a fresh no-op child
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-launch-smoke.ps1'
+          $child = [Diagnostics.Process]::new()
+          $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
+          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -ConfirmSyntheticChildLaunch -VerifiedImageProbe'
+          $child.StartInfo.UseShellExecute = $false
+          $child.StartInfo.CreateNoWindow = $true
+          $child.StartInfo.RedirectStandardOutput = $true
+          $child.StartInfo.RedirectStandardError = $true
+          try {
+            if (-not $child.Start()) { throw 'Synthetic image helper did not start.' }
+            $stdout = $child.StandardOutput.ReadToEndAsync()
+            $stderr = $child.StandardError.ReadToEndAsync()
+            if (-not $child.WaitForExit(30000)) { throw 'Synthetic image helper timed out; no forced termination requested.' }
+            if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($stdout, $stderr), 5000)) {
+              throw 'Synthetic image output did not close.'
+            }
+            if ($child.ExitCode -ne 0 -or $stderr.Result.Length -ne 0 -or $stdout.Result.Length -gt 4096 -or
+                $stdout.Result -cnotmatch '\A[^\r\n]+\r?\n\z') {
+              throw 'Synthetic image helper failed or emitted unexpected output.'
+            }
+            $result = $stdout.Result | ConvertFrom-Json
+            if ($result.schema -cne 'easyeda-pro-control.pcb-diagnostic-synthetic-launch.v1' -or
+                $result.easyedaLaunched -cne $false -or $result.productionFilesAccessed -cne $false -or
+                $result.forcedTermination -cne $false -or @($result.results).Count -ne 1) {
+              throw 'Synthetic scope proof failed.'
+            }
+            $proof = @($result.results)[0]
+            if ($proof.Variant -cne 'shared-dos-suspended-native-image-verified' -or
+                $proof.Created -cne $true -or $proof.CreatedImageVerified -cne $true -or
+                $proof.PrimaryThreadResumed -cne $true -or $proof.OriginalRootExited -cne $true -or
+                $proof.JobEmpty -cne $true -or $proof.Released -cne $true -or
+                $proof.Error -ne 0 -or $proof.ExitCode -ne 0) {
+              throw 'Original suspended-image, natural-exit or release proof failed.'
+            }
+          } finally { $child.Dispose() }
+          Write-Output 'Exact shared launch core verified the suspended image, resumed once, observed natural exit and released its original handles. No EasyEDA launch.'

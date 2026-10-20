@@ -59,8 +59,9 @@ void test("native installation source retains read leases, ancestry and volume p
   assert.ok(source.includes("directory?0x80u:0x80000000u,1u"));
   assert.ok(source.includes("leases.Add(lease); // Allocate retention before the native acquisition."));
   assert.ok(source.includes("new SafeFileHandle(lease.Handle,false)"));
-  assert.ok(source.includes("installation.AssertCurrent();\n        // The retained volume-GUID path"));
-  assert.ok(source.includes("CreateProcess(installation.ExecutableNativePath"));
+  assert.ok(source.includes("installation.AssertCurrent();\n        // This Windows tuple rejects GUID/NT image paths"));
+  assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));
+  assert.ok(source.includes("installation.ExecutableNativeDirectory.Length>=260"));
   assert.ok(source.includes("installation.Release(); released=true"));
   assert.ok(source.indexOf('if(!Terminated()) throw Error("retain-live-owner")') < source.indexOf("installation.Release(); released=true"));
   assert.ok(source.includes('if(rootCreated==0) throw Error("cleanup-only")'));
@@ -69,6 +70,24 @@ void test("native installation source retains read leases, ancestry and volume p
   assert.ok(source.includes("AssertCleanupLive(); Native(PostMessage"));
   assert.ok(!source.includes("Process.GetProcessById"));
   assert.ok(!source.includes("TerminateProcess"));
+});
+void test("native DOS creation verifies the retained original image before one primary-thread resume", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
+  assert.ok(core.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
+  const retained = core.indexOf("creationPhase=CreationPhase.RootRetained");
+  const image = core.indexOf("installation.AssertCreatedImage(root)");
+  const resume = core.indexOf("if(ResumeThread(rootThread)!=1)");
+  assert.ok(retained !== -1 && retained < image && image < resume && resume < core.indexOf("Close(ref rootThread)"));
+  assert.equal(core.match(/ResumeThread\(rootThread\)/gu)?.length, 1);
+  assert.ok(core.includes('throw Error("primary-thread-resume")'));
+  assert.ok(source.includes("string expected=FinalPath(selected.Handle,2);"));
+  assert.ok(source.includes("QueryFullProcessImageName(process,1,actual,ref count)"));
+  assert.ok(source.includes("selected.Mapping+selected.Path.Substring(2)"));
+  assert.ok(source.includes("Same(selected.Before,Facts(selected),false); AssertCurrent();"));
+  assert.ok(!source.includes("'resume'"));
+  assert.ok(!source.includes("OpenProcess("));
+  assert.ok(!source.includes("TerminateJobObject"));
 });
 void test("native unlaunched release refuses any consumed launch or retained native root", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");

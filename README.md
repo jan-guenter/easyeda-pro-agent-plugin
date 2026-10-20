@@ -61,6 +61,17 @@ process ownership and explicit cleanup, including confirmed no-process refusals.
 Connected native diagnostic qualification
 and PCB writing remain pending; no diagnostic result grants CAD execution.
 
+Update `0.3.0+codex.20261020081744` adds a
+[retained-owner disposable project opener](docs/current-pcb-diagnostic-opening-2026-10-20.md)
+and a [fixed compiler-state observer](docs/current-pcb-model-observation-2026-10-20.md).
+The opener is worker-only: it does not create PCB-frame authority for the observer.
+Neither enables PCB writing or proves saved state. A
+[native launch correction](docs/current-pcb-native-launch-2026-10-20.md)
+verifies the suspended process image before its single resume. The shared launch
+code passed a synthetic Windows no-op child test; actual EasyEDA launch,
+opening and model-observer qualification remain pending. Windows CI now runs
+the same synthetic launch test.
+
 Earlier update `0.3.0+codex.20261019125900` adds Image/Picture placement reads, project-only PCB
 inventories and schematic-container metadata with complete observed child rosters. These are
 bounded native equivalents, not image-content, circuit or saved-state readers.

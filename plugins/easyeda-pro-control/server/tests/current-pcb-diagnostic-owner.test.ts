@@ -15,10 +15,10 @@ const SOURCE = "const syntheticIdentity = true;\n";
 const SCRIPT_PROFILE = { family: "pcb", relativePath: "pro-pcb/test-version/js/pcb.js",
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
 function fixture(context: TestContext, scenario = "normal"): Readonly<{
-  owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean }; actions: string[];
+  owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean }; actions: string[]; openingPhases: string[];
 }> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario], { stdio: ["pipe", "pipe", "pipe"] });
-  const actions: string[] = [], installation = { valid: true }, source = { valid: true };
+  const actions: string[] = [], installation = { valid: true }, openingPhases: string[] = [], source = { valid: true };
   const originalWrite = child.stdin.write.bind(child.stdin);
   // Keep actual child pipes and callbacks; observe only the generated wire data.
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
@@ -26,6 +26,7 @@ function fixture(context: TestContext, scenario = "normal"): Readonly<{
     if (typeof first === "string") {
       const parsed: unknown = JSON.parse(first); assert.ok(parsed !== null && typeof parsed === "object" && "action" in parsed);
       actions.push(String(parsed["action"]));
+      if ("openingPhase" in parsed) { openingPhases.push(String(parsed["openingPhase"])); }
     }
     return originalWrite(...args);
   });
@@ -39,7 +40,7 @@ function fixture(context: TestContext, scenario = "normal"): Readonly<{
       child.stdin.end(); await closed;
     }
   });
-  return { owner, child, source, installation, actions };
+  return { owner, child, source, installation, actions, openingPhases };
 }
 async function close(value: ReturnType<typeof fixture>): Promise<void> {
   assert.equal(await value.owner.observeApplicationWindow(), "456");
@@ -365,7 +366,17 @@ void test("concurrent observation cannot interleave normal close with an owned d
 void test("diagnostic native source preserves original handles, explicit inheritance and EOF retention", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   assert.ok(source.includes("root=info.process; rootThread=info.thread; rootPid=info.processId;"));
-  assert.ok(source.includes("finally { Close(ref rootThread); }"));
+  const core = source.slice(source.indexOf("void CreateVerifiedRoot()"), source.indexOf("// Exact worker diagnostic program."));
+  let cursor = -1;
+  for (const marker of ["CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004",
+    "root=info.process; rootThread=info.thread; rootPid=info.processId;",
+    "GetProcessTimes(root,out created,out exited,out kernel,out user)", "AssertLive(); installation.AssertCreatedImage(root);",
+    'if(ResumeThread(rootThread)!=1) throw Error("primary-thread-resume");', "Close(ref rootThread);"]) {
+    const next = core.indexOf(marker); assert.ok(next > cursor, `Original suspended launch order: ${marker}`); cursor = next;
+  }
+  const release = source.slice(source.indexOf("public void ReleaseClosed()"), source.indexOf("public void RetainUntilClosed()"));
+  assert.ok(release.includes('if(!Terminated()) throw Error("retain-live-owner");'));
+  assert.ok(release.indexOf("Close(ref rootThread);") > release.indexOf('if(!Terminated()) throw Error("retain-live-owner");'));
   assert.ok(source.includes("new IntPtr(0x0002000D)")); assert.ok(source.includes("new IntPtr(0x00020002)"));
   assert.ok(source.includes("Close(ref browserRead); Close(ref browserWrite); AssertLive();"));
   assert.ok(source.includes("} finally {$owner.RetainUntilClosed()}"));
@@ -380,4 +391,110 @@ void test("diagnostic native source preserves original handles, explicit inherit
   assert.ok(source.includes('const string WorkerExpression=@"'));
   assert.ok(!source.includes("$request.expression"));
   assert.ok(!source.includes("$request.params"));
+});
+const OPEN_PATH = String.raw`C:\Disposable\Selected.eprj2`;
+const OPEN_TARGET = { rawWindowsPath: OPEN_PATH, projectUuid: createHash("sha256").update(OPEN_PATH).digest("hex"), branchUuid: "b".repeat(32),
+  documentUuid: "d".repeat(16), expectedSourceSha256: "e".repeat(64) };
+const UI_PROFILE = { ...SCRIPT_PROFILE, family: "ui", relativePath: "pro-ui/test-version/js/ui.js" } as const;
+async function openingFixture(context: TestContext, scenario = "opening"): Promise<ReturnType<typeof fixture>> {
+  const value = fixture(context, scenario);
+  await value.owner.launch(LAUNCH); await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
+  await value.owner.inspectScript("frame-1", UI_PROFILE); return value;
+}
+void test("diagnostic project opening retains exact source and one-shot transition before worker discovery", async context => {
+  const value = await openingFixture(context);
+  let reproofs = 0;
+  const result = await value.owner.openProject(OPEN_TARGET, async () => {
+    reproofs += 1; assert.deepEqual(value.openingPhases, ["preflight"]); await Promise.resolve();
+  });
+  assert.equal(result.ok, true); assert.equal(result.status, "opened-prefix-observed"); assert.equal(reproofs, 1);
+  assert.equal(result.nativeWorkMayRemain, true); assert.equal(result.compilerOwnerVerified, false);
+  assert.equal(value.owner.status().projectOpeningConsumed, true);
+  assert.equal(value.owner.status().projectOpeningResult, result);
+  assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
+  assert.equal(value.actions.filter(action => action === "send").length, 23);
+  await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u);
+  const workers = await value.owner.inspectWorkers(); assert.deepEqual(workers["workers"], []);
+  assert.equal(value.actions.filter(action => action === "send").length, 28);
+  await close(value);
+});
+void test("fixed diagnostic opening may carry a validated long path without widening unrelated requests", async context => {
+  const value = await openingFixture(context);
+  const rawWindowsPath = `C:\\${"界".repeat(2000)}.eprj2`;
+  const result = await value.owner.openProject({ ...OPEN_TARGET, rawWindowsPath,
+    projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex") }, () => Promise.resolve());
+  assert.equal(result.ok, true); assert.deepEqual(value.openingPhases, ["preflight", "open-project"]); await close(value);
+});
+void test("refused fixed preflight and open replies consume navigation stage and keep original close usable", async context => {
+  for (const scenario of ["opening-preflight-refused", "opening-open-refused"]) {
+    const value = await openingFixture(context, scenario);
+    let reproofs = 0;
+    const result = await value.owner.openProject(OPEN_TARGET, () => { reproofs += 1; return Promise.resolve(); });
+    assert.equal(result.ok, false); assert.equal(value.owner.status().projectOpeningResult, result);
+    assert.equal(reproofs, scenario === "opening-preflight-refused" ? 0 : 1);
+    assert.deepEqual(value.openingPhases, scenario === "opening-preflight-refused" ? ["preflight"] : ["preflight", "open-project"]);
+    assert.equal(value.child.stdin?.writableEnded, false); assert.notEqual(value.owner.status().diagnosticFailure, null);
+    await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u);
+    await assert.rejects(value.owner.inspectWorkers(), /PIPE_INPUT/u); await close(value);
+  }
+});
+void test("checkpoint or installation drift after preflight never dispatches opening or clears consumption", async context => {
+  for (const scenario of ["checkpoint", "installation", "source"]) {
+    const value = await openingFixture(context);
+    await assert.rejects(value.owner.openProject(OPEN_TARGET, () => {
+      if (scenario === "checkpoint") { return Promise.reject(new Error("checkpoint changed")); }
+      if (scenario === "installation") { value.installation.valid = false; } else { value.source.valid = false; }
+      return Promise.resolve();
+    }), /changed/u);
+    assert.deepEqual(value.openingPhases, ["preflight"]);
+    assert.equal(value.owner.status().projectOpeningResult?.phase, "preflight");
+    assert.equal(value.owner.status().projectOpeningConsumed, true);
+    assert.notEqual(value.owner.status().diagnosticFailure, null);
+    value.installation.valid = true; value.source.valid = true;
+    await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u); await close(value);
+  }
+});
+void test("uncertain opening reply, context loss and forbidden restored frames are terminal without replay", async context => {
+  for (const scenario of ["opening-malformed-reply", "opening-context-lost", "opening-no-event", "opening-title-changed", "opening-child-frame"]) {
+    const value = await openingFixture(context, scenario);
+    await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_REPLY|PIPE_REPLY|CONTEXT_IDENTITY/u);
+    assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
+    assert.equal(value.owner.status().projectOpeningConsumed, true);
+    assert.equal(value.owner.status().projectOpeningResult?.phase,
+      scenario === "opening-malformed-reply" || scenario === "opening-context-lost" ? "preflight" : "open-project");
+    assert.equal(value.child.stdin?.writableEnded, false); assert.notEqual(value.owner.status().diagnosticFailure, null);
+    await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u); await close(value);
+  }
+});
+void test("already sampled workers cannot be followed by a diagnostic project open", async context => {
+  const value = await openingFixture(context); await value.owner.inspectWorkers();
+  await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /OPENING_UNAVAILABLE/u);
+  assert.equal(value.owner.status().projectOpeningConsumed, false); assert.deepEqual(value.openingPhases, []); await close(value);
+});
+void test("fixed model observation stays in the source-admitted PCB session and releases its private group", async context => {
+  const value = fixture(context, "staged-model"); await value.owner.launch(LAUNCH);
+  await value.owner.browserObservation(); await value.owner.inspectFrames("target-1");
+  await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
+  const result = await value.owner.observeModelState();
+  assert.equal(result.main.headType, "PCB"); assert.equal(result.queueCompletionVerified, false);
+  assert.equal(result.saveAuthorized, false); assert.equal(value.owner.status().modelObservationConsumed, true);
+  assert.equal(value.actions.filter(action => action === "send").length, 27);
+  assert.ok(!JSON.stringify(result).includes("synthetic private"));
+  await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
+  await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
+  await assert.rejects(value.owner.openProject(OPEN_TARGET, () => Promise.resolve()), /PROJECT_OPENING_UNAVAILABLE/u);
+  await close(value);
+});
+void test("model source, scope cleanup and context failures retain the original process cleanup", async context => {
+  for (const scenario of ["staged-model-source-refused", "staged-model-release-refused", "staged-model-context-lost"]) {
+    const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
+    await value.owner.browserObservation(); await value.owner.inspectFrames("target-1"); await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
+    await assert.rejects(value.owner.observeModelState(), /MODEL_SCOPE|MODEL_OBSERVATION|PIPE_REPLY/u);
+    assert.equal(value.owner.status().modelObservationConsumed, true); assert.notEqual(value.owner.status().diagnosticFailure, null);
+    assert.equal(value.child.stdin?.writableEnded, false);
+    await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u); await close(value);
+  }
+  const opened = await openingFixture(context);
+  await opened.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+  await assert.rejects(opened.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u); await close(opened);
 });

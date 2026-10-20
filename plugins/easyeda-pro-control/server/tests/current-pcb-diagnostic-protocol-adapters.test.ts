@@ -1,0 +1,166 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposable-open.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
+  CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "../src/current-pcb-diagnostic-model-runner.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams } from "../src/current-pcb-diagnostic-protocol.ts";
+
+type Row = Record<string, unknown>;
+function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
+function target(rawWindowsPath = String.raw`C:\validation\disposable.eprj2`): ReturnType<typeof currentDisposableOpenSealedTargetSchema.parse> {
+  return currentDisposableOpenSealedTargetSchema.parse({
+    rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex"),
+    documentUuid: "d".repeat(16), expectedSourceSha256: "e".repeat(64), branchUuid: "b".repeat(32),
+  });
+}
+const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false };
+function properties(objectId: string): Row {
+  return { method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } };
+}
+function modelCommands(): readonly Row[] {
+  const commands = [
+    { method: "Runtime.evaluate", params: { ...effects, expression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
+      uniqueContextId: "context", objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP,
+      returnByValue: false, timeout: 1000, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false } },
+    properties("wrapper"), properties("wrapper-scopes"),
+    { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "wrapper-scope",
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, returnByValue: false } },
+    properties("handler"), properties("handler-scopes"),
+    { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
+    { method: "Runtime.releaseObjectGroup", params: { objectGroup: CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } },
+  ];
+  return commands.map((command, index) => ({ id: index + 1, method: command["method"], params: command["params"], sessionId: "original-page-session" }));
+}
+function row(value: unknown): value is Row { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function params(command: Row): Row {
+  const value = command["params"]; assert.ok(row(value));
+  return value;
+}
+
+void test("fixed project opener flattens only sealed identifiers and path, with schema/native field-order parity", () => {
+  for (const phase of ["preflight", "open-project"] as const) {
+    const selected = target();
+    const command = { id: 64, method: "Runtime.callFunctionOn",
+      params: diagnosticOpeningParams("original-context", selected, phase), sessionId: "original-page-session" };
+    const request = diagnosticNativeRequest(wire(command));
+    assert.deepEqual(request, { action: "send", requestId: 64, method: "Runtime.callFunctionOn",
+      sessionId: "original-page-session", uniqueContextId: "original-context", openingPhase: phase,
+      targetRawWindowsPath: selected.rawWindowsPath, targetProjectUuid: selected.projectUuid,
+      targetBranchUuid: selected.branchUuid, targetDocumentUuid: selected.documentUuid,
+      targetExpectedSourceSha256: selected.expectedSourceSha256 });
+    assert.equal(Object.hasOwn(request, "functionDeclaration"), false); assert.equal(Object.hasOwn(request, "arguments"), false);
+    assert.deepEqual(Object.keys(selected), ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]);
+    const argument = command.params.arguments[0]?.value;
+    assert.deepEqual(argument, selected);
+  }
+  const selected = target(`${String.raw`C:\validation`}\\${"µ中".repeat(100)}.eprj2`);
+  const command = { id: 1, method: "Runtime.callFunctionOn", params: diagnosticOpeningParams("context", selected, "preflight"), sessionId: "session" };
+  assert.equal(diagnosticNativeRequest(wire(command))["targetRawWindowsPath"], selected.rawWindowsPath);
+});
+
+void test("all eight fixed model requests map to private phases without forwarding source or group selectors", () => {
+  const commands = modelCommands(), expected = ["wrapper", "properties", "properties", "handler", "properties", "properties", "snapshot", "release"];
+  for (let index = 0; index < commands.length; index += 1) {
+    const command = commands[index]; assert.ok(command !== undefined);
+    const request = diagnosticNativeRequest(wire(command));
+    assert.equal(request["modelPhase"], expected[index]); assert.equal(request["requestId"], index + 1);
+    assert.equal(request["sessionId"], "original-page-session");
+    for (const field of ["params", "expression", "functionDeclaration", "objectGroup", "arguments", "timeout"]) {
+      assert.equal(Object.hasOwn(request, field), false, field);
+    }
+    if (index === 6) { assert.equal(request["objectId"], "handler-scope"); assert.equal(request["callbackObjectId"], "wrapper"); }
+    if (index === 7) { assert.deepEqual(Object.keys(request), ["action", "requestId", "method", "sessionId", "modelPhase"]); }
+  }
+});
+
+void test("opening protocol rejects code/options, phase, target identity and noncanonical target-order mutations", () => {
+  const selected = target();
+  const original = { id: 1, method: "Runtime.callFunctionOn",
+    params: diagnosticOpeningParams("context", selected, "open-project"), sessionId: "session" };
+  const changes: readonly ((command: Row) => void)[] = [
+    command => { params(command)["functionDeclaration"] = "function(){return true}"; },
+    command => { params(command)["throwOnSideEffect"] = true; },
+    command => { params(command)["awaitPromise"] = false; },
+    command => { params(command)["objectId"] = "unowned"; },
+    command => { params(command)["arguments"] = [{ value: selected }, { value: "save" }]; },
+    command => { params(command)["arguments"] = [{ value: { ...selected, projectUuid: "f".repeat(64) } }, { value: "open-project" }]; },
+    command => { params(command)["arguments"] = [{ value: selected }, { value: "open-project" }, { value: "extra" }]; },
+    command => { params(command)["arguments"] = [{ value: Object.fromEntries(Object.entries(selected).toReversed()) }, { value: "open-project" }]; },
+    command => { command["modelPhase"] = "wrapper"; },
+  ];
+  for (const change of changes) {
+    const command: Row = structuredClone(original); change(command);
+    assert.throws(() => diagnosticNativeRequest(wire(command)));
+  }
+});
+
+void test("model protocol rejects every effect override, extra scope/call options and non-retained handle shape", () => {
+  const originals = modelCommands();
+  for (const original of originals) {
+    for (const change of [
+      (command: Row): void => { command["modelPhase"] = "snapshot"; },
+      (command: Row): void => { params(command)["executionContextId"] = 1; },
+      (command: Row): void => { command["sessionId"] = "s".repeat(129); },
+    ]) {
+      const command = structuredClone(original); change(command);
+      assert.throws(() => diagnosticNativeRequest(wire(command)));
+    }
+  }
+  for (const index of [0, 3, 6]) {
+    const original = originals[index]; assert.ok(original !== undefined);
+    for (const [field, value] of Object.entries({ throwOnSideEffect: false, silent: false, awaitPromise: true,
+      generatePreview: true, userGesture: true })) {
+      const command = structuredClone(original); params(command)[field] = value;
+      assert.throws(() => diagnosticNativeRequest(wire(command)), field);
+    }
+  }
+  for (const [index, field, value] of [
+    [0, "expression", "globalThis"], [0, "objectGroup", "foreign"], [0, "uniqueContextId", "c".repeat(257)],
+    [1, "objectId", "foreign/handle"], [1, "ownProperties", false], [1, "accessorPropertiesOnly", true],
+    [3, "timeout", 1000], [3, "arguments", []], [3, "functionDeclaration", "function(){}"],
+    [6, "arguments", [{ value: "caller-data" }]], [6, "arguments", [{ objectId: "a" }, { objectId: "b" }]],
+    [6, "arguments", [{ objectId: "x".repeat(257) }]], [7, "objectGroup", "foreign"], [7, "objectId", "extra"],
+  ] as const) {
+    const original = originals[index]; assert.ok(original !== undefined);
+    const command = structuredClone(original); params(command)[field] = value;
+    assert.throws(() => diagnosticNativeRequest(wire(command)), `${index}:${field}`);
+  }
+});
+
+void test("adapter request and byte budgets are fixed and reject overflow without a caller override", () => {
+  assert.equal(DIAGNOSTIC_REQUEST_LIMIT, 64);
+  const original = modelCommands()[0]; assert.ok(original !== undefined);
+  assert.equal(diagnosticNativeRequest(wire({ ...original, id: 64 }))["requestId"], 64);
+  for (const id of [0, -1, 65, 1.5, "64"]) {
+    assert.throws(() => diagnosticNativeRequest(wire({ ...original, id })));
+  }
+  assert.throws(() => diagnosticNativeRequest(Buffer.alloc(65_537)));
+  assert.throws(() => diagnosticNativeRequest(Buffer.from(JSON.stringify(original))));
+  assert.throws(() => diagnosticNativeRequest(Buffer.from(`${JSON.stringify(original)} \0`)));
+});
+
+void test("native adapter embeds and private fields match TS programs without native execution", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  for (const [name, program] of Object.entries({
+    OpeningFunction: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, ModelCallbackExpression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
+    ModelHandlerFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, ModelStateFunction: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
+  })) {
+    const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
+    assert.equal(encoded?.replaceAll('""', '"'), program);
+    assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
+  }
+  assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
+  assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
+  assert.ok(source.includes("$request.requestId -gt 64")); assert.ok(source.includes("id!=nextRequest || id>64"));
+  assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
+  assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));
+  const retained = source.indexOf("root=info.process; rootThread=info.thread; rootPid=info.processId;");
+  const checked = source.indexOf("installation.AssertCreatedImage(root);"), resumed = source.indexOf("if(ResumeThread(rootThread)!=1)");
+  assert.ok(retained > 0 && checked > retained && resumed > checked);
+  assert.ok(source.includes("QueryFullProcessImageName(process,1,actual,ref count)"));
+});

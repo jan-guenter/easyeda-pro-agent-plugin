@@ -6,15 +6,19 @@ import { createInterface } from "node:readline";
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
 const staged = scenario?.startsWith("staged") === true;
+const openingCase = scenario?.startsWith("opening") === true;
+const modelCase = scenario?.startsWith("staged-model") === true;
 const workerCase = scenario?.startsWith("staged-worker") === true;
-const identityCase = staged || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
+const identityCase = staged || openingCase || scenario === "identity" || scenario === "identity-navigation" || scenario === "identity-large-source";
 const noProcessCase = scenario?.startsWith("no-process-") === true;
 const creationState = scenario === "no-process-create-refused" || scenario?.startsWith("no-process-win32") === true ? "returned-false" : "not-entered";
-const target = { targetId: "target-1", type: "page", title: "synthetic", url: "file:///synthetic/ui.html" };
+const uiBase = "https://client/editor?cll=warn";
+const target = { targetId: "target-1", type: "page", title: "synthetic", url: openingCase ? `${uiBase}#` : "file:///synthetic/ui.html" };
 const worker = { targetId: "worker-1", type: "worker", title: `project_${"a".repeat(64)}_window_1`,
   url: "file:///synthetic/editor?entry=mgr-project-worker.js", attached: true };
 let attached = false;
 let workerAttached = false;
+let opened = false;
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let sent = Buffer.alloc(0), terminated = false;
@@ -63,30 +67,32 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if (request["method"] === "Target.setAutoAttach") {
-          assert.equal(workerCase, true); workerAttached = true; payload = {};
-          events.push({ method: "Target.attachedToTarget", sessionId: "session-1",
-            params: { sessionId: "worker-session-1", targetInfo: worker, waitingForDebugger: false } });
+        if ("modelPhase" in request) {
+          assert.equal(modelCase, true); payload = modelResponse(request, events);
+        } else if (request["method"] === "Target.setAutoAttach") {
+          assert.ok(workerCase || openingCase); payload = {};
+          events.push(...workerAttachment());
         } else if (request["method"] === "Page.enable") { payload = {}; }
         else if (request["method"] === "Page.getFrameTree") {
           frameReads += 1;
           const frame = { id: "frame-1", loaderId: scenario === "staged-frame-changed" && frameReads > 2 ? "loader-2" : "loader-1",
             url: "file:///synthetic/pcb.html", securityOrigin: "file://" };
-          payload = { frameTree: staged ? { frame: { ...frame, id: "ui-root", loaderId: "root-loader" },
-            childFrames: [{ frame: { ...frame, parentId: "ui-root" } }] } : { frame } };
+          payload = { frameTree: frameTree(frame) };
         } else if (request["method"] === "Runtime.enable") {
           payload = {}; events.push({ method: "Runtime.executionContextCreated", sessionId: "session-1",
-            params: { context: { id: 7, uniqueId: "unique-context-1", origin: "file://", name: "", auxData: { frameId: "frame-1", isDefault: true, type: "default" } } } },
+            params: { context: { id: 7, uniqueId: "unique-context-1", origin: openingCase ? "https://client" : "file://", name: "", auxData: { frameId: "frame-1", isDefault: true, type: "default" } } } },
           ...(staged ? [{ method: "Runtime.consoleAPICalled", sessionId: "session-1", params: { args: [{ value: "private-console-data" }] } }] : []));
         } else if (request["method"] === "Debugger.enable") {
           payload = { debuggerId: "debugger-1" }; events.push({ method: "Debugger.scriptParsed", sessionId: "session-1",
-            params: { scriptId: "script-1", url: staged ? "file:///synthetic/pro-pcb/test-version/js/pcb.js" : "file:///synthetic/pcb.js",
+            params: { scriptId: "script-1", url: sourceScriptUrl(),
               executionContextId: 7, hasSourceURL: false, scriptLanguage: "JavaScript" } });
         } else if (request["method"] === "Debugger.getScriptSource") {
           assert.ok("scriptId" in request);
           assert.equal(request["scriptId"], "script-1");
           payload = { scriptSource: sourcePayload() };
           events.push(...navigationEvent());
+        } else if (request["method"] === "Runtime.callFunctionOn") {
+          assert.equal(openingCase, true); payload = openingResponse(request, events);
         } else { throw new Error("unexpected synthetic method"); }
       }
     }
@@ -140,6 +146,99 @@ function sourcePayload(): string {
   if (scenario === "identity-large-source") { return "x".repeat(12 * 1024 * 1024); }
   if (scenario === "staged-large-source") { return "x".repeat(18 * 1024 * 1024); }
   return "const syntheticIdentity = true;\n";
+}
+function workerAttachment(): readonly unknown[] {
+  if (!workerCase) { return []; }
+  workerAttached = true;
+  return [{ method: "Target.attachedToTarget", sessionId: "session-1",
+    params: { sessionId: "worker-session-1", targetInfo: worker, waitingForDebugger: false } }];
+}
+function frameTree(frame: Record<string, unknown>): unknown {
+  if (openingCase) {
+    return { frame: { ...frame, url: uiBase, urlFragment: target.url.slice(uiBase.length), securityOrigin: "https://client" },
+      ...(opened && scenario === "opening-child-frame" ? { childFrames: [{ frame: { ...frame, id: "child", parentId: "frame-1" } }] } : {}) };
+  }
+  if (staged) { return { frame: { ...frame, id: "ui-root", loaderId: "root-loader" }, childFrames: [{ frame: { ...frame, parentId: "ui-root" } }] }; }
+  return { frame };
+}
+function sourceScriptUrl(): string {
+  if (openingCase) { return "https://client/pro-ui/test-version/js/ui.js"; }
+  return staged ? "file:///synthetic/pro-pcb/test-version/js/pcb.js" : "file:///synthetic/pcb.js";
+}
+function modelResponse(request: object & Record<"modelPhase", unknown>, events: unknown[]): unknown {
+  const phase = request.modelPhase;
+  if (phase === "wrapper" || phase === "handler") {
+    return { result: { type: "function", className: phase === "wrapper" ? "Function" : "AsyncFunction",
+      description: "synthetic private function", objectId: phase === "wrapper" ? "wrapper" : "handler" } };
+  }
+  if (phase === "release") { return scenario === "staged-model-release-refused" ? { extra: true } : {}; }
+  assert.ok("objectId" in request);
+  const id = request.objectId;
+  if (phase === "properties") {
+    if (scenario === "staged-model-context-lost") {
+      events.push({ method: "Runtime.executionContextsCleared", sessionId: "session-1", params: {} });
+    }
+    if (id === "wrapper" || id === "handler") {
+      return { result: [modelProperty("length", { type: "number", value: id === "wrapper" ? 3 : 1 }),
+        modelProperty("name", { type: "string", value: "" })], internalProperties: [
+        { name: "[[Prototype]]", value: { type: "function", objectId: "function-prototype" } },
+        { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: {
+          scriptId: scenario === "staged-model-source-refused" ? "foreign-script" : "script-1",
+          lineNumber: id === "wrapper" ? 30 : 91_968, columnNumber: id === "wrapper" ? 14_676 : 9858,
+        } } },
+        { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array",
+          description: "Scopes[2]", objectId: `${id}-scopes` } },
+      ] };
+    }
+    assert.ok(id === "wrapper-scopes" || id === "handler-scopes");
+    return { result: [modelProperty("0", { type: "object", subtype: "internal#scope", className: "Object",
+      description: id === "wrapper-scopes" ? "Closure (rpcService)" : "Closure", objectId: `${id}-zero` }),
+    modelProperty("1", { type: "object", subtype: "internal#scope", className: "Object", description: "Global", objectId: "global-scope" })] };
+  }
+  assert.equal(phase, "snapshot"); assert.equal(id, "handler-scopes-zero");
+  assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
+  return { result: { type: "string", value: JSON.stringify({
+    schema: "easyeda-pro-control.pcb-diagnostic-model-state.v1",
+    main: { uuid: "a".repeat(32), uniqueId: "b".repeat(32), headType: "PCB", isProject: true, isInit: true, canSave: true,
+      isInitIng: false, pendCacheLength: 0, pendingDocumentKeyCount: 0, cacheKeyCount: 0, deleteCacheCount: 0,
+      subscriptionCount: 0, pendTimer: "absent", pendPromise: "absent", maxTicket: 0, pendingChange: false, localChange: false },
+    loadedFootprintCount: 0, customFootprints: [],
+    dynamicCopper: { openPcb: true, workerNameMarker: "absent", workerName: null, timer: "absent", bus: "present" },
+  }) } };
+}
+function modelProperty(name: string, value: unknown): unknown {
+  return { name, value, writable: true, configurable: true, enumerable: true, isOwn: true };
+}
+function openingResponse(request: object, events: unknown[]): unknown {
+  assert.ok("uniqueContextId" in request && "openingPhase" in request && "targetProjectUuid" in request &&
+    "targetBranchUuid" in request && "targetDocumentUuid" in request && "targetRawWindowsPath" in request &&
+    "targetExpectedSourceSha256" in request);
+  assert.equal(request.uniqueContextId, "unique-context-1");
+  assert.equal(Object.hasOwn(request, "expression"), false); assert.equal(Object.hasOwn(request, "functionDeclaration"), false);
+  const phase = request.openingPhase;
+  assert.ok(phase === "preflight" || phase === "open-project");
+  const dispatchAttempted = phase === "open-project";
+  const ok = scenario !== (dispatchAttempted ? "opening-open-refused" : "opening-preflight-refused");
+  if (dispatchAttempted && ok) {
+    opened = true; target.url = `${uiBase}#id=${String(request.targetProjectUuid)}`;
+    if (scenario !== "opening-no-event") {
+      events.push({ method: scenario === "opening-context-lost" ? "Runtime.executionContextsCleared" : "Page.navigatedWithinDocument",
+        sessionId: "session-1", params: scenario === "opening-context-lost" ? {} :
+          { frameId: "frame-1", url: target.url, navigationType: "fragment" } });
+    }
+    if (scenario === "opening-title-changed") { target.title = "changed"; }
+  }
+  const status = dispatchAttempted ? "opened-prefix-observed" : "ready";
+  return { result: { type: "string", value: scenario === "opening-malformed-reply" && dispatchAttempted ? "{}" : JSON.stringify({
+    schema: "easyeda-pro-control.pcb-diagnostic-opening.v1", phase, projectUuid: request.targetProjectUuid,
+    branchUuid: request.targetBranchUuid, documentUuid: request.targetDocumentUuid, ok,
+    status: ok ? status : "refused",
+    failure: ok ? null : { stage: dispatchAttempted ? "acknowledgement" : "registration-before", code: dispatchAttempted ? "ACK" : "REGISTRY" },
+    dispatchAttempted, publicResult: dispatchAttempted ? ok : null, prefixObserved: dispatchAttempted && ok,
+    nativeWorkMayRemain: dispatchAttempted,
+    observation: ok ? { projectPresent: dispatchAttempted, branchUuid: dispatchAttempted ? request.targetBranchUuid : null,
+      windowTabId: "original-window", containerCount: 1, tabIds: [], activeTabId: "tab_page1" } : null,
+  }) } };
 }
 function workerEvent(method: string, params: unknown): unknown { return { method, params, sessionId: "worker-session-1" }; }
 function workerResponse(request: object & Record<"method", unknown>, events: unknown[]): unknown {

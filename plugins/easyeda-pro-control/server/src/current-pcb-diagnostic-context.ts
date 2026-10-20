@@ -97,6 +97,15 @@ function scriptUrlMatches(value: unknown, profile: DiagnosticScriptProfile): boo
       url.pathname.endsWith(`/${profile.relativePath}`) && !url.pathname.split("/").some(part => part === "." || part === "..");
   } catch { return false; }
 }
+function startPageBase(frame: Row): string {
+  const fragment = frame["urlFragment"], url = frame["url"];
+  // CDP Frame.url excludes the fragment; Frame.urlFragment includes '#'.
+  // This is the empty-fragment subset of the pinned ordinary UI URL grammar.
+  if (!text(url) || !/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/u.test(url) ||
+      (fragment !== undefined && fragment !== "#") || frame["parentId"] !== undefined ||
+      frame["securityOrigin"] !== "https://client") { return refuse(); }
+  return url;
+}
 
 /** One original attachment and its ordered event stream. Any identity loss is
  * terminal. Unrelated new contexts/scripts remain bounded evidence, not errors;
@@ -114,6 +123,9 @@ export class CurrentPcbDiagnosticContext {
   #profile: DiagnosticScriptProfile | null = null;
   #failed = false;
   #attachmentEvent: Row | null = null;
+  #sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null = null;
+  #openingConsumed = false;
+  #opening: { readonly base: string; readonly url: string; events: number } | null = null;
 
   public constructor(expected: DiagnosticFrameExpectation | string) {
     if (typeof expected === "string") {
@@ -183,6 +195,15 @@ export class CurrentPcbDiagnosticContext {
       this.#attachmentEvent = clone(params); return;
     }
     if (event.sessionId !== this.#sessionId) { this.#refuse(); }
+    if (event.method === "Page.navigatedWithinDocument") {
+      const opening = this.#opening;
+      if (opening === null || opening.events >= 8 || this.#frame === null ||
+          !diagnosticExact(params, ["frameId", "url", "navigationType"]) ||
+          params["frameId"] !== this.#frame["id"] || params["url"] !== opening.url ||
+          (params["navigationType"] !== "fragment" && params["navigationType"] !== "historyApi")) { this.#refuse(); }
+      opening.events += 1;
+      this.openingContext(); return;
+    }
     if (event.method === "Runtime.executionContextCreated") {
       const context = params["context"];
       if (!diagnosticRecord(context) || !integer(context["id"]) || !diagnosticToken(context["uniqueId"]) ||
@@ -226,6 +247,9 @@ export class CurrentPcbDiagnosticContext {
     if (!diagnosticExact(source, ["scriptSource"]) || typeof scriptSource !== "string" || scriptSource.length > DIAGNOSTIC_SOURCE_BYTES ||
         !scriptSource.isWellFormed() || Buffer.byteLength(scriptSource, "utf8") !== profile.scriptBytes ||
         createHash("sha256").update(scriptSource, "utf8").digest("hex") !== profile.scriptSha256) { return this.#refuse(); }
+    const contextId = selected.context["id"], uniqueContextId = selected.context["uniqueId"];
+    if (!integer(contextId) || !diagnosticToken(uniqueContextId)) { return this.#refuse(); }
+    this.#sourceIdentity = Object.freeze({ scriptId: selected.scriptId, contextId, uniqueContextId });
     if (this.#profile !== null && this.#frame !== null) {
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-frame-observation.v1", target: diagnosticTargetSummary(current),
         sessionId: this.#sessionId, frame: frameSummary(this.#frame),
@@ -241,6 +265,70 @@ export class CurrentPcbDiagnosticContext {
       sourceBytes: profile.scriptBytes, ...(this.#profile === null ? {} : { family: this.#profile.family, relativePath: this.#profile.relativePath }),
       events: structuredClone(this.#events), sourceVerified: true,
       projectWorkerAssociationVerified: false, compilerOwnerVerified: false, executionAuthorized: false, continuousObservation: false });
+  }
+  /** An internal selector for the one fixed opening function, not generic eval
+   * authority. Exact source admission must precede this call. The caller still
+   * owns checkpoint reproof, durable intent and one-shot request consumption. */
+  public openingContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    this.assertCurrent();
+    const selected = this.script(), source = this.#sourceIdentity;
+    if (this.#expected !== null || this.#profile?.family !== "ui" || this.#frame === null ||
+        this.#frames?.length !== 1 || this.#frame["parentId"] !== undefined ||
+        this.#frames[0]?.["id"] !== this.#frame["id"] || source === null || this.#sessionId === null ||
+        selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
+        selected.context["uniqueId"] !== source.uniqueContextId) { return this.#refuse(); }
+    return Object.freeze({ sessionId: this.#sessionId, uniqueContextId: source.uniqueContextId });
+  }
+  /** Fixed model observer only, after the existing PCB frame's complete source
+   * was admitted. UI opening and model inspection are intentionally disjoint;
+   * a worker-only opening never upgrades its context into a PCB compiler. */
+  public modelContext(): Readonly<{ sessionId: string; scriptId: string; uniqueContextId: string }> {
+    this.assertCurrent();
+    const selected = this.script(), source = this.#sourceIdentity;
+    if (this.#expected !== null || this.#profile?.family !== "pcb" || this.#frame === null || this.#frames === null ||
+        !this.#frames.some(frame => frame["id"] === this.#frame?.["id"]) || this.#openingConsumed ||
+        this.#opening !== null || source === null || this.#sessionId === null ||
+        selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
+        selected.context["uniqueId"] !== source.uniqueContextId) { return this.#refuse(); }
+    return Object.freeze({ sessionId: this.#sessionId, scriptId: source.scriptId, uniqueContextId: source.uniqueContextId });
+  }
+  /** Permit only the selected project's one same-document hash transition.
+   * No frame creation/restored editor tabs are admitted: CDP frame URLs alone
+   * cannot prove those frames belong to the checkpoint-selected project.
+   * Any failure remains terminal; this method never resets an invalid context. */
+  public beginOpeningTransition(projectUuid: string): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    const selected = this.openingContext();
+    if (this.#openingConsumed) { return this.#refuse(); }
+    this.#openingConsumed = true;
+    try {
+      if (!/^[a-f\d]{64}$/u.test(projectUuid) || this.#frame === null || this.#target === null) { this.#refuse(); }
+      const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
+      if (this.#target["url"] !== `${base}${fragment}`) { this.#refuse(); }
+      this.#opening = { base, url: `${base}#id=${projectUuid}`, events: 0 };
+      return selected;
+    } catch { return this.#refuse(); }
+  }
+  /** Complete only after the fixed call has returned and original target/frame
+   * reads have settled. An acknowledgement or missing reply is not enough.
+   * Keep all fields except the expected URL fragment byte-for-byte equivalent,
+   * including loader, origin, title and the retained default-context/script. */
+  public finishOpeningTransition(targetReply: Row, frameReply: Row): void {
+    this.openingContext();
+    try {
+      const opening = this.#opening, original = this.#frame;
+      if (opening === null || opening.events === 0 || original === null || this.#target === null) { this.#refuse(); }
+      const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true);
+      const currentFrame = currentFrames[0];
+      if (currentFrames.length !== 1 || currentFrame === undefined) { this.#refuse(); }
+      const { urlFragment: currentFragment, ...currentFields } = currentFrame;
+      const { urlFragment: _originalFragment, ...originalFields } = original;
+      if (currentFragment !== opening.url.slice(opening.base.length) || !equal(originalFields, currentFields) ||
+          !equal({ ...this.#target, url: opening.url, attached: true }, currentTarget)) { this.#refuse(); }
+      this.openingContext();
+      this.#frame = currentFrame; this.#frames = currentFrames;
+      this.#target = Object.freeze({ ...currentTarget, attached: false });
+      this.#opening = null;
+    } catch { this.#refuse(); }
   }
   public assertCurrent(): void { if (this.#failed || this.#sessionId === null) { this.#refuse(); } }
   #refuse(): never { this.#failed = true; return refuse(); }

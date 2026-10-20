@@ -1,7 +1,9 @@
-/** Original-owner validation lifecycle. No project navigation, generic debugger
- * command, CAD write, Windows runtime adoption or historical owner recreation. */
+/** Original-owner validation lifecycle with one checkpoint-bound disposable
+ * opening. No generic debugger command, CAD writer or historical owner recreation. */
 import type { z } from "zod";
 import { canonicalJson, sha256Json } from "./core.ts";
+import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
 import { startCurrentPcbDiagnosticOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbDiagnosticOwner } from "./current-pcb-diagnostic-owner.ts";
@@ -18,10 +20,10 @@ import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, acquireCurrentPcbDiagnosticLaunchExcl
 import type { CurrentPcbDiagnosticLaunchLease, DiagnosticLifecycleBinding, DiagnosticLifecycleOperation, DiagnosticLifecycleRecordName, DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 
 type CleanupRequest = Exclude<Request, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<Request, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" }>;
+type ObservationRequest = Extract<Request, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" }>;
 type ObservationStage = z.infer<typeof diagnosticObservationStageSchema>;
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
-  "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState"] as const;
+  "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]>;
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
   readonly assertAllowed: () => Promise<void>;
@@ -36,6 +38,8 @@ export interface CurrentPcbDiagnosticLifecycleDependencies {
   readonly verifyInstallation?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticInstallation>;
   readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbDiagnosticLifecycleOwner>;
   readonly publishRecord?: typeof publishCurrentPcbDiagnosticLifecycleRecord;
+  readonly prepareCheckpoint?: typeof prepareCurrentDisposableOpenCheckpoint;
+  readonly verifyCheckpoint?: typeof verifyCurrentDisposableOpenCheckpoint;
 }
 interface Retained {
   readonly operationId: string;
@@ -68,6 +72,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     closeAcknowledged: records?.["close-acknowledged.json"] !== undefined, releaseAttemptConsumed: records?.["release-intent.json"] !== undefined,
     noProcessReleaseAttemptConsumed: records?.["no-process-release-intent.json"] !== undefined,
     noProcessReleaseProof: records?.["no-process-released.json"]?.proof,
+    projectOpeningAttemptConsumed: records?.["project-opening-intent.json"] !== undefined,
+    projectOpeningResultPublished: records?.["project-opening-result.json"] !== undefined,
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
     ...claims };
 }
@@ -77,6 +83,8 @@ export class CurrentPcbDiagnosticLifecycle {
   readonly #verify: NonNullable<CurrentPcbDiagnosticLifecycleDependencies["verifyInstallation"]>;
   readonly #allocate: NonNullable<CurrentPcbDiagnosticLifecycleDependencies["allocateOwner"]>;
   readonly #publish: typeof publishCurrentPcbDiagnosticLifecycleRecord;
+  readonly #prepareCheckpoint: typeof prepareCurrentDisposableOpenCheckpoint;
+  readonly #verifyCheckpoint: typeof verifyCurrentDisposableOpenCheckpoint;
   readonly #pending = new Map<DiagnosticLifecycleRecordName, string>();
   readonly #observations = new Map<ObservationStage, Readonly<Record<string, unknown>>>();
   readonly #observationConsumed = new Set<ObservationStage>();
@@ -90,12 +98,16 @@ export class CurrentPcbDiagnosticLifecycle {
   #releaseInvoked = false;
   #unlaunchedInvoked = false;
   #noProcessInvoked = false;
+  #openingAttempted = false;
+  #openingResult: Readonly<Record<string, unknown>> | null = null;
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
     this.#options = Object.freeze({ ...options });
     this.#verify = dependencies.verifyInstallation ?? verifyCurrentPcbDiagnosticInstallation;
     this.#allocate = dependencies.allocateOwner ?? startCurrentPcbDiagnosticOwner;
     this.#publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
+    this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
+    this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
@@ -118,7 +130,27 @@ export class CurrentPcbDiagnosticLifecycle {
           resultRetained: original && this.#observations.has(stage), published: record !== undefined,
           result: stage === selectedStage ? (record ?? retained)?.result : undefined };
       });
+      const openingPending = original ? this.#pending.get("project-opening-result.json") : undefined;
+      const openingPublished = operation?.records["project-opening-result.json"];
+      const openingRecord = openingPending === undefined ? openingPublished :
+        diagnosticLifecycleRecordSchemas["project-opening-result.json"].parse(JSON.parse(openingPending) as unknown);
+      const openingConsumed = operation?.records["project-opening-intent.json"] !== undefined || original && this.#openingAttempted;
+      const openingResult = original && this.#openingResult !== null ? this.#openingResult : openingRecord?.result;
+      // A decoded renderer reply can precede a failed original-frame or final
+      // Installation check. Preserve it separately, never as an accepted result
+      // Or a publication plan that could authorize worker discovery.
+      const nativeOpeningReply = original && openingConsumed && this.#openingResult === null
+        ? native?.projectOpeningResult ?? null : null;
+      let openingState = openingConsumed ? "opening-unknown" : "not-attempted";
+      if (openingResult !== undefined) {
+        openingState = openingResult["ok"] === true && openingResult["status"] === "opened-prefix-observed" ? "opened-prefix-observed" : "refused";
+      }
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
+        projectOpeningAttemptConsumed: openingConsumed,
+        projectOpeningResultRetained: original && this.#openingResult !== null,
+        projectOpeningState: openingState,
+        ...(openingResult === undefined ? {} : { projectOpeningResult: openingResult }),
+        ...(nativeOpeningReply === null ? {} : { nativeOpeningReply, hostTransitionAccepted: false }),
         ...(native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError }),
         ...(pendingIntent === null ? {} : { intentSha256: pendingIntent.intentSha256, publicationSettlementAvailable: this.#lease !== null,
           unlaunchedCleanupAvailable: !pendingIntent.launchInvoked && (!pendingIntent.allocationInvoked || this.#retained !== null) }),
@@ -310,7 +342,8 @@ export class CurrentPcbDiagnosticLifecycle {
       requestNormalClose: owner.requestNormalClose, observeTermination: owner.observeTermination, releaseClosed: owner.releaseClosed,
       releaseUnlaunched: owner.releaseUnlaunched, releaseNoProcess: owner.releaseNoProcess,
       browserObservation: owner.browserObservation, inspectFrames: owner.inspectFrames, inspectScript: owner.inspectScript,
-      inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState });
+      inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
+      observeModelState: owner.observeModelState, openProject: owner.openProject });
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
       intentSha256: sha256Json(intent), binding: null };
     this.#retained = retained;
@@ -359,8 +392,10 @@ export class CurrentPcbDiagnosticLifecycle {
     // Handles. The native owner still checks its retained helper on cleanup.
     this.#assertOwner(retained);
     await assertSnapshot(operations); this.#assertOwner(retained);
+    if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
-        request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state") {
+        request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
+        request.action === "observe-model-state") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-window") {
@@ -413,6 +448,7 @@ export class CurrentPcbDiagnosticLifecycle {
     if (request.action === "inspect-workers") { stage = "workers"; }
     if (request.action === "inspect-worker-script") { stage = "worker-script"; }
     if (request.action === "observe-worker-state") { stage = "worker-state"; }
+    if (request.action === "observe-model-state") { stage = "model-state"; }
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
       operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "OBSERVATION_UNAVAILABLE");
     requireValue(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === undefined, "OBSERVATION_CONSUMED");
@@ -421,6 +457,19 @@ export class CurrentPcbDiagnosticLifecycle {
     requireValue(stage !== "workers" || operation.records["frames-result.json"] !== undefined, "FRAME_OBSERVATION_REQUIRED");
     requireValue(stage !== "worker-script" || operation.records["workers-result.json"] !== undefined, "WORKER_OBSERVATION_REQUIRED");
     requireValue(stage !== "worker-state" || operation.records["worker-script-result.json"] !== undefined, "WORKER_SOURCE_REQUIRED");
+    if (stage === "model-state") {
+      const originalScript = this.#observations.get("script"), script = operation.records["script-result.json"];
+      requireValue(script !== undefined && originalScript !== undefined && originalScript["family"] === "pcb" &&
+        originalScript["sourceVerified"] === true && canonicalJson(script.result) === canonicalJson(originalScript) &&
+        this.#pending.get("script-result.json") === canonicalJson(script), "ORIGINAL_PCB_SOURCE_REQUIRED");
+    }
+    if (stage === "workers" && (this.#openingAttempted || operation.records["project-opening-intent.json"] !== undefined)) {
+      const opened = operation.records["project-opening-result.json"];
+      requireValue(this.#openingResult !== null && this.#openingResult["ok"] === true &&
+        this.#openingResult["status"] === "opened-prefix-observed" && this.#openingResult["failure"] === null &&
+        opened !== undefined && canonicalJson(opened.result) === canonicalJson(this.#openingResult) &&
+        this.#pending.get("project-opening-result.json") === canonicalJson(opened), "PROJECT_OPENING_UNCONFIRMED");
+    }
     await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
     const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"]> = {
       schema: "easyeda-pro-control.pcb-diagnostic-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
@@ -438,6 +487,7 @@ export class CurrentPcbDiagnosticLifecycle {
     else if (request.action === "inspect-script") { result = await retained.methods.inspectScript.call(retained.owner, request.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family]); }
     else if (request.action === "inspect-workers") { result = await retained.methods.inspectWorkers.call(retained.owner); }
     else if (request.action === "inspect-worker-script") { result = await retained.methods.inspectWorkerScript.call(retained.owner, request.targetId); }
+    else if (request.action === "observe-model-state") { result = await retained.methods.observeModelState.call(retained.owner); }
     else { result = await retained.methods.observeWorkerState.call(retained.owner); }
     // Preserve the original observation before validation/publication can fail.
     this.#observations.set(stage, result);
@@ -452,6 +502,66 @@ export class CurrentPcbDiagnosticLifecycle {
     const completed = { ...updated, records: { ...updated.records, [`${stage}-result.json`]: record } };
     await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
     return { ...describe(request.operationId, operation), stage, result: record.result };
+  }
+  async #openProject(request: Extract<CleanupRequest, { action: "open-project" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    requireValue(!this.#openingAttempted && operation.records["project-opening-intent.json"] === undefined, "PROJECT_OPENING_CONSUMED");
+    requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
+      !this.#closeAttempted && operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+      !this.#observationConsumed.has("workers") && operation.records["workers-intent.json"] === undefined, "PROJECT_OPENING_UNAVAILABLE");
+    const originalScript = this.#observations.get("script"), script = operation.records["script-result.json"];
+    requireValue(script !== undefined && originalScript !== undefined && originalScript["family"] === "ui" &&
+      originalScript["sourceVerified"] === true && canonicalJson(script.result) === canonicalJson(originalScript) &&
+      this.#pending.get("script-result.json") === canonicalJson(script), "ORIGINAL_UI_SOURCE_REQUIRED");
+    // Consume before checkpoint or installation work. Failure can preserve a
+    // Backup or an uncertain durable intent; neither grants a retry.
+    this.#openingAttempted = true;
+    await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+    const target = Object.freeze(structuredClone(request.target));
+    const prepared = await this.#prepareCheckpoint(target);
+    const preparedText = canonicalJson(prepared);
+    requireValue(prepared.targetEvidence.projectUuid === target.projectUuid && prepared.targetEvidence.documentUuid === target.documentUuid &&
+      prepared.targetEvidence.docType === "PCB" && prepared.targetEvidence.sourceSha256 === target.expectedSourceSha256, "PROJECT_CHECKPOINT_BINDING");
+    const sealedTarget = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ ...target, branchUuid: prepared.targetEvidence.branchUuid }));
+    const preparationCheckpoint = currentDisposableOpenPreparationCheckpointSchema.parse(prepared.preparationCheckpoint);
+    await this.#verifyCheckpoint(prepared, target);
+    requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
+    await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+    const intent: NonNullable<DiagnosticLifecycleRecords["project-opening-intent.json"]> = {
+      schema: "easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1", operationId: request.operationId,
+      createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256, scriptResultSha256: sha256Json(script),
+      target: sealedTarget, preparationCheckpoint, checkpointReceiptSha256: sha256Json(prepared.checkpoint),
+      confirmDisposableProject: true, acceptNormalOpenEffects: true,
+    };
+    await this.#record(request.operationId, "project-opening-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "project-opening-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
+    await assertSnapshot(expected); this.#assertOwner(retained);
+    let reverificationAttempted = false, reverified = false;
+    const result = await retained.methods.openProject.call(retained.owner, sealedTarget, async () => {
+      requireValue(!reverificationAttempted, "PROJECT_REVERIFICATION_CONSUMED"); reverificationAttempted = true;
+      await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+      requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
+      await this.#verifyCheckpoint(prepared, target);
+      requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
+      await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+      reverified = true;
+    });
+    // Keep the exact decoded reply even when final owner checks or publication
+    // Fail. This result is never a writer token or evidence of full restoration.
+    this.#openingResult = result;
+    requireValue(Buffer.byteLength(canonicalJson(result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "PROJECT_OPENING_BOUND");
+    requireValue(!result.ok || reverified, "PROJECT_REVERIFICATION_REQUIRED");
+    const record: NonNullable<DiagnosticLifecycleRecords["project-opening-result.json"]> = {
+      schema: "easyeda-pro-control.pcb-diagnostic-project-opening-result.v1", operationId: request.operationId,
+      createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), result: structuredClone(result), executionAuthorized: false,
+    };
+    this.#retainRecord("project-opening-result.json", record);
+    this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+    await this.#publish(request.operationId, "project-opening-result.json", record);
+    const completed = { ...updated, records: { ...updated.records, "project-opening-result.json": record } };
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
+    return { ...describe(request.operationId, completed), projectOpeningResultRetained: true, result: record.result, preparationCheckpoint };
   }
   async #release(operation: DiagnosticLifecycleOperation, operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
     const termination = operation.records["terminated.json"];
