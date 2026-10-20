@@ -8,8 +8,8 @@ Installed `0.3.0+codex.20261020053706`, original facade719505, operation
 - `CreateProcessW` returned false with error87 and empty process outputs.
 - The original helper proved no process was created, released its empty Job and
   pipes, and completed `cleanup-no-process`. Terminal state: `no-process-released`.
-- No EasyEDA project was opened, no CAD command or Save was issued, and PianoPi
-  was not accessed.
+- No EasyEDA project was opened, no CAD command or Save was issued, and production
+  files were not accessed.
 - Private receipts:
   `/root/.cache/easyeda-053706-native-diagnostic-live-bXHbzT5l`.
 
