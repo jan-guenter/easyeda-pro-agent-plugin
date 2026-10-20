@@ -15,8 +15,9 @@ function array(value: unknown): unknown[] { assert.ok(Array.isArray(value)); ret
 function rawReply(value: unknown): unknown { return { result: { type: "string", value: JSON.stringify(value) } }; }
 function rawText(value: string): unknown { return { result: { type: "string", value } }; }
 
-/** Self-authored source-shaped observations. Raw fields are specified separately
- * from candidate output; geometry/dataState are deliberately not its prediction. */
+/** Self-authored source-shaped observations, independently specified. The Test
+ * Glyph endpoints produce width23.99; the native unrounded sum with x12 is
+ * 35.989999999999995. DataState is not a modeled completion signal. */
 function rawModel(): Record<string, unknown> {
   return { globalIndex: binding.primitiveId, modelType: "Text", zIndex: { kind: "absent" },
     partition: { kind: "absent" }, groupId: { kind: "absent" }, parent: { kind: "absent" }, number: { kind: "absent" },
@@ -26,7 +27,7 @@ function rawModel(): Record<string, unknown> {
       silkColor: { kind: "value", value: { r: 0, g: 0, b: 0, alpha: 1 } },
       layerId: { kind: "absent" }, locked: { kind: "absent" } },
     box: { kind: "value", value: { layerId: 3, locked: false, leftLow: { x: 12, y: -45 },
-      leftUp: { x: 12, y: -33 }, rightLow: { x: 37, y: -45 }, rightUp: { x: 37, y: -33 } } },
+      leftUp: { x: 12, y: -33 }, rightLow: { x: 35.989999999999995, y: -45 }, rightUp: { x: 35.989999999999995, y: -33 } } },
     stateWatcher: { kind: "value", value: "reciprocal-yr" } };
 }
 function rawState(models: readonly unknown[] = []): Record<string, unknown> {
@@ -165,10 +166,13 @@ void test("post-create relation rejects an additional publication record or subs
   }
 });
 
-void test("post-create retains unmodeled fields but never calls equal samples complete geometry or settled state", () => {
+void test("post-create rejects identical wrong boxes and keeps unmodeled state separate", () => {
   const model = rawModel(), value = fixture();
   model["dataState"] = 129;
   record(record(record(model["box"])["value"])["leftUp"])["y"] = -30;
+  replaceAfter(value, model);
+  assert.throws(() => compare(value), /DEFAULT_GEOMETRY_BOX/u);
+  record(record(record(model["box"])["value"])["leftUp"])["y"] = -33;
   replaceAfter(value, model);
   const changed = compare(value), original = compare(fixture());
   assert.notEqual(changed.afterRawModelProjectionSha256, original.afterRawModelProjectionSha256);

@@ -1,6 +1,6 @@
 # PCB common-state and producer implementation batch
 
-Candidate `0.3.0+codex.20261020202000` combines opening and startup fixes with
+Delivered `0.3.0+codex.20261020202000` combines opening and startup fixes with
 two private observation runners. No String writer is enabled. SDK coverage
 remains774 methods:212 public subsets,33 native equivalents,79 blocked and450
 documented omissions. These categories are not counts of live-validated methods.
@@ -63,9 +63,39 @@ with an empty Job and no application launch. An earlier compile caught the old
 embedded opening digest; it was corrected before the passing reruns. The first
 UNC path attempt did not find a script and executed none.
 
-Focused tests and reciprocal reviews are in progress. Final frozen verification,
-exact-payload CI, publication and official installation are pending. The loaded
-185144 facade and installed cache have not been changed.
+Reciprocal source/integration/native/pin reviews passed. Frozen local verification
+passed12021 facade tests:12017 passes,4 platform skips,0 failures;424 bridge tests,
+strict type-aware lint/types, API inventory, skills and package/MCP checks.
+Repository/privacy and seven skill-creator checks also passed. The early focused
+run failed from a full /tmp filesystem and resulting synthetic quarantine;
+the final run used disk-backed temporary storage. An early repository scan
+overlapped bundle publication and refused it; the settled rerun passed. Original
+failed logs are retained, not counted as passing evidence.
+
+[PR90](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/90) merged
+exact head`dc17c0fa61feb1be2937e10fedf7af41a3e9ef80` as main
+`7df9a9cd2c7e6935ad341df3ae9e08dcc76b1d9e`. Full and plugin trees match exactly.
+Exact-head Linux39491797097 passed build, all8facade shards and the aggregate
+gate; Windows39491797251 passed. Post-main Windows39493798406 passed;
+Linux39493798341 was still running at this handoff.
+
+The official Git marketplace upgraded the enabled plugin to20202000. Complete
+installed comparison passed1637files,42directories,33598845bytes and exact modes;
+inventory SHA256`3c87674a43c01c6e8260c3ae71a80c9d5710aa2b5d12010805cd707c0ce800a6`.
+The installed offline probe passed26restricted tools,51configured policies and
+10queries, with normal EOF/exit0 and zero stderr. It used a synthetic profile,
+not live control data; continuous isolation and connected execution are not
+claimed. Loaded host1534112 remains185144 and was not terminated or hotpatched.
+A fresh Codex session must load the new snapshot before connected work.
+
+Release evidence is retained privately at
+`/root/.cache/easyeda-common-producer-release-2Lz05itK`.
+Installed comparison receipt SHA256:
+`ff2a81f908b85a2dd78fb8b16a3d217d9b862027d1352706a4a34822781b8389`.
+Offline probe receipt SHA256:
+`e756d9d8e4baf24ff5d556ab535d9295692aa020e282c0e8e1aa632fdd4af0a8`.
+These delivery notes are a local handoff beyond the immutable PR90 payload;
+the packaged plugin has not changed since verification and installation.
 
 ## Remaining work
 

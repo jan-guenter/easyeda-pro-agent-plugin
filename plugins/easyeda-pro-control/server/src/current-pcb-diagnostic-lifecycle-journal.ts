@@ -10,6 +10,7 @@ import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
+import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
@@ -143,6 +144,10 @@ const stringPrecreateResultSchema = z.object({
   operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"), intentSha256: diagnosticLifecycleDigestSchema,
   result: stringPrecreateObservationResultSchema, executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= STRING_PRECREATE_OBSERVATION_MAX_BYTES, "String precreate result exceeds its bound.");
+const observationFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-failure.v1"), ...base,
+  stage: z.enum(["model-state", "string-precreate"]), intentSha256: diagnosticLifecycleDigestSchema,
+  failure: currentPcbObservationFailureSchema, executionAuthorized: z.literal(false),
+}).strict().refine(value => (value.stage === "string-precreate") === (value.failure.family === "STRING_PRECREATE"));
 const projectOpeningIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -180,6 +185,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
+  "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
 export interface DiagnosticLifecycleOperation { readonly operationId: string; readonly records: DiagnosticLifecycleRecords }
@@ -269,6 +275,13 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     requireValue(observation === undefined || binding !== undefined && observation.stage === stage &&
       observation.bindingSha256 === sha256Json(binding) && binding.launchAcknowledged && binding.binding.rootCreated !== "0", "OBSERVATION_CHAIN");
     requireValue(result === undefined || observation !== undefined && result.stage === stage && result.intentSha256 === sha256Json(observation), "OBSERVATION_RESULT_CHAIN");
+  }
+  const observationFailure = records["observation-failure.json"];
+  if (observationFailure !== undefined) {
+    const stage = observationFailure.stage;
+    const observation = records[`${stage}-intent.json`];
+    requireValue(observation !== undefined && observationFailure.intentSha256 === sha256Json(observation) &&
+      records[`${stage}-result.json`] === undefined && (stage === "string-precreate") === stringPurpose, "OBSERVATION_FAILURE_CHAIN");
   }
   requireValue(records["frames-intent.json"] === undefined || records["browser-result.json"] !== undefined, "FRAMES_CHAIN");
   requireValue(records["script-intent.json"] === undefined || records["frames-result.json"] !== undefined, "SCRIPT_CHAIN");

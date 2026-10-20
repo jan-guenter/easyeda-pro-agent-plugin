@@ -27,6 +27,7 @@ scope.object.nr.instance=make("nr",{_mode:"WIRING_MODE_SURROUND",_type:"WIRING_C
 scope.object.pl.instance=make("pl",{minimumTrackCorners:1,pushViaOptimization:"OPTIMIZA_OPEN",pathOptimization:0,currentPathOptimization:"OPTIMIZA_WEAK",removeCircuitsContainingVias:true,removeAntenna:true});
 scope.object.ha.instance=make("ha",{wiringRouterParams:scope.object.pl.instance});scope.object.rt=make("Epe",{defaultVia:{innerRadius:0,radius:0}});
 const rules=manager("te",{map:new Map(),_last:undefined,betweenNetRule:make("Wre",{_name:"",rule:[],cacheRuleMap:[]}),ruleTemplateName:"",defaultRuleMap:new Map(),max:null});
+scope.object._Fe={UNIT_NAME:"mm"};
 for(const name of ["nets","netClass","netDifferentials","regionSelectors","equalLengthGroups","padsPairGroups","cacheNetModel"])rules[name]=new Map();
 const families=[["safeSpacings","xI"],["otherSpacings","Ky"],["creepageSpacings","nC"],["trackPhysics","cR"],["netLengthPhysics","tR"],["netLengthTolerancePhysics","rR"],["differentialPhysics","i2"],["blindViaPhysics","Jx"],["radiusPhysics","aR"],["innerPlanes","eR"],["copperPlanes","Qx"],["solderExpansions","lR"],["pasteExpansions","sR"],["autoRouters","hR"]];
 for(const [name,kind] of families)rules[name]=new Map([["default",make(kind,{_name:"default",_isDefault:true,value:1})]]);

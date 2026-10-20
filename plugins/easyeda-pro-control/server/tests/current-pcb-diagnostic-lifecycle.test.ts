@@ -1,9 +1,11 @@
+/* oxlint-disable import/max-dependencies -- Failure provenance is tested through the existing lifecycle, owner, journal and checkpoint boundaries together. */
 import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { sha256Json, sha256Text } from "../src/core.ts";
+import { currentPcbObservationFailure, currentPcbObservationFailureDetail, currentPcbPendingFailure } from "../src/current-pcb-observation-failure.ts";
 import type { CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
@@ -247,6 +249,45 @@ async function readyForString(id: string, value: ReturnType<typeof fixture>): Pr
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
   await value.request("inspect-workers"); await value.request("inspect-worker-script", { targetId: "worker-1" });
 }
+void test("primary observation failure survives publication failure, settlement and historical inspection without replay", async context => {
+  for (const stringPurpose of [false, true]) {
+    const id = `${stringPurpose ? "string-precreate" : "diagnostic"}-test-primary-failure`;
+    let failPublication = true;
+    const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+      if (name === "observation-failure.json" && failPublication) { failPublication = false; throw new Error("synthetic failure publication"); }
+      await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+    } });
+    const primary = currentPcbObservationFailure(stringPurpose ? "STRING_PRECREATE" : "MODEL", "pending",
+      [currentPcbPendingFailure("teardrops", "own")], false);
+    const fail = (): Promise<never> => { value.calls.push("failure-observation"); return Promise.reject(primary); };
+    if (stringPurpose) { value.owner.observeStringPrecreate = fail; await readyForString(id, value); }
+    else {
+      value.owner.observeModelState = fail; await value.coordinator.run(launch(id));
+      await value.request("browser-observation"); await value.request("inspect-frames", { targetId: "target-1" });
+      await value.request("inspect-script", { frameId: "frame-1", family: "pcb" });
+    }
+    const action = stringPurpose ? "observe-string-precreate" : "observe-model-state";
+    await assert.rejects(value.request(action), (error: unknown) => {
+      assert.ok(error instanceof AggregateError); assert.equal(error.cause, primary); return true;
+    });
+    const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.deepEqual(inspected["observationFailure"], currentPcbObservationFailureDetail(primary));
+    assert.equal(inspected["observationFailurePublished"], false);
+    await assert.rejects(value.request(action), /OBSERVATION_CONSUMED/u);
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+    const historical = stringPurpose ? new CurrentPcbStringPrecreateLifecycle(value.options) : new CurrentPcbDiagnosticLifecycle(value.options);
+    const result = await historical.run({ action: "inspect", operationId: id });
+    assert.deepEqual(result["observationFailure"], currentPcbObservationFailureDetail(primary));
+    assert.equal(result["observationFailurePublished"], true); assert.equal(result["historicalOwnershipRecreated"], false);
+    assert.equal(value.calls.filter(call => call === "failure-observation").length, 1);
+    const records = await readCurrentPcbDiagnosticLifecycles();
+    const operation = records.find(item => item.operationId === id);
+    assert.ok(operation !== undefined);
+    const record = operation.records["observation-failure.json"]; assert.ok(record !== undefined);
+    assert.equal(record.intentSha256, sha256Json(operation.records[`${record.stage}-intent.json`]));
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  }
+});
 void test("fixed String lifecycle seals purpose, journals the joined source chain and preserves historical read-only inspection", async context => {
   const id = "string-precreate-test-chain", value = fixture(context, id);
   await readyForOpening(id, value);

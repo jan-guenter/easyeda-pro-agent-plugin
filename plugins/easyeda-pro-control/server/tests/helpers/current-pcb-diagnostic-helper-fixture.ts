@@ -256,6 +256,11 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
   const documentUuid = pcbCase && scenario !== "opening-pcb-model-document-drift" ? pcbDocumentUuid : "a".repeat(32);
   if (phase === "pending") {
+    if (scenario === "opening-pcb-string-pending-refused") {
+      return { result: { type: "string", value: JSON.stringify({
+        schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",
+      }) } };
+    }
     return pendingModelReply(scenario === "staged-model-document-drift" ? "f".repeat(32) : documentUuid);
   }
   if (phase === "raw-strings") { return rawStringsModelReply(documentUuid); }

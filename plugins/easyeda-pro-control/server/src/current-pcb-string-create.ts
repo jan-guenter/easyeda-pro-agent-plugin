@@ -103,6 +103,12 @@ export interface CurrentPcbStringCreateBodyComparison extends Readonly<typeof LI
 }
 const candidates = new WeakSet<CurrentPcbStringCreateCandidate>();
 
+/** Original pure-plan identity only, never a live owner or permission to create. */
+export function requireOriginalCurrentPcbStringCreate(candidate: CurrentPcbStringCreateCandidate): CurrentPcbStringCreateCandidate {
+  need(candidates.has(candidate), "original candidate required");
+  return candidate;
+}
+
 /** The future lifecycle must independently establish a fresh empty root PCB,
  * receiver ownership and complete baselines. Native create generates its ID;
  * this candidate reserves none. A returned ID can precede publication, and

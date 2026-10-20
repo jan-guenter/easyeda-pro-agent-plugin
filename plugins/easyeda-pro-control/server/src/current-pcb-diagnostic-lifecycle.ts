@@ -23,6 +23,7 @@ import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTE
   diagnosticObservationStageSchema, diagnosticPcbOpeningSourceAccepted, publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
   reserveCurrentPcbDiagnosticLifecycle, stringPrecreateObservationResultSchema, stringPrecreateTargetMatches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticLaunchLease, DiagnosticLifecycleBinding, DiagnosticLifecycleOperation, DiagnosticLifecycleRecordName, DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
+import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest;
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
@@ -154,6 +155,9 @@ class CurrentPcbLifecycleCore {
       const noProcessCleanupAvailable = original && this.#retained !== null && this.#lease !== null && !this.#noProcessInvoked &&
         this.#retained.methods.status.call(this.#retained.owner).noProcessCleanupAvailable;
       const native = original && this.#retained !== null ? this.#retained.methods.status.call(this.#retained.owner) : null;
+      const pendingFailure = original ? this.#pending.get("observation-failure.json") : undefined;
+      const failureRecord = pendingFailure === undefined ? operation?.records["observation-failure.json"] :
+        diagnosticLifecycleRecordSchemas["observation-failure.json"].parse(JSON.parse(pendingFailure) as unknown);
       const selectedStage = request.observation ?? this.#stages.toReversed().find(stage =>
         operation?.records[`${stage}-result.json`] !== undefined || original && this.#pending.has(`${stage}-result.json`));
       const observations = this.#stages.map(stage => {
@@ -199,6 +203,8 @@ class CurrentPcbLifecycleCore {
         ...(nativePcbOpeningReply === null ? {} : { nativePcbOpeningReply, pcbHostTransitionAccepted: false }),
         ...(nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false }),
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
+        observationFailure: native?.observationFailure ?? failureRecord?.failure ?? null,
+        observationFailurePublished: operation?.records["observation-failure.json"] !== undefined,
         nativeSendError: native?.nativeSendError ?? null,
         ...(native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError }),
         ...(pendingIntent === null ? {} : { intentSha256: pendingIntent.intentSha256, publicationSettlementAvailable: this.#lease !== null,
@@ -585,6 +591,7 @@ class CurrentPcbLifecycleCore {
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
     await assertSnapshot(expected); this.#assertOwner(retained);
     let result: Readonly<Record<string, unknown>>;
+    try {
     if (request.action === "browser-observation") { result = await retained.methods.browserObservation.call(retained.owner); }
     else if (request.action === "inspect-frames") { result = await retained.methods.inspectFrames.call(retained.owner, request.targetId); }
     else if (request.action === "inspect-script") { result = await retained.methods.inspectScript.call(retained.owner, request.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family]); }
@@ -601,6 +608,26 @@ class CurrentPcbLifecycleCore {
       result = await retained.methods.observePcbOpening.call(retained.owner, preparation.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
     }
     else { result = await retained.methods.observeWorkerState.call(retained.owner); }
+    } catch (caughtError) {
+      const failure = currentPcbObservationFailureDetail(caughtError);
+      if (failure !== null && (stage === "model-state" || stage === "string-precreate")) {
+        const record = diagnosticLifecycleRecordSchemas["observation-failure.json"].parse({
+          schema: "easyeda-pro-control.pcb-diagnostic-observation-failure.v1", operationId: request.operationId,
+          createdAt: new Date().toISOString(), stage, intentSha256: sha256Json(intent), failure, executionAuthorized: false,
+        });
+        this.#retainRecord("observation-failure.json", record);
+        try {
+          this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+          await this.#publish(request.operationId, "observation-failure.json", record);
+          const failed = { ...updated, records: { ...updated.records, "observation-failure.json": record } };
+          await assertSnapshot(expected.map(value => value.operationId === request.operationId ? failed : value)); this.#assertOwner(retained);
+        } catch (publicationError) {
+          // oxlint-disable-next-line eslint/preserve-caught-error -- Keep the primary observation as cause; both it and this later publication error remain in errors.
+          throw new AggregateError([caughtError, publicationError], "PCB_DIAGNOSTIC_OBSERVATION_FAILURE_PUBLICATION", { cause: caughtError });
+        }
+      }
+      throw caughtError;
+    }
     // Preserve the original observation before validation/publication can fail.
     this.#observations.set(stage, result);
     requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES), "OBSERVATION_BOUND");

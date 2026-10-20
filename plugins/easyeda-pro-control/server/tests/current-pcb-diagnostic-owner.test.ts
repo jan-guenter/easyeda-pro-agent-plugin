@@ -517,6 +517,7 @@ void test("model source, scope cleanup and context failures retain the original 
     await value.owner.browserObservation(); await value.owner.inspectFrames("target-1"); await value.owner.inspectScript("frame-1", SCRIPT_PROFILE);
     await assert.rejects(value.owner.observeModelState(), /MODEL_SCOPE|MODEL_OBSERVATION|PIPE_REPLY/u);
     assert.equal(value.owner.status().modelObservationConsumed, true); assert.notEqual(value.owner.status().diagnosticFailure, null);
+    assert.equal(value.owner.status().observationFailure?.family, "MODEL");
     assert.equal(value.child.stdin?.writableEnded, false);
     await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u); await close(value);
   }
@@ -675,10 +676,30 @@ void test("String purpose refuses wrong window, compiler token and changed secon
     await assert.rejects(value.owner.observeStringPrecreate(), /PCB_STRING_PRECREATE_OBSERVATION/u, scenario);
     assert.equal(value.owner.status().stringPrecreateConsumed, true);
     assert.notEqual(value.owner.status().diagnosticFailure, null);
+    if (scenario !== "opening-pcb-string-window-drift") {
+      assert.equal(value.owner.status().observationFailure?.family, "STRING_PRECREATE");
+    }
     assert.equal(value.child.stdin?.writableEnded, false);
     await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
     await close(value);
   }
+});
+
+void test("pending leaf survives successful cleanup and later synthetic pipe invalidation", async context => {
+  const value = await stringFixture(context, "opening-pcb-string-pending-refused");
+  await assert.rejects(value.owner.observeStringPrecreate(), /FAILED_PENDING_LEAF_TEARDROPS_OWN$/u);
+  const status = value.owner.status();
+  assert.equal(status.observationFailure?.phase, "pending");
+  assert.deepEqual(status.observationFailure?.leaf, {
+    schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",
+  });
+  assert.equal(status.observationFailure?.cleanupFailed, false);
+  assert.equal(status.diagnosticFailureObservation?.reason, "input");
+  assert.equal(status.diagnosticFailureObservation?.request?.method, "Runtime.releaseObjectGroup");
+  assert.equal(status.diagnosticFailureObservation?.requestPending, false);
+  assert.equal(status.stringPrecreateConsumed, true);
+  await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+  await close(value);
 });
 
 void test("diagnostic purpose never adopts joined String observations or worker-plus-PCB admission", async context => {

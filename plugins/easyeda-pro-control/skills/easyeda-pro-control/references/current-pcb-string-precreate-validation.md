@@ -28,6 +28,13 @@ The installed version and actual process must first match the reviewed payload.
 Keep that Codex facade alive through cleanup and durable receipt settlement.
 Historical records cannot reconstruct ownership after restart.
 
+Installed20202000 passed one disposable project opening, PCB-frame/full-source
+qualification and direct-child project-worker/full-source qualification. Its
+combined observation stopped at the pending-work reader, before create or Save.
+Original normal closure, whole-Job termination and release passed, with unchanged
+closed fixture bytes. This is partial connected evidence; neither the observation
+nor a writer lifecycle completed. The case is terminal and must not be replayed.
+
 ## Fixed sequence
 
 All calls below use the new tool's `request` object.
@@ -67,6 +74,16 @@ one of `browser`, `frames`, `script`, `pcb-opening`, `workers`, `worker-script`
 or `string-precreate`. The original cleanup and receipt-settlement paths remain
 available after a refusal. Do not disconnect the native pipe to close EasyEDA.
 
+After an observation failure, retain `inspect.observationFailure` when present.
+Its fixed phase and optional leaf stage/reason describe the primary refusal;
+`cleanupFailed` separately reports object-group cleanup. A later
+`diagnosticFailureObservation` with reason `input` can be the owner's synthetic
+invalidation, even when its last request was a successful model release. Do not
+substitute that label for the primary cause. A published failure record survives
+restart as evidence only, not ownership; if publication failed while the original
+owner remains, use the existing same-byte settlement path rather than repeating
+observation. Older cases without this record retain their unknown cause.
+
 ## What the result establishes
 
 Each sweep includes compiler state, pending-producer samples, raw Strings,
@@ -99,6 +116,15 @@ does not dispatch those runners or any writer program. The common-state graph
 preserves aliases, field order, undefined and signed zero; it is not the saved
 format or proof that stored and live state match.
 
+Pure host encoders now model selected native common-record bodies without calling
+FileSource. Encoding can omit raw fields; compare the preserved raw graph as well
+as encoded rows. Missing descriptor or mutable-unit evidence is a real limitation,
+not permission to assume a default. The phase-specific asset relation separately
+checks the default text-base manager and the empty custom font/blob holders.
+An empty custom-font cache alone does not establish an empty text-base cache.
+The default-font box prediction uses exact glyph rounding and matrix arithmetic;
+it does not validate outlines, data-state flags, glyph-table provenance or rendering.
+
 V8's retained internal scope wrappers can contain stale primitive bindings.
 Producer sampling must reacquire the original function's scope list and selected
 scope wrappers for each sample, especially across create or Save. Inspecting a
@@ -106,6 +132,12 @@ timer or promise does not establish queue completion: some wrappers retain them
 after completion, while the buffered uploader clears them before upload finishes.
 PCB and worker handles belong to distinct sessions; cleanup releases the private
 object group separately in both, including after partial failure.
+
+Fixed callback source/location profiles do not expose the captured `this` of
+class arrows. Same-source callbacks from different instances can have different
+hidden receivers. Keep the explicit receiver limitation until original construction
+or equivalent provenance is established. Do not invoke callbacks or pause the
+debugger to manufacture that proof.
 
 The complete writer still needs an original-owner lifecycle that joins a full
 baseline and producer inventory, one consumed create, actual publication,
