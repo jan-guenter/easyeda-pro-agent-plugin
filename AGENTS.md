@@ -4,6 +4,61 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+Delivered `0.3.0+codex.20261020105401` through protected PR86 on2026-10-20.
+Final payload `162e2d0a0d8357c9a076943c35d5254f6c813537`, merged main
+`65e54dec5c6e9649fec870ece8c21b6c8321b91b`; complete treee458f504 and plugin
+tree91edab1b are identical between final PR head and merged main.
+
+One batch adds strict Start Page ancillary-object admission, populated PCB-root
+inventory and two String input-walker Proxy fixes, with operational skill updates.
+The full path uses64requests, including original-group release. Four samples
+remain non-atomic; no empty-board, complete ownership, queue completion, writer
+or Save authority follows. SDK coverage remains774:212public subsets,
+33native equivalents/79blocked/450omitted.
+
+Final frozen verify18294 PASSED:11,872facade/4platformskips/0failures;
+424bridge; strict types/type-aware lint, build, package/MCP and seven skills.
+Logb90b8ccf; all1,585 packaged input files unchanged, fingerprint94a30a01.
+Repository/privacy57533 passededf62efe; seven skill-creator checks33066965.
+Dependency signatures151/attestations40/audit pass, zero vulnerabilities.
+Source529/b28057a3, runtime3/c51ddba3, manifestcc4145ae, plugin manifestb5700204.
+Only facade projections/review time changed; external pins unchanged.
+Exact-head Linux39412830256 PASSED all8shards/build/finalgate; Windows
+39412830294 PASSED. Post-main Windows39414551492 PASSED; automatic Linux
+39414551512 is still running on65e54dec. Check its outcome next session.
+Do not rerun another broad validation campaign just to check that CI result.
+
+Official named Git marketplace upgrade18342 completed with no errors/stderr;
+list confirms installed/enabled105401 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD equals merged main. Maintained comparison98505 PASSED
+1,585files/42directories/32,867,120bytes and modes, inventory1102edaf.
+Exact-main worktree:
+`/root/.cache/easyeda-105401-merged-main-YJt3ekLW/worktree`.
+Release evidence: `/root/.cache/easyeda-start-page-inventory-release-xu66hOr6`.
+The frozen package's offline catalog checks passed; installed byte comparison
+is not a new installed-process startup/admission claim. No maintained standalone
+dependency-free installed-path catalog probe is available; no historical probe
+was reused. Actual loaded1037922 remains093241; it was not killed or hotpatched.
+No more live calls after upgrade. A fresh Codex session must load/admit105401.
+
+The consumed093241 diagnostic is terminal released, with original root/Job
+termination proved. Its browser/frame/UI-source reads passed; its actual blank
+child owner was never inspected. No project/PCB opening, worker/model sample,
+CAD edit, explicit Save or production-design access occurred. Existing-profile
+startup effects remain unqualified. Do not replay that case or reinterpret it
+as proof of the new ancillary path.
+
+Next: check automatic main CI; admit actual fresh105401; run one NEW original-
+owned disposable ancillary/project/PCB/model/normal-cleanup case. Separately
+qualify the exclusive worker path. Then complete String writer/source/producer
+and saved/reopened/visual proof; populated geometry readers; remaining design,
+library and manufacturing families; portability. Batch useful work before
+another release. Details: `docs/current-pcb-start-page-inventory-batch-2026-10-20.md`.
+This post-install handoff is local documentation beyond the immutable PR86 payload.
+
+### Completed105401 preparation
+
 Candidate `0.3.0+codex.20261020105401` batches Start Page ancillary-object
 admission, a populated PCB-root census and two String walker Proxy fixes.
 Four non-atomic diagnostic samples fit the unchanged64-request/64MiB/128KiB
