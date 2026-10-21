@@ -60,8 +60,16 @@ privacy and packaged all7skill checks pass; changed skill also passes the offici
 quick validator. Skill handoff now distinguishes registered observations from
 dormant writer pieces and instructs retention after ambiguous timeouts.
 Combined candidate `0.3.0+codex.20261021100337` is now entering release checks.
-Dependency audit/full verification, final exact-payload CI, publication and
-official installation are pending. No new installed runtime is claimed.
+Dependency tree/signatures/audit pass. Frozen local verify on43e635b completed
+12204facade tests:12198passed,4platformskips,2stale request-budget assertions.
+That run is NOT fully green. Final test-only corrections assert237acceptance/
+238refusal and include the12-request move collector in the shared limit formula;
+all8focused tests and strict targeted lint pass. Runtime/bundles/pins unchanged.
+The final metadata also restores explicit legacy-writer/connected-read boundary
+sentences; maintained package and repository checks pass. All7 official skill
+validators pass; no external plugin validator is installed. Remaining bridge/
+skill/package checks and final exact-head Linux/Windows CI, protected publication
+and official installation are pending. No new installed runtime is claimed.
 Release evidence: `/root/.cache/easyeda-100337-release-GZa75uEt`.
 See `docs/current-pcb-string-lifecycle-batch-2026-10-21.md` and its source notes.
 
