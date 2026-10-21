@@ -12,7 +12,8 @@ void test("observation failures retain the original leaf separately from cleanup
   assert.match(failure.message, /FAILED_PENDING_LEAF_DYNAMIC_COPPER_OBJECT_RELEASE_FAILED$/u);
   assert.doesNotMatch(failure.message, /PRIVATE_CLEANUP/u);
   const details = currentPcbObservationFailureDetail(failure); assert.ok(details !== null);
-  assert.equal(details.cleanupFailed, true); assert.equal(details.leaf?.stage, "dynamic-copper");
+  assert.equal(details.cleanupFailed, true); assert.ok(details.leaf !== null && "stage" in details.leaf);
+  assert.equal(details.leaf.stage, "dynamic-copper");
   assert.equal(details.executionAuthorized, false); assert.equal(Object.isFrozen(details.leaf), true);
   let calls = 0;
   const trap = (): never => { calls += 1; throw new Error("PRIVATE_TRAP"); };

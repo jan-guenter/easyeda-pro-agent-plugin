@@ -29,14 +29,14 @@ function Read-BoundedFile([string]$Path,[int]$MaximumBytes) {
 }
 $helper = Join-Path $PSScriptRoot 'pcb-diagnostic-owner.ps1'
 # This source-artifact ceiling covers both fixed profiles. The default profile
-# retains103 requests/128KiB observations; the separate String profile has155
-# requests including optional common-state reads. Transport remains64MiB.
+# retains103 requests/128KiB observations; the separate String profile has225
+# requests including common, worker and actor reads. Transport remains64MiB.
 $bytes = Read-BoundedFile $helper 524288
-if ($bytes.Length -ne 331961) {throw 'synthetic-launch-helper-size'}
+if ($bytes.Length -ne 500081) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne 'ae7e5dfceb4949b7ff98663dce987040c71d773b4e32f4710a569d3f705231bb') {
+if ($helperHash -cne '6eb5b91814473670fdb4026091f839be26fb47fdbee1b6aa49355c9ebb79d1fc') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)

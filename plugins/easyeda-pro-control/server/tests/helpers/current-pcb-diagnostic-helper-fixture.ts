@@ -5,7 +5,11 @@ import process from "node:process";
 import { createInterface } from "node:readline";
 import { runInContext } from "node:vm";
 import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION, CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION } from "../../src/current-pcb-string-association.ts";
-import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION } from "../../src/current-pcb-string-empty-producers.ts";
+import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION } from "../../src/current-pcb-string-empty-producers.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../../src/current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "../../src/current-pcb-diagnostic-pending-program.ts";
+import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../../src/current-pcb-string-producer-markers.ts";
+import { CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS } from "../../src/current-pcb-string-actor-clock.ts";
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./current-pcb-diagnostic-model-replies.ts";
 import { constructorBundleReply, constructorHandle, constructorPropertiesReply, constructorTupleReply } from "./current-pcb-constructor-replies.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../../src/current-pcb-constructor-scope.ts";
@@ -15,6 +19,8 @@ import { pcbCommonFixture } from "./current-pcb-common-fixture.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../../src/current-pcb-common-state.ts";
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../../src/current-pcb-common-metadata.ts";
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../../src/current-pcb-string-empty-assets.ts";
+import { pcbLazyOwnerFixture, pcbLazyOwnerReply } from "./current-pcb-lazy-owner-fixture.ts";
+import { createCurrentPcbStringWorkerProducerResponder } from "./current-pcb-string-worker-producer-responder.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
@@ -44,8 +50,10 @@ let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let ancillaryReads = 0;
 let commonReading = false;
+let producerResponder: ReturnType<typeof createCurrentPcbStringWorkerProducerResponder> | undefined;
 let sent = Buffer.alloc(0), terminated = false;
 const lines = createInterface({ input: process.stdin });
+lines.on("close", (): void => { producerResponder?.close(); });
 lines.on("line", line => {
   const request: unknown = JSON.parse(line);
   assert.ok(request !== null && typeof request === "object");
@@ -93,7 +101,9 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if ("commonPhase" in request) {
+        if ("actorClockPhase" in request) {
+          assert.equal(stringCase, true); payload = actorClockResponse(request);
+        } else if ("commonPhase" in request) {
           assert.equal(stringCase, true);
           payload = commonResponse(request);
         } else if ("stringPhase" in request) {
@@ -321,7 +331,7 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   assert.equal(id, "handler-scopes-zero");
   assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
   const documentUuid = pcbCase && scenario !== "opening-pcb-model-document-drift" ? pcbDocumentUuid : "a".repeat(32);
-  if (phase === "pending") {
+  if (phase === "pending" || phase === "pending-v2") {
     assert.ok("constructorObjectId" in request); assert.equal(request.constructorObjectId, "constructors");
     assert.ok("teardropObjectId" in request); assert.equal(request.teardropObjectId, "teardrop-proof");
     if (scenario === "opening-pcb-string-pending-refused") {
@@ -329,12 +339,21 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
         schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",
       }) } };
     }
+    if (phase === "pending-v2") {
+      return pcbLazyOwnerReply(CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION, pcbLazyOwnerFixture(`${stringIdentityChange(false)}FP.manager=null;MI.manager=null;`));
+    }
     return pendingModelReply(scenario === "staged-model-document-drift" ? "f".repeat(32) : documentUuid);
   }
   if (phase === "raw-strings") { return rawStringsModelReply(documentUuid); }
   if (phase === "root-inventory") {
     assert.ok("constructorObjectId" in request); assert.equal(request.constructorObjectId, "constructors");
     return rootInventoryModelReply(documentUuid);
+  }
+  if (phase === "snapshot-v2") {
+    const drift = scenario === "opening-pcb-string-token-drift" ?
+      'const previous=base.consistencyManager.unique;base.consistencyManager.unique="b".repeat(32);env.compilerChannel.compiler.PCB.delete(previous);env.compilerChannel.compiler.PCB.set(base.consistencyManager.unique,base);' : "";
+    return pcbLazyOwnerReply(CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION,
+      pcbLazyOwnerFixture(`${stringIdentityChange(false)}FP.manager=null;MI.manager=null;${drift}`));
   }
   assert.equal(phase, "snapshot");
   return { result: { type: "string", value: JSON.stringify({
@@ -426,6 +445,14 @@ function openingResponse(request: object, events: unknown[]): unknown {
 }
 function workerEvent(method: string, params: unknown): unknown { return { method, params, sessionId: "worker-session-1" }; }
 function workerResponse(request: object & Record<"method", unknown>, events: unknown[]): unknown {
+  if ("workerProducerPhase" in request) {
+    producerResponder ??= createCurrentPcbStringWorkerProducerResponder({ projectUuid, branchUuid, windowTabId: "original-window" });
+    if (scenario === "opening-pcb-string-worker-refused" && request.workerProducerPhase === "gates") {
+      return { result: { type: "undefined" }, exceptionDetails: {} };
+    }
+    return producerResponder.reply({ ...request });
+  }
+  if ("actorClockPhase" in request) { return actorClockResponse(request); }
   if (request["method"] === "Runtime.enable") {
     events.push(workerEvent("Runtime.executionContextCreated", { context: {
       id: 8, uniqueId: "worker-context-1", origin: worker.url, name: worker.title,
@@ -452,11 +479,9 @@ function workerResponse(request: object & Record<"method", unknown>, events: unk
   }
   throw new Error("unexpected synthetic worker method");
 }
-function stringResponse(request: object & Record<"stringPhase", unknown>): unknown {
-  assert.equal(stringCase, true); stringReads += 1;
-  const workerRole = request.stringPhase === "worker-association";
+function stringIdentityChange(workerRole: boolean): string {
   const windowId = scenario === "opening-pcb-string-window-drift" ? "foreign-window" : "original-window";
-  const change = `const selectedProject=${JSON.stringify(projectUuid)}, selectedWindow=${JSON.stringify(windowId)};
+  return `const selectedProject=${JSON.stringify(projectUuid)}, selectedWindow=${JSON.stringify(windowId)};
   const selectedChannel="/"+selectedWindow+"/project/"+selectedProject;
   const env=scope.object.x.env, base=env._compiler.base;
   env._id=${JSON.stringify(pcbDocumentUuid)};env._tabId=env._id+"@"+selectedProject;
@@ -464,14 +489,41 @@ function stringResponse(request: object & Record<"stringPhase", unknown>): unkno
   base.consistencyManager.client=selectedWindow;base.dataBus=new J(selectedChannel);
   PROJECT.uuid=selectedProject;PROJECT._branchUuid=${JSON.stringify(branchUuid)};globalThis._TAB_ID_=selectedWindow;
   PROJECT.workerBus=new JP(selectedChannel);globalThis[selectedChannel]=${workerRole ? "PROJECT.workerBus" : "base.dataBus"};
-  ${scenario === "opening-pcb-string-sample-drift" && stringReads > 3 ? 'base.dataBus.uuid="33333333-3333-4333-8333-333333333333";' : ""}`;
-  const context = pcbStringObservationFixture(workerRole, change);
+  ${scenario === "opening-pcb-string-sample-drift" && stringReads > 4 ? 'base.dataBus.uuid="33333333-3333-4333-8333-333333333333";' : ""}`;
+}
+function stringResponse(request: object & Record<"stringPhase", unknown>): unknown {
+  assert.equal(stringCase, true); stringReads += 1;
+  const workerRole = request.stringPhase === "worker-association";
+  const context = pcbLazyOwnerFixture(`${stringIdentityChange(workerRole)}FP.manager=null;MI.manager=null;`);
   if (workerRole) { return pcbStringReply(runInContext(CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION, context) as unknown); }
   assert.ok("objectId" in request && "callbackObjectId" in request);
   assert.equal(request.objectId, "handler-scopes-zero"); assert.equal(request.callbackObjectId, "wrapper");
-  assert.ok(request.stringPhase === "renderer-association" || request.stringPhase === "empty-producers");
-  return pcbStringReply(callPcbStringObservation(context, request.stringPhase === "renderer-association" ?
-    CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION : CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION));
+  const programs = { "renderer-association": CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION,
+    "empty-producers": CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, "empty-producers-v2": CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION,
+    "producer-markers-v2": CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION };
+  const phase = request.stringPhase; assert.ok(typeof phase === "string" && Object.hasOwn(programs, phase));
+  const program: unknown = Reflect.get(programs, phase); assert.equal(typeof program, "string");
+  return pcbLazyOwnerReply(String(program), context);
+}
+function actorClockResponse(request: object & Record<"actorClockPhase", unknown>): unknown {
+  const phase = request.actorClockPhase; assert.ok(phase === "ui" || phase === "worker" || phase === "pcb");
+  if (scenario === "opening-pcb-string-actor-refused" && phase === "worker") {
+    return { result: { type: "undefined" }, exceptionDetails: {} };
+  }
+  const contexts = { worker: "worker-context-1", pcb: "pcb-context", ui: "unique-context-1" };
+  assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, contexts[phase]);
+  const identity = { projectUuid, branchUuid, documentUuid: pcbDocumentUuid, windowTabId: "original-window" };
+  if (phase !== "pcb") {
+    assert.ok("actorProjectUuid" in request && "actorBranchUuid" in request && "actorDocumentUuid" in request && "actorWindowTabId" in request);
+    assert.deepEqual([request.actorProjectUuid, request.actorBranchUuid, request.actorDocumentUuid, request.actorWindowTabId],
+      [identity.projectUuid, identity.branchUuid, identity.documentUuid, identity.windowTabId]);
+  }
+  const setup = `Date.now=()=>1700000000000;
+  const account={uuid:"f".repeat(32),nickname:"Synthetic",username:"synthetic-user",avatar:"avatar"};PROJECT.user={...account};
+  globalThis.gVars={currentProject:{projectId:${JSON.stringify(projectUuid)},branchUuid:${JSON.stringify(branchUuid)},isV2Format:false},isHistoryMode:false,
+  globalVariableCookieData:{userInfo:{uuid:account.uuid,username:account.username,nickname:account.nickname}},loginedUserInfo:{...account}};globalThis.UI={gVars};`;
+  const context = pcbStringObservationFixture(phase === "worker", stringIdentityChange(phase === "worker") + setup);
+  return pcbStringReply(runInContext(`(${CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS[phase]})(${JSON.stringify(identity)})`, context, { timeout: 1000 }) as unknown);
 }
 function sizes(names: readonly string[]): Record<string, number> { return Object.fromEntries(names.map(name => [name, 0])); }
 function watchers(): Record<string, number> { return sizes(["footprint", "symbol", "device", "board", "sch", "sheet", "pcb", "panel", "simulation"]); }

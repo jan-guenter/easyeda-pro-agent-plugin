@@ -35,10 +35,13 @@ It rechecks retained descriptors, method references and prototype identities.
 Every method still needs host-side body and location qualification; matching a
 constructor name alone is not sufficient.
 
-No public caller chooses a method, expression, object handle or scope. A future
-fixed runner must bind the tuple and freshly acquired scope to the original
-worker/context, enforce effect checking, retain replies, release its group and
-recheck the original owner. No such runner is registered by this component.
+No public caller chooses a method, expression, object handle or scope. The
+private fixed worker-producer runner now binds the tuple and freshly acquired
+scope to its original worker/context, enforces effect checking, retains exact
+reader replies, releases its group and rechecks its original owner. The gate
+component itself does not register a transport. See
+[the collector contract](current-pcb-string-worker-producer-runner-2026-10-21.md)
+for the native integration boundary and remaining limitations.
 
 ## What the gates mean
 

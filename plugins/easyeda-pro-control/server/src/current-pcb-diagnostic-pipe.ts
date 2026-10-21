@@ -7,6 +7,7 @@
  * The original native owner must retain both pipe handles until its reviewed
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Two fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
+/* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
   diagnosticExact, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
@@ -20,6 +21,10 @@ import { CURRENT_PCB_COMMON_GRAPH_BYTES } from "./current-pcb-common-graph.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_STRING_PRECREATE_PHASES, CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT } from "./current-pcb-string-commands.ts";
 import type { CurrentPcbStringPrecreateCommand, CurrentPcbStringPrecreatePhase } from "./current-pcb-string-commands.ts";
+import { CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE } from "./current-pcb-string-worker-producer-commands.ts";
+import type { CurrentPcbStringWorkerProducerCommand } from "./current-pcb-string-worker-producer-commands.ts";
+import { CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES } from "./current-pcb-string-actor-clock.ts";
+import type { CurrentPcbStringActorClockCommand } from "./current-pcb-string-actor-clock.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -37,7 +42,8 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
-  `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}`;
+  `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
+  `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -49,9 +55,12 @@ const REQUEST_PHASES = [
   "model-constructors-diagnostic", "model-constructors-precreate",
   "model-teardrop-callbacks", "model-teardrop-owner",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
+  "model-snapshot-v2", "model-pending-v2",
   ...CURRENT_PCB_STRING_PRECREATE_PHASES.map(phase => `string-${phase}` as const),
   "common-wrapper", "common-properties", "common-handler", "common-constructors", "common-presentation", "common-rules",
   "common-preference", "common-assets", "common-metadata", "common-release",
+  ...CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE.map(phase => `worker-producer-${phase}` as const),
+  ...CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.map(phase => `actor-clock-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -258,6 +267,22 @@ class CurrentPcbFixedPipeCore {
     const { commonPhase, ...wire } = command;
     return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId }, `common-${commonPhase}`);
   }
+  protected observeWorkerProducerCommand(command: CurrentPcbStringWorkerProducerCommand): Promise<Reply> {
+    if (!this.#stringPurpose || this.#sessionId === null || command.sessionId !== this.#workerSession()) {
+      return Promise.reject(new Error("PCB_WORKER_PRODUCER_PIPE_PURPOSE"));
+    }
+    // The private tag distinguishes otherwise identical getProperties wire
+    // Shapes; native reconstruction removes it before any Chromium dispatch.
+    const { sessionId, ...wire } = command;
+    return this.#request({ id: this.#nextId, ...wire, sessionId }, `worker-producer-${command.workerProducerPhase}`);
+  }
+  protected observeActorClockCommand(command: CurrentPcbStringActorClockCommand): Promise<Reply> {
+    if (!this.#stringPurpose || this.#sessionId === null || this.#selectedWorkerSession === null) {
+      return Promise.reject(new Error("PCB_ACTOR_CLOCK_PIPE_PURPOSE"));
+    }
+    return this.#request({ id: this.#nextId, ...command,
+      sessionId: command.actorClockPhase === "worker" ? this.#workerSession() : this.#sessionId }, `actor-clock-${command.actorClockPhase}`);
+  }
   public observePcbOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
     phase: CurrentPcbDiagnosticPcbOpeningPhase): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
@@ -458,5 +483,11 @@ export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, true); }
   public observeCommonBaseline(command: CurrentPcbCommonBaselineCommand): Promise<Reply> {
     return this.observeCommonBaselineCommand(command);
+  }
+  public observeWorkerProducers(command: CurrentPcbStringWorkerProducerCommand): Promise<Reply> {
+    return this.observeWorkerProducerCommand(command);
+  }
+  public observeActorClock(command: CurrentPcbStringActorClockCommand): Promise<Reply> {
+    return this.observeActorClockCommand(command);
   }
 }

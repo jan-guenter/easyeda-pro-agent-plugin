@@ -54,7 +54,8 @@ void test("eighteen common commands use fixed String transport phases without fo
     for (const key of ["functionDeclaration", "expression", "objectGroup", "params", "arguments", "budget"]) { assert.equal(Object.hasOwn(flat, key), false); }
     if (commonPhase !== "properties" && commonPhase !== "handler") { assert.throws(() => diagnosticNativeRequest(encoded), /OUTBOUND/u); }
     assert.throws(() => stringPrecreateNativeRequest(wire({ id: index + 1, ...command, commonPhase, sessionId: "original-page" })), /OUTBOUND/u);
-    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 156, ...command, sessionId: "original-page" })), /OUTBOUND/u);
+    assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 225, ...command, sessionId: "original-page" })), { ...flat, requestId: 225 });
+    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 226, ...command, sessionId: "original-page" })), /OUTBOUND/u);
   }
 });
 

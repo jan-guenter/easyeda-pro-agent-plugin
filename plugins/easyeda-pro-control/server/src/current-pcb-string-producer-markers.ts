@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_LAZY_OWNER_GUARDS, currentPcbLazyOwnerSchema } from "./current-pcb-lazy-owner.ts";
 import { CURRENT_PCB_STRING_OBSERVATION_GUARDS, currentPcbStringCountSchema, currentPcbStringMarkerSchema,
   decodeCurrentPcbStringObservation } from "./current-pcb-string-observation-core.ts";
 import type { CURRENT_PCB_STRING_OBSERVATION_LIMITS } from "./current-pcb-string-observation-core.ts";
@@ -23,7 +24,7 @@ const LIMITS = Object.freeze({
  * Collection values/keys never leave the leaf. Counts are not full inventories;
  * callback equality is not lexical receiver or lifecycle evidence.
  */
-export const CURRENT_PCB_STRING_PRODUCER_MARKERS_FUNCTION = `function(originalCallback,constructors){
+function markerProgram(version: 1 | 2): string { return `function(originalCallback,constructors){
 ${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 const prototypes=[],keySamples=[],absentFields=[];
@@ -40,18 +41,19 @@ const arrayCount=o=>{if(!Array.isArray(o)||prototype(o)!==Array.prototype)bad();
 const mapCount=o=>size(o,Map.prototype),setCount=o=>size(o,Set.prototype);
 const ec=klass("x"),env=instance(own(ec,"env"),ec),documentUuid=id(own(env,"_id"),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
 if(own(env,"_doctype")!==3)bad();
-const copperClass=klass("FP"),copperOwner=own(copperClass,"manager");
-let dynamicCopper={manager:"null",state:null};
-if(copperOwner!==null){
+${version === 2 ? `${CURRENT_PCB_LAZY_OWNER_GUARDS}
+const copperClass=klass("FP"),copperSlot=lazyOwner(copperClass),copperOwner=copperSlot.value;` : 'const copperClass=klass("FP"),copperOwner=own(copperClass,"manager");'}
+let dynamicCopper={manager:${version === 2 ? 'copperSlot.marker' : '"null"'},state:null};
+if(${version === 2 ? 'copperSlot.marker==="present"' : 'copperOwner!==null'}){
  const copper=instance(copperOwner,copperClass),workerNameMarker=rawMarker(copper,"workerName");
  const state={openPcb:flag(own(copper,"openPcb")),workerNameMarker,
  workerId:workerNameMarker==="present"?token(own(copper,"workerName")):null,
  timerMarker:rawMarker(copper,"time"),busMarker:rawMarker(copper,"_bus")};
  dynamicCopper={manager:"present",state};
 }
-const modelClass=klass("MI"),modelOwner=own(modelClass,"manager");
-let ratlineModel={manager:"null",state:null};
-if(modelOwner!==null){
+${version === 2 ? 'const modelClass=klass("MI"),modelSlot=lazyOwner(modelClass),modelOwner=modelSlot.value;' : 'const modelClass=klass("MI"),modelOwner=own(modelClass,"manager");'}
+let ratlineModel={manager:${version === 2 ? 'modelSlot.marker' : '"null"'},state:null};
+if(${version === 2 ? 'modelSlot.marker==="present"' : 'modelOwner!==null'}){
  const models=instance(modelOwner,modelClass);
  ratlineModel={manager:"present",state:{netCount:mapCount(own(models,"map")),idCount:mapCount(own(models,"idMap")),
  lastRatlineMarker:rawMarker(models,"_lastRatline"),lastMarker:rawMarker(models,"_last")}};
@@ -81,14 +83,16 @@ const clusters={networkCount:mapCount(own(klass("Xh"),"map")),
 wireClusterCount:mapCount(own(constructorInstance(own(scope,"h_"),"HSe"),"map")),
 jumpWireCount:mapCount(own(constructorInstance(own(scope,"aE"),"USe"),"map")),
  useWireClusterCache:flag(own(klass("h0"),"useWireClusterCache")),emptyNetChange:flag(own(klass("h0"),"emptyNetChange"))};
-verifyConstructorAssociations();verify();
+verifyConstructorAssociations();${version === 2 ? "verifyLazyOwners();" : ""}verify();
 for(const item of retained)if(item.length===3&&!Object.is(Object.getOwnPropertyDescriptor(item[0],item[1]).value,item[2]))bad();
 for(const item of prototypes)if(Object.getPrototypeOf(item[0])!==item[1])bad();
 for(const item of absentFields){let p=item[0],n=0;while(p!==null){if(++n>10||Object.hasOwn(p,item[1]))bad();p=Object.getPrototypeOf(p);}}
 for(const item of keySamples){const k=Reflect.ownKeys(item[0]);if(k.length!==item[1].length)bad();for(let i=0;i<k.length;i++){if(k[i]!==item[1][i])bad();const d=Object.getOwnPropertyDescriptor(item[0],k[i]);if(!d||!Object.hasOwn(d,"value"))bad();}}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-return JSON.stringify({schema:"easyeda-pro-control.pcb-string-producer-markers.v1",documentUuid,dynamicCopper,ratlineModel,ratlineView,net,notification,clusters});
-}`;
+return JSON.stringify({schema:"easyeda-pro-control.pcb-string-producer-markers.v${version}",documentUuid,dynamicCopper,ratlineModel,ratlineView,net,notification,clusters});
+}`; }
+export const CURRENT_PCB_STRING_PRODUCER_MARKERS_FUNCTION = markerProgram(1);
+export const CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION = markerProgram(2);
 
 const number = z.number().refine(value => !Object.is(value, -0));
 const token = number.refine(value => Number.isSafeInteger(value) && value >= 0);
@@ -99,10 +103,11 @@ const copperState = z.object({ openPcb: z.boolean(), workerNameMarker: currentPc
 const copper = z.discriminatedUnion("manager", [absentOwner, z.object({
   manager: z.literal("present"), state: copperState,
 }).strict()]);
+const modelState = z.object({ netCount: currentPcbStringCountSchema, idCount: currentPcbStringCountSchema,
+  lastRatlineMarker: currentPcbStringMarkerSchema, lastMarker: currentPcbStringMarkerSchema }).strict();
 const model = z.discriminatedUnion("manager", [absentOwner, z.object({
   manager: z.literal("present"),
-  state: z.object({ netCount: currentPcbStringCountSchema, idCount: currentPcbStringCountSchema,
-    lastRatlineMarker: currentPcbStringMarkerSchema, lastMarker: currentPcbStringMarkerSchema }).strict(),
+  state: modelState,
 }).strict()]);
 const notification = z.object({
   funcMarker: z.enum(["null", "function"]), frameMarker: z.enum(["null", "token"]), frameId: token.nullable(),
@@ -128,12 +133,21 @@ const schema = z.object({
   clusters: z.object({ networkCount: currentPcbStringCountSchema, wireClusterCount: currentPcbStringCountSchema,
     jumpWireCount: currentPcbStringCountSchema, useWireClusterCache: z.boolean(), emptyNetChange: z.boolean() }).strict(),
 }).strict();
+const schemaV2 = z.object({ ...schema.shape,
+  schema: z.literal("easyeda-pro-control.pcb-string-producer-markers.v2"),
+  dynamicCopper: currentPcbLazyOwnerSchema(copperState), ratlineModel: currentPcbLazyOwnerSchema(modelState),
+}).strict();
 
 export type CurrentPcbStringProducerMarkers = Readonly<z.infer<typeof schema>> &
+typeof CURRENT_PCB_STRING_OBSERVATION_LIMITS & typeof LIMITS;
+export type CurrentPcbStringProducerMarkersV2 = Readonly<z.infer<typeof schemaV2>> &
 typeof CURRENT_PCB_STRING_OBSERVATION_LIMITS & typeof LIMITS;
 
 export function decodeCurrentPcbStringProducerMarkers(input: unknown): CurrentPcbStringProducerMarkers {
   return freezeDeep({ ...decodeCurrentPcbStringObservation(input, schema), ...LIMITS });
+}
+export function decodeCurrentPcbStringProducerMarkersV2(input: unknown): CurrentPcbStringProducerMarkersV2 {
+  return freezeDeep({ ...decodeCurrentPcbStringObservation(input, schemaV2), ...LIMITS });
 }
 
 export const CURRENT_PCB_STRING_PRODUCER_MARKERS_SHA256 =

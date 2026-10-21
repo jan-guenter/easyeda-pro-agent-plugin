@@ -9,6 +9,7 @@ import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts
 import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_TEARDROP_OWNER_FRAGMENT } from "./current-pcb-teardrop-owner-program.ts";
+import { CURRENT_PCB_LAZY_OWNER_GUARDS, currentPcbLazyOwnerSchema } from "./current-pcb-lazy-owner.ts";
 import { currentPcbPendingFailure, currentPcbPendingFailureDetail, currentPcbPendingFailureSchema } from "./current-pcb-observation-failure.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -36,7 +37,7 @@ const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownK
  * silent and returnByValue true; awaitPromise, preview and userGesture false.
  * No source, selectors, remote handles or optional flags come from the caller.
  */
-export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback,constructors,teardropProof){${GUARDS}
+function pendingProgram(version: 1 | 2): string { return `function(originalCallback,constructors,teardropProof){${GUARDS}
 try{
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 stage="scope";
@@ -71,10 +72,14 @@ const tears=constructorInstance(teardropOwner,"Sfe");
 const teardrops={isMove:flag(own(tears,"isMove")),suspend:flag(own(tears,"suspend")),
 modifyCount:collection(keep(tears,"modify").value,Set.prototype),taskCount:collection(keep(tears,"task").value,Set.prototype),
 modifyTearsCount:collection(keep(tears,"modifyTears").value,Set.prototype),timer:keep(tears,"timeoutId").marker};
-stage="dynamic-copper";const copperClass=klass("FP"),copper=instance(keep(copperClass,"manager").value,copperClass),worker=keep(copper,"workerName"),copperBus=keep(copper,"_bus");
-const workerId=worker.marker==="present"?extent(worker.value):null;
+${version === 2 ? `${CURRENT_PCB_LAZY_OWNER_GUARDS}
+stage="dynamic-copper";const copperClass=klass("FP"),copperOwner=lazyOwner(copperClass);
+let worker=null,copperBus=null;
+if(copperOwner.marker==="present"){const copper=instance(copperOwner.value,copperClass);worker=keep(copper,"workerName");copperBus=keep(copper,"_bus");}
+const workerId=worker!==null&&worker.marker==="present"?extent(worker.value):null;` : `stage="dynamic-copper";const copperClass=klass("FP"),copper=instance(keep(copperClass,"manager").value,copperClass),worker=keep(copper,"workerName"),copperBus=keep(copper,"_bus");
+const workerId=worker.marker==="present"?extent(worker.value):null;`}
 stage="worker-registry";const workerClass=klass("Of"),registry=keep(workerClass,"manager");
-let workers=null,association=workerId===null?"no-worker-id":"registry-unavailable";
+let workers=null,association=${version === 2 ? 'copperOwner.marker!=="present"?"owner-unavailable":' : ""}workerId===null?"no-worker-id":"registry-unavailable";
 if(registry.marker==="present"){
 const manager=instance(registry.value,workerClass),map=keep(manager,"map").value,bridges=keep(manager,"busMap").value;
 workers={workerCount:collection(map,Map.prototype),bridgeCount:keyCount(bridges),
@@ -97,14 +102,16 @@ else association="matched";
 }
 }
 }
-stage="reproof";verifyConstructorAssociations();verifyTeardropOwner();if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
+stage="reproof";verifyConstructorAssociations();verifyTeardropOwner();${version === 2 ? "verifyLazyOwners();" : ""}if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
 for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-stage="serialize";return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v1",documentUuid,copperUploads,planeUploads,boardUpload,
+stage="serialize";return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v${version}",documentUuid,copperUploads,planeUploads,boardUpload,
 commands:{undoCount,redoCount,activeStack},teardrops,workerRegistry:{marker:registry.marker,workers},
-dynamicCopper:{workerMarker:worker.marker,workerId,busMarker:copperBus.marker,association}});
+dynamicCopper:${version === 2 ? '{manager:copperOwner.marker,state:copperOwner.marker==="present"?{workerMarker:worker.marker,workerId,busMarker:copperBus.marker,association}:null}' : '{workerMarker:worker.marker,workerId,busMarker:copperBus.marker,association}'}});
 }catch{return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-failure.v1",stage,reason});}
-}`;
+}`; }
+export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = pendingProgram(1);
+export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION = pendingProgram(2);
 
 export const CURRENT_PCB_DIAGNOSTIC_PENDING_PROGRAM_SHA256 =
   createHash("sha256").update(CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION).digest("hex");
@@ -156,12 +163,25 @@ const schema = z.object({
   }
   return true;
 });
+const schemaV2 = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-pending-state.v2"),
+  documentUuid: schema.shape.documentUuid, copperUploads: schema.shape.copperUploads,
+  planeUploads: schema.shape.planeUploads, boardUpload: schema.shape.boardUpload, commands: schema.shape.commands,
+  teardrops: schema.shape.teardrops, workerRegistry: schema.shape.workerRegistry,
+  dynamicCopper: currentPcbLazyOwnerSchema(schema.shape.dynamicCopper),
+}).strict().refine(value => {
+  if (value.dynamicCopper.manager !== "present") { return true; }
+  // Reuse the original complete association relation only for an actual owner.
+  return schema.safeParse({ ...value, schema: "easyeda-pro-control.pcb-diagnostic-pending-state.v1",
+    dynamicCopper: value.dynamicCopper.state }).success;
+});
 const LIMITS = Object.freeze({
   completePendingProducerInventoryVerified: false, producerCompletionVerified: false,
   projectWorkerAssociationVerified: false, workerLivenessVerified: false, queueCompletionVerified: false,
   saveAuthorized: false, executionAuthorized: false, continuousObservation: false, nativeIntrinsicsVerified: false,
 } as const);
 export type CurrentPcbDiagnosticPendingState = Readonly<z.infer<typeof schema>> & typeof LIMITS;
+export type CurrentPcbDiagnosticPendingStateV2 = Readonly<z.infer<typeof schemaV2>> & typeof LIMITS;
 
 function refuse(): never { throw currentPcbPendingFailure("decode", "reply"); }
 function record(value: unknown, names: readonly string[]): Readonly<Record<string, unknown>> {
@@ -180,18 +200,25 @@ function record(value: unknown, names: readonly string[]): Readonly<Record<strin
 }
 
 /** Decoder only. A supplied snapshot cannot establish original-owner authority. */
-export function decodeCurrentPcbDiagnosticPendingReply(input: unknown): CurrentPcbDiagnosticPendingState {
+function replyData(input: unknown): unknown {
   const reply = record(input, ["result"]), result = record(reply["result"], ["type", "value"]);
   const raw = result["value"];
   if (result["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() ||
       Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_PENDING_RESULT_BYTES) { return refuse(); }
+  const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), failure = currentPcbPendingFailureSchema.safeParse(decoded);
+  if (failure.success) { throw currentPcbPendingFailure(failure.data.stage, failure.data.reason); }
+  return decoded;
+}
+export function decodeCurrentPcbDiagnosticPendingReply(input: unknown): CurrentPcbDiagnosticPendingState {
   try {
-    const decoded = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")), failure = currentPcbPendingFailureSchema.safeParse(decoded);
-    if (failure.success) { throw currentPcbPendingFailure(failure.data.stage, failure.data.reason); }
-    const state = schema.parse(decoded);
+    const state = schema.parse(replyData(input));
     return freezeDeep({ ...state, ...LIMITS });
   } catch (caughtError) {
     if (currentPcbPendingFailureDetail(caughtError) !== null) { throw caughtError; }
     return refuse();
   }
+}
+export function decodeCurrentPcbDiagnosticPendingReplyV2(input: unknown): CurrentPcbDiagnosticPendingStateV2 {
+  try { return freezeDeep({ ...schemaV2.parse(replyData(input)), ...LIMITS }); }
+  catch (error) { if (currentPcbPendingFailureDetail(error) !== null) { throw error; } return refuse(); }
 }

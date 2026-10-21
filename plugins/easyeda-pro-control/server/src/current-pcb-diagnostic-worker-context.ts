@@ -176,6 +176,14 @@ export class CurrentPcbDiagnosticWorkerContext {
     if (!diagnosticToken(uniqueId)) { return this.#refuse(); }
     return uniqueId;
   }
+  /** Original admitted worker only; no selection or ownership adoption. */
+  public producerContext(): Readonly<{ sessionId: string; scriptId: string; uniqueContextId: string }> {
+    const uniqueContextId = this.evaluationContext();
+    const selected = this.#selectedScript();
+    const scriptId = selected.script["scriptId"];
+    if (!diagnosticToken(scriptId)) { return this.#refuse(); }
+    return Object.freeze({ sessionId: selected.sessionId, scriptId, uniqueContextId });
+  }
   public observeTargets(reply: Row): void { this.#targets(reply); }
   public finishState(reply: unknown, targetReply: Row): Row {
     this.evaluationContext(); this.#targets(targetReply);

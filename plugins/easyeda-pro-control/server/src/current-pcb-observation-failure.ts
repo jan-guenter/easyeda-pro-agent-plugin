@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { currentPcbConstructorFailureDetail, currentPcbConstructorFailureSchema } from "./current-pcb-constructor-failure.ts";
 import { currentPcbTeardropFailureDetail, currentPcbTeardropFailureSchema } from "./current-pcb-teardrop-failure.ts";
+import { currentPcbStringWorkerProducerFailureDetail, currentPcbStringWorkerProducerFailureSchema } from "./current-pcb-string-worker-producer-evidence.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const currentPcbPendingFailureStageSchema = z.enum(["callback", "scope", "environment", "copper-uploads", "plane-uploads",
@@ -13,11 +14,13 @@ export const currentPcbPendingFailureReasonSchema = z.enum(["guard", "object", "
 export const currentPcbPendingFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-pending-failure.v1"),
   stage: currentPcbPendingFailureStageSchema, reason: currentPcbPendingFailureReasonSchema }).strict();
 const phaseSchema = z.enum(["owner", "owner-final", "wrapper", "properties", "handler", "teardrop-callbacks", "teardrop-owner", "constructors-diagnostic", "constructors-precreate", "snapshot", "pending", "raw-strings", "root-inventory",
-  "renderer-association", "worker-association", "empty-producers", "identity", "empty-baseline", "bounds", "sample-match", "owner-observation", "release"]);
+  "renderer-association", "worker-association", "empty-producers", "snapshot-v2", "pending-v2", "empty-producers-v2", "producer-markers-v2",
+  "worker-producers", "actor-clock", "identity", "empty-baseline", "bounds", "sample-match", "owner-observation", "release"]);
 export type CurrentPcbObservationPhase = z.infer<typeof phaseSchema>;
 export const currentPcbObservationFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-observation-failure.v1"),
   family: z.enum(["MODEL", "STRING_PRECREATE"]), phase: phaseSchema,
-  leaf: z.discriminatedUnion("schema", [currentPcbPendingFailureSchema, currentPcbConstructorFailureSchema, currentPcbTeardropFailureSchema]).nullable(),
+  leaf: z.discriminatedUnion("schema", [currentPcbPendingFailureSchema, currentPcbConstructorFailureSchema, currentPcbTeardropFailureSchema,
+    currentPcbStringWorkerProducerFailureSchema]).nullable(),
   cleanupFailed: z.boolean(), failureCount: z.number().int().min(1).max(8), executionAuthorized: z.literal(false),
   dispatchAbsenceVerified: z.literal(false) }).strict();
 export type CurrentPcbObservationFailure = Readonly<z.infer<typeof currentPcbObservationFailureSchema>>;
@@ -41,8 +44,13 @@ export function currentPcbObservationFailureDetail(error: unknown): CurrentPcbOb
 
 export function currentPcbObservationFailure(family: "MODEL" | "STRING_PRECREATE", phase: CurrentPcbObservationPhase,
   failures: readonly unknown[], cleanupFailed: boolean): AggregateError {
-  const leaf = currentPcbPendingFailureDetail(failures[0]) ?? currentPcbConstructorFailureDetail(failures[0]) ?? currentPcbTeardropFailureDetail(failures[0]);
-  const suffix = leaf === null ? "" : `_LEAF_${leaf.stage.toUpperCase().replaceAll("-", "_")}_${leaf.reason.toUpperCase()}`;
+  const leaf = currentPcbPendingFailureDetail(failures[0]) ?? currentPcbConstructorFailureDetail(failures[0]) ??
+    currentPcbTeardropFailureDetail(failures[0]) ?? currentPcbStringWorkerProducerFailureDetail(failures[0]);
+  let suffix = "";
+  if (leaf !== null) {
+    suffix = "stage" in leaf ? `_LEAF_${leaf.stage.toUpperCase().replaceAll("-", "_")}_${leaf.reason.toUpperCase()}` :
+      `_WORKER_${leaf.phase.toUpperCase().replaceAll("-", "_")}_${leaf.cleanup.toUpperCase().replaceAll("-", "_")}`;
+  }
   const error = new AggregateError(failures,
     `PCB_${family === "MODEL" ? "DIAGNOSTIC_MODEL" : family}_OBSERVATION_FAILED_${phase.toUpperCase().replaceAll("-", "_")}${suffix}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
     { cause: failures[0] });

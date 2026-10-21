@@ -1,6 +1,6 @@
 # PCB owned baseline and callback discovery batch
 
-Candidate: `0.3.0+codex.20261021055237`.
+Delivered: `0.3.0+codex.20261021055237` through protected PR93.
 
 This batch adds an optional callable common-state comparison, fixes teardrop-owner
 discovery in both public observation paths, and adds private worker gate/publisher
@@ -79,5 +79,27 @@ See [common baseline session](current-pcb-common-baseline-session-2026-10-21.md)
 ## Verification and delivery
 
 Focused synthetic inspector, decoder, protocol and lifecycle tests accompany the
-batch. They are not connected execution evidence. Final frozen-payload checks,
-protected CI, publication and installation are pending.
+batch. They are not connected execution evidence.
+
+Final head `63abfae2b07d411a9fbdc46277f46f34a7b2de53` passed Linux39553826177
+(all10jobs,12110passes/5platformskips/0failures) and Windows39553826224.
+Protected PR93 merged to `a5739a939eb9b9be8b4bdece90cfd492470357d0` with the same
+complete tree and packaged subtree. Strict type-aware lint, types,424bridge tests,
+build reproducibility, seven skills, package/MCP and repository/privacy checks pass.
+The earlier local full run retained one stale256KiB helper-cap assertion failure;
+the final test-only correction changes two constants to the existing512KiB bound.
+Do not describe that earlier local run as zero-failure.
+
+The official named Git marketplace upgrade installed/enabled this version from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Exact-main installed
+comparison passed1678files,42directories,34478090bytes and all committed modes.
+The installed offline catalog probe passed26restricted tools/51configured policies,
+10queries/12requests, normal EOF/exit0, no stderr, post-close checks and sampled
+no-descendant/socket checks. It did not select the live control root, admit the
+actual host or validate connected execution. The old host was left untouched.
+
+A fresh Codex chat must admit the actual loaded version before the next disposable
+case. The preceding233238 case is terminal released and must never be replayed.
+Post-main Windows39555303710 passed; duplicate Linux39555303718 was still running
+on the identical tree at handoff. No new local broad test run is needed for that.
+These delivery notes postdate immutable PR93; no packaged file changed afterward.

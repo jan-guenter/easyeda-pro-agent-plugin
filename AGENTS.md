@@ -4,6 +4,109 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Combined073200 release preparation, 2026-10-21
+
+Candidate `0.3.0+codex.20261021073200` on
+`feature/pcb-owned-producers-20261021` combines inherited-constructor correction,
+V2 lazy-owner sweeps, original-worker58-request collection and six actor/local-
+clock samples. Existing precreate action now uses203requests or225 with common;
+diagnostic stays103. Full V2 evidence680KiB is journaled; initial/inspect results
+return a compact summary. Historical V1 programs/bounds remain unchanged.
+Dormant command-state now consumes original teardrop proof. No writer/coverage
+increase; backlog in `docs/current-pcb-owned-producers-batch-2026-10-21.md`.
+
+Main/independent reviews accept all24 constructor profiles and all49 embedded
+programs, including22 prior byte-identical programs. Helper500081/6eb5b918,
+both actual Windows PowerShell5.1 no-app CompileOnly profiles pass. Focused
+synthetic203/225routes, owner/failure/cleanup and large-result summary tests pass;
+strict types and targeted type-aware lint clean. Freeze/build/pins, required
+verification, protected CI/publication and official installation pending.
+Release evidence: `/root/.cache/easyeda-073200-release-lK3xEMpa`.
+
+Actual2055019 remains installed055237, untouched. No pending native/CAD owner;
+terminal055237case below must never replay. No further live call this session.
+After installation use a fresh chat for actual-version admission and one new
+disposable case. Production designs remain excluded, including read/hash work.
+
+### 055237 terminal disposable case; combined implementation, 2026-10-21
+
+Actual055237 admission passed main and independent: facade2055019/start54101485,
+parent2053294/start54096552, exact574source/3runtime and1678installed files/modes.
+Post-main Linux39555303718 PASSED/all10jobs. Original
+`string-precreate-055237-20261021-01` is terminal released; NEVER replay.
+Project/PCB/worker opening and full-source observations passed. Optional common
+baseline refused in constructor-properties before precreate/create/Save. Cleanup
+released; the final synthetic input invalidation is not a release failure.
+Root42188/creation134370398619813012 closed normally, whole Job empty and helper
+released; disposable598016/e620d21a unchanged. No production design accessed.
+Receipts: `/root/.cache/easyeda-055237-live-6t8Hex4A`; independent admission:
+`/root/.cache/easyeda-055237-independent-admission-KW5Pc0aM/admission.json`.
+
+Branch `feature/pcb-owned-producers-20261021` batches exact inherited-constructor
+metadata correction, versioned lazy-owner observations, retained teardrop proof,
+original worker producer collection and String-specific actor/clock sampling.
+Real synthetic inspector reproduces GSe.prototype className Ni, not Object;
+fixed request75 localizes the refusal to GSe metadata, but its raw reply was not
+retained. Do not call the exact failed field live-observed. No new writer or
+coverage claim. Keep the batch together; no live retry on installed055237,
+hotpatch, owner termination or tiny diagnostics-only publication.
+
+### Delivered055237 checkpoint, 2026-10-21
+
+Delivered `0.3.0+codex.20261021055237` through protected PR93. Exact tested head
+`63abfae2b07d411a9fbdc46277f46f34a7b2de53`, merged main
+`a5739a939eb9b9be8b4bdece90cfd492470357d0`; full tree652118cc and plugin
+tree63f50532 are identical. One batch adds original-owned common/pre-open SQL
+comparison, bound-callback teardrop discovery, fixed native transport, bounded
+primary-failure evidence and private worker gate/publisher profiles. Operational
+skills now describe the optional common stage and its exact refusal semantics.
+No geometry writer or SDK coverage increase; remaining work is documented in
+`docs/current-pcb-owned-baseline-batch-2026-10-21.md`.
+
+Source574/b2b05caf, runtime3/8edc0a3a, compatibilitycb8030bd; external pins
+unchanged. Native helper331961/ae7e5dfc and22 embedded programs independently
+verified. Both actual Windows no-app CompileOnly profiles pass. Dependency
+tree/signatures/audit, strict lint/types, reproducible bundles and seven official
+skill checks pass. Original frozen local verify21362 completed12115tests:
+12110passed,1stale helper-cap assertion failed,4skipped. Never call that run fully
+green. Final63abfae changes only two test constants256KiB->512KiB to match the
+already-reviewed artifact bound; runtime/pins unchanged. Four focused tests pass.
+Separate22138 passed424bridge tests, all7skills, plugin/MCP and repository/privacy
+checks after the original full run ended. Final exact-head Linux39553826177
+(all10jobs;12115tests/12110passed/5platformskips/0failures) and Windows39553826224
+PASSED. Post-main Windows39555303710 PASSED; duplicate Linux39555303718 is still
+running on the identical merged tree. Check its result next session, not a new
+local broad suite.
+
+Official named Git marketplace upgrade16415/list22064 confirm installed/enabled
+055237 from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`.
+Marketplace HEAD is merged main; upgrade errors/stderr empty. Maintained exact-
+main comparison96291 passes1678files/42dirs/34478090bytes/modes, inventorya1f50e8f.
+Exact-main checkout: `/root/.cache/easyeda-055237-final-H9cDvvhB/worktree`.
+Installed offline probe96291 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0, no stderr, normal stdin EOF/exit0. Post-close
+marker/control checks and sampled no-descendant/socket checks pass; continuous
+isolation, connected validation and runtime admission are not claimed.
+Independent delivery review repeated the complete maintained file/mode comparison
+and checked upgrade/list, exact-head CI and retained offline receipts; PASSED.
+Main read receipt70ef0b67 in
+`/root/.cache/easyeda-055237-independent-delivery-0UptKoLZ/delivery-review.json`.
+The offline probe was not repeated. Handoff repository/privacy check79658 passed.
+Release receipts and private next-session plan:
+`/root/.cache/easyeda-055237-release-A9HNggaz`.
+
+Loaded facade1927870/start53543483 remains233238, parent1926256/start53538056.
+It was not killed, rebound or hotpatched; no live call after installation. A fresh
+Codex chat and actual055237 admission are required before one NEW disposable
+common/precreate case. Terminal `string-precreate-233238-20261021-01` below must
+NEVER be replayed. No pending CAD/native owner, create or Save; production designs
+untouched. Next batch should combine versioned nullable owners, retained teardrop
+proof migration, callback/gate transport integration and String-specific actor/
+clock ownership; do not publish merely another marker-diagnostic increment.
+Private next-session.md explains unresolved receiver/destination containment and
+one-create/one-Save/full-SQL/reopen/visual obligations. This delivery record is
+beyond immutable PR93; packaged payload unchanged.
+
 ### 055237 batch frozen; delivery checks in progress, 2026-10-21
 
 Actual233238 admission passed main and independent checks: facade1927870/

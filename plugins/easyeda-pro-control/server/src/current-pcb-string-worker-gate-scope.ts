@@ -75,6 +75,14 @@ function method(value: z.infer<typeof remote>, kind: CurrentPcbStringWorkerGateK
   return value.objectId;
 }
 
+/** Only the fixed PROJECT selector's exact remote-object envelope is accepted. */
+export function decodeCurrentPcbStringWorkerProject(input: unknown): string {
+  try {
+    return z.object({ result: z.object({ type: z.literal("object"), className: z.literal("Lg"),
+      description: z.literal("Lg"), objectId: token }).strict() }).strict().parse(data(input)).result.objectId;
+  } catch { return refuse(); }
+}
+
 export function decodeCurrentPcbStringWorkerGateBundle(input: unknown): string {
   try {
     return z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"),

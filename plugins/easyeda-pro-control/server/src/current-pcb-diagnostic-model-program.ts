@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
+import { CURRENT_PCB_LAZY_OWNER_GUARDS, currentPcbLazyOwnerSchema } from "./current-pcb-lazy-owner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const MAX_COUNT = 65_536;
@@ -64,7 +65,7 @@ return handler;
  * No getters, vendor methods, paths, titles, primitive values or queue payloads.
  * Map iteration selects the intrinsic and bounds the already checked size.
  */
-export const CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION = `function(originalCallback){${GUARDS}
+function stateProgram(version: 1 | 2): string { return `function(originalCallback){${GUARDS}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 const scope=object(own(this,"object"));
 const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
@@ -99,12 +100,22 @@ const state=compiler(own(footprint,"instance"),"custom-footprint");if(state.uuid
 }
 }
 if(own(Reflect.apply(next,iterator,[]),"done")!==true)bad();
-const copper=instance(own(copperClass,"manager"),copperClass),workerMarker=marker(copper,"workerName");
+${version === 2 ? `${CURRENT_PCB_LAZY_OWNER_GUARDS}
+const copperOwner=lazyOwner(copperClass);let dynamicCopper={manager:copperOwner.marker,state:null};
+if(copperOwner.marker==="present"){
+const copper=instance(copperOwner.value,copperClass),workerMarker=marker(copper,"workerName");
 let workerName=null;if(workerMarker==="present")workerName=extent(own(copper,"workerName"));
-const dynamicCopper={openPcb:flag(own(copper,"openPcb")),workerNameMarker:workerMarker,workerName,timer:marker(copper,"time"),bus:marker(copper,"_bus")};
-if(own(envClass,"env")!==env||own(managerClass,"manager")!==manager||own(copperClass,"manager")!==copper||own(env,"_compiler")!==mainOwner||own(manager,"map")!==map||own(env,"compilerChannel")!==channel)bad();
-return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-model-state.v1",main,loadedFootprintCount,customFootprints:custom,dynamicCopper});
-}`;
+dynamicCopper={manager:"present",state:{openPcb:flag(own(copper,"openPcb")),workerNameMarker:workerMarker,workerName,timer:marker(copper,"time"),bus:marker(copper,"_bus")}};
+}
+verifyLazyOwners();` : `const copper=instance(own(copperClass,"manager"),copperClass),workerMarker=marker(copper,"workerName");
+let workerName=null;if(workerMarker==="present")workerName=extent(own(copper,"workerName"));
+const dynamicCopper={openPcb:flag(own(copper,"openPcb")),workerNameMarker:workerMarker,workerName,timer:marker(copper,"time"),bus:marker(copper,"_bus")};`}
+if(own(envClass,"env")!==env||own(managerClass,"manager")!==manager||${version === 1 ? 'own(copperClass,"manager")!==copper||' : ""}own(env,"_compiler")!==mainOwner||own(manager,"map")!==map||own(env,"compilerChannel")!==channel)bad();
+return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-model-state.v${version}",main,loadedFootprintCount,customFootprints:custom,dynamicCopper});
+}`; }
+export const CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION = stateProgram(1);
+/** Separate versioned observation; null owners carry no subordinate state. */
+export const CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION = stateProgram(2);
 
 export const CURRENT_PCB_DIAGNOSTIC_MODEL_PROGRAM_HASHES = Object.freeze({
   callback: createHash("sha256").update(CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION).digest("hex"),
@@ -124,6 +135,9 @@ const compilerSchema = z.object({
   subscriptionCount: countSchema, pendTimer: markerSchema, pendPromise: markerSchema, maxTicket: extentSchema,
   pendingChange: z.boolean(), localChange: z.boolean(),
 }).strict();
+const copperStateSchema = z.object({ openPcb: z.boolean(), workerNameMarker: markerSchema, workerName: extentSchema.nullable(),
+  timer: markerSchema, bus: markerSchema }).strict()
+  .refine(value => (value.workerNameMarker === "present") === (value.workerName !== null));
 const stateSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-model-state.v1"),
   main: compilerSchema.refine(value => value.headType === "PCB" && idSchema.safeParse(value.uuid).success),
@@ -135,10 +149,19 @@ const stateSchema = z.object({
   new Set(value.customFootprints.map(item => item.uuid)).size === value.customFootprints.length &&
   new Set([value.main.uniqueId, ...value.customFootprints.map(item => item.uniqueId)]).size === value.customFootprints.length + 1 &&
   (value.dynamicCopper.workerNameMarker === "present") === (value.dynamicCopper.workerName !== null));
+const stateV2Schema = z.object({
+  main: stateSchema.shape.main, loadedFootprintCount: stateSchema.shape.loadedFootprintCount,
+  customFootprints: stateSchema.shape.customFootprints,
+  schema: z.literal("easyeda-pro-control.pcb-diagnostic-model-state.v2"),
+  dynamicCopper: currentPcbLazyOwnerSchema(copperStateSchema),
+}).strict().refine(value => value.customFootprints.length <= value.loadedFootprintCount &&
+  new Set(value.customFootprints.map(item => item.uuid)).size === value.customFootprints.length &&
+  new Set([value.main.uniqueId, ...value.customFootprints.map(item => item.uniqueId)]).size === value.customFootprints.length + 1);
 const LIMITS = Object.freeze({ completeModelMembershipVerified: false, completePendingProducerInventoryVerified: false,
   projectWorkerAssociationVerified: false, queueCompletionVerified: false, saveAuthorized: false,
   executionAuthorized: false, continuousObservation: false, nativeIntrinsicsVerified: false } as const);
 export type CurrentPcbDiagnosticModelState = Readonly<z.infer<typeof stateSchema>> & typeof LIMITS;
+export type CurrentPcbDiagnosticModelStateV2 = Readonly<z.infer<typeof stateV2Schema>> & typeof LIMITS;
 
 function refuse(): never { throw new Error("PCB_DIAGNOSTIC_MODEL_REPLY"); }
 function record(value: unknown, names: readonly string[]): Readonly<Record<string, unknown>> {
@@ -158,13 +181,20 @@ function record(value: unknown, names: readonly string[]): Readonly<Record<strin
 /** Shape validation only: original source/session/reference ownership remains
  * the retained diagnostic owner's obligation. Supplied JSON grants no authority.
  */
-export function decodeCurrentPcbDiagnosticModelReply(input: unknown): CurrentPcbDiagnosticModelState {
+function replyData(input: unknown): unknown {
   const reply = record(input, ["result"]), result = record(reply["result"], ["type", "value"]);
   const raw = result["value"];
   if (result["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() ||
       Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_MODEL_RESULT_BYTES) { return refuse(); }
+  return decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8"));
+}
+export function decodeCurrentPcbDiagnosticModelReply(input: unknown): CurrentPcbDiagnosticModelState {
   try {
-    const state = stateSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8")));
+    const state = stateSchema.parse(replyData(input));
     return freezeDeep({ ...state, ...LIMITS });
   } catch { return refuse(); }
+}
+export function decodeCurrentPcbDiagnosticModelReplyV2(input: unknown): CurrentPcbDiagnosticModelStateV2 {
+  try { return freezeDeep({ ...stateV2Schema.parse(replyData(input)), ...LIMITS }); }
+  catch { return refuse(); }
 }

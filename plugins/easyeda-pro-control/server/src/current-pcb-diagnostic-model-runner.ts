@@ -75,11 +75,11 @@ export type CurrentPcbDiagnosticModelCommand =
       Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>,
       Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
-  | Readonly<{ modelPhase: "snapshot"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+  | Readonly<{ modelPhase: "snapshot" | "snapshot-v2"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION; returnByValue: true;
     arguments: readonly [Readonly<{ objectId: string }>];
   }> }>
-  | Readonly<{ modelPhase: "pending"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+  | Readonly<{ modelPhase: "pending" | "pending-v2"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION; returnByValue: true;
     arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
@@ -148,7 +148,7 @@ export class CurrentPcbDiagnosticModelRunner {
     const handles = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "diagnostic"), prototypes = new Set<string>();
     for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic.entries()) {
       const selected = handles[index]; if (selected === undefined) { return refuse(); }
-      const qualified = decodeCurrentPcbConstructorProperties(await this.#properties(selected), this.#scriptId, name);
+      const qualified = decodeCurrentPcbConstructorProperties(await this.#properties(selected), this.#scriptId, name, "diagnostic");
       if (prototypes.has(qualified.prototypeId)) { return refuse(); } prototypes.add(qualified.prototypeId);
     }
     return bundle;

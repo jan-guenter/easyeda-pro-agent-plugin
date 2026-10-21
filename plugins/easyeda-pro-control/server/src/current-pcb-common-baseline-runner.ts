@@ -162,7 +162,7 @@ export class CurrentPcbCommonBaselineRunner {
     const constructors = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "common"), prototypes = new Set<string>();
     for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.common.entries()) {
       const constructor = constructors[index]; if (constructor === undefined) { return refuse(); }
-      const result = decodeCurrentPcbConstructorProperties(await this.#properties(constructor), this.#script, name);
+      const result = decodeCurrentPcbConstructorProperties(await this.#properties(constructor), this.#script, name, "common");
       if (prototypes.has(result.prototypeId)) { return refuse(); } prototypes.add(result.prototypeId);
     }
     return bundle;

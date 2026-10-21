@@ -3,7 +3,8 @@ import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { runInContext } from "node:vm";
 import { CURRENT_PCB_STRING_COMMAND_STATE_FUNCTION, decodeCurrentPcbStringCommandState } from "../src/current-pcb-string-command-state.ts";
-import { callPcbStringObservation, pcbStringObservationFixture, pcbStringReply } from "./helpers/current-pcb-string-observation-fixture.ts";
+import { pcbStringObservationFixture, pcbStringReply } from "./helpers/current-pcb-string-observation-fixture.ts";
+import { CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING, currentPcbTeardropSources } from "./helpers/current-pcb-teardrop-fixture.ts";
 
 const SETUP = `
 class G6{constructor(){this.groupId=undefined;this.groupName=null;this.number=-1;
@@ -18,11 +19,14 @@ class t7{constructor(){this.mgr=bo.manager;}}
 class pE{constructor(){this.flag=false;}}pE.proxy=new pE();
 class qI{constructor(){this.data=new Set();}}qI.proxy=new qI();
 class e5{constructor(){this.data=new Set();}}e5.proxy=new e5();
-class Sfe{constructor(){this.isMove=false;this.suspend=true;this.modify=new Set();this.task=new Set();this.modifyTears=new Set();this.timeoutId=null;}}
-Object.assign(scope.object,{G6,De,kde,rd,bo,t7,pE,qI,e5,Sfe,Xe:new kde(),Jr:new t7(),Zec:new Sfe()});
+class Sfe{constructor(){this.isMove=false;this.suspend=true;this.modify=new Set();this.task=new Set();this.modifyTears=new Set();this.timeoutId=null;}${currentPcbTeardropSources.join("")}}
+Object.assign(scope.object,{G6,De,rd,bo,t7,pE,qI,e5,Xe:new kde(),Jr:new t7()});
+producerConstructors[0]=kde;producerConstructors[1]=Sfe;
+const tearsOwner=new Sfe();${CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING}
 `;
+const EXPRESSION = `(${CURRENT_PCB_STRING_COMMAND_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,producerConstructors,teardropProof)`;
 function sample(change = ""): ReturnType<typeof pcbStringReply> {
-  return pcbStringReply(callPcbStringObservation(pcbStringObservationFixture(false, SETUP + change), CURRENT_PCB_STRING_COMMAND_STATE_FUNCTION));
+  return pcbStringReply(runInContext(EXPRESSION, pcbStringObservationFixture(false, SETUP + change), { timeout: 1000 }) as unknown);
 }
 
 void test("one String command observes generated ID and exact upload-cleared history", () => {
@@ -31,7 +35,7 @@ void test("one String command observes generated ID and exact upload-cleared his
   assert.equal(state.history.source, "undefined"); assert.equal(state.history.data, "absent");
   assert.equal(state.teardrop.timer, "null"); assert.equal(state.queueCompletionVerified, false);
   assert.equal(state.saveAuthorized, false); assert.equal(state.executionAuthorized, false);
-  assert.equal(decodeCurrentPcbStringCommandState(sample("scope.object.Zec.timeoutId=0;")).teardrop.timer, "present");
+  assert.equal(decodeCurrentPcbStringCommandState(sample("teardropProof[0].timeoutId=0;")).teardrop.timer, "present");
 });
 
 void test("one String command refuses extra history, changed identities, source retention and shared uploads", () => {
@@ -47,8 +51,11 @@ void test("one String command refuses extra history, changed identities, source 
     'scope.object.bo.manager.map.set("f".repeat(16),new rd());',
     "scope.object.Jr.mgr=new bo();", "scope.object.pE.proxy.flag=true;",
     "scope.object.qI.proxy.data.add({});", "scope.object.e5.proxy.data.add({});",
-    "scope.object.Zec.modify.add({});", "scope.object.Zec.task.add({});", "scope.object.Zec.modifyTears.add({});",
-    "scope.object.Zec.suspend=false;", "scope.object.Zec.timeoutId=false;",
+    "teardropProof[0].modify.add({});", "teardropProof[0].task.add({});", "teardropProof[0].modifyTears.add({});",
+    "teardropProof[0].suspend=false;", "teardropProof[0].timeoutId=false;",
+    "MSG_BUS_PCB.messageBus.subscribed.SetSuspend[0].callback=()=>{};",
+    "teardropProof[0].setSuspend=teardropProof[2][1];",
+    "producerConstructors[0]=class kde{};", "producerConstructors[1]=class Sfe{};",
   ]) { assert.throws(() => sample(change), /PCB_STRING_OBSERVATION_STATE/u, change); }
 });
 
@@ -75,7 +82,7 @@ void test("one String command read passes local V8 effect check without invoking
     await session.post("Runtime.enable");
     const context = pcbStringObservationFixture(false, SETUP);
     assert.notEqual(uniqueContextId, "");
-    const expression = `(${CURRENT_PCB_STRING_COMMAND_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback)`;
+    const expression = EXPRESSION;
     const parameters = { expression, uniqueContextId, returnByValue: true, throwOnSideEffect: true, silent: true,
       awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false,
       userGesture: false, generatePreview: false, timeout: 1000 };

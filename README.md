@@ -9,7 +9,21 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261021055237` combines [bound-callback owner discovery,
+Candidate `0.3.0+codex.20261021073200` combines [inherited-constructor correction,
+versioned lazy-state readers and original worker/actor collection](docs/current-pcb-owned-producers-batch-2026-10-21.md).
+The existing precreate action now retains unavailable managers as unmet
+conditions, samples worker queues/callbacks, and compares account/local-clock
+observations across the original UI, worker and PCB contexts. Full evidence
+stays in the journal; responses provide a bounded summary and record location.
+No geometry writer or coverage increase is claimed. Hidden receivers, complete
+effects/destinations, Save-clock provenance and saved/reopened writing remain.
+
+Installed055237 completed disposable opening and source qualification, then
+stopped during common constructor metadata. Normal closure and release passed;
+the closed disposable stayed unchanged. The inherited-prototype correction is
+source-pinned and reproduced with a real synthetic inspector, not live-validated.
+
+Previous update `0.3.0+codex.20261021055237` combines [bound-callback owner discovery,
 original common-baseline integration and worker gate qualification](docs/current-pcb-owned-baseline-batch-2026-10-21.md).
 The optional common stage now compares its own five raw reader replies with the
 complete SQL inventory retained before opening. A narrowly classified comparison

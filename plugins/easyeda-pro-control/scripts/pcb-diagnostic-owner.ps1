@@ -249,7 +249,7 @@ public sealed class EasyedaDiagnosticOwner {
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   readonly bool stringPrecreate;
-  int RequestLimit { get { return stringPrecreate?155:103; } }
+  int RequestLimit { get { return stringPrecreate?225:103; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -775,7 +775,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source,bool stringPurpose) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(id<1 || id>(stringPurpose?155:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+    if(id<1 || id>(stringPurpose?225:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
       !matches(path,@"\A[A-Za-z]:\\[^\x00-\x1F\x7F<>:""|?*/]+\.eprj2\z") ||
@@ -2403,12 +2403,553 @@ return callback;
     string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId,string teardropObjectId) {
     return ModelProtocolMessageCore(id,method,sessionId,phase,uniqueContextId,objectId,callbackObjectId,constructorObjectId,false,teardropObjectId);
   }
+  const string ModelStateV2Function=@"function(originalCallback){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object""));
+const klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
+const envClass=klass(""x""),managerClass=klass(""wi""),copperClass=klass(""FP"");
+const env=instance(own(envClass,""env""),envClass),manager=instance(own(managerClass,""manager""),managerClass);
+if(own(env,""_doctype"")!==3||own(env,""_compiler"")===null)bad();
+const alternate=marker(managerClass,""otherDecodingProjectId"");if(alternate===""present"")bad();
+const channel=instance(own(env,""compilerChannel""),klass(""mCe""));
+const compiler=(value,kind)=>{
+instance(value,klass(kind===""main""?""Zu"":""XS""));
+const base=instance(own(value,""base""),klass(""A8e"")),consistency=instance(own(base,""consistencyManager""),klass(""sCe""));
+if(own(value,""uuid"")!==own(base,""uuid"")||own(value,""consistencyManager"")!==consistency||own(base,""channel"")!==channel||own(base,""_headType"")!==(kind===""main""?""PCB"":""FOOTPRINT""))bad();
+const uniqueId=id(own(consistency,""unique"")),registry=plain(own(channel,""compiler"")),registryMap=nativeMap(own(registry,kind===""main""?""PCB"":""FOOTPRINT""));
+mapSize(registryMap);
+if(Reflect.apply(own(Map.prototype,""get""),registryMap,[uniqueId])!==base)bad();
+const result={uuid:kind===""main""?id(own(base,""uuid"")):customId(own(base,""uuid"")),uniqueId,headType:kind===""main""?""PCB"":""FOOTPRINT"",isProject:flag(own(base,""isProject"")),isInit:flag(own(base,""isInit"")),canSave:flag(own(base,""canSave"")),isInitIng:flag(own(base,""isInitIng"")),pendCacheLength:extent(own(base,""pendCacheLength"")),pendingDocumentKeyCount:keys(own(base,""pendCache"")),cacheKeyCount:keys(own(base,""cache"")),deleteCacheCount:mapSize(own(base,""deleteCache"")),subscriptionCount:arrayLength(own(base,""sub"")),pendTimer:marker(base,""pendTimer""),pendPromise:marker(base,""pendPromise""),maxTicket:extent(own(consistency,""maxTicket"")),pendingChange:flag(own(consistency,""isPendChange"")),localChange:flag(own(consistency,""isLocalChange""))};
+return result;
+};
+const mainOwner=own(env,""_compiler""),main=compiler(mainOwner,""main"");if(main.uuid!==id(own(env,""_id"")))bad();
+const map=nativeMap(own(manager,""map"")),loadedFootprintCount=mapSize(map);if(loadedFootprintCount>128)bad();
+const custom=[],seen=new Set(),iterator=Reflect.apply(own(Map.prototype,""entries""),map,[]),iteratorPrototype=Object.getPrototypeOf(iterator),next=own(iteratorPrototype,""next"");
+if(typeof next!==""function"")bad();
+for(let index=0;index<loadedFootprintCount;index++){
+const entry=Reflect.apply(next,iterator,[]);if(own(entry,""done"")!==false)bad();
+const pair=own(entry,""value"");if(arrayLength(pair)!==2)bad();
+const footprint=object(own(pair,""1"")),prototype=Object.getPrototypeOf(footprint);
+if(prototype!==own(klass(""Al""),""prototype"")&&prototype!==own(klass(""aC""),""prototype""))bad();
+if(prototype===own(klass(""Al""),""prototype"")){
+const uuid=customId(own(footprint,""_uuid""));if(own(pair,""0"")!==uuid||seen.has(uuid))bad();seen.add(uuid);
+const state=compiler(own(footprint,""instance""),""custom-footprint"");if(state.uuid!==uuid)bad();custom.push(state);
+}
+}
+if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();
+
+const lazyOwners=[],lazyOwnerPrototypes=[];
+const lazyOwner=c=>{if(typeof c!==""function"")bad();const d=Object.getOwnPropertyDescriptor(c,""manager"");
+if(d&&!Object.hasOwn(d,""value""))bad();
+if(!d){let p=c,n=0;while(p!==null){if(++n>8||Object.hasOwn(p,""manager""))bad();const next=Object.getPrototypeOf(p);lazyOwnerPrototypes.push([p,next]);p=next;}}
+lazyOwners.push([c,d]);const v=d?d.value:undefined;
+return {marker:!d?""absent"":v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
+const verifyLazyOwners=()=>{for(const [c,d]of lazyOwners){const n=Object.getOwnPropertyDescriptor(c,""manager"");
+if(!d){if(n!==undefined)bad();let p=Object.getPrototypeOf(c),i=0;while(p!==null){if(++i>8||Object.hasOwn(p,""manager""))bad();p=Object.getPrototypeOf(p);}}
+else if(!n||!Object.hasOwn(n,""value"")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad();}
+for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
+
+const copperOwner=lazyOwner(copperClass);let dynamicCopper={manager:copperOwner.marker,state:null};
+if(copperOwner.marker===""present""){
+const copper=instance(copperOwner.value,copperClass),workerMarker=marker(copper,""workerName"");
+let workerName=null;if(workerMarker===""present"")workerName=extent(own(copper,""workerName""));
+dynamicCopper={manager:""present"",state:{openPcb:flag(own(copper,""openPcb"")),workerNameMarker:workerMarker,workerName,timer:marker(copper,""time""),bus:marker(copper,""_bus"")}};
+}
+verifyLazyOwners();
+if(own(envClass,""env"")!==env||own(managerClass,""manager"")!==manager||own(env,""_compiler"")!==mainOwner||own(manager,""map"")!==map||own(env,""compilerChannel"")!==channel)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-model-state.v2"",main,loadedFootprintCount,customFootprints:custom,dynamicCopper});
+}";
+  const string ModelPendingV2Function=@"function(originalCallback,constructors,teardropProof){
+""use strict"";
+let stage=""callback"",reason=""unexpected"";
+const bad=(r=""guard"")=>{reason=r;throw new Error(""PCB_DIAGNOSTIC_PENDING_STATE"");};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad(""object"");return o;};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad(""own"");const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad(""own"");return d.value;};
+const optional=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return {marker:""absent"",value:undefined};const v=own(o,k);if(v===undefined)return {marker:""undefined"",value:v};if(v===null)return {marker:""null"",value:v};return {marker:""present"",value:v};};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad(""count"");return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad(""flag"");return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad(""id"");return v;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const keyCount=o=>{plain(o);const keys=Reflect.ownKeys(o);if(keys.some(k=>typeof k!==""string""))bad();return count(keys.length);};
+const arrayCount=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad(""collection"");const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad(""collection"");return count(Reflect.apply(d.get,o,[]));};
+
+try{
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+stage=""scope"";
+const scope=object(own(this,""object"")),retained=[];
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![16,20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=constructorLength===20?[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""]:[""kde"",""Sfe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
+const klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad(""instance"");return o;};
+const keep=(o,k)=>{const v=optional(o,k);retained.push([o,k,v.marker,v.value]);return v;};
+stage=""environment"";const envClass=klass(""x""),env=instance(keep(envClass,""env"").value,envClass),compiler=own(env,""_compiler"");
+if(own(env,""_doctype"")!==3||compiler===null||typeof compiler!==""object"")bad();
+const documentUuid=id(own(env,""_id""));
+const upload=n=>{const c=klass(n),v=keep(c,""proxy"");if(v.marker!==""present"")return {marker:v.marker,count:null};
+const owner=instance(v.value,c),data=keep(owner,""data"").value;return {marker:""present"",count:collection(data,Set.prototype)};};
+stage=""copper-uploads"";const copperUploads=upload(""qI"");stage=""plane-uploads"";const planeUploads=upload(""e5"");
+stage=""board-upload"";const boardClass=klass(""pE""),boardOwner=keep(boardClass,""proxy"");
+const boardUpload={marker:boardOwner.marker,flag:boardOwner.marker===""present""?flag(own(instance(boardOwner.value,boardClass),""flag"")):null};
+stage=""commands"";const commands=constructorInstance(keep(scope,""Xe"").value,""kde""),undo=keep(commands,""undoCommand"").value,redo=keep(commands,""redoCommand"").value;
+const undoCount=arrayCount(undo),redoCount=arrayCount(redo);if(undoCount>50||redoCount>50)bad();
+const active=keep(commands,""stack"");if(active.marker!==""null""&&active.marker!==""present"")bad();
+let activeStack=null;
+if(active.marker===""present""){
+stage=""active-stack"";
+const stack=instance(active.value,klass(""De""));
+activeStack={commandCount:arrayCount(keep(stack,""_commands"").value),waitingUploadCount:arrayCount(keep(stack,""waitingUploadStack"").value),
+idMapCount:collection(keep(stack,""idMap"").value,Map.prototype),refreshService:flag(own(stack,""refreshService"")),
+needCheckFilterCommand:flag(own(stack,""needCheckFilterCommand"")),partitionNeedAskBeforeDelete:flag(own(stack,""_partitionNeedAskBeforeDelete"")),
+createPartitionFile:flag(own(stack,""createPartitionFile"")),sendCopperOrderChange:flag(own(stack,""sendCopperOrderChange""))};
+}
+stage=""teardrops"";
+
+const tearsHeld=[],tearsPrototypes=[],tearsDescriptors=[],tearsTopics=[""isMoveSwitch"",""SetSuspend"",""cheakTearDrop"",""addModifyTeardrop"",""flushTearDrop"",""refreshTearDrop""],tearsMethods=[""isMoveSwitch"",""setSuspend"",""addModify"",""addMaodifyTeardrop"",""flushService"",""refreshService""];
+const tearsOwn=(o,k)=>{const v=own(o,k);tearsHeld.push([o,k,v]);return v;};
+const tearsProto=o=>{const p=Object.getPrototypeOf(o);tearsPrototypes.push([o,p]);return p;};
+const tearsArray=(v,n)=>{if(!Array.isArray(v)||tearsProto(v)!==Array.prototype||tearsOwn(v,""length"")!==n)bad(""count"");const k=Reflect.ownKeys(v);if(k.length!==n+1||k[n]!==""length"")bad(""count"");for(let i=0;i<n;i++)if(k[i]!==String(i))bad(""count"");return v;};
+const tearsNamed=(o,n)=>{object(o);const p=tearsProto(o),c=tearsOwn(p,""constructor"");if(typeof c!==""function""||tearsOwn(c,""name"")!==n||tearsOwn(c,""prototype"")!==p)bad(""instance"");return o;};
+tearsArray(teardropProof,3);const teardropOwner=tearsNamed(tearsOwn(teardropProof,""0""),""Sfe""),tearsCallbacks=tearsArray(tearsOwn(teardropProof,""1""),6),tearsTargets=tearsArray(tearsOwn(teardropProof,""2""),6);
+const tearsPrototype=tearsProto(teardropOwner);if(tearsProto(tearsPrototype)!==Object.prototype)bad(""prototype"");
+const tearsBridge=tearsNamed(tearsOwn(globalThis,""MSG_BUS_PCB""),""HJ""),tearsBus=tearsNamed(tearsOwn(tearsBridge,""messageBus""),""Oet""),tearsRegistry=object(tearsOwn(tearsBus,""subscribed""));
+const tearsRegistryPrototype=tearsProto(tearsRegistry);if(tearsRegistryPrototype!==Object.prototype&&tearsRegistryPrototype!==null)bad(""prototype"");
+for(let i=0;i<6;i++){const tasks=tearsArray(tearsOwn(tearsRegistry,tearsTopics[i]),1),task=tearsNamed(tearsOwn(tasks,""0""),""Z1e""),callback=tearsOwn(task,""callback""),method=tearsMethods[i];if(tearsOwn(task,""isRunning"")!==true||typeof callback!==""function""||tearsOwn(tearsCallbacks,String(i))!==callback)bad(""callback"");if(Object.getOwnPropertyDescriptor(teardropOwner,method)!==undefined)bad(""shadow"");const d=Object.getOwnPropertyDescriptor(tearsPrototype,method);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||d.enumerable||typeof d.value!==""function""||tearsOwn(tearsTargets,String(i))!==d.value)bad(""target"");tearsDescriptors.push([method,d]);}
+const verifyTeardropOwner=()=>{for(const [o,k,v]of tearsHeld){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,v))bad(""own"");}for(const [o,p]of tearsPrototypes)if(Object.getPrototypeOf(o)!==p)bad(""prototype"");for(const [k,d]of tearsDescriptors){if(Object.getOwnPropertyDescriptor(teardropOwner,k)!==undefined)bad(""shadow"");const n=Object.getOwnPropertyDescriptor(tearsPrototype,k);if(!n||!Object.hasOwn(n,""value"")||n.value!==d.value||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad(""target"");}};
+
+const tears=constructorInstance(teardropOwner,""Sfe"");
+const teardrops={isMove:flag(own(tears,""isMove"")),suspend:flag(own(tears,""suspend"")),
+modifyCount:collection(keep(tears,""modify"").value,Set.prototype),taskCount:collection(keep(tears,""task"").value,Set.prototype),
+modifyTearsCount:collection(keep(tears,""modifyTears"").value,Set.prototype),timer:keep(tears,""timeoutId"").marker};
+
+const lazyOwners=[],lazyOwnerPrototypes=[];
+const lazyOwner=c=>{if(typeof c!==""function"")bad();const d=Object.getOwnPropertyDescriptor(c,""manager"");
+if(d&&!Object.hasOwn(d,""value""))bad();
+if(!d){let p=c,n=0;while(p!==null){if(++n>8||Object.hasOwn(p,""manager""))bad();const next=Object.getPrototypeOf(p);lazyOwnerPrototypes.push([p,next]);p=next;}}
+lazyOwners.push([c,d]);const v=d?d.value:undefined;
+return {marker:!d?""absent"":v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
+const verifyLazyOwners=()=>{for(const [c,d]of lazyOwners){const n=Object.getOwnPropertyDescriptor(c,""manager"");
+if(!d){if(n!==undefined)bad();let p=Object.getPrototypeOf(c),i=0;while(p!==null){if(++i>8||Object.hasOwn(p,""manager""))bad();p=Object.getPrototypeOf(p);}}
+else if(!n||!Object.hasOwn(n,""value"")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad();}
+for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
+
+stage=""dynamic-copper"";const copperClass=klass(""FP""),copperOwner=lazyOwner(copperClass);
+let worker=null,copperBus=null;
+if(copperOwner.marker===""present""){const copper=instance(copperOwner.value,copperClass);worker=keep(copper,""workerName"");copperBus=keep(copper,""_bus"");}
+const workerId=worker!==null&&worker.marker===""present""?extent(worker.value):null;
+stage=""worker-registry"";const workerClass=klass(""Of""),registry=keep(workerClass,""manager"");
+let workers=null,association=copperOwner.marker!==""present""?""owner-unavailable"":workerId===null?""no-worker-id"":""registry-unavailable"";
+if(registry.marker===""present""){
+const manager=instance(registry.value,workerClass),map=keep(manager,""map"").value,bridges=keep(manager,""busMap"").value;
+workers={workerCount:collection(map,Map.prototype),bridgeCount:keyCount(bridges),
+ratlineWorkerCount:collection(keep(manager,""ratlineWorker"").value,Map.prototype),
+threadBusCount:collection(keep(manager,""workerBus"").value,Map.prototype),
+stateCount:keyCount(keep(manager,""_workerStateMap"").value),nextWorkerId:extent(own(manager,""id"")),nextThreadId:extent(own(manager,""i""))};
+if(workerId!==null){
+stage=""worker-association"";
+const registered=Reflect.apply(own(Map.prototype,""get""),map,[workerId]),bridge=optional(bridges,String(workerId));
+if(registered===undefined)association=""missing-worker"";
+else if(bridge.marker!==""present"")association=""missing-bridge"";
+else if(bridge.value!==copperBus.value)association=""bridge-mismatch"";
+else{
+object(registered);const selected=object(bridge.value),prototype=Object.getPrototypeOf(selected),constructor=own(prototype,""constructor"");
+if(typeof constructor!==""function""||own(constructor,""name"")!==""Cet""||own(constructor,""prototype"")!==prototype)bad();
+const sourceBus=own(own(globalThis,""MSG_BUS_PCB""),""messageBus"");
+if(own(selected,""worker"")!==registered)association=""worker-mismatch"";
+else if(own(selected,""bus"")!==sourceBus)association=""bus-mismatch"";
+else association=""matched"";
+}
+}
+}
+stage=""reproof"";verifyConstructorAssociations();verifyTeardropOwner();verifyLazyOwners();if(own(env,""_compiler"")!==compiler||own(env,""_id"")!==documentUuid||own(env,""_doctype"")!==3)bad();
+for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+stage=""serialize"";return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pending-state.v2"",documentUuid,copperUploads,planeUploads,boardUpload,
+commands:{undoCount,redoCount,activeStack},teardrops,workerRegistry:{marker:registry.marker,workers},
+dynamicCopper:{manager:copperOwner.marker,state:copperOwner.marker===""present""?{workerMarker:worker.marker,workerId,busMarker:copperBus.marker,association}:null}});
+}catch{return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pending-failure.v1"",stage,reason});}
+}";
+  const string StringEmptyProducersV2Function=@"function(originalCallback,constructors){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,""prototype""))bad();return o;};
+const ec=klass(""x""),env=instance(own(ec,""env""),ec),documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
+if(own(env,""_doctype"")!==3)bad();
+const emptyArray=o=>{if(arraySize(o)!==0)bad();return [];};
+const nullish=(o,k)=>{const m=marker(o,k);if(m===""present"")bad();return m;};
+
+const lazyOwners=[],lazyOwnerPrototypes=[];
+const lazyOwner=c=>{if(typeof c!==""function"")bad();const d=Object.getOwnPropertyDescriptor(c,""manager"");
+if(d&&!Object.hasOwn(d,""value""))bad();
+if(!d){let p=c,n=0;while(p!==null){if(++n>8||Object.hasOwn(p,""manager""))bad();const next=Object.getPrototypeOf(p);lazyOwnerPrototypes.push([p,next]);p=next;}}
+lazyOwners.push([c,d]);const v=d?d.value:undefined;
+return {marker:!d?""absent"":v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
+const verifyLazyOwners=()=>{for(const [c,d]of lazyOwners){const n=Object.getOwnPropertyDescriptor(c,""manager"");
+if(!d){if(n!==undefined)bad();let p=Object.getPrototypeOf(c),i=0;while(p!==null){if(++i>8||Object.hasOwn(p,""manager""))bad();p=Object.getPrototypeOf(p);}}
+else if(!n||!Object.hasOwn(n,""value"")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad();}
+for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
+
+const modelClass=klass(""MI""),modelOwner=lazyOwner(modelClass);
+const views=constructorInstance(own(scope,""jo""),""mpe"");
+let model={manager:modelOwner.marker,state:null};if(modelOwner.marker===""present""){const models=instance(modelOwner.value,modelClass);model={manager:""present"",state:{netKeys:emptyMap(own(models,""map"")),idKeys:emptyMap(own(models,""idMap"")),
+lastRatline:nullish(models,""_lastRatline""),last:nullish(models,""_last"")}};}
+const view={netKeys:emptyMap(own(views,""map"")),idKeys:emptyMap(own(views,""idMap"")),
+highlightNets:emptySet(own(views,""highLightNets"")),clickHighlight:emptySet(own(views,""clickHighlightRatlines"")),
+hoverHighlight:emptySet(own(views,""hoverHighlightRatlines""))};
+const network=constructorInstance(own(scope,""ze""),""Yde""),updates=plain(own(network,""updateNets""));
+if(keys(updates).length!==3)bad();
+const notification=instance(own(network,""debounce""),klass(""U5""));
+const net={keys:emptyMap(own(network,""map"")),noneKeys:emptyMap(own(network,""noneNetMap"")),
+lengthKeys:emptyMap(own(network,""netLength"")),modifyKeys:emptyMap(own(network,""netModify"")),
+rubbish:emptySet(own(network,""rubbish"")),options:emptyArray(own(network,""netOptions"")),
+add:emptyArray(own(updates,""addNet"")),delete:emptyArray(own(updates,""deleteNet"")),
+updateLengthKeys:emptyObject(own(updates,""updateNetLength"")),grayKeys:emptyObject(own(network,""ratlineVisibleBeforeGray"")),
+viewGroups:null,viewGroupsMarker:marker(network,""_viewGroupIds""),updateLeftTree:nullish(network,""updateLeftTree""),
+notification:{func:nullish(notification,""func""),animationFrame:nullish(notification,""animationFrameId""),
+lastTime:own(notification,""lastTime""),delay:own(notification,""delay"")}};
+if(net.viewGroupsMarker===""present"")net.viewGroups=emptyArray(own(network,""_viewGroupIds""));
+if(net.notification.lastTime!==-1||net.notification.delay!==0)bad();
+const clusters={networkKeys:emptyMap(own(klass(""Xh""),""map"")),
+wireClusterKeys:emptyMap(own(constructorInstance(own(scope,""h_""),""HSe""),""map"")),
+jumpWireKeys:emptyMap(own(constructorInstance(own(scope,""aE""),""USe""),""map"")),
+useWireClusterCache:flag(own(klass(""h0""),""useWireClusterCache"")),emptyNetChange:flag(own(klass(""h0""),""emptyNetChange""))};
+verifyConstructorAssociations();verifyLazyOwners();verify();if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v2"",documentUuid,model,view,net,clusters});
+}";
+  const string StringProducerMarkersV2Function=@"function(originalCallback,constructors){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const prototypes=[],keySamples=[],absentFields=[];
+const prototype=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
+const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
+
+const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
+const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
+if(![20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
+for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
+const constructorNames=[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
+const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
+const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
+const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
+
+const instance=(o,c)=>{object(o);if(prototype(o)!==own(c,""prototype""))bad();return o;};
+const rawMarker=(o,k)=>{const m=marker(o,k);if(m===""absent""){absentFields.push([o,k]);let p=o,n=0;while(p!==null){if(++n>10)bad();p=prototype(p);}}return m;};
+const finite=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0))bad();return v;};
+const token=v=>{finite(v);if(!Number.isSafeInteger(v)||v<0)bad();return v;};
+const dataKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>65537)bad();for(const key of k){if(typeof key!==""string"")bad();const d=Object.getOwnPropertyDescriptor(o,key);if(!d||!Object.hasOwn(d,""value""))bad();}keySamples.push([o,k]);return k;};
+const objectCount=o=>{plain(o);prototype(o);return count(dataKeys(o).length);};
+const arrayCount=o=>{if(!Array.isArray(o)||prototype(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=dataKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)if(k[i]!==String(i))bad();return n;};
+const mapCount=o=>size(o,Map.prototype),setCount=o=>size(o,Set.prototype);
+const ec=klass(""x""),env=instance(own(ec,""env""),ec),documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
+if(own(env,""_doctype"")!==3)bad();
+
+const lazyOwners=[],lazyOwnerPrototypes=[];
+const lazyOwner=c=>{if(typeof c!==""function"")bad();const d=Object.getOwnPropertyDescriptor(c,""manager"");
+if(d&&!Object.hasOwn(d,""value""))bad();
+if(!d){let p=c,n=0;while(p!==null){if(++n>8||Object.hasOwn(p,""manager""))bad();const next=Object.getPrototypeOf(p);lazyOwnerPrototypes.push([p,next]);p=next;}}
+lazyOwners.push([c,d]);const v=d?d.value:undefined;
+return {marker:!d?""absent"":v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
+const verifyLazyOwners=()=>{for(const [c,d]of lazyOwners){const n=Object.getOwnPropertyDescriptor(c,""manager"");
+if(!d){if(n!==undefined)bad();let p=Object.getPrototypeOf(c),i=0;while(p!==null){if(++i>8||Object.hasOwn(p,""manager""))bad();p=Object.getPrototypeOf(p);}}
+else if(!n||!Object.hasOwn(n,""value"")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad();}
+for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
+
+const copperClass=klass(""FP""),copperSlot=lazyOwner(copperClass),copperOwner=copperSlot.value;
+let dynamicCopper={manager:copperSlot.marker,state:null};
+if(copperSlot.marker===""present""){
+ const copper=instance(copperOwner,copperClass),workerNameMarker=rawMarker(copper,""workerName"");
+ const state={openPcb:flag(own(copper,""openPcb"")),workerNameMarker,
+ workerId:workerNameMarker===""present""?token(own(copper,""workerName"")):null,
+ timerMarker:rawMarker(copper,""time""),busMarker:rawMarker(copper,""_bus"")};
+ dynamicCopper={manager:""present"",state};
+}
+const modelClass=klass(""MI""),modelSlot=lazyOwner(modelClass),modelOwner=modelSlot.value;
+let ratlineModel={manager:modelSlot.marker,state:null};
+if(modelSlot.marker===""present""){
+ const models=instance(modelOwner,modelClass);
+ ratlineModel={manager:""present"",state:{netCount:mapCount(own(models,""map"")),idCount:mapCount(own(models,""idMap"")),
+ lastRatlineMarker:rawMarker(models,""_lastRatline""),lastMarker:rawMarker(models,""_last"")}};
+}
+const views=constructorInstance(own(scope,""jo""),""mpe"");
+const ratlineView={netCount:mapCount(own(views,""map"")),idCount:mapCount(own(views,""idMap"")),
+ highlightNetCount:setCount(own(views,""highLightNets"")),clickHighlightCount:setCount(own(views,""clickHighlightRatlines"")),
+ hoverHighlightCount:setCount(own(views,""hoverHighlightRatlines""))};
+const network=constructorInstance(own(scope,""ze""),""Yde""),updates=plain(own(network,""updateNets""));
+if(objectCount(updates)!==3)bad();
+const viewGroupsMarker=rawMarker(network,""_viewGroupIds"");
+const net={netCount:mapCount(own(network,""map"")),noneNetCount:mapCount(own(network,""noneNetMap"")),
+ lengthCount:mapCount(own(network,""netLength"")),modifyCount:mapCount(own(network,""netModify"")),
+ rubbishCount:setCount(own(network,""rubbish"")),optionCount:arrayCount(own(network,""netOptions"")),
+ addCount:arrayCount(own(updates,""addNet"")),deleteCount:arrayCount(own(updates,""deleteNet"")),
+ updateLengthCount:objectCount(own(updates,""updateNetLength"")),grayCount:objectCount(own(network,""ratlineVisibleBeforeGray"")),
+ viewGroupsMarker,viewGroupCount:viewGroupsMarker===""present""?arrayCount(own(network,""_viewGroupIds"")):null};
+const debounce=instance(own(network,""debounce""),klass(""U5"")),func=own(debounce,""func""),frame=own(debounce,""animationFrameId"");
+if(func!==null&&typeof func!==""function"")bad();
+const leftMarker=rawMarker(network,""updateLeftTree""),left=leftMarker===""present""?own(network,""updateLeftTree""):null;
+if(leftMarker===""present""&&typeof left!==""function"")bad();
+const notification={funcMarker:func===null?""null"":""function"",frameMarker:frame===null?""null"":""token"",
+ frameId:frame===null?null:token(frame),lastTime:finite(own(debounce,""lastTime"")),delay:finite(own(debounce,""delay"")),
+ updateLeftTreeMarker:leftMarker===""present""?""function"":leftMarker,
+ sameCallbackReference:typeof func===""function""&&typeof left===""function""?func===left:null};
+const clusters={networkCount:mapCount(own(klass(""Xh""),""map"")),
+wireClusterCount:mapCount(own(constructorInstance(own(scope,""h_""),""HSe""),""map"")),
+jumpWireCount:mapCount(own(constructorInstance(own(scope,""aE""),""USe""),""map"")),
+ useWireClusterCache:flag(own(klass(""h0""),""useWireClusterCache"")),emptyNetChange:flag(own(klass(""h0""),""emptyNetChange""))};
+verifyConstructorAssociations();verifyLazyOwners();verify();
+for(const item of retained)if(item.length===3&&!Object.is(Object.getOwnPropertyDescriptor(item[0],item[1]).value,item[2]))bad();
+for(const item of prototypes)if(Object.getPrototypeOf(item[0])!==item[1])bad();
+for(const item of absentFields){let p=item[0],n=0;while(p!==null){if(++n>10||Object.hasOwn(p,item[1]))bad();p=Object.getPrototypeOf(p);}}
+for(const item of keySamples){const k=Reflect.ownKeys(item[0]);if(k.length!==item[1].length)bad();for(let i=0;i<k.length;i++){if(k[i]!==item[1][i])bad();const d=Object.getOwnPropertyDescriptor(item[0],k[i]);if(!d||!Object.hasOwn(d,""value""))bad();}}
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.v2"",documentUuid,dynamicCopper,ratlineModel,ratlineView,net,notification,clusters});
+}";
   static string ModelProtocolMessageCore(int id,string method,string sessionId,string phase,
     string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId,bool stringPurpose,string teardropObjectId=null) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>(stringPurpose?155:103) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
-    if(phase!="pending" && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object");
-    bool teardrop=phase=="pending" || phase=="constructors-diagnostic" || phase=="constructors-precreate";
+    if(id<1 || id>(stringPurpose?225:103) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
+    bool pending=phase=="pending" || phase=="pending-v2",snapshot=phase=="snapshot" || phase=="snapshot-v2";
+    if((phase=="pending-v2" || phase=="snapshot-v2") && !stringPurpose) throw Error("model-purpose");
+    if(!pending && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object");
+    bool teardrop=pending || phase=="constructors-diagnostic" || phase=="constructors-precreate";
     if(teardrop?!handle(teardropObjectId):teardropObjectId!=null) throw Error("model-teardrop");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     const string group="easyeda-pro-control-pcb-model-v1";
@@ -2430,13 +2971,13 @@ return callback;
         string program=stringPurpose?ModelPrecreateConstructorsFunction:ModelDiagnosticConstructorsFunction;
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(program)+
           ",\"returnByValue\":false,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"},{\"objectId\":"+JsonString(teardropObjectId)+"}]";
-      } else if((phase=="snapshot" || phase=="pending" || phase=="raw-strings" || phase=="root-inventory") && method=="Runtime.callFunctionOn") {
-        if(!handle(objectId) || !handle(callbackObjectId) || ((phase=="pending" || phase=="root-inventory") && !handle(constructorObjectId))) throw Error("model-object");
-        string program=phase=="snapshot"?ModelStateFunction:phase=="pending"?ModelPendingFunction:phase=="raw-strings"?ModelRawStringsFunction:ModelRootInventoryFunction;
+      } else if((snapshot || pending || phase=="raw-strings" || phase=="root-inventory") && method=="Runtime.callFunctionOn") {
+        if(!handle(objectId) || !handle(callbackObjectId) || ((pending || phase=="root-inventory") && !handle(constructorObjectId))) throw Error("model-object");
+        string program=phase=="snapshot-v2"?ModelStateV2Function:phase=="pending-v2"?ModelPendingV2Function:phase=="snapshot"?ModelStateFunction:phase=="pending"?ModelPendingFunction:phase=="raw-strings"?ModelRawStringsFunction:ModelRootInventoryFunction;
         parameters=effects+",\"objectId\":"+JsonString(objectId)+",\"functionDeclaration\":"+JsonString(program)+
           ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callbackObjectId)+"}"+
-          (phase=="pending" || phase=="root-inventory"?",{\"objectId\":"+JsonString(constructorObjectId)+"}":"")+
-          (phase=="pending"?",{\"objectId\":"+JsonString(teardropObjectId)+"}":"")+"]";
+          (pending || phase=="root-inventory"?",{\"objectId\":"+JsonString(constructorObjectId)+"}":"")+
+          (pending?",{\"objectId\":"+JsonString(teardropObjectId)+"}":"")+"]";
       } else if(phase=="release" && method=="Runtime.releaseObjectGroup") {
         if(objectId!=null || callbackObjectId!=null) throw Error("model-object");
         parameters="\"objectGroup\":"+JsonString(group);
@@ -2453,7 +2994,7 @@ return callback;
     return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);
   }
   static string ProtocolMessageCore(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId,bool stringPurpose) {
-    if(id<1 || id>(stringPurpose?155:103) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
+    if(id<1 || id>(stringPurpose?225:103) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
     string fields="";
     if(method=="Browser.getVersion" || method=="Target.getTargets") { if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields"); }
@@ -2480,6 +3021,26 @@ return callback;
     return message;
   }
   public static void VerifyProtocolSmoke() {
+    string[] lazyPrograms={ModelStateV2Function,ModelPendingV2Function,StringEmptyProducersV2Function,StringProducerMarkersV2Function};
+    int[] lazyLengths={8872,17715,13089,15722};
+    string[] lazyDigests={"e3b412ab98389e3071b78fea7391046d49d96ce2e71b631f863a94b2c689eeef","689a601acf4a73afd3386eca7a958dbad87e5ff6ffd6df74f282120b94782731","911d984112dc5c358f77ed1d0ef2a757921a9668b451a5638a0d943ef69733e5","a8e74ec6f2c508145b731ef03e15e967d2d18aaedf1b60a8bba26d20e2d50d9f"};
+    for(int i=0;i<lazyPrograms.Length;i++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(lazyPrograms[i]);
+      if(bytes.Length!=lazyLengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=lazyDigests[i]) throw Error("lazy-program");
+    }
+    foreach(string phase in new string[]{"snapshot-v2","pending-v2"}) {
+      bool pendingV2=phase=="pending-v2";
+      ModelProtocolMessageCore(225,"Runtime.callFunctionOn","s",phase,null,"scope","callback",pendingV2?"constructors":null,true,pendingV2?"teardrop":null);
+      bool refused=false;try{ModelProtocolMessageCore(1,"Runtime.callFunctionOn","s",phase,null,"scope","callback",pendingV2?"constructors":null,false,pendingV2?"teardrop":null);}catch(InvalidOperationException){refused=true;}
+      if(!refused)throw Error("lazy-purpose-smoke");
+    }
+    foreach(string phase in new string[]{"empty-producers-v2","producer-markers-v2"}) {
+      StringPrecreateProtocolMessage(225,"Runtime.callFunctionOn","s",phase,null,"scope","callback","constructors");
+      bool refused=false;try{StringPrecreateProtocolMessage(1,"Runtime.callFunctionOn","s",phase,null,"scope","callback",null);}catch(InvalidOperationException){refused=true;}
+      if(!refused)throw Error("lazy-constructors-smoke");
+    }
+    VerifyWorkerProducerProtocolSmoke();
+    VerifyActorClockProtocolSmoke();
     using(SHA256 hash=SHA256.Create()) {
       byte[] source=Encoding.UTF8.GetBytes(WorkerExpression);
       if(source.Length!=3841 || BitConverter.ToString(hash.ComputeHash(source)).Replace("-","").ToLowerInvariant()!="dba64a7237d99363d35b134a7c4c6bfa312259f125fe2f7fb813db47b1ae4e52") throw Error("worker-program");
@@ -2518,14 +3079,14 @@ return callback;
       if(message.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 ||
         message.IndexOf(arguments,StringComparison.Ordinal)<0) throw Error("string-scope-smoke");
     }
-    StringPrecreateProtocolMessage(155,"Runtime.evaluate","worker","worker-association","context",null,null,null);
+    StringPrecreateProtocolMessage(225,"Runtime.evaluate","worker","worker-association","context",null,null,null);
     ProtocolMessage(103,"Browser.getVersion",null,null,null,null);
-    bool diagnostic104Refused=false,string156Refused=false;
+    bool diagnostic104Refused=false,string226Refused=false;
     try { ProtocolMessage(104,"Browser.getVersion",null,null,null,null); } catch(InvalidOperationException) { diagnostic104Refused=true; }
-    try { StringPrecreateProtocolMessage(156,"Runtime.evaluate","worker","worker-association","context",null,null,null); } catch(InvalidOperationException) { string156Refused=true; }
-    if(!diagnostic104Refused || !string156Refused) throw Error("string-budget-smoke");
+    try { StringPrecreateProtocolMessage(226,"Runtime.evaluate","worker","worker-association","context",null,null,null); } catch(InvalidOperationException) { string226Refused=true; }
+    if(!diagnostic104Refused || !string226Refused) throw Error("string-budget-smoke");
     CommonBaselineProtocolMessage(1,"Runtime.evaluate","page","wrapper","context",null,null,null);
-    CommonBaselineProtocolMessage(155,"Runtime.releaseObjectGroup","page","release",null,null,null,null);
+    CommonBaselineProtocolMessage(225,"Runtime.releaseObjectGroup","page","release",null,null,null,null);
     foreach(string phase in new string[] {"constructors","presentation","rules","preference","assets","metadata"}) {
       bool pair=phase!="constructors" && phase!="metadata";
       string common=CommonBaselineProtocolMessage(100,"Runtime.callFunctionOn","page",phase,null,"scope","callback",pair?"constructors":null);
@@ -2543,10 +3104,10 @@ return callback;
       bool refused=false; try { CommonBaselineProtocolMessage(1,"Runtime.getProperties","page",phase,null,"scope","callback",null); } catch(InvalidOperationException) { refused=true; }
       if(!refused) throw Error("common-method-smoke");
     }
-    bool commonBudgetRefused=false; try { CommonBaselineProtocolMessage(156,"Runtime.releaseObjectGroup","page","release",null,null,null,null); } catch(InvalidOperationException) { commonBudgetRefused=true; }
+    bool commonBudgetRefused=false; try { CommonBaselineProtocolMessage(226,"Runtime.releaseObjectGroup","page","release",null,null,null,null); } catch(InvalidOperationException) { commonBudgetRefused=true; }
     if(!commonBudgetRefused) throw Error("common-budget-smoke");
     foreach(bool stringPurpose in new bool[]{false,true}) {
-      int limit=stringPurpose?155:103;
+      int limit=stringPurpose?225:103;
       TeardropProtocolMessage(limit,"Runtime.callFunctionOn","page","teardrop-callbacks","scope","callback",null,null,null,stringPurpose);
       object[] receivers={"r0","r1","r2","r3","r4","r5"},targets={"t0","t1","t2","t3","t4","t5"};
       string message=TeardropProtocolMessage(limit,"Runtime.callFunctionOn","page","teardrop-owner","scope","callback","callbacks",receivers,targets,stringPurpose);
@@ -2656,7 +3217,7 @@ return callback;
   }
   static string DomProtocolMessageCore(int id,string method,string sessionId,object frameId,object backendNodeId,bool stringPurpose) {
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
-    if(id<1 || id>(stringPurpose?155:103) || !token(sessionId)) throw Error("dom-fields");
+    if(id<1 || id>(stringPurpose?225:103) || !token(sessionId)) throw Error("dom-fields");
     string parameters;
     if(method=="DOM.getFrameOwner") {
       string frame=OptionalText(frameId);
@@ -2692,7 +3253,7 @@ return callback;
     object suppliedCallbacks,object[] suppliedReceivers,object[] suppliedTargets,bool stringPurpose) {
     string scope=OptionalText(suppliedScope),callback=OptionalText(suppliedCallback),callbacks=OptionalText(suppliedCallbacks);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>(stringPurpose?155:103) || method!="Runtime.callFunctionOn" || !handle(sessionId) || sessionId.Length>128 || !handle(scope) || !handle(callback)) throw Error("teardrop-fields");
+    if(id<1 || id>(stringPurpose?225:103) || method!="Runtime.callFunctionOn" || !handle(sessionId) || sessionId.Length>128 || !handle(scope) || !handle(callback)) throw Error("teardrop-fields");
     string arguments="[{\"objectId\":"+JsonString(callback)+"}",program;
     if(phase=="teardrop-callbacks") {
       if(callbacks!=null || suppliedReceivers!=null || suppliedTargets!=null) throw Error("teardrop-extra");
@@ -2718,20 +3279,21 @@ return callback;
     object suppliedContext,object suppliedObject,object suppliedCallback,object suppliedConstructors) {
     string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback),constructors=OptionalText(suppliedConstructors);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>155 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
-    if(phase!="empty-producers" && constructors!=null) throw Error("string-scope");
+    if(id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
+    bool producers=phase=="empty-producers" || phase=="empty-producers-v2" || phase=="producer-markers-v2";
+    if(!producers && constructors!=null) throw Error("string-scope");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     string parameters;
     if(phase=="worker-association" && method=="Runtime.evaluate") {
       if(!handle(context) || scope!=null || callback!=null) throw Error("string-context");
       parameters=effects+",\"expression\":"+JsonString(StringWorkerAssociationExpression)+",\"uniqueContextId\":"+JsonString(context)+
         ",\"returnByValue\":true,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false,\"timeout\":1000";
-    } else if((phase=="renderer-association" || phase=="empty-producers") && method=="Runtime.callFunctionOn") {
-      if(context!=null || !handle(scope) || !handle(callback) || (phase=="empty-producers" && !handle(constructors))) throw Error("string-scope");
+    } else if((phase=="renderer-association" || producers) && method=="Runtime.callFunctionOn") {
+      if(context!=null || !handle(scope) || !handle(callback) || (producers && !handle(constructors))) throw Error("string-scope");
       parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+
-        JsonString(phase=="renderer-association"?StringRendererAssociationFunction:StringEmptyProducersFunction)+
+        JsonString(phase=="renderer-association"?StringRendererAssociationFunction:phase=="empty-producers-v2"?StringEmptyProducersV2Function:phase=="producer-markers-v2"?StringProducerMarkersV2Function:StringEmptyProducersFunction)+
         ",\"returnByValue\":true,\"arguments\":[{\"objectId\":"+JsonString(callback)+"}"+
-        (phase=="empty-producers"?",{\"objectId\":"+JsonString(constructors)+"}":"")+"]";
+        (producers?",{\"objectId\":"+JsonString(constructors)+"}":"")+"]";
     } else throw Error("string-phase");
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+
       parameters+"},\"sessionId\":"+JsonString(sessionId)+"}\0";
@@ -2742,13 +3304,181 @@ return callback;
     if(!stringPrecreate) throw Error("string-purpose");
     SendMessage(id,StringPrecreateProtocolMessage(id,method,sessionId,phase,context,scope,callback,constructors));
   }
+  const string ActorClockUiFunction=@"function(target){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const root=globalThis,apply=Reflect.apply,nativeDate=own(root,""Date""),now=own(nativeDate,""now""),datePrototype=own(nativeDate,""prototype""),iso=own(datePrototype,""toISOString""),zone=own(datePrototype,""getTimezoneOffset"");
+if([nativeDate,now,iso,zone].some(v=>typeof v!==""function""))bad();
+const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
+const before=stamp();
+const text=(v,max)=>{if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
+const actor=o=>({uuid:id(own(o,""uuid""),/^[a-f0-9]{32}$/),username:text(own(o,""username""),1024),nickname:text(own(o,""nickname""),1024)});
+const finish=()=>{const after=stamp();verify();if(after.milliseconds<before.milliseconds||after.milliseconds-before.milliseconds>1000||after.timezoneOffsetMinutes!==before.timezoneOffsetMinutes)bad();return{before,after};};
+
+plain(target);if(Reflect.ownKeys(target).join("","")!==""projectUuid,branchUuid,documentUuid,windowTabId"")bad();
+id(own(target,""projectUuid""),/^[a-f0-9]{64}$/);id(own(target,""branchUuid""),/^[a-f0-9]{32}$/);id(own(target,""documentUuid""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);id(own(target,""windowTabId""),/^[A-Za-z0-9_-]{1,128}$/);
+if(own(root,""_TAB_ID_"")!==target.windowTabId)bad();
+
+const host=object(own(root,""gVars"")),ui=object(own(root,""UI"")),project=object(own(host,""currentProject""));
+if(own(ui,""gVars"")!==host||own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
+const cached=object(own(object(own(host,""globalVariableCookieData"")),""userInfo"")),startup=object(own(host,""loginedUserInfo""));
+const cachedActor=actor(cached),startupActor=actor(startup);
+if(JSON.stringify(cachedActor)!==JSON.stringify(startupActor))bad();
+const workerUser={uuid:startupActor.uuid,nickname:startupActor.nickname,username:startupActor.username,avatar:text(own(startup,""avatar""),4096)};
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-actor-clock.v1"",phase:""ui"",identity:target,cachedActor,startupActor,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
+}";
+  const string ActorClockWorkerFunction=@"function(target){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const root=globalThis,apply=Reflect.apply,nativeDate=own(root,""Date""),now=own(nativeDate,""now""),datePrototype=own(nativeDate,""prototype""),iso=own(datePrototype,""toISOString""),zone=own(datePrototype,""getTimezoneOffset"");
+if([nativeDate,now,iso,zone].some(v=>typeof v!==""function""))bad();
+const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
+const before=stamp();
+const text=(v,max)=>{if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
+const actor=o=>({uuid:id(own(o,""uuid""),/^[a-f0-9]{32}$/),username:text(own(o,""username""),1024),nickname:text(own(o,""nickname""),1024)});
+const finish=()=>{const after=stamp();verify();if(after.milliseconds<before.milliseconds||after.milliseconds-before.milliseconds>1000||after.timezoneOffsetMinutes!==before.timezoneOffsetMinutes)bad();return{before,after};};
+
+plain(target);if(Reflect.ownKeys(target).join("","")!==""projectUuid,branchUuid,documentUuid,windowTabId"")bad();
+id(own(target,""projectUuid""),/^[a-f0-9]{64}$/);id(own(target,""branchUuid""),/^[a-f0-9]{32}$/);id(own(target,""documentUuid""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);id(own(target,""windowTabId""),/^[A-Za-z0-9_-]{1,128}$/);
+if(own(root,""_TAB_ID_"")!==target.windowTabId)bad();
+
+const project=named(own(root,""PROJECT""),""Lg""),gp=Object.getPrototypeOf(Object.getPrototypeOf(project));
+if(own(own(gp,""constructor""),""name"")!==""Gd""||Object.getPrototypeOf(gp)!==Object.prototype||own(project,""uuid"")!==target.projectUuid||own(project,""_branchUuid"")!==target.branchUuid)bad();
+const source=plain(own(project,""user"")),order=Reflect.ownKeys(source);
+if(order.length!==4||order.some(k=>typeof k!==""string""||![""uuid"",""nickname"",""username"",""avatar""].includes(k)))bad();
+const projected=actor(source),avatar=text(own(source,""avatar""),4096),workerUser={};
+for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!d||d.enumerable!==true)bad();workerUser[key]=key===""avatar""?avatar:projected[key];}
+if(Reflect.ownKeys(source).join("","")!==order.join("",""))bad();
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-actor-clock.v1"",phase:""worker"",identity:target,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
+}";
+  const string ActorClockPcbFunction=@"function(){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const root=globalThis,apply=Reflect.apply,nativeDate=own(root,""Date""),now=own(nativeDate,""now""),datePrototype=own(nativeDate,""prototype""),iso=own(datePrototype,""toISOString""),zone=own(datePrototype,""getTimezoneOffset"");
+if([nativeDate,now,iso,zone].some(v=>typeof v!==""function""))bad();
+const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
+const before=stamp();
+const text=(v,max)=>{if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
+const actor=o=>({uuid:id(own(o,""uuid""),/^[a-f0-9]{32}$/),username:text(own(o,""username""),1024),nickname:text(own(o,""nickname""),1024)});
+const finish=()=>{const after=stamp();verify();if(after.milliseconds<before.milliseconds||after.milliseconds-before.milliseconds>1000||after.timezoneOffsetMinutes!==before.timezoneOffsetMinutes)bad();return{before,after};};
+
+return JSON.stringify({schema:""easyeda-pro-control.pcb-string-actor-clock.v1"",phase:""pcb"",clock:finish()});
+}";
+  // Local Date and DOCHEAD actor snapshots only. No Windows clock/APP authority.
+  public static string ActorClockProtocolMessage(int id,string method,string sessionId,string phase,object suppliedContext,
+    object suppliedProject,object suppliedBranch,object suppliedDocument,object suppliedWindow) {
+    string context=OptionalText(suppliedContext),project=OptionalText(suppliedProject),branch=OptionalText(suppliedBranch),
+      document=OptionalText(suppliedDocument),window=OptionalText(suppliedWindow);
+    Func<string,string,bool> match=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
+    if(id<1 || id>225 || method!="Runtime.callFunctionOn" || !match(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+      !match(context,@"\A[A-Za-z0-9_.:-]{1,256}\z")) throw Error("actor-clock-fields");
+    string program,arguments;
+    if(phase=="pcb") {
+      if(project!=null || branch!=null || document!=null || window!=null) throw Error("actor-clock-pcb-target");
+      program=ActorClockPcbFunction;arguments="[]";
+    } else if(phase=="ui" || phase=="worker") {
+      if(!match(project,@"\A[a-f0-9]{64}\z") || !match(branch,@"\A[a-f0-9]{32}\z") ||
+        !match(document,@"\A(?:[a-f0-9]{16}|[a-f0-9]{32})\z") || !match(window,@"\A[A-Za-z0-9_-]{1,128}\z")) throw Error("actor-clock-target");
+      program=phase=="ui"?ActorClockUiFunction:ActorClockWorkerFunction;
+      arguments="[{\"value\":{\"projectUuid\":"+JsonString(project)+",\"branchUuid\":"+JsonString(branch)+
+        ",\"documentUuid\":"+JsonString(document)+",\"windowTabId\":"+JsonString(window)+"}}]";
+    } else throw Error("actor-clock-phase");
+    string parameters="\"functionDeclaration\":"+JsonString(program)+",\"uniqueContextId\":"+JsonString(context)+",\"arguments\":"+arguments+
+      ",\"returnByValue\":true,\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+parameters+
+      "},\"sessionId\":"+JsonString(sessionId)+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("actor-clock-send-size");return message;
+  }
+  public void SendActorClock(int id,string method,string sessionId,string phase,object context,object project,object branch,object document,object window) {
+    if(!stringPrecreate) throw Error("actor-clock-purpose");
+    SendMessage(id,ActorClockProtocolMessage(id,method,sessionId,phase,context,project,branch,document,window));
+  }
+  public static void VerifyActorClockProtocolSmoke() {
+    string[] programs={ActorClockUiFunction,ActorClockWorkerFunction,ActorClockPcbFunction};
+    int[] lengths={5011,5073,3828};
+    string[] digests={"38a7cdc7eabee6083322da3e67a22e4f95711824ac363e2b314ccff0f2fa14b8","405b6e62234ff0d185d07ed753d678bfe2a37d4a0e5676d3a692230d4acda6e4","fd305129368c88eac97b9d316dde7ff333cf4e440d11aac7ab7d54254e19a3ea"};
+    for(int i=0;i<programs.Length;i++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[i]);
+      if(bytes.Length!=lengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[i]) throw Error("actor-clock-program-smoke");
+    }
+    string project=new string('a',64),branch=new string('b',32),document=new string('d',16);
+    foreach(string phase in new string[]{"ui","worker","pcb"}) {
+      bool pcb=phase=="pcb";
+      string message=ActorClockProtocolMessage(1,"Runtime.callFunctionOn","session",phase,"context",pcb?null:project,pcb?null:branch,pcb?null:document,pcb?null:"window");
+      if(!message.EndsWith("\0",StringComparison.Ordinal) || !message.Contains("\"throwOnSideEffect\":true") ||
+        !message.Contains("\"awaitPromise\":false")) throw Error("actor-clock-smoke");
+      foreach(object invalid in new object[]{null,"","bad\ncontext",1}) {
+        bool refused=false;try { ActorClockProtocolMessage(1,"Runtime.callFunctionOn","session",phase,invalid,pcb?null:project,pcb?null:branch,pcb?null:document,pcb?null:"window"); }
+        catch(InvalidOperationException) { refused=true; }if(!refused) throw Error("actor-clock-context-smoke");
+      }
+    }
+    foreach(string phase in new string[]{"other","UI",""}) {
+      bool refused=false;try { ActorClockProtocolMessage(1,"Runtime.callFunctionOn","session",phase,"context",project,branch,document,"window"); }
+      catch(InvalidOperationException) { refused=true; }if(!refused) throw Error("actor-clock-phase-smoke");
+    }
+    bool extra=false;try { ActorClockProtocolMessage(1,"Runtime.callFunctionOn","session","pcb","context",project,branch,document,"window"); }
+    catch(InvalidOperationException) { extra=true; }if(!extra) throw Error("actor-clock-extra-smoke");
+  }
   // Fixed common baseline reads share the original String owner and page.
   // No caller source, object group, options or request budget is accepted.
   public static string CommonBaselineProtocolMessage(int id,string method,string sessionId,string phase,
     object suppliedContext,object suppliedObject,object suppliedCallback,object suppliedConstructors) {
     string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback),constructors=OptionalText(suppliedConstructors);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>155 || !handle(sessionId) || sessionId.Length>128) throw Error("common-fields");
+    if(id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("common-fields");
     bool withConstructors=phase=="presentation" || phase=="rules" || phase=="preference" || phase=="assets";
     if(!withConstructors && constructors!=null) throw Error("common-constructors");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
@@ -2777,6 +3507,812 @@ return callback;
   public void SendCommonBaseline(int id,string method,string sessionId,string phase,object context,object scope,object callback,object constructors) {
     if(!stringPrecreate) throw Error("common-purpose");
     SendMessage(id,CommonBaselineProtocolMessage(id,method,sessionId,phase,context,scope,callback,constructors));
+  }
+  const string WorkerProducerProgram0=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+verify();return project;})()";
+  const string WorkerProducerProgram1=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+const original=fn(own(project,""uploadStructure""));verify();return original;})()";
+  const string WorkerProducerProgram2=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+const original=fn(own(project,""structure""));verify();return original;})()";
+  const string WorkerProducerProgram3=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+const original=fn(own(project,""bufferedPendDataStream""));verify();return original;})()";
+  const string WorkerProducerProgram4=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+const original=fn(own(project,""bufferedUploadCloud""));verify();return original;})()";
+  const string WorkerProducerProgram5=@"function(){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const descriptors=[],prototypes=[];
+const proto=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
+const desc=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);descriptors.push([o,k,d]);return d;};
+const absent=(o,k)=>{if(desc(o,k)!==undefined)bad();};
+const nativeMethod=(o,k)=>{const d=desc(o,k);if(!d||!Object.hasOwn(d,""value"")||typeof d.value!==""function""||!d.writable||!d.configurable||d.enumerable)bad();return d.value;};
+const project=object(own(globalThis,""PROJECT""));if(this!==project)bad();
+named(project,""Lg"");const lp=proto(project);named(lp,""Gd"");const gp=proto(lp);if(proto(gp)!==Object.prototype)bad();
+for(const key of [""isReadOnly"",""isV2Format"",""canWsPublish""])absent(project,key);
+absent(lp,""isReadOnly"");absent(lp,""isV2Format"");
+const format=desc(gp,""isV2Format"");if(!format||Object.hasOwn(format,""value"")||typeof format.get!==""function""||typeof format.set!==""function""||!format.configurable||format.enumerable)bad();
+const bus=object(own(project,""workerBus""));named(bus,""JP"");const jp=proto(bus);named(jp,""KP"");const kp=proto(jp);named(kp,""Mb"");const mp=proto(kp);if(proto(mp)!==Object.prototype)bad();
+for(const key of [""publish"",""broadcastPublish"",""post"",""onMessage"",""onReceivedPublish""])absent(bus,key);
+absent(jp,""publish"");absent(jp,""onReceivedPublish"");
+const methods=[nativeMethod(gp,""isReadOnly""),format.get,nativeMethod(lp,""canWsPublish""),nativeMethod(kp,""publish""),nativeMethod(jp,""broadcastPublish""),nativeMethod(jp,""post""),nativeMethod(jp,""onMessage""),nativeMethod(kp,""onReceivedPublish"")];
+const recheck=()=>{verify();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(!d){if(n!==undefined)bad();continue;}if(!n||n.enumerable!==d.enumerable||n.configurable!==d.configurable||Object.hasOwn(n,""value"")!==Object.hasOwn(d,""value"")||n.value!==d.value||n.writable!==d.writable||n.get!==d.get||n.set!==d.set)bad();}};
+
+recheck();return methods;}";
+  const string WorkerProducerProgram6=@"function(originalMethods,gateScope){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const descriptors=[],prototypes=[];
+const proto=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
+const desc=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);descriptors.push([o,k,d]);return d;};
+const absent=(o,k)=>{if(desc(o,k)!==undefined)bad();};
+const nativeMethod=(o,k)=>{const d=desc(o,k);if(!d||!Object.hasOwn(d,""value"")||typeof d.value!==""function""||!d.writable||!d.configurable||d.enumerable)bad();return d.value;};
+const project=object(own(globalThis,""PROJECT""));if(this!==project)bad();
+named(project,""Lg"");const lp=proto(project);named(lp,""Gd"");const gp=proto(lp);if(proto(gp)!==Object.prototype)bad();
+for(const key of [""isReadOnly"",""isV2Format"",""canWsPublish""])absent(project,key);
+absent(lp,""isReadOnly"");absent(lp,""isV2Format"");
+const format=desc(gp,""isV2Format"");if(!format||Object.hasOwn(format,""value"")||typeof format.get!==""function""||typeof format.set!==""function""||!format.configurable||format.enumerable)bad();
+const bus=object(own(project,""workerBus""));named(bus,""JP"");const jp=proto(bus);named(jp,""KP"");const kp=proto(jp);named(kp,""Mb"");const mp=proto(kp);if(proto(mp)!==Object.prototype)bad();
+for(const key of [""publish"",""broadcastPublish"",""post"",""onMessage"",""onReceivedPublish""])absent(bus,key);
+absent(jp,""publish"");absent(jp,""onReceivedPublish"");
+const methods=[nativeMethod(gp,""isReadOnly""),format.get,nativeMethod(lp,""canWsPublish""),nativeMethod(kp,""publish""),nativeMethod(jp,""broadcastPublish""),nativeMethod(jp,""post""),nativeMethod(jp,""onMessage""),nativeMethod(kp,""onReceivedPublish"")];
+const recheck=()=>{verify();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(!d){if(n!==undefined)bad();continue;}if(!n||n.enumerable!==d.enumerable||n.configurable!==d.configurable||Object.hasOwn(n,""value"")!==Object.hasOwn(d,""value"")||n.value!==d.value||n.writable!==d.writable||n.get!==d.get||n.set!==d.set)bad();}};
+
+if(arraySize(originalMethods)!==8)bad();for(let i=0;i<8;i++)if(own(originalMethods,String(i))!==methods[i])bad();
+const captured=object(own(gateScope,""object"")),privateMode=flag(own(captured,""jr""));
+const syncDescriptor=desc(project,""isSyncing"");let syncing;
+if(syncDescriptor===undefined){for(let p=proto(project),n=0;p!==null;p=proto(p)){if(++n>8)bad();absent(p,""isSyncing"");}syncing={state:""absent"",value:null};}
+else{const value=own(project,""isSyncing"");syncing=value===undefined?{state:""undefined"",value:null}:{state:""boolean"",value:flag(value)};}
+const isTemporary=flag(own(project,""isTemporary"")),isHistoryBack=flag(own(project,""isHistoryBack"")),isV2Format=flag(own(project,""_isV2Format"")),isReady=flag(own(project,""isReady""));
+const isReadOnly=isTemporary||isHistoryBack||isV2Format,syncingTrue=syncing.value===true;
+const state={schema:""easyeda-pro-control.pcb-string-worker-gates.v1"",
+identity:{projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)},
+raw:{isTemporary,isHistoryBack,isV2Format,isReady,isSyncing:syncing,privateMode},
+predicates:{isReadOnly,canWsPublish:privateMode&&isReady&&!isReadOnly&&!syncingTrue,cooperationCallbackGateOpen:!isReadOnly,structureCallbackStateGateOpen:isReady&&!isReadOnly&&!syncingTrue},
+privateModeSource:""jr=L1.IS_PRIVATE"",gateMethodReferencesMatched:true,
+publisher:{senderUuid:id(own(bus,""uuid""),/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/),methodChainReferencesMatched:true,nativeChannelVerified:false,nativeOnMessageReceiverVerified:false,completePublishersVerified:false},
+hiddenCallbackReceiversVerified:false,writeDestinationsContained:false,atomicSample:false};recheck();return JSON.stringify(state);}";
+  const string WorkerProducerProgram7=@"function(originalFunction){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""uploadStructure"")!==originalFunction)bad();const s=scope(this),last=own(s,""r"");fn(own(s,""e""));
+const state={schema:""easyeda-pro-control.pcb-string-serial-closure.v1"",identity,kind:""uploadStructure"",
+inFlight:promise(own(s,""t"")),queued:promise(own(s,""s"")),lastArguments:last===undefined?null:arraySize(last)};
+verify();return JSON.stringify(state);}";
+  const string WorkerProducerProgram8=@"function(originalFunction){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""structure"")!==originalFunction)bad();const s=scope(this),last=own(s,""r"");fn(own(s,""e""));
+const state={schema:""easyeda-pro-control.pcb-string-serial-closure.v1"",identity,kind:""structure"",
+inFlight:promise(own(s,""t"")),queued:promise(own(s,""s"")),lastArguments:last===undefined?null:arraySize(last)};
+verify();return JSON.stringify(state);}";
+  const string WorkerProducerProgram9=@"function(originalStructure){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""structure"")!==originalStructure)bad();const original=fn(own(scope(this),""e""));verify();return original;}";
+  const string WorkerProducerProgram10=@"function(parameters,serialScope,originalStructure,originalDebounce){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""structure"")!==originalStructure||own(scope(serialScope),""e"")!==originalDebounce)bad();
+const s=scope(this),p=scope(parameters);fn(own(p,""e""));
+if(own(p,""t"")!==300||own(p,""s"")!==false)bad();
+const state={schema:""easyeda-pro-control.pcb-string-debounce-closure.v1"",identity,
+timer:timer(own(s,""r"")),resolver:resolver(own(s,""i"")),delay:300,leading:false};
+verify();return JSON.stringify(state);}";
+  const string WorkerProducerProgram11=@"function(originalFunction){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""bufferedPendDataStream"")!==originalFunction)bad();const s=scope(this);fn(own(s,""e""));
+if(own(s,""t"")!==10)bad();const state={schema:""easyeda-pro-control.pcb-string-cooperation-closure.v1"",identity,
+batchCount:arraySize(own(s,""s"")),outerTimer:timer(own(s,""r"")),innerTimer:timer(own(s,""i"")),delay:10};
+verify();return JSON.stringify(state);}";
+  const string WorkerProducerProgram12=@"function(originalFunction){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+const identity={projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)};
+
+if(own(project,""bufferedUploadCloud"")!==originalFunction)bad();const s=scope(this);
+if(own(s,""a"")!==project||own(s,""s"")!==500)bad();fn(own(s,""t""));fn(own(s,""o""));fn(own(s,""c""));
+const state={schema:""easyeda-pro-control.pcb-string-upload-closure.v1"",identity,
+timer:timer(own(s,""r"")),promise:promise(own(s,""i"")),resolver:resolver(own(s,""n"")),delay:500};
+verify();return JSON.stringify(state);}";
+  const string WorkerProducerProgram13=@"function(originalWrapper){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""uploadStructure"")!==originalWrapper)bad();
+const selected=fn(own(scope(this),""e""));verify();return selected;}";
+  const string WorkerProducerProgram14=@"function(originalWrapper,serialScope,originalDebounce){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""structure"")!==originalWrapper||own(scope(serialScope),""e"")!==originalDebounce)bad();
+const s=scope(this);if(own(s,""t"")!==300||own(s,""s"")!==false)bad();
+const selected=fn(own(s,""e""));verify();return selected;}";
+  const string WorkerProducerProgram15=@"function(originalWrapper){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""bufferedPendDataStream"")!==originalWrapper)bad();
+const selected=fn(own(scope(this),""e""));verify();return selected;}";
+  const string WorkerProducerProgram16=@"function(originalWrapper){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""bufferedUploadCloud"")!==originalWrapper)bad();
+const s=scope(this);if(own(s,""a"")!==project||own(s,""s"")!==500)bad();
+const selected=fn(own(s,""t""));verify();return selected;}";
+  const string WorkerProducerProgram17=@"function(originalWrapper){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""bufferedUploadCloud"")!==originalWrapper)bad();
+const s=scope(this);if(own(s,""a"")!==project||own(s,""s"")!==500)bad();
+const selected=fn(own(s,""o""));verify();return selected;}";
+  const string WorkerProducerProgram18=@"function(originalWrapper){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""bufferedUploadCloud"")!==originalWrapper)bad();
+const s=scope(this);if(own(s,""a"")!==project||own(s,""s"")!==500)bad();
+const selected=fn(own(s,""c""));verify();return selected;}";
+  const string WorkerProducerProgram19=@"function(originalWrapper,bufferScope,drainScope,originalUpload,originalBuffer,originalDrain){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const project=object(own(globalThis,""PROJECT""));named(project,""Lg"");
+const lp=Object.getPrototypeOf(project);named(lp,""Gd"");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+
+if(own(project,""bufferedUploadCloud"")!==originalWrapper)bad();
+fn(originalUpload);fn(originalBuffer);fn(originalDrain);
+const environments=[scope(this),scope(bufferScope),scope(drainScope)];
+const first=environments[0];
+for(const s of environments){
+if(own(s,""a"")!==project||own(s,""t"")!==originalUpload||own(s,""o"")!==originalBuffer||own(s,""c"")!==originalDrain||own(s,""s"")!==500)bad();
+for(const key of [""r"",""i"",""n""]){if(!Object.is(own(s,key),own(first,key)))bad();}}
+const timer=own(first,""r""),promise=own(first,""i""),resolver=own(first,""n"");
+if(timer!==null&&(typeof timer!==""number""||!Number.isSafeInteger(timer)||Object.is(timer,-0)||timer<1))bad();
+if(promise!==null&&(object(promise),Object.getPrototypeOf(promise)!==Promise.prototype))bad();
+if(resolver!==null)fn(resolver);
+const state={schema:""easyeda-pro-control.pcb-string-buffered-callback-environment.v1"",
+identity:{projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),
+branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)},
+retainedProjectReferenceMatched:true,callbackReferencesMatched:true,scalarSnapshotsMatched:true,
+timer:timer===null?""null"":""present"",promise:promise===null?""null"":""present"",resolver:resolver===null?""null"":""present"",
+uploadLexicalReceiverVerified:false,atomicSample:false};verify();return JSON.stringify(state);}";
+  static readonly string[] WorkerProducerSequence={"project","gate-select","properties","properties","properties","properties","properties","properties","properties","properties","properties","properties","properties","gates","upload-structure-select","properties","properties","upload-structure","upload-structure-callback","properties","structure-select","properties","properties","structure","properties","properties","debounce-select","properties","properties","debounce","structure-callback","properties","cooperation-select","properties","properties","cooperation","cooperation-callback","properties","upload-select","properties","properties","upload","properties","properties","upload-callback","properties","buffer-callback","properties","drain-callback","properties","properties","properties","properties","properties","properties","properties","buffered-environment","release"};
+  static string WorkerProducerProgram(string phase) { switch(phase) {
+    case "project": return WorkerProducerProgram0;
+    case "upload-structure-select": return WorkerProducerProgram1;
+    case "structure-select": return WorkerProducerProgram2;
+    case "cooperation-select": return WorkerProducerProgram3;
+    case "upload-select": return WorkerProducerProgram4;
+    case "gate-select": return WorkerProducerProgram5;
+    case "gates": return WorkerProducerProgram6;
+    case "upload-structure": return WorkerProducerProgram7;
+    case "structure": return WorkerProducerProgram8;
+    case "debounce-select": return WorkerProducerProgram9;
+    case "debounce": return WorkerProducerProgram10;
+    case "cooperation": return WorkerProducerProgram11;
+    case "upload": return WorkerProducerProgram12;
+    case "upload-structure-callback": return WorkerProducerProgram13;
+    case "structure-callback": return WorkerProducerProgram14;
+    case "cooperation-callback": return WorkerProducerProgram15;
+    case "upload-callback": return WorkerProducerProgram16;
+    case "buffer-callback": return WorkerProducerProgram17;
+    case "drain-callback": return WorkerProducerProgram18;
+    case "buffered-environment": return WorkerProducerProgram19;
+    default: throw Error("worker-producer-program");
+  }}
+  public static int WorkerProducerArgumentCount(string phase) { switch(phase) {
+    case "project": return -1;
+    case "upload-structure-select": return -1;
+    case "structure-select": return -1;
+    case "cooperation-select": return -1;
+    case "upload-select": return -1;
+    case "gate-select": return 0;
+    case "gates": return 2;
+    case "upload-structure": return 1;
+    case "structure": return 1;
+    case "debounce-select": return 1;
+    case "debounce": return 4;
+    case "cooperation": return 1;
+    case "upload": return 1;
+    case "upload-structure-callback": return 1;
+    case "structure-callback": return 3;
+    case "cooperation-callback": return 1;
+    case "upload-callback": return 1;
+    case "buffer-callback": return 1;
+    case "drain-callback": return 1;
+    case "buffered-environment": return 6;
+    case "properties": return -2;
+    case "release": return -3;
+    default: throw Error("worker-producer-phase");
+  }}
+  static bool WorkerProducerReturnValue(string phase) { switch(phase) {
+    case "gates": return true;
+    case "upload-structure": return true;
+    case "structure": return true;
+    case "debounce": return true;
+    case "cooperation": return true;
+    case "upload": return true;
+    case "buffered-environment": return true;
+    default: return false;
+  }}
+  static void VerifyWorkerProducerProtocolSmoke() {
+    string[] programs={WorkerProducerProgram0,WorkerProducerProgram1,WorkerProducerProgram2,WorkerProducerProgram3,WorkerProducerProgram4,WorkerProducerProgram5,WorkerProducerProgram6,WorkerProducerProgram7,WorkerProducerProgram8,WorkerProducerProgram9,WorkerProducerProgram10,WorkerProducerProgram11,WorkerProducerProgram12,WorkerProducerProgram13,WorkerProducerProgram14,WorkerProducerProgram15,WorkerProducerProgram16,WorkerProducerProgram17,WorkerProducerProgram18,WorkerProducerProgram19};
+    int[] lengths={2711,3487,3481,3494,3491,4477,6305,3794,3782,3551,3879,3784,3822,2925,3053,2932,2988,2988,2988,4255};
+    string[] digests={"45728f3c4f2330179b6f5f1e0cf3dd1192f4a539bd4c417a0bd206c056e1ab76","76d8ce1375d17e1ea6c18a41e034ee6be643fc04ff7880d46eb6f514785da311","97b75664f5cdb9152f1bbaf9789cd728f54a95f2069dc288871878e9956102e6","d4727170db18143108ea70a1df7460f7b8b548d6a2c4c49b501370ea0a61d1c9","d8cb4e2f1e58b4394c87d00534376c9783bf0393dc17cca547e4d2565e12338a","5f2956d03f69cb4e1fb8c6077464e55c3939ab9b74e54af6e4bdf9adf1448424","d5ad3ae0eb7d9d34abc93a616bbd02c569550c6d7317b61bebfe7fe3dddc6b4e","01b51a3da3d2c0ad96071d0ec12dbfb458c282edcf919e79adfeeb4af4c75b15","3024897195a1123120888215abc8ef45eaf942a3795857ff8b7e89f53e26e8f9","bff9c640db4291b0c2890c7dfa485a2d082a30784d2bb6cb6d7574017a673d72","603600050abc6457cde49dda730844fc303536589b8ddc008cccf3aa3547afc3","6c166c6d39ac6c66b35dc273b3cddc886f67e0177d75875526704b51dae3df02","fcc7eb8a838071622e4175cd7c4762b22a3dcb9a2f96a284375cce67bb07e3bb","5891d1916296026e862ec92b4dcc7c9492025001ff690f78fe9d0002f926660a","2c38231557d4cb10a0064a2c9c6650a7b04b7e8aff9aa0077990bd7351ecb51d","4461a2c194421a6f7adfc6e035cc94617281ea88bb316515303dce83e0660dd0","2e56a96103b58e6d1136b6a873fca4ee89a471234220acf83b41f51de081a23a","46a3ea5ed12a5c9784e65e05a11bb55940b7e38abeef1d55f9295f6403515ef2","ec794eb2f340d327ca30c8a9db0ebf6dc2982460799e1e2a333fbca7f7c31a44","b6a43372fedb546c753ca4cc25e053600ce8dd7359fc8b33dcd41494a0c3b8a9"};
+    for(int index=0;index<programs.Length;index++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[index]);
+      if(bytes.Length!=lengths[index] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[index]) throw Error("worker-producer-program-smoke");
+    }
+    if(WorkerProducerSequence.Length!=58) throw Error("worker-producer-sequence-smoke");
+    foreach(string phase in WorkerProducerSequence) {
+      int count=WorkerProducerArgumentCount(phase);
+      object[] args=count>=0?new object[count]:null; if(args!=null) for(int index=0;index<count;index++) args[index]="argument"+index;
+      string method=count==-1?"Runtime.evaluate":count==-2?"Runtime.getProperties":count==-3?"Runtime.releaseObjectGroup":"Runtime.callFunctionOn";
+      object context=count==-1?"original-context":null,scope=count>=0 || count==-2?"original-object":null;
+      WorkerProducerProtocolMessage(1,method,"original-worker",phase,context,scope,args,true);
+      bool refused=false;try{WorkerProducerProtocolMessage(1,method,"original-worker",phase,context,scope,args,false);}catch(InvalidOperationException){refused=true;}
+      if(!refused)throw Error("worker-producer-purpose-smoke");
+    }
+  }
+  // Original worker-producer stage: fixed programs and one retained session.
+  // Source/target admission remains in the original owner, not caller fields.
+  int workerProducerStep;
+  string workerProducerSession,workerProducerContext;
+  bool workerProducerReleased;
+  public static string WorkerProducerProtocolMessage(int id,string method,string sessionId,string phase,
+    object suppliedContext,object suppliedObject,object[] suppliedArguments,bool stringPurpose) {
+    string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject);
+    Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
+    if(!stringPurpose || id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("worker-producer-fields");
+    int count=WorkerProducerArgumentCount(phase);
+    const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    const string group="easyeda-pro-control-string-worker-producers-v1";
+    string parameters;
+    if(count==-1) {
+      if(method!="Runtime.evaluate" || !handle(context) || scope!=null || suppliedArguments!=null) throw Error("worker-producer-context");
+      parameters=effects+",\"expression\":"+JsonString(WorkerProducerProgram(phase))+",\"uniqueContextId\":"+JsonString(context)+
+        ",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":false,\"timeout\":1000,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false";
+    } else if(count==-2) {
+      if(method!="Runtime.getProperties" || context!=null || !handle(scope) || suppliedArguments!=null) throw Error("worker-producer-properties");
+      parameters="\"objectId\":"+JsonString(scope)+",\"ownProperties\":true,\"accessorPropertiesOnly\":false,\"generatePreview\":false";
+    } else if(count==-3) {
+      if(method!="Runtime.releaseObjectGroup" || context!=null || scope!=null || suppliedArguments!=null) throw Error("worker-producer-release");
+      parameters="\"objectGroup\":"+JsonString(group);
+    } else {
+      if(method!="Runtime.callFunctionOn" || context!=null || !handle(scope) || suppliedArguments==null || suppliedArguments.Length!=count) throw Error("worker-producer-arguments");
+      string arguments="[";
+      for(int index=0;index<count;index++) {
+        string selected=OptionalText(suppliedArguments[index]);if(!handle(selected))throw Error("worker-producer-handle");
+        if(index>0)arguments+=",";arguments+="{\"objectId\":"+JsonString(selected)+"}";
+      }
+      arguments+="]";
+      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(WorkerProducerProgram(phase))+
+        ",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(WorkerProducerReturnValue(phase)?"true":"false")+",\"arguments\":"+arguments;
+    }
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+
+      parameters+"},\"sessionId\":"+JsonString(sessionId)+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>(method=="Runtime.callFunctionOn"?65536:method=="Runtime.evaluate"?8192:1024)) throw Error("worker-producer-size");
+    return message;
+  }
+  public void SendWorkerProducer(int id,string method,string sessionId,string phase,object context,object scope,object[] arguments) {
+    string message=WorkerProducerProtocolMessage(id,method,sessionId,phase,context,scope,arguments,stringPrecreate);
+    if(workerProducerReleased || workerProducerStep>=58) throw Error("worker-producer-consumed");
+    if(workerProducerStep==0) {
+      if(phase!="project") throw Error("worker-producer-first");
+      workerProducerSession=sessionId;workerProducerContext=OptionalText(context);
+    } else if(sessionId!=workerProducerSession) throw Error("worker-producer-session");
+    if(phase=="release") {
+      if(workerProducerStep==0) throw Error("worker-producer-unstarted");
+      workerProducerReleased=true;workerProducerStep=58;
+    } else {
+      if(phase!=WorkerProducerSequence[workerProducerStep] ||
+        (WorkerProducerArgumentCount(phase)==-1 && OptionalText(context)!=workerProducerContext)) throw Error("worker-producer-sequence");
+      workerProducerStep++;
+    }
+    // Consumed before write: a partial write never permits replay or reattach.
+    SendMessage(id,message);
   }
   void SendMessage(int id,string message) {
     AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>RequestLimit) throw Error("discovery-request");
@@ -2982,10 +4518,20 @@ try {
           $result=@{helperInstance=$owner.HelperInstance;jobId=$owner.JobId;rootPid=$owner.RootPid;rootCreated=$owner.RootCreated}
         }
         'send' {
-          $requestLimit=if ($StringPrecreate) {155} else {103}
+          $requestLimit=if ($StringPrecreate) {225} else {103}
           if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $requestLimit -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
           $fields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid')
-          if ($null -ne $request.commonPhase) {
+          if ($null -ne $request.workerProducerPhase) {
+            if (-not $StringPrecreate -or $request.workerProducerPhase -isnot [string]) {throw 'pcb-diagnostic-worker-producer-purpose'}
+            $fields+=@('sessionId','workerProducerPhase')
+            $workerCount=[EasyedaDiagnosticOwner]::WorkerProducerArgumentCount($request.workerProducerPhase)
+            if ($workerCount -eq -1) {$fields+=@('uniqueContextId')}
+            elseif ($workerCount -eq -2) {$fields+=@('objectId')}
+            elseif ($workerCount -ge 0) {
+              $fields+=@('objectId')
+              for ($workerIndex=0;$workerIndex -lt $workerCount;$workerIndex++) {$fields+=@("workerArgument$workerIndex")}
+            }
+          } elseif ($null -ne $request.commonPhase) {
             if (-not $StringPrecreate) {throw 'pcb-diagnostic-common-purpose'}
             $fields+=@('sessionId','commonPhase')
             switch -CaseSensitive ($request.commonPhase) {
@@ -2999,6 +4545,16 @@ try {
               'release' {}
               default {throw 'pcb-diagnostic-common-phase'}
             }
+          } elseif ($null -ne $request.actorClockPhase) {
+            if (-not $StringPrecreate) {throw 'pcb-diagnostic-actor-clock-purpose'}
+            foreach ($actorField in @('actorClockPhase','actorProjectUuid','actorBranchUuid','actorDocumentUuid','actorWindowTabId')) {if ($null -ne $request.$actorField -and $request.$actorField -isnot [string]) {throw 'pcb-diagnostic-actor-clock-field'}}
+            $fields+=@('sessionId','actorClockPhase','uniqueContextId')
+            switch -CaseSensitive ($request.actorClockPhase) {
+              'ui' {$fields+=@('actorProjectUuid','actorBranchUuid','actorDocumentUuid','actorWindowTabId')}
+              'worker' {$fields+=@('actorProjectUuid','actorBranchUuid','actorDocumentUuid','actorWindowTabId')}
+              'pcb' {}
+              default {throw 'pcb-diagnostic-actor-clock-phase'}
+            }
           } elseif ($null -ne $request.stringPhase) {
             if (-not $StringPrecreate) {throw 'pcb-diagnostic-string-purpose'}
             $fields+=@('sessionId','stringPhase')
@@ -3006,6 +4562,8 @@ try {
               'worker-association' {$fields+=@('uniqueContextId')}
               'renderer-association' {$fields+=@('objectId','callbackObjectId')}
               'empty-producers' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
+              'empty-producers-v2' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
+              'producer-markers-v2' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
               default {throw 'pcb-diagnostic-string-phase'}
             }
           } elseif ($null -ne $request.modelPhase) {
@@ -3019,7 +4577,9 @@ try {
               'constructors-diagnostic' {if ($StringPrecreate) {throw 'pcb-diagnostic-model-constructors'};$fields+=@('objectId','callbackObjectId','teardropObjectId')}
               'constructors-precreate' {if (-not $StringPrecreate) {throw 'pcb-diagnostic-model-constructors'};$fields+=@('objectId','callbackObjectId','teardropObjectId')}
               'snapshot' {$fields+=@('objectId','callbackObjectId')}
+              'snapshot-v2' {if (-not $StringPrecreate) {throw 'pcb-diagnostic-model-purpose'};$fields+=@('objectId','callbackObjectId')}
               'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}
+              'pending-v2' {if (-not $StringPrecreate) {throw 'pcb-diagnostic-model-purpose'};$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}
               'raw-strings' {$fields+=@('objectId','callbackObjectId')}
               'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}
               'release' {}
@@ -3046,8 +4606,18 @@ try {
           }}
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
           foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','commonPhase','objectId','callbackObjectId','constructorObjectId','teardropObjectId','teardropCallbacksObjectId','teardropReceiver0','teardropReceiver1','teardropReceiver2','teardropReceiver3','teardropReceiver4','teardropReceiver5','teardropTarget0','teardropTarget1','teardropTarget2','teardropTarget3','teardropTarget4','teardropTarget5','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
-          if ($null -ne $request.commonPhase) {
+          foreach ($field in @('workerProducerPhase','workerArgument0','workerArgument1','workerArgument2','workerArgument3','workerArgument4','workerArgument5')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-worker-producer-field'}}
+          if ($null -ne $request.workerProducerPhase) {
+            $workerArguments=$null
+            if ($workerCount -ge 0) {
+              $workerArguments=[object[]]@()
+              for ($workerIndex=0;$workerIndex -lt $workerCount;$workerIndex++) {$workerArguments+=@($request."workerArgument$workerIndex")}
+            }
+            $owner.SendWorkerProducer([int]$request.requestId,$request.method,$request.sessionId,$request.workerProducerPhase,$request.uniqueContextId,$request.objectId,$workerArguments)
+          } elseif ($null -ne $request.commonPhase) {
             $owner.SendCommonBaseline([int]$request.requestId,$request.method,$request.sessionId,$request.commonPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId,$request.constructorObjectId)
+          } elseif ($null -ne $request.actorClockPhase) {
+            $owner.SendActorClock([int]$request.requestId,$request.method,$request.sessionId,$request.actorClockPhase,$request.uniqueContextId,$request.actorProjectUuid,$request.actorBranchUuid,$request.actorDocumentUuid,$request.actorWindowTabId)
           } elseif ($null -ne $request.stringPhase) {
             $owner.SendStringPrecreate([int]$request.requestId,$request.method,$request.sessionId,$request.stringPhase,$request.uniqueContextId,$request.objectId,$request.callbackObjectId,$request.constructorObjectId)
           } elseif ($null -ne $request.modelPhase) {

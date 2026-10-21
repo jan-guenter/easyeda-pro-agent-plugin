@@ -8,8 +8,8 @@ export const currentPcbConstructorFailureSchema = z.object({
   bundle: z.enum(["diagnostic", "precreate", "common"]),
   profile: z.enum(["kde", "Sfe", "mpe", "Yde", "HSe", "USe", "Yme", "Nfe", "Epe", "GSe",
     "Jse", "Lpe", "Kme", "fpe", "P1e", "mge", "tge", "$me", "Spe", "Ume", "cge", "Tfe", "Qme", "jde"]).nullable(),
-  stage: z.enum(["callback", "scope", "owner", "constructor", "metadata", "statics", "reproof", "decode"]),
-  reason: z.enum(["own", "object", "function", "name", "arity", "prototype", "static", "callback", "count", "instance", "target", "shadow", "unexpected", "reply"]),
+  stage: z.enum(["callback", "scope", "owner", "constructor", "metadata", "statics", "reproof", "decode", "tuple"]),
+  reason: z.enum(["own", "object", "function", "name", "arity", "prototype", "static", "callback", "count", "instance", "target", "shadow", "unexpected", "reply", "location", "scopes"]),
 }).strict();
 export type CurrentPcbConstructorFailure = Readonly<z.infer<typeof currentPcbConstructorFailureSchema>>;
 const failures = new WeakMap<object, CurrentPcbConstructorFailure>();

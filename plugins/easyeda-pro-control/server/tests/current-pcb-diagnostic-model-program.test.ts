@@ -365,12 +365,12 @@ void test("String sweep stops at its first malformed reply and reports that phas
     request: command => {
       assert.ok("modelPhase" in command); phases.push(command.modelPhase);
       if (command.modelPhase === "release") { return Promise.resolve({}); }
-      return Promise.resolve(command.modelPhase === "snapshot" ? replyWithException() : replies[phases.length - 1]);
+      return Promise.resolve(command.modelPhase === "snapshot-v2" ? replyWithException() : replies[phases.length - 1]);
     },
   });
-  await assert.rejects(runner.observe(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_SNAPSHOT/u);
+  await assert.rejects(runner.observe(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_SNAPSHOT_V2/u);
   assert.deepEqual(phases, ["wrapper", "properties", "properties", "handler", "properties", "properties", "teardrop-callbacks", ...Array.from({ length: 19 }, () => "properties"), "teardrop-owner", "constructors-precreate",
-    ...Array.from({ length: 21 }, () => "properties"), "snapshot", "release"]);
+    ...Array.from({ length: 21 }, () => "properties"), "snapshot-v2", "release"]);
 });
 
 void test("composite model observation rejects mixed documents and malformed leaves without partial acceptance", async () => {
