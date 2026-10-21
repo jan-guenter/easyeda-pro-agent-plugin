@@ -4,6 +4,69 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Delivered 121921, 2026-10-21
+
+Published and installed `0.3.0+codex.20261021121921` through protected PR96.
+Final tested head `0abd96f911bebb32baf526b0d3e561008f71b005` and merged main
+`cc19c3b9c2e963874b75e407ec4f0f596d9955f4` have identical full tree
+`0760a85c5aca41197f5b1f967822309a97d19f67` and plugin tree
+`5802843a15032b2a4f6cdf1bb8b0f7083558e57e`. This local delivery record is
+beyond immutable PR96 and changes no packaged payload. Candidate/pending-release
+statements below are historical.
+
+The combined batch adds bounded common graph packets, original actor/SQL token
+retention and dormant ledger integration, shared unresolved String-ledger gates,
+fixed raw-reader failure labels, separate root/Job termination diagnostics and a
+private worker construction collector. Control and extension skill references
+document these boundaries. The collector has no native prebootstrap integration;
+there is no new writer, public clock action or API coverage claim. Common packets
+are not atomic snapshots or complete live baselines. Source602/fb917868,
+runtime3/749d85b9, helper611926/6f961eab, compatibility68191b9b; external pins
+remain unchanged.
+
+Final exact-head Linux39600915953 passed all 10 jobs: 12,226 facade tests,
+12,221 passed, 5 platform skips, 0 failures. Windows39600915770 passed. All 424
+bridge tests, strict types/type-aware lint, dependency/signature/audit,
+reproducible build, compatibility, repository/privacy, maintained plugin/MCP
+checks and all 7 official skill validators pass. Both actual Windows no-app
+CompileOnly profiles pass. No external official plugin validator was available.
+Preserve the original frozen local suite result: 12,225 tests, 12,219 passed,
+4 skipped, 2 failed stale test expectations. Final corrections passed focused
+tests and exact-head CI; that original full run was not green. Earlier privacy,
+incorrect-distribution and native smoke failures remain retained. No second broad
+local suite was added. Post-main Windows39603365723 passed. Duplicate Linux
+39603365080 was still running on the identical merged tree at handoff, with its
+build job successful. Check its final result next session.
+
+Official named Git marketplace upgrade completed without errors/stderr. Installed
+and enabled 121921 comes from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+equals merged main. Main and independent complete comparisons pass 1,732 files,
+42 directories, 35,563,656 bytes and modes, inventory e0969580. One installed synthetic
+offline probe passed on Node24.18.0: 26 tools, 51 configured policies, 10 queries/
+12 requests, zero stderr, normal EOF and observed exit0. Sampled isolation and
+post-close checks pass; continuous isolation and actual host-owned runtime
+admission are not claimed. Do not repeat the consumed probe.
+
+Independent delivery review passes. Main read the complete receipt a3a57d01 at
+`/root/.cache/easyeda-121921-independent-delivery-cJBKfrea/delivery-review.json`.
+Release evidence and updated continuation are in
+`/root/.cache/easyeda-batched-release-20261021-zOlJGWwu`. No live call followed
+installation. Old loaded100337 was not killed, rebound or hotpatched. Its prior
+disposable case is terminal as recorded below; never replay it. No production
+design was accessed, including reads/hashes.
+
+A fresh Codex chat is required to load and admit actual121921. Batch the next
+implementation work: original-owner prebootstrap integration; worker/channel/
+publisher ownership; actual filesystem/network/upload/replay containment; private
+server-time/clock/ledger coordination; fixed exact-once create/Save dispatch and
+terminal completion. Then qualify one complete disposable closed-SQL/history,
+fresh-owner reopen and visual lifecycle. The private next-batch integration map
+records exact code hooks. Inventory remains 774 methods: 212 public subsets,
+33 native equivalents, 79 blocked implementations and 450 omissions. Wider PCB,
+schematic, library/device/3D, routing/copper/rules, ECO/ERC/DRC, manufacturing and
+portable packaging work remains open; omissions are not all safely implementable.
+
 ### Candidate121921, 2026-10-21
 
 The combined payload `0.3.0+codex.20261021121921` is frozen for final checks,
