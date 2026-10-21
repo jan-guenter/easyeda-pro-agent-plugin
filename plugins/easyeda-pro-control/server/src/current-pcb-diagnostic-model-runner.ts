@@ -3,6 +3,7 @@
  * its exact source bytes, session/context and original native lifecycle.
  * This module has no public caller-JavaScript or remote-object selector input.
  */
+/* oxlint-disable import/max-dependencies -- This runner composes separately audited fixed observations and the original bound-callback proof without merging their trust boundaries. */
 import { types } from "node:util";
 import { canonicalJson } from "./core.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS,
@@ -18,6 +19,7 @@ import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, decodeCurrentPcbDiagnostic
 import type { CurrentPcbDiagnosticRawStrings } from "./current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, decodeCurrentPcbDiagnosticRootInventoryReply } from "./current-pcb-diagnostic-root-inventory.ts";
 import type { CurrentPcbDiagnosticRootInventory } from "./current-pcb-diagnostic-root-inventory.ts";
+import { observeCurrentPcbTeardropOwner } from "./current-pcb-teardrop-owner-runner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { currentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
 import type { CurrentPcbObservationPhase } from "./current-pcb-observation-failure.ts";
@@ -59,7 +61,19 @@ export type CurrentPcbDiagnosticModelCommand =
   }> }>
   | Readonly<{ modelPhase: "constructors-diagnostic" | "constructors-precreate"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: string; returnByValue: false;
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ modelPhase: "teardrop-callbacks"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: string; returnByValue: false;
     arguments: readonly [Readonly<{ objectId: string }>];
+  }> }>
+  | Readonly<{ modelPhase: "teardrop-owner"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
+    objectId: string; functionDeclaration: string; returnByValue: false;
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>,
+      Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>,
+      Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>,
+      Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>,
+      Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "snapshot"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION; returnByValue: true;
@@ -67,7 +81,7 @@ export type CurrentPcbDiagnosticModelCommand =
   }> }>
   | Readonly<{ modelPhase: "pending"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION; returnByValue: true;
-    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
+    arguments: readonly [Readonly<{ objectId: string }>, Readonly<{ objectId: string }>, Readonly<{ objectId: string }>];
   }> }>
   | Readonly<{ modelPhase: "raw-strings"; method: "Runtime.callFunctionOn"; params: EffectFlags & Readonly<{
     objectId: string; functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION; returnByValue: true;
@@ -126,11 +140,11 @@ export class CurrentPcbDiagnosticModelRunner {
     return this.#request({ modelPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  async #constructors(scope: string, wrapper: string): Promise<string> {
+  async #constructors(scope: string, wrapper: string, teardropProof: string): Promise<string> {
     const bundle = decodeCurrentPcbConstructorBundle(await this.#request({ modelPhase: "constructors-diagnostic",
       method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS, objectId: scope,
         functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic, returnByValue: false,
-        arguments: [{ objectId: wrapper }] } }), "diagnostic");
+        arguments: [{ objectId: wrapper }, { objectId: teardropProof }] } }), "diagnostic");
     const handles = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "diagnostic"), prototypes = new Set<string>();
     for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic.entries()) {
       const selected = handles[index]; if (selected === undefined) { return refuse(); }
@@ -161,7 +175,8 @@ export class CurrentPcbDiagnosticModelRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#scriptId, "save-handler");
       const handlerScope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
-      const constructors = await this.#constructors(handlerScope, wrapper);
+      const teardropProof = await observeCurrentPcbTeardropOwner(command => this.#request(command), handlerScope, wrapper, this.#scriptId);
+      const constructors = await this.#constructors(handlerScope, wrapper, teardropProof);
       const compilerState = decodeCurrentPcbDiagnosticModelReply(await this.#request({
         modelPhase: "snapshot", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION,
@@ -170,7 +185,7 @@ export class CurrentPcbDiagnosticModelRunner {
       const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(await this.#request({
         modelPhase: "pending", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,
           objectId: handlerScope, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
-          returnByValue: true, arguments: [{ objectId: wrapper }, { objectId: constructors }] },
+          returnByValue: true, arguments: [{ objectId: wrapper }, { objectId: constructors }, { objectId: teardropProof }] },
       }));
       const rawStrings = decodeCurrentPcbDiagnosticRawStringsReply(await this.#request({
         modelPhase: "raw-strings", method: "Runtime.callFunctionOn", params: { ...EFFECT_FLAGS,

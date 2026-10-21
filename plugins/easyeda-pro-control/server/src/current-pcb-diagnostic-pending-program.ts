@@ -8,6 +8,7 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_TEARDROP_OWNER_FRAGMENT } from "./current-pcb-teardrop-owner-program.ts";
 import { currentPcbPendingFailure, currentPcbPendingFailureDetail, currentPcbPendingFailureSchema } from "./current-pcb-observation-failure.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -35,7 +36,7 @@ const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownK
  * silent and returnByValue true; awaitPromise, preview and userGesture false.
  * No source, selectors, remote handles or optional flags come from the caller.
  */
-export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback,constructors){${GUARDS}
+export const CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION = `function(originalCallback,constructors,teardropProof){${GUARDS}
 try{
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 stage="scope";
@@ -64,7 +65,9 @@ idMapCount:collection(keep(stack,"idMap").value,Map.prototype),refreshService:fl
 needCheckFilterCommand:flag(own(stack,"needCheckFilterCommand")),partitionNeedAskBeforeDelete:flag(own(stack,"_partitionNeedAskBeforeDelete")),
 createPartitionFile:flag(own(stack,"createPartitionFile")),sendCopperOrderChange:flag(own(stack,"sendCopperOrderChange"))};
 }
-stage="teardrops";const tears=constructorInstance(keep(scope,"Zec").value,"Sfe");
+stage="teardrops";
+${CURRENT_PCB_TEARDROP_OWNER_FRAGMENT}
+const tears=constructorInstance(teardropOwner,"Sfe");
 const teardrops={isMove:flag(own(tears,"isMove")),suspend:flag(own(tears,"suspend")),
 modifyCount:collection(keep(tears,"modify").value,Set.prototype),taskCount:collection(keep(tears,"task").value,Set.prototype),
 modifyTearsCount:collection(keep(tears,"modifyTears").value,Set.prototype),timer:keep(tears,"timeoutId").marker};
@@ -94,7 +97,7 @@ else association="matched";
 }
 }
 }
-stage="reproof";verifyConstructorAssociations();if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
+stage="reproof";verifyConstructorAssociations();verifyTeardropOwner();if(own(env,"_compiler")!==compiler||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
 for(const r of retained){const v=optional(r[0],r[1]);if(v.marker!==r[2]||v.value!==r[3])bad();}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
 stage="serialize";return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-pending-state.v1",documentUuid,copperUploads,planeUploads,boardUpload,

@@ -17,8 +17,8 @@ void test("synthetic launch fixture binds exact helper bytes without executing i
   assert.ok(!fixture.includes("& $helper"));
   assert.ok(!fixture.includes(". $helper"));
   assert.ok(!fixture.includes("Start-Process"));
-  assert.ok(fixture.includes("Read-BoundedFile $helper 262144"));
-  assert.ok(helper.length <= 262_144);
+  assert.ok(fixture.includes("Read-BoundedFile $helper 524288"));
+  assert.ok(helper.length <= 524_288);
   assert.ok(fixture.includes("Read-BoundedFile $executable 1048576"));
 });
 

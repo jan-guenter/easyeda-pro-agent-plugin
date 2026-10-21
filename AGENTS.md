@@ -4,7 +4,117 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-### Active211943 continuation, 2026-10-21
+### 055237 batch frozen; delivery checks in progress, 2026-10-21
+
+Actual233238 admission passed main and independent checks: facade1927870/
+start53543483, parent1926256/start53538056, pinned Node24.18.0/core0,
+source564/48823583, runtime3/fcaf312d and compatibility6bb53e61. Complete
+installed1661file/mode comparison matches mergedmainf2a509e3. Post-main
+Linux39518076592 is SUCCESS/all10jobs; both platforms are green. Main receipt
+0941857d is in `/root/.cache/easyeda-233238-live-RDhYWdoM/admission.json`;
+independent receipt0be5e36e is in
+`/root/.cache/easyeda-233238-independent-admission-cxgxFgPn/admission.json`.
+
+NEW `string-precreate-233238-20261021-01` is terminal released; NEVER replay.
+Original launch, UI source, disposable project/PCB opening, PCB source and
+direct-child project-worker source passed. The combined observation refused at
+`PCB_STRING_PRECREATE_OBSERVATION_FAILED_CONSTRUCTORS_PRECREATE` before model
+samples, create or Save. Published primary failure has leafnull,
+cleanupFailedfalse/failureCount1; later model-release input is synthetic owner
+invalidation, not cleanup failure. Original root53200/created134370342719206233,
+binding26b983aa and hwnd241437640 closed normally; retained root/whole-Job exit
+and helper release passed. Closed disposable remains598016/e620d21a exactly.
+No prompt choice or production-design access. Complete responses are retained
+in `/root/.cache/easyeda-233238-live-RDhYWdoM`.
+
+Working branch `feature/pcb-owned-baseline-gates-20261021` batches original
+common-baseline/pre-open-SQL integration, fixed native transport, subscribed
+teardrop-owner discovery, bounded failure evidence and private worker gates.
+Both public observation paths use six qualified original bound callbacks, not
+an omitted lexical Zec binding. Optionalcommon comparison/refusal consumes one
+attempt; only successful reads/release/context reproof and published failure+
+result permit independent precreate after a comparison refusal. No writer added.
+
+Candidate055237 is frozen/reviewed:574source b2b05caf,3runtime8edc0a3a,
+compatibilitycb8030bd. Only facade projections/reviewtime changed. Native helper
+331961/ae7e5dfc and22 embedded programs pass independent parity. Actual Windows
+PowerShell5.1 no-app CompileOnly passes BOTH profiles; no process launched.
+Dependency tree/signatures/audit/sanitizer/build/types/strictlint pass; repository/
+privacy and all7skillvalidators pass. Full local verify is running on this
+frozen payload; protected exact-head Linux+Windows CI and installation remain
+pending. Evidence `/root/.cache/easyeda-055237-release-A9HNggaz`.
+
+Loaded facade1927870 remains233238, untouched. No pending live/native case and
+no further live call planned in this session. Installed payload remains233238
+until the full batch is published. New connected validation needs a fresh chat
+after installation. Backlog: `docs/current-pcb-owned-baseline-batch-2026-10-21.md`.
+
+### Delivered233238 checkpoint, 2026-10-21
+
+Delivered `0.3.0+codex.20261020233238` through protected PR92. Exact tested head
+`1e4c340e8c92c1200429680043842df544f752f7`, merged main
+`f2a509e398f36298bbcf29f1251288e7597dbb41`; full tree3ad5b84f and plugin
+treeac4906b3 are identical. One batch covers24 source-qualified constructor
+profiles, captured Xh alias, post-cleanup owner checks, compiler metadata,
+five-reply common baseline/raw-history relation and lazy-producer markers.
+New baseline/marker components remain private; no new writer or API coverage.
+Diagnostic/precreate budgets82/112 are observations, not writer authority.
+
+Source564/48823583, runtime3/fcaf312d, compatibility6bb53e61. Only facade
+projections/review time changed; external/bridge/sanitizer pins unchanged.
+Native helper212714/3c5d875e and14 embedded programs independently verified;
+both actual Windows no-app CompileOnly profiles passed. Dependency/tree/
+signatures/audit/sanitizer84440 and build/pin85426 pass. Frozen local verify85034
+passed12090facade tests/12086passed/4platformskips/0failures,424bridge tests,
+strict lint/types, build/API/compatibility/skills/package/MCP checks. Committed
+bundles reproduce exactly. All7skill-creator checks41063 pass.
+
+The initial repository check89771 refused only two required description phrases.
+While local tests stayed frozen, a separate022 checkout restored `typed API` and
+`future mismatches fail closed`; source/runtime/pins were unchanged. Final
+description/repository/privacy/MCP checks70465/58583 pass. Exact final-head
+LinuxCI39516485061(all10jobs) and WindowsCI39516484978 PASSED. Post-main
+WindowsCI39518076825 also PASSED; duplicate LinuxCI39518076592 runs on the
+identical merged tree. Check its completion next session, do not repeat broad
+local suites.
+
+Official named Git marketplace upgrade67084 completed with no errors/stderr.
+CLI30128 lists233238 installed/enabled from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+is merged main. Maintained exact-main comparison33047 passes1661files/42dirs/
+33982209bytes/modes, inventoryc6b07c8d. Exact-main worktree:
+`/root/.cache/easyeda-233238-merged-main-UlM4BYgK/worktree`.
+Installed offline probe33047 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0,0stderr and normal EOF/exit0. Post-close marker/
+control checks and no-descendant/socket samples pass; continuous isolation and
+connected execution are not claimed. Live control root was not selected.
+Independent final delivery review repeated the maintained file/mode comparison
+and checked upgrade/list/offline receipts; it PASSED. No offline replay or old
+host action. Implementation/native/final-text/exact-checkout reviews also passed.
+Main read the independent delivery receipt71c9a932 in
+`/root/.cache/easyeda-constructor-native-review-Bipp3pOx/delivery-review-233238.json`.
+Release evidence:
+`/root/.cache/easyeda-constructor-baseline-release-GRCxScsn`.
+
+Loaded host1778507/start51206168 remains211943, parent1776835/start51200437.
+It was not killed/rebound/hotpatched; no live call after installation. A fresh
+Codex chat and actual233238 admission are required before a NEW disposable case.
+Terminal `string-precreate-211943-20261021-01` below is NEVER replayed. No pending
+CAD/native owner, create or Save; production designs untouched.
+
+Full backlog: `docs/current-pcb-constructor-baseline-batch-2026-10-21.md`.
+Main fully read222line private next-integration.md SHA772e1f2e in the release
+evidence. Next batch: original-owned common/metadata/assets/SQL integration,
+source-qualified callback/publisher/gate and String-specific actor/clock owners.
+It also documents legitimate null FP/MI initialization and an unretained ratline
+timer. Proposed versioned owner unions and a finite-effect writer contract are
+NOT implemented/authorized by that document. Do not chase impossible absolute
+quiescence or silently relax v1 guards: establish receiver/write-destination
+containment, then require exact bounded closed/reopened effects. Hidden arrow
+receivers remain a concrete scope blocker. Batch useful integration before the
+next release. These delivery notes are beyond immutable PR92; plugin unchanged.
+
+### Completed211943 continuation, 2026-10-21
 
 Actual211943 admission passed main and independent checks: facade1778507/
 start51206168, parent1776835/start51200437, Node24.18.0/core0, installed cwd/argv,

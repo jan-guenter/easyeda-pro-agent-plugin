@@ -10,6 +10,7 @@ import {
   decodeCurrentPcbDiagnosticPendingReply,
 } from "../src/current-pcb-diagnostic-pending-program.ts";
 import { currentPcbPendingFailureDetail, currentPcbPendingFailureReasonSchema, currentPcbPendingFailureStageSchema } from "../src/current-pcb-observation-failure.ts";
+import { CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING, currentPcbTeardropSources } from "./helpers/current-pcb-teardrop-fixture.ts";
 
 const FIXTURE = `
 globalThis.reads=0;
@@ -27,7 +28,7 @@ this.refreshService=false;this.needCheckFilterCommand=true;this._partitionNeedAs
 this.createPartitionFile=false;this.sendCopperOrderChange=false;}}
 class kde{constructor(){this.undoCommand=[];this.redoCommand=[];this.stack=new De();}}
 class Sfe{constructor(){this.isMove=false;this.suspend=true;this.modify=new Set();this.task=new Set();
-this.modifyTears=new Set();this.timeoutId=null;}}
+this.modifyTears=new Set();this.timeoutId=null;}${currentPcbTeardropSources.join("")}}
 class Of{constructor(){this.map=new Map();this.busMap={};this.ratlineWorker=new Map();
 this.workerBus=new Map();this._workerStateMap={};this.id=1;this.i=0;}}
 Of.manager=new Of();
@@ -35,9 +36,11 @@ class Cet{constructor(worker){this.worker=worker;this.bus=MSG_BUS_PCB.messageBus
 class FP{constructor(){this.openPcb=true;this.workerName=0;this._bus=new Cet({});}}
 FP.manager=new FP();
 Of.manager.map.set(0,FP.manager._bus.worker);Of.manager.busMap["0"]=FP.manager._bus;
-globalThis.scope={object:{x,qI,e5,pE,De,kde,Xe:new kde(),Sfe,Zec:new Sfe(),Of,FP}};
+globalThis.scope={object:{x,qI,e5,pE,De,kde,Xe:new kde(),Of,FP}};
+const tearsOwner=new Sfe;
+${CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING}
 `;
-const READ = `(${CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,[kde,Sfe,...Array(14).fill(class{})])`;
+const READ = `(${CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,[kde,Sfe,...Array(14).fill(class{})],teardropProof)`;
 function snapshot(change = ""): Readonly<{ raw: string; reads: unknown }> {
   const context = createContext({});
   runInContext(FIXTURE + change, context, { timeout: 1000 });
@@ -52,7 +55,7 @@ void test("pending reader distinguishes optional producers and samples worker ze
 const privatePayload=Object.defineProperty({},"secret",{get(){reads++;throw new Error("PRIVATE_PAYLOAD");}});
 scope.object.qI.proxy.data.add(privatePayload);scope.object.e5.proxy.data.add(privatePayload);
 scope.object.Xe.stack._commands.push(privatePayload);scope.object.Xe.stack.waitingUploadStack.push(privatePayload);
-scope.object.Zec.modify.add(privatePayload);scope.object.Zec.timeoutId=0;
+teardropProof[0].modify.add(privatePayload);teardropProof[0].timeoutId=0;
 Object.defineProperty(scope.object.Xe.stack,"commands",{get(){reads++;throw new Error("VENDOR_GETTER");}});
 `);
   const state = decodeCurrentPcbDiagnosticPendingReply(reply(observed.raw));
@@ -93,8 +96,8 @@ void test("pending reader reports structural worker mismatches and rejects unsup
     'scope.object.FP.manager.workerName=-0;',
     'scope.object.x.env._doctype=4;',
     'scope.object.x.env._id="private-title";',
-    'scope.object.Zec.modify=new Set(Array.from({length:65537},(_,i)=>i));',
-    'Object.defineProperty(scope.object.Zec,"task",{get(){reads++;throw new Error("GETTER");}});',
+    'teardropProof[0].modify=new Set(Array.from({length:65537},(_,i)=>i));',
+    'Object.defineProperty(teardropProof[0],"task",{get(){reads++;throw new Error("GETTER");}});',
     'Object.defineProperty(scope.object.qI,"proxy",{get(){reads++;throw new Error("GETTER");}});',
   ]) { assert.throws(() => decodeCurrentPcbDiagnosticPendingReply(reply(snapshot(change).raw)), /PCB_DIAGNOSTIC_PENDING_REPLY/u, change); }
 });
@@ -103,7 +106,7 @@ void test("pending failure labels identify the failed group without disclosing v
   for (const [change, stage, reason] of [
     ["scope.object.FP.manager=null;", "dynamic-copper", "object"],
     ["scope.object.Xe.stack={};", "active-stack", "instance"],
-    ['Object.defineProperty(scope.object.Zec,"task",{get(){reads++;throw new Error("PRIVATE_PAYLOAD");}});', "teardrops", "own"],
+    ['Object.defineProperty(teardropProof[0],"task",{get(){reads++;throw new Error("PRIVATE_PAYLOAD");}});', "teardrops", "own"],
   ] as const) {
     const observed = snapshot(change);
     assert.equal(observed.reads, 0); assert.doesNotMatch(observed.raw, /PRIVATE_PAYLOAD/u);
@@ -173,7 +176,7 @@ void test("pending fixed program works under inspector effect checking without c
       includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false, timeout: 1000,
     });
     assert.equal(decodeCurrentPcbDiagnosticPendingReply(await read()).dynamicCopper.association, "matched");
-    runInContext('scope.object.Zec=new Proxy(scope.object.Zec,{getOwnPropertyDescriptor(target,key){reads++;return Reflect.getOwnPropertyDescriptor(target,key);}});', context);
+    runInContext('teardropProof[0]=new Proxy(teardropProof[0],{getOwnPropertyDescriptor(target,key){reads++;return Reflect.getOwnPropertyDescriptor(target,key);}});', context);
     const refused = await read();
     assert.throws(() => decodeCurrentPcbDiagnosticPendingReply(refused), /PENDING_REPLY/u);
     assert.equal(runInContext("reads", context) as unknown, 0);

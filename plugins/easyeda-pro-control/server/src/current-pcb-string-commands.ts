@@ -4,8 +4,10 @@ import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION } from "./current-pcb-strin
 
 // 49 UI/project/PCB qualification +12 worker qualification +6 scope acquisition
 // +22 constructor-bundle/source checks +2*(7 observations +4 target/frame
-// Reproofs) +1 original-group release. These are observations, not a writer budget.
-export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 112;
+// Reproofs) +1 original-group release +18 separately consumed common-baseline
+// Requests +4 original target/frame reproofs +21 bound-teardrop-owner checks.
+// Observations, not a writer budget.
+export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 155;
 export const CURRENT_PCB_STRING_PRECREATE_PHASES = ["renderer-association", "worker-association", "empty-producers"] as const;
 export type CurrentPcbStringPrecreatePhase = typeof CURRENT_PCB_STRING_PRECREATE_PHASES[number];
 const EFFECTS = Object.freeze({ throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const);

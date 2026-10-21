@@ -33,9 +33,9 @@ export function expectedRaw(): string {
     record({ type: "META", ticket: 101, id: "META" }, { title: OPERATION.patch.name, description: OPERATION.patch.description,
       tags: ["synthetic"], docType: 2, source: "" })].join("|\n");
 }
-function oldRaw(): string {
+function oldRaw(targetUuid: string): string {
   return [record({ type: "EDIT_HEAD" }, { uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic", updateTime: 1 }),
-    record({ type: "DOCHEAD", ticket: 1 }, { docType: "SYMBOL", client: "b".repeat(16), uuid: IDS.target, updateTime: 1, version: "1", editVersion: "3.0" }),
+    record({ type: "DOCHEAD", ticket: 1 }, { docType: "SYMBOL", client: "b".repeat(16), uuid: targetUuid, updateTime: 1, version: "1", editVersion: "3.0" }),
     record({ type: "META", ticket: 1, id: "META" }, { title: "Original synthetic", description: "Old synthetic description", tags: ["synthetic"], docType: 2, source: "" }),
     record({ type: "LINE", ticket: 90, id: "deleted-shape" }, { x: 0 }), record({ type: "LINE", ticket: 100, id: "deleted-shape" }),
     record({ type: "DOCHEAD", ticket: 2 }, { docType: "SYMBOL", client: "b".repeat(16), uuid: IDS.peer, updateTime: 1, version: "1", editVersion: "3.0" }),
@@ -57,27 +57,27 @@ export async function inventory(path: string): ReturnType<typeof readExactSqlInv
   const expectedSha256 = createHash("sha256").update(await readFile(path)).digest("hex");
   return readExactSqlInventory({ checkpointPath: path, expectedSha256, runtime: await syntheticSqlRuntime() });
 }
-export async function fixture(): Promise<Readonly<{ path: string; before: Awaited<ReturnType<typeof readExactSqlInventory>> }>> {
+export async function fixture(identity: Readonly<{ project: string; branch: string; target: string }> = IDS): Promise<Readonly<{ path: string; before: Awaited<ReturnType<typeof readExactSqlInventory>> }>> {
   const directory = await mkdtemp(join(syntheticSqlRoot(), "synthetic-symbol-sql-")); const path = join(directory, "source.eprj2");
   const database = new DatabaseSync(path, { enableForeignKeyConstraints: false });
   try {
     database.exec("BEGIN");
-    const schema = nativeProjectSymbolSqlSchema(IDS.branch).entries;
+    const schema = nativeProjectSymbolSqlSchema(identity.branch).entries;
     for (const entry of [...schema.filter((value) => value.type === "table"), ...schema.filter((value) => value.type === "index")]) {
       if (entry.sql !== null && entry.name !== "sqlite_sequence") { database.exec(entry.sql); }
     }
     insertRequired(database, "db_versions", { key: "sqlite", value: "25.10.31.1" });
     insertRequired(database, "users", { uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic" });
-    insertRequired(database, "projects", { uuid: IDS.project, branch_uuid: IDS.branch, owner_uuid: IDS.actor, name: "Synthetic only", ticket: 100 });
-    insertRequired(database, "branches", { uuid: IDS.start, project_uuid: IDS.project, history_uuid: null, name: "start", node: 1, parent_uuid: null });
-    insertRequired(database, "branches", { uuid: IDS.branch, project_uuid: IDS.project, history_uuid: IDS.oldHead, name: "synthetic", node: 0, parent_uuid: IDS.start });
-    insertRequired(database, HISTORY_TABLE, { id: 5, uuid: IDS.oldHead, parent: null, snapshot: null, key: IDS.oldKey, is_lock: 1,
+    insertRequired(database, "projects", { uuid: identity.project, branch_uuid: identity.branch, owner_uuid: IDS.actor, name: "Synthetic only", ticket: 100 });
+    insertRequired(database, "branches", { uuid: IDS.start, project_uuid: identity.project, history_uuid: null, name: "start", node: 1, parent_uuid: null });
+    insertRequired(database, "branches", { uuid: identity.branch, project_uuid: identity.project, history_uuid: IDS.oldHead, name: "synthetic", node: 0, parent_uuid: IDS.start });
+    insertRequired(database, `project_history_${identity.branch}`, { id: 5, uuid: IDS.oldHead, parent: null, snapshot: null, key: IDS.oldKey, is_lock: 1,
       num: 0, created_at: "2020-01-01 00:00:00", updated_at: "2020-01-01 00:00:00", snapshot_num: 0 });
-    insertRequired(database, "history_data", { id: 7, uuid: IDS.oldHead, history_uuid: IDS.oldHead, dataStr: encrypted(oldRaw(), IDS.oldHead, IDS.oldKey) });
+    insertRequired(database, "history_data", { id: 7, uuid: IDS.oldHead, history_uuid: IDS.oldHead, dataStr: encrypted(oldRaw(identity.target), IDS.oldHead, IDS.oldKey) });
     database.exec("UPDATE sqlite_sequence SET seq=11 WHERE name='history_data'");
-    insertRequired(database, "project_structures", { id: 1, ticket: 100, project_uuid: IDS.project, branch_uuid: IDS.branch,
+    insertRequired(database, "project_structures", { id: 1, ticket: 100, project_uuid: identity.project, branch_uuid: identity.branch,
       structure: JSON.stringify({ boards: {}, schematics: {}, sheets: {}, pcbs: {}, panels: {}, blockSymbols: {}, owner: { uuid: IDS.actor } }) });
-    insertRequired(database, "project_images", { uuid: IDS.peer, project_uuid: IDS.project, branch_uuid: IDS.branch, url: "synthetic" });
+    insertRequired(database, "project_images", { uuid: IDS.peer, project_uuid: identity.project, branch_uuid: identity.branch, url: "synthetic" });
     insertRequired(database, "resources", { hash: "synthetic-resource", dataStr: "keep raw peer bytes" });
     database.exec("COMMIT");
   } finally { database.close(); }

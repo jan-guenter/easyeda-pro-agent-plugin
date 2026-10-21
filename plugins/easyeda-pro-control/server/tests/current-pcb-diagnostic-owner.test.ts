@@ -9,6 +9,8 @@ import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
+// oxlint-disable-next-line import/max-dependencies -- One integration case supplies the real completed SQL reader to the existing synthetic retained native-helper owner.
+import { IDS, encrypted, inventory, mutate, fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
 
 const LAUNCH = { executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true } as const;
 const SOURCE = "const syntheticIdentity = true;\n";
@@ -504,7 +506,7 @@ void test("fixed model observation stays in the source-admitted PCB session and 
   assert.equal(result.rootInventory.documentUuid, result.documentUuid); assert.equal(result.rootInventory.emptyRootPcbVerified, false);
   assert.equal(result.atomicSnapshotVerified, false);
   assert.equal(result.saveAuthorized, false); assert.equal(value.owner.status().modelObservationConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 48);
+  assert.equal(value.actions.filter(action => action === "send").length, 69);
   assert.ok(!JSON.stringify(result).includes("synthetic private"));
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -540,7 +542,7 @@ void test("disposable PCB opening admits original child DOM and source before it
   const model = await value.owner.observeModelState();
   assert.equal(model.documentUuid, OPEN_TARGET.documentUuid); assert.equal(model.executionAuthorized, false);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
-  assert.equal(value.actions.filter(action => action === "send").length, 72);
+  assert.equal(value.actions.filter(action => action === "send").length, 93);
   await assert.rejects(value.owner.openPcb(OPEN_TARGET, () => Promise.resolve()), /PCB_OPENING_UNAVAILABLE/u);
   await assert.rejects(value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE), /PCB_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.inspectWorkers(), /WORKER_INSPECTION_UNAVAILABLE/u);
@@ -560,14 +562,14 @@ void test("all fixed PCB phases carry the original maximum-width Unicode path wi
   assert.equal(value.owner.status().failure, null); await close(value);
 });
 
-void test("original source-shaped ancillary OBJECT and constructors fit the82-command budget", async context => {
+void test("original source-shaped ancillary OBJECT and constructors fit the103-command budget", async context => {
   const value = await openingFixture(context, "opening-pcb-ancillary");
   await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
   await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
   await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
   const result = await value.owner.observeModelState();
   assert.equal(result.executionAuthorized, false);
-  assert.equal(value.actions.filter(action => action === "send").length, 82);
+  assert.equal(value.actions.filter(action => action === "send").length, 103);
   assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
   await close(value);
@@ -652,7 +654,30 @@ async function stringFixture(context: TestContext, scenario = "opening-pcb-strin
   return value;
 }
 
-void test("separate String purpose joins both original contexts, constructors and two sweeps within exactly112requests", async context => {
+void test("original String owner retains a common comparison refusal and still performs its one independent precreate", async context => {
+  const database = await sqlFixture({ project: OPEN_TARGET.projectUuid, branch: OPEN_TARGET.branchUuid, target: OPEN_TARGET.documentUuid });
+  const raw = [
+    `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic", updateTime: 1 })}`,
+    `${JSON.stringify({ type: "DOCHEAD", ticket: 1 })}||${JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: OPEN_TARGET.documentUuid, updateTime: 1, version: "1", editVersion: "3.0" })}`,
+    `${JSON.stringify({ type: "META", ticket: 1, id: "META" })}||${JSON.stringify({ title: "Empty PCB", parent: "", source: "", board: "", zIndex: null })}`,
+  ].join("|\n");
+  mutate(database.path, `UPDATE history_data SET dataStr='${encrypted(raw, IDS.oldHead, IDS.oldKey)}' WHERE id=7;`);
+  const before = await inventory(database.path), value = await stringFixture(context);
+  const originalCount = value.actions.filter(action => action === "send").length;
+  const result = await value.owner.observeCommonBaseline(before);
+  assert.equal(result.schema, "easyeda-pro-control.pcb-common-baseline-refusal.v1");
+  assert.equal(value.actions.filter(action => action === "send").length - originalCount, 22);
+  assert.equal(result.executionAuthorized, false); assert.equal(value.owner.status().diagnosticFailure, null);
+  const failure = value.owner.retainedCommonBaselineFailure(); assert.ok(failure);
+  assert.equal(failure.nativeContinuationAllowed, true); assert.equal(failure.originalRunnerIssued, true);
+  assert.ok(failure.originalReplies); assert.equal(failure.runnerFailure, null);
+  await assert.rejects(value.owner.observeCommonBaseline(before), /COMMON_BASELINE_UNAVAILABLE/u);
+  const precreate = await value.owner.observeStringPrecreate(); assert.equal(precreate["matchingSamples"], true);
+  await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+  await close(value);
+});
+
+void test("separate String purpose joins both original contexts, constructors and two sweeps within exactly133requests", async context => {
   const value = await stringFixture(context);
   assert.equal(value.actions.filter(action => action === "send").length, 61);
   const result = await value.owner.observeStringPrecreate();
@@ -662,11 +687,11 @@ void test("separate String purpose joins both original contexts, constructors an
   assert.equal(result["projectWorkerAssociationVerified"], false); assert.equal(result["queueCompletionVerified"], false);
   assert.deepEqual(result["first"], result["second"]);
   assert.equal(value.owner.status().stringPrecreateConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 112);
+  assert.equal(value.actions.filter(action => action === "send").length, 133);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
-  assert.equal(value.actions.filter(action => action === "send").length, 112);
+  assert.equal(value.actions.filter(action => action === "send").length, 133);
   await close(value);
 });
 

@@ -20,6 +20,7 @@ import { currentPcbStringScopeCommand, currentPcbStringWorkerCommand } from "./c
 import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
 import { inspectCurrentPcbStringEmptyBaseline } from "./current-pcb-string-empty-baseline.ts";
 import { decodeCurrentPcbStringEmptyProducers } from "./current-pcb-string-empty-producers.ts";
+import { observeCurrentPcbTeardropOwner } from "./current-pcb-teardrop-owner-runner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { currentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
 import type { CurrentPcbObservationPhase } from "./current-pcb-observation-failure.ts";
@@ -70,11 +71,11 @@ export class CurrentPcbStringPrecreateRunner {
     return this.#request({ modelPhase: "properties", method: "Runtime.getProperties",
       params: { objectId: handle(objectId), ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  async #constructors(scope: string, wrapper: string): Promise<string> {
+  async #constructors(scope: string, wrapper: string, teardropProof: string): Promise<string> {
     const bundle = decodeCurrentPcbConstructorBundle(await this.#request({ modelPhase: "constructors-precreate",
       method: "Runtime.callFunctionOn", params: { ...EFFECTS, objectId: scope,
         functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate, returnByValue: false,
-        arguments: [{ objectId: wrapper }] } }), "precreate");
+        arguments: [{ objectId: wrapper }, { objectId: teardropProof }] } }), "precreate");
     const handles = decodeCurrentPcbConstructorTuple(await this.#properties(bundle), "precreate"), prototypes = new Set<string>();
     for (const [index, name] of CURRENT_PCB_CONSTRUCTOR_BUNDLES.precreate.entries()) {
       const selected = handles[index]; if (selected === undefined) { return refuse(); }
@@ -83,7 +84,7 @@ export class CurrentPcbStringPrecreateRunner {
     }
     return bundle;
   }
-  async #sweep(scope: string, wrapper: string, constructors: string): Promise<Readonly<Record<string, unknown>>> {
+  async #sweep(scope: string, wrapper: string, constructors: string, teardropProof: string): Promise<Readonly<Record<string, unknown>>> {
     this.#phase = "owner-observation";
     this.#transport.assertCurrent(); await this.#transport.observeCurrent(); this.#transport.assertCurrent();
     const args = Object.freeze([{ objectId: wrapper }] as const);
@@ -94,7 +95,7 @@ export class CurrentPcbStringPrecreateRunner {
     const compilerState = decodeCurrentPcbDiagnosticModelReply(modelReply);
     const pendingReply = await this.#request({ modelPhase: "pending", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true,
-        arguments: [{ objectId: wrapper }, { objectId: constructors }] } });
+        arguments: [{ objectId: wrapper }, { objectId: constructors }, { objectId: teardropProof }] } });
     const pendingProducers = decodeCurrentPcbDiagnosticPendingReply(pendingReply);
     const stringsReply = await this.#request({ modelPhase: "raw-strings", method: "Runtime.callFunctionOn",
       params: { ...params, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...call } });
@@ -150,8 +151,9 @@ export class CurrentPcbStringPrecreateRunner {
       }), "save-handler");
       const handlerScopes = decodeCurrentPcbDiagnosticModelScopeList(await this.#properties(handler), this.#script, "save-handler");
       const scope = decodeCurrentPcbDiagnosticModelScope(await this.#properties(handlerScopes), "save-handler");
-      const constructors = await this.#constructors(scope, wrapper);
-      const first = await this.#sweep(scope, wrapper, constructors), second = await this.#sweep(scope, wrapper, constructors);
+      const teardropProof = await observeCurrentPcbTeardropOwner(command => this.#request(command), scope, wrapper, this.#script);
+      const constructors = await this.#constructors(scope, wrapper, teardropProof);
+      const first = await this.#sweep(scope, wrapper, constructors, teardropProof), second = await this.#sweep(scope, wrapper, constructors, teardropProof);
       this.#phase = "sample-match";
       if (canonicalJson(first) !== canonicalJson(second)) { return refuse(); }
       result = freezeDeep({ schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",

@@ -9,7 +9,23 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261020233238` batches [constructor admission, compiler metadata,
+Update `0.3.0+codex.20261021055237` combines [bound-callback owner discovery,
+original common-baseline integration and worker gate qualification](docs/current-pcb-owned-baseline-batch-2026-10-21.md).
+The optional common stage now compares its own five raw reader replies with the
+complete SQL inventory retained before opening. A narrowly classified comparison
+refusal preserves evidence without blocking the independent precreate observation;
+transport, cleanup and identity failures still stop the workflow. Neither stage
+permits creating geometry or saving. Worker gate/publisher profiles remain private.
+
+Installed233238 passed disposable opening and original PCB/project-worker source
+qualification, then refused constructor discovery. Normal closure, whole-Job
+termination and release passed with unchanged closed disposable bytes. Source
+inspection found that the teardrop owner is retained by six bound subscriptions,
+not by the Save closure's omitted `Zec` variable. The new route qualifies those
+subscriptions and their shared receiver without invoking callbacks. This fix and
+the common-stage integration still need connected validation.
+
+The preceding `0.3.0+codex.20261020233238` batches [constructor admission, compiler metadata,
 saved common-record/history matching and producer markers](docs/current-pcb-constructor-baseline-batch-2026-10-21.md).
 It handles24 pinned constructor profiles and one captured alias across the
 reviewed readers, and rechecks ownership after cleanup. It does not enable a PCB

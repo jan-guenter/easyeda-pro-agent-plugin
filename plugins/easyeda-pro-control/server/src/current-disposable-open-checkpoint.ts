@@ -138,6 +138,22 @@ export async function verifyCurrentDisposableOpenCheckpoint(prepared: CurrentDis
   }
 }
 
+/** String common-state preparation only. Called during the original one-shot
+ * opening preparation, while the original source still matches its checkpoint.
+ * The returned completed reader object stays in that lifecycle, never in JSON. */
+export async function readCurrentPcbCommonOpenInventory(prepared: CurrentDisposableOpenCheckpoint,
+  target: CurrentDisposableOpenTarget): ReturnType<typeof readExactSqlInventory> {
+  await verifyCurrentDisposableOpenCheckpoint(prepared, target);
+  const configured = await loadRuntimeMachineProfile();
+  const inventory = await readExactSqlInventory({ checkpointPath: prepared.checkpoint.checkpoint,
+    expectedSha256: prepared.checkpoint.checkpointSha256, runtime: configured.profile.runtime });
+  await verifyCurrentDisposableOpenCheckpoint(prepared, target);
+  if (inventory.checkpointSha256 !== prepared.checkpoint.checkpointSha256) {
+    throw new Error("String common pre-open inventory differs from its original checkpoint.");
+  }
+  return inventory;
+}
+
 /** Reprove only the original managed backup and its historical default-branch
  * membership after navigation. Deliberately never opens or hashes the live
  * source, which normal opening may already have migrated or persisted. This is

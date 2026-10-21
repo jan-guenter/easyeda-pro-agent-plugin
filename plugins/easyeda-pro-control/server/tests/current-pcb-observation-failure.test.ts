@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { currentPcbConstructorFailure } from "../src/current-pcb-constructor-failure.ts";
+import { currentPcbTeardropFailure } from "../src/current-pcb-teardrop-failure.ts";
 import { currentPcbObservationFailure, currentPcbObservationFailureDetail,
   currentPcbPendingFailure, currentPcbPendingFailureDetail } from "../src/current-pcb-observation-failure.ts";
 
@@ -22,4 +24,36 @@ void test("observation failures retain the original leaf separately from cleanup
     assert.equal(reported.message, "PCB_DIAGNOSTIC_MODEL_OBSERVATION_FAILED_PENDING");
   }
   assert.equal(calls, 0);
+});
+
+void test("bound producer failures preserve source topic while cleanup cannot replace the cause", () => {
+  const primary = currentPcbTeardropFailure({ schema: "easyeda-pro-control.pcb-teardrop-owner-failure.v1",
+    stage: "receiver", topic: "SetSuspend", reason: "receiver" });
+  const failure = currentPcbObservationFailure("MODEL", "teardrop-owner", [primary, new Error("PRIVATE_VALUE")], true);
+  const detail = currentPcbObservationFailureDetail(failure); assert.ok(detail !== null);
+  assert.equal(detail.leaf?.schema, "easyeda-pro-control.pcb-teardrop-owner-failure.v1");
+  if (detail.leaf?.schema === "easyeda-pro-control.pcb-teardrop-owner-failure.v1") {
+    assert.equal(detail.leaf.topic, "SetSuspend");
+  }
+  assert.equal(failure.cause, primary); assert.equal(detail.cleanupFailed, true);
+  assert.doesNotMatch(failure.message, /PRIVATE_VALUE/u);
+  const copy = currentPcbObservationFailure("MODEL", "teardrop-owner", [structuredClone(detail.leaf)], false);
+  assert.equal(currentPcbObservationFailureDetail(copy)?.leaf, null);
+});
+
+void test("constructor selection preserves fixed profile details without interpreting copied failures", () => {
+  const primary = currentPcbConstructorFailure({ schema: "easyeda-pro-control.pcb-constructor-failure.v1",
+    bundle: "precreate", profile: "Sfe", stage: "owner", reason: "own" });
+  const failure = currentPcbObservationFailure("STRING_PRECREATE", "constructors-precreate", [primary], false);
+  const detail = currentPcbObservationFailureDetail(failure);
+  assert.ok(detail !== null);
+  assert.deepEqual(detail.leaf, { schema: "easyeda-pro-control.pcb-constructor-failure.v1",
+    bundle: "precreate", profile: "Sfe", stage: "owner", reason: "own" });
+  assert.equal(detail.cleanupFailed, false); assert.equal(detail.failureCount, 1);
+  assert.equal(failure.cause, primary); assert.equal(Object.isFrozen(detail.leaf), true);
+  assert.match(failure.message, /FAILED_CONSTRUCTORS_PRECREATE_LEAF_OWNER_OWN$/u);
+  for (const copy of [new Error(primary.message), structuredClone(detail.leaf)]) {
+    const forged = currentPcbObservationFailure("STRING_PRECREATE", "constructors-precreate", [copy], false);
+    assert.equal(currentPcbObservationFailureDetail(forged)?.leaf, null);
+  }
 });

@@ -11,6 +11,7 @@ import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "../src/current-pc
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../src/current-pcb-constructor-scope.ts";
+import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "../src/current-pcb-teardrop-owner-program.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams, stringPrecreateNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
 type Row = Record<string, unknown>;
@@ -37,7 +38,7 @@ function modelCommands(): readonly Row[] {
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
-      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }] } },
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }, { objectId: "teardrop" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { method: "Runtime.callFunctionOn", params: { ...effects, objectId: "handler-scope",
@@ -94,20 +95,51 @@ void test("constructor selection is purpose-pinned and pending requires exactly 
     const rejected = kind === "diagnostic" ? stringPrecreateNativeRequest : diagnosticNativeRequest;
     const command = { id: 1, method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
       functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS[kind], returnByValue: false,
-      arguments: [{ objectId: "wrapper" }] }, sessionId: "session" };
+      arguments: [{ objectId: "wrapper" }, { objectId: "teardrop" }] }, sessionId: "session" };
     assert.deepEqual(accepted(wire(command)), { action: "send", requestId: 1, method: "Runtime.callFunctionOn",
-      sessionId: "session", modelPhase: `constructors-${kind}`, objectId: "scope", callbackObjectId: "wrapper" });
+      sessionId: "session", modelPhase: `constructors-${kind}`, objectId: "scope", callbackObjectId: "wrapper", teardropObjectId: "teardrop" });
     assert.throws(() => rejected(wire(command)), /OUTBOUND/u);
     for (const changes of [{ returnByValue: true }, { throwOnSideEffect: false },
-      { arguments: [{ objectId: "wrapper" }, { objectId: "extra" }] }]) {
+      { arguments: [{ objectId: "wrapper" }] }, { arguments: [{ objectId: "wrapper" }, { value: "extra" }] }]) {
       assert.throws(() => accepted(wire({ ...command, params: { ...command.params, ...changes } })), /OUTBOUND/u);
     }
   }
   const pending = modelCommands()[7]; assert.ok(pending !== undefined);
   assert.equal(diagnosticNativeRequest(wire(pending))["constructorObjectId"], "constructors");
   for (const args of [[{ objectId: "wrapper" }], [{ objectId: "wrapper" }, { value: "constructors" }],
-    [{ objectId: "wrapper" }, { objectId: "constructors" }, { objectId: "extra" }]]) {
+    [{ objectId: "wrapper" }, { objectId: "constructors" }],
+    [{ objectId: "wrapper" }, { objectId: "constructors" }, { objectId: "teardrop" }, { objectId: "extra" }]]) {
     assert.throws(() => diagnosticNativeRequest(wire({ ...pending, params: { ...params(pending), arguments: args } })), /OUTBOUND/u);
+  }
+});
+
+void test("teardrop owner protocol admits exactly six bound receivers and six source-qualified targets", () => {
+  for (const [phase, functionDeclaration, argumentCount] of [
+    ["teardrop-callbacks", CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, 1],
+    ["teardrop-owner", CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION, 14],
+  ] as const) {
+    const argumentsList = Array.from({ length: argumentCount }, (_, index) => ({ objectId: `a${index}` }));
+    const command = { id: 103, method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
+      functionDeclaration, returnByValue: false, arguments: argumentsList }, sessionId: "page" };
+    for (const adapter of [diagnosticNativeRequest, stringPrecreateNativeRequest]) {
+      const flat = adapter(wire(command)); assert.equal(flat["modelPhase"], phase); assert.equal(flat["callbackObjectId"], "a0");
+      if (argumentCount === 14) {
+        assert.equal(flat["teardropCallbacksObjectId"], "a1");
+        for (let index = 0; index < 6; index += 1) {
+          assert.equal(flat[`teardropReceiver${index}`], `a${index + 2}`);
+          assert.equal(flat[`teardropTarget${index}`], `a${index + 8}`);
+        }
+      }
+      for (const changes of [{ arguments: [] }, { arguments: [...argumentsList, { objectId: "extra" }] },
+        { returnByValue: true }, { throwOnSideEffect: false }, { awaitPromise: true }, { uniqueContextId: "foreign" }]) {
+        assert.throws(() => adapter(wire({ ...command, params: { ...command.params, ...changes } })), /OUTBOUND/u);
+      }
+      for (let index = 0; index < argumentsList.length; index += 1) {
+        const changed = structuredClone(argumentsList); changed[index] = { objectId: "foreign/handle" };
+        assert.throws(() => adapter(wire({ ...command, params: { ...command.params, arguments: changed } })), /OUTBOUND/u);
+      }
+      for (const key of ["params", "functionDeclaration", "arguments", "expression", "budget"]) { assert.equal(Object.hasOwn(flat, key), false); }
+    }
   }
 });
 
@@ -171,10 +203,10 @@ void test("model protocol rejects every effect override, extra scope/call option
 });
 
 void test("adapter request and byte budgets are fixed and reject overflow without a caller override", () => {
-  assert.equal(DIAGNOSTIC_REQUEST_LIMIT, 82);
+  assert.equal(DIAGNOSTIC_REQUEST_LIMIT, 103);
   const original = modelCommands()[0]; assert.ok(original !== undefined);
-  assert.equal(diagnosticNativeRequest(wire({ ...original, id: 82 }))["requestId"], 82);
-  for (const id of [0, -1, 83, 1.5, "82"]) {
+  assert.equal(diagnosticNativeRequest(wire({ ...original, id: 103 }))["requestId"], 103);
+  for (const id of [0, -1, 104, 1.5, "103"]) {
     assert.throws(() => diagnosticNativeRequest(wire({ ...original, id })));
   }
   assert.throws(() => diagnosticNativeRequest(Buffer.alloc(65_537)));
@@ -207,6 +239,8 @@ void test("native adapter embeds and private fields match TS programs without na
     ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION,
     ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
     ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate,
+    TeardropCallbacksFunction: CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR,
+    TeardropOwnerFunction: CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), program);
@@ -214,13 +248,13 @@ void test("native adapter embeds and private fields match TS programs without na
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
-  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {112} else {82}"));
+  assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {155} else {103}"));
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>RequestLimit"));
-  assert.ok(source.includes("int RequestLimit { get { return stringPrecreate?112:82; } }"));
+  assert.ok(source.includes("int RequestLimit { get { return stringPrecreate?155:103; } }"));
   assert.ok(source.includes('if(received+count>64*1024*1024) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
-  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
+  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}"));
   assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
   assert.ok(source.includes("CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004"));

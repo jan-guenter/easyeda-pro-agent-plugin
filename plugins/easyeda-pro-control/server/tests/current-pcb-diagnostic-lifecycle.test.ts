@@ -11,8 +11,11 @@ import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-d
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner,
-  CurrentPcbStringPrecreateLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
+  CurrentPcbStringPrecreateLifecycleDependencies, CurrentPcbStringPrecreateLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { LIFECYCLE_MODEL_RESULT as MODEL_RESULT } from "./helpers/current-pcb-diagnostic-lifecycle-model.ts";
+import { fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
+import { currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResultSchema } from "../src/current-pcb-common-baseline-validation.ts";
+import type { CurrentPcbCommonBaselineFailure } from "../src/current-pcb-common-baseline-validation.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertNoUnresolvedCurrentPcbDiagnosticLaunches,
   diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticPcbOpeningSourceAccepted,
   publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles, releaseCurrentPcbDiagnosticLaunchExclusion,
@@ -85,6 +88,8 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
     rootCreated: state.cleanupOnly ? "0" : "123456789012345",
   });
   const stringPurpose = id.startsWith("string-precreate-");
+  let originalInventory: Awaited<ReturnType<typeof sqlFixture>>["before"] | null = null;
+  let originalCheckpoint = structuredClone(OPEN_CHECKPOINT);
   const owner: CurrentPcbStringPrecreateLifecycleOwner = {
     status: () => ({ profile: stringPurpose ? "string-precreate" : "diagnostic", stringPrecreateConsumed: calls.includes("string-precreate"), helperPid: 456, binding: state.bound ? binding() : null, failure: null, busy: false,
       launchConsumed: state.bound, closeConsumed: state.closed, released: state.released, helperClosed: state.released,
@@ -159,6 +164,22 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
         atomicSnapshotVerified: false, projectWorkerAssociationVerified: false, publicationCaptureVerified: false,
         completeLiveSourceVerified: false, continuousObservation: false, queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false };
     },
+    observeCommonBaseline: async before => {
+      calls.push("common-baseline"); assert.equal(before, originalInventory);
+      const intent = await readFile(join(directory(id), "common-baseline-intent.json"), "utf8");
+      assert.match(intent, new RegExp(before.logicalSha256, "u"));
+      return currentPcbCommonBaselineResultSchema.parse({ schema: "easyeda-pro-control.pcb-common-baseline-observation.v1",
+        identity: { projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, documentUuid: OPEN_TARGET.documentUuid },
+        beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256, historicalHeaderSha256: "a".repeat(64),
+        observationSha256: "b".repeat(64), relationSha256: "c".repeat(64), packetSha256: "d".repeat(64),
+        retainedReplySha256: Object.fromEntries(["presentation", "rules", "preference", "assets", "metadata"].map(name => [name, "e".repeat(64)])),
+        commonRowCount: 62, documentCount: 2, originalRunnerIssued: true, originalCompletedSqlReaderRetained: true,
+        historicalHeaderJoined: true, completeTargetCommonAndMetaMatched: true,
+        atomicSnapshotVerified: false, continuousObservation: false, completeLiveBaselineVerified: false,
+        completeStoredAssetsOwnershipVerified: false, queueCompletionVerified: false, completeEffectVerified: false,
+        closedFileOwnershipVerified: false, savedVerified: false, reopenedVerified: false, saveAuthorized: false, executionAuthorized: false });
+    },
+    retainedCommonBaselineFailure: () => null,
     observeModelState: () => {
       calls.push("model-state");
       return Promise.resolve(structuredClone(MODEL_RESULT));
@@ -198,21 +219,31 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
   const commonDependencies: CurrentPcbDiagnosticLifecycleDependencies = {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
     allocateOwner: (): Promise<CurrentPcbDiagnosticLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); },
-    prepareCheckpoint: (target): Promise<CurrentDisposableOpenCheckpoint> => {
+    prepareCheckpoint: async (target): Promise<CurrentDisposableOpenCheckpoint> => {
       calls.push("prepare-checkpoint"); assert.deepEqual(target, OPEN_TARGET);
-      return Promise.resolve(structuredClone(OPEN_CHECKPOINT));
+      if (stringPurpose) {
+        const sampled = await sqlFixture(); originalInventory = sampled.before;
+        originalCheckpoint = { ...structuredClone(OPEN_CHECKPOINT),
+          checkpoint: { ...OPEN_CHECKPOINT.checkpoint, checkpointSha256: sampled.before.checkpointSha256 },
+          preparationCheckpoint: { path: "/fixture/backup.eprj2", bytes: 8192, sha256: sampled.before.checkpointSha256 },
+          targetEvidence: { ...OPEN_CHECKPOINT.targetEvidence, checkpointSha256: sampled.before.checkpointSha256 } };
+      }
+      return originalCheckpoint;
     },
     verifyCheckpoint: (prepared, target): Promise<void> => {
-      calls.push("verify-checkpoint"); assert.deepEqual(prepared, OPEN_CHECKPOINT); assert.deepEqual(target, OPEN_TARGET);
+      calls.push("verify-checkpoint"); assert.deepEqual(prepared, originalCheckpoint); assert.deepEqual(target, OPEN_TARGET);
       return Promise.resolve();
     },
     verifyHistoricalCheckpoint: (prepared, target): Promise<void> => {
-      calls.push("verify-historical-checkpoint"); assert.deepEqual(prepared, OPEN_CHECKPOINT); assert.deepEqual(target, OPEN_TARGET);
+      calls.push("verify-historical-checkpoint"); assert.deepEqual(prepared, originalCheckpoint); assert.deepEqual(target, OPEN_TARGET);
       return Promise.resolve();
     },
     ...dependencies,
   };
   const coordinator = stringPurpose ? new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
+    readCommonInventory: (prepared): ReturnType<NonNullable<CurrentPcbStringPrecreateLifecycleDependencies["readCommonInventory"]>> => {
+      calls.push("common-inventory"); assert.equal(prepared, originalCheckpoint); assert.ok(originalInventory); return Promise.resolve(originalInventory);
+    },
     allocateOwner: (): Promise<CurrentPcbStringPrecreateLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); } }) :
     new CurrentPcbDiagnosticLifecycle(options, commonDependencies);
   async function request(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
@@ -249,6 +280,89 @@ async function readyForString(id: string, value: ReturnType<typeof fixture>): Pr
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
   await value.request("inspect-workers"); await value.request("inspect-worker-script", { targetId: "worker-1" });
 }
+function comparisonRefusal(value: ReturnType<typeof fixture>, fatal = false): void {
+  const original = value.owner.observeCommonBaseline;
+  let retained: CurrentPcbCommonBaselineFailure | null = null;
+  value.owner.observeCommonBaseline = async (before): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeCommonBaseline"]> => {
+    const result = await original.call(value.owner, before);
+    retained = currentPcbCommonBaselineFailureSchema.parse({ schema: "easyeda-pro-control.pcb-common-baseline-failure.v1",
+      identity: result.identity, phase: fatal ? "owner-after" : "stored-relation", runnerFailure: null,
+      historicalHeader: { headerText: "{}", headerSha256: sha256Text("{}"), beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256 },
+      originalReplies: Object.fromEntries(["presentation", "rules", "preference", "assets", "metadata"].map(name => [name, { result: { type: "string", value: "{}" } }])),
+      retainedReplySha256: Object.fromEntries(["presentation", "rules", "preference", "assets", "metadata"].map(name => [name, sha256Text("{}")])),
+      observationSha256: result.observationSha256, originalRunnerIssued: true, comparisonAccepted: false,
+      nativeContinuationAllowed: !fatal, executionAuthorized: false });
+    if (fatal) { throw new Error("synthetic original owner failure"); }
+    return currentPcbCommonBaselineRefusal(retained, result.observationSha256);
+  };
+  value.owner.retainedCommonBaselineFailure = (): CurrentPcbCommonBaselineFailure | null => retained;
+}
+
+void test("optional common stage retains original pre-open SQL and permits one unchanged precreate after success", async context => {
+  const id = "string-precreate-test-common-success", value = fixture(context, id);
+  await readyForString(id, value);
+  assert.ok(value.calls.indexOf("common-inventory") < value.calls.indexOf("open-dispatch"));
+  const result = await value.request("observe-common-baseline"); assert.equal(result["stage"], "common-baseline");
+  await assert.rejects(value.request("observe-common-baseline"), /COMMON_OBSERVATION_CONSUMED/u);
+  await value.request("observe-string-precreate");
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(entry => entry.operationId === id); assert.ok(operation);
+  assert.equal(operation.records["common-baseline-result.json"]?.result.schema, "easyeda-pro-control.pcb-common-baseline-observation.v1");
+  assert.equal(operation.records["common-baseline-intent.json"]?.beforeSqlSha256, operation.records["project-opening-intent.json"]?.commonBeforeSqlSha256);
+  assert.equal(operation.records["common-baseline-failure.json"], undefined);
+});
+
+void test("explicit common comparison refusal retains bounded evidence and permits independent precreate", async context => {
+  const id = "string-precreate-test-common-refusal", value = fixture(context, id); comparisonRefusal(value);
+  await readyForString(id, value); const result = await value.request("observe-common-baseline");
+  assert.match(JSON.stringify(result), /pcb-common-baseline-refusal/u);
+  await value.request("observe-string-precreate");
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(entry => entry.operationId === id); assert.ok(operation);
+  assert.equal(operation.records["common-baseline-failure.json"]?.failure.nativeContinuationAllowed, true);
+  assert.equal(operation.records["common-baseline-result.json"]?.result.schema, "easyeda-pro-control.pcb-common-baseline-refusal.v1");
+  await assert.rejects(value.request("observe-common-baseline"), /COMMON_OBSERVATION_CONSUMED/u);
+});
+
+for (const name of ["common-baseline-failure.json", "common-baseline-result.json"] as const) {
+  void test(`common refusal ${name} publication must settle before independent precreate`, async context => {
+    const id = `string-precreate-test-common-${name.includes("failure") ? "failure" : "result"}-publication`;
+    let refuse = true;
+    const value = fixture(context, id, { publishRecord: async (operationId, selected, record) => {
+      if (selected === name && refuse) { refuse = false; throw new Error("synthetic common publication failure"); }
+      await publishCurrentPcbDiagnosticLifecycleRecord(operationId, selected, record);
+    } });
+    comparisonRefusal(value); await readyForString(id, value);
+    await assert.rejects(value.request("observe-common-baseline"), /publication failure/u);
+    await assert.rejects(value.request("observe-string-precreate"), /COMMON_RESULT_PUBLICATION_REQUIRED/u);
+    assert.equal(value.calls.includes("string-precreate"), false);
+    const pending = await value.coordinator.run({ action: "inspect", operationId: id, observation: "common-baseline" });
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: pending["intentSha256"] });
+    await value.request("observe-string-precreate"); assert.equal(value.calls.filter(call => call === "common-baseline").length, 1);
+    assert.equal(value.calls.filter(call => call === "string-precreate").length, 1);
+  });
+}
+
+void test("fatal common owner failure cannot authorize precreate but original cleanup remains available", async context => {
+  const id = "string-precreate-test-common-fatal", value = fixture(context, id); comparisonRefusal(value, true);
+  await readyForString(id, value);
+  await assert.rejects(value.request("observe-common-baseline"), /original owner failure/u);
+  await assert.rejects(value.request("observe-string-precreate"), /COMMON_RESULT_PUBLICATION_REQUIRED/u);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(entry => entry.operationId === id); assert.ok(operation);
+  assert.equal(operation.records["common-baseline-failure.json"]?.failure.nativeContinuationAllowed, false);
+  assert.equal(operation.records["common-baseline-result.json"], undefined);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true }); assert.equal(value.state.closed, true);
+});
+
+void test("common stage cannot follow precreate or accept caller-owned baseline input", async context => {
+  const id = "string-precreate-test-common-order", value = fixture(context, id);
+  await readyForString(id, value);
+  await assert.rejects(value.request("observe-common-baseline", { before: {} }));
+  await value.request("observe-string-precreate");
+  await assert.rejects(value.request("observe-common-baseline"), /COMMON_OBSERVATION_UNAVAILABLE/u);
+  assert.equal(value.calls.includes("common-baseline"), false);
+});
 void test("primary observation failure survives publication failure, settlement and historical inspection without replay", async context => {
   for (const stringPurpose of [false, true]) {
     const id = `${stringPurpose ? "string-precreate" : "diagnostic"}-test-primary-failure`;

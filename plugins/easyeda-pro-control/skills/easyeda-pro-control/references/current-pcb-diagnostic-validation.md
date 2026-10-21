@@ -213,7 +213,7 @@ does not establish this PCB-frame prerequisite.
 The fixed inspector path selects the original `pcb/saveCompiler` callback,
 checks its complete source/script location, and follows only its two bounded
 V8 scope links. It never calls the callback or Save handler, pauses a debugger,
-or accepts an object ID from the tool caller. Eleven fixed commands read and
+or accepts an object ID from the tool caller. Fifty fixed commands read and
 release the private remote-object group. Effect checks remain enabled.
 
 The composite contains four separate samples from the same original handler
@@ -327,14 +327,14 @@ to call the dormant create program.
 Public results contain identity fields and event counts/kinds, at most 128 KiB
 per observation. They exclude script text and console/exception payloads.
 Browser discovery is bounded to 8 MiB. Attached transport allows 64 MiB total,
-82 requests, and 4096 events/8 MiB. Ordinary protocol frames stay at 1 MiB;
+103 requests, and 4096 events/8 MiB. Ordinary protocol frames stay at 1 MiB;
 only the script-source reply allows a 32 MiB encoded frame and 20 MiB decoded
 UTF-8 source. The larger source allowance covers the pinned UI asset, not
 arbitrary event or response expansion.
 The former complete worker path uses32 requests; opening adds8, and an admitted
 ancillary child adds6 to that project-only branch. The separate
-existing-PCB-source/model path uses48 total; the separate complete UI/project/
-PCB-opening/model path uses72, or82 with the five ancillary-owner checks,
+existing-PCB-source/model path uses69 total; the separate complete UI/project/
+PCB-opening/model path uses93, or103 with the five ancillary-owner checks,
 including release of the original object group.
 Eighteen requests select and qualify the fixed pending/root constructors through
 their source-owned instances: tuple selection, tuple properties and sixteen exact
@@ -342,6 +342,11 @@ function-location checks against the admitted script. This handles V8's omission
 of top-level-only class bindings without assuming a matching name is sufficient.
 Leaves recheck the retained associations; original lexical identity remains
 unverified. No constructor is called.
+Another21 requests qualify the six original bound teardrop callbacks, their
+targets and empty bound arguments. A fixed association check proves that all
+six retain the same owner and still match the original registry. This discovers
+the subscribed owner, not a lexical `Zec` binding: the pinned Save closure does
+not retain that top-level-only variable. No callback is invoked.
 The fixed budget is not permission for extra
 CDP probes or repeated observations. Fixed opening programs allow65,536 outbound
 bytes and32,768 native input bytes; other limits are unchanged.

@@ -3,7 +3,7 @@
 This batch combines a source-backed constructor correction, compiler metadata,
 complete supplied common-record/history matching, and raw producer diagnostics.
 It does not register a PCB writer or change the API coverage classifications.
-Candidate: `0.3.0+codex.20261020233238`.
+Delivered: `0.3.0+codex.20261020233238`.
 
 ## Connected result that motivated the correction
 
@@ -97,7 +97,33 @@ SHA256 `3c5d875e3980df13f9551aed25af87b323fce6ea265928729395bacdf0427731`.
 Both actual Windows CompileOnly profiles pass without launching an application.
 Synthetic selector/leaf tests cover omitted bindings, exact arity/statics, aliases
 and original associations. Purpose labels no longer contain obsolete budgets.
-Final frozen verification,
-exact-payload GitHub CI, publication and official Git-marketplace installation
-must be recorded before this batch is described as delivered. The loaded host
-and installed211943 snapshot remain unchanged during implementation.
+Frozen local verification passed:12,090 facade tests,12,086 passes,
+four platform skips and zero failures, plus424 bridge tests. Strict type-aware
+lint/types, dependency signatures/security, build/compatibility, API/skill/package
+and MCP checks passed. All seven installed skill-creator validators passed.
+
+The initial repository check caught two required package-description phrases.
+They were restored in a separate checkout while the local suite kept its inputs
+frozen. That final change affects only description text; source, bundles and
+compatibility pins are identical. Final repository/privacy/MCP checks passed.
+The complete final payload passed LinuxCI39516485061 and WindowsCI39516484978
+before [PR92](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/92)
+merged. Tested head `1e4c340e8c92c1200429680043842df544f752f7` and merged main
+`f2a509e398f36298bbcf29f1251288e7597dbb41` have identical complete/package trees.
+
+The official named Git-marketplace upgrade installed/enabled the release from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. All1,661 installed
+files,42directories,33,982,209bytes and modes match merged main; inventory SHA256
+`c6b07c8d3fbf437b35829d27d5f4f7ca96906e60eb1dd61d08149407f38b6852`.
+The isolated installed offline probe passed26restricted tools/51configured
+policies,10queries/12requests, Node24.18.0 and normal EOF/exit0 with no stderr.
+Post-close marker/control and no-descendant/socket samples passed. This is not
+connected validation or continuous isolation; it did not select the live profile.
+
+The loaded211943 host was left intact. A fresh chat must load and admit233238
+before a new disposable connected case. No create, explicit Save, production
+access or live call after installation occurred. Post-main duplicate CI runs on
+the identical tree; Windows passed and Linux completion remains to be checked.
+Independent installed-file/mode comparison and receipt review also passed.
+These delivery notes are
+local additions beyond the immutable tested PR payload, not plugin changes.

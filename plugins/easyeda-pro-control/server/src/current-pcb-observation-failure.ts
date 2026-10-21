@@ -2,19 +2,22 @@
  * chain; no vendor message, expression, object handle or design data is copied
  * into the public message. Cleanup failure never replaces the first failure. */
 import { z } from "zod";
+import { currentPcbConstructorFailureDetail, currentPcbConstructorFailureSchema } from "./current-pcb-constructor-failure.ts";
+import { currentPcbTeardropFailureDetail, currentPcbTeardropFailureSchema } from "./current-pcb-teardrop-failure.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const currentPcbPendingFailureStageSchema = z.enum(["callback", "scope", "environment", "copper-uploads", "plane-uploads",
   "board-upload", "commands", "active-stack", "teardrops", "dynamic-copper", "worker-registry", "worker-association", "reproof", "serialize", "decode"]);
 export const currentPcbPendingFailureReasonSchema = z.enum(["guard", "object", "own", "instance", "count", "flag", "id",
-  "collection", "unexpected", "reply"]);
+  "collection", "unexpected", "reply", "prototype", "callback", "target", "shadow"]);
 export const currentPcbPendingFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-pending-failure.v1"),
   stage: currentPcbPendingFailureStageSchema, reason: currentPcbPendingFailureReasonSchema }).strict();
-const phaseSchema = z.enum(["owner", "owner-final", "wrapper", "properties", "handler", "constructors-diagnostic", "constructors-precreate", "snapshot", "pending", "raw-strings", "root-inventory",
+const phaseSchema = z.enum(["owner", "owner-final", "wrapper", "properties", "handler", "teardrop-callbacks", "teardrop-owner", "constructors-diagnostic", "constructors-precreate", "snapshot", "pending", "raw-strings", "root-inventory",
   "renderer-association", "worker-association", "empty-producers", "identity", "empty-baseline", "bounds", "sample-match", "owner-observation", "release"]);
 export type CurrentPcbObservationPhase = z.infer<typeof phaseSchema>;
 export const currentPcbObservationFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-observation-failure.v1"),
-  family: z.enum(["MODEL", "STRING_PRECREATE"]), phase: phaseSchema, leaf: currentPcbPendingFailureSchema.nullable(),
+  family: z.enum(["MODEL", "STRING_PRECREATE"]), phase: phaseSchema,
+  leaf: z.discriminatedUnion("schema", [currentPcbPendingFailureSchema, currentPcbConstructorFailureSchema, currentPcbTeardropFailureSchema]).nullable(),
   cleanupFailed: z.boolean(), failureCount: z.number().int().min(1).max(8), executionAuthorized: z.literal(false),
   dispatchAbsenceVerified: z.literal(false) }).strict();
 export type CurrentPcbObservationFailure = Readonly<z.infer<typeof currentPcbObservationFailureSchema>>;
@@ -38,7 +41,7 @@ export function currentPcbObservationFailureDetail(error: unknown): CurrentPcbOb
 
 export function currentPcbObservationFailure(family: "MODEL" | "STRING_PRECREATE", phase: CurrentPcbObservationPhase,
   failures: readonly unknown[], cleanupFailed: boolean): AggregateError {
-  const leaf = currentPcbPendingFailureDetail(failures[0]);
+  const leaf = currentPcbPendingFailureDetail(failures[0]) ?? currentPcbConstructorFailureDetail(failures[0]) ?? currentPcbTeardropFailureDetail(failures[0]);
   const suffix = leaf === null ? "" : `_LEAF_${leaf.stage.toUpperCase().replaceAll("-", "_")}_${leaf.reason.toUpperCase()}`;
   const error = new AggregateError(failures,
     `PCB_${family === "MODEL" ? "DIAGNOSTIC_MODEL" : family}_OBSERVATION_FAILED_${phase.toUpperCase().replaceAll("-", "_")}${suffix}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,

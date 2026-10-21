@@ -8,7 +8,7 @@ const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u);
 const operationId = currentPcbStringPrecreateIdSchema;
 const bound = { operationId, expectedBindingSha256: digest };
-export const currentPcbStringPrecreateStages = ["browser", "frames", "script", "pcb-opening", "workers", "worker-script", "string-precreate"] as const;
+export const currentPcbStringPrecreateStages = ["browser", "frames", "script", "pcb-opening", "workers", "worker-script", "common-baseline", "string-precreate"] as const;
 export const currentPcbStringPrecreateRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch"), operationId, confirmValidationOnly: z.literal(true),
     confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true) }).strict(),
@@ -25,6 +25,7 @@ export const currentPcbStringPrecreateRequestSchema = z.discriminatedUnion("acti
   z.object({ action: z.literal("observe-pcb-opening"), ...bound }).strict(),
   z.object({ action: z.literal("inspect-workers"), ...bound }).strict(),
   z.object({ action: z.literal("inspect-worker-script"), ...bound, targetId: token }).strict(),
+  z.object({ action: z.literal("observe-common-baseline"), ...bound }).strict(),
   z.object({ action: z.literal("observe-string-precreate"), ...bound }).strict(),
   z.object({ action: z.literal("observe-window"), ...bound }).strict(),
   z.object({ action: z.literal("normal-close"), ...bound, hwnd: z.string().regex(/^[1-9]\d{0,18}$/u), confirmNormalClose: z.literal(true) }).strict(),
@@ -43,6 +44,7 @@ export function queryCurrentPcbStringPrecreate(input: unknown = {}): Record<stri
       "A distinct original-owner purpose is sealed at launch. It cannot upgrade a diagnostic owner, accept caller budgets or run arbitrary expressions. Use a unique string-precreate-* operation ID.",
       "Existing-profile launch and disposable opening can restore projects, migrate files, replay caches and automatically Save. They are not isolated, project-free or startup-qualified. No explicit Save or design edit is offered.",
       "After pinned UI admission, open the checkpoint-bound disposable project and its sealed PCB, then source-qualify that exact PCB frame before discovering and source-qualifying its retained project worker. Old diagnostic worker/PCB exclusivity is unchanged.",
+      "Optional observe-common-baseline runs once after worker-source admission and before any precreate attempt. It compares five original fixed common/metadata/asset replies with the complete SQL inventory retained before opening. Missing defaults or unmodeled rows may produce an explicit comparison refusal after original context reproofs; independent precreate remains blocked until both failure and refusal result are published or settled. Native/header/cleanup failures remain fatal. No FileSource, initialization repair, common retry or writer token is provided.",
       "One observe-string-precreate call samples two fixed sweeps of renderer/compiler, worker and selected empty producer memberships under original retained contexts. Channel names and source-shaped bus references are observed, not proof of actual publication delivery, channel lifetime, storage partition, complete latent callbacks or queue completion.",
       "The sampled relation is non-atomic and does not establish complete live baseline, saved state, writer eligibility, publication or Save authority. A matching pair is not a writer token.",
       "Every effectful stage is consumed once. Inspect retained results after uncertainty; settlement only republishes original in-memory bytes. Historical JSON never recreates ownership. Shared launch exclusion includes both diagnostic and String operations, including partial reservations.",

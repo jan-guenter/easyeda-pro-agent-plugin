@@ -8,6 +8,8 @@ import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS, CURRENT_PCB_CONSTRUCTOR_B
   decodeCurrentPcbConstructorProperties, decodeCurrentPcbConstructorTuple } from "../src/current-pcb-constructor-scope.ts";
 import type { CurrentPcbConstructorBundleKind, CurrentPcbConstructorName } from "../src/current-pcb-constructor-scope.ts";
 import { pcbStringObservationFixture } from "./helpers/current-pcb-string-observation-fixture.ts";
+import { CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING, currentPcbTeardropSources } from "./helpers/current-pcb-teardrop-fixture.ts";
+import { currentPcbConstructorFailureDetail } from "../src/current-pcb-constructor-failure.ts";
 
 function handleName(name: CurrentPcbConstructorName): string { return name.replace("$", "dollar"); }
 function property(name: string, value: object, writable = false, configurable = true, enumerable = false): object {
@@ -92,7 +94,7 @@ const ROOT_SYNTHETIC = CURRENT_PCB_CONSTRUCTOR_BUNDLES.diagnostic.slice(2).map(k
 const SYNTHETIC_SCOPE = `
 (function(){
  var kde=class{constructor(){this.stack=null;}},Xe=new kde();
- var Sfe=class{constructor(){this.isMove=false;}},Zec=new Sfe();
+ var Sfe=class{constructor(){this.isMove=false;}${currentPcbTeardropSources.join("")}},Zec=new Sfe();
  var U5=class{constructor(){this.func=null;}};
  var Yde=class{constructor(){this.debounce=new U5();}},ze=new Yde();
  var mpe=class{constructor(){this.map=new Map();}},jo=new mpe();
@@ -103,7 +105,8 @@ const SYNTHETIC_SCOPE = `
  var Epe=class{constructor(){this.field=0;}},rt=new Epe();
  var GSe=class extends Object{},id=new GSe();
  ${ROOT_SYNTHETIC}
- globalThis.syntheticHandler=()=>[Xe,Zec,jo,ze,h_,aE,Me,ce,rt,id,Si,$0,Pi,Sr,cm,nu,Us,Xo,dl,Yr,ru,Wn,Yh,Ft];
+ const tearsOwner=Zec;${CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING}
+ globalThis.syntheticHandler=()=>[Xe,jo,ze,h_,aE,Me,ce,rt,id,Si,$0,Pi,Sr,cm,nu,Us,Xo,dl,Yr,ru,Wn,Yh,Ft];
 })();
 `;
 
@@ -136,15 +139,20 @@ void test("real synthetic V8 scopes omit singleton classes; fixed selectors reco
     const scope = await inspectProperties(session, scopeId);
     const names = new Set(scope.result.map(item => item.name));
     for (const [name, expected] of Object.entries(CURRENT_PCB_CONSTRUCTOR_PROFILES)) {
-      assert.ok(!names.has(name), name); assert.ok(names.has(expected.owner), expected.owner);
+      assert.ok(!names.has(name), name);
+      assert.equal(names.has(expected.owner), name !== "Sfe", expected.owner);
     }
     assert.ok(names.has("U5"));
     const callback = await (session.post("Runtime.evaluate", { expression: 'MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback',
       contextId, returnByValue: false, throwOnSideEffect: true, silent: true, objectGroup: "synthetic-constructors" }) as Promise<unknown>);
     const callbackId = inspectedHandle(callback);
+    const proofPending: Promise<unknown> = session.post("Runtime.evaluate", { expression: "teardropProof", contextId,
+      returnByValue: false, throwOnSideEffect: true, silent: true, objectGroup: "synthetic-constructors" });
+    const proofId = inspectedHandle(await proofPending);
     for (const kind of ["diagnostic", "precreate", "common"] as const) {
       const selected = await (session.post("Runtime.callFunctionOn", { objectId: scopeId,
-        functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS[kind], arguments: [{ objectId: callbackId }],
+        functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS[kind],
+        arguments: kind === "common" ? [{ objectId: callbackId }] : [{ objectId: callbackId }, { objectId: proofId }],
         returnByValue: false, throwOnSideEffect: true, silent: true, objectGroup: "synthetic-constructors" }) as Promise<unknown>);
       const tupleId = decodeCurrentPcbConstructorBundle(selected, kind);
       const properties = await inspectProperties(session, tupleId);
@@ -161,6 +169,30 @@ void test("real synthetic V8 scopes omit singleton classes; fixed selectors reco
     }
     assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
   } finally { await session.post("Runtime.releaseObjectGroup", { objectGroup: "synthetic-constructors" }); session.disconnect(); }
+});
+
+void test("constructor selector failures preserve only fixed profile and guard labels", () => {
+  for (const kind of ["diagnostic", "precreate", "common"] as const) {
+    const raw = JSON.stringify({ schema: "easyeda-pro-control.pcb-constructor-failure.v1", bundle: kind,
+      profile: "Sfe", stage: "owner", reason: "own" });
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- assert.throws requires a synchronous error predicate.
+    assert.throws(() => decodeCurrentPcbConstructorBundle({ result: { type: "string", value: raw } }, kind), (error: unknown) => {
+      assert.deepEqual(currentPcbConstructorFailureDetail(error), JSON.parse(raw) as unknown); return true;
+    });
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- assert.throws requires a synchronous error predicate.
+    assert.throws(() => decodeCurrentPcbConstructorBundle({ result: { type: "string", value: raw.replace('"own"', '"private-value"') } }, kind), (error: unknown) => {
+      assert.equal(currentPcbConstructorFailureDetail(error)?.stage, "decode");
+      assert.ok(error instanceof Error); assert.doesNotMatch(error.message, /private-value/u); return true;
+    });
+    for (const reason of ["count", "instance", "target", "shadow"] as const) {
+      const detail = { schema: "easyeda-pro-control.pcb-constructor-failure.v1", bundle: kind,
+        profile: "Sfe", stage: "owner", reason };
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- assert.throws requires a synchronous error predicate.
+      assert.throws(() => decodeCurrentPcbConstructorBundle({ result: { type: "string", value: JSON.stringify(detail) } }, kind), (error: unknown) => {
+        assert.deepEqual(currentPcbConstructorFailureDetail(error), detail); return true;
+      });
+    }
+  }
 });
 
 void test("leaf constructor association rejects missing tuples and owner/prototype substitutions even when names match", () => {

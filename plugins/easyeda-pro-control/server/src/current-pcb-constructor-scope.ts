@@ -5,7 +5,10 @@
  */
 import { types } from "node:util";
 import { z } from "zod";
+import { currentPcbConstructorFailure, currentPcbConstructorFailureDetail, currentPcbConstructorFailureSchema } from "./current-pcb-constructor-failure.ts";
+import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_TEARDROP_OWNER_FRAGMENT } from "./current-pcb-teardrop-owner-program.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const NO_STATIC_FIELDS: Readonly<Record<string, number>> = Object.freeze({});
@@ -97,18 +100,24 @@ export type CurrentPcbConstructorBundleKind = keyof typeof CURRENT_PCB_CONSTRUCT
 function selector(kind: CurrentPcbConstructorBundleKind): string {
   const owners = CURRENT_PCB_CONSTRUCTOR_BUNDLES[kind].map(key => {
     const profile = CURRENT_PCB_CONSTRUCTOR_PROFILES[key];
-    return [profile.name, profile.owner, profile.parameterCount, profile.staticFields];
+    return [key, profile.name, profile.owner, profile.parameterCount, profile.staticFields];
   });
-  return `function(originalCallback){"use strict";
-const bad=()=>{throw new Error("PCB_CONSTRUCTOR_SCOPE");};
-const held=[],own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();held.push([o,k,d.value]);return d.value;};
-if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-const scope=own(this,"object"),owners=${JSON.stringify(owners)},selected=[],instances=[];
-for(const [name,key,arity,statics] of owners){const o=own(scope,key);if(o===null||typeof o!=="object"||Array.isArray(o))bad();const p=Object.getPrototypeOf(o),c=own(p,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"length")!==arity||own(c,"prototype")!==p)bad();for(const key of Object.keys(statics))if(own(c,key)!==statics[key])bad();selected.push(c);instances.push([o,p]);}
-for(const [o,p] of instances)if(Object.getPrototypeOf(o)!==p)bad();
-for(const [o,k,v] of held){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,v))bad();}
-if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
-return selected;}`;
+  return `function(originalCallback${kind === "common" ? "" : ",teardropProof"}){"use strict";
+let profile=null,stage="callback",reason="unexpected";
+const bad=r=>{reason=r;throw new Error("PCB_CONSTRUCTOR_SCOPE");};
+const held=[],own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad("object");const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad("own");held.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad("object");return o;};
+try{
+if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad("callback");
+stage="scope";const scope=own(this,"object"),owners=${JSON.stringify(owners)},selected=[],instances=[];
+${kind === "common" ? "" : `profile="Sfe";stage="owner";${CURRENT_PCB_TEARDROP_OWNER_FRAGMENT}`}
+for(const [label,name,key,arity,statics] of owners){profile=label;stage="owner";const o=${kind === "common" ? "own(scope,key)" : 'label==="Sfe"?teardropOwner:own(scope,key)'};if(o===null||typeof o!=="object"||Array.isArray(o))bad("object");stage="constructor";const p=Object.getPrototypeOf(o),c=own(p,"constructor");if(typeof c!=="function")bad("function");stage="metadata";if(own(c,"name")!==name)bad("name");if(own(c,"length")!==arity)bad("arity");if(own(c,"prototype")!==p)bad("prototype");stage="statics";for(const key of Object.keys(statics))if(own(c,key)!==statics[key])bad("static");selected.push(c);instances.push([o,p]);}
+profile=null;stage="reproof";for(const [o,p] of instances)if(Object.getPrototypeOf(o)!==p)bad("prototype");
+for(const [o,k,v] of held){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,v))bad("own");}
+${kind === "common" ? "" : "verifyTeardropOwner();"}
+if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad("callback");
+return selected;
+}catch{return JSON.stringify({schema:"easyeda-pro-control.pcb-constructor-failure.v1",bundle:${JSON.stringify(kind)},profile,stage,reason});}}`;
 }
 export const CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS = Object.freeze({
   diagnostic: selector("diagnostic"), precreate: selector("precreate"), common: selector("common"),
@@ -189,11 +198,20 @@ function copyData(input: unknown, depth: number, budget: { nodes: number; bytes:
 export function decodeCurrentPcbConstructorBundle(input: unknown, kind: CurrentPcbConstructorBundleKind): string {
   try {
     const result = z.object({ result: remote }).strict().parse(data(input)).result;
+    if (result.type === "string" && typeof result.value === "string" && result.objectId === undefined &&
+        result.className === undefined && result.subtype === undefined && Buffer.byteLength(result.value) <= 1024) {
+      const detail = currentPcbConstructorFailureSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(result.value)));
+      if (detail.bundle !== kind) { return refuse(); } throw currentPcbConstructorFailure(detail);
+    }
     if (result.type !== "object" || result.subtype !== "array" || result.className !== "Array" ||
         result.description !== `Array(${CURRENT_PCB_CONSTRUCTOR_BUNDLES[kind].length})` || result.value !== undefined ||
         result.objectId === undefined) { return refuse(); }
     return result.objectId;
-  } catch { return refuse(); }
+  } catch (error) {
+    if (currentPcbConstructorFailureDetail(error) !== null) { throw error; }
+    throw currentPcbConstructorFailure({ schema: "easyeda-pro-control.pcb-constructor-failure.v1", bundle: kind,
+      profile: null, stage: "decode", reason: "reply" });
+  }
 }
 
 export function decodeCurrentPcbConstructorTuple(input: unknown, kind: CurrentPcbConstructorBundleKind): readonly string[] {
