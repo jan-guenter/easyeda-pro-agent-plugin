@@ -18,11 +18,11 @@ const SCRIPT_PROFILE = { family: "pcb", relativePath: "pro-pcb/test-version/js/p
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
 function fixture(context: TestContext, scenario = "normal", stringPurpose = false): Readonly<{
   owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean };
-  actions: string[]; openingPhases: string[]; pcbPhases: string[]; workerPhases: string[]; actorPhases: string[];
+  actions: string[]; openingPhases: string[]; pcbPhases: string[]; workerPhases: string[]; movePhases: string[]; actorPhases: string[]; producerOrder: string[];
 }> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario], { stdio: ["pipe", "pipe", "pipe"] });
-  const actions: string[] = [], actorPhases: string[] = [], installation = { valid: true }, openingPhases: string[] = [],
-    pcbPhases: string[] = [], source = { valid: true }, workerPhases: string[] = [];
+  const actions: string[] = [], actorPhases: string[] = [], installation = { valid: true }, movePhases: string[] = [], openingPhases: string[] = [],
+    pcbPhases: string[] = [], producerOrder: string[] = [], source = { valid: true }, workerPhases: string[] = [];
   const originalWrite = child.stdin.write.bind(child.stdin);
   // Keep actual child pipes and callbacks; observe only the generated wire data.
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
@@ -32,8 +32,9 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
       actions.push(String(parsed["action"]));
       if ("openingPhase" in parsed) { openingPhases.push(String(parsed["openingPhase"])); }
       if ("pcbOpeningPhase" in parsed) { pcbPhases.push(String(parsed["pcbOpeningPhase"])); }
-      if ("workerProducerPhase" in parsed) { workerPhases.push(String(parsed["workerProducerPhase"])); }
-      if ("actorClockPhase" in parsed) { actorPhases.push(String(parsed["actorClockPhase"])); }
+      if ("workerProducerPhase" in parsed) { workerPhases.push(String(parsed["workerProducerPhase"])); producerOrder.push("worker"); }
+      if ("movePhase" in parsed) { movePhases.push(String(parsed["movePhase"])); producerOrder.push("move"); }
+      if ("actorClockPhase" in parsed) { actorPhases.push(String(parsed["actorClockPhase"])); producerOrder.push("actor"); }
     }
     return originalWrite(...args);
   });
@@ -48,7 +49,7 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
       child.stdin.end(); await closed;
     }
   });
-  return { owner, child, source, installation, actions, openingPhases, pcbPhases, workerPhases, actorPhases };
+  return { owner, child, source, installation, actions, openingPhases, pcbPhases, workerPhases, movePhases, actorPhases, producerOrder };
 }
 async function close(value: ReturnType<typeof fixture>): Promise<void> {
   assert.equal(await value.owner.observeApplicationWindow(), "456");
@@ -676,47 +677,67 @@ void test("original String owner retains a common comparison refusal and still p
   assert.ok(failure.originalReplies); assert.equal(failure.runnerFailure, null);
   await assert.rejects(value.owner.observeCommonBaseline(before), /COMMON_BASELINE_UNAVAILABLE/u);
   const precreate = await value.owner.observeStringPrecreate(); assert.equal(precreate["matchingSamples"], true);
-  assert.equal(value.actions.filter(action => action === "send").length, 225);
+  assert.equal(value.actions.filter(action => action === "send").length, 237);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await close(value);
 });
 
-void test("separate String purpose joins precreate v2, original worker producers and actor clocks within203requests", async context => {
+void test("separate String purpose joins precreate v3, original worker/move/startup producers and actor clocks within215requests", async context => {
   const value = await stringFixture(context);
   assert.equal(value.actions.filter(action => action === "send").length, 61);
   const result = await value.owner.observeStringPrecreate();
-  assert.equal(result["schema"], "easyeda-pro-control.pcb-string-precreate-observation.v2");
+  assert.equal(result["schema"], "easyeda-pro-control.pcb-string-precreate-observation.v3");
   assert.equal(result["matchingSamples"], true); assert.equal(result["originalContextsRechecked"], true);
   assert.equal(result["saveAuthorized"], false); assert.equal(result["executionAuthorized"], false);
   assert.equal(result["projectWorkerAssociationVerified"], false); assert.equal(result["queueCompletionVerified"], false);
   assert.deepEqual(result["first"], result["second"]);
   assert.equal(value.owner.status().stringPrecreateConsumed, true);
-  const actorClock = result["actorClock"], workerProducers = result["workerProducers"];
+  const actorClock = result["actorClock"], finiteEffects = result["finiteEffects"], moveProducers = result["moveProducers"], workerProducers = result["workerProducers"];
   assert.ok(workerProducers !== null && typeof workerProducers === "object" && "originalRunnerIssued" in workerProducers && "executionAuthorized" in workerProducers);
   assert.ok(actorClock !== null && typeof actorClock === "object" && "originalRunnerIssued" in actorClock && "executionAuthorized" in actorClock);
   assert.equal(workerProducers.originalRunnerIssued, true); assert.equal(workerProducers.executionAuthorized, false);
   assert.equal(actorClock.originalRunnerIssued, true); assert.equal(actorClock.executionAuthorized, false);
+  assert.ok(moveProducers !== null && typeof moveProducers === "object" && "originalRunnerIssued" in moveProducers &&
+    "noRetainedMoveState" in moveProducers && "executionAuthorized" in moveProducers && "startup" in moveProducers);
+  assert.equal(moveProducers.originalRunnerIssued, true); assert.equal(moveProducers.noRetainedMoveState, true); assert.equal(moveProducers.executionAuthorized, false);
+  assert.ok(moveProducers.startup !== null && typeof moveProducers.startup === "object" && "route" in moveProducers.startup &&
+    "startupCallbackCompletionVerified" in moveProducers.startup);
+  assert.equal(moveProducers.startup.route, "single-result-terminal-compatible"); assert.equal(moveProducers.startup.startupCallbackCompletionVerified, false);
+  assert.ok(finiteEffects !== null && typeof finiteEffects === "object" && "originalRunnerObservationsMatched" in finiteEffects &&
+    "observedNecessaryConditionsMatch" in finiteEffects && "writeDestinationsContained" in finiteEffects && "executionAuthorized" in finiteEffects);
+  assert.equal(finiteEffects.originalRunnerObservationsMatched, true); assert.equal(finiteEffects.observedNecessaryConditionsMatch, true);
+  assert.equal(finiteEffects.writeDestinationsContained, false); assert.equal(finiteEffects.executionAuthorized, false);
   assert.equal(value.workerPhases.length, 58); assert.equal(value.workerPhases.filter(phase => phase === "release").length, 1);
+  assert.deepEqual(value.movePhases, ["wrapper", "properties", "properties", "handler", "properties", "properties",
+    "select", "properties", "properties", "sample", "startup", "release"]);
   assert.deepEqual(value.actorPhases, ["ui", "worker", "pcb", "pcb", "worker", "ui"]);
-  assert.equal(value.actions.filter(action => action === "send").length, 203);
+  assert.deepEqual(value.producerOrder, [...Array.from({ length: 58 }, () => "worker"), ...Array.from({ length: 12 }, () => "move"), ...Array.from({ length: 6 }, () => "actor")]);
+  assert.equal(value.actions.filter(action => action === "send").length, 215);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
-  assert.equal(value.actions.filter(action => action === "send").length, 203);
+  assert.equal(value.actions.filter(action => action === "send").length, 215);
   await close(value);
 });
 
-void test("joined String owner preserves worker and actor failures without publishing a partial observation", async context => {
-  for (const stage of ["worker", "actor"] as const) {
+void test("joined String owner preserves worker, move, startup and actor failures without publishing a partial observation", async context => {
+  for (const stage of ["worker", "move", "startup", "actor"] as const) {
     const value = await stringFixture(context, `opening-pcb-string-${stage}-refused`);
-    await assert.rejects(value.owner.observeStringPrecreate(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_(?:WORKER_PRODUCERS|ACTOR_CLOCK)/u);
+    await assert.rejects(value.owner.observeStringPrecreate(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_(?:WORKER_PRODUCERS|MOVE_PRODUCERS|ACTOR_CLOCK)/u);
     const detail = value.owner.status().observationFailure;
-    assert.equal(detail?.phase, stage === "worker" ? "worker-producers" : "actor-clock");
+    const expectedPhase = { worker: "worker-producers", actor: "actor-clock", move: "move-producers", startup: "move-producers" };
+    assert.equal(detail?.phase, expectedPhase[stage]);
     assert.equal(detail.cleanupFailed, false);
     if (stage === "worker") {
       assert.ok(detail.leaf?.schema === "easyeda-pro-control.pcb-string-worker-producer-failure.v1");
       assert.equal(detail.leaf.phase, "gates"); assert.equal(detail.leaf.cleanup, "released");
-      assert.deepEqual(value.actorPhases, []);
+      assert.deepEqual(value.movePhases, []); assert.deepEqual(value.actorPhases, []);
+    } else if (stage === "move" || stage === "startup") {
+      assert.ok(detail.leaf?.schema === "easyeda-pro-control.pcb-string-move-failure.v1");
+      assert.equal(detail.leaf.phase, stage === "move" ? "sample" : "startup"); assert.equal(detail.leaf.cleanup, "released");
+      assert.equal(detail.leaf.sampleRetained, stage === "startup"); assert.equal(detail.leaf.startupSampleRetained, false);
+      assert.equal(value.movePhases.filter(phase => phase === "release").length, 1);
+      assert.equal(value.movePhases.at(-1), "release"); assert.deepEqual(value.actorPhases, []);
     } else { assert.equal(detail.leaf, null); assert.deepEqual(value.actorPhases, ["ui", "worker"]); }
     assert.equal(value.workerPhases.filter(phase => phase === "release").length, 1);
     const requests = value.actions.length;
@@ -767,4 +788,59 @@ void test("diagnostic purpose never adopts joined String observations or worker-
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   assert.equal(value.actions.filter(action => action === "send").length, count);
   assert.equal(value.owner.status().stringPrecreateConsumed, false); await close(value);
+});
+
+void test("private String native clock requires its launched original purpose and never claims Save authority", async context => {
+  const diagnostic = fixture(context), string = fixture(context, "normal", true);
+  await assert.rejects(string.owner.observeStringNativeClock("before"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.deepEqual(string.actions, []);
+  await diagnostic.owner.launch(LAUNCH);
+  await assert.rejects(diagnostic.owner.observeStringNativeClock("before"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.deepEqual(diagnostic.actions, ["launch"]); await close(diagnostic);
+  await string.owner.launch(LAUNCH);
+  const token = await string.owner.observeStringNativeClock("before");
+  assert.deepEqual(token.binding, string.owner.status().binding); assert.equal(token.phase, "before"); assert.equal(token.sequence, 1);
+  assert.equal(token.originalTransportIssued, true); assert.equal(token.nativeClockSamplesVerified, true);
+  assert.equal(token.nativeOwnerAdmissionVerified, false); assert.equal(token.originalClockedLaunchVerified, false);
+  assert.equal(token.futureSaveClockVerified, false); assert.equal(token.saveAuthorized, false); assert.equal(token.executionAuthorized, false);
+  assert.equal(Object.isFrozen(token), true); assert.equal(string.owner.status().executionAuthorized, false);
+  await assert.rejects(string.owner.observeStringNativeClock("before"), /consumed/u);
+  assert.equal(string.actions.filter(action => action === "string-clock").length, 1); await close(string);
+});
+
+void test("private String clock phases are one-shot and termination needs original observed root exit", async context => {
+  const value = fixture(context, "normal", true); await value.owner.launch(LAUNCH);
+  await assert.rejects(value.owner.observeStringNativeClock("armed"), /phase order/u);
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.equal(value.actions.filter(action => action === "string-clock").length, 0);
+  const before = await value.owner.observeStringNativeClock("before");
+  await assert.rejects(value.owner.observeStringNativeClock("post"), /phase order/u);
+  const armed = await value.owner.observeStringNativeClock("armed"), post = await value.owner.observeStringNativeClock("post");
+  assert.deepEqual([before.sequence, armed.sequence, post.sequence], [1, 2, 3]);
+  assert.equal(await value.owner.observeTermination(), false);
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  await value.owner.requestNormalClose("456");
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.equal(await value.owner.observeTermination(), true);
+  const terminated = await value.owner.observeStringNativeClock("termination");
+  assert.equal(terminated.sequence, 4); assert.equal(terminated.phase, "termination"); assert.equal(terminated.executionAuthorized, false);
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /consumed/u);
+  await assert.rejects(value.owner.observeStringNativeClock("before"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.equal(value.actions.filter(action => action === "string-clock").length, 4);
+  await value.owner.releaseClosed(); assert.equal(value.child.exitCode, 0);
+});
+
+void test("failed private String native clock stays consumed while original close and terminal observation remain usable", async context => {
+  const value = fixture(context, "string-clock-refused", true); await value.owner.launch(LAUNCH);
+  await assert.rejects(value.owner.observeStringNativeClock("before"), /clock unavailable/u);
+  await assert.rejects(value.owner.observeStringNativeClock("before"), /consumed/u);
+  await assert.rejects(value.owner.observeStringNativeClock("armed"), /phase order/u);
+  assert.equal(value.actions.filter(action => action === "string-clock").length, 1);
+  assert.equal(value.owner.status().failure, null); assert.equal(value.child.stdin?.writableEnded, false);
+  await value.owner.requestNormalClose("456"); assert.equal(await value.owner.observeTermination(), true);
+  const terminated = await value.owner.observeStringNativeClock("termination");
+  assert.equal(terminated.sequence, 2); assert.equal(terminated.phase, "termination"); assert.equal(terminated.saveAuthorized, false);
+  assert.equal(value.actions.filter(action => action === "normal-close").length, 1);
+  assert.equal(value.actions.filter(action => action === "string-clock").length, 2);
+  await value.owner.releaseClosed(); assert.equal(value.child.exitCode, 0);
 });

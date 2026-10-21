@@ -1,9 +1,37 @@
 # PCB owned producer and lazy-state batch
 
+## Current follow-up: combined source batch
+
+The follow-up joins the original move closure and startup-marker collector to
+the existing worker and actor observations. Current precreate evidence is V3:
+215 requests without common, 237 with common, and a 712KiB full journal bound.
+Historical V2 stays at 680KiB; its published 203/225 request evidence below is
+unchanged. The diagnostic-only route remains 103 requests.
+
+The new finite-effect report requires original current runner packets and
+keeps unresolved startup, hidden receiver, native-channel and destination
+proof separate. A dormant lifecycle ledger composes durable single create/Save
+reservations with supplied publication, complete SQL and reopened-content
+comparisons. Private String-native clocks and actor/SQL Save-provenance modules
+do not provide a public writer, Save action or completed lifecycle. See the
+[combined lifecycle batch](current-pcb-string-lifecycle-batch-2026-10-21.md)
+for implementation boundaries and remaining work.
+
+Actual073200 process admission has passed. Its new disposable live case stopped
+at common-presentation request 76 with a deadline, before precreate, create or
+explicit Save. The original normal-close request was acknowledged once; four
+later termination observations were false. The user reports no visible window
+or dialog, which is not root/whole-Job exit proof. This case is not terminal and
+must not be replayed. The new cooperative graph budget adds fail-closed checks;
+it is not a demonstrated fix for that live deadline. Production designs remain
+untouched.
+
+## Published073200 record
+
 Published and installed: `0.3.0+codex.20261021073200`, protected
 [PR94](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/94), merged main
-`5be1545a73ca83889ce9ed7b650dac9587b47c1d`. Fresh actual-process admission and
-connected validation remain pending.
+`5be1545a73ca83889ce9ed7b650dac9587b47c1d`. The sections below preserve that
+release's implementation and verification record; current follow-up is above.
 
 This update combines the inherited-constructor fix with callable lazy-state,
 worker-producer and actor/clock observations. It does not enable a geometry
@@ -56,7 +84,7 @@ See [lazy owners](current-pcb-lazy-owners-2026-10-21.md),
 [actor/clocks](current-pcb-string-actor-clock-2026-10-21.md) and the packaged
 [operational reference](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb-string-precreate-validation.md).
 
-## Remaining work
+## Remaining work recorded at073200 publication
 
 1. Admit the next installed snapshot and exercise this combined route on a new
    disposable case. Source/synthetic tests are not connected execution support.

@@ -17,9 +17,10 @@ import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSc
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
-/** V2: two208KiB sweeps+8KiB envelope,128KiB worker and128KiB actor.
- * Historical V1 keeps its384KiB limit; diagnostic remains128KiB. */
-export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 680 * 1024;
+/** V3 adds16KiB each for move/startup and finite-effect observations.
+ * Historical V1/V2 retain384/680KiB; diagnostic remains128KiB. */
+export const STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES = 680 * 1024;
+export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 712 * 1024;
 const MAX_OPERATIONS = 4096;
 const qualifiedPcbOpeningSchema = z.looseObject({
   family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
@@ -172,13 +173,39 @@ const stringPrecreateObservationV2 = stringPrecreateObservationV1.extend({
   value.workerProducers.identity.projectUuid === value.target.projectUuid &&
   value.workerProducers.identity.branchUuid === value.target.branchUuid &&
   value.workerProducers.identity.windowTabId === value.target.windowTabId, "String owned observations target differs.");
+const stringMoveObservation = z.looseObject({
+  schema: z.literal("easyeda-pro-control.pcb-string-move-observation.v1"), identity: stringPrecreateObservationV1.shape.target,
+  state: z.looseObject({ documentUuid: stringPrecreateObservationV1.shape.target.shape.documentUuid }),
+  startup: z.looseObject({ schema: z.literal("easyeda-pro-control.pcb-string-startup-route.v1"),
+    state: z.looseObject({ documentUuid: stringPrecreateObservationV1.shape.target.shape.documentUuid }),
+    startupCallbackCompletionVerified: z.literal(false), writeDestinationsContained: z.literal(false), executionAuthorized: z.literal(false) }),
+  originalRunnerIssued: z.literal(true), continuousObservation: z.literal(false), completeProducerInventoryVerified: z.literal(false),
+  queueCompletionVerified: z.literal(false), writeDestinationsContained: z.literal(false), saveAuthorized: z.literal(false), executionAuthorized: z.literal(false),
+}).refine(value => Buffer.byteLength(canonicalJson(value)) <= 16_384 && value.state.documentUuid === value.identity.documentUuid &&
+  value.startup.state.documentUuid === value.identity.documentUuid);
+const stringFiniteEffects = z.looseObject({
+  schema: z.literal("easyeda-pro-control.pcb-string-finite-effects.v1"), identity: stringPrecreateObservationV1.shape.target,
+  originalRunnerObservationsMatched: z.literal(true), continuousObservation: z.literal(false), completeProducerInventoryVerified: z.literal(false),
+  writeDestinationsContained: z.literal(false), queueCompletionVerified: z.literal(false), saveAuthorized: z.literal(false), executionAuthorized: z.literal(false),
+}).refine(value => Buffer.byteLength(canonicalJson(value)) <= 16_384);
+const stringPrecreateObservationV3 = stringPrecreateObservationV1.extend({
+  schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation.v3"),
+  workerProducers: stringWorkerObservation, actorClock: stringActorObservation, moveProducers: stringMoveObservation, finiteEffects: stringFiniteEffects,
+}).refine(value => canonicalJson(value.actorClock.identity) === canonicalJson(value.target) &&
+  canonicalJson(value.moveProducers.identity) === canonicalJson(value.target) && canonicalJson(value.finiteEffects.identity) === canonicalJson(value.target) &&
+  value.workerProducers.identity.projectUuid === value.target.projectUuid && value.workerProducers.identity.branchUuid === value.target.branchUuid &&
+  value.workerProducers.identity.windowTabId === value.target.windowTabId, "String owned observations target differs.");
 /** Historical JSON is not an issuance capability. Retain old V1 records without
  * permitting unavailable V2 managers or new collector claims to be recast V1. */
-export const stringPrecreateObservationResultSchema = z.union([stringPrecreateObservationV1, stringPrecreateObservationV2])
+export const stringPrecreateObservationResultSchema = z.union([stringPrecreateObservationV1, stringPrecreateObservationV2, stringPrecreateObservationV3])
   .refine(value => canonicalJson(value.first) === canonicalJson(value.second) &&
     Buffer.byteLength(canonicalJson(value.first)) <= (value.schema.endsWith(".v1") ? 188_416 : 212_992),
   "String precreate sweeps differ or exceed their bound.")
-  .refine(value => Buffer.byteLength(canonicalJson(value)) <= (value.schema.endsWith(".v1") ? 393_216 : STRING_PRECREATE_OBSERVATION_MAX_BYTES));
+  .refine(value => {
+    if (value.schema.endsWith(".v1")) { return Buffer.byteLength(canonicalJson(value)) <= 393_216; }
+    const limit = value.schema.endsWith(".v2") ? STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES : STRING_PRECREATE_OBSERVATION_MAX_BYTES;
+    return Buffer.byteLength(canonicalJson(value)) <= limit;
+  });
 const projectWindowSchema = z.looseObject({ observation: z.looseObject({ windowTabId: z.string() }) });
 const pcbWindowSchema = z.looseObject({ openingObservation: z.looseObject({ windowTabId: z.string() }) });
 export function stringPrecreateTargetMatches(result: z.infer<typeof stringPrecreateObservationResultSchema>,

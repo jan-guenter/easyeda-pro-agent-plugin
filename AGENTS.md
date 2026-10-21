@@ -4,6 +4,63 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Active073200 continuation and combined source batch, 2026-10-21
+
+Actual facade2190173/start54575608 and parent2188465/start54571655 were admitted
+on installed073200: pinned Node24.18.0/core0, exact source583/0612598f,
+runtime3/1dd7bf21, compatibility91d11d17. Independent complete installed/main
+comparison passes1698files/42dirs/34983051bytes/modes. Post-main Linux39566613804
+is now SUCCESS/all10jobs at5be1545a. Independent admission receipt:
+`/root/.cache/easyeda-073200-independent-admission-8ZvoVz4q/admission.json`.
+
+NEW case `string-precreate-073200-20261021-01` opened only the disposable project
+and PCB, admitted original UI/PCB/worker source, then failed common observation.
+Request76 `Runtime.callFunctionOn`/`common-presentation` hit the pipe deadline;
+constructor qualification had passed. No returned presentation, precreate,
+create or explicit Save. Common failure is published; native continuation false.
+Original root52636/created134370446269413942, helper96efcc55b90c484d982e613f5b25288a,
+Jobda615031c9624230b1ac1a03918227c6, bindingf8676c45a3348bec8e94ffaeb248244cc66dddf9571c4ee263fd02c31777ab9a.
+Normal close of observed HWND4588258 was acknowledged ONCE. Five subsequent
+original termination observations remain false. KEEP THIS FACADE/HELPER ALIVE;
+do not replay/launch/Save/release or restart Codex before actual root/whole-Job
+exit and release. Windows computer-use failed before app access with
+`sandboxCwd is not a local file URI`; user was asked whether a dialog is visible,
+leaving any Save/Discard prompt unanswered. User reports no visible EasyEDA
+window or dialog; a later question asks about a normal tray Quit/Exit command.
+No force termination, repeated close or replacement launch is authorized by
+this checkpoint. A false combined termination observation does not distinguish
+the retained root from remaining Job members. Private live evidence:
+`/root/.cache/easyeda-073200-live-khfaU70i`. Production designs remain excluded.
+
+Combined source batch is implemented and locally built, not released/installed:
+original move/startup collector/native integration; finite-effect destination
+report; String actor/SQL, private native Windows clocks, dormant server-time RPC
+and sealed clock composition; durable dormant lifecycle ledger; bounded common
+traversal; original worker/move reply capture before owner callbacks. Registered
+precreate is V3/712KiB,215requests or237with common; diagnostic stays103.
+The cooperative traversal deadline is an additional refusal, NOT a proven fix
+for the live timeout or a hard interruption. Historical graph/metadata programs
+remain byte-exact. No writer/Save/public clock action was enabled.
+
+Source596/6005b8ea, runtime3/d08d47f5, compatibilityeb22a0ca. External pins
+unchanged; only facade projections/review time refreshed. Exact native helper
+545116/a56a296a independently checked:3existing common programs changed,
+5move programs added, every other existing embedded program unchanged; all
+8current literals and clock C# match their TS sources. Both actual Windows
+no-app CompileOnly profiles pass. The first default compile retained a stale226
+budget-smoke refusal; corrected exact237acceptance/238refusal passes both.
+
+Focused verification passes:25clock/provenance,7ledger,13move/worker,53native/
+protocol, and final9original-owner/helper-pin checks. Common/metadata, V3journal
+and smoke tests also pass. Full types and repository-wide strict type-aware lint
+are clean. Build/sanitizer/SQL-program/compatibility, plugin/MCP, repository/
+privacy and packaged all7skill checks pass; changed skill also passes the official
+quick validator. Skill handoff now distinguishes registered observations from
+dormant writer pieces and instructs retention after ambiguous timeouts.
+No broad full release suite, dependency audit, new CI, version bump, publication
+or installation this turn. Those release gates remain required before shipping.
+See `docs/current-pcb-string-lifecycle-batch-2026-10-21.md` and its source notes.
+
 ### Delivered073200 checkpoint, 2026-10-21
 
 Delivered `0.3.0+codex.20261021073200` through protected PR94. Final tested head

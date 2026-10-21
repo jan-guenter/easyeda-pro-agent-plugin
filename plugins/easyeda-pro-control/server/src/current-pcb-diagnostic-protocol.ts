@@ -27,6 +27,8 @@ import { currentPcbStringActorClockWire } from "./current-pcb-string-actor-clock
 import type { CurrentPcbStringActorClockWireCommand } from "./current-pcb-string-actor-clock-wire.ts";
 import { currentPcbStringWorkerProducerWire } from "./current-pcb-string-worker-producer-wire.ts";
 import type { CurrentPcbStringWorkerProducerWireCommand } from "./current-pcb-string-worker-producer-wire.ts";
+import { currentPcbStringMoveWire } from "./current-pcb-string-move-wire.ts";
+import type { CurrentPcbStringMoveWireCommand } from "./current-pcb-string-move-wire.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses69; the complete project/PCB opening and
@@ -67,6 +69,7 @@ export function diagnosticWorkerEvaluationParams(uniqueContextId: string): Reado
 export type DiagnosticCommand =
   | CurrentPcbStringActorClockWireCommand
   | CurrentPcbStringWorkerProducerWireCommand
+  | CurrentPcbStringMoveWireCommand
   | Readonly<{ id: number; method: "Browser.getVersion" | "Target.getTargets" }>
   | Readonly<{ id: number; method: "Target.attachToTarget"; params: Readonly<{ targetId: string; flatten: true }> }>
   | Readonly<{ id: number; method: "Page.enable" | "Page.getFrameTree" | "Runtime.enable"; params: Readonly<Record<string, never>>; sessionId: string }>
@@ -297,6 +300,12 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
   if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 ||
       raw["id"] > (stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) { return fail(); }
   const id = raw["id"], method = raw["method"], params = raw["params"], sessionId = raw["sessionId"];
+  if (Object.hasOwn(raw, "movePhase")) {
+    if (!stringPurpose || method === "Runtime.evaluate" && chunk.length > 8192 ||
+        method !== "Runtime.evaluate" && method !== "Runtime.callFunctionOn" && chunk.length > 1024) { return fail(); }
+    const fixed = currentPcbStringMoveWire(raw, id);
+    if (chunk.toString("utf8") !== `${JSON.stringify(fixed.command)}\0`) { return fail(); } return fixed.request;
+  }
   if (Object.hasOwn(raw, "actorClockPhase")) {
     if (!stringPurpose) { return fail(); }
     const fixed = currentPcbStringActorClockWire(raw, id);

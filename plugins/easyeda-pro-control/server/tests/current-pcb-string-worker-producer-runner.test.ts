@@ -15,7 +15,8 @@ import { currentPcbStringWorkerProducerFixture } from "./helpers/current-pcb-str
 const identity = Object.freeze({ projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "synthetic-window" });
 let fixtureNumber = 0;
 interface Options { readonly failPhase?: string; readonly releaseFailure?: boolean; readonly loseAtRelease?: boolean;
-  readonly lostInitially?: boolean; readonly setup?: string; readonly wrongScript?: boolean; readonly malformed?: string; readonly retainedBatch?: boolean }
+  readonly lostInitially?: boolean; readonly setup?: string; readonly wrongScript?: boolean; readonly malformed?: string; readonly retainedBatch?: boolean;
+  readonly mutateRawAfterArrival?: boolean; readonly loseAfterSample?: string }
 async function fixture(options: Options = {}): Promise<Readonly<{
   runner: CurrentPcbStringWorkerProducerRunner; commands: CurrentPcbStringWorkerProducerCommand[];
   close: () => void; trapCalls: () => unknown; paused: () => boolean; lose: () => void; primary: Error;
@@ -24,6 +25,7 @@ async function fixture(options: Options = {}): Promise<Readonly<{
   const commands: CurrentPcbStringWorkerProducerCommand[] = [], context = createContext({}, { name: filename });
   const primary = new Error("SYNTHETIC_CHANNEL_FAILURE"), session = new Session(); session.connect();
   let lost = options.lostInitially === true, paused = false, scriptId = "", uniqueContextId = "";
+  let pendingArrival: { phase: string; result: { value: unknown } } | undefined;
   session.on("Runtime.executionContextCreated", ({ params }): void => {
     if (params.context.name === filename) { uniqueContextId = z.object({ uniqueId: z.string() }).parse(params.context).uniqueId; }
   });
@@ -34,7 +36,14 @@ async function fixture(options: Options = {}): Promise<Readonly<{
   if (options.setup !== undefined) { runInContext(options.setup, context); }
   assert.ok(scriptId.length > 0 && uniqueContextId.length > 0);
   const runner = new CurrentPcbStringWorkerProducerRunner({
-    assertCurrent: (): void => { if (lost) { throw new Error("SYNTHETIC_ORIGINAL_OWNER_LOST"); } },
+    assertCurrent: (): void => {
+      if (pendingArrival !== undefined) {
+        if (options.mutateRawAfterArrival === true) { pendingArrival.result.value = '{"altered":true}'; }
+        if (options.loseAfterSample === pendingArrival.phase) { lost = true; }
+        pendingArrival = undefined;
+      }
+      if (lost) { throw new Error("SYNTHETIC_ORIGINAL_OWNER_LOST"); }
+    },
     request: async (command): Promise<unknown> => {
       commands.push(command); assert.equal(command.sessionId, "original-worker-session");
       assert.equal(Object.isFrozen(command.params), true);
@@ -49,7 +58,17 @@ async function fixture(options: Options = {}): Promise<Readonly<{
           assert.equal(command.params.functionDeclaration, CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS[command.workerProducerPhase]);
           const signature = CURRENT_PCB_STRING_WORKER_PRODUCER_CALL_ARGUMENTS[command.workerProducerPhase];
           assert.equal(command.params.arguments.length, signature.count); assert.equal(command.params.returnByValue, signature.returnByValue);
-          return session.post(command.method, { ...command.params, arguments: [...command.params.arguments] });
+          // Node's broad overload omits effect-checked call result typing.
+          // Keep the real response unknown and narrow only the mutable test alias.
+          const pending: Promise<unknown> = session.post("Runtime.callFunctionOn", { ...command.params, arguments: [...command.params.arguments] });
+          const reply = await pending;
+          if (signature.returnByValue) {
+            assert.ok(reply !== null && typeof reply === "object" && "result" in reply);
+            const result: unknown = reply.result;
+            assert.ok(result !== null && typeof result === "object" && "value" in result && typeof result.value === "string");
+            pendingArrival = { phase: command.workerProducerPhase, result };
+          }
+          return reply;
         }
         case "Runtime.getProperties": { return session.post(command.method, command.params); }
         case "Runtime.releaseObjectGroup": {
@@ -109,6 +128,28 @@ void test("channel failure retains primary cause and prior raw samples separatel
     assert.equal(state.commands.at(-1)?.workerProducerPhase, "release");
     const count = state.commands.length; await assert.rejects(state.runner.observe()); assert.equal(state.commands.length, count);
   } finally { state.close(); }
+});
+
+void test("worker samples retain original arrival text before mutating or refusing owner callbacks", async () => {
+  const changed = await fixture({ mutateRawAfterArrival: true });
+  try {
+    const observation = await changed.runner.observe(), replies = changed.runner.requireOriginal(observation);
+    assert.equal(Object.keys(replies).length, 7);
+    assert.ok(Object.values(replies).every(reply => !reply.result.value.includes('"altered"')));
+  } finally { changed.close(); }
+  for (const loseAfterSample of ["gates", "buffered-environment"]) {
+    const state = await fixture({ mutateRawAfterArrival: true, loseAfterSample });
+    try {
+      await assert.rejects(state.runner.observe(), (error: unknown) => {
+        const detail = currentPcbStringWorkerProducerFailureDetail(error);
+        const replies = requireOriginalCurrentPcbStringWorkerProducerFailureReplies(error);
+        assert.equal(detail?.phase, loseAfterSample); assert.equal(detail.cleanup, "released");
+        assert.equal(Object.keys(replies).length, loseAfterSample === "gates" ? 1 : 7);
+        assert.ok(Object.values(replies).every(reply => !reply.result.value.includes('"altered"'))); return true;
+      });
+      assert.equal(state.commands.at(-1)?.workerProducerPhase, "release");
+    } finally { state.close(); }
+  }
 });
 
 void test("a retained nonempty cooperation batch stays raw evidence, never inferred idle or completion", async () => {

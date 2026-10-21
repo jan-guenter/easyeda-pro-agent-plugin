@@ -25,6 +25,8 @@ import { CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE } from "./current-pcb-strin
 import type { CurrentPcbStringWorkerProducerCommand } from "./current-pcb-string-worker-producer-commands.ts";
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES } from "./current-pcb-string-actor-clock.ts";
 import type { CurrentPcbStringActorClockCommand } from "./current-pcb-string-actor-clock.ts";
+import { CURRENT_PCB_STRING_MOVE_SEQUENCE } from "./current-pcb-string-move-runner.ts";
+import type { CurrentPcbStringMoveCommand } from "./current-pcb-string-move-runner.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -43,7 +45,7 @@ type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-s
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
-  `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}`;
+  `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -61,6 +63,7 @@ const REQUEST_PHASES = [
   "common-preference", "common-assets", "common-metadata", "common-release",
   ...CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE.map(phase => `worker-producer-${phase}` as const),
   ...CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.map(phase => `actor-clock-${phase}` as const),
+  ...CURRENT_PCB_STRING_MOVE_SEQUENCE.map(phase => `move-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -276,6 +279,13 @@ class CurrentPcbFixedPipeCore {
     const { sessionId, ...wire } = command;
     return this.#request({ id: this.#nextId, ...wire, sessionId }, `worker-producer-${command.workerProducerPhase}`);
   }
+  protected observeMoveCommand(command: CurrentPcbStringMoveCommand): Promise<Reply> {
+    if (!this.#stringPurpose || this.#sessionId === null || this.#selectedWorkerSession === null || command.sessionId !== this.#sessionId) {
+      return Promise.reject(new Error("PCB_MOVE_PIPE_PURPOSE"));
+    }
+    const { sessionId, ...wire } = command;
+    return this.#request({ id: this.#nextId, ...wire, sessionId }, `move-${command.movePhase}`);
+  }
   protected observeActorClockCommand(command: CurrentPcbStringActorClockCommand): Promise<Reply> {
     if (!this.#stringPurpose || this.#sessionId === null || this.#selectedWorkerSession === null) {
       return Promise.reject(new Error("PCB_ACTOR_CLOCK_PIPE_PURPOSE"));
@@ -487,6 +497,7 @@ export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
   public observeWorkerProducers(command: CurrentPcbStringWorkerProducerCommand): Promise<Reply> {
     return this.observeWorkerProducerCommand(command);
   }
+  public observeMoveProducers(command: CurrentPcbStringMoveCommand): Promise<Reply> { return this.observeMoveCommand(command); }
   public observeActorClock(command: CurrentPcbStringActorClockCommand): Promise<Reply> {
     return this.observeActorClockCommand(command);
   }

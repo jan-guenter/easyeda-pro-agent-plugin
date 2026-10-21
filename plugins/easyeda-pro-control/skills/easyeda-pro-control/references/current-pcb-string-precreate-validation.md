@@ -74,7 +74,8 @@ All calls below use the new tool's `request` object.
    require normal cleanup. Do not retry or open again to bypass a refusal.
 9. `observe-string-precreate` once. It accepts no caller program or selector.
    It retains two matching versioned sweeps, then selected original-worker
-   producer state and six paired UI/worker/PCB actor-clock samples. Failure in
+   producer state, fixed move/startup observations, a finite-effect report and
+   six paired UI/worker/PCB actor-clock samples. Failure in
    any part stops the stage; do not retry a component separately.
 10. `observe-window`, `normal-close` with that observed `hwnd` and
    `confirmNormalClose:true`, then `observe-termination` until original root
@@ -108,8 +109,8 @@ leaves named baseline conditions unmet; it is never initialized or represented
 as proven empty. The runner compares the exact sealed project,
 branch, PCB and original window, and the compiler's unique token. It checks
 target/frame identity around each sweep and releases its private object group.
-The String owner has a fixed225request ceiling. The complete route uses225 with
-the optional common stage or203 without it; the diagnostic ceiling remains103.
+The String owner has a fixed237request ceiling. The complete route uses237 with
+the optional common stage or215 without it; the diagnostic ceiling remains103.
 The added requests qualify fixed source-owned instance constructors
 against the already-admitted original script, exact function location and own
 class metadata. V8 can omit top-level-only class bindings from a retained closure;
@@ -125,11 +126,12 @@ names cannot replace this association. No callback or constructor is invoked.
 
 The four model samples retain their combined128KiB limit. Each versioned sweep
 is bounded to208KiB; its pair to424KiB. Worker and actor sections each allow
-128KiB, giving a680KiB journal result. Initial and inspect responses return a
+128KiB. Move/startup and finite-effect sections each allow16KiB, giving a712KiB
+V3 journal result. Historical V2 retains its680KiB bound. Initial and inspect responses return a
 compact summary with the complete record path, result hash, byte count and
 publication status. Read that record when details are needed; summary-only
 output is not missing evidence. Historical V1 retains its original384KiB bound.
-Over-budget evidence refuses, never truncates or downgrades to V1.
+Over-budget evidence refuses, never truncates or downgrades to an older version.
 
 The worker collector uses58 fixed requests, qualifies eight gate/publisher
 methods and six callbacks, and reads seven selected producer states. Its
@@ -138,6 +140,13 @@ sample names. Actor/clock sampling uses UI, worker, PCB, PCB, worker, UI; it
 compares cached/startup account values with the worker's retained user and exact
 JSON field order. Local clocks do not prove backend actor identity, the Windows
 clock, Save server time or future use of the sampled user.
+
+Move/startup collection uses12 fixed requests in the original PCB context. It
+reacquires the retained V8 scopes, preserves the original replies before owner
+callbacks and releases its own object group. The finite-effect report joins
+original worker/move packets; it is a list of observed inputs and unresolved
+destinations, not proof of complete effects or startup completion. In particular,
+late timer samples cannot prove the earlier startup ratline worker's delivery.
 
 Matching sweeps are non-atomic sampled evidence. Matching channel names and
 source-shaped bus references do not prove actual message delivery, channel
@@ -152,8 +161,8 @@ instrumentation, post-create/post-Save readers and supplied-data SQL/history
 comparators. The optional common-baseline stage collects raw common presentation,
 rules, routing preferences, compiler metadata and empty font/blob holders.
 The combined tool now dispatches the original-worker structure, debounce,
-cooperation and upload readers. Move producers, complete publisher confinement
-and writer programs remain outside it. The common-state graph
+cooperation and upload readers plus selected move/startup readers. Complete
+publisher confinement and writer programs remain outside it. The common-state graph
 preserves aliases, field order, undefined and signed zero; it is not the saved
 format or proof that stored and live state match. The private common runner also
 retains compiler document metadata and original reply text. Its supplied-data
@@ -165,6 +174,22 @@ Cloned packets, replacement observations and later SQL reads cannot recreate
 that session. A later stored-state refusal retains any completed observation
 separately from a successful join. This relation does not establish complete
 asset ownership, current saved state or an atomic baseline.
+
+The bounded common traversal has cooperative elapsed-time checks. They can
+refuse oversized or slow traversals but cannot interrupt a blocked intrinsic or
+IPC call. A transport deadline does not prove the reader stopped. Keep the
+original owner through normal closure and observed whole-Job termination; an
+absent window is not exit evidence. Do not repeat the read or disconnect its pipe.
+
+Dormant String-owned modules now join actor samples to completed SQL and model
+native Windows clock samples, the fixed Save-time RPC and a durable lifecycle
+ledger. They are not public create/Save actions. The RPC changes its counter and
+subscription, so even that observation needs a durable operation intent before
+dispatch. Native clock sampling uses the retained original Job/root; it grants
+neither a clocked-launch proof nor Save authority. The ledger still needs global
+unresolved-operation gating and an original-owner coordinator for dispatch,
+publication, closure, reopen and final acceptance. Never adopt these modules'
+JSON as an execution permit.
 
 Raw producer markers preserve lazy managers and timer/notification state without
 calling them empty or complete. They complement the selected empty predicates;

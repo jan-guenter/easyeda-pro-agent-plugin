@@ -9,8 +9,9 @@ import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "./current-pcb-s
 // Requests +4 original target/frame reproofs +21 bound-teardrop-owner checks.
 // That precreate/common route is157 requests. The same action adds58 original
 // Worker-producer requests,6 actor/clock samples and4 parent target/frame
-// Reproofs:225 total. Observations, not a writer budget.
-export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 225;
+// Reproofs:225 total. The original move/startup collector adds12, giving237.
+// Observations, not a writer budget; diagnostic remains103.
+export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 237;
 export const CURRENT_PCB_STRING_PRECREATE_PHASES = Object.freeze(["renderer-association", "worker-association", "empty-producers",
   "empty-producers-v2", "producer-markers-v2"] as const);
 export type CurrentPcbStringPrecreatePhase = typeof CURRENT_PCB_STRING_PRECREATE_PHASES[number];
