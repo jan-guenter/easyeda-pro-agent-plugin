@@ -4,6 +4,62 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Delivered073200 checkpoint, 2026-10-21
+
+Delivered `0.3.0+codex.20261021073200` through protected PR94. Final tested head
+`8a10a0136ab8543bb4c8d2d60bc87240b2f3ebab`, merged main
+`5be1545a73ca83889ce9ed7b650dac9587b47c1d`; full tree92cc9de1 and plugin
+treef3c6c12a are identical. One batch integrates inherited-constructor correction,
+V2 lazy owners, original-worker producers, actor/local-clock observations and
+bounded public summaries. No geometry writer or API coverage increase.
+
+Source583/0612598f, runtime3/1dd7bf21, compatibility91d11d17; external pins
+unchanged. Helper500081/6eb5b918 and49 embedded programs independently reviewed;
+both actual Windows no-app CompileOnly profiles pass. Strict types/type-aware
+lint, dependency tree/signatures/audit, reproducible bundles, repository/privacy
+and all7 official skill validators pass. No external official plugin validator
+was available; maintained plugin/MCP checks pass.
+
+Original frozen local verify92288 completed12154facade tests:12149passed,
+1stale request-limit assertion failed,4platformskips. Never call it fully green.
+Initial CI39563654781 found the same sole stale156rejection. Final8a10a01 only
+changes that test to assert full225acceptance/226rejection; runtime/pins unchanged.
+Four focused tests and targeted lint pass. Remaining local28648 passes424bridge
+tests, skills, plugin/MCP and repository/privacy checks. Final exact-head
+Linux39565188653 PASSED/all10jobs,12154tests/12149passed/5skips/0failures;
+Windows39565188700 PASSED. No second broad local suite was added.
+Post-main Windows39566613811 PASSED; duplicate Linux39566613804 was still
+running on the identical merged tree at handoff. Check it next session.
+
+Official named Git marketplace upgrade2849 completed without errors/stderr;
+post-upgrade list19287 confirms installed/enabled073200 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Marketplace HEAD
+is merged main. Earlier list93687 ran during upgrade and still showed055237;
+it is not the final installation receipt. Maintained comparison17578 passes
+1698files/42dirs/34983051bytes/modes, inventory426c585d. Exact-main worktree:
+`/root/.cache/easyeda-073200-release-lK3xEMpa/merged-main`.
+Single installed offline probe17578 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0, zero stderr and normal EOF/exit0. Post-close
+control/marker checks and sampled no-descendant/socket checks pass; continuous
+isolation, connected execution and actual runtime admission are not claimed.
+Independent delivery review repeated the complete maintained comparison and
+checked merge/tree identity, final CI totals, upgrade/list/marketplace and retained
+offline receipts; PASSED. Main read receipt1fef4993 at
+`/root/.cache/easyeda-073200-independent-delivery-PGJg3PQ3/delivery-review.json`.
+The offline probe was not repeated.
+
+No pending native/CAD owner, create or Save. Last-admitted facade2055019/
+start54101485 loaded055237; it was not killed, rebound or hotpatched. No live
+call after installation. A fresh chat and actual073200 admission are required
+before ONE new disposable common/precreate case. Terminal055237case below must
+never replay. Production designs remain excluded, including read/hash work.
+Next batch should combine finite effects/destination containment, String-owned
+backend/Windows actor and Save-clock provenance, and the dormant one-create/
+one-Save/full-SQL/reopen lifecycle before another installation. Full backlog:
+`docs/current-pcb-owned-producers-batch-2026-10-21.md`. Release evidence and private
+next-session plan: `/root/.cache/easyeda-073200-release-lK3xEMpa`.
+This delivery record is beyond immutable PR94; packaged payload unchanged.
+
 ### Combined073200 release preparation, 2026-10-21
 
 Candidate `0.3.0+codex.20261021073200` on

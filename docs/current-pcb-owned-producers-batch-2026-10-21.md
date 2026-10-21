@@ -1,6 +1,9 @@
 # PCB owned producer and lazy-state batch
 
-Candidate: `0.3.0+codex.20261021073200`. Publication and installation pending.
+Published and installed: `0.3.0+codex.20261021073200`, protected
+[PR94](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/94), merged main
+`5be1545a73ca83889ce9ed7b650dac9587b47c1d`. Fresh actual-process admission and
+connected validation remain pending.
 
 This update combines the inherited-constructor fix with callable lazy-state,
 worker-producer and actor/clock observations. It does not enable a geometry
@@ -69,6 +72,13 @@ See [lazy owners](current-pcb-lazy-owners-2026-10-21.md),
 5. Continue remaining schematic, PCB, library and manufacturing API families
    and portable packaging. Production-design restrictions remain unchanged.
 
+Batch items2–4 together before another installation. Source-backed finite-effect
+contracts and the dormant lifecycle composition can progress alongside the
+one new connected observation case; they need not wait for separate diagnostic
+releases. Other primitive families are independent backlog, not prerequisites
+for the first empty-board String. A successful snapshot cannot establish hidden
+receiver identity, complete quiescence or future Save provenance.
+
 ## Verification
 
 Focused synthetic tests cover real V8 descriptors, effect checks, the203/225
@@ -76,5 +86,23 @@ request routes, original-owner substitution, partial failures, cleanup and
 historical schema bounds. Strict TypeScript and targeted type-aware lint pass.
 Both actual Windows PowerShell5.1 no-app CompileOnly profiles pass. Independent
 source/native reviews cover the inheritance profiles and new worker/actor paths.
-Final frozen verification, protected CI, publication and installation remain
-pending; no new live writer evidence is claimed.
+The original frozen local run completed12154facade tests:12149passed,4platform
+skips and one stale assertion that still rejected request156. It is not a green
+run. Test-only final commit`8a10a0136ab8543bb4c8d2d60bc87240b2f3ebab` verifies
+full acceptance at225 and refusal at226. Four focused tests and targeted strict
+lint pass; runtime, bundles, manifests and pins are unchanged. Remaining local
+checks pass424bridge tests and skill, package/MCP and repository/privacy checks.
+
+Final exact-head LinuxCI39565188653 passes all10jobs and12154facade tests:
+12149passed,5platformskips,0failures. WindowsCI39565188700 passes. The merged
+tree is identical. No second broad local campaign was added.
+
+Official Git marketplace upgrade and final list confirm installed/enabled073200.
+Maintained comparison matches1698files/42dirs/34983051bytes and modes to merged
+main. Installed offline startup passes26tools,10queries/12requests, zero stderr
+and normal EOF/exit0; no live control root was selected. This is package evidence,
+not runtime admission or connected writer support. Exact receipts and the
+next-session plan remain private in `/root/.cache/easyeda-073200-release-lK3xEMpa`.
+Independent delivery review repeated the complete installed-file/mode comparison
+and checked CI, merge and marketplace receipts. It passed without replaying the
+offline probe or making live calls.
