@@ -409,8 +409,12 @@ source-associated constructor, not the original lexical binding. The separate
 precreate profile has twenty such constructors. V8 reports an inherited class's
 own prototype with its immediate parent class name: the eight pinned inherited
 profiles must not be forced to `Object` or accepted by an arbitrary-name fallback.
-The current V3 route has a215request total, or237 including the optional
-original-owner common-baseline stage. That stage qualifies
+The current V3 no-common route uses215 requests. Its optional original-owner
+common-baseline stage now uses fixed bounded graph packets, with a3309request
+maximum for the combined route. Each graph permits512 packets and one final
+native full reply. Per-call deadlines, effect checks and64MiB total bytes are
+unchanged. Historical237request owners cannot adopt this larger vocabulary.
+The common stage qualifies
 four common constructors, retains five original raw replies and joins them with
 the completed SQL inventory from the operation's original pre-open checkpoint.
 It cannot adopt caller-supplied observations or recreate ownership from JSON.
@@ -421,6 +425,12 @@ writer authority. Lpe has arity1; the source alias $me points to named Sy
 with four exact numeric statics. Preserve these profile differences. For the
 static-map owner pP, the captured native alias is Xh; class self-references do
 not prove an outer pP closure binding. These observation budgets do not admit a writer.
+The packet reader retains ordered aliases and descriptors, then rechecks them
+in bounded passes. Its final full JSON is produced in the original renderer,
+not relabeled host reconstruction. Reproof spans awaits and is not atomic;
+nested fields can change after their reproof. Keep complete-live-baseline and
+writer flags false. Synthetic timing does not establish the cause or correction
+of a historical connected timeout.
 
 The pinned `Zec=new Sfe` variable is not captured by the Save handler. Discover
 the subscribed Sfe owner through its six original `.bind(this)` callbacks instead:
@@ -444,9 +454,13 @@ readers keep their old meanings. Return the bounded V3 summary and retain the
 full journal evidence; the712KiB evidence cap exceeds the512KiB tool envelope.
 Historical V2 retains680KiB and its203/225request limits. These samples still
 exclude hidden arrow receivers, complete publishers and destinations, and writer
-authorization. Private String actor/SQL, Windows-clock and Save-clock modules
-remain dormant. Their tokens cannot substitute for actual native dispatch or a
-complete saved/reopened lifecycle.
+authorization. The original precreate owner now privately retains its actor
+packet and completed pre-open SQL and issues their provenance token. The dormant
+ledger can consume that exact token and bind its own original Save-clock plan.
+Shared launch/bridge/native-edit exclusion now includes every unresolved String
+ledger reservation. Windows clocks, server-time dispatch, create/Save dispatch
+and native terminal completion remain separate unfinished integration. Neither
+the provenance token nor journal JSON supplies execution authority.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

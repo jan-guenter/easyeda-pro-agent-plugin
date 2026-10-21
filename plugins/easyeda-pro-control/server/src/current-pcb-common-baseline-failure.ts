@@ -6,7 +6,8 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const currentPcbCommonRunnerFailureSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-common-runner-failure.v1"),
-  phase: z.enum(["presentation", "rules", "preference", "assets", "metadata", "owner", "owner-final", "wrapper", "properties", "handler", "constructors", "bounds", "release"]),
+  phase: z.enum(["presentation", "rules", "preference", "presentation-seed", "rules-seed", "preference-seed",
+    "packet-advance", "packet-read", "packet-result", "assets", "metadata", "owner", "owner-final", "wrapper", "properties", "handler", "constructors", "bounds", "release"]),
   cleanup: z.enum(["not-started", "released", "failed"]),
   constructor: currentPcbConstructorFailureSchema.nullable(), executionAuthorized: z.literal(false),
 }).strict().refine(value => value.constructor === null || value.constructor.bundle === "common");

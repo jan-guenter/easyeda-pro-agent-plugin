@@ -6,7 +6,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
-import { currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
+import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
@@ -48,17 +48,18 @@ function retained(value: ReturnType<typeof fixture>): void {
   assert.throws(() =>{  value.pipe.releaseClosedListeners(); }, /RETAIN_ORIGINAL_STREAMS/u);
 }
 
-void test("separate String pipe accepts exactly237requests and rejects238 without dispatch; diagnostics cannot adopt its phase", async context => {
+void test("separate String pipe accepts its fixed packet budget and rejects overflow without dispatch; diagnostic purpose remains separate", async context => {
   const diagnostic = fixture(context);
   await assert.rejects(diagnostic.pipe.observeStringPrecreate(currentPcbStringWorkerCommand("worker")), /PCB_STRING_PIPE_PURPOSE/u);
   assert.equal(diagnostic.sent.length, 0);
   const string = fixture(context, false, true);
-  for (let id = 1; id <= 237; id += 1) {
+  for (let id = 1; id <= CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT; id += 1) {
     const result = string.pipe.getTargets();
     string.input.write(wire({ id, result: {} })); await result;
   }
   await assert.rejects(string.pipe.getTargets(), /PIPE_BUDGET/u);
-  assert.equal(string.sent.length, 237); assert.equal(string.pipe.status().requestCount, 237); retained(string); retained(diagnostic);
+  assert.equal(string.sent.length, CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT);
+  assert.equal(string.pipe.status().requestCount, CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT); retained(string); retained(diagnostic);
 });
 
 void test("diagnostic pipe sends only fixed browser discovery reads and keeps complete replies", async context => {

@@ -4,7 +4,8 @@ import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "./current-pcb-construc
 import { CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP } from "./current-pcb-common-baseline-runner.ts";
 import type { CurrentPcbCommonBaselineCommand } from "./current-pcb-common-baseline-runner.ts";
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "./current-pcb-common-metadata.ts";
-import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "./current-pcb-common-state.ts";
+import { CURRENT_PCB_COMMON_PACKET_ADVANCE, CURRENT_PCB_COMMON_PACKET_READ, CURRENT_PCB_COMMON_PACKET_RESULT,
+  CURRENT_PCB_COMMON_PACKET_SEEDS } from "./current-pcb-common-packet-program.ts";
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "./current-pcb-string-empty-assets.ts";
 import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "./current-pcb-teardrop-owner-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION } from "./current-pcb-diagnostic-worker-program.ts";
@@ -98,10 +99,13 @@ function modelHandle(value: unknown): string {
   return value;
 }
 const COMMON_PROGRAMS = Object.freeze({ constructors: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common,
-  presentation: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, rules: CURRENT_PCB_COMMON_RULES_FUNCTION,
-  preference: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION,
+  "presentation-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.presentation, "rules-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.rules,
+  "preference-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.preference, assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION,
   metadata: CURRENT_PCB_COMMON_METADATA_FUNCTION });
-const COMMON_PROGRAM_PHASES = ["constructors", "presentation", "rules", "preference", "assets", "metadata"] as const;
+const COMMON_PROGRAM_PHASES = ["constructors", "presentation-seed", "rules-seed", "preference-seed", "assets", "metadata"] as const;
+const COMMON_PACKET_PROGRAMS = Object.freeze({ "packet-advance": CURRENT_PCB_COMMON_PACKET_ADVANCE,
+  "packet-read": CURRENT_PCB_COMMON_PACKET_READ, "packet-result": CURRENT_PCB_COMMON_PACKET_RESULT });
+const COMMON_PACKET_PHASES = ["packet-advance", "packet-read", "packet-result"] as const;
 /** Common scope properties and handler are byte-identical to existing fixed
  * model requests. Only distinct group/program variants get a common phase. */
 function commonWire(id: number, method: unknown, params: Record<string, unknown>, sessionId: string):
@@ -119,6 +123,15 @@ function commonWire(id: number, method: unknown, params: Record<string, unknown>
     command = { id, method, params: { objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP }, sessionId };
     request = { ...base, commonPhase: "release" };
   } else if (method === "Runtime.callFunctionOn") {
+    const packetPhase = COMMON_PACKET_PHASES.find(key => COMMON_PACKET_PROGRAMS[key] === params["functionDeclaration"]);
+    if (packetPhase !== undefined) {
+      const objectId = modelHandle(params["objectId"]);
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: COMMON_PACKET_PROGRAMS[packetPhase],
+        objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP, returnByValue: packetPhase !== "packet-advance" }, sessionId };
+      request = { ...base, commonPhase: packetPhase, objectId };
+      if (JSON.stringify(params) !== JSON.stringify(command.params)) { return fail(); }
+      return { command, request };
+    }
     const phase = COMMON_PROGRAM_PHASES.find(key => COMMON_PROGRAMS[key] === params["functionDeclaration"]);
     if (phase === undefined) { return null; }
     const args = params["arguments"], withConstructors = phase !== "constructors" && phase !== "metadata";
@@ -129,8 +142,12 @@ function commonWire(id: number, method: unknown, params: Record<string, unknown>
     const callbackObjectId = modelHandle(first["objectId"]), objectId = modelHandle(params["objectId"]);
     if (withConstructors) {
       const constructorObjectId = modelHandle(diagnosticRecord(second) ? second["objectId"] : undefined);
-      command = { id, method, params: { ...effects, objectId, functionDeclaration: COMMON_PROGRAMS[phase], returnByValue: true,
-        arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId };
+      command = phase === "assets"
+        ? { id, method, params: { ...effects, objectId, functionDeclaration: COMMON_PROGRAMS.assets, returnByValue: true,
+          arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId }
+        : { id, method, params: { ...effects, objectId, functionDeclaration: COMMON_PROGRAMS[phase],
+          objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP, returnByValue: false,
+          arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId };
       request = { ...base, commonPhase: phase, objectId, callbackObjectId, constructorObjectId };
     } else {
       command = phase === "metadata" ?

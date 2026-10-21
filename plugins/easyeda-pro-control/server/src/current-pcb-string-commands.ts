@@ -2,16 +2,15 @@
 import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION, CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION } from "./current-pcb-string-association.ts";
 import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION } from "./current-pcb-string-empty-producers.ts";
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "./current-pcb-string-producer-markers.ts";
+import { CURRENT_PCB_COMMON_PACKET_MAX_STEPS } from "./current-pcb-common-packet-program.ts";
 
-// 49 UI/project/PCB qualification +12 worker qualification +6 scope acquisition
-// +22 constructor-bundle/source checks +2*(8 observations +4 target/frame
-// Reproofs) +1 original-group release +18 separately consumed common-baseline
-// Requests +4 original target/frame reproofs +21 bound-teardrop-owner checks.
-// That precreate/common route is157 requests. The same action adds58 original
-// Worker-producer requests,6 actor/clock samples and4 parent target/frame
-// Reproofs:225 total. The original move/startup collector adds12, giving237.
-// Observations, not a writer budget; diagnostic remains103.
-export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 237;
+/* The no-common path remains 215 requests. Optional common observation adds four
+ * original target/frame reproofs, 12 scope/constructor requests, two scalar readers,
+ * one group release and three graph leaves. Each graph permits 512 original packets,
+ * each produced/read once, then one final native result. Deadlines, effect
+ * checks and 64 MiB session bytes remain unchanged. This is not a writer budget;
+ * the separate diagnostic purpose remains 103 requests. */
+export const CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT = 215 + 4 + 15 + 3 * (2 * CURRENT_PCB_COMMON_PACKET_MAX_STEPS + 1);
 export const CURRENT_PCB_STRING_PRECREATE_PHASES = Object.freeze(["renderer-association", "worker-association", "empty-producers",
   "empty-producers-v2", "producer-markers-v2"] as const);
 export type CurrentPcbStringPrecreatePhase = typeof CURRENT_PCB_STRING_PRECREATE_PHASES[number];

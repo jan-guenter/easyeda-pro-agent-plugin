@@ -9,6 +9,9 @@ import { CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP } from "../src/current-pcb-com
 import type { CurrentPcbCommonBaselineCommand } from "../src/current-pcb-common-baseline-runner.ts";
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../src/current-pcb-common-metadata.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../src/current-pcb-common-state.ts";
+import { CURRENT_PCB_COMMON_PACKET_ADVANCE, CURRENT_PCB_COMMON_PACKET_READ, CURRENT_PCB_COMMON_PACKET_RESULT,
+  CURRENT_PCB_COMMON_PACKET_SEEDS } from "../src/current-pcb-common-packet-program.ts";
+import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT } from "../src/current-pcb-string-commands.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../src/current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
@@ -20,9 +23,13 @@ function properties(objectId: string): CurrentPcbCommonBaselineCommand {
   return { commonPhase: "properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } };
 }
 function commands(): readonly CurrentPcbCommonBaselineCommand[] {
-  const readers = [
-    ["presentation", CURRENT_PCB_COMMON_PRESENTATION_FUNCTION], ["rules", CURRENT_PCB_COMMON_RULES_FUNCTION],
-    ["preference", CURRENT_PCB_COMMON_PREFERENCE_FUNCTION], ["assets", CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION],
+  const seeds = [
+    ["presentation-seed", CURRENT_PCB_COMMON_PACKET_SEEDS.presentation], ["rules-seed", CURRENT_PCB_COMMON_PACKET_SEEDS.rules],
+    ["preference-seed", CURRENT_PCB_COMMON_PACKET_SEEDS.preference],
+  ] as const;
+  const packets = [
+    ["packet-advance", CURRENT_PCB_COMMON_PACKET_ADVANCE], ["packet-read", CURRENT_PCB_COMMON_PACKET_READ],
+    ["packet-result", CURRENT_PCB_COMMON_PACKET_RESULT],
   ] as const;
   return [
     { commonPhase: "wrapper", method: "Runtime.evaluate", params: { ...effects, expression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,
@@ -35,9 +42,15 @@ function commands(): readonly CurrentPcbCommonBaselineCommand[] {
     { commonPhase: "constructors", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
       functionDeclaration: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common, returnByValue: false, arguments: [{ objectId: "wrapper" }] } },
     properties("constructors"), ...["Yme", "Nfe", "Epe", "GSe"].map(name => properties(name)),
-    ...readers.map(([commonPhase, functionDeclaration]): CurrentPcbCommonBaselineCommand => ({ commonPhase, method: "Runtime.callFunctionOn",
-      params: { ...effects, objectId: "scope", functionDeclaration, returnByValue: true,
+    ...seeds.map(([commonPhase, functionDeclaration]): CurrentPcbCommonBaselineCommand => ({ commonPhase, method: "Runtime.callFunctionOn",
+      params: { ...effects, objectId: "scope", functionDeclaration, objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP, returnByValue: false,
         arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }] } })),
+    ...packets.map(([commonPhase, functionDeclaration]): CurrentPcbCommonBaselineCommand => ({ commonPhase, method: "Runtime.callFunctionOn",
+      params: { ...effects, objectId: "original-packet", functionDeclaration, objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP,
+        returnByValue: commonPhase !== "packet-advance" } })),
+    { commonPhase: "assets", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
+      functionDeclaration: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION, returnByValue: true,
+      arguments: [{ objectId: "wrapper" }, { objectId: "constructors" }] } },
     { commonPhase: "metadata", method: "Runtime.callFunctionOn", params: { ...effects, objectId: "scope",
       functionDeclaration: CURRENT_PCB_COMMON_METADATA_FUNCTION, returnByValue: true, arguments: [{ objectId: "wrapper" }] } },
     { commonPhase: "release", method: "Runtime.releaseObjectGroup", params: { objectGroup: CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP } },
@@ -45,8 +58,8 @@ function commands(): readonly CurrentPcbCommonBaselineCommand[] {
 }
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 
-void test("eighteen common commands use fixed String transport phases without forwarding caller programs or groups", () => {
-  const sequence = commands(); assert.equal(sequence.length, 18);
+void test("common packet commands use fixed String transport phases without forwarding caller programs or groups", () => {
+  const sequence = commands(); assert.equal(sequence.length, 21);
   for (const [index, { commonPhase, ...command }] of sequence.entries()) {
     const encoded = wire({ id: index + 1, ...command, sessionId: "original-page" });
     const flat = stringPrecreateNativeRequest(encoded);
@@ -54,8 +67,9 @@ void test("eighteen common commands use fixed String transport phases without fo
     for (const key of ["functionDeclaration", "expression", "objectGroup", "params", "arguments", "budget"]) { assert.equal(Object.hasOwn(flat, key), false); }
     if (commonPhase !== "properties" && commonPhase !== "handler") { assert.throws(() => diagnosticNativeRequest(encoded), /OUTBOUND/u); }
     assert.throws(() => stringPrecreateNativeRequest(wire({ id: index + 1, ...command, commonPhase, sessionId: "original-page" })), /OUTBOUND/u);
-    assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 237, ...command, sessionId: "original-page" })), { ...flat, requestId: 237 });
-    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 238, ...command, sessionId: "original-page" })), /OUTBOUND/u);
+    assert.deepEqual(stringPrecreateNativeRequest(wire({ id: CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, ...command, sessionId: "original-page" })),
+      { ...flat, requestId: CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT });
+    assert.throws(() => stringPrecreateNativeRequest(wire({ id: CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT + 1, ...command, sessionId: "original-page" })), /OUTBOUND/u);
   }
 });
 
@@ -75,12 +89,15 @@ void test("common fixed protocol refuses source, effect, argument, group and con
   }
 });
 
-void test("common native adapter embeds exact six programs and retains fixed purpose and group", async () => {
+void test("common native adapter embeds exact historical and packet programs and retains fixed purpose and group", async () => {
   const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   for (const [name, source] of Object.entries({ CommonConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.common,
     CommonPresentationFunction: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CommonRulesFunction: CURRENT_PCB_COMMON_RULES_FUNCTION,
     CommonPreferenceFunction: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CommonAssetsFunction: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION,
-    CommonMetadataFunction: CURRENT_PCB_COMMON_METADATA_FUNCTION })) {
+    CommonMetadataFunction: CURRENT_PCB_COMMON_METADATA_FUNCTION,
+    CommonPresentationSeedFunction: CURRENT_PCB_COMMON_PACKET_SEEDS.presentation, CommonRulesSeedFunction: CURRENT_PCB_COMMON_PACKET_SEEDS.rules,
+    CommonPreferenceSeedFunction: CURRENT_PCB_COMMON_PACKET_SEEDS.preference, CommonPacketAdvanceFunction: CURRENT_PCB_COMMON_PACKET_ADVANCE,
+    CommonPacketReadFunction: CURRENT_PCB_COMMON_PACKET_READ, CommonPacketResultFunction: CURRENT_PCB_COMMON_PACKET_RESULT })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
     assert.equal(encoded?.replaceAll('""', '"'), source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
@@ -119,19 +136,19 @@ void test("common pipe requires original retained page and worker and always rea
     assert.equal(stringPrecreateNativeRequest(encoded)["sessionId"], "original-page");
     // This is a byte-transport test, not semantic graph acceptance. The fixed
     // Native polling path emits at most65536 bytes per transfer.
-    const result = selected.commonPhase === "presentation" ? { result: { type: "string", value: "\\".repeat(524_288) } } : { retained: "raw" };
+    const result = selected.commonPhase === "packet-result" ? { result: { type: "string", value: "\\".repeat(524_288) } } : { retained: "raw" };
     const encodedReply = wire({ id, sessionId: "original-page", result });
-    if (selected.commonPhase === "presentation") { assert.ok(encodedReply.length > 1024 * 1024); }
+    if (selected.commonPhase === "packet-result") { assert.ok(encodedReply.length > 1024 * 1024); }
     for (let offset = 0; offset < encodedReply.length; offset += 65_536) { input.write(encodedReply.subarray(offset, offset + 65_536)); }
     assert.deepEqual(await reply, result);
   }
-  assert.equal(sent.length, 20); assert.equal(input.destroyed, false); assert.equal(output.writableEnded, false);
-  const presentation = commands().find(value => value.commonPhase === "presentation"); assert.ok(presentation !== undefined);
+  assert.equal(sent.length, 23); assert.equal(input.destroyed, false); assert.equal(output.writableEnded, false);
+  const presentation = commands().find(value => value.commonPhase === "packet-result"); assert.ok(presentation !== undefined);
   const tooLarge = pipe.observeCommonBaseline(presentation);
   const rejected = assert.rejects(tooLarge, /PIPE_FRAMING/u);
-  const oversized = wire({ id: 21, sessionId: "original-page", result: { result: { type: "string", value: "\\".repeat(525_000) } } });
+  const oversized = wire({ id: 24, sessionId: "original-page", result: { result: { type: "string", value: "\\".repeat(525_000) } } });
   for (let offset = 0; offset < oversized.length; offset += 65_536) { input.write(oversized.subarray(offset, offset + 65_536)); }
   await rejected;
-  assert.equal(pipe.status().failureObservation?.request?.phase, "common-presentation");
+  assert.equal(pipe.status().failureObservation?.request?.phase, "common-packet-result");
   assert.equal(input.destroyed, false); assert.equal(output.writableEnded, false);
 });

@@ -31,6 +31,9 @@ export interface CurrentPcbStringSaveClockPlan extends Readonly<typeof LIMITS> {
   readonly reviewedOrdinaryDateAndVfsImplementationsRequired: true;
 }
 interface Owned {
+  readonly provenance: CurrentPcbStringSaveProvenance;
+  readonly serverRunner: CurrentPcbStringServerClockRunner;
+  readonly server: CurrentPcbStringServerClockPacket;
   readonly issuer: CurrentPcbStringNativeClockIssuer;
   readonly before: CurrentPcbStringNativeClockObservation;
   readonly armed: CurrentPcbStringNativeClockObservation;
@@ -75,7 +78,18 @@ export function prepareCurrentPcbStringSaveClock(provenance: CurrentPcbStringSav
     workerUserText: provenance.workerUserText, backendActorCandidateText: provenance.backendActorCandidateText,
     saveWindow, backendWindow, backendLocalOffsetMinutes: before.before.localOffsetMinutes,
     commonOsClockAndNoInterveningChangeRequired: true, reviewedOrdinaryDateAndVfsImplementationsRequired: true, ...LIMITS });
-  issued.set(plan, { issuer, before, armed, postAttempted: false, closureAttempted: false }); return plan;
+  issued.set(plan, { provenance, serverRunner, server, issuer, before, armed, postAttempted: false, closureAttempted: false }); return plan;
+}
+/** Pre-Save validation only. After closure use the sealed historical relation,
+ * not this live-source check. Copies and different original provenance refuse. */
+export function requireOriginalCurrentPcbStringSaveClock(plan: CurrentPcbStringSaveClockPlan,
+  provenance: CurrentPcbStringSaveProvenance): CurrentPcbStringSaveClockPlan {
+  const owner = issued.get(plan);
+  need(owner !== undefined && owner.provenance === provenance && !owner.postAttempted && !owner.closureAttempted,
+    "original live clock plan required");
+  currentPcbStringSaveProvenanceSource(provenance);
+  nativeOriginal.call(owner.issuer, owner.before); nativeOriginal.call(owner.issuer, owner.armed);
+  serverOriginal.call(owner.serverRunner, owner.server); return plan;
 }
 /** Seal the original post token while its native process is still current. */
 export function recordCurrentPcbStringSaveClockPost(plan: CurrentPcbStringSaveClockPlan, post: CurrentPcbStringNativeClockObservation): void {

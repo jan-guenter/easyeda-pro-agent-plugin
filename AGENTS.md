@@ -4,6 +4,145 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Candidate121921, 2026-10-21
+
+The combined payload `0.3.0+codex.20261021121921` is frozen for final checks,
+not yet published or installed. It combines the packet reader, original ledger
+integration, shared unresolved-operation gate, raw-reader labels, cleanup details
+and private worker construction capture described below. No new writer or API
+coverage is claimed. Installed/loaded100337 remains unchanged.
+
+Pinned Node24.18.0/npm11.16.0/core0 dependency preparation passed: npm ci and
+dependency tree,151 registry signatures/40 attestations, zero vulnerabilities,
+exact sanitizer and reproducible-source build. Strict lint now passes. Both
+actual Windows no-app CompileOnly profiles pass with zero stderr, empty Job and
+pipe checks. Their first invocation had an incorrect WSL distribution path and
+did not reach the helper; the next found a stale PowerShell self-test phase loop.
+That loop now covers the new seed/packet commands. Native helper is
+611926bytes/6f961eab; source602/fb917868. Independent packet/native/termination
+review passed; final repository, all-skill and full verification remain pending.
+
+Release evidence: `/root/.cache/easyeda-batched-release-20261021-zOlJGWwu`.
+The host `/tmp` tmpfs is full. Tests use a new private root on the repository
+filesystem: `/root/.cache/easyeda-batch-test-tmp-20261021-8xVne3`. No evidence or
+unrelated temporary files were removed. Use that TMPDIR for remaining checks.
+No further live attempt, production access or loaded-runtime replacement.
+
+The first repository privacy check refused a production-project name in one new
+document. The isolated final checkout removes that name and passes repository
+validation. Windows CI on7831239 compiled the helper, then its synthetic launch
+check refused the stale previous helper byte count. The final checkout corrects
+only that smoke pin/comment and adds a Linux regression checking actual helper
+bytes/hash against both owner and smoke pins. Seven focused native tests and
+strict lint pass. Runtime source, helper, bundles and compatibility pins remain
+unchanged; the original full local suite continues separately on7831239. Final
+protected CI must test the corrected head. Preserve the earlier failed checks.
+
+The original local suite also exposed a historical V2 test still expecting the
+old shared request ceiling. The final checkout changes that assertion to the
+bounded packet arithmetic; the V2 leaf itself still uses66 requests. Eight
+focused V2/smoke tests and strict lint pass. This adds no runtime/pin change.
+
+### Terminal100337 and combined continuation, 2026-10-21
+
+Actual installed100337 facade2341107/start55788122 and its parent2339467 were
+admitted on pinned Node24.18.0/core0. Complete main/cache comparison passes
+1720files/42directories/35308081bytes/modes, inventory7fc1f6b4. Independent
+admission receipt24867c19 is retained at
+`/root/.cache/easyeda-100337-independent-admission-BWmea4kL/admission.json`.
+Post-main Linux39585632041 is now SUCCESS/all10jobs. Delivery and admission
+are separate evidence; the former pending CI/admission statements below are historical.
+
+NEW case `string-precreate-100337-20261021-01` completed original UI, PCB and
+project-worker source qualification. Optional common was omitted. The sole
+precreate observation refused at raw-strings, before create or explicit Save.
+Its primary leaf is null; the later pipe input/release label is not its cause.
+No source mismatch has been demonstrated. Normal close of original HWND16651374
+was dispatched once; original root44060/creation134370566267255593 and whole-Job
+termination passed. Release and final inspection show no pending settlement.
+The disposable598016/e620d21a remains byte-exact with no sidecars. No Save,
+discard, restore, forced exit or replay occurred. Production designs were not
+accessed, including reads/hashes. Evidence and continuation are in
+`/root/.cache/easyeda-100337-live-9jBraZtS`.
+
+The current dirty source batch is NOT published or installed. It combines bounded
+common graph packets and native protocol wiring, original actor/SQL provenance
+retention and ledger consumption, shared unresolved String-ledger exclusion,
+separate original-root/Job termination diagnostics, raw reader failure labels
+and a private construction-time worker receiver collector. The latter remains
+unregistered with no native startup integration. No writer or coverage increase
+is claimed. Final focused checks, source/pin freeze, release CI and official
+installation remain pending. Do not hotpatch the admitted100337 runtime, replay
+its terminal case or claim this source batch is connected validation.
+
+### Delivered 100337, 2026-10-21
+
+Published and installed `0.3.0+codex.20261021100337` through protected PR95.
+Final tested head `b43946c6c697c47c3c8d4870d2da48a10f4ad3ff` and merged main
+`b4a43d68087159d1225f7b721ae08d3de806b607` have identical full tree
+`90dabbfa6586986fa5c302e23f47622b8d6b9b77` and plugin tree
+`60cd397a5adef8cb9c5588c10fac6e122dcb183a`. This local delivery record is
+beyond immutable PR95 and changes no packaged payload. Earlier pending-release
+statements below are historical.
+
+The combined batch includes original move/startup observations, immutable worker
+replies, finite-effect reporting, String actor/SQL provenance, private Windows
+clocks, dormant server-time/Save-clock composition and a dormant lifecycle ledger.
+V3 observation limits are 712 KiB and 215 requests, or 237 with common baseline.
+No geometry writer, Save action or public clock action was enabled. No API
+coverage increase or connected writer validation is claimed. The cooperative
+common deadline is not a demonstrated correction for the live timeout.
+Source 596/6005b8ea, runtime 3/d08d47f5, helper 545116/a56a296a;
+final compatibility bb7d4398. External pins remain unchanged.
+
+Final exact-head Linux39584032030 passed all 10 jobs, including 12,204 facade
+tests: 12,199 passed, 5 platform skips, zero failures. Windows39584032196 passed.
+All 424 bridge tests, strict types/type-aware lint, dependency/signature/audit,
+reproducible build, compatibility, repository/privacy and seven official skill
+validators pass. Both actual Windows no-app CompileOnly profiles passed.
+No external official plugin validator was available; maintained plugin/MCP checks
+passed. Preserve the original frozen local result: 12,198 passed, 4 skipped,
+2 stale budget assertions failed. Final test-only corrections passed 8 focused
+tests and final CI; that earlier full local run was not green. No second broad
+local test campaign was added. Superseded Windows26ad attempt1 timed out before
+helper observation; unchanged attempt2 passed without relaxing deadlines.
+Post-main Windows39585632121 passed; duplicate Linux39585632041 remained running
+on the identical merged tree at handoff. Check its result next session.
+
+Official named Git marketplace upgrade completed with no errors/stderr. Final
+list confirms installed/enabled 100337 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; marketplace HEAD
+equals merged main. Complete maintained comparison passes all 1,720 files,
+42 directories, 35,308,081 bytes and modes, inventory 7fc1f6b4. One installed
+synthetic offline probe passed: Node24.18.0, 26 tools, 51 policies, 10 queries/
+12 requests, zero stderr and normal EOF/exit0. Sampled isolation and post-close
+checks passed; continuous isolation and actual host-owned runtime admission are
+not claimed. The probe was not repeated. Independent delivery review repeated
+the full installed comparison, verified exact CI/merge identity and retained
+offline receipts, and passed. Main read receipt b87e0597 at
+`/root/.cache/easyeda-100337-independent-delivery-IltHXDBX/delivery-review.json`.
+Release and next-session evidence: `/root/.cache/easyeda-100337-release-GZa75uEt`.
+
+The old 073200 case is terminal after explicit user-approved exact-root force
+exit. Original MCP proved root exit and whole-Job empty, released the helper and
+confirmed no publication settlement pending. Disposable 598016/e620d21a remained
+byte-exact with no sidecars. This is forced recovery, not normal lifecycle or
+successful reader validation. No Save/discard/restore/replay. No production
+design was accessed, including reads/hashes. No live call followed installation;
+old host-owned facade2190173 was not killed, rebound or hotpatched.
+
+Fresh Codex chat is required before admitting the actual 100337 runtime. Next,
+use one new disposable precreate-only observation case, omitting the explicitly
+optional common-baseline stage. The common timeout remains unresolved and no
+writer prerequisite is waived. Do not reuse or replay a failed owner/stage.
+Continue batching implementation: common timeout diagnosis; complete startup,
+publisher/receiver/channel and write-destination provenance; upload/replay
+containment; original create/Save/clock dispatch and unresolved-operation gates;
+full closed SQL, fresh reopen, final closure and visual acceptance. Broader
+schematic/PCB/library/manufacturing families and portable packaging remain open.
+Inventory remains 774 methods: 212 public subsets, 33 native equivalents,
+79 blocked implementations and 450 omissions, not blanket live support.
+
 ### Terminal073200 recovery and combined source batch, 2026-10-21
 
 Actual facade2190173/start54575608 and parent2188465/start54571655 were admitted

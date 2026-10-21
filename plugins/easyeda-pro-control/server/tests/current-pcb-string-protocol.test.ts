@@ -20,22 +20,22 @@ const COMMANDS = [
   currentPcbStringScopeCommand("producer-markers-v2", "scope", "callback", "constructors"),
 ] as const;
 void test("separate String native protocol accepts its fixed precreate programs without forwarding code", () => {
-  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 237);
+  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 3309);
   for (const { stringPhase, ...command } of COMMANDS) {
-    const encoded = wire({ id: 237, ...command, sessionId: "original" });
+    const encoded = wire({ id: 3309, ...command, sessionId: "original" });
     const result = stringPrecreateNativeRequest(encoded);
-    assert.equal(result["stringPhase"], stringPhase); assert.equal(result["requestId"], 237);
+    assert.equal(result["stringPhase"], stringPhase); assert.equal(result["requestId"], 3309);
     assert.equal(result["sessionId"], "original");
     for (const field of ["params", "expression", "functionDeclaration", "arguments", "timeout"]) {
       assert.equal(Object.hasOwn(result, field), false);
     }
     assert.throws(() => diagnosticNativeRequest(encoded), /OUTBOUND/u);
     assert.throws(() => diagnosticNativeRequest(wire({ id: 1, ...command, sessionId: "original" })), /OUTBOUND/u);
-    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 238, ...command, sessionId: "original" })), /OUTBOUND/u);
+    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 3310, ...command, sessionId: "original" })), /OUTBOUND/u);
   }
-  assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 237, method: "Target.getTargets" })),
-    { action: "send", requestId: 237, method: "Target.getTargets" });
-  assert.throws(() => stringPrecreateNativeRequest(wire({ id: 238, method: "Target.getTargets" })), /OUTBOUND/u);
+  assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 3309, method: "Target.getTargets" })),
+    { action: "send", requestId: 3309, method: "Target.getTargets" });
+  assert.throws(() => stringPrecreateNativeRequest(wire({ id: 3310, method: "Target.getTargets" })), /OUTBOUND/u);
   assert.throws(() => diagnosticNativeRequest(wire({ id: 104, method: "Target.getTargets" })), /OUTBOUND/u);
 });
 void test("String native protocol rejects caller code, effect overrides, extra arguments and public phase routing", () => {

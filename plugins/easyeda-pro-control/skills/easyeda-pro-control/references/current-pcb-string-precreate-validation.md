@@ -109,8 +109,11 @@ leaves named baseline conditions unmet; it is never initialized or represented
 as proven empty. The runner compares the exact sealed project,
 branch, PCB and original window, and the compiler's unique token. It checks
 target/frame identity around each sweep and releases its private object group.
-The String owner has a fixed237request ceiling. The complete route uses237 with
-the optional common stage or215 without it; the diagnostic ceiling remains103.
+The String owner has a fixed3309request ceiling. The no-common path uses215;
+the optional common stage uses a variable number of bounded graph packets,
+including at most512 packets per graph and one final native result. The separate
+diagnostic ceiling remains103. This raises the count of short reads, not their
+deadlines, permitted effects or64MiB session byte limit.
 The added requests qualify fixed source-owned instance constructors
 against the already-admitted original script, exact function location and own
 class metadata. V8 can omit top-level-only class bindings from a retained closure;
@@ -175,19 +178,32 @@ that session. A later stored-state refusal retains any completed observation
 separately from a successful join. This relation does not establish complete
 asset ownership, current saved state or an atomic baseline.
 
-The bounded common traversal has cooperative elapsed-time checks. They can
-refuse oversized or slow traversals but cannot interrupt a blocked intrinsic or
-IPC call. A transport deadline does not prove the reader stopped. Keep the
+The common reader now captures and rechecks descriptors and ordered Map/Set
+membership across fixed-size packets. Each packet is new; it does not mutate
+earlier packets, iterators or model objects. The final native result preserves
+aliases, field order and scalar distinctions. Nested reproof spans several
+calls, so a field can change after its check. It is not an atomic snapshot or a
+writer baseline. The per-call cooperative deadline and effect checks still
+refuse slow or unsupported graphs. They cannot interrupt a blocked intrinsic or
+IPC call. Synthetic inspector measurements are not connected latency proof.
+A transport deadline does not prove the reader stopped. Keep the
 original owner through normal closure and observed whole-Job termination; an
 absent window is not exit evidence. Do not repeat the read or disconnect its pipe.
+`lastTerminationObservation` reports the last accepted original-root and Job
+samples separately. Null means unknown. A partial result never permits release,
+and an earlier sample is not a fresh observation after a later failure.
 
-Dormant String-owned modules now join actor samples to completed SQL and model
-native Windows clock samples, the fixed Save-time RPC and a durable lifecycle
-ledger. They are not public create/Save actions. The RPC changes its counter and
+The retained precreate owner now joins its original actor samples to the original
+completed pre-open SQL reader. Its private provenance token can be consumed by
+the dormant ledger without reissuing or adopting copied evidence. Unresolved
+String ledger reservations now block shared launch, bridge and native-edit
+admission; JSON claiming completion cannot clear them. Native Windows clock
+and Save-clock modules remain private. They are not public create/Save actions.
+The fixed Save-time RPC changes its counter and
 subscription, so even that observation needs a durable operation intent before
 dispatch. Native clock sampling uses the retained original Job/root; it grants
-neither a clocked-launch proof nor Save authority. The ledger still needs global
-unresolved-operation gating and an original-owner coordinator for dispatch,
+neither a clocked-launch proof nor Save authority. The ledger still needs an
+original-owner coordinator for dispatch,
 publication, closure, reopen and final acceptance. Never adopt these modules'
 JSON as an execution permit.
 
@@ -217,6 +233,9 @@ class arrows. Same-source callbacks from different instances can have different
 hidden receivers. Keep the explicit receiver limitation until original construction
 or equivalent provenance is established. Do not invoke callbacks or pause the
 debugger to manufacture that proof.
+The separate construction-capture component is an unregistered implementation
+for a future pre-bootstrap owner. It does not change this tool's no-pause
+contract or make its synthetic captured receivers available in EasyEDA.
 
 The complete writer still needs an original-owner lifecycle that joins a full
 baseline and producer inventory, one consumed create, actual publication,

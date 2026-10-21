@@ -1,5 +1,6 @@
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
+/* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
 import { constants } from "node:fs";
 import type { BigIntStats, Dirent } from "node:fs";
 import { lstat, mkdir, open, opendir } from "node:fs/promises";
@@ -11,7 +12,7 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
 import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
-// oxlint-disable-next-line import/max-dependencies -- One append-only journal validates separately bounded diagnostic, String and common evidence without sharing their authority.
+import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
@@ -472,6 +473,7 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {
+  await assertNoUnresolvedCurrentPcbStringLedgers();
   const operations = await readCurrentPcbDiagnosticLifecycles();
   requireValue(operations.every(operation => operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
     operation.records["no-process-released.json"] !== undefined), "UNRESOLVED_LAUNCH");

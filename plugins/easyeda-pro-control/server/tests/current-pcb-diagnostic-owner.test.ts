@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
 // oxlint-disable-next-line import/max-dependencies -- One integration case supplies the real completed SQL reader to the existing synthetic retained native-helper owner.
 import { IDS, encrypted, inventory, mutate, fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
+import { currentPcbStringSaveProvenanceSource } from "../src/current-pcb-string-save-provenance.ts";
 
 const LAUNCH = { executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true } as const;
 const SOURCE = "const syntheticIdentity = true;\n";
@@ -77,6 +78,37 @@ void test("diagnostic owner retains live helper on release refusal and permits r
   await assert.rejects(value.owner.releaseClosed(), /RETAIN_LIVE_OWNER/u);
   assert.equal(value.child.stdin?.writableEnded, false); assert.equal(value.actions.includes("release"), false);
   await close(value); await assert.rejects(value.owner.releaseClosed(), /RELEASE_CONSUMED/u);
+});
+void test("termination details distinguish original root and Job without promoting partial closure", async context => {
+  for (const [scenario, originalRootExited, originalJobEmpty] of [
+    ["root-exited-job-live", true, false], ["root-live-job-empty", false, true], ["termination-unknown", null, null],
+  ] as const) {
+    const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
+    assert.equal(await value.owner.observeTermination(), false);
+    assert.deepEqual(value.owner.status().lastTerminationObservation, { terminated: false, originalRootExited, originalJobEmpty });
+    assert.equal(Object.isFrozen(value.owner.status().lastTerminationObservation), true);
+    await assert.rejects(value.owner.releaseClosed(), /RETAIN_LIVE_OWNER/u);
+    assert.equal(value.child.stdin?.writableEnded, false);
+    assert.equal(value.actions.includes("release"), false);
+  }
+});
+void test("contradictory original termination details refuse without a completion token", async context => {
+  const value = fixture(context, "termination-contradiction", true); await value.owner.launch(LAUNCH);
+  await assert.rejects(value.owner.observeTermination(), /TERMINATION_REPLY/u);
+  assert.equal(value.owner.status().lastTerminationObservation, null);
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  assert.equal(value.actions.includes("string-clock"), false);
+});
+void test("a failed later termination sample retains only the explicitly historical prior observation", async context => {
+  const value = fixture(context, "termination-later-contradiction", true); await value.owner.launch(LAUNCH);
+  assert.equal(await value.owner.observeTermination(), false);
+  const prior = value.owner.status().lastTerminationObservation;
+  assert.deepEqual(prior, { terminated: false, originalRootExited: false, originalJobEmpty: false });
+  await assert.rejects(value.owner.observeTermination(), /TERMINATION_REPLY/u);
+  assert.equal(value.owner.status().lastTerminationObservation, prior);
+  await assert.rejects(value.owner.observeStringNativeClock("termination"), /STRING_NATIVE_CLOCK_UNAVAILABLE/u);
+  await assert.rejects(value.owner.releaseClosed(), /TERMINATION_REPLY/u);
+  assert.equal(value.actions.includes("string-clock"), false); assert.equal(value.actions.includes("release"), false);
 });
 void test("original unlaunched helper requires native never-attempted proof before normal EOF release", async context => {
   const value = fixture(context); await value.owner.releaseUnlaunched();
@@ -670,14 +702,16 @@ void test("original String owner retains a common comparison refusal and still p
   const originalCount = value.actions.filter(action => action === "send").length;
   const result = await value.owner.observeCommonBaseline(before);
   assert.equal(result.schema, "easyeda-pro-control.pcb-common-baseline-refusal.v1");
-  assert.equal(value.actions.filter(action => action === "send").length - originalCount, 22);
+  // This small fixture uses three packets plus one final result per graph:
+  // 15 fixed common requests + 3*7 packet requests + four frame reproofs.
+  assert.equal(value.actions.filter(action => action === "send").length - originalCount, 40);
   assert.equal(result.executionAuthorized, false); assert.equal(value.owner.status().diagnosticFailure, null);
   const failure = value.owner.retainedCommonBaselineFailure(); assert.ok(failure);
   assert.equal(failure.nativeContinuationAllowed, true); assert.equal(failure.originalRunnerIssued, true);
   assert.ok(failure.originalReplies); assert.equal(failure.runnerFailure, null);
   await assert.rejects(value.owner.observeCommonBaseline(before), /COMMON_BASELINE_UNAVAILABLE/u);
   const precreate = await value.owner.observeStringPrecreate(); assert.equal(precreate["matchingSamples"], true);
-  assert.equal(value.actions.filter(action => action === "send").length, 237);
+  assert.equal(value.actions.filter(action => action === "send").length, 255);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await close(value);
 });
@@ -718,6 +752,30 @@ void test("separate String purpose joins precreate v3, original worker/move/star
   await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
   assert.equal(value.actions.filter(action => action === "send").length, 215);
   await close(value);
+});
+
+void test("String owner retains its own actor packet with the exact completed pre-open SQL and invalidates it on close", async context => {
+  const database = await sqlFixture({ project: OPEN_TARGET.projectUuid, branch: OPEN_TARGET.branchUuid, target: OPEN_TARGET.documentUuid });
+  const before = database.before;
+  const rejected = await stringFixture(context);
+  const priorSends = rejected.actions.filter(action => action === "send").length;
+  await assert.rejects(rejected.owner.observeStringPrecreate(structuredClone(before)), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_OWNER/u);
+  assert.equal(rejected.actions.filter(action => action === "send").length, priorSends);
+  assert.throws(() => rejected.owner.originalStringSaveProvenance(), /STRING_ORIGINAL_PROVENANCE_UNAVAILABLE/u);
+  await close(rejected);
+  const value = await stringFixture(context);
+  assert.throws(() => value.owner.originalStringSaveProvenance(), /STRING_ORIGINAL_PROVENANCE_UNAVAILABLE/u);
+  const observed = await value.owner.observeStringPrecreate(before), provenance = value.owner.originalStringSaveProvenance();
+  const original = currentPcbStringSaveProvenanceSource(provenance);
+  assert.equal(original.before, before); assert.equal(original.packet, observed["actorClock"]);
+  assert.equal(value.owner.originalStringSaveProvenance(), provenance);
+  assert.equal(provenance.originalCompletedSqlRetained, true); assert.equal(provenance.backendRequestActorVerified, false);
+  assert.equal(provenance.windowsClockProvenanceVerified, false); assert.equal(provenance.saveAuthorized, false);
+  assert.throws(() => currentPcbStringSaveProvenanceSource(structuredClone(provenance)), /original String provenance/u);
+  await value.owner.requestNormalClose("456");
+  assert.throws(() => value.owner.originalStringSaveProvenance(), /STRING_ORIGINAL_PROVENANCE_UNAVAILABLE/u);
+  assert.throws(() => currentPcbStringSaveProvenanceSource(provenance), /STRING_CONTEXT_CHANGED/u);
+  assert.equal(await value.owner.observeTermination(), true); await value.owner.releaseClosed();
 });
 
 void test("joined String owner preserves worker, move, startup and actor failures without publishing a partial observation", async context => {

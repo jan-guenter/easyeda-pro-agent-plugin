@@ -10,6 +10,8 @@ import { currentPcbCommonBaselineFailure, currentPcbCommonBaselineFailureSchema,
 import { sha256Json } from "../src/core.ts";
 import type { CurrentPcbCommonBaselineCommand, CurrentPcbCommonBaselineTransport } from "../src/current-pcb-common-baseline-runner.ts";
 import { requireOriginalCurrentPcbCommonBaselineReplies } from "../src/current-pcb-common-baseline-runner.ts";
+import { CURRENT_PCB_COMMON_PACKET_ADVANCE, CURRENT_PCB_COMMON_PACKET_READ,
+  CURRENT_PCB_COMMON_PACKET_RESULT, CURRENT_PCB_COMMON_PACKET_SEEDS } from "../src/current-pcb-common-packet-program.ts";
 import { encodeCurrentPcbCommonPreference, encodeCurrentPcbCommonPresentation } from "../src/current-pcb-common-encoding.ts";
 import { encodeCurrentPcbCommonRulesAndPrimitives } from "../src/current-pcb-common-rule-encoding.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../src/current-pcb-common-state.ts";
@@ -24,6 +26,10 @@ import { IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql
 const identity = Object.freeze({ projectUuid: IDS.project, branchUuid: IDS.branch, documentUuid: IDS.target });
 const header = JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: IDS.target, updateTime: 1, version: "1", editVersion: "3.0" });
 const meta = { title: "Empty PCB", parent: "", source: "", board: "", zIndex: null };
+// This rule-rich fixture needs eleven chunks, not the smaller runner fixture's
+// Nine: twelve original-scope calls + three seeds + eight advances + eleven
+// Reads + three final graph results + two plain readers + one release.
+const REQUEST_COUNT = 40;
 function literal(value: string): string { return `'${value.replaceAll("'", "''")}'`; }
 function wrapper(kind: "rpc-wrapper" | "save-handler"): readonly unknown[] {
     const point = CURRENT_PCB_DIAGNOSTIC_MODEL_LOCATIONS[kind];
@@ -71,6 +77,11 @@ scope.object.Ke.manager.map.set(4,make("WA",{layerId:4,type:"BOTTOM_SILK",name:"
   mutate(base.path, `UPDATE history_data SET dataStr=${literal(encrypted(text, IDS.oldHead, IDS.oldKey))} WHERE id=7;
     UPDATE project_structures SET structure=${literal(structure)};${changeSql}`);
   const before = await inventory(base.path), commands: CurrentPcbCommonBaselineCommand[] = [], replies = scopeReplies();
+  const packets = new Map<string, unknown>();
+  const retainPacket = (packet: unknown): unknown => {
+    const objectId = `packet-${packets.size}`; packets.set(objectId, packet);
+    return { result: { type: "object", className: "Object", description: "Object", objectId } };
+  };
   runInContext(changeLive, context);
   let afterRelease = false, current = true;
   const transport: CurrentPcbCommonBaselineTransport = {
@@ -78,8 +89,31 @@ scope.object.Ke.manager.map.set(4,make("WA",{layerId:4,type:"BOTTOM_SILK",name:"
     request: (command): Promise<unknown> => {
       commands.push(command);
       if (command.commonPhase === "release") { if (afterRelease) { current = false; } return Promise.resolve({}); }
-      if (commands.length <= replies.length) { return Promise.resolve(replies[commands.length - 1]); }
+      if (commands.length <= replies.length) {
+        if (command.commonPhase === "constructors") {
+          assert.equal(command.params.objectId, "save-handler-0");
+          assert.deepEqual(command.params.arguments, [{ objectId: "rpc-wrapper" }]);
+          runInContext(`globalThis.qualifiedCommonConstructors=(${command.params.functionDeclaration}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback);`, context);
+        }
+        return Promise.resolve(replies[commands.length - 1]);
+      }
       assert.ok(command.method === "Runtime.callFunctionOn");
+      if (command.commonPhase === "packet-advance" || command.commonPhase === "packet-read" || command.commonPhase === "packet-result") {
+        const source = { "packet-advance": CURRENT_PCB_COMMON_PACKET_ADVANCE, "packet-read": CURRENT_PCB_COMMON_PACKET_READ,
+          "packet-result": CURRENT_PCB_COMMON_PACKET_RESULT }[command.commonPhase];
+        assert.equal(command.params.functionDeclaration, source); assert.equal(Object.hasOwn(command.params, "arguments"), false);
+        assert.ok(packets.has(command.params.objectId)); context["originalPacket"] = packets.get(command.params.objectId);
+        const observed: unknown = runInContext(`(${source}).call(originalPacket)`, context, { timeout: 2000 });
+        return Promise.resolve(command.commonPhase === "packet-advance" ? retainPacket(observed) : pcbStringReply(observed));
+      }
+      if (command.commonPhase === "presentation-seed" || command.commonPhase === "rules-seed" || command.commonPhase === "preference-seed") {
+        const source = { "presentation-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.presentation, "rules-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.rules,
+          "preference-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.preference }[command.commonPhase];
+        assert.equal(command.params.functionDeclaration, source); assert.equal(command.params.objectId, "save-handler-0");
+        assert.deepEqual(command.params.arguments, [{ objectId: "rpc-wrapper" }, { objectId: "constructors" }]);
+        const observed: unknown = runInContext(`(${source}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,qualifiedCommonConstructors)`, context, { timeout: 2000 });
+        return Promise.resolve(retainPacket(observed));
+      }
       return Promise.resolve(sample(command.params.functionDeclaration));
     },
   };
@@ -93,7 +127,12 @@ void test("owned common session derives historical header and joins only its ori
   const summary = currentPcbCommonBaselineResult(result);
   assert.equal(summary.schema, "easyeda-pro-control.pcb-common-baseline-observation.v1");
   assert.equal(summary.beforeSqlSha256, value.before.logicalSha256); assert.equal("relation" in summary, false);
-  assert.equal(value.commands.length, 18); assert.equal(result.historicalHeader.headerText, header);
+  assert.equal(value.commands.length, REQUEST_COUNT); assert.equal(result.historicalHeader.headerText, header);
+  assert.deepEqual(value.commands.filter(command => command.commonPhase.endsWith("-seed")).map(command => command.commonPhase),
+    ["presentation-seed", "rules-seed", "preference-seed"]);
+  assert.equal(value.commands.filter(command => command.commonPhase === "packet-read").length, 11);
+  assert.equal(value.commands.filter(command => command.commonPhase === "packet-advance").length, 8);
+  assert.equal(value.commands.filter(command => command.commonPhase === "packet-result").length, 3);
   assert.equal(result.relation.common.beforeSqlSha256, value.before.logicalSha256);
   assert.equal(result.originalRunnerIssued, true); assert.equal(result.historicalHeaderJoined, true);
   assert.equal(result.completeTargetCommonAndMetaMatched, true); assert.equal(result.relation.common.rows.length, 62);
@@ -105,13 +144,13 @@ void test("owned common session derives historical header and joins only its ori
   assert.throws(() => value.session.requireOriginalPacket(structuredClone(result)), /original completed packet/u);
   value.setCurrent(false); assert.throws(() => value.session.requireOriginalPacket(result), /synthetic owner changed/u);
   value.setCurrent(true); assert.throws(() => value.session.requireOriginalPacket(result), /original completed packet/u);
-  await assert.rejects(value.session.observeAndJoin(), /attempt consumed/u); assert.equal(value.commands.length, 18);
+  await assert.rejects(value.session.observeAndJoin(), /attempt consumed/u); assert.equal(value.commands.length, REQUEST_COUNT);
 });
 
 void test("join failure retains the original observation and header without granting another attempt", async () => {
   const value = await setup("", 'scope.object.x.env._compiler.docDetail.title="Wrong title";');
   await assert.rejects(value.session.observeAndJoin(), /FAILED_STORED-RELATION/u);
-  assert.equal(value.commands.length, 18); assert.equal(value.session.status().failurePhase, "stored-relation");
+  assert.equal(value.commands.length, REQUEST_COUNT); assert.equal(value.session.status().failurePhase, "stored-relation");
   assert.equal(value.session.status().packetRetained, false); assert.equal(value.session.retainedHistoricalHeader()?.headerText, header);
   const observed = value.session.retainedObservation(); assert.ok(observed);
   const replies = requireOriginalCurrentPcbCommonBaselineReplies(observed); assert.match(replies.metadata.result.value, /Wrong title/u);
@@ -127,7 +166,7 @@ void test("join failure retains the original observation and header without gran
   value.setCurrent(false); assert.throws(() => value.session.requireOriginalComparisonRefusal(), /synthetic owner changed/u);
   value.setCurrent(true); assert.equal(value.session.comparisonRefused(), false);
   assert.throws(() => value.session.requireOriginalComparisonRefusal(), /original comparison refusal/u);
-  await assert.rejects(value.session.observeAndJoin(), /attempt consumed/u); assert.equal(value.commands.length, 18);
+  await assert.rejects(value.session.observeAndJoin(), /attempt consumed/u); assert.equal(value.commands.length, REQUEST_COUNT);
 });
 
 void test("stale original lifetime before historical read or during cleanup never publishes a packet", async () => {
@@ -135,7 +174,7 @@ void test("stale original lifetime before historical read or during cleanup neve
   await assert.rejects(early.session.observeAndJoin(), /FAILED_HISTORICAL-HEADER/u); assert.equal(early.commands.length, 0);
   const later = await setup(); later.invalidateAfterRelease();
   await assert.rejects(later.session.observeAndJoin(), /FAILED_OBSERVATION/u);
-  assert.equal(later.commands.length, 18); assert.equal(later.session.retainedObservation(), null);
+  assert.equal(later.commands.length, REQUEST_COUNT); assert.equal(later.session.retainedObservation(), null);
   assert.equal(later.session.status().packetRetained, false); assert.equal(later.commands.at(-1)?.commonPhase, "release");
   assert.equal(later.session.comparisonRefused(), false);
   const failure = currentPcbCommonBaselineFailure(identity, "observation", null, later.session.retainedHistoricalHeader(), false, later.session.retainedFailure());
@@ -169,6 +208,6 @@ void test("owner loss across asynchronous SQL joining retains evidence but withh
     } } });
   await assert.rejects(session.observeAndJoin(), /FAILED_STORED-RELATION/u);
   assert.equal(session.status().packetRetained, false); assert.ok(session.retainedObservation());
-  assert.equal(value.commands.length, 18); assert.equal(session.status().failurePhase, "stored-relation");
+  assert.equal(value.commands.length, REQUEST_COUNT); assert.equal(session.status().failurePhase, "stored-relation");
   assert.equal(session.comparisonRefused(), false);
 });

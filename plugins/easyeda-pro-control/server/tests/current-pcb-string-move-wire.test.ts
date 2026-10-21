@@ -75,7 +75,7 @@ void test("five native move programs, twelve-step grammar and original session/g
   assert.ok(sequence !== undefined); assert.deepEqual(JSON.parse(`[${sequence}]`) as unknown, CURRENT_PCB_STRING_MOVE_SEQUENCE);
   for (const check of ["VerifyMoveProducerProtocolSmoke();", "move-producer-purpose-smoke", "moveProducerStep>=12",
     "moveProducerReleased=true;moveProducerStep=12;", "sessionId!=moveProducerSession", "OptionalText(context)!=moveProducerContext",
-    "moveProducerStep++;", "$owner.SendMoveProducer(", "'movePhase','moveArgument0','moveArgument1','moveArgument2'", "stringPrecreate?237:103"]) {
+    "moveProducerStep++;", "$owner.SendMoveProducer(", "'movePhase','moveArgument0','moveArgument1','moveArgument2'", "stringPrecreate?3309:103"]) {
     assert.ok(source.includes(check), check);
   }
   assert.ok(!source.includes("$request.arguments")); assert.ok(!source.includes("$request.functionDeclaration"));

@@ -231,6 +231,7 @@ class CurrentPcbLifecycleCore {
         ...(nativePcbFrameObservation === null ? {} : { nativePcbFrameObservation, pcbSourceAdmissionAccepted: false }),
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
         observationFailure: native?.observationFailure ?? failureRecord?.failure ?? null,
+        lastTerminationObservation: native?.lastTerminationObservation ?? null,
         observationFailurePublished: operation?.records["observation-failure.json"] !== undefined,
         commonBaselineFailure: commonFailure === undefined ? null : currentPcbCommonBaselineFailureSummary(commonFailure.failure),
         commonBaselineFailurePublished: operation?.records["common-baseline-failure.json"] !== undefined,
@@ -521,7 +522,8 @@ class CurrentPcbLifecycleCore {
     const terminated = await retained.methods.observeTermination.call(retained.owner);
     this.#assertOwner(retained); await assertSnapshot(operations);
     requireValue(typeof terminated === "boolean", "TERMINATION_REPLY");
-    if (!terminated) { return { ...describe(request.operationId, operation), terminationObserved: false }; }
+    if (!terminated) { return { ...describe(request.operationId, operation), terminationObserved: false,
+      lastTerminationObservation: retained.methods.status.call(retained.owner).lastTerminationObservation ?? null }; }
     const record: NonNullable<DiagnosticLifecycleRecords["terminated.json"]> = {
       schema: "easyeda-pro-control.pcb-diagnostic-terminated.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       bindingSha256: request.expectedBindingSha256, originalRootExited: true, originalJobEmpty: true,
@@ -642,7 +644,9 @@ class CurrentPcbLifecycleCore {
     else if (request.action === "observe-string-precreate") {
       const observe = retained.methods.observeStringPrecreate;
       requireValue(this.#stringPurpose && observe !== undefined, "STRING_PURPOSE_REQUIRED");
-      result = await observe.call(retained.owner);
+      const before = this.#originalProjectOpening(operation).commonInventory;
+      requireValue(before !== null, "STRING_ORIGINAL_SQL_REQUIRED");
+      result = await observe.call(retained.owner, before);
     }
     else if (request.action === "observe-pcb-opening") {
       const preparation = this.#originalProjectOpening(operation);
