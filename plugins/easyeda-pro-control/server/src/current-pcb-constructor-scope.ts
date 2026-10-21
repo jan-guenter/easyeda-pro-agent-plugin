@@ -16,76 +16,76 @@ const TURN_STATIC_FIELDS: Readonly<Record<string, number>> = Object.freeze({
   FLIP_PROGRESS_RANGE: 0.8, FLIP_PROGRESS_START: 0.1, MAX_QUEUE_SIZE: 20, PROGRESS_UPDATE_INTERVAL: 10,
 });
 export const CURRENT_PCB_CONSTRUCTOR_PROFILES = freezeDeep({
-  kde: { name: "kde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Xe",
+  kde: { name: "kde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Xe", prototypeClassName: "Object",
     lineNumber: 4627, columnNumber: 318_905, classStart: 7_922_242, classEnd: 7_925_628,
     constructorOffset: 7_922_259, sourceBytes: 3386, sourceSha256: "dcc4464b0da5bd2fd7060e37f6c0f5b8eaa931d76e127669491ad57690911d27" },
-  Sfe: { name: "Sfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Zec",
+  Sfe: { name: "Sfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Zec", prototypeClassName: "Object",
     lineNumber: 4630, columnNumber: 17_287, classStart: 9_092_139, classEnd: 9_097_834,
     constructorOffset: 9_092_156, sourceBytes: 5695, sourceSha256: "0aff9b9a95b70517d57bff33b4dc612e5413dacc8c52cbde092902ed21909ab1" },
-  mpe: { name: "mpe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "jo",
+  mpe: { name: "mpe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "jo", prototypeClassName: "Ni",
     lineNumber: 4627, columnNumber: 545_949, classStart: 8_149_275, classEnd: 8_152_896,
     constructorOffset: 8_149_303, sourceBytes: 3621, sourceSha256: "074a812ccd7ce932dad23b5728c0921aeb7acdb0a6ca31f34447d2c3e786fc4d" },
-  Yde: { name: "Yde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ze",
+  Yde: { name: "Yde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ze", prototypeClassName: "Ni",
     lineNumber: 4627, columnNumber: 360_596, classStart: 7_963_922, classEnd: 7_969_994,
     constructorOffset: 7_963_950, sourceBytes: 6072, sourceSha256: "7ec033b0b25943300f005a4c33e92ba8b0891b6caf420a6d99ff03ca1016f712" },
-  HSe: { name: "HSe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "h_",
+  HSe: { name: "HSe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "h_", prototypeClassName: "Object",
     lineNumber: 3641, columnNumber: 496_349, classStart: 4_352_370, classEnd: 4_352_484,
     constructorOffset: 4_352_387, sourceBytes: 114, sourceSha256: "83ab14b30051411faafecb86c09c5bd755fd5cec1ad229e13e1a4220f788ff3b" },
-  USe: { name: "USe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "aE",
+  USe: { name: "USe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "aE", prototypeClassName: "Object",
     lineNumber: 3641, columnNumber: 495_949, classStart: 4_351_970, classEnd: 4_352_365,
     constructorOffset: 4_351_987, sourceBytes: 395, sourceSha256: "db3cd6007d938af6b962a8c2fc2bb2b94d65cd5a43f3795d20616315b081b2eb" },
-  Yme: { name: "Yme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Me",
+  Yme: { name: "Yme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Me", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 19_324, classStart: 10_162_265, classEnd: 10_173_663,
     constructorOffset: 10_162_282, sourceBytes: 11_398, sourceSha256: "a893d9de2b624033405f92faed96c9729a9807de0b7bc1bafc54539e764c0387" },
-  Nfe: { name: "Nfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ce",
+  Nfe: { name: "Nfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ce", prototypeClassName: "Object",
     lineNumber: 4630, columnNumber: 119_942, classStart: 9_194_794, classEnd: 9_208_479,
     constructorOffset: 9_194_811, sourceBytes: 13_685, sourceSha256: "3559f6df2d12906a458ce9b527ba3f263ab2d2a5bbfc4880efe3df266ad37fb9" },
-  Epe: { name: "Epe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "rt",
+  Epe: { name: "Epe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "rt", prototypeClassName: "Object",
     lineNumber: 4627, columnNumber: 618_972, classStart: 8_222_309, classEnd: 8_230_254,
     constructorOffset: 8_222_326, sourceBytes: 7945, sourceSha256: "67d0d67dadd36e3c6a732a5254e385bb2f958c58f69f2f096354869fa5254409" },
-  GSe: { name: "GSe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "id",
+  GSe: { name: "GSe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "id", prototypeClassName: "Ni",
     lineNumber: 3641, columnNumber: 387_988, classStart: 4_244_026, classEnd: 4_244_134,
     constructorOffset: 4_244_026, sourceBytes: 108, sourceSha256: "55137181bc2f0dc7cbdfabed5256009ebaa7f15798742166c883890c426a6f4d" },
-  Jse: { name: "Jse", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Si",
+  Jse: { name: "Jse", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Si", prototypeClassName: "Object",
     lineNumber: 3641, columnNumber: 1_991_682, classStart: 5_847_703, classEnd: 5_856_091,
     constructorOffset: 5_847_720, sourceBytes: 8388, sourceSha256: "cd5a5a28e6c03674d2137fa84edaf62e424cf1e1c60d8336b6ad87464ef3c097" },
-  Lpe: { name: "Lpe", parameterCount: 1, staticFields: NO_STATIC_FIELDS, owner: "$0",
+  Lpe: { name: "Lpe", parameterCount: 1, staticFields: NO_STATIC_FIELDS, owner: "$0", prototypeClassName: "kF",
     lineNumber: 4627, columnNumber: 696_135, classStart: 8_299_461, classEnd: 8_307_862,
     constructorOffset: 8_299_489, sourceBytes: 8401, sourceSha256: "0c3f93fe8ec922fb255ebd29710f1cfead21ca9056e6caa7179c98023f79371e" },
-  Kme: { name: "Kme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Pi",
+  Kme: { name: "Kme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Pi", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 44_548, classStart: 10_187_489, classEnd: 10_188_620,
     constructorOffset: 10_187_506, sourceBytes: 1131, sourceSha256: "0b6dbc126ac0759270fadb6a3c6dc4d0a459d1573dbb40f94e4ff7b27efce263" },
-  fpe: { name: "fpe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Sr",
+  fpe: { name: "fpe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Sr", prototypeClassName: "Object",
     lineNumber: 4627, columnNumber: 542_047, classStart: 8_145_384, classEnd: 8_149_266,
     constructorOffset: 8_145_401, sourceBytes: 3882, sourceSha256: "8ebe140de749f7a7acda82bc3bd021ed517cb06aaba63d22b0544db95024385a" },
-  P1e: { name: "P1e", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "cm",
+  P1e: { name: "P1e", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "cm", prototypeClassName: "Object",
     lineNumber: 91_968, columnNumber: 2427, classStart: 10_791_266, classEnd: 10_792_645,
     constructorOffset: 10_791_283, sourceBytes: 1379, sourceSha256: "3875b613153b8a857ba5ba539ff69bf3fa63eca6a1f0001dc929c74d2d5eaecb" },
-  mge: { name: "mge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "nu",
+  mge: { name: "mge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "nu", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 138_224, classStart: 10_281_165, classEnd: 10_285_586,
     constructorOffset: 10_281_182, sourceBytes: 4421, sourceSha256: "02c535bcc0900172ee05cd45b96f3a5eb0c8c6cd0769e0c48a3d4a9461e9a2c4" },
-  tge: { name: "tge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Us",
+  tge: { name: "tge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Us", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 59_398, classStart: 10_202_339, classEnd: 10_207_569,
     constructorOffset: 10_202_356, sourceBytes: 5230, sourceSha256: "ab4a93b6ceb61e3a525ab92c928b2c9e06ee663ee187af7c4c9e3c51729d3093" },
-  $me: { name: "Sy", parameterCount: 0, staticFields: TURN_STATIC_FIELDS, owner: "Xo",
+  $me: { name: "Sy", parameterCount: 0, staticFields: TURN_STATIC_FIELDS, owner: "Xo", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 36_564, classStart: 10_179_502, classEnd: 10_187_365,
     constructorOffset: 10_179_522, sourceBytes: 7863, sourceSha256: "08e89830bcd3b649158376b92e97d542c8a9990344e6a1b04215168026483502" },
-  Spe: { name: "Spe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "dl",
+  Spe: { name: "Spe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "dl", prototypeClassName: "Object",
     lineNumber: 4627, columnNumber: 618_724, classStart: 8_222_061, classEnd: 8_222_300,
     constructorOffset: 8_222_078, sourceBytes: 239, sourceSha256: "a176bb4bfdffd45bb398ae0dca7a8618d330fc99a2b226fbb7bc975cfd132473" },
-  Ume: { name: "Ume", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Yr",
+  Ume: { name: "Ume", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Yr", prototypeClassName: "Object",
     lineNumber: 91_819, columnNumber: 7602, classStart: 10_150_543, classEnd: 10_153_421,
     constructorOffset: 10_150_560, sourceBytes: 2878, sourceSha256: "c6c2e86b6779d4a7f46ac4be7278f1e95cd4b268636380fdbc5489af050c00eb" },
-  cge: { name: "cge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ru",
+  cge: { name: "cge", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "ru", prototypeClassName: "lc",
     lineNumber: 91_819, columnNumber: 116_173, classStart: 10_259_103, classEnd: 10_272_647,
     constructorOffset: 10_259_131, sourceBytes: 13_546, sourceSha256: "7b4bbba269bed6870dbae2dad42c2ad1e86b6eb9424140b7bb05dd574842e036" },
-  Tfe: { name: "Tfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Wn",
+  Tfe: { name: "Tfe", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Wn", prototypeClassName: "iu",
     lineNumber: 4630, columnNumber: 15_616, classStart: 9_090_457, classEnd: 9_091_778,
     constructorOffset: 9_090_485, sourceBytes: 1321, sourceSha256: "11923518703ed56f958839434140408a6523d63c01ed71c6aefc3c66b79ffcc4" },
-  Qme: { name: "Qme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Yh",
+  Qme: { name: "Qme", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Yh", prototypeClassName: "Ni",
     lineNumber: 91_819, columnNumber: 56_726, classStart: 10_199_684, classEnd: 10_201_277,
     constructorOffset: 10_199_684, sourceBytes: 1593, sourceSha256: "7d1b0d0a24413d9141125f6ad92c4efbe0495b2ae627384ea0283c3ac7b769ca" },
-  jde: { name: "jde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Ft",
+  jde: { name: "jde", parameterCount: 0, staticFields: NO_STATIC_FIELDS, owner: "Ft", prototypeClassName: "Ni",
     lineNumber: 4627, columnNumber: 366_670, classStart: 7_970_024, classEnd: 7_971_115,
     constructorOffset: 7_970_024, sourceBytes: 1091, sourceSha256: "f7d96ad152cb49b6a5633a0e9325882157360d1e92968a40eedca3af3e2a327c" },
 });
@@ -236,14 +236,24 @@ export function decodeCurrentPcbConstructorTuple(input: unknown, kind: CurrentPc
       handles.push(item.value.objectId);
     }
     return Object.freeze(handles);
-  } catch { return refuse(); }
+  } catch {
+    throw currentPcbConstructorFailure({ schema: "easyeda-pro-control.pcb-constructor-failure.v1", bundle: kind,
+      profile: null, stage: "tuple", reason: "reply" });
+  }
 }
 
+function defaultBundle(name: CurrentPcbConstructorName): CurrentPcbConstructorBundleKind {
+  if (name === "Yme" || name === "Nfe" || name === "Epe" || name === "GSe") { return "common"; }
+  if (name === "mpe" || name === "Yde" || name === "HSe" || name === "USe") { return "precreate"; }
+  return "diagnostic";
+}
 /** The complete pinned script must already be admitted. This checks its exact
  * constructor location and own class metadata; supplied metadata alone grants
  * no original lexical-binding identity, transport or execution permission. */
-export function decodeCurrentPcbConstructorProperties(input: unknown, scriptId: string, name: CurrentPcbConstructorName):
+export function decodeCurrentPcbConstructorProperties(input: unknown, scriptId: string, name: CurrentPcbConstructorName,
+  kind: CurrentPcbConstructorBundleKind = defaultBundle(name)):
 Readonly<{ prototypeId: string; lexicalBindingVerified: false; executionAuthorized: false }> {
+  let reason: Parameters<typeof currentPcbConstructorFailure>[0]["reason"] = "reply";
   try {
     token.parse(scriptId);
     const expected = CURRENT_PCB_CONSTRUCTOR_PROFILES[name];
@@ -253,15 +263,23 @@ Readonly<{ prototypeId: string; lexicalBindingVerified: false; executionAuthoriz
     const length = values.get("length");
     const label = values.get("name");
     const ownerPrototype = values.get("prototype");
-    if (values.size !== 3 + staticFields.length || length?.value.type !== "number" || length.value.value !== expected.parameterCount || Object.is(length.value.value, -0) ||
+    if (values.size !== 3 + staticFields.length) { return refuse(); }
+    reason = "arity";
+    if (length?.value.type !== "number" || length.value.value !== expected.parameterCount || Object.is(length.value.value, -0) ||
         length.value.objectId !== undefined || length.value.subtype !== undefined || length.value.className !== undefined ||
-        length.writable || !length.configurable || length.enumerable ||
-        label?.value.type !== "string" || label.value.value !== expected.name || label.value.objectId !== undefined ||
+        length.writable || !length.configurable || length.enumerable) { return refuse(); }
+    reason = "name";
+    if (label?.value.type !== "string" || label.value.value !== expected.name || label.value.objectId !== undefined ||
         label.value.subtype !== undefined || label.value.className !== undefined ||
-        label.writable || !label.configurable || label.enumerable || ownerPrototype?.value.type !== "object" ||
-        ownerPrototype.value.className !== "Object" || ownerPrototype.value.objectId === undefined ||
+        label.writable || !label.configurable || label.enumerable) { return refuse(); }
+    reason = "prototype";
+    // V8 describes a subclass prototype by its immediate superclass name.
+    // These eight inherited profiles are source-pinned, not a generic fallback.
+    if (ownerPrototype?.value.type !== "object" ||
+        ownerPrototype.value.className !== expected.prototypeClassName || ownerPrototype.value.objectId === undefined ||
         ownerPrototype.value.value !== undefined || ownerPrototype.value.subtype !== undefined ||
         ownerPrototype.writable || ownerPrototype.configurable || ownerPrototype.enumerable) { return refuse(); }
+    reason = "static";
     for (const [field, value] of staticFields) {
       const item = values.get(field);
       if (item?.value.type !== "number" || !Object.is(item.value.value, value) || item.value.objectId !== undefined ||
@@ -273,12 +291,18 @@ Readonly<{ prototypeId: string; lexicalBindingVerified: false; executionAuthoriz
     const prototype = internals.get("[[Prototype]]");
     const scopes = internals.get("[[Scopes]]");
     const point = location?.value;
+    reason = "location";
     if (internals.size !== 3 || location?.type !== "object" || location.subtype !== "internal#location" || location.objectId !== undefined ||
         point === null || typeof point !== "object" || point.scriptId !== scriptId ||
-        point.lineNumber !== expected.lineNumber || point.columnNumber !== expected.columnNumber ||
-        prototype?.type !== "function" || prototype.className !== "Function" || prototype.objectId === undefined || prototype.value !== undefined ||
-        scopes?.type !== "object" || scopes.subtype !== "internal#scopeList" || scopes.className !== "Array" ||
+        point.lineNumber !== expected.lineNumber || point.columnNumber !== expected.columnNumber) { return refuse(); }
+    reason = "prototype";
+    if (prototype?.type !== "function" || prototype.className !== "Function" || prototype.objectId === undefined || prototype.value !== undefined) { return refuse(); }
+    reason = "scopes";
+    if (scopes?.type !== "object" || scopes.subtype !== "internal#scopeList" || scopes.className !== "Array" ||
         scopes.objectId === undefined || scopes.value !== undefined || !/^Scopes\[[1-8]\]$/u.test(scopes.description ?? "")) { return refuse(); }
     return Object.freeze({ prototypeId: ownerPrototype.value.objectId, lexicalBindingVerified: false, executionAuthorized: false });
-  } catch { return refuse(); }
+  } catch {
+    throw currentPcbConstructorFailure({ schema: "easyeda-pro-control.pcb-constructor-failure.v1", bundle: kind,
+      profile: name, stage: "metadata", reason });
+  }
 }

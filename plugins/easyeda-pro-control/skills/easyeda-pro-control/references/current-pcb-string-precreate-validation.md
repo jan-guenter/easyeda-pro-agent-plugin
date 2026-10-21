@@ -28,9 +28,10 @@ The installed version and actual process must first match the reviewed payload.
 Keep that Codex facade alive through cleanup and durable receipt settlement.
 Historical records cannot reconstruct ownership after restart.
 
-Installed20202000 passed one disposable project opening, PCB-frame/full-source
+Installed055237 passed disposable project opening, PCB-frame/full-source
 qualification and direct-child project-worker/full-source qualification. Its
-combined observation stopped at the pending-work reader, before create or Save.
+optional common observation stopped during constructor metadata, before
+precreate, create or Save. The following source update is not connected proof.
 Original normal closure, whole-Job termination and release passed, with unchanged
 closed fixture bytes. This is partial connected evidence; neither the observation
 nor a writer lifecycle completed. The case is terminal and must not be replayed.
@@ -72,7 +73,9 @@ All calls below use the new tool's `request` object.
    must first be published or settled from the original bytes. Other failures
    require normal cleanup. Do not retry or open again to bypass a refusal.
 9. `observe-string-precreate` once. It accepts no caller program or selector.
-   It retains two matching sweeps from the original PCB and worker contexts.
+   It retains two matching versioned sweeps, then selected original-worker
+   producer state and six paired UI/worker/PCB actor-clock samples. Failure in
+   any part stops the stage; do not retry a component separately.
 10. `observe-window`, `normal-close` with that observed `hwnd` and
    `confirmNormalClose:true`, then `observe-termination` until original root
    exit and whole-Job emptiness are proved. Finish with `release-closed` and any
@@ -98,27 +101,43 @@ observation. Older cases without this record retain their unknown cause.
 ## What the result establishes
 
 Each sweep includes compiler state, pending-producer samples, raw Strings,
-root inventory, renderer/channel identity, worker/channel identity and selected
-empty producer memberships. The runner compares the exact sealed project,
+root inventory, renderer/channel identity, worker/channel identity, selected
+empty-producer memberships and raw producer markers. Lazy FP/MI managers retain
+distinct absent, undefined, null and present states. An unavailable manager
+leaves named baseline conditions unmet; it is never initialized or represented
+as proven empty. The runner compares the exact sealed project,
 branch, PCB and original window, and the compiler's unique token. It checks
 target/frame identity around each sweep and releases its private object group.
-The String owner has a fixed155request ceiling. The complete route uses155 with
-the optional common stage or133 without it; the diagnostic ceiling is103.
+The String owner has a fixed225request ceiling. The complete route uses225 with
+the optional common stage or203 without it; the diagnostic ceiling remains103.
 The added requests qualify fixed source-owned instance constructors
 against the already-admitted original script, exact function location and own
 class metadata. V8 can omit top-level-only class bindings from a retained closure;
 do not retry an absent binding or replace the check with a matching class name.
 Each leaf rechecks its instance/prototype/constructor association. This is not
 proof of the original lexical binding. There is no caller-controlled extension.
+Inherited-class prototype metadata uses its pinned immediate parent name, not
+always `Object`. Do not broaden this to accepting arbitrary prototype names.
 The teardrop owner is discovered through six original bound callbacks, with exact
 target source/location and empty bound arguments, shared receiver identity and
 registry reproof. The pinned Save closure does not retain `Zec`; matching class
 names cannot replace this association. No callback or constructor is invoked.
 
-The four existing diagnostic samples retain their combined 128 KiB limit.
-Each complete sweep is bounded to 184 KiB; the paired result is bounded to
-384 KiB. Over-budget results refuse, never truncate. The shared transport and
-source limits still apply.
+The four model samples retain their combined128KiB limit. Each versioned sweep
+is bounded to208KiB; its pair to424KiB. Worker and actor sections each allow
+128KiB, giving a680KiB journal result. Initial and inspect responses return a
+compact summary with the complete record path, result hash, byte count and
+publication status. Read that record when details are needed; summary-only
+output is not missing evidence. Historical V1 retains its original384KiB bound.
+Over-budget evidence refuses, never truncates or downgrades to V1.
+
+The worker collector uses58 fixed requests, qualifies eight gate/publisher
+methods and six callbacks, and reads seven selected producer states. Its
+failure leaf retains the phase, request ordinal, cleanup outcome and retained
+sample names. Actor/clock sampling uses UI, worker, PCB, PCB, worker, UI; it
+compares cached/startup account values with the worker's retained user and exact
+JSON field order. Local clocks do not prove backend actor identity, the Windows
+clock, Save server time or future use of the sampled user.
 
 Matching sweeps are non-atomic sampled evidence. Matching channel names and
 source-shaped bus references do not prove actual message delivery, channel
@@ -132,9 +151,9 @@ The package contains dormant fixed create/Save programs, publication-capture
 instrumentation, post-create/post-Save readers and supplied-data SQL/history
 comparators. The optional common-baseline stage collects raw common presentation,
 rules, routing preferences, compiler metadata and empty font/blob holders.
-Separate private readers inspect selected move, structure, debounce, cooperation
-and upload producer closures; this tool does not dispatch those producer readers
-or any writer program. The common-state graph
+The combined tool now dispatches the original-worker structure, debounce,
+cooperation and upload readers. Move producers, complete publisher confinement
+and writer programs remain outside it. The common-state graph
 preserves aliases, field order, undefined and signed zero; it is not the saved
 format or proof that stored and live state match. The private common runner also
 retains compiler document metadata and original reply text. Its supplied-data
@@ -147,9 +166,9 @@ that session. A later stored-state refusal retains any completed observation
 separately from a successful join. This relation does not establish complete
 asset ownership, current saved state or an atomic baseline.
 
-Separate raw producer markers preserve null lazy managers and timer/notification
-state without calling them empty or complete. They are not dispatched by this
-tool and must not be substituted for its strict empty-producer checks.
+Raw producer markers preserve lazy managers and timer/notification state without
+calling them empty or complete. They complement the selected empty predicates;
+they do not override an unmet baseline condition or prove queue completion.
 
 Pure host encoders now model selected native common-record bodies without calling
 FileSource. Encoding can omit raw fields; compare the preserved raw graph as well

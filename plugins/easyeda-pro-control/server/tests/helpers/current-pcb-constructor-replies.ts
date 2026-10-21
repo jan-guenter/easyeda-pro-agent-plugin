@@ -23,7 +23,7 @@ export function constructorPropertiesReply(name: CurrentPcbConstructorName, scri
   const location = CURRENT_PCB_CONSTRUCTOR_PROFILES[name];
   return { result: [property("length", { type: "number", value: location.parameterCount }, false, true),
     property("name", { type: "string", value: location.name }, false, true),
-    property("prototype", { type: "object", className: "Object", objectId: `prototype-${location.name}` }, false, false),
+    property("prototype", { type: "object", className: location.prototypeClassName, objectId: `prototype-${location.name}` }, false, false),
     ...Object.entries(location.staticFields).map(([key, value]) => property(key, { type: "number", value }, true, true, true))],
   internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location",

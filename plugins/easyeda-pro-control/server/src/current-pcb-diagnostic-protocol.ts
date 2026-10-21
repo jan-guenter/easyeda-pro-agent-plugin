@@ -13,16 +13,20 @@ import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION,
-  CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION } from "./current-pcb-diagnostic-model-program.ts";
+  CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "./current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_OBJECT_GROUP } from "./current-pcb-diagnostic-model-runner.ts";
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
-import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION } from "./current-pcb-diagnostic-pending-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "./current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "./current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "./current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, currentPcbDiagnosticPcbOpeningArguments } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringScopeCommand, currentPcbStringWorkerCommand } from "./current-pcb-string-commands.ts";
 import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
+import { currentPcbStringActorClockWire } from "./current-pcb-string-actor-clock-wire.ts";
+import type { CurrentPcbStringActorClockWireCommand } from "./current-pcb-string-actor-clock-wire.ts";
+import { currentPcbStringWorkerProducerWire } from "./current-pcb-string-worker-producer-wire.ts";
+import type { CurrentPcbStringWorkerProducerWireCommand } from "./current-pcb-string-worker-producer-wire.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses69; the complete project/PCB opening and
@@ -61,6 +65,8 @@ export function diagnosticWorkerEvaluationParams(uniqueContextId: string): Reado
     timeout: 1000, userGesture: false, generatePreview: false });
 }
 export type DiagnosticCommand =
+  | CurrentPcbStringActorClockWireCommand
+  | CurrentPcbStringWorkerProducerWireCommand
   | Readonly<{ id: number; method: "Browser.getVersion" | "Target.getTargets" }>
   | Readonly<{ id: number; method: "Target.attachToTarget"; params: Readonly<{ targetId: string; flatten: true }> }>
   | Readonly<{ id: number; method: "Page.enable" | "Page.getFrameTree" | "Runtime.enable"; params: Readonly<Record<string, never>>; sessionId: string }>
@@ -198,12 +204,17 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     request = { ...base, modelPhase: stringPurpose ? "constructors-precreate" : "constructors-diagnostic", objectId, callbackObjectId, teardropObjectId };
   } else if (method === "Runtime.callFunctionOn" && (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION ||
+    params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION ||
     params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION)) {
     const args = params["arguments"];
+    const modelV2 = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION;
+    const pendingV2 = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION;
+    if ((modelV2 || pendingV2) && !stringPurpose) { return fail(); }
     const withConstructors = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION ||
-      params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION;
-    const withTeardrop = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION;
+      params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION || pendingV2;
+    const withTeardrop = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION || pendingV2;
     let argumentCount = withConstructors ? 2 : 1;
     if (withTeardrop) { argumentCount = 3; }
     if (!Array.isArray(args) || args.length !== argumentCount ||
@@ -216,11 +227,11 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
     const third: unknown = args[2];
     const teardropObjectId = diagnosticRecord(third) ? modelHandle(third["objectId"]) : undefined;
     let modelPhase = "snapshot";
-    if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION) {
+    if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION || pendingV2) {
       if (constructorObjectId === undefined || teardropObjectId === undefined) { return fail(); }
-      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: pendingV2 ? CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION : CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION,
         returnByValue: true, arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }, { objectId: teardropObjectId }] }, sessionId };
-      modelPhase = "pending";
+      modelPhase = pendingV2 ? "pending-v2" : "pending";
     } else if (params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION) {
       command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, ...callParams }, sessionId };
       modelPhase = "raw-strings";
@@ -230,7 +241,8 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
         returnByValue: true, arguments: [{ objectId: callbackObjectId }, { objectId: constructorObjectId }] }, sessionId };
       modelPhase = "root-inventory";
     } else {
-      command = { id, method, params: { ...effects, objectId, functionDeclaration: CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
+      command = { id, method, params: { ...effects, objectId, functionDeclaration: modelV2 ? CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION : CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, ...callParams }, sessionId };
+      modelPhase = modelV2 ? "snapshot-v2" : "snapshot";
     }
     request = { ...base, modelPhase, objectId, callbackObjectId, ...(constructorObjectId === undefined ? {} : { constructorObjectId }),
       ...(teardropObjectId === undefined ? {} : { teardropObjectId }) };
@@ -265,9 +277,10 @@ function stringWire(id: number, method: unknown, params: Record<string, unknown>
       const first: unknown = args[0], second: unknown = args[1];
       if (!diagnosticRecord(first)) { return fail(); }
       const callback = modelHandle(first["objectId"]);
-      const candidate = args.length === 1 ? currentPcbStringScopeCommand("renderer-association", params["objectId"], callback) :
-        currentPcbStringScopeCommand("empty-producers", params["objectId"], callback, modelHandle(diagnosticRecord(second) ? second["objectId"] : undefined));
-      if ("functionDeclaration" in candidate.params && params["functionDeclaration"] === candidate.params.functionDeclaration) { fixed = candidate; }
+      const candidates = args.length === 1 ? [currentPcbStringScopeCommand("renderer-association", params["objectId"], callback)] :
+        (["empty-producers", "empty-producers-v2", "producer-markers-v2"] as const).map(phase =>
+          currentPcbStringScopeCommand(phase, String(params["objectId"]), callback, modelHandle(diagnosticRecord(second) ? second["objectId"] : undefined)));
+      fixed = candidates.find(candidate => "functionDeclaration" in candidate.params && params["functionDeclaration"] === candidate.params.functionDeclaration) ?? null;
     }
   }
   if (fixed === null) { return null; }
@@ -276,7 +289,7 @@ function stringWire(id: number, method: unknown, params: Record<string, unknown>
   return { command: { id, ...wire, sessionId }, request: { action: "send", requestId: id, method, sessionId, stringPhase,
     ...("uniqueContextId" in fixed.params ? { uniqueContextId: fixed.params.uniqueContextId } :
       { objectId: fixed.params.objectId, callbackObjectId: fixed.params.arguments[0].objectId,
-        ...(fixed.stringPhase === "empty-producers" ? { constructorObjectId: fixed.params.arguments[1].objectId } : {}) }) } };
+        ...(fixed.stringPhase === "renderer-association" ? {} : { constructorObjectId: fixed.params.arguments[1].objectId }) }) } };
 }
 function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Record<string, unknown>> {
   if (chunk.length > 65_536 || chunk.at(-1) !== 0) { return fail(); }
@@ -284,6 +297,17 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
   if (!diagnosticRecord(raw) || !Number.isSafeInteger(raw["id"]) || typeof raw["id"] !== "number" || raw["id"] < 1 ||
       raw["id"] > (stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) { return fail(); }
   const id = raw["id"], method = raw["method"], params = raw["params"], sessionId = raw["sessionId"];
+  if (Object.hasOwn(raw, "actorClockPhase")) {
+    if (!stringPurpose) { return fail(); }
+    const fixed = currentPcbStringActorClockWire(raw, id);
+    if (chunk.toString("utf8") !== `${JSON.stringify(fixed.command)}\0`) { return fail(); } return fixed.request;
+  }
+  if (Object.hasOwn(raw, "workerProducerPhase")) {
+    if (!stringPurpose || method === "Runtime.evaluate" && chunk.length > 8192 ||
+        method !== "Runtime.evaluate" && method !== "Runtime.callFunctionOn" && chunk.length > 1024) { return fail(); }
+    const fixed = currentPcbStringWorkerProducerWire(raw, id);
+    if (chunk.toString("utf8") !== `${JSON.stringify(fixed.command)}\0`) { return fail(); } return fixed.request;
+  }
   if (method === "Runtime.evaluate" && chunk.length > 8192 ||
       method !== "Runtime.evaluate" && method !== "Runtime.callFunctionOn" && chunk.length > 1024) { return fail(); }
   let command: DiagnosticCommand | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> & Readonly<{ id: number; sessionId: string }>);

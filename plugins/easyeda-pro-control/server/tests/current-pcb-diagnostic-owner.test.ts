@@ -18,10 +18,11 @@ const SCRIPT_PROFILE = { family: "pcb", relativePath: "pro-pcb/test-version/js/p
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
 function fixture(context: TestContext, scenario = "normal", stringPurpose = false): Readonly<{
   owner: CurrentPcbDiagnosticOwner; child: ReturnType<typeof spawn>; source: { valid: boolean }; installation: { valid: boolean };
-  actions: string[]; openingPhases: string[]; pcbPhases: string[];
+  actions: string[]; openingPhases: string[]; pcbPhases: string[]; workerPhases: string[]; actorPhases: string[];
 }> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario], { stdio: ["pipe", "pipe", "pipe"] });
-  const actions: string[] = [], installation = { valid: true }, openingPhases: string[] = [], pcbPhases: string[] = [], source = { valid: true };
+  const actions: string[] = [], actorPhases: string[] = [], installation = { valid: true }, openingPhases: string[] = [],
+    pcbPhases: string[] = [], source = { valid: true }, workerPhases: string[] = [];
   const originalWrite = child.stdin.write.bind(child.stdin);
   // Keep actual child pipes and callbacks; observe only the generated wire data.
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
@@ -31,6 +32,8 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
       actions.push(String(parsed["action"]));
       if ("openingPhase" in parsed) { openingPhases.push(String(parsed["openingPhase"])); }
       if ("pcbOpeningPhase" in parsed) { pcbPhases.push(String(parsed["pcbOpeningPhase"])); }
+      if ("workerProducerPhase" in parsed) { workerPhases.push(String(parsed["workerProducerPhase"])); }
+      if ("actorClockPhase" in parsed) { actorPhases.push(String(parsed["actorClockPhase"])); }
     }
     return originalWrite(...args);
   });
@@ -45,7 +48,7 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
       child.stdin.end(); await closed;
     }
   });
-  return { owner, child, source, installation, actions, openingPhases, pcbPhases };
+  return { owner, child, source, installation, actions, openingPhases, pcbPhases, workerPhases, actorPhases };
 }
 async function close(value: ReturnType<typeof fixture>): Promise<void> {
   assert.equal(await value.owner.observeApplicationWindow(), "456");
@@ -673,26 +676,53 @@ void test("original String owner retains a common comparison refusal and still p
   assert.ok(failure.originalReplies); assert.equal(failure.runnerFailure, null);
   await assert.rejects(value.owner.observeCommonBaseline(before), /COMMON_BASELINE_UNAVAILABLE/u);
   const precreate = await value.owner.observeStringPrecreate(); assert.equal(precreate["matchingSamples"], true);
+  assert.equal(value.actions.filter(action => action === "send").length, 225);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await close(value);
 });
 
-void test("separate String purpose joins both original contexts, constructors and two sweeps within exactly133requests", async context => {
+void test("separate String purpose joins precreate v2, original worker producers and actor clocks within203requests", async context => {
   const value = await stringFixture(context);
   assert.equal(value.actions.filter(action => action === "send").length, 61);
   const result = await value.owner.observeStringPrecreate();
-  assert.equal(result["schema"], "easyeda-pro-control.pcb-string-precreate-observation.v1");
+  assert.equal(result["schema"], "easyeda-pro-control.pcb-string-precreate-observation.v2");
   assert.equal(result["matchingSamples"], true); assert.equal(result["originalContextsRechecked"], true);
   assert.equal(result["saveAuthorized"], false); assert.equal(result["executionAuthorized"], false);
   assert.equal(result["projectWorkerAssociationVerified"], false); assert.equal(result["queueCompletionVerified"], false);
   assert.deepEqual(result["first"], result["second"]);
   assert.equal(value.owner.status().stringPrecreateConsumed, true);
-  assert.equal(value.actions.filter(action => action === "send").length, 133);
+  const actorClock = result["actorClock"], workerProducers = result["workerProducers"];
+  assert.ok(workerProducers !== null && typeof workerProducers === "object" && "originalRunnerIssued" in workerProducers && "executionAuthorized" in workerProducers);
+  assert.ok(actorClock !== null && typeof actorClock === "object" && "originalRunnerIssued" in actorClock && "executionAuthorized" in actorClock);
+  assert.equal(workerProducers.originalRunnerIssued, true); assert.equal(workerProducers.executionAuthorized, false);
+  assert.equal(actorClock.originalRunnerIssued, true); assert.equal(actorClock.executionAuthorized, false);
+  assert.equal(value.workerPhases.length, 58); assert.equal(value.workerPhases.filter(phase => phase === "release").length, 1);
+  assert.deepEqual(value.actorPhases, ["ui", "worker", "pcb", "pcb", "worker", "ui"]);
+  assert.equal(value.actions.filter(action => action === "send").length, 203);
   await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeModelState(), /MODEL_OBSERVATION_UNAVAILABLE/u);
   await assert.rejects(value.owner.observeWorkerState(), /WORKER_STATE_UNAVAILABLE/u);
-  assert.equal(value.actions.filter(action => action === "send").length, 133);
+  assert.equal(value.actions.filter(action => action === "send").length, 203);
   await close(value);
+});
+
+void test("joined String owner preserves worker and actor failures without publishing a partial observation", async context => {
+  for (const stage of ["worker", "actor"] as const) {
+    const value = await stringFixture(context, `opening-pcb-string-${stage}-refused`);
+    await assert.rejects(value.owner.observeStringPrecreate(), /PCB_STRING_PRECREATE_OBSERVATION_FAILED_(?:WORKER_PRODUCERS|ACTOR_CLOCK)/u);
+    const detail = value.owner.status().observationFailure;
+    assert.equal(detail?.phase, stage === "worker" ? "worker-producers" : "actor-clock");
+    assert.equal(detail.cleanupFailed, false);
+    if (stage === "worker") {
+      assert.ok(detail.leaf?.schema === "easyeda-pro-control.pcb-string-worker-producer-failure.v1");
+      assert.equal(detail.leaf.phase, "gates"); assert.equal(detail.leaf.cleanup, "released");
+      assert.deepEqual(value.actorPhases, []);
+    } else { assert.equal(detail.leaf, null); assert.deepEqual(value.actorPhases, ["ui", "worker"]); }
+    assert.equal(value.workerPhases.filter(phase => phase === "release").length, 1);
+    const requests = value.actions.length;
+    await assert.rejects(value.owner.observeStringPrecreate(), /STRING_PRECREATE_UNAVAILABLE/u);
+    assert.equal(value.actions.length, requests); await close(value);
+  }
 });
 
 void test("String purpose refuses wrong window, compiler token and changed second sample while retaining normal closure", async context => {
@@ -712,9 +742,9 @@ void test("String purpose refuses wrong window, compiler token and changed secon
 
 void test("pending leaf survives successful cleanup and later synthetic pipe invalidation", async context => {
   const value = await stringFixture(context, "opening-pcb-string-pending-refused");
-  await assert.rejects(value.owner.observeStringPrecreate(), /FAILED_PENDING_LEAF_TEARDROPS_OWN$/u);
+  await assert.rejects(value.owner.observeStringPrecreate(), /FAILED_PENDING_V2_LEAF_TEARDROPS_OWN$/u);
   const status = value.owner.status();
-  assert.equal(status.observationFailure?.phase, "pending");
+  assert.equal(status.observationFailure?.phase, "pending-v2");
   assert.deepEqual(status.observationFailure?.leaf, {
     schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",
   });

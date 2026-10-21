@@ -13,7 +13,7 @@ import process from "node:process";
 import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { sha256Json } from "./core.ts";
+import { canonicalJson, sha256Json } from "./core.ts";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
@@ -33,15 +33,19 @@ import type { CurrentPcbDiagnosticModelObservation } from "./current-pcb-diagnos
 import { currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-runner.ts";
-import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
-import type { CurrentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
+import { currentPcbObservationFailure, currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
+import type { CurrentPcbObservationFailure, CurrentPcbObservationPhase } from "./current-pcb-observation-failure.ts";
 import { CurrentPcbCommonBaselineSession } from "./current-pcb-common-baseline-session.ts";
 import { currentPcbCommonBaselineFailure, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
 import type { CurrentPcbCommonBaselineFailure, CurrentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
+import { CurrentPcbStringWorkerProducerRunner } from "./current-pcb-string-worker-producer-runner.ts";
+import { currentPcbStringWorkerProducerFailureDetail } from "./current-pcb-string-worker-producer-evidence.ts";
+import { CurrentPcbStringActorClockRunner } from "./current-pcb-string-actor-clock-runner.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const HELPER_SHA256 = "ae7e5dfceb4949b7ff98663dce987040c71d773b4e32f4710a569d3f705231bb";
-const HELPER_BYTES = 331_961;
+const HELPER_SHA256 = "6eb5b91814473670fdb4026091f839be26fb47fdbee1b6aa49355c9ebb79d1fc";
+const HELPER_BYTES = 500_081;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -139,6 +143,8 @@ class CurrentPcbRetainedOwnerCore {
   #commonBaselineConsumed = false;
   #commonBaselineSession: CurrentPcbCommonBaselineSession | null = null;
   #commonBaselineFailure: CurrentPcbCommonBaselineFailure | null = null;
+  #stringWorkerRunner: CurrentPcbStringWorkerProducerRunner | null = null;
+  #stringActorRunner: CurrentPcbStringActorClockRunner | null = null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, stringPurpose: boolean) {
@@ -506,35 +512,62 @@ class CurrentPcbRetainedOwnerCore {
    * in one retained lifetime but does not qualify backend delivery or writing. */
   public async observeStringPrecreate(): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, target = this.#projectOpeningTarget, worker = this.#workerContext;
-    if (!this.#stringPurpose || this.#stringPrecreateConsumed || context === null || worker === null || target === null ||
+    const pipe = this.#pipe;
+    if (!this.#stringPurpose || !(pipe instanceof CurrentPcbStringPrecreatePipe) || this.#stringPrecreateConsumed || context === null || worker === null || target === null ||
         !this.#pcbSourceQualified || !this.#workerScriptConsumed || this.#modelConsumed || this.#workerStateConsumed) {
       throw error("STRING_PRECREATE_UNAVAILABLE");
     }
     this.#enter(true); this.#stringPrecreateConsumed = true;
+    let phase: CurrentPcbObservationPhase = "owner";
     try {
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       const selected = context.modelContext(), workerContext = worker.evaluationContext();
+      const producerContext = worker.producerContext(), uiContext = context.pcbOpeningContext();
       const windowTabId = this.#projectOpeningResult?.observation?.windowTabId;
       if (windowTabId === undefined || windowTabId !== this.#pcbFrameObservation?.windowTabId) { throw error("STRING_WINDOW_CHANGED"); }
       const assertCurrent = (): void => {
         this.#available();
         if (this.#stagedContext !== context || this.#workerContext !== worker || this.#projectOpeningTarget !== target ||
-            JSON.stringify(context.modelContext()) !== JSON.stringify(selected) || worker.evaluationContext() !== workerContext) {
+            JSON.stringify(context.modelContext()) !== JSON.stringify(selected) || worker.evaluationContext() !== workerContext ||
+            JSON.stringify(worker.producerContext()) !== JSON.stringify(producerContext) ||
+            JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(uiContext)) {
           throw error("STRING_CONTEXT_CHANGED");
         }
       };
       const runner = new CurrentPcbStringPrecreateRunner({
         request: (command): Promise<unknown> => this.#transfer(() => "stringPhase" in command
-          ? this.#pipe.observeStringPrecreate(command) : this.#pipe.observeModel(command)),
+          ? pipe.observeStringPrecreate(command) : pipe.observeModel(command)),
         assertCurrent,
         observeCurrent: async (): Promise<void> => { assertCurrent(); await this.#observeParent(); assertCurrent(); },
       }, selected.scriptId, selected.uniqueContextId, workerContext, { ...target, windowTabId });
       const result = await runner.observe();
+      phase = "owner-observation";
+      assertCurrent(); await this.#observeParent(); assertCurrent();
+      phase = "worker-producers";
+      this.#stringWorkerRunner = new CurrentPcbStringWorkerProducerRunner({
+        request: (command): Promise<unknown> => this.#transfer(() => pipe.observeWorkerProducers(command)), assertCurrent,
+      }, producerContext, { projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId });
+      const workerProducers = await this.#stringWorkerRunner.observe();
+      phase = "actor-clock";
+      this.#stringActorRunner = new CurrentPcbStringActorClockRunner({
+        request: (command): Promise<unknown> => this.#transfer(() => pipe.observeActorClock(command)), assertCurrent,
+      }, { ui: uiContext.uniqueContextId, worker: workerContext, pcb: selected.uniqueContextId },
+      { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid, windowTabId });
+      const actorClock = await this.#stringActorRunner.observe();
+      phase = "owner-final";
+      assertCurrent(); await this.#observeParent(); assertCurrent();
       assertCurrent(); await this.#verifyInstallation(); await this.#verify(); assertCurrent();
-      return result;
+      this.#stringWorkerRunner.requireOriginal(workerProducers); this.#stringActorRunner.requireOriginalPacket(actorClock);
+      phase = "bounds";
+      const combined = freezeDeep({ ...result, workerProducers, actorClock });
+      // Two208KiB sweeps+8KiB envelope,128KiB worker and128KiB actor reserve.
+      if (Buffer.byteLength(canonicalJson(actorClock)) > 131_072 || Buffer.byteLength(canonicalJson(combined)) > 696_320) { throw error("STRING_COMBINED_BOUND"); }
+      return combined;
     } catch (caughtError) {
-      this.#observationFailure ??= currentPcbObservationFailureDetail(caughtError);
-      this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw caughtError;
+      const failure = currentPcbObservationFailureDetail(caughtError) === null ?
+        currentPcbObservationFailure("STRING_PRECREATE", phase, [caughtError], currentPcbStringWorkerProducerFailureDetail(caughtError)?.cleanup === "failed") : caughtError;
+      this.#observationFailure ??= currentPcbObservationFailureDetail(failure);
+      this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw failure;
     }
     finally { this.#busy = false; }
   }

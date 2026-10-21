@@ -5,6 +5,13 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { CURRENT_PCB_STRING_OBSERVATION_GUARDS, decodeCurrentPcbStringObservation } from "./current-pcb-string-observation-core.ts";
 
+/** Fixed original-worker receiver selection, never a caller-supplied expression. */
+export const CURRENT_PCB_STRING_WORKER_PROJECT_SELECTOR = `(()=>{${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
+const project=object(own(globalThis,"PROJECT"));named(project,"Lg");
+const lp=Object.getPrototypeOf(project);named(lp,"Gd");
+if(Object.getPrototypeOf(Object.getPrototypeOf(lp))!==Object.prototype)bad();
+verify();return project;})()`;
+
 const ASSOCIATION = `${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
 const descriptors=[],prototypes=[];
 const proto=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
@@ -48,6 +55,7 @@ publisher:{senderUuid:id(own(bus,"uuid"),/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-
 hiddenCallbackReceiversVerified:false,writeDestinationsContained:false,atomicSample:false};recheck();return JSON.stringify(state);}`;
 
 export const CURRENT_PCB_STRING_WORKER_GATE_HASHES = Object.freeze({
+  project: createHash("sha256").update(CURRENT_PCB_STRING_WORKER_PROJECT_SELECTOR).digest("hex"),
   selector: createHash("sha256").update(CURRENT_PCB_STRING_WORKER_GATE_SELECTOR).digest("hex"),
   observation: createHash("sha256").update(CURRENT_PCB_STRING_WORKER_GATE_PROGRAM).digest("hex"),
 });

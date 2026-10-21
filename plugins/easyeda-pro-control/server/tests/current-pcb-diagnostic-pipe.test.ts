@@ -48,17 +48,17 @@ function retained(value: ReturnType<typeof fixture>): void {
   assert.throws(() =>{  value.pipe.releaseClosedListeners(); }, /RETAIN_ORIGINAL_STREAMS/u);
 }
 
-void test("separate String pipe has fixed155requests and ordinary diagnostics cannot adopt its phase", async context => {
+void test("separate String pipe has fixed225requests and ordinary diagnostics cannot adopt its phase", async context => {
   const diagnostic = fixture(context);
   await assert.rejects(diagnostic.pipe.observeStringPrecreate(currentPcbStringWorkerCommand("worker")), /PCB_STRING_PIPE_PURPOSE/u);
   assert.equal(diagnostic.sent.length, 0);
   const string = fixture(context, false, true);
-  for (let id = 1; id <= 155; id += 1) {
+  for (let id = 1; id <= 225; id += 1) {
     const result = string.pipe.getTargets();
     string.input.write(wire({ id, result: {} })); await result;
   }
   await assert.rejects(string.pipe.getTargets(), /PIPE_BUDGET/u);
-  assert.equal(string.sent.length, 155); retained(string); retained(diagnostic);
+  assert.equal(string.sent.length, 225); retained(string); retained(diagnostic);
 });
 
 void test("diagnostic pipe sends only fixed browser discovery reads and keeps complete replies", async context => {

@@ -18,7 +18,7 @@ function property(name: string, value: object, writable = false, configurable = 
 function metadata(name: CurrentPcbConstructorName): object {
   const expected = CURRENT_PCB_CONSTRUCTOR_PROFILES[name];
   return { result: [property("length", { type: "number", value: expected.parameterCount }), property("name", { type: "string", value: expected.name }),
-    property("prototype", { type: "object", className: "Object", objectId: `prototype.${handleName(name)}` }, false, false),
+    property("prototype", { type: "object", className: expected.prototypeClassName, objectId: `prototype.${handleName(name)}` }, false, false),
     ...Object.entries(expected.staticFields).map(([key, value]) => property(key, { type: "number", value }, true, true, true))],
   internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: {
@@ -103,7 +103,7 @@ const SYNTHETIC_SCOPE = `
  var Yme=class{constructor(){this.field=0;}},Me=new Yme();
  var Nfe=class{constructor(){this.field=0;}},ce=new Nfe();
  var Epe=class{constructor(){this.field=0;}},rt=new Epe();
- var GSe=class extends Object{},id=new GSe();
+ var Ni=class{constructor(){this.map=new Map();}},GSe=class extends Ni{},id=new GSe();
  ${ROOT_SYNTHETIC}
  const tearsOwner=Zec;${CURRENT_PCB_TEARDROP_SYNTHETIC_BINDING}
  globalThis.syntheticHandler=()=>[Xe,jo,ze,h_,aE,Me,ce,rt,id,Si,$0,Pi,Sr,cm,nu,Us,Xo,dl,Yr,ru,Wn,Yh,Ft];
@@ -120,6 +120,38 @@ async function inspectProperties(session: Session, objectId: string): Promise<z.
   const reply = await (session.post("Runtime.getProperties", { objectId, ownProperties: true }) as Promise<unknown>);
   return inspectedProperties.parse(reply);
 }
+
+void test("real V8 inherited constructor descriptors pass only their exact pinned parent class and location", async () => {
+  const session = new Session(); session.connect();
+  try {
+    await session.post("Runtime.enable");
+    for (const name of ["mpe", "Yde", "GSe", "Lpe", "cge", "Tfe", "Qme", "jde"] as const) {
+      const expected = CURRENT_PCB_CONSTRUCTOR_PROFILES[name];
+      const implicit = expected.classStart === expected.constructorOffset;
+      const body = `const ${name}=class extends ${expected.prototypeClassName}{${implicit ? "" : `constructor(${expected.parameterCount === 1 ? "arg" : ""}){super();}`} };return ${name};})()`;
+      const position = implicit ? body.indexOf("class") : body.indexOf("(");
+      // This is generated test source, not the vendor bundle. Align only the
+      // Inspector location to exercise the real descriptor-positive decoder.
+      const expression = `(()=>{class Ni{}class kF{}class lc{}class iu extends Ni{}${"\n".repeat(expected.lineNumber)}${" ".repeat(expected.columnNumber - position)}${body}`;
+      const reply: unknown = await session.post("Runtime.evaluate", { expression, returnByValue: false,
+        objectGroup: "synthetic-inheritance", silent: true });
+      const properties = await inspectProperties(session, inspectedHandle(reply));
+      const location = z.object({ scriptId: z.string(), lineNumber: z.number(), columnNumber: z.number() }).parse(
+        properties.internalProperties?.find(item => item.name === "[[FunctionLocation]]")?.value?.value);
+      assert.equal(location.lineNumber, expected.lineNumber); assert.equal(location.columnNumber, expected.columnNumber);
+      const admitted = decodeCurrentPcbConstructorProperties(properties, location.scriptId, name);
+      assert.equal(admitted.executionAuthorized, false); assert.equal(admitted.lexicalBindingVerified, false);
+      for (const wrong of ["Object", "OtherParent"]) {
+        const changed: unknown = JSON.parse(JSON.stringify(properties).replace(`"className":"${expected.prototypeClassName}"`, `"className":"${wrong}"`));
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- assert.throws requires a synchronous error predicate.
+        assert.throws(() => decodeCurrentPcbConstructorProperties(changed, location.scriptId, name), (error: unknown) => {
+          assert.equal(currentPcbConstructorFailureDetail(error)?.profile, name);
+          assert.equal(currentPcbConstructorFailureDetail(error)?.reason, "prototype"); return true;
+        });
+      }
+    }
+  } finally { await session.post("Runtime.releaseObjectGroup", { objectGroup: "synthetic-inheritance" }); session.disconnect(); }
+});
 
 void test("real synthetic V8 scopes omit singleton classes; fixed selectors recover only source-owned constructors without invocation", async () => {
   const session = new Session(); session.connect(); let contextId = 0;

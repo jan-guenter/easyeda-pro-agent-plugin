@@ -17,9 +17,9 @@ import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSc
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
-/** Two fixed 184 KiB sweeps plus a bounded 16 KiB relation envelope. This does
- * not enlarge the older diagnostic observation allowance. */
-export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 384 * 1024;
+/** V2: two208KiB sweeps+8KiB envelope,128KiB worker and128KiB actor.
+ * Historical V1 keeps its384KiB limit; diagnostic remains128KiB. */
+export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 680 * 1024;
 const MAX_OPERATIONS = 4096;
 const qualifiedPcbOpeningSchema = z.looseObject({
   family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
@@ -136,7 +136,7 @@ const commonBaselineFailureSchema = z.object({
   operationId: currentPcbStringPrecreateIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
   failure: currentPcbCommonBaselineFailureSchema, executionAuthorized: z.literal(false),
 }).strict();
-export const stringPrecreateObservationResultSchema = z.object({
+const stringPrecreateObservationV1 = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation.v1"),
   target: z.object({ projectUuid: diagnosticLifecycleDigestSchema, branchUuid: token,
     documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
@@ -147,8 +147,38 @@ export const stringPrecreateObservationResultSchema = z.object({
   publicationCaptureVerified: z.literal(false), completeLiveSourceVerified: z.literal(false),
   continuousObservation: z.literal(false), queueCompletionVerified: z.literal(false),
   saveAuthorized: z.literal(false), executionAuthorized: z.literal(false),
-}).strict().refine(value => canonicalJson(value.first) === canonicalJson(value.second) &&
-  Buffer.byteLength(canonicalJson(value.first)) <= 188_416, "String precreate sweeps differ or exceed their bound.");
+}).strict();
+const stringWorkerObservation = z.looseObject({
+  schema: z.literal("easyeda-pro-control.pcb-string-worker-producer-observation.v1"),
+  identity: z.object({ projectUuid: diagnosticLifecycleDigestSchema, branchUuid: token,
+    windowTabId: stringPrecreateObservationV1.shape.target.shape.windowTabId }).strict(),
+  originalRunnerIssued: z.literal(true), hiddenCallbackReceiversVerified: z.literal(false), completePublishersVerified: z.literal(false),
+  writeDestinationsContained: z.literal(false), atomicSnapshotVerified: z.literal(false), continuousObservation: z.literal(false),
+  queueCompletionVerified: z.literal(false), saveAuthorized: z.literal(false), executionAuthorized: z.literal(false),
+}).refine(value => Buffer.byteLength(canonicalJson(value)) <= 131_072);
+const stringActorObservation = z.looseObject({
+  profile: z.literal("private.current-pcb-string-actor-clock-packet.v1"), identity: stringPrecreateObservationV1.shape.target,
+  originalRunnerIssued: z.literal(true), pairedActorValuesMatched: z.literal(true), packetSha256: diagnosticLifecycleDigestSchema,
+  originalOwnerVerified: z.literal(false), nativeIntrinsicsVerified: z.literal(false), workerUserFutureUseVerified: z.literal(false),
+  backendActorProvenanceVerified: z.literal(false), windowsClockProvenanceVerified: z.literal(false), serverClockObserved: z.literal(false),
+  clockProvenanceVerified: z.literal(false), continuousObservation: z.literal(false), producerBindingVerified: z.literal(false),
+  completePublicationIntervalVerified: z.literal(false), originalSaveVerified: z.literal(false),
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).refine(value => Buffer.byteLength(canonicalJson(value)) <= 131_072);
+const stringPrecreateObservationV2 = stringPrecreateObservationV1.extend({
+  schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation.v2"),
+  workerProducers: stringWorkerObservation, actorClock: stringActorObservation,
+}).refine(value => canonicalJson(value.actorClock.identity) === canonicalJson(value.target) &&
+  value.workerProducers.identity.projectUuid === value.target.projectUuid &&
+  value.workerProducers.identity.branchUuid === value.target.branchUuid &&
+  value.workerProducers.identity.windowTabId === value.target.windowTabId, "String owned observations target differs.");
+/** Historical JSON is not an issuance capability. Retain old V1 records without
+ * permitting unavailable V2 managers or new collector claims to be recast V1. */
+export const stringPrecreateObservationResultSchema = z.union([stringPrecreateObservationV1, stringPrecreateObservationV2])
+  .refine(value => canonicalJson(value.first) === canonicalJson(value.second) &&
+    Buffer.byteLength(canonicalJson(value.first)) <= (value.schema.endsWith(".v1") ? 188_416 : 212_992),
+  "String precreate sweeps differ or exceed their bound.")
+  .refine(value => Buffer.byteLength(canonicalJson(value)) <= (value.schema.endsWith(".v1") ? 393_216 : STRING_PRECREATE_OBSERVATION_MAX_BYTES));
 const projectWindowSchema = z.looseObject({ observation: z.looseObject({ windowTabId: z.string() }) });
 const pcbWindowSchema = z.looseObject({ openingObservation: z.looseObject({ windowTabId: z.string() }) });
 export function stringPrecreateTargetMatches(result: z.infer<typeof stringPrecreateObservationResultSchema>,

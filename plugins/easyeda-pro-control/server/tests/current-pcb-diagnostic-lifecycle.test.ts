@@ -4,7 +4,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
-import { sha256Json, sha256Text } from "../src/core.ts";
+import { canonicalJson, sha256Json, sha256Text } from "../src/core.ts";
 import { currentPcbObservationFailure, currentPcbObservationFailureDetail, currentPcbPendingFailure } from "../src/current-pcb-observation-failure.ts";
 import type { CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
@@ -15,6 +15,7 @@ import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLif
 import { LIFECYCLE_MODEL_RESULT as MODEL_RESULT } from "./helpers/current-pcb-diagnostic-lifecycle-model.ts";
 import { fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
 import { currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResultSchema } from "../src/current-pcb-common-baseline-validation.ts";
+import { CURRENT_PCB_STRING_ACTOR_CLOCK_LIMITS } from "../src/current-pcb-string-actor-clock-runner.ts";
 import type { CurrentPcbCommonBaselineFailure } from "../src/current-pcb-common-baseline-validation.ts";
 import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, assertNoUnresolvedCurrentPcbDiagnosticLaunches,
   diagnosticLifecycleNoProcessReleaseProofSchema, diagnosticLifecycleRecordSchemas, diagnosticPcbOpeningSourceAccepted,
@@ -434,6 +435,54 @@ void test("fixed String lifecycle seals purpose, journals the joined source chai
   await assert.rejects(historical.run({ action: "observe-string-precreate", operationId: id,
     expectedBindingSha256: sha256Json(operation.records["binding.json"]) }), /ORIGINAL_OWNER_REQUIRED/u);
   await assert.rejects(new CurrentPcbDiagnosticLifecycle(value.options).run({ action: "inspect", operationId: id }), /PURPOSE_MISMATCH/u);
+});
+void test("String V2 summary bounds initial and historical responses while retaining the complete original record", async context => {
+  const id = "string-precreate-test-v2-summary", value = fixture(context, id);
+  const original = value.owner.observeStringPrecreate, retained: { result?: Readonly<Record<string, unknown>> } = {};
+  const target = { projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid,
+    documentUuid: OPEN_TARGET.documentUuid, windowTabId: "fixture-tab" };
+  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> => {
+    const sample = { synthetic: "x".repeat(200 * 1024) };
+    const result = { ...await original.call(value.owner), schema: "easyeda-pro-control.pcb-string-precreate-observation.v2",
+      first: sample, second: sample,
+      workerProducers: { schema: "easyeda-pro-control.pcb-string-worker-producer-observation.v1",
+        identity: { projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId: target.windowTabId },
+        originalRunnerIssued: true, hiddenCallbackReceiversVerified: false, completePublishersVerified: false,
+        writeDestinationsContained: false, atomicSnapshotVerified: false, continuousObservation: false,
+        queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false, synthetic: "w".repeat(80 * 1024) },
+      actorClock: { profile: "private.current-pcb-string-actor-clock-packet.v1", identity: target,
+        originalRunnerIssued: true, pairedActorValuesMatched: true, packetSha256: "c".repeat(64),
+        ...CURRENT_PCB_STRING_ACTOR_CLOCK_LIMITS, synthetic: "a".repeat(80 * 1024) } };
+    retained.result = result; return result;
+  };
+  await readyForString(id, value);
+  const observed = await value.request("observe-string-precreate");
+  assert.ok(retained.result !== undefined);
+  const resultBytes = Buffer.byteLength(canonicalJson(retained.result));
+  assert.ok(resultBytes > 512 * 1024 && resultBytes < 680 * 1024);
+  const expected = { schema: "easyeda-pro-control.pcb-string-precreate-summary.v1",
+    observationSchema: "easyeda-pro-control.pcb-string-precreate-observation.v2", target,
+    matchingSamples: true, originalContextsRechecked: true, summaryOnly: true,
+    record: { path: join(directory(id), "string-precreate-result.json"), published: true,
+      resultSha256: sha256Json(retained.result), resultBytes },
+    projectWorkerAssociationVerified: false, publicationCaptureVerified: false, completeLiveSourceVerified: false,
+    queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false };
+  assert.deepEqual(observed["result"], expected);
+  assert.ok(Buffer.byteLength(canonicalJson(observed)) < 8192);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const operation = operations.find(entry => entry.operationId === id);
+  assert.ok(operation !== undefined);
+  assert.deepEqual(operation.records["string-precreate-result.json"]?.result, retained.result);
+  for (const coordinator of [value.coordinator, new CurrentPcbStringPrecreateLifecycle(value.options)]) {
+    const inspected = await coordinator.run({ action: "inspect", operationId: id, observation: "string-precreate" });
+    assert.ok(Buffer.byteLength(canonicalJson(inspected)) < 16_384);
+    assert.ok(Array.isArray(inspected["observations"]));
+    const observation: unknown = inspected["observations"].find((item: { stage: string }) => item.stage === "string-precreate");
+    assert.ok(typeof observation === "object" && observation !== null && "result" in observation);
+    assert.deepEqual(observation.result, expected);
+  }
+  await assert.rejects(value.request("observe-string-precreate"), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(call => call === "string-precreate").length, 1);
 });
 void test("String publication uncertainty consumes once, retains the result and settles only original bytes", async context => {
   let fail = true;

@@ -2,6 +2,8 @@
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
 /* oxlint-disable max-classes-per-file, import/max-dependencies -- Two fixed public facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
 import type { z } from "zod";
+import { join } from "node:path";
+import { controlDataDirectory } from "./artifacts.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -105,6 +107,19 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
     ...claims };
 }
+/** V2 retains up to680KiB on disk. Keep both initial and inspect responses
+ * below the facade512KiB envelope; the complete original record is unchanged. */
+function publicObservationResult(operationId: string, stage: ObservationStage,
+  result: Readonly<Record<string, unknown>> | undefined, published: boolean): Readonly<Record<string, unknown>> | undefined {
+  if (stage !== "string-precreate" || result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v2") { return result; }
+  const value = stringPrecreateObservationResultSchema.parse(result);
+  return { schema: "easyeda-pro-control.pcb-string-precreate-summary.v1", observationSchema: value.schema,
+    target: value.target, matchingSamples: value.matchingSamples, originalContextsRechecked: value.originalContextsRechecked,
+    summaryOnly: true, record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "string-precreate-result.json"),
+      published, resultSha256: sha256Json(value), resultBytes: Buffer.byteLength(canonicalJson(value)) },
+    projectWorkerAssociationVerified: false, publicationCaptureVerified: false, completeLiveSourceVerified: false,
+    queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false };
+}
 
 /** Shared cleanup and journal machinery. Only the two fixed exported facades
  * construct it; neither public requests nor dependency seams select purpose. */
@@ -177,7 +192,7 @@ class CurrentPcbLifecycleCore {
         const retained = pending === undefined ? undefined : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending) as unknown);
         return { stage, consumed: operation?.records[`${stage}-intent.json`] !== undefined || original && this.#observationConsumed.has(stage),
           resultRetained: original && this.#observations.has(stage), published: record !== undefined,
-          result: stage === selectedStage ? (record ?? retained)?.result : undefined };
+          result: stage === selectedStage ? publicObservationResult(request.operationId, stage, (record ?? retained)?.result, record !== undefined) : undefined };
       });
       const openingPending = original ? this.#pending.get("project-opening-result.json") : undefined;
       const openingPublished = operation?.records["project-opening-result.json"];
@@ -673,7 +688,7 @@ class CurrentPcbLifecycleCore {
     await this.#publish(request.operationId, `${stage}-result.json`, record);
     const completed = { ...updated, records: { ...updated.records, [`${stage}-result.json`]: record } };
     await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
-    return { ...describe(request.operationId, operation), stage, result: record.result };
+    return { ...describe(request.operationId, completed), stage, result: publicObservationResult(request.operationId, stage, record.result, true) };
   }
   async #observeCommonBaseline(request: Extract<CleanupRequest, { action: "observe-common-baseline" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {

@@ -4,6 +4,53 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Combined073200 release preparation, 2026-10-21
+
+Candidate `0.3.0+codex.20261021073200` on
+`feature/pcb-owned-producers-20261021` combines inherited-constructor correction,
+V2 lazy-owner sweeps, original-worker58-request collection and six actor/local-
+clock samples. Existing precreate action now uses203requests or225 with common;
+diagnostic stays103. Full V2 evidence680KiB is journaled; initial/inspect results
+return a compact summary. Historical V1 programs/bounds remain unchanged.
+Dormant command-state now consumes original teardrop proof. No writer/coverage
+increase; backlog in `docs/current-pcb-owned-producers-batch-2026-10-21.md`.
+
+Main/independent reviews accept all24 constructor profiles and all49 embedded
+programs, including22 prior byte-identical programs. Helper500081/6eb5b918,
+both actual Windows PowerShell5.1 no-app CompileOnly profiles pass. Focused
+synthetic203/225routes, owner/failure/cleanup and large-result summary tests pass;
+strict types and targeted type-aware lint clean. Freeze/build/pins, required
+verification, protected CI/publication and official installation pending.
+Release evidence: `/root/.cache/easyeda-073200-release-lK3xEMpa`.
+
+Actual2055019 remains installed055237, untouched. No pending native/CAD owner;
+terminal055237case below must never replay. No further live call this session.
+After installation use a fresh chat for actual-version admission and one new
+disposable case. Production designs remain excluded, including read/hash work.
+
+### 055237 terminal disposable case; combined implementation, 2026-10-21
+
+Actual055237 admission passed main and independent: facade2055019/start54101485,
+parent2053294/start54096552, exact574source/3runtime and1678installed files/modes.
+Post-main Linux39555303718 PASSED/all10jobs. Original
+`string-precreate-055237-20261021-01` is terminal released; NEVER replay.
+Project/PCB/worker opening and full-source observations passed. Optional common
+baseline refused in constructor-properties before precreate/create/Save. Cleanup
+released; the final synthetic input invalidation is not a release failure.
+Root42188/creation134370398619813012 closed normally, whole Job empty and helper
+released; disposable598016/e620d21a unchanged. No production design accessed.
+Receipts: `/root/.cache/easyeda-055237-live-6t8Hex4A`; independent admission:
+`/root/.cache/easyeda-055237-independent-admission-KW5Pc0aM/admission.json`.
+
+Branch `feature/pcb-owned-producers-20261021` batches exact inherited-constructor
+metadata correction, versioned lazy-owner observations, retained teardrop proof,
+original worker producer collection and String-specific actor/clock sampling.
+Real synthetic inspector reproduces GSe.prototype className Ni, not Object;
+fixed request75 localizes the refusal to GSe metadata, but its raw reply was not
+retained. Do not call the exact failed field live-observed. No new writer or
+coverage claim. Keep the batch together; no live retry on installed055237,
+hotpatch, owner termination or tiny diagnostics-only publication.
+
 ### Delivered055237 checkpoint, 2026-10-21
 
 Delivered `0.3.0+codex.20261021055237` through protected PR93. Exact tested head

@@ -44,7 +44,7 @@ function constructorProperties(name: CurrentPcbConstructorName, scriptId: string
   return { result: [
     { name: "length", value: { type: "number", value: 0 }, writable: false, configurable: true, enumerable: false, isOwn: true },
     { name: "name", value: { type: "string", value: name }, writable: false, configurable: true, enumerable: false, isOwn: true },
-    { name: "prototype", value: { type: "object", className: "Object", objectId: samePrototype ? "same-prototype" : `prototype-${name}` }, writable: false, configurable: false, enumerable: false, isOwn: true },
+    { name: "prototype", value: { type: "object", className: location.prototypeClassName, objectId: samePrototype ? "same-prototype" : `prototype-${name}` }, writable: false, configurable: false, enumerable: false, isOwn: true },
   ], internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId, lineNumber: location.lineNumber, columnNumber: location.columnNumber } } },
     { name: "[[Prototype]]", value: { type: "function", className: "Function", objectId: "function-prototype" } },

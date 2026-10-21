@@ -406,8 +406,11 @@ qualify each function's exact location, name, arity and prototype against the
 already-admitted script. Leaves recheck those associations. No constructor runs;
 no name-only fallback or arbitrary scope lookup is allowed. This proves a
 source-associated constructor, not the original lexical binding. The separate
-precreate profile has twenty such constructors and a133request total, or155
-including the optional original-owner common-baseline stage. That stage qualifies
+precreate profile has twenty such constructors. V8 reports an inherited class's
+own prototype with its immediate parent class name: the eight pinned inherited
+profiles must not be forced to `Object` or accepted by an arbitrary-name fallback.
+The combined route has a203request total, or225 including the optional
+original-owner common-baseline stage. That stage qualifies
 four common constructors, retains five original raw replies and joins them with
 the completed SQL inventory from the operation's original pre-open checkpoint.
 It cannot adopt caller-supplied observations or recreate ownership from JSON.
@@ -426,6 +429,17 @@ receiver, no instance shadow and a fresh registry association check. Distinct CD
 handles can refer to the same receiver; compare object identity in the original
 context. This proves the subscribed owner, not lexical Zec identity. Bound-function
 metadata does not solve hidden receivers in class arrows.
+
+The versioned precreate readers preserve absent/undefined/null/present FP/MI
+managers; missing initialization remains an unmet condition, not zero work.
+The combined owner additionally runs a fixed58-request worker producer collector
+and six UI/worker/PCB actor-clock samples, rechecking its original admissions.
+Native adapters reconstruct fixed programs, including tagged worker-property
+requests; no caller expression crosses the helper boundary. Historical V1
+readers keep their old meanings. Return the bounded V2 summary and retain the
+full journal evidence; the680KiB evidence cap exceeds the512KiB tool envelope.
+These samples still exclude hidden arrow receivers, complete publishers and
+destinations, Windows/backend clock provenance and writer authorization.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL
