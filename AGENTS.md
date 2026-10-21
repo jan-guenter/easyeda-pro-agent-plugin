@@ -38,6 +38,11 @@ strict lint pass. Runtime source, helper, bundles and compatibility pins remain
 unchanged; the original full local suite continues separately on7831239. Final
 protected CI must test the corrected head. Preserve the earlier failed checks.
 
+The original local suite also exposed a historical V2 test still expecting the
+old shared request ceiling. The final checkout changes that assertion to the
+bounded packet arithmetic; the V2 leaf itself still uses66 requests. Eight
+focused V2/smoke tests and strict lint pass. This adds no runtime/pin change.
+
 ### Terminal100337 and combined continuation, 2026-10-21
 
 Actual installed100337 facade2341107/start55788122 and its parent2339467 were
