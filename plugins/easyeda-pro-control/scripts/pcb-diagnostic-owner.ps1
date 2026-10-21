@@ -16,6 +16,73 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+// BEGIN STRING NATIVE CLOCK COLLECTOR
+public sealed class EasyedaStringClockSample {
+  public string schema = "easyeda-pro-control.windows-clock-sample.v1";
+  public string utcBeforeTicks, utcAfterTicks, qpcBefore, qpcAfter, qpcFrequency;
+  public bool highResolution = true;
+  public int localOffsetMinutes;
+  public string zoneRulesSha256;
+}
+public sealed class EasyedaStringClockObservation {
+  public bool tzAbsent;
+  public string reason;
+  public EasyedaStringClockSample sample;
+  [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint="GetEnvironmentVariableW", CharSet=System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling=true, SetLastError=true)]
+  static extern uint GetEnvironmentVariable(string name, System.IntPtr buffer, uint size);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint="SetLastError", ExactSpelling=true)]
+  static extern void ResetLastError(uint code);
+  public static EasyedaStringClockObservation Read() {
+    EasyedaStringClockObservation result = new EasyedaStringClockObservation();
+    try {
+      ResetLastError(0);
+      uint length = GetEnvironmentVariable("TZ", System.IntPtr.Zero, 0);
+      int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+      if (length != 0 || error != 203) {
+        result.reason = length != 0 || error == 0 ? "tz-present" : "tz-query";
+        return result;
+      }
+      result.tzAbsent = true;
+      if (!System.Diagnostics.Stopwatch.IsHighResolution || System.Diagnostics.Stopwatch.Frequency <= 0) {
+        result.reason = "clock-sample"; return result;
+      }
+      long qpcBefore = System.Diagnostics.Stopwatch.GetTimestamp();
+      System.DateTime utcBefore = System.DateTime.UtcNow;
+      System.TimeZoneInfo.ClearCachedData();
+      System.TimeZoneInfo zone = System.TimeZoneInfo.Local;
+      System.TimeSpan offset = zone.GetUtcOffset(utcBefore);
+      string rules = zone.ToSerializedString();
+      if (rules.Length > 65536 || offset.Ticks % System.TimeSpan.TicksPerMinute != 0 ||
+          offset.TotalMinutes < -840 || offset.TotalMinutes > 840) {
+        result.reason = "timezone"; return result;
+      }
+      string rulesHash;
+      using (System.Security.Cryptography.SHA256 hash = System.Security.Cryptography.SHA256.Create()) {
+        rulesHash = System.BitConverter.ToString(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rules))).Replace("-", "").ToLowerInvariant();
+      }
+      System.DateTime utcAfter = System.DateTime.UtcNow;
+      long qpcAfter = System.Diagnostics.Stopwatch.GetTimestamp();
+      if (qpcBefore < 0 || qpcAfter < qpcBefore || utcAfter < utcBefore ||
+          qpcAfter - qpcBefore > System.Diagnostics.Stopwatch.Frequency ||
+          utcAfter.Ticks - utcBefore.Ticks > System.TimeSpan.TicksPerSecond) {
+        result.reason = "clock-sample"; return result;
+      }
+      EasyedaStringClockSample value = new EasyedaStringClockSample();
+      value.utcBeforeTicks = utcBefore.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      value.utcAfterTicks = utcAfter.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      value.qpcBefore = qpcBefore.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      value.qpcAfter = qpcAfter.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      value.qpcFrequency = System.Diagnostics.Stopwatch.Frequency.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      value.localOffsetMinutes = checked((int)offset.TotalMinutes);
+      value.zoneRulesSha256 = rulesHash;
+      result.sample = value;
+      return result;
+    } catch {
+      result.reason = "clock-sample"; return result;
+    }
+  }
+}
+// END STRING NATIVE CLOCK COLLECTOR
 // Independent native ancestry/file proof. Every component is retained without
 // write/delete sharing until the original Job exits. Ordinary child-file writes
 // remain possible; replacement or reparse changes of the leased objects do not.
@@ -249,7 +316,7 @@ public sealed class EasyedaDiagnosticOwner {
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   readonly bool stringPrecreate;
-  int RequestLimit { get { return stringPrecreate?225:103; } }
+  int RequestLimit { get { return stringPrecreate?237:103; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -775,7 +842,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source,bool stringPurpose) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(id<1 || id>(stringPurpose?225:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+    if(id<1 || id>(stringPurpose?237:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
       !matches(path,@"\A[A-Za-z]:\\[^\x00-\x1F\x7F<>:""|?*/]+\.eprj2\z") ||
@@ -1795,17 +1862,23 @@ const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own
 const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
 
+const graphNow=Date.now;
+if(typeof graphNow!==""function"")bad();
+const graphStarted=Reflect.apply(graphNow,Date,[]);
+if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
+const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
+
 const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
 const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
 const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
+const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
+const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
+const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
+const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
 if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
+const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
 const graphValue=(v,depth=0)=>{
-if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
+graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
 if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
 if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
 if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
@@ -1815,10 +1888,10 @@ if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node
 else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
+const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
 
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
+const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
 const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
@@ -1841,7 +1914,7 @@ if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
 const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
 if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
-})())!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
 
 noOwnPublic(env,[""origin"",""unit"",""altGridSize"",""gridType"",""multiType"",""multiRatio"",""forceValue""]);
 const canvas=pick(env,[""_origin"",""_unit"",""_altGridSize"",""_gridType"",""_multiType"",""_multiRatio"",""_forceValue""]);
@@ -1907,17 +1980,23 @@ const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own
 const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
 
+const graphNow=Date.now;
+if(typeof graphNow!==""function"")bad();
+const graphStarted=Reflect.apply(graphNow,Date,[]);
+if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
+const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
+
 const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
 const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
 const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
+const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
+const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
+const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
+const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
 if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
+const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
 const graphValue=(v,depth=0)=>{
-if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
+graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
 if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
 if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
 if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
@@ -1927,10 +2006,10 @@ if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node
 else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
+const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
 
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
+const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
 const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
@@ -1953,7 +2032,7 @@ if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
 const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
 if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
-})())!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
 
 const rules=instance(own(klass(""te""),""manager""),""te"");
 for(const name of [""safeSpacings"",""otherSpacings"",""creepageSpacings"",""trackPhysics"",""netLengthPhysics"",""netLengthTolerancePhysics"",""differentialPhysics"",""blindViaPhysics"",""radiusPhysics"",""innerPlanes"",""copperPlanes"",""solderExpansions"",""pasteExpansions"",""autoRouters""])graphCollection(own(rules,name),Map.prototype);
@@ -2011,17 +2090,23 @@ const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own
 const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
 
+const graphNow=Date.now;
+if(typeof graphNow!==""function"")bad();
+const graphStarted=Reflect.apply(graphNow,Date,[]);
+if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
+const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
+
 const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
 const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
 const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
+const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
+const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
+const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
+const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
 if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
+const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
 const graphValue=(v,depth=0)=>{
-if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
+graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
 if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
 if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
 if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
@@ -2031,10 +2116,10 @@ if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node
 else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
 graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
+const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
 
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
+const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
 const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
@@ -2057,7 +2142,7 @@ if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
 const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
 if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
 return callback;
-})())!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
 
 const config=instance(own(constructorInstance(own(scope,""ce""),""Nfe""),""pcbConfig""),""vfe""),model=constructorInstance(own(scope,""Me""),""Yme"");
 const route=instance(own(klass(""nr""),""instance""),""nr""),params=instance(own(klass(""pl""),""instance""),""pl"");
@@ -2945,7 +3030,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
   static string ModelProtocolMessageCore(int id,string method,string sessionId,string phase,
     string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId,bool stringPurpose,string teardropObjectId=null) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>(stringPurpose?225:103) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
+    if(id<1 || id>(stringPurpose?237:103) || !handle(sessionId) || sessionId.Length>128) throw Error("model-fields");
     bool pending=phase=="pending" || phase=="pending-v2",snapshot=phase=="snapshot" || phase=="snapshot-v2";
     if((phase=="pending-v2" || phase=="snapshot-v2") && !stringPurpose) throw Error("model-purpose");
     if(!pending && phase!="root-inventory" && constructorObjectId!=null) throw Error("model-object");
@@ -2994,7 +3079,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);
   }
   static string ProtocolMessageCore(int id,string method,string targetId,string sessionId,string scriptId,string uniqueContextId,bool stringPurpose) {
-    if(id<1 || id>(stringPurpose?225:103) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
+    if(id<1 || id>(stringPurpose?237:103) || (method!="Runtime.evaluate" && uniqueContextId!=null)) throw Error("discovery-fields");
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
     string fields="";
     if(method=="Browser.getVersion" || method=="Target.getTargets") { if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields"); }
@@ -3030,16 +3115,17 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     }
     foreach(string phase in new string[]{"snapshot-v2","pending-v2"}) {
       bool pendingV2=phase=="pending-v2";
-      ModelProtocolMessageCore(225,"Runtime.callFunctionOn","s",phase,null,"scope","callback",pendingV2?"constructors":null,true,pendingV2?"teardrop":null);
+      ModelProtocolMessageCore(237,"Runtime.callFunctionOn","s",phase,null,"scope","callback",pendingV2?"constructors":null,true,pendingV2?"teardrop":null);
       bool refused=false;try{ModelProtocolMessageCore(1,"Runtime.callFunctionOn","s",phase,null,"scope","callback",pendingV2?"constructors":null,false,pendingV2?"teardrop":null);}catch(InvalidOperationException){refused=true;}
       if(!refused)throw Error("lazy-purpose-smoke");
     }
     foreach(string phase in new string[]{"empty-producers-v2","producer-markers-v2"}) {
-      StringPrecreateProtocolMessage(225,"Runtime.callFunctionOn","s",phase,null,"scope","callback","constructors");
+      StringPrecreateProtocolMessage(237,"Runtime.callFunctionOn","s",phase,null,"scope","callback","constructors");
       bool refused=false;try{StringPrecreateProtocolMessage(1,"Runtime.callFunctionOn","s",phase,null,"scope","callback",null);}catch(InvalidOperationException){refused=true;}
       if(!refused)throw Error("lazy-constructors-smoke");
     }
     VerifyWorkerProducerProtocolSmoke();
+    VerifyMoveProducerProtocolSmoke();
     VerifyActorClockProtocolSmoke();
     using(SHA256 hash=SHA256.Create()) {
       byte[] source=Encoding.UTF8.GetBytes(WorkerExpression);
@@ -3053,8 +3139,8 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
       if(bytes.Length!=lengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[i]) throw Error("fixed-program");
     }
     string[] commonPrograms={CommonConstructorsFunction,CommonPresentationFunction,CommonRulesFunction,CommonPreferenceFunction,CommonAssetsFunction,CommonMetadataFunction,TeardropCallbacksFunction,TeardropOwnerFunction};
-    int[] commonLengths={6114,14584,14042,14640,10159,12134,7342,7986};
-    string[] commonDigests={"7b18b78d9ba7dc29f00a86fbab59a06dfd15de615984d099ba6807485c3d8374","120e1bad0bf6c74d3d38fef610aa2a6e3daa9b7f77c9f8205195b42f94da1fb2","cfe762452a45dd80b2f0d35dd098ae2b13de106db9b863ec05852b1d24907754","bad2b7b90f85839104097550747167453edcfc37709ff606081a85177d5b1734","6d808cc30a9d8b056a7a243b7cff3bf300b080bd13779a409bb6bea6f1512671","381ba0b93a04dd4ab8e5460aeb4fbb4e89c483c5c4ce556df56c201e0e45d826","b087a93ce8a5e87515958a80b63bc7071688af9b5593cd2c64005b2a1fdb4f10","214d3a006b81be6be1add9a4086ad546bd8a8473a20fee17afa23d43e7f713fc"};
+    int[] commonLengths={6114,15161,14619,15217,10159,12134,7342,7986};
+    string[] commonDigests={"7b18b78d9ba7dc29f00a86fbab59a06dfd15de615984d099ba6807485c3d8374","10ec3a9288a5b424b61c68adcc2253292251e880f4b7bce8514c1d737819069c","6107c74fc09378557d300fcf4972136521de2cfe1f9ace044c3dbac8295db7a9","9d60d49e00b1ced4913f6a9a265a57a87508bb3725bd19aebee6c80469d319e5","6d808cc30a9d8b056a7a243b7cff3bf300b080bd13779a409bb6bea6f1512671","381ba0b93a04dd4ab8e5460aeb4fbb4e89c483c5c4ce556df56c201e0e45d826","b087a93ce8a5e87515958a80b63bc7071688af9b5593cd2c64005b2a1fdb4f10","214d3a006b81be6be1add9a4086ad546bd8a8473a20fee17afa23d43e7f713fc"};
     for(int i=0;i<commonPrograms.Length;i++) using(SHA256 hash=SHA256.Create()) {
       byte[] bytes=new UTF8Encoding(false,true).GetBytes(commonPrograms[i]);
       if(bytes.Length!=commonLengths[i] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=commonDigests[i]) throw Error("common-program");
@@ -3079,14 +3165,14 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
       if(message.IndexOf("\"throwOnSideEffect\":true",StringComparison.Ordinal)<0 ||
         message.IndexOf(arguments,StringComparison.Ordinal)<0) throw Error("string-scope-smoke");
     }
-    StringPrecreateProtocolMessage(225,"Runtime.evaluate","worker","worker-association","context",null,null,null);
+    StringPrecreateProtocolMessage(237,"Runtime.evaluate","worker","worker-association","context",null,null,null);
     ProtocolMessage(103,"Browser.getVersion",null,null,null,null);
-    bool diagnostic104Refused=false,string226Refused=false;
+    bool diagnostic104Refused=false,string238Refused=false;
     try { ProtocolMessage(104,"Browser.getVersion",null,null,null,null); } catch(InvalidOperationException) { diagnostic104Refused=true; }
-    try { StringPrecreateProtocolMessage(226,"Runtime.evaluate","worker","worker-association","context",null,null,null); } catch(InvalidOperationException) { string226Refused=true; }
-    if(!diagnostic104Refused || !string226Refused) throw Error("string-budget-smoke");
+    try { StringPrecreateProtocolMessage(238,"Runtime.evaluate","worker","worker-association","context",null,null,null); } catch(InvalidOperationException) { string238Refused=true; }
+    if(!diagnostic104Refused || !string238Refused) throw Error("string-budget-smoke");
     CommonBaselineProtocolMessage(1,"Runtime.evaluate","page","wrapper","context",null,null,null);
-    CommonBaselineProtocolMessage(225,"Runtime.releaseObjectGroup","page","release",null,null,null,null);
+    CommonBaselineProtocolMessage(237,"Runtime.releaseObjectGroup","page","release",null,null,null,null);
     foreach(string phase in new string[] {"constructors","presentation","rules","preference","assets","metadata"}) {
       bool pair=phase!="constructors" && phase!="metadata";
       string common=CommonBaselineProtocolMessage(100,"Runtime.callFunctionOn","page",phase,null,"scope","callback",pair?"constructors":null);
@@ -3104,10 +3190,10 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
       bool refused=false; try { CommonBaselineProtocolMessage(1,"Runtime.getProperties","page",phase,null,"scope","callback",null); } catch(InvalidOperationException) { refused=true; }
       if(!refused) throw Error("common-method-smoke");
     }
-    bool commonBudgetRefused=false; try { CommonBaselineProtocolMessage(226,"Runtime.releaseObjectGroup","page","release",null,null,null,null); } catch(InvalidOperationException) { commonBudgetRefused=true; }
+    bool commonBudgetRefused=false; try { CommonBaselineProtocolMessage(238,"Runtime.releaseObjectGroup","page","release",null,null,null,null); } catch(InvalidOperationException) { commonBudgetRefused=true; }
     if(!commonBudgetRefused) throw Error("common-budget-smoke");
     foreach(bool stringPurpose in new bool[]{false,true}) {
-      int limit=stringPurpose?225:103;
+      int limit=stringPurpose?237:103;
       TeardropProtocolMessage(limit,"Runtime.callFunctionOn","page","teardrop-callbacks","scope","callback",null,null,null,stringPurpose);
       object[] receivers={"r0","r1","r2","r3","r4","r5"},targets={"t0","t1","t2","t3","t4","t5"};
       string message=TeardropProtocolMessage(limit,"Runtime.callFunctionOn","page","teardrop-owner","scope","callback","callbacks",receivers,targets,stringPurpose);
@@ -3217,7 +3303,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
   }
   static string DomProtocolMessageCore(int id,string method,string sessionId,object frameId,object backendNodeId,bool stringPurpose) {
     Func<string,bool> token=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,128}\z");
-    if(id<1 || id>(stringPurpose?225:103) || !token(sessionId)) throw Error("dom-fields");
+    if(id<1 || id>(stringPurpose?237:103) || !token(sessionId)) throw Error("dom-fields");
     string parameters;
     if(method=="DOM.getFrameOwner") {
       string frame=OptionalText(frameId);
@@ -3253,7 +3339,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     object suppliedCallbacks,object[] suppliedReceivers,object[] suppliedTargets,bool stringPurpose) {
     string scope=OptionalText(suppliedScope),callback=OptionalText(suppliedCallback),callbacks=OptionalText(suppliedCallbacks);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>(stringPurpose?225:103) || method!="Runtime.callFunctionOn" || !handle(sessionId) || sessionId.Length>128 || !handle(scope) || !handle(callback)) throw Error("teardrop-fields");
+    if(id<1 || id>(stringPurpose?237:103) || method!="Runtime.callFunctionOn" || !handle(sessionId) || sessionId.Length>128 || !handle(scope) || !handle(callback)) throw Error("teardrop-fields");
     string arguments="[{\"objectId\":"+JsonString(callback)+"}",program;
     if(phase=="teardrop-callbacks") {
       if(callbacks!=null || suppliedReceivers!=null || suppliedTargets!=null) throw Error("teardrop-extra");
@@ -3279,7 +3365,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     object suppliedContext,object suppliedObject,object suppliedCallback,object suppliedConstructors) {
     string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback),constructors=OptionalText(suppliedConstructors);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
+    if(id<1 || id>237 || !handle(sessionId) || sessionId.Length>128) throw Error("string-fields");
     bool producers=phase=="empty-producers" || phase=="empty-producers-v2" || phase=="producer-markers-v2";
     if(!producers && constructors!=null) throw Error("string-scope");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
@@ -3423,7 +3509,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-actor-clock.v1"",
     string context=OptionalText(suppliedContext),project=OptionalText(suppliedProject),branch=OptionalText(suppliedBranch),
       document=OptionalText(suppliedDocument),window=OptionalText(suppliedWindow);
     Func<string,string,bool> match=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(id<1 || id>225 || method!="Runtime.callFunctionOn" || !match(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
+    if(id<1 || id>237 || method!="Runtime.callFunctionOn" || !match(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       !match(context,@"\A[A-Za-z0-9_.:-]{1,256}\z")) throw Error("actor-clock-fields");
     string program,arguments;
     if(phase=="pcb") {
@@ -3478,7 +3564,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-actor-clock.v1"",
     object suppliedContext,object suppliedObject,object suppliedCallback,object suppliedConstructors) {
     string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject),callback=OptionalText(suppliedCallback),constructors=OptionalText(suppliedConstructors);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("common-fields");
+    if(id<1 || id>237 || !handle(sessionId) || sessionId.Length>128) throw Error("common-fields");
     bool withConstructors=phase=="presentation" || phase=="rules" || phase=="preference" || phase=="assets";
     if(!withConstructors && constructors!=null) throw Error("common-constructors");
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
@@ -4265,7 +4351,7 @@ uploadLexicalReceiverVerified:false,atomicSample:false};verify();return JSON.str
     object suppliedContext,object suppliedObject,object[] suppliedArguments,bool stringPurpose) {
     string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject);
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
-    if(!stringPurpose || id<1 || id>225 || !handle(sessionId) || sessionId.Length>128) throw Error("worker-producer-fields");
+    if(!stringPurpose || id<1 || id>237 || !handle(sessionId) || sessionId.Length>128) throw Error("worker-producer-fields");
     int count=WorkerProducerArgumentCount(phase);
     const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
     const string group="easyeda-pro-control-string-worker-producers-v1";
@@ -4314,6 +4400,337 @@ uploadLexicalReceiverVerified:false,atomicSample:false};verify();return JSON.str
     // Consumed before write: a partial write never permits replay or reattach.
     SendMessage(id,message);
   }
+  const string MoveProducerProgram0=@"(()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})()";
+  const string MoveProducerProgram1=@"function(){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const handler=own(object(own(this,""object"")),""t"");
+if(typeof handler!==""function"")bad();
+return handler;
+}";
+  const string MoveProducerProgram2=@"function(originalCallback){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const original=fn(own(scope(this),""eL""));verify();return original;}";
+  const string MoveProducerProgram3=@"function(originalMove,handlerScope,originalCallback){
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+const fn=v=>{if(typeof v!==""function"")bad();return v;};
+const scope=o=>object(own(o,""object""));
+const nullable=v=>v===null?""null"":(object(v),""present"");
+const timer=v=>{if(v===null)return ""null"";if(v===undefined)return ""undefined"";if(typeof v!==""number""||!Number.isSafeInteger(v)||Object.is(v,-0)||v<1)bad();return ""present"";};
+const promise=v=>{if(v===null)return ""null"";object(v);if(Object.getPrototypeOf(v)!==Promise.prototype)bad();return ""present"";};
+const resolver=v=>v===null?""null"":(fn(v),""present"");
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback||own(scope(handlerScope),""eL"")!==originalMove)bad();
+const ec=fn(own(scope(handlerScope),""x"")),env=object(own(ec,""env""));
+if(Object.getPrototypeOf(env)!==own(ec,""prototype"")||own(env,""_doctype"")!==3)bad();
+const s=scope(this),state={schema:""easyeda-pro-control.pcb-string-move-closure.v1"",
+documentUuid:id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),
+timer:timer(own(s,""o"")),selectionCount:arraySize(own(s,""t"")),builder:nullable(own(s,""e"")),command:nullable(own(s,""r""))};
+verify();return JSON.stringify(state);}";
+  const string MoveProducerProgram4=@"function(originalCallback){
+
+""use strict"";
+const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();
+const scope=object(own(this,""object"")),ec=own(scope,""x"");if(typeof ec!==""function"")bad();
+const env=object(own(ec,""env""));if(Object.getPrototypeOf(env)!==own(ec,""prototype"")||own(env,""_doctype"")!==3)bad();
+const documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),startup=plain(own(scope,""tl""));
+const expected=[""useWebgl"",""multiThreadingOnOpen"",""rebuildingRatlineInWorker"",""needFlushService"",""modelIsBuilt"",""controllerIsBuilt"",""engineHighlightReady""];
+const actual=keys(startup);if(actual.length!==expected.length||expected.some(k=>!actual.includes(k)))bad();
+const state={schema:""easyeda-pro-control.pcb-string-startup-state.v1"",documentUuid,
+useWebgl:flag(own(startup,""useWebgl"")),multiThreadingOnOpen:flag(own(startup,""multiThreadingOnOpen"")),
+rebuildingRatlineInWorker:flag(own(startup,""rebuildingRatlineInWorker"")),needFlushService:flag(own(startup,""needFlushService"")),
+modelIsBuilt:flag(own(startup,""modelIsBuilt"")),controllerIsBuilt:flag(own(startup,""controllerIsBuilt"")),engineHighlightReady:flag(own(startup,""engineHighlightReady""))};
+verify();const after=keys(startup);if(after.length!==actual.length||after.some((k,i)=>k!==actual[i]))bad();
+if(((()=>{
+""use strict"";
+const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
+const count=n=>{extent(n);if(n>65536)bad();return n;};
+const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
+const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
+const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
+const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
+const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
+const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
+
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
+const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
+if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
+const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
+if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
+return callback;
+})())!==originalCallback)bad();return JSON.stringify(state);
+}";
+  static readonly string[] MoveProducerSequence={"wrapper","properties","properties","handler","properties","properties","select","properties","properties","sample","startup","release"};
+  static string MoveProducerProgram(string phase) { switch(phase) {
+    case "wrapper": return MoveProducerProgram0;
+    case "handler": return MoveProducerProgram1;
+    case "select": return MoveProducerProgram2;
+    case "sample": return MoveProducerProgram3;
+    case "startup": return MoveProducerProgram4;
+    default: throw Error("move-producer-program");
+  }}
+  public static int MoveProducerArgumentCount(string phase) { switch(phase) {
+    case "wrapper": return -1;
+    case "properties": return -2;
+    case "release": return -3;
+    case "handler": return 0;
+    case "select": return 1;
+    case "sample": return 3;
+    case "startup": return 1;
+    default: throw Error("move-producer-phase");
+  }}
+  static bool MoveProducerReturnValue(string phase) { return phase=="sample" || phase=="startup"; }
+  static void VerifyMoveProducerProtocolSmoke() {
+    string[] programs={MoveProducerProgram0,MoveProducerProgram1,MoveProducerProgram2,MoveProducerProgram3,MoveProducerProgram4};
+    int[] lengths={2204,1730,5314,5783,8172};
+    string[] digests={"f1b6e32a10f64af767d6a29a679e0e906625585bc1d5514fef6dce3c2605776e","548c8af51fad2c6c11b47623dc845ed1e8031563756912bc6e16d004a2314591","a74ed72699f1e6bf67ebf41da90113d9979b67dcdff6362e67e9afda7de6f9e2","d48ce7ea07030d9a3e5c0de51ca0b265e3408388c399e91b0eec16168b75a557","de247a4466d3f601e748a5105e4255aaf9b152f0c258b5142c49a1e88c3fe709"};
+    for(int index=0;index<programs.Length;index++) using(SHA256 hash=SHA256.Create()) {
+      byte[] bytes=new UTF8Encoding(false,true).GetBytes(programs[index]);
+      if(bytes.Length!=lengths[index] || BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=digests[index]) throw Error("move-producer-program-smoke");
+    }
+    if(MoveProducerSequence.Length!=12) throw Error("move-producer-sequence-smoke");
+    foreach(string phase in MoveProducerSequence) {
+      int count=MoveProducerArgumentCount(phase);
+      object[] args=count>=0?new object[count]:null; if(args!=null) for(int index=0;index<count;index++) args[index]="argument"+index;
+      string method=count==-1?"Runtime.evaluate":count==-2?"Runtime.getProperties":count==-3?"Runtime.releaseObjectGroup":"Runtime.callFunctionOn";
+      object context=count==-1?"original-context":null,scope=count>=0 || count==-2?"original-object":null;
+      MoveProducerProtocolMessage(1,method,"original-page",phase,context,scope,args,true);
+      bool refused=false;try{MoveProducerProtocolMessage(1,method,"original-page",phase,context,scope,args,false);}catch(InvalidOperationException){refused=true;}
+      if(!refused)throw Error("move-producer-purpose-smoke");
+    }
+  }
+  // Original move-producer stage: fixed programs and one retained session.
+  // Source/target admission remains in the original owner, not caller fields.
+  int moveProducerStep;
+  string moveProducerSession,moveProducerContext;
+  bool moveProducerReleased;
+  public static string MoveProducerProtocolMessage(int id,string method,string sessionId,string phase,
+    object suppliedContext,object suppliedObject,object[] suppliedArguments,bool stringPurpose) {
+    string context=OptionalText(suppliedContext),scope=OptionalText(suppliedObject);
+    Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
+    if(!stringPurpose || id<1 || id>237 || !handle(sessionId) || sessionId.Length>128) throw Error("move-producer-fields");
+    int count=MoveProducerArgumentCount(phase);
+    const string effects="\"throwOnSideEffect\":true,\"silent\":true,\"awaitPromise\":false,\"generatePreview\":false,\"userGesture\":false";
+    const string group="easyeda-pro-control-string-move-v1";
+    string parameters;
+    if(count==-1) {
+      if(method!="Runtime.evaluate" || !handle(context) || scope!=null || suppliedArguments!=null) throw Error("move-producer-context");
+      parameters=effects+",\"expression\":"+JsonString(MoveProducerProgram(phase))+",\"uniqueContextId\":"+JsonString(context)+
+        ",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":false,\"timeout\":1000,\"includeCommandLineAPI\":false,\"allowUnsafeEvalBlockedByCSP\":false";
+    } else if(count==-2) {
+      if(method!="Runtime.getProperties" || context!=null || !handle(scope) || suppliedArguments!=null) throw Error("move-producer-properties");
+      parameters="\"objectId\":"+JsonString(scope)+",\"ownProperties\":true,\"accessorPropertiesOnly\":false,\"generatePreview\":false";
+    } else if(count==-3) {
+      if(method!="Runtime.releaseObjectGroup" || context!=null || scope!=null || suppliedArguments!=null) throw Error("move-producer-release");
+      parameters="\"objectGroup\":"+JsonString(group);
+    } else {
+      if(method!="Runtime.callFunctionOn" || context!=null || !handle(scope) || suppliedArguments==null || suppliedArguments.Length!=count) throw Error("move-producer-arguments");
+      string arguments="[";
+      for(int index=0;index<count;index++) {
+        string selected=OptionalText(suppliedArguments[index]);if(!handle(selected))throw Error("move-producer-handle");
+        if(index>0)arguments+=",";arguments+="{\"objectId\":"+JsonString(selected)+"}";
+      }
+      arguments+="]";
+      parameters=effects+",\"objectId\":"+JsonString(scope)+",\"functionDeclaration\":"+JsonString(MoveProducerProgram(phase))+
+        ",\"objectGroup\":"+JsonString(group)+",\"returnByValue\":"+(MoveProducerReturnValue(phase)?"true":"false")+",\"arguments\":"+arguments;
+    }
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":"+JsonString(method)+",\"params\":{"+
+      parameters+"},\"sessionId\":"+JsonString(sessionId)+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>(method=="Runtime.callFunctionOn"?65536:method=="Runtime.evaluate"?8192:1024)) throw Error("move-producer-size");
+    return message;
+  }
+  public void SendMoveProducer(int id,string method,string sessionId,string phase,object context,object scope,object[] arguments) {
+    string message=MoveProducerProtocolMessage(id,method,sessionId,phase,context,scope,arguments,stringPrecreate);
+    if(moveProducerReleased || moveProducerStep>=12) throw Error("move-producer-consumed");
+    if(moveProducerStep==0) {
+      if(phase!="wrapper") throw Error("move-producer-first");
+      moveProducerSession=sessionId;moveProducerContext=OptionalText(context);
+    } else if(sessionId!=moveProducerSession) throw Error("move-producer-session");
+    if(phase=="release") {
+      if(moveProducerStep==0) throw Error("move-producer-unstarted");
+      moveProducerReleased=true;moveProducerStep=12;
+    } else {
+      if(phase!=MoveProducerSequence[moveProducerStep] ||
+        (MoveProducerArgumentCount(phase)==-1 && OptionalText(context)!=moveProducerContext)) throw Error("move-producer-sequence");
+      moveProducerStep++;
+    }
+    // Consumed before write: a partial write never permits replay or reattach.
+    SendMessage(id,message);
+  }
   void SendMessage(int id,string message) {
     AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>RequestLimit) throw Error("discovery-request");
     byte[] bytes=Encoding.UTF8.GetBytes(message);
@@ -4358,6 +4775,92 @@ uploadLexicalReceiverVerified:false,atomicSample:false};verify();return JSON.str
     if(root==IntPtr.Zero) return job==IntPtr.Zero || JobCount()==0;
     return RootExited() && JobCount()==0 && RootExited() && JobCount()==0;
   }
+  // String clocks bind only this original Job/root. They are not ordinary
+  // authority tokens, Save permission, or proof of a clocked launch.
+  int stringClockSequence,stringClockLiveStage;
+  bool stringClockTerminated,stringClockFailed;
+  readonly HashSet<string> stringClockAttempts=new HashSet<string>(StringComparer.Ordinal);
+  static int StringClockPhase(string phase) {
+    switch(phase) { case "before": return 0; case "armed": return 1; case "post": return 2; case "termination": return 3; }
+    throw Error("string-clock-phase");
+  }
+  void AssertStringClockOwner(bool terminated) {
+    if(!launchCompleted || root==IntPtr.Zero || rootCreated<=0 || rootPid==0 || released) throw Error("string-clock-owner");
+    if(terminated) {
+      AssertLimits(); AssertPipes(); installation.AssertCurrent();
+      if(!Terminated()) throw Error("string-clock-not-terminated");
+    } else AssertLive();
+  }
+  public object StringClock(string phase,int sequence) {
+    if(!stringPrecreate) throw Error("string-clock-purpose");
+    int stage=StringClockPhase(phase);
+    // The TS owner consumes before its own pre-dispatch checks. Only terminal
+    // cleanup may bridge such an unreceived sequence; live samples stay exact.
+    if(sequence<1 || sequence>4 || sequence<=stringClockSequence || (stage!=3 && sequence!=stringClockSequence+1) ||
+       stringClockTerminated || stringClockAttempts.Contains(phase)) throw Error("string-clock-consumed");
+    if(stage!=3 && (stringClockFailed || stage!=stringClockLiveStage)) throw Error("string-clock-order");
+    // Reserve before any owner read, sample or publication. Even unavailable
+    // observations and lost replies never permit resampling the same phase.
+    stringClockSequence=sequence; stringClockAttempts.Add(phase);
+    if(stage==3) stringClockTerminated=true; else stringClockLiveStage++;
+    try {
+      AssertStringClockOwner(stage==3);
+      EasyedaStringClockObservation before=EasyedaStringClockObservation.Read();
+      AssertStringClockOwner(stage==3);
+      EasyedaStringClockObservation after=EasyedaStringClockObservation.Read();
+      AssertStringClockOwner(stage==3);
+      if(!before.tzAbsent || !after.tzAbsent || before.sample==null || after.sample==null || before.reason!=null || after.reason!=null) stringClockFailed=true;
+      return new Dictionary<string,object> {
+        {"schema","easyeda-pro-control.pcb-string-native-clock.v1"},{"phase",phase},{"sequence",sequence},
+        {"binding",new Dictionary<string,object>{{"helperInstance",HelperInstance},{"jobId",JobId},{"rootPid",rootPid},{"rootCreated",RootCreated}}},
+        {"clock",new Dictionary<string,object>{{"before",before},{"after",after}}}
+      };
+    } catch { stringClockFailed=true; throw; }
+  }
+  public static void VerifyStringClockSmoke() {
+    EasyedaDiagnosticOwner diagnostic=new EasyedaDiagnosticOwner();
+    bool refused=false;
+    try { diagnostic.StringClock("before",1); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-purpose") throw; refused=true; }
+    if(!refused) throw Error("string-clock-purpose-smoke");
+    foreach(string phase in new string[]{null,"","BEFORE","save"}) {
+      EasyedaDiagnosticOwner unused=CreateStringPrecreate();refused=false;
+      try { unused.StringClock(phase,1); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-phase") throw; refused=true; }
+      if(!refused || unused.launchAttempted || unused.root!=IntPtr.Zero) throw Error("string-clock-phase-smoke");
+    }
+    foreach(int sequence in new int[]{0,2,5}) {
+      EasyedaDiagnosticOwner unused=CreateStringPrecreate();refused=false;
+      try { unused.StringClock("before",sequence); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-consumed") throw; refused=true; }
+      if(!refused || unused.launchAttempted || unused.root!=IntPtr.Zero) throw Error("string-clock-sequence-smoke");
+    }
+    EasyedaDiagnosticOwner fresh=CreateStringPrecreate();refused=false;
+    try { fresh.StringClock("before",1); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-owner") throw; refused=true; }
+    if(!refused || fresh.stringClockSequence!=1 || !fresh.stringClockFailed || fresh.launchAttempted || fresh.root!=IntPtr.Zero) throw Error("string-clock-owner-smoke");
+    refused=false;
+    try { fresh.StringClock("before",1); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-consumed") throw; refused=true; }
+    if(!refused) throw Error("string-clock-replay-smoke");
+    refused=false;
+    try { fresh.StringClock("armed",2); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-order") throw; refused=true; }
+    if(!refused) throw Error("string-clock-failed-order-smoke");
+    refused=false;
+    try { fresh.StringClock("termination",2); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-owner") throw; refused=true; }
+    if(!refused || !fresh.stringClockTerminated || fresh.launchAttempted || fresh.root!=IntPtr.Zero) throw Error("string-clock-termination-smoke");
+    foreach(int sequence in new int[]{2,4}) {
+      EasyedaDiagnosticOwner skipped=CreateStringPrecreate();refused=false;
+      try { skipped.StringClock("termination",sequence); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-owner") throw; refused=true; }
+      if(!refused || skipped.stringClockSequence!=sequence || !skipped.stringClockTerminated || skipped.launchAttempted || skipped.root!=IntPtr.Zero)
+        throw Error("string-clock-terminal-gap-smoke");
+      refused=false;
+      try { skipped.StringClock("termination",sequence); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-consumed") throw; refused=true; }
+      if(!refused) throw Error("string-clock-terminal-gap-replay-smoke");
+    }
+    EasyedaDiagnosticOwner stale=CreateStringPrecreate();stale.stringClockSequence=2;
+    foreach(int sequence in new int[]{0,1,2,5}) {
+      refused=false;
+      try { stale.StringClock("termination",sequence); } catch(InvalidOperationException e) { if(e.Message!="pcb-diagnostic-string-clock-consumed") throw; refused=true; }
+      if(!refused || stale.stringClockSequence!=2 || stale.stringClockTerminated || stale.launchAttempted || stale.root!=IntPtr.Zero)
+        throw Error("string-clock-terminal-stale-smoke");
+    }
+  }
   static void Close(ref IntPtr handle) { if(handle!=IntPtr.Zero) { Native(CloseHandle(handle)); handle=IntPtr.Zero; } }
   public void ReleaseUnlaunched() {
     // Only the original helper can prove that its launch entrypoint was never
@@ -4395,6 +4898,7 @@ try {
   if ($CompileOnly) {
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
+    [EasyedaDiagnosticOwner]::VerifyStringClockSmoke()
     # Exercise the actual PowerShell-to-.NET binder used by Send/SendModel.
     # Direct C# null literals cannot detect PowerShell's string coercion.
     $browser=[EasyedaDiagnosticOwner]::BoundProtocolMessage(1,'Browser.getVersion',$null,$null,$null,$null)
@@ -4518,10 +5022,20 @@ try {
           $result=@{helperInstance=$owner.HelperInstance;jobId=$owner.JobId;rootPid=$owner.RootPid;rootCreated=$owner.RootCreated}
         }
         'send' {
-          $requestLimit=if ($StringPrecreate) {225} else {103}
+          $requestLimit=if ($StringPrecreate) {237} else {103}
           if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $requestLimit -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
           $fields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid')
-          if ($null -ne $request.workerProducerPhase) {
+          if ($null -ne $request.movePhase) {
+            if (-not $StringPrecreate -or $request.movePhase -isnot [string]) {throw 'pcb-diagnostic-move-producer-purpose'}
+            $fields+=@('sessionId','movePhase')
+            $moveCount=[EasyedaDiagnosticOwner]::MoveProducerArgumentCount($request.movePhase)
+            if ($moveCount -eq -1) {$fields+=@('uniqueContextId')}
+            elseif ($moveCount -eq -2) {$fields+=@('objectId')}
+            elseif ($moveCount -ge 0) {
+              $fields+=@('objectId')
+              for ($moveIndex=0;$moveIndex -lt $moveCount;$moveIndex++) {$fields+=@("moveArgument$moveIndex")}
+            }
+          } elseif ($null -ne $request.workerProducerPhase) {
             if (-not $StringPrecreate -or $request.workerProducerPhase -isnot [string]) {throw 'pcb-diagnostic-worker-producer-purpose'}
             $fields+=@('sessionId','workerProducerPhase')
             $workerCount=[EasyedaDiagnosticOwner]::WorkerProducerArgumentCount($request.workerProducerPhase)
@@ -4607,7 +5121,15 @@ try {
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
           foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','commonPhase','objectId','callbackObjectId','constructorObjectId','teardropObjectId','teardropCallbacksObjectId','teardropReceiver0','teardropReceiver1','teardropReceiver2','teardropReceiver3','teardropReceiver4','teardropReceiver5','teardropTarget0','teardropTarget1','teardropTarget2','teardropTarget3','teardropTarget4','teardropTarget5','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
           foreach ($field in @('workerProducerPhase','workerArgument0','workerArgument1','workerArgument2','workerArgument3','workerArgument4','workerArgument5')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-worker-producer-field'}}
-          if ($null -ne $request.workerProducerPhase) {
+          foreach ($field in @('movePhase','moveArgument0','moveArgument1','moveArgument2')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-move-producer-field'}}
+          if ($null -ne $request.movePhase) {
+            $moveArguments=$null
+            if ($moveCount -ge 0) {
+              $moveArguments=[object[]]@()
+              for ($moveIndex=0;$moveIndex -lt $moveCount;$moveIndex++) {$moveArguments+=@($request."moveArgument$moveIndex")}
+            }
+            $owner.SendMoveProducer([int]$request.requestId,$request.method,$request.sessionId,$request.movePhase,$request.uniqueContextId,$request.objectId,$moveArguments)
+          } elseif ($null -ne $request.workerProducerPhase) {
             $workerArguments=$null
             if ($workerCount -ge 0) {
               $workerArguments=[object[]]@()
@@ -4644,6 +5166,12 @@ try {
           $result=@{written=$true}
         }
         'poll' {if (-not $launched) {throw 'pcb-diagnostic-not-launched'}; $result=@{bytes=$owner.Poll()}}
+        'string-clock' {
+          if (-not $StringPrecreate -or -not $launched -or $request.phase -isnot [string] -or
+              ($request.sequence -isnot [int] -and $request.sequence -isnot [long]) -or $request.sequence -lt 1 -or $request.sequence -gt 4 -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,phase,rootCreated,rootPid,sequence') {throw 'pcb-diagnostic-string-clock-fields'}
+          $result=$owner.StringClock($request.phase,[int]$request.sequence)
+        }
         'window' {if (-not $launched) {throw 'pcb-diagnostic-not-launched'}; $result=@{hwnd=$owner.Window()}}
         'normal-close' {if (-not $launched -or $request.confirmNormalClose -isnot [bool] -or $request.confirmNormalClose -ne $true) {throw 'pcb-diagnostic-close-approval'}; $owner.NormalClose($request.hwnd); $result=@{closeDispatched=$true;saveOrDiscardSelected=$false}}
         'termination' {$result=@{terminated=$owner.Terminated()}}

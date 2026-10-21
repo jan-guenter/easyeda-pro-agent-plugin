@@ -409,7 +409,7 @@ source-associated constructor, not the original lexical binding. The separate
 precreate profile has twenty such constructors. V8 reports an inherited class's
 own prototype with its immediate parent class name: the eight pinned inherited
 profiles must not be forced to `Object` or accepted by an arbitrary-name fallback.
-The combined route has a203request total, or225 including the optional
+The current V3 route has a215request total, or237 including the optional
 original-owner common-baseline stage. That stage qualifies
 four common constructors, retains five original raw replies and joins them with
 the completed SQL inventory from the operation's original pre-open checkpoint.
@@ -432,14 +432,21 @@ metadata does not solve hidden receivers in class arrows.
 
 The versioned precreate readers preserve absent/undefined/null/present FP/MI
 managers; missing initialization remains an unmet condition, not zero work.
-The combined owner additionally runs a fixed58-request worker producer collector
-and six UI/worker/PCB actor-clock samples, rechecking its original admissions.
+The combined owner additionally runs a fixed58-request worker producer collector,
+a12-request move/startup collector and six UI/worker/PCB actor-clock samples,
+rechecking its original admissions. Move samples bind the original Save-handler
+closure and exact callback source, then retain its timer, selection, builder,
+command and seven startup flags without invoking or cancelling them. Matching
+flags do not prove startup completion or containment of write destinations.
 Native adapters reconstruct fixed programs, including tagged worker-property
 requests; no caller expression crosses the helper boundary. Historical V1
-readers keep their old meanings. Return the bounded V2 summary and retain the
-full journal evidence; the680KiB evidence cap exceeds the512KiB tool envelope.
-These samples still exclude hidden arrow receivers, complete publishers and
-destinations, Windows/backend clock provenance and writer authorization.
+readers keep their old meanings. Return the bounded V3 summary and retain the
+full journal evidence; the712KiB evidence cap exceeds the512KiB tool envelope.
+Historical V2 retains680KiB and its203/225request limits. These samples still
+exclude hidden arrow receivers, complete publishers and destinations, and writer
+authorization. Private String actor/SQL, Windows-clock and Save-clock modules
+remain dormant. Their tokens cannot substitute for actual native dispatch or a
+complete saved/reopened lifecycle.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

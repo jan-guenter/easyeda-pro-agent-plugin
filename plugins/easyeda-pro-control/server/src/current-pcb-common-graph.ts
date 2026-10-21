@@ -45,6 +45,36 @@ const graphVerify=()=>{for(const h of graphHeld){if(h[1]===null){const k=Reflect
 `;
 }
 export const CURRENT_PCB_COMMON_GRAPH_PROGRAM = graphProgram(CURRENT_PCB_COMMON_GRAPH_CLASSES);
+
+/** A separate cooperative-budget variant for current common-state traversal.
+ * Keep the historical graph/metadata programs byte-exact. CDP callFunctionOn
+ * has no execution timeout: these checks bound our loops but cannot interrupt
+ * a blocked intrinsic, debugger operation or transport.
+ */
+function boundedGraphProgram(): string {
+  let program = CURRENT_PCB_COMMON_GRAPH_PROGRAM;
+  for (const marker of [
+    "const graphString=v=>{", "const graphKeys=o=>{",
+    "const graphDescriptor=(o,k,enumerableKeys)=>{", "while(o!==null){",
+    "for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);",
+    "if(depth>32)bad();", "const graphVerify=()=>{",
+    "for(const h of graphHeld){", "for(const h of graphCollections){",
+    "for(const h of graphJsonChecks){",
+  ]) {
+    if (program.split(marker).length !== 2) { throw new Error("PCB_COMMON_GRAPH_BUDGET_MARKER"); }
+    // Preserve each original statement; only add a refusal before more work.
+    const insertion = marker.startsWith("if(depth") ? `graphBudget();${marker}` : `${marker}graphBudget();`;
+    program = program.replace(marker, insertion);
+  }
+  return `
+const graphNow=Date.now;
+if(typeof graphNow!=="function")bad();
+const graphStarted=Reflect.apply(graphNow,Date,[]);
+if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
+const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
+${program}`;
+}
+export const CURRENT_PCB_COMMON_BOUNDED_GRAPH_PROGRAM = boundedGraphProgram();
 /** Fixed plain-data specialization for document metadata. It does not depend
  * On unrelated model classes being retained in V8's original lexical scope.
  * Custom instances refuse; descriptor, collection and graph limits are shared.

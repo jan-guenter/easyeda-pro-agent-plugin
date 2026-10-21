@@ -10,6 +10,8 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../../src/curren
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "../../src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../../src/current-pcb-string-producer-markers.ts";
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS } from "../../src/current-pcb-string-actor-clock.ts";
+import { CURRENT_PCB_STRING_PRODUCER_LOCATIONS } from "../../src/current-pcb-string-producer-scope.ts";
+import { CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION } from "../../src/current-pcb-string-startup-state.ts";
 import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from "./current-pcb-diagnostic-model-replies.ts";
 import { constructorBundleReply, constructorHandle, constructorPropertiesReply, constructorTupleReply } from "./current-pcb-constructor-replies.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../../src/current-pcb-constructor-scope.ts";
@@ -21,6 +23,7 @@ import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../../src/current-pcb-comm
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../../src/current-pcb-string-empty-assets.ts";
 import { pcbLazyOwnerFixture, pcbLazyOwnerReply } from "./current-pcb-lazy-owner-fixture.ts";
 import { createCurrentPcbStringWorkerProducerResponder } from "./current-pcb-string-worker-producer-responder.ts";
+import { currentPcbStringProducerSources } from "./current-pcb-string-producer-fixture.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
@@ -101,7 +104,9 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if ("actorClockPhase" in request) {
+        if ("movePhase" in request) {
+          assert.equal(stringCase, true); payload = moveResponse(request);
+        } else if ("actorClockPhase" in request) {
           assert.equal(stringCase, true); payload = actorClockResponse(request);
         } else if ("commonPhase" in request) {
           assert.equal(stringCase, true);
@@ -154,6 +159,16 @@ lines.on("line", line => {
     }
     const size = scenario === "identity-large-source" || scenario === "staged-large-source" || stringCase ? 65_536 : 17;
     result = { bytes: sent.subarray(0, size).toString("base64") }; sent = sent.subarray(size);
+  } else if (request["action"] === "string-clock") {
+    assert.deepEqual(Object.keys(request).toSorted(), ["action", "helperInstance", "id", "jobId", "phase", "rootCreated", "rootPid", "sequence"]);
+    assert.ok("phase" in request && "sequence" in request && typeof request.sequence === "number");
+    assert.equal(request.phase === "termination", terminated);
+    const start = 1000 + request.sequence * 100;
+    result = { schema: "easyeda-pro-control.pcb-string-native-clock.v1", phase: request.phase, sequence: request.sequence,
+      binding: { ...owner }, clock: {
+        before: { tzAbsent: scenario !== "string-clock-refused" || request.phase !== "before", reason: null, sample: clockSample(start) },
+        after: { tzAbsent: true, reason: null, sample: clockSample(start + 2) },
+      } };
   } else if (request["action"] === "window") { result = { hwnd: "456" }; }
   else if (request["action"] === "normal-close") { terminated = true; result = { closeDispatched: true, saveOrDiscardSelected: false }; }
   else if (request["action"] === "termination") { result = { terminated }; }
@@ -189,6 +204,12 @@ lines.on("line", line => {
 function navigationEvent(): readonly unknown[] {
   return scenario === "identity-navigation" || scenario === "staged-navigation"
     ? [{ method: "Page.frameNavigated", sessionId: "session-1", params: { frame: { id: "frame-1" } } }] : [];
+}
+function clockSample(ms: number): Readonly<Record<string, unknown>> {
+  const ticks = 621_355_968_000_000_000n + BigInt(ms) * 10_000n;
+  return { schema: "easyeda-pro-control.windows-clock-sample.v1", utcBeforeTicks: String(ticks), utcAfterTicks: String(ticks + 10n),
+    qpcBefore: String(ms * 1000), qpcAfter: String(ms * 1000 + 1), qpcFrequency: "1000000", highResolution: true,
+    localOffsetMinutes: 120, zoneRulesSha256: "c".repeat(64) };
 }
 function sourcePayload(): string {
   if (scenario === "identity-large-source") { return "x".repeat(12 * 1024 * 1024); }
@@ -504,6 +525,56 @@ function stringResponse(request: object & Record<"stringPhase", unknown>): unkno
   const phase = request.stringPhase; assert.ok(typeof phase === "string" && Object.hasOwn(programs, phase));
   const program: unknown = Reflect.get(programs, phase); assert.equal(typeof program, "string");
   return pcbLazyOwnerReply(String(program), context);
+}
+function moveResponse(request: object & Record<"movePhase", unknown>): unknown {
+  const phase = request.movePhase;
+  if (scenario === "opening-pcb-string-move-refused" && phase === "sample" ||
+      scenario === "opening-pcb-string-startup-refused" && phase === "startup") {
+    return { result: { type: "undefined" }, exceptionDetails: {} };
+  }
+  if (phase === "wrapper" || phase === "handler" || phase === "release") {
+    return modelResponse({ ...request, modelPhase: phase }, []);
+  }
+  assert.ok("objectId" in request);
+  if (phase === "select") {
+    assert.equal(request.objectId, "handler-scopes-zero");
+    assert.ok("moveArgument0" in request); assert.equal(request.moveArgument0, "wrapper");
+    return { result: { type: "function", className: "Function", description: currentPcbStringProducerSources.move, objectId: "move" } };
+  }
+  if (phase === "properties") {
+    if (request.objectId === "move") {
+      const location = CURRENT_PCB_STRING_PRODUCER_LOCATIONS.move;
+      return { result: [moveProperty("length", { type: "number", value: location.parameterCount }), moveProperty("name", { type: "string", value: "" }),
+        moveProperty("arguments", { type: "object", subtype: "null", value: null }, false, false),
+        moveProperty("caller", { type: "object", subtype: "null", value: null }, false, false),
+        moveProperty("prototype", { type: "object", className: "Object", objectId: "move-prototype" }, true, false)], internalProperties: [
+        { name: "[[Prototype]]", value: { type: "function", objectId: "function-prototype" } },
+        { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: {
+          scriptId: "pcb-script-1", lineNumber: location.lineNumber, columnNumber: location.columnNumber } } },
+        { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[2]", objectId: "move-scopes" } },
+      ] };
+    }
+    if (request.objectId === "move-scopes") {
+      return { result: [modelProperty("0", { type: "object", subtype: "internal#scope", className: "Object", description: "Closure", objectId: "move-scope" }),
+        modelProperty("1", { type: "object", subtype: "internal#scope", className: "Object", description: "Global", objectId: "global-scope" })] };
+    }
+    return modelResponse({ ...request, modelPhase: phase }, []);
+  }
+  if (phase === "sample") {
+    assert.equal(request.objectId, "move-scope");
+    assert.ok("moveArgument0" in request && "moveArgument1" in request && "moveArgument2" in request);
+    assert.deepEqual([request.moveArgument0, request.moveArgument1, request.moveArgument2], ["move", "handler-scopes-zero", "wrapper"]);
+    return pcbStringReply(JSON.stringify({ schema: "easyeda-pro-control.pcb-string-move-closure.v1", documentUuid: pcbDocumentUuid,
+      timer: "null", selectionCount: 0, builder: "null", command: "null" }));
+  }
+  assert.equal(phase, "startup"); assert.equal(request.objectId, "handler-scopes-zero");
+  assert.ok("moveArgument0" in request); assert.equal(request.moveArgument0, "wrapper");
+  const context = pcbStringObservationFixture(false, `${stringIdentityChange(false)}scope.object.tl={useWebgl:false,multiThreadingOnOpen:true,
+    rebuildingRatlineInWorker:false,needFlushService:false,modelIsBuilt:true,controllerIsBuilt:true,engineHighlightReady:true};`);
+  return pcbStringReply(callPcbStringObservation(context, CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION));
+}
+function moveProperty(name: string, value: unknown, writable = false, configurable = true): unknown {
+  return { name, value, writable, configurable, enumerable: false, isOwn: true };
 }
 function actorClockResponse(request: object & Record<"actorClockPhase", unknown>): unknown {
   const phase = request.actorClockPhase; assert.ok(phase === "ui" || phase === "worker" || phase === "pcb");

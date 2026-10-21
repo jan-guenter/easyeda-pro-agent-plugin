@@ -107,11 +107,12 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
     ...claims };
 }
-/** V2 retains up to680KiB on disk. Keep both initial and inspect responses
+/** V2/V3 retain up to680/712KiB on disk. Keep initial and inspect responses
  * below the facade512KiB envelope; the complete original record is unchanged. */
 function publicObservationResult(operationId: string, stage: ObservationStage,
   result: Readonly<Record<string, unknown>> | undefined, published: boolean): Readonly<Record<string, unknown>> | undefined {
-  if (stage !== "string-precreate" || result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v2") { return result; }
+  if (stage !== "string-precreate" || result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v2" &&
+      result?.["schema"] !== "easyeda-pro-control.pcb-string-precreate-observation.v3") { return result; }
   const value = stringPrecreateObservationResultSchema.parse(result);
   return { schema: "easyeda-pro-control.pcb-string-precreate-summary.v1", observationSchema: value.schema,
     target: value.target, matchingSamples: value.matchingSamples, originalContextsRechecked: value.originalContextsRechecked,

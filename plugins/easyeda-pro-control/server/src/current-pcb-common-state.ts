@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
-import { CURRENT_PCB_COMMON_GRAPH_PROGRAM, currentPcbCommonGraphSchema, decodeCurrentPcbCommonGraph } from "./current-pcb-common-graph.ts";
+import { CURRENT_PCB_COMMON_BOUNDED_GRAPH_PROGRAM, currentPcbCommonGraphSchema, decodeCurrentPcbCommonGraph } from "./current-pcb-common-graph.ts";
 import type { CURRENT_PCB_COMMON_GRAPH_LIMITS } from "./current-pcb-common-graph.ts";
 import { CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS } from "./current-pcb-constructor-scope.ts";
 
@@ -42,9 +42,9 @@ if(own(env,"_doctype")!==3||typeof documentUuid!=="string"||!/^(?:[a-f0-9]{16}|[
 const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own(o,n);return r;};
 const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
 const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
-${CURRENT_PCB_COMMON_GRAPH_PROGRAM}
+${CURRENT_PCB_COMMON_BOUNDED_GRAPH_PROGRAM}
 const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}return text;};
+const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,"value")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
 `;
 
 /** Includes all own fields of layer and physical-stack models. Custom disabled

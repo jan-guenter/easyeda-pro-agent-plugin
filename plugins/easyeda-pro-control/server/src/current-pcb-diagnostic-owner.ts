@@ -42,10 +42,15 @@ import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { CurrentPcbStringWorkerProducerRunner } from "./current-pcb-string-worker-producer-runner.ts";
 import { currentPcbStringWorkerProducerFailureDetail } from "./current-pcb-string-worker-producer-evidence.ts";
 import { CurrentPcbStringActorClockRunner } from "./current-pcb-string-actor-clock-runner.ts";
+import { CurrentPcbStringMoveRunner, currentPcbStringMoveFailureDetail } from "./current-pcb-string-move-runner.ts";
+import { inspectCurrentPcbStringFiniteEffects } from "./current-pcb-string-finite-effects.ts";
+import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const HELPER_SHA256 = "6eb5b91814473670fdb4026091f839be26fb47fdbee1b6aa49355c9ebb79d1fc";
-const HELPER_BYTES = 500_081;
+const HELPER_SHA256 = "a56a296ab09abbf2d4a901819d5aa30df2234aa212d4e757e58a5ed3b0024b75";
+const HELPER_BYTES = 545_116;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -145,6 +150,9 @@ class CurrentPcbRetainedOwnerCore {
   #commonBaselineFailure: CurrentPcbCommonBaselineFailure | null = null;
   #stringWorkerRunner: CurrentPcbStringWorkerProducerRunner | null = null;
   #stringActorRunner: CurrentPcbStringActorClockRunner | null = null;
+  #stringMoveRunner: CurrentPcbStringMoveRunner | null = null;
+  #stringNativeClock: CurrentPcbStringNativeClockIssuer | null = null;
+  #terminationObserved = false;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, stringPurpose: boolean) {
@@ -548,6 +556,12 @@ class CurrentPcbRetainedOwnerCore {
         request: (command): Promise<unknown> => this.#transfer(() => pipe.observeWorkerProducers(command)), assertCurrent,
       }, producerContext, { projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId });
       const workerProducers = await this.#stringWorkerRunner.observe();
+      phase = "move-producers";
+      this.#stringMoveRunner = new CurrentPcbStringMoveRunner({
+        request: (command): Promise<unknown> => this.#transfer(() => pipe.observeMoveProducers(command)), assertCurrent,
+      }, selected, { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid, windowTabId });
+      const moveProducers = await this.#stringMoveRunner.observe();
+      const finiteEffects = inspectCurrentPcbStringFiniteEffects(this.#stringMoveRunner, moveProducers, this.#stringWorkerRunner, workerProducers);
       phase = "actor-clock";
       this.#stringActorRunner = new CurrentPcbStringActorClockRunner({
         request: (command): Promise<unknown> => this.#transfer(() => pipe.observeActorClock(command)), assertCurrent,
@@ -558,14 +572,17 @@ class CurrentPcbRetainedOwnerCore {
       assertCurrent(); await this.#observeParent(); assertCurrent();
       assertCurrent(); await this.#verifyInstallation(); await this.#verify(); assertCurrent();
       this.#stringWorkerRunner.requireOriginal(workerProducers); this.#stringActorRunner.requireOriginalPacket(actorClock);
+      this.#stringMoveRunner.requireOriginal(moveProducers);
       phase = "bounds";
-      const combined = freezeDeep({ ...result, workerProducers, actorClock });
-      // Two208KiB sweeps+8KiB envelope,128KiB worker and128KiB actor reserve.
-      if (Buffer.byteLength(canonicalJson(actorClock)) > 131_072 || Buffer.byteLength(canonicalJson(combined)) > 696_320) { throw error("STRING_COMBINED_BOUND"); }
+      const combined = freezeDeep({ ...result, schema: "easyeda-pro-control.pcb-string-precreate-observation.v3", workerProducers, moveProducers, finiteEffects, actorClock });
+      // V2's680KiB plus16KiB move/startup and16KiB finite-effect report.
+      if (Buffer.byteLength(canonicalJson(actorClock)) > 131_072 || Buffer.byteLength(canonicalJson(moveProducers)) > 16_384 ||
+          Buffer.byteLength(canonicalJson(finiteEffects)) > 16_384 || Buffer.byteLength(canonicalJson(combined)) > 729_088) { throw error("STRING_COMBINED_BOUND"); }
       return combined;
     } catch (caughtError) {
       const failure = currentPcbObservationFailureDetail(caughtError) === null ?
-        currentPcbObservationFailure("STRING_PRECREATE", phase, [caughtError], currentPcbStringWorkerProducerFailureDetail(caughtError)?.cleanup === "failed") : caughtError;
+        currentPcbObservationFailure("STRING_PRECREATE", phase, [caughtError], currentPcbStringWorkerProducerFailureDetail(caughtError)?.cleanup === "failed" ||
+          currentPcbStringMoveFailureDetail(caughtError)?.cleanup === "failed") : caughtError;
       this.#observationFailure ??= currentPcbObservationFailureDetail(failure);
       this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw failure;
     }
@@ -731,7 +748,40 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify(); this.#available(); const reply = await this.#request({ action: "termination" });
       await this.#verify(); this.#available();
       if (!exact(reply, ["terminated"]) || typeof reply["terminated"] !== "boolean") { throw error("TERMINATION_REPLY"); }
+      if (reply["terminated"]) { this.#terminationObserved = true; }
       return reply["terminated"];
+    } finally { this.#busy = false; }
+  }
+
+  /** Private String-native clock boundary. Not a public validation action or a
+   * Save permit. The future writer must journal and seal these original tokens
+   * before closing; historical JSON cannot recreate this retained issuer. */
+  public async observeStringNativeClock(phase: CurrentPcbStringNativeClockPhase): Promise<CurrentPcbStringNativeClockObservation> {
+    const original = this.#binding;
+    if (!this.#stringPurpose || original === null || !this.#launchSucceeded ||
+        phase === "termination" && !this.#terminationObserved ||
+        phase !== "termination" && (this.#terminationObserved || this.#pipe.status().failure !== null)) {
+      throw error("STRING_NATIVE_CLOCK_UNAVAILABLE");
+    }
+    this.#enter(true);
+    try {
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      this.#stringNativeClock ??= new CurrentPcbStringNativeClockIssuer({
+          request: async (request): Promise<unknown> => {
+            await this.#verifyInstallation(); await this.#verify(); this.#available();
+            const result = captureCurrentPcbStringClockReply(await this.#request({ ...request }));
+            await this.#verifyInstallation(); await this.#verify(); this.#available(); return result.value;
+          },
+          assertCurrent: (selected): void => {
+            this.#available();
+            if (this.#binding !== original || !this.#launchSucceeded ||
+                selected === "termination" && !this.#terminationObserved ||
+                selected !== "termination" && (this.#terminationObserved || this.#pipe.status().failure !== null)) {
+              throw error("STRING_NATIVE_CLOCK_OWNER_CHANGED");
+            }
+          },
+        }, original);
+      return await this.#stringNativeClock.observe(phase);
     } finally { this.#busy = false; }
   }
 

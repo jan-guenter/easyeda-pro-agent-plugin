@@ -39,6 +39,18 @@ scope.object.Ke.manager.map.set(i,make("WA",{_temporaryActiveColor:undefined,lay
   assert.equal(state.graph.nodes.filter(node => node.kind === "object" && node.className === "WA").length, 270);
 });
 
+void test("common traversal refuses exhausted, reversed and replaced clocks without returning partial state", () => {
+  for (const change of [
+    "let budgetTick=0;Date.now=()=>10000+1001*budgetTick++;",
+    "let budgetTick=0;Date.now=()=>10000-budgetTick++;",
+    "Date.now=()=>{Date.now=()=>10000;return 10000;};",
+  ]) {
+    const context = pcbCommonFixture(change);
+    assert.throws(() => callPcbStringObservation(context, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION), /PCB_COMMON_STATE/u);
+    assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
+  }
+});
+
 void test("rules retain all raw families, nested tables, source order and shared default object", () => {
   const state = decodeCurrentPcbCommonRules(sample(CURRENT_PCB_COMMON_RULES_FUNCTION));
   const rules = state.graph.nodes[0]; assert.ok(rules?.kind === "object");

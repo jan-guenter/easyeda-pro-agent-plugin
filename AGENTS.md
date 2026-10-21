@@ -4,6 +4,131 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Terminal073200 recovery and combined source batch, 2026-10-21
+
+Actual facade2190173/start54575608 and parent2188465/start54571655 were admitted
+on installed073200: pinned Node24.18.0/core0, exact source583/0612598f,
+runtime3/1dd7bf21, compatibility91d11d17. Independent complete installed/main
+comparison passes1698files/42dirs/34983051bytes/modes. Post-main Linux39566613804
+is now SUCCESS/all10jobs at5be1545a. Independent admission receipt:
+`/root/.cache/easyeda-073200-independent-admission-8ZvoVz4q/admission.json`.
+
+NEW case `string-precreate-073200-20261021-01` opened only the disposable project
+and PCB, admitted original UI/PCB/worker source, then failed common observation.
+Request76 `Runtime.callFunctionOn`/`common-presentation` hit the pipe deadline;
+constructor qualification had passed. No returned presentation, precreate,
+create or explicit Save. Common failure is published; native continuation false.
+Original root52636/created134370446269413942, helper96efcc55b90c484d982e613f5b25288a,
+Jobda615031c9624230b1ac1a03918227c6, bindingf8676c45a3348bec8e94ffaeb248244cc66dddf9571c4ee263fd02c31777ab9a.
+Normal close of observed HWND4588258 was acknowledged ONCE, followed by six
+false termination observations. User confirmed no visible window/dialog/tray,
+then explicitly approved killing EasyEDA. At10:01:00Z the exact original
+root52636/creation134370446269413942/image was rechecked and terminated through
+one retained .NET Process.Handle. No broad name-based kill, Codex or helper
+termination. The original MCP termination7 then proved root exit/whole-Job empty;
+release-closed succeeded and inspect confirms released, not busy, with no record
+settlement pending. This is approved forced recovery, NOT normal lifecycle proof.
+Closed disposable598016/e620d21a is byte-exact to its pre-open raw baseline;
+no WAL/SHM/journal sidecars. No Save, discard, restore or replay. This operation
+is terminal and must NEVER replay. Private original intent/result/termination/
+release/closed-file evidence: `/root/.cache/easyeda-073200-live-khfaU70i`.
+Production designs remain excluded, including reads and hashes.
+
+Combined source batch is implemented and locally built, not released/installed:
+original move/startup collector/native integration; finite-effect destination
+report; String actor/SQL, private native Windows clocks, dormant server-time RPC
+and sealed clock composition; durable dormant lifecycle ledger; bounded common
+traversal; original worker/move reply capture before owner callbacks. Registered
+precreate is V3/712KiB,215requests or237with common; diagnostic stays103.
+The cooperative traversal deadline is an additional refusal, NOT a proven fix
+for the live timeout or a hard interruption. Historical graph/metadata programs
+remain byte-exact. No writer/Save/public clock action was enabled.
+
+Source596/6005b8ea, runtime3/d08d47f5, compatibilityeb22a0ca. External pins
+unchanged; only facade projections/review time refreshed. Exact native helper
+545116/a56a296a independently checked:3existing common programs changed,
+5move programs added, every other existing embedded program unchanged; all
+8current literals and clock C# match their TS sources. Both actual Windows
+no-app CompileOnly profiles pass. The first default compile retained a stale226
+budget-smoke refusal; corrected exact237acceptance/238refusal passes both.
+
+Focused verification passes:25clock/provenance,7ledger,13move/worker,53native/
+protocol, and final9original-owner/helper-pin checks. Common/metadata, V3journal
+and smoke tests also pass. Full types and repository-wide strict type-aware lint
+are clean. Build/sanitizer/SQL-program/compatibility, plugin/MCP, repository/
+privacy and packaged all7skill checks pass; changed skill also passes the official
+quick validator. Skill handoff now distinguishes registered observations from
+dormant writer pieces and instructs retention after ambiguous timeouts.
+Combined candidate `0.3.0+codex.20261021100337` is now entering release checks.
+Dependency tree/signatures/audit pass. Frozen local verify on43e635b completed
+12204facade tests:12198passed,4platformskips,2stale request-budget assertions.
+That run is NOT fully green. Final test-only corrections assert237acceptance/
+238refusal and include the12-request move collector in the shared limit formula;
+all8focused tests and strict targeted lint pass. Runtime/bundles/pins unchanged.
+The final metadata also restores explicit legacy-writer/connected-read boundary
+sentences; maintained package and repository checks pass. All7 official skill
+validators pass; no external plugin validator is installed. Remaining bridge/
+skill/package checks and final exact-head Linux/Windows CI, protected publication
+and official installation are pending. No new installed runtime is claimed.
+Release evidence: `/root/.cache/easyeda-100337-release-GZa75uEt`.
+See `docs/current-pcb-string-lifecycle-batch-2026-10-21.md` and its source notes.
+
+### Delivered073200 checkpoint, 2026-10-21
+
+Delivered `0.3.0+codex.20261021073200` through protected PR94. Final tested head
+`8a10a0136ab8543bb4c8d2d60bc87240b2f3ebab`, merged main
+`5be1545a73ca83889ce9ed7b650dac9587b47c1d`; full tree92cc9de1 and plugin
+treef3c6c12a are identical. One batch integrates inherited-constructor correction,
+V2 lazy owners, original-worker producers, actor/local-clock observations and
+bounded public summaries. No geometry writer or API coverage increase.
+
+Source583/0612598f, runtime3/1dd7bf21, compatibility91d11d17; external pins
+unchanged. Helper500081/6eb5b918 and49 embedded programs independently reviewed;
+both actual Windows no-app CompileOnly profiles pass. Strict types/type-aware
+lint, dependency tree/signatures/audit, reproducible bundles, repository/privacy
+and all7 official skill validators pass. No external official plugin validator
+was available; maintained plugin/MCP checks pass.
+
+Original frozen local verify92288 completed12154facade tests:12149passed,
+1stale request-limit assertion failed,4platformskips. Never call it fully green.
+Initial CI39563654781 found the same sole stale156rejection. Final8a10a01 only
+changes that test to assert full225acceptance/226rejection; runtime/pins unchanged.
+Four focused tests and targeted lint pass. Remaining local28648 passes424bridge
+tests, skills, plugin/MCP and repository/privacy checks. Final exact-head
+Linux39565188653 PASSED/all10jobs,12154tests/12149passed/5skips/0failures;
+Windows39565188700 PASSED. No second broad local suite was added.
+Post-main Windows39566613811 PASSED; duplicate Linux39566613804 was still
+running on the identical merged tree at handoff. Check it next session.
+
+Official named Git marketplace upgrade2849 completed without errors/stderr;
+post-upgrade list19287 confirms installed/enabled073200 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Marketplace HEAD
+is merged main. Earlier list93687 ran during upgrade and still showed055237;
+it is not the final installation receipt. Maintained comparison17578 passes
+1698files/42dirs/34983051bytes/modes, inventory426c585d. Exact-main worktree:
+`/root/.cache/easyeda-073200-release-lK3xEMpa/merged-main`.
+Single installed offline probe17578 passes26restricted tools/51configured policies,
+10queries/12requests, Node24.18.0, zero stderr and normal EOF/exit0. Post-close
+control/marker checks and sampled no-descendant/socket checks pass; continuous
+isolation, connected execution and actual runtime admission are not claimed.
+Independent delivery review repeated the complete maintained comparison and
+checked merge/tree identity, final CI totals, upgrade/list/marketplace and retained
+offline receipts; PASSED. Main read receipt1fef4993 at
+`/root/.cache/easyeda-073200-independent-delivery-PGJg3PQ3/delivery-review.json`.
+The offline probe was not repeated.
+
+No pending native/CAD owner, create or Save. Last-admitted facade2055019/
+start54101485 loaded055237; it was not killed, rebound or hotpatched. No live
+call after installation. A fresh chat and actual073200 admission are required
+before ONE new disposable common/precreate case. Terminal055237case below must
+never replay. Production designs remain excluded, including read/hash work.
+Next batch should combine finite effects/destination containment, String-owned
+backend/Windows actor and Save-clock provenance, and the dormant one-create/
+one-Save/full-SQL/reopen lifecycle before another installation. Full backlog:
+`docs/current-pcb-owned-producers-batch-2026-10-21.md`. Release evidence and private
+next-session plan: `/root/.cache/easyeda-073200-release-lK3xEMpa`.
+This delivery record is beyond immutable PR94; packaged payload unchanged.
+
 ### Combined073200 release preparation, 2026-10-21
 
 Candidate `0.3.0+codex.20261021073200` on

@@ -2,7 +2,7 @@
  * or be adopted as a current collector packet. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { STRING_PRECREATE_OBSERVATION_MAX_BYTES, stringPrecreateObservationResultSchema,
+import { STRING_PRECREATE_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES, stringPrecreateObservationResultSchema,
   stringPrecreateTargetMatches } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_LIMITS } from "../src/current-pcb-string-actor-clock-runner.ts";
 
@@ -27,6 +27,17 @@ function actor(windowTabId: string = TARGET.windowTabId): Record<string, unknown
 function currentV2(windowTabId: string = TARGET.windowTabId): Record<string, unknown> {
   return { ...historicalV1(), schema: "easyeda-pro-control.pcb-string-precreate-observation.v2",
     target: { ...TARGET, windowTabId }, workerProducers: worker(windowTabId), actorClock: actor(windowTabId) };
+}
+function currentV3(): Record<string, unknown> {
+  const limits = { continuousObservation: false, completeProducerInventoryVerified: false,
+    queueCompletionVerified: false, writeDestinationsContained: false, saveAuthorized: false, executionAuthorized: false };
+  return { ...currentV2(), schema: "easyeda-pro-control.pcb-string-precreate-observation.v3",
+    moveProducers: { schema: "easyeda-pro-control.pcb-string-move-observation.v1", identity: TARGET,
+      state: { documentUuid: TARGET.documentUuid }, startup: { schema: "easyeda-pro-control.pcb-string-startup-route.v1",
+        state: { documentUuid: TARGET.documentUuid }, startupCallbackCompletionVerified: false, writeDestinationsContained: false, executionAuthorized: false },
+      originalRunnerIssued: true, ...limits },
+    finiteEffects: { schema: "easyeda-pro-control.pcb-string-finite-effects.v1", identity: TARGET,
+      originalRunnerObservationsMatched: true, ...limits } };
 }
 function padded(bytes: number): Readonly<Record<string, string>> {
   const result = { padding: "x".repeat(bytes - Buffer.byteLength(JSON.stringify({ padding: "" }))) };
@@ -88,5 +99,26 @@ void test("historical and V2 sweeps keep separate limits and both collector sect
   for (const [key, base] of [["workerProducers", worker()], ["actorClock", actor()]] as const) {
     assert.equal(stringPrecreateObservationResultSchema.safeParse({ ...currentV2(), [key]: { ...base, padding: "x".repeat(131_072) } }).success, false);
   }
-  assert.equal(STRING_PRECREATE_OBSERVATION_MAX_BYTES, 696_320);
+  assert.equal(STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES, 696_320);
+});
+
+void test("V3 requires bounded same-target move/startup and finite-effect sections without upgrading V2 history", () => {
+  const current = currentV3();
+  assert.equal(stringPrecreateObservationResultSchema.safeParse(current).success, true);
+  assert.equal(STRING_PRECREATE_OBSERVATION_MAX_BYTES, 729_088);
+  for (const key of ["moveProducers", "finiteEffects"] as const) {
+    const section = current[key]; assert.ok(section !== null && typeof section === "object");
+    const missing = Object.fromEntries(Object.entries(current).filter(([name]) => name !== key));
+    assert.equal(stringPrecreateObservationResultSchema.safeParse(missing).success, false);
+    for (const change of [{ executionAuthorized: true }, { saveAuthorized: true }, { queueCompletionVerified: true },
+      { writeDestinationsContained: true }, { identity: { ...TARGET, documentUuid: "e".repeat(16) } }, { padding: "x".repeat(16_384) }]) {
+      assert.equal(stringPrecreateObservationResultSchema.safeParse({ ...current, [key]: { ...section, ...change } }).success, false);
+    }
+  }
+  const move = current["moveProducers"]; assert.ok(move !== null && typeof move === "object");
+  assert.equal(stringPrecreateObservationResultSchema.safeParse({ ...current, moveProducers: { ...move,
+    startup: { schema: "easyeda-pro-control.pcb-string-startup-route.v1", state: { documentUuid: "e".repeat(16) },
+      startupCallbackCompletionVerified: false, writeDestinationsContained: false, executionAuthorized: false } } }).success, false);
+  assert.equal(stringPrecreateObservationResultSchema.safeParse({ ...current, schema: "easyeda-pro-control.pcb-string-precreate-observation.v2" }).success, false);
+  assert.equal(stringPrecreateObservationResultSchema.safeParse({ ...currentV2(), schema: "easyeda-pro-control.pcb-string-precreate-observation.v3" }).success, false);
 });

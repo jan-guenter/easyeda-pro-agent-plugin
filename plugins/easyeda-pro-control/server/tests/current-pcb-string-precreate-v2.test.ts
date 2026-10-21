@@ -49,7 +49,8 @@ void test("precreate v2 retains unavailable owners through two eight-leaf sweeps
   assert.equal(fixture.untouched(), true); assert.equal(observations, 4); assert.equal(commands.length, 66);
   assert.deepEqual(commands.slice(49).map(command => phase(command)), [...SWEEP, ...SWEEP, "release"]);
   assert.equal(commands.filter(command => phase(command) === "release").length, 1);
-  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 155 + 2 + 58 + 6 + 4);
+  // The shared ceiling also includes the V3 move collector; this V2 leaf still uses 66 requests.
+  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 155 + 2 + 58 + 12 + 6 + 4);
   assert.equal(CURRENT_PCB_STRING_PRECREATE_SAMPLE_BYTES, 208 * 1024);
   assert.equal(CURRENT_PCB_STRING_PRECREATE_RESULT_BYTES, 424 * 1024);
   await assert.rejects(selected.observe(), /PRECREATE_OBSERVATION/u); assert.equal(commands.length, 66);

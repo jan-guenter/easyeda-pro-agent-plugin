@@ -100,7 +100,16 @@ export class CurrentPcbStringWorkerProducerRunner {
     if (this.#requests >= CURRENT_PCB_STRING_WORKER_PRODUCER_REQUEST_COUNT - 1) { return refuse(); }
     this.#requests += 1;
     this.#started = true;
-    const reply = await this.#transport.request(freezeDeep(command)); this.#current(); return reply;
+    const reply = await this.#transport.request(freezeDeep(command));
+    const phase = command.workerProducerPhase;
+    if (phase === "gates" || phase === "upload-structure" || phase === "structure" || phase === "debounce" ||
+        phase === "cooperation" || phase === "upload" || phase === "buffered-environment") {
+      // Retain the received own string before post-arrival owner callbacks,
+      // Including callbacks which refuse or mutate the transport alias.
+      const retained = retainCurrentPcbStringWorkerProducerReply(reply);
+      this.#replies[phase] = retained; this.#current(); return retained;
+    }
+    this.#current(); return reply;
   }
   #evaluate(workerProducerPhase: CurrentPcbStringWorkerProducerEvaluation): Promise<unknown> {
     return this.#request({ sessionId: this.#owner.sessionId, workerProducerPhase, method: "Runtime.evaluate", params: {
@@ -132,8 +141,7 @@ export class CurrentPcbStringWorkerProducerRunner {
         identity.windowTabId !== this.#identity.windowTabId) { refuse(); }
   }
   async #sample(phase: CurrentPcbStringWorkerProducerSample, receiver: string, args: readonly string[]): Promise<CurrentPcbStringWorkerProducerReply> {
-    const reply = retainCurrentPcbStringWorkerProducerReply(await this.#call(phase, receiver, args));
-    this.#replies[phase] = reply; return reply;
+    await this.#call(phase, receiver, args); return this.#replies[phase] ?? refuse();
   }
   async #callback(phase: "upload-structure-callback" | "structure-callback" | "cooperation-callback" | "upload-callback" | "buffer-callback" | "drain-callback",
     kind: CurrentPcbStringProducerCallbackKind, receiver: string, args: readonly string[]): Promise<string> {
