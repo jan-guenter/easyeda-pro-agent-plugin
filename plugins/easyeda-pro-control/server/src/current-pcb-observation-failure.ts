@@ -7,6 +7,7 @@ import { currentPcbTeardropFailureDetail, currentPcbTeardropFailureSchema } from
 import { currentPcbStringWorkerProducerFailureDetail, currentPcbStringWorkerProducerFailureSchema } from "./current-pcb-string-worker-producer-evidence.ts";
 import { currentPcbStringMoveFailureDetail } from "./current-pcb-string-move-runner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { currentPcbRawStringFailureDetail, currentPcbRawStringFailureSchema } from "./current-pcb-raw-string-failure.ts";
 
 export const currentPcbPendingFailureStageSchema = z.enum(["callback", "scope", "environment", "copper-uploads", "plane-uploads",
   "board-upload", "commands", "active-stack", "teardrops", "dynamic-copper", "worker-registry", "worker-association", "reproof", "serialize", "decode"]);
@@ -25,7 +26,7 @@ const moveFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-
 export const currentPcbObservationFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-observation-failure.v1"),
   family: z.enum(["MODEL", "STRING_PRECREATE"]), phase: phaseSchema,
   leaf: z.discriminatedUnion("schema", [currentPcbPendingFailureSchema, currentPcbConstructorFailureSchema, currentPcbTeardropFailureSchema,
-    currentPcbStringWorkerProducerFailureSchema, moveFailureSchema]).nullable(),
+    currentPcbStringWorkerProducerFailureSchema, moveFailureSchema, currentPcbRawStringFailureSchema]).nullable(),
   cleanupFailed: z.boolean(), failureCount: z.number().int().min(1).max(8), executionAuthorized: z.literal(false),
   dispatchAbsenceVerified: z.literal(false) }).strict();
 export type CurrentPcbObservationFailure = Readonly<z.infer<typeof currentPcbObservationFailureSchema>>;
@@ -50,7 +51,8 @@ export function currentPcbObservationFailureDetail(error: unknown): CurrentPcbOb
 export function currentPcbObservationFailure(family: "MODEL" | "STRING_PRECREATE", phase: CurrentPcbObservationPhase,
   failures: readonly unknown[], cleanupFailed: boolean): AggregateError {
   const leaf = currentPcbPendingFailureDetail(failures[0]) ?? currentPcbConstructorFailureDetail(failures[0]) ??
-    currentPcbTeardropFailureDetail(failures[0]) ?? currentPcbStringWorkerProducerFailureDetail(failures[0]) ?? currentPcbStringMoveFailureDetail(failures[0]);
+    currentPcbTeardropFailureDetail(failures[0]) ?? currentPcbStringWorkerProducerFailureDetail(failures[0]) ?? currentPcbStringMoveFailureDetail(failures[0]) ??
+    currentPcbRawStringFailureDetail(failures[0]);
   let suffix = "";
   if (leaf !== null) {
     suffix = "stage" in leaf ? `_LEAF_${leaf.stage.toUpperCase().replaceAll("-", "_")}_${leaf.reason.toUpperCase()}` :

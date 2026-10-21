@@ -37,7 +37,7 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
-  assert.ok(source.includes('if(id<1 || id>(stringPurpose?237:103) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes('if(id<1 || id>(stringPurpose?3309:103) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
   assert.ok(source.includes("return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);"));
   assert.ok(source.includes('if(scriptId!=null || !token(uniqueContextId))'));
   assert.ok(source.includes(String.raw`\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]`));
@@ -117,8 +117,8 @@ void test("native constructor grammar admits only purpose-matched fixed selector
   }
   assert.ok(source.includes('ProtocolMessage(103,"Browser.getVersion",null,null,null,null)'));
   assert.ok(source.includes('ProtocolMessage(104,"Browser.getVersion",null,null,null,null)'));
-  assert.ok(source.includes('StringPrecreateProtocolMessage(237,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
-  assert.ok(source.includes('StringPrecreateProtocolMessage(238,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(3309,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(3310,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
 });
 
 void test("native creation failure captures numeric error before cleanup while preserving unknown-creation refusal", async () => {

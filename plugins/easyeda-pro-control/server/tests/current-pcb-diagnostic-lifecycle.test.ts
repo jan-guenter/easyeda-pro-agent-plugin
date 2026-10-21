@@ -154,8 +154,8 @@ function fixture(context: TestContext, id: string, dependencies: CurrentPcbDiagn
       calls.push("worker-state");
       return Promise.resolve({ queueCompletionVerified: false, executionAuthorized: false });
     },
-    observeStringPrecreate: async () => {
-      calls.push("string-precreate");
+    observeStringPrecreate: async before => {
+      calls.push("string-precreate"); assert.ok(originalInventory); assert.equal(before, originalInventory);
       const intent = await readFile(join(directory(id), "string-precreate-intent.json"), "utf8");
       assert.match(intent, /pcbOpeningResultSha256/u);
       return { schema: "easyeda-pro-control.pcb-string-precreate-observation.v1",
@@ -441,9 +441,9 @@ void test("String V2 summary bounds initial and historical responses while retai
   const original = value.owner.observeStringPrecreate, retained: { result?: Readonly<Record<string, unknown>> } = {};
   const target = { projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid,
     documentUuid: OPEN_TARGET.documentUuid, windowTabId: "fixture-tab" };
-  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> => {
+  value.owner.observeStringPrecreate = async (before): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> => {
     const sample = { synthetic: "x".repeat(200 * 1024) };
-    const result = { ...await original.call(value.owner), schema: "easyeda-pro-control.pcb-string-precreate-observation.v2",
+    const result = { ...await original.call(value.owner, before), schema: "easyeda-pro-control.pcb-string-precreate-observation.v2",
       first: sample, second: sample,
       workerProducers: { schema: "easyeda-pro-control.pcb-string-worker-producer-observation.v1",
         identity: { projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId: target.windowTabId },
@@ -503,8 +503,8 @@ void test("String publication uncertainty consumes once, retains the result and 
 void test("String purpose admits its bounded pair above the old diagnostic bound without enlarging diagnostic records", async context => {
   const id = "string-precreate-test-bound", sample = { synthetic: "x".repeat(160 * 1024) }, value = fixture(context, id);
   const original = value.owner.observeStringPrecreate;
-  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
-    ({ ...await original.call(value.owner), first: sample, second: sample });
+  value.owner.observeStringPrecreate = async (before): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
+    ({ ...await original.call(value.owner, before), first: sample, second: sample });
   await readyForString(id, value);
   await value.request("observe-string-precreate");
   const operations = await readCurrentPcbDiagnosticLifecycles();
@@ -537,8 +537,8 @@ void test("journal refuses changing String intent to diagnostic and method/profi
 void test("String result with a changed window cannot be published and original cleanup remains available", async context => {
   const id = "string-precreate-test-window", value = fixture(context, id);
   const original = value.owner.observeStringPrecreate;
-  value.owner.observeStringPrecreate = async (): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
-    ({ ...await original.call(value.owner), target: { projectUuid: OPEN_TARGET.projectUuid,
+  value.owner.observeStringPrecreate = async (before): ReturnType<CurrentPcbStringPrecreateLifecycleOwner["observeStringPrecreate"]> =>
+    ({ ...await original.call(value.owner, before), target: { projectUuid: OPEN_TARGET.projectUuid,
       branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, documentUuid: OPEN_TARGET.documentUuid, windowTabId: "different-window" } });
   await readyForString(id, value);
   await assert.rejects(value.request("observe-string-precreate"), /STRING_PRECREATE_TARGET/u);

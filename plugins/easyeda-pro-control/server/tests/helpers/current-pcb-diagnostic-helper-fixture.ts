@@ -18,7 +18,8 @@ import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../../src/current-pcb-construct
 import { callPcbStringObservation, pcbStringObservationFixture, pcbStringReply } from "./current-pcb-string-observation-fixture.ts";
 import { teardropArgumentsReply, teardropBoundReply, teardropCallbacksReply, teardropProofReply, teardropTargetReply, teardropTupleReply } from "./current-pcb-teardrop-replies.ts";
 import { pcbCommonFixture } from "./current-pcb-common-fixture.ts";
-import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../../src/current-pcb-common-state.ts";
+import { CURRENT_PCB_COMMON_PACKET_ADVANCE, CURRENT_PCB_COMMON_PACKET_READ, CURRENT_PCB_COMMON_PACKET_RESULT,
+  CURRENT_PCB_COMMON_PACKET_SEEDS } from "../../src/current-pcb-common-packet-program.ts";
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../../src/current-pcb-common-metadata.ts";
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../../src/current-pcb-string-empty-assets.ts";
 import { pcbLazyOwnerFixture, pcbLazyOwnerReply } from "./current-pcb-lazy-owner-fixture.ts";
@@ -53,8 +54,10 @@ let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let ancillaryReads = 0;
 let commonReading = false;
+let commonContext: ReturnType<typeof pcbCommonFixture> | null = null, commonPacket = 0;
 let producerResponder: ReturnType<typeof createCurrentPcbStringWorkerProducerResponder> | undefined;
 let sent = Buffer.alloc(0), terminated = false;
+let terminationReads = 0;
 const lines = createInterface({ input: process.stdin });
 lines.on("close", (): void => { producerResponder?.close(); });
 lines.on("line", line => {
@@ -171,7 +174,15 @@ lines.on("line", line => {
       } };
   } else if (request["action"] === "window") { result = { hwnd: "456" }; }
   else if (request["action"] === "normal-close") { terminated = true; result = { closeDispatched: true, saveOrDiscardSelected: false }; }
-  else if (request["action"] === "termination") { result = { terminated }; }
+  else if (request["action"] === "termination") {
+    terminationReads += 1;
+    result = { terminated, originalRootExited: terminated, originalJobEmpty: terminated };
+    if (scenario === "root-exited-job-live") { result = { terminated: false, originalRootExited: true, originalJobEmpty: false }; }
+    if (scenario === "root-live-job-empty") { result = { terminated: false, originalRootExited: false, originalJobEmpty: true }; }
+    if (scenario === "termination-unknown") { result = { terminated: false, originalRootExited: null, originalJobEmpty: null }; }
+    if (scenario === "termination-contradiction") { result = { terminated: true, originalRootExited: true, originalJobEmpty: false }; }
+    if (scenario === "termination-later-contradiction" && terminationReads > 1) { result = { terminated: true, originalRootExited: true, originalJobEmpty: false }; }
+  }
   else if (request["action"] === "release-unlaunched") {
     assert.equal(launchAttempted, false);
     result = { released: true, launchNeverAttempted: scenario !== "unlaunched-ambiguous" };
@@ -267,7 +278,7 @@ function sourceScriptUrl(): string {
 function commonResponse(request: object & Record<"commonPhase", unknown>): unknown {
   const phase = request.commonPhase;
   if (phase === "wrapper") { commonReading = true; }
-  if (phase === "release") { commonReading = false; }
+  if (phase === "release") { commonReading = false; commonContext = null; }
   if (phase === "wrapper" || phase === "handler" || phase === "release") { return modelResponse({ ...request, modelPhase: phase }, []); }
   if (phase === "constructors") { return constructorBundleReply("common"); }
   assert.ok("objectId" in request);
@@ -278,15 +289,36 @@ function commonResponse(request: object & Record<"commonPhase", unknown>): unkno
     }
     return modelResponse({ ...request, modelPhase: "properties" }, []);
   }
-  const programs = { presentation: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, rules: CURRENT_PCB_COMMON_RULES_FUNCTION,
-    preference: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, metadata: CURRENT_PCB_COMMON_METADATA_FUNCTION, assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION };
+  const seeds = { "presentation-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.presentation, "rules-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.rules,
+    "preference-seed": CURRENT_PCB_COMMON_PACKET_SEEDS.preference };
+  if (typeof phase === "string" && Object.hasOwn(seeds, phase)) {
+    const seed: unknown = Reflect.get(seeds, phase); assert.equal(typeof seed, "string");
+    commonContext = commonFixture(); commonPacket += 1;
+    runInContext(`globalThis.packet=(${String(seed)}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,producerConstructors)`,
+      commonContext, { timeout: 1000 });
+    return { result: { type: "object", className: "Object", description: "Object", objectId: `common-packet-${commonPacket}` } };
+  }
+  const packets = { "packet-advance": CURRENT_PCB_COMMON_PACKET_ADVANCE, "packet-read": CURRENT_PCB_COMMON_PACKET_READ,
+    "packet-result": CURRENT_PCB_COMMON_PACKET_RESULT };
+  if (typeof phase === "string" && Object.hasOwn(packets, phase)) {
+    assert.ok(commonContext !== null); assert.equal(request.objectId, `common-packet-${commonPacket}`);
+    const program: unknown = Reflect.get(packets, phase); assert.equal(typeof program, "string");
+    if (phase === "packet-advance") {
+      runInContext(`globalThis.packet=(${String(program)}).call(packet)`, commonContext, { timeout: 1000 }); commonPacket += 1;
+      return { result: { type: "object", className: "Object", description: "Object", objectId: `common-packet-${commonPacket}` } };
+    }
+    return pcbStringReply(runInContext(`(${String(program)}).call(packet)`, commonContext, { timeout: 1000 }) as unknown);
+  }
+  const programs = { metadata: CURRENT_PCB_COMMON_METADATA_FUNCTION, assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION };
   assert.ok(typeof phase === "string" && Object.hasOwn(programs, phase));
   const program: unknown = Reflect.get(programs, phase); assert.equal(typeof program, "string");
-  const context = pcbCommonFixture(`const env=scope.object.x.env,compiler=env._compiler;
+  return pcbStringReply(callPcbStringObservation(commonFixture(), String(program)));
+}
+function commonFixture(): ReturnType<typeof pcbCommonFixture> {
+  return pcbCommonFixture(`const env=scope.object.x.env,compiler=env._compiler;
 env._id=${JSON.stringify(pcbDocumentUuid)};env._tabId=${JSON.stringify(pcbTabId)};compiler.uuid=env._id;compiler.base.uuid=env._id;
 compiler.base.path=${JSON.stringify(projectUuid)};compiler.project=compiler.base.path;compiler.isProject=true;
 compiler.docDetail={title:"Empty PCB",parent:"",source:"",board:"",zIndex:null};`);
-  return pcbStringReply(callPcbStringObservation(context, String(program)));
 }
 function modelResponse(request: object & Record<"modelPhase", unknown>, events: unknown[]): unknown {
   const phase = request.modelPhase;

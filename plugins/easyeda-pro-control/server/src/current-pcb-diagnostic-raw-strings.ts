@@ -7,6 +7,8 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION } from "./current-pcb-diagnostic-model-program.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { currentPcbRawStringFailure, currentPcbRawStringFailureDetail, currentPcbRawStringFailureSchema,
+  currentPcbRawStringReplyFailure } from "./current-pcb-raw-string-failure.ts";
 
 export const CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES = 65_536;
 const MAX_STRINGS = 16;
@@ -20,8 +22,9 @@ const MAX_STRINGS = 16;
  */
 export const CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION = `function(originalCallback){
 "use strict";
-const bad=()=>{throw new Error("PCB_DIAGNOSTIC_RAW_STRINGS_STATE");};
-const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+let stage="callback",reason="unexpected";
+const bad=(r="guard")=>{reason=r;throw new Error("PCB_DIAGNOSTIC_RAW_STRINGS_STATE");};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad("object");const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad("own");return d.value;};
 const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
 const number=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1e11)bad();return v;};
 const integer=v=>{number(v);if(!Number.isSafeInteger(v))bad();return v;};
@@ -29,14 +32,19 @@ const flag=v=>{if(typeof v!=="boolean")bad();return v;};
 const text=(v,n)=>{if(typeof v!=="string"||v.length>n||!v.isWellFormed())bad();return v;};
 const id=v=>{text(v,32);if(!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(v))bad();return v;};
 const marker=(o,k,copy)=>{let d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.getOwnPropertyDescriptor(p,k))bad();p=Object.getPrototypeOf(p);}return {kind:"absent"};}if(!Object.hasOwn(d,"value"))bad();const v=d.value;if(v===undefined)return {kind:"undefined"};if(v===null)return {kind:"null"};return {kind:"value",value:copy(v)};};
+try{
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
+stage="scope";
 const scope=object(own(this,"object"));
 const klass=n=>{const c=own(scope,n);if(typeof c!=="function")bad();return c;};
-const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad();return o;};
-const envClass=klass("x"),managerClass=klass("bo"),env=instance(own(envClass,"env"),envClass),manager=instance(own(managerClass,"manager"),managerClass);
+const instance=(o,c)=>{object(o);if(Object.getPrototypeOf(o)!==own(c,"prototype"))bad("instance");return o;};
+stage="environment";const envClass=klass("x"),env=instance(own(envClass,"env"),envClass);
+stage="manager";const managerClass=klass("bo"),manager=instance(own(managerClass,"manager"),managerClass);
+stage="view-manager";
 const viewManager=instance(own(scope,"Jr"),klass("t7"));
 if(own(env,"_doctype")!==3||own(viewManager,"mgr")!==manager)bad();
-const documentUuid=id(own(env,"_id")),map=object(own(manager,"map"));
+stage="environment";const documentUuid=id(own(env,"_id"));
+stage="map";const map=object(own(manager,"map"));
 if(Object.getPrototypeOf(map)!==Map.prototype||Reflect.ownKeys(map).length!==0)bad();
 const sizeDescriptor=Object.getOwnPropertyDescriptor(Map.prototype,"size");
 if(!sizeDescriptor||typeof sizeDescriptor.get!=="function"||sizeDescriptor.set!==undefined)bad();
@@ -54,7 +62,7 @@ return {kind,num:integer(own(v,"num")),type:integer(own(v,"type")),origin:intege
 };
 const models=[],originals=[],seen=new Set(),iterator=Reflect.apply(own(Map.prototype,"entries"),map,[]),next=own(Object.getPrototypeOf(iterator),"next");
 if(typeof next!=="function")bad();
-for(let index=0;index<count;index++){
+stage="models";for(let index=0;index<count;index++){
 const entry=Reflect.apply(next,iterator,[]);if(own(entry,"done")!==false)bad();
 const pair=own(entry,"value");if(!Array.isArray(pair)||Object.getPrototypeOf(pair)!==Array.prototype||own(pair,"length")!==2||Reflect.ownKeys(pair).length!==3)bad();
 const model=instance(own(pair,"1"),klass("rd")),globalIndex=id(own(model,"_globalIndex"));
@@ -64,12 +72,13 @@ const snapshot={globalIndex,modelType:"Text",zIndex:marker(model,"_zIndex",integ
 if(snapshot.key!==""||snapshot.base.kind==="U8"&&(snapshot.base.layerId.kind!=="absent"||snapshot.base.locked.kind!=="absent")||snapshot.base.kind==="ib"&&(snapshot.base.layerId.kind!=="value"||snapshot.base.locked.kind!=="value"))bad();
 models.push(snapshot);originals.push([globalIndex,model,nativeBase,position]);
 }
-if(own(Reflect.apply(next,iterator,[]),"done")!==true||size()!==count)bad();
+stage="reproof";if(own(Reflect.apply(next,iterator,[]),"done")!==true||size()!==count)bad();
 for(const item of originals){if(Reflect.apply(own(Map.prototype,"get"),map,[item[0]])!==item[1]||own(item[1],"base")!==item[2]||own(item[1],"_position")!==item[3])bad();}
 if(own(envClass,"env")!==env||own(managerClass,"manager")!==manager||own(manager,"map")!==map||own(scope,"Jr")!==viewManager||own(viewManager,"mgr")!==manager||own(env,"_id")!==documentUuid||own(env,"_doctype")!==3)bad();
-const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-raw-strings.v1",documentUuid,managerModelCount:count,models});
+stage="serialize";const output=JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-raw-strings.v1",documentUuid,managerModelCount:count,models});
 let bytes=0;for(let index=0;index<output.length;index++){const c=output.charCodeAt(index);if(c<128)bytes++;else if(c<2048)bytes+=2;else if(c>=55296&&c<=56319){bytes+=4;index++;}else bytes+=3;if(bytes>${CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES})bad();}
 return output;
+}catch{return JSON.stringify({schema:"easyeda-pro-control.pcb-raw-string-failure.v1",stage,reason});}
 }`;
 export const CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256 = createHash("sha256")
   .update(CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION).digest("hex");
@@ -114,7 +123,7 @@ const LIMITS = Object.freeze({ originalScopeVerified: false, liveReceiverVerifie
   executionAuthorized: false, nativeIntrinsicsVerified: false, continuousObservation: false } as const);
 export type CurrentPcbDiagnosticRawStrings = Readonly<z.infer<typeof state>> & typeof LIMITS;
 
-function refuse(): never { throw new Error("PCB_DIAGNOSTIC_RAW_STRINGS_REPLY"); }
+function refuse(): never { throw currentPcbRawStringReplyFailure(); }
 function record(input: unknown, fields: readonly string[]): Readonly<Record<string, unknown>> {
   if (input === null || typeof input !== "object" || types.isProxy(input) || Array.isArray(input)) { return refuse(); }
   const keys = Reflect.ownKeys(input), prototype: unknown = Object.getPrototypeOf(input);
@@ -137,7 +146,9 @@ export function decodeCurrentPcbDiagnosticRawStringsReply(input: unknown): Curre
       Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES) { return refuse(); }
   try {
     const parsed = decodeCurrentPcbDiagnosticJson(Buffer.from(raw, "utf8"));
+    const failure = currentPcbRawStringFailureSchema.safeParse(parsed);
+    if (failure.success) { throw currentPcbRawStringFailure(failure.data); }
     return freezeDeep({ ...state.parse(parsed), ...LIMITS });
   }
-  catch { return refuse(); }
+  catch (error) { if (currentPcbRawStringFailureDetail(error) !== null) { throw error; } return refuse(); }
 }

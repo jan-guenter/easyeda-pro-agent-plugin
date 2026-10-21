@@ -4,6 +4,62 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### Candidate121921, 2026-10-21
+
+The combined payload `0.3.0+codex.20261021121921` is frozen for final checks,
+not yet published or installed. It combines the packet reader, original ledger
+integration, shared unresolved-operation gate, raw-reader labels, cleanup details
+and private worker construction capture described below. No new writer or API
+coverage is claimed. Installed/loaded100337 remains unchanged.
+
+Pinned Node24.18.0/npm11.16.0/core0 dependency preparation passed: npm ci and
+dependency tree,151 registry signatures/40 attestations, zero vulnerabilities,
+exact sanitizer and reproducible-source build. Strict lint now passes. Both
+actual Windows no-app CompileOnly profiles pass with zero stderr, empty Job and
+pipe checks. Their first invocation had an incorrect WSL distribution path and
+did not reach the helper; the next found a stale PowerShell self-test phase loop.
+That loop now covers the new seed/packet commands. Native helper is
+611926bytes/6f961eab; source602/fb917868. Independent packet/native/termination
+review passed; final repository, all-skill and full verification remain pending.
+
+Release evidence: `/root/.cache/easyeda-batched-release-20261021-zOlJGWwu`.
+The host `/tmp` tmpfs is full. Tests use a new private root on the repository
+filesystem: `/root/.cache/easyeda-batch-test-tmp-20261021-8xVne3`. No evidence or
+unrelated temporary files were removed. Use that TMPDIR for remaining checks.
+No further live attempt, production access or loaded-runtime replacement.
+
+### Terminal100337 and combined continuation, 2026-10-21
+
+Actual installed100337 facade2341107/start55788122 and its parent2339467 were
+admitted on pinned Node24.18.0/core0. Complete main/cache comparison passes
+1720files/42directories/35308081bytes/modes, inventory7fc1f6b4. Independent
+admission receipt24867c19 is retained at
+`/root/.cache/easyeda-100337-independent-admission-BWmea4kL/admission.json`.
+Post-main Linux39585632041 is now SUCCESS/all10jobs. Delivery and admission
+are separate evidence; the former pending CI/admission statements below are historical.
+
+NEW case `string-precreate-100337-20261021-01` completed original UI, PCB and
+project-worker source qualification. Optional common was omitted. The sole
+precreate observation refused at raw-strings, before create or explicit Save.
+Its primary leaf is null; the later pipe input/release label is not its cause.
+No source mismatch has been demonstrated. Normal close of original HWND16651374
+was dispatched once; original root44060/creation134370566267255593 and whole-Job
+termination passed. Release and final inspection show no pending settlement.
+The disposable598016/e620d21a remains byte-exact with no sidecars. No Save,
+discard, restore, forced exit or replay occurred. Production designs were not
+accessed, including reads/hashes. Evidence and continuation are in
+`/root/.cache/easyeda-100337-live-9jBraZtS`.
+
+The current dirty source batch is NOT published or installed. It combines bounded
+common graph packets and native protocol wiring, original actor/SQL provenance
+retention and ledger consumption, shared unresolved String-ledger exclusion,
+separate original-root/Job termination diagnostics, raw reader failure labels
+and a private construction-time worker receiver collector. The latter remains
+unregistered with no native startup integration. No writer or coverage increase
+is claimed. Final focused checks, source/pin freeze, release CI and official
+installation remain pending. Do not hotpatch the admitted100337 runtime, replay
+its terminal case or claim this source batch is connected validation.
+
 ### Delivered 100337, 2026-10-21
 
 Published and installed `0.3.0+codex.20261021100337` through protected PR95.

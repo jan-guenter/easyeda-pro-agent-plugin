@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInContext } from "node:vm";
 import { CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT,
-  CurrentPcbCommonBaselineRunner, requireOriginalCurrentPcbCommonBaselineReplies } from "../src/current-pcb-common-baseline-runner.ts";
+  CurrentPcbCommonBaselineRunner, currentPcbCommonBaselineChunkMetadata, requireOriginalCurrentPcbCommonBaselineChunks,
+  requireOriginalCurrentPcbCommonBaselineReplies } from "../src/current-pcb-common-baseline-runner.ts";
 import type { CurrentPcbCommonBaselineCommand } from "../src/current-pcb-common-baseline-runner.ts";
 import { currentPcbCommonRunnerFailureDetail } from "../src/current-pcb-common-baseline-failure.ts";
 import { currentPcbConstructorFailure } from "../src/current-pcb-constructor-failure.ts";
@@ -58,6 +59,7 @@ interface Options {
   readonly cleanupFailure?: Error;
   readonly staleAfter?: string;
   readonly replace?: (phase: string, reply: unknown) => unknown;
+  readonly afterArrival?: (phase: string, reply: unknown) => void;
 }
 function fixture(options: Options = {}): {
   readonly runner: CurrentPcbCommonBaselineRunner;
@@ -69,9 +71,15 @@ function fixture(options: Options = {}): {
 const compiler=scope.object.x.env._compiler;compiler.project=compiler.base.path;compiler.isProject=true;
 compiler.docDetail={title:"Fixture PCB",parent:"",source:"",board:"",zIndex:null};
 for(const name of ["Yme","Nfe","Epe","GSe"])delete scope.object[name];`), counter = { checks: 0 };
-  let current = true;
+  let arriving: { readonly phase: string; readonly reply: unknown } | undefined, current = true;
+  const packets = new Map<string, unknown>();
   const runner = new CurrentPcbCommonBaselineRunner({
-    assertCurrent: (): void => { counter.checks += 1; if (!current) { throw new Error("synthetic owner changed"); } },
+    assertCurrent: (): void => {
+      counter.checks += 1;
+      const arrival = arriving; arriving = undefined;
+      if (arrival !== undefined) { options.afterArrival?.(arrival.phase, arrival.reply); }
+      if (!current) { throw new Error("synthetic owner changed"); }
+    },
     request: (command): Promise<unknown> => {
       assert.ok(Object.isFrozen(command)); assert.ok(Object.isFrozen(command.params)); commands.push(command);
       let reply: unknown;
@@ -93,26 +101,44 @@ for(const name of ["Yme","Nfe","Epe","GSe"])delete scope.object[name];`), counte
         assert.deepEqual(command.params.arguments, [{ objectId: "rpc-wrapper" }]);
         runInContext(`globalThis.qualifiedCommonConstructors=(${command.params.functionDeclaration}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback);`, context);
         reply = { result: { type: "object", subtype: "array", className: "Array", description: "Array(4)", objectId: "common-constructors" } };
+      } else if (command.commonPhase === "packet-advance" || command.commonPhase === "packet-read" || command.commonPhase === "packet-result") {
+        assert.equal(Object.hasOwn(command.params, "arguments"), false);
+        assert.ok(packets.has(command.params.objectId)); context["originalPacket"] = packets.get(command.params.objectId);
+        const observed: unknown = runInContext(`(${command.params.functionDeclaration}).call(originalPacket)`, context);
+        if (command.commonPhase === "packet-advance") {
+          const objectId = `packet-${packets.size}`; packets.set(objectId, observed);
+          reply = { result: { type: "object", className: "Object", description: "Object", objectId } };
+        } else { reply = pcbStringReply(observed); }
       } else {
         assert.equal(command.params.objectId, "save-handler-scope");
+        assert.ok("arguments" in command.params);
         assert.deepEqual(command.params.arguments, command.commonPhase === "metadata" ? [{ objectId: "rpc-wrapper" }] : [{ objectId: "rpc-wrapper" }, { objectId: "common-constructors" }]);
-        reply = pcbStringReply(runInContext(`(${command.params.functionDeclaration}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,qualifiedCommonConstructors)`, context) as unknown);
+        const observed: unknown = runInContext(`(${command.params.functionDeclaration}).call(scope,MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback,qualifiedCommonConstructors)`, context);
+        if (command.commonPhase.endsWith("-seed")) {
+          const objectId = `packet-${packets.size}`; packets.set(objectId, observed);
+          reply = { result: { type: "object", className: "Object", description: "Object", objectId } };
+        } else { reply = pcbStringReply(observed); }
       }
       if (command.commonPhase === options.staleAfter) { current = false; }
-      return Promise.resolve(options.replace === undefined ? reply : options.replace(command.commonPhase, reply));
+      const returned = options.replace === undefined ? reply : options.replace(command.commonPhase, reply);
+      arriving = { phase: command.commonPhase, reply: returned };
+      return Promise.resolve(returned);
     },
   }, "pcb", "original-context", "d".repeat(16));
   return { commands, counter, runner, nativeCalls: (): unknown => runInContext("getterReads+vendorCalls", context) as unknown };
 }
 
-void test("common baseline qualifies elided constructors and five fixed readers in eighteen retained-scope commands", async () => {
+void test("common baseline qualifies original constructors and bounded graph packets in one retained group", async () => {
   const value = fixture();
   const result = await value.runner.observe();
-  assert.equal(value.commands.length, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
-  assert.deepEqual(value.commands.map(command => command.commonPhase),
+  assert.ok(value.commands.length < CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
+  assert.deepEqual(value.commands.slice(0, 12).map(command => command.commonPhase),
     ["wrapper", "properties", "properties", "handler", "properties", "properties", "constructors",
-      "properties", "properties", "properties", "properties", "properties", "presentation", "rules", "preference", "assets", "metadata", "release"]);
-  assert.equal(value.counter.checks, 37);
+      "properties", "properties", "properties", "properties", "properties"]);
+  assert.deepEqual(value.commands.filter(command => command.commonPhase.endsWith("-seed")).map(command => command.commonPhase),
+    ["presentation-seed", "rules-seed", "preference-seed"]);
+  assert.equal(value.commands.filter(command => command.commonPhase === "packet-result").length, 3);
+  assert.equal(value.counter.checks, value.commands.length * 2 + 1);
   const first = value.commands[0], last = value.commands.at(-1);
   assert.ok(first?.commonPhase === "wrapper" && last?.commonPhase === "release");
   assert.equal(first.params.uniqueContextId, "original-context");
@@ -137,9 +163,14 @@ void test("common baseline qualifies elided constructors and five fixed readers 
   assert.ok(decoded !== null && typeof decoded === "object" && "documentUuid" in decoded);
   assert.equal(decoded.documentUuid, result.documentUuid);
   assert.throws(() => requireOriginalCurrentPcbCommonBaselineReplies(structuredClone(result)), /PCB_COMMON_BASELINE_OBSERVATION/u);
+  const chunks = requireOriginalCurrentPcbCommonBaselineChunks(result), metadata = currentPcbCommonBaselineChunkMetadata(result);
+  assert.ok(Object.isFrozen(chunks) && Object.isFrozen(chunks.presentation) && Object.isFrozen(chunks.presentation[0]?.result));
+  assert.equal(metadata.leaves.presentation.count, chunks.presentation.length);
+  assert.ok(metadata.totalBytes > 0); assert.equal(metadata.executionAuthorized, false);
+  assert.throws(() => requireOriginalCurrentPcbCommonBaselineChunks(structuredClone(result)), /PCB_COMMON_BASELINE_OBSERVATION/u);
   assert.equal(value.nativeCalls(), 0);
   await assert.rejects(value.runner.observe(), /PCB_COMMON_BASELINE_OBSERVATION/u);
-  assert.equal(value.commands.length, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
+  assert.ok(value.commands.length < CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
 });
 
 void test("common baseline rejects a foreign original script before any common reader", async () => {
@@ -149,7 +180,7 @@ void test("common baseline rejects a foreign original script before any common r
 });
 
 void test("each common leaf is decoded before the next dispatch and foreign document samples refuse", async () => {
-  for (const phase of ["presentation", "rules", "preference", "assets", "metadata"]) {
+  for (const phase of ["packet-read", "packet-result", "assets", "metadata"]) {
     for (const malformed of [false, true]) {
       const value = fixture({ replace: (selected, reply) => {
         if (selected !== phase) { return reply; }
@@ -166,13 +197,35 @@ void test("each common leaf is decoded before the next dispatch and foreign docu
 });
 
 void test("common baseline rechecks original ownership after every observation await", async () => {
-  for (const phase of ["wrapper", "handler", "constructors", "presentation", "rules", "preference", "assets", "metadata"]) {
+  for (const phase of ["wrapper", "handler", "constructors", "presentation-seed", "rules-seed", "preference-seed", "packet-advance", "packet-read", "packet-result", "assets", "metadata"]) {
     const value = fixture({ staleAfter: phase });
     await assert.rejects(value.runner.observe(), (caughtError: unknown) => {
       assert.ok(caughtError instanceof AggregateError && caughtError.cause instanceof Error);
       assert.equal(caughtError.cause.message, "synthetic owner changed"); return true;
     });
     assert.equal(value.commands.at(-2)?.commonPhase, phase); assert.equal(value.commands.at(-1)?.commonPhase, "release");
+  }
+});
+
+void test("common raw replies are immutable before post-arrival owner hooks, including refused owners", async () => {
+  for (const phase of ["packet-read", "packet-result", "assets", "metadata"]) {
+    for (const lostOwner of [false, true]) {
+      let captured = false;
+      const value = fixture({ ...(lostOwner ? { staleAfter: phase } : {}), afterArrival: (selected, reply) => {
+        if (selected !== phase) { return; }
+        assert.ok(reply !== null && typeof reply === "object" && "result" in reply);
+        const result = reply.result; assert.ok(result !== null && typeof result === "object" && "value" in result);
+        assert.ok(Object.isFrozen(reply) && Object.isFrozen(result));
+        assert.equal(Reflect.set(result, "value", "{}"), false);
+        assert.equal(Reflect.set(reply, "result", {}), false); captured = true;
+      } });
+      if (lostOwner) { await assert.rejects(value.runner.observe(), new RegExp(`FAILED_${phase.toUpperCase()}$`, "u")); }
+      else { const result = await value.runner.observe(); assert.equal(result.documentUuid, "d".repeat(16)); }
+      assert.equal(captured, true);
+      assert.equal(value.commands.at(-1)?.commonPhase, "release");
+      assert.equal(value.commands.filter(command => command.commonPhase === "release").length, 1);
+      await assert.rejects(value.runner.observe(), /PCB_COMMON_BASELINE_OBSERVATION/u);
+    }
   }
 });
 
@@ -190,7 +243,7 @@ void test("common baseline retains primary and release errors separately and nev
     assert.deepEqual(caughtError.errors, [cleanup]);
     assert.equal(caughtError.message, "PCB_COMMON_BASELINE_OBSERVATION_FAILED_RELEASE_RELEASE_FAILED"); return true;
   });
-  assert.equal(release.commands.length, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
+  assert.ok(release.commands.length < CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
 });
 
 void test("common runner retains only original branded constructor labels and cleanup outcome", async () => {
@@ -218,7 +271,7 @@ void test("common baseline withholds a sample when original ownership changes du
     assert.equal(caughtError.message, "PCB_COMMON_BASELINE_OBSERVATION_FAILED_OWNER-FINAL");
     assert.equal(caughtError.cause.message, "synthetic owner changed"); return true;
   });
-  assert.equal(value.commands.length, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
+  assert.ok(value.commands.length < CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
   assert.equal(value.commands.at(-1)?.commonPhase, "release");
 });
 
@@ -226,7 +279,7 @@ void test("common baseline refuses foreign constructor script or aliased prototy
   for (const options of [{ constructorScript: "other-script" }, { samePrototype: true }]) {
     const value = fixture(options);
     await assert.rejects(value.runner.observe(), /FAILED_PROPERTIES/u);
-    assert.equal(value.commands.some(command => command.commonPhase === "presentation"), false);
+    assert.equal(value.commands.some(command => command.commonPhase === "presentation-seed"), false);
     assert.equal(value.commands.at(-1)?.commonPhase, "release");
   }
 });

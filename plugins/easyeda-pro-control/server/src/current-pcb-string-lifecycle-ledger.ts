@@ -14,6 +14,7 @@ import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { decodeCurrentPcbDiagnosticRawStringsReply } from "./current-pcb-diagnostic-raw-strings.ts";
 import { compareCurrentPcbStringCreateBody } from "./current-pcb-string-create.ts";
+import type { CurrentPcbStringActorClockPacket, CurrentPcbStringActorClockRunner } from "./current-pcb-string-actor-clock-runner.ts";
 import type { CurrentPcbStringCreateCandidate } from "./current-pcb-string-create.ts";
 import { compareCurrentPcbStringCreateObservation, requireOriginalCurrentPcbStringCreateObservationPlan } from "./current-pcb-string-create-observation.ts";
 import type { CurrentPcbStringCreateObservationPlan } from "./current-pcb-string-create-observation.ts";
@@ -22,8 +23,16 @@ import { compareCapturedCurrentPcbStringPublication } from "./current-pcb-string
 import type { CurrentPcbStringPublicationPlan } from "./current-pcb-string-publication.ts";
 import { compareCurrentPcbStringSaveObservation, planCurrentPcbStringSaveObservation } from "./current-pcb-string-save-observation.ts";
 import type { CurrentPcbStringSaveObservationPlan } from "./current-pcb-string-save-observation.ts";
-import { compareCurrentPcbStringSaveHistoryProvenance } from "./current-pcb-string-save-provenance.ts";
+import { compareCurrentPcbStringSaveHistoryProvenance, currentPcbStringSaveProvenanceSource,
+  prepareCurrentPcbStringSaveProvenance } from "./current-pcb-string-save-provenance.ts";
 import type { CurrentPcbStringSaveProvenance } from "./current-pcb-string-save-provenance.ts";
+import { compareCurrentPcbStringSaveClockHistory, prepareCurrentPcbStringSaveClock,
+  recordCurrentPcbStringSaveClockPost, requireOriginalCurrentPcbStringSaveClock } from "./current-pcb-string-save-clock.ts";
+import type { CurrentPcbStringSaveClockPlan } from "./current-pcb-string-save-clock.ts";
+import type { CurrentPcbStringNativeClockIssuer, CurrentPcbStringNativeClockObservation } from "./current-pcb-string-native-clock.ts";
+import type { CurrentPcbStringServerClockPacket, CurrentPcbStringServerClockRunner } from "./current-pcb-string-server-clock-runner.ts";
+import { CURRENT_PCB_STRING_LEDGER_DIRECTORY, assertNoUnresolvedCurrentPcbStringLedgers,
+  readCurrentPcbStringLedgerReservations } from "./current-pcb-string-ledger-exclusion.ts";
 import type { CurrentPcbStringHistoryProjection } from "./current-pcb-string-history.ts";
 import { prepareCurrentPcbStringSql, verifyCurrentPcbStringSql } from "./current-pcb-string-sql.ts";
 import type { CurrentPcbStringSqlPlan, CurrentPcbStringSqlWitness } from "./current-pcb-string-sql.ts";
@@ -36,7 +45,8 @@ type Phase = "prepared" | "create-intent" | "create-acknowledged" | "postcreate-
   "save-intent" | "save-acknowledged" | "closed-sql-compared" | "reopened-string-compared" |
   "comparisons-complete-awaiting-native-lifecycle-proof" | "failed";
 type AttemptKind = "create" | "save";
-const DIRECTORY = "pcb-string-dormant-lifecycle-v1";
+const DIRECTORY = CURRENT_PCB_STRING_LEDGER_DIRECTORY;
+let originalPreparationBusy = false;
 const MAX_RECORD_BYTES = 256 * 1024;
 const LIMITS = Object.freeze({ nativeDispatchPerformed: false, nativeOwnerVerified: false, createEligibilityVerified: false,
   saveEligibilityVerified: false, originalPublicationVerified: false, originalSaveVerified: false,
@@ -60,9 +70,13 @@ export interface CurrentPcbStringLedgerStatus extends Readonly<typeof LIMITS> {
   readonly saveAttemptConsumed: boolean;
   readonly recordCount: number;
   readonly acknowledgedPrimitiveId: string | null;
+  readonly originalSourcesRetained: boolean;
+  readonly saveClockPlanRecorded: boolean;
+  readonly saveClockPostRecorded: boolean;
 }
 const originalAttempts = new WeakMap<CurrentPcbStringLedgerAttempt, CurrentPcbStringLifecycleLedger>();
 const consumedPlans = new WeakSet<CurrentPcbStringCreateObservationPlan>();
+const consumedProvenances = new WeakSet<CurrentPcbStringSaveProvenance>();
 function need(value: boolean, detail: string): asserts value {
   if (!value) { throw new Error(`PCB_STRING_LIFECYCLE_LEDGER: ${detail}`); }
 }
@@ -108,6 +122,11 @@ export class CurrentPcbStringLifecycleLedger {
   #savePlan: CurrentPcbStringSaveObservationPlan | null = null;
   #sqlPlan: CurrentPcbStringSqlPlan | null = null;
   #afterSql: Inventory | null = null;
+  #originalProvenance: CurrentPcbStringSaveProvenance | null = null;
+  #clockPlan: CurrentPcbStringSaveClockPlan | null = null;
+  #clockAttempted = false;
+  #clockPostRecorded = false;
+  #history: CurrentPcbStringHistoryProjection | null = null;
 
   private constructor(operationId: string, directoryIdentity: string, candidate: CurrentPcbStringCreateCandidate,
     createPlan: CurrentPcbStringCreateObservationPlan, before: Inventory) {
@@ -137,13 +156,62 @@ export class CurrentPcbStringLifecycleLedger {
       return ledger;
     } catch (error) { ledger.#phase = "failed"; throw error; }
   }
+  /** Original-source composition for the future retained native owner. No
+   * injected dispatch callback is accepted. The existing comparison-only
+   * factory cannot create this mode or clear its durable global blocker. */
+  public static async prepareOriginalSources(operationId: string, candidate: CurrentPcbStringCreateCandidate,
+    createPlan: CurrentPcbStringCreateObservationPlan, runner: CurrentPcbStringActorClockRunner,
+    packet: CurrentPcbStringActorClockPacket, before: Inventory): Promise<CurrentPcbStringLifecycleLedger> {
+    originalCandidate(candidate); requireOriginalCurrentPcbStringCreateObservationPlan(createPlan);
+    need(typeof operationId === "string" && /^string-ledger-[a-z0-9][a-z0-9_-]{0,63}$/u.test(operationId), "operation ID differs");
+    need(!originalPreparationBusy, "original preparation busy"); originalPreparationBusy = true;
+    try {
+      await assertNoUnresolvedCurrentPcbStringLedgers();
+      const provenance = prepareCurrentPcbStringSaveProvenance(runner, packet, before);
+      return await CurrentPcbStringLifecycleLedger.#prepareOriginalLedger(operationId, candidate, createPlan, provenance);
+    } finally { originalPreparationBusy = false; }
+  }
+  /** The actual retained owner already issued its actor/SQL provenance. Join
+   * that exact original token instead of consuming its actor packet twice.
+   * This private module API still cannot dispatch or admit a native owner. */
+  public static async prepareOriginalProvenance(operationId: string, candidate: CurrentPcbStringCreateCandidate,
+    createPlan: CurrentPcbStringCreateObservationPlan, provenance: CurrentPcbStringSaveProvenance): Promise<CurrentPcbStringLifecycleLedger> {
+    originalCandidate(candidate); requireOriginalCurrentPcbStringCreateObservationPlan(createPlan);
+    currentPcbStringSaveProvenanceSource(provenance);
+    need(typeof operationId === "string" && /^string-ledger-[a-z0-9][a-z0-9_-]{0,63}$/u.test(operationId), "operation ID differs");
+    need(!originalPreparationBusy, "original preparation busy"); originalPreparationBusy = true;
+    try {
+      await assertNoUnresolvedCurrentPcbStringLedgers();
+      return await CurrentPcbStringLifecycleLedger.#prepareOriginalLedger(operationId, candidate, createPlan, provenance);
+    } finally { originalPreparationBusy = false; }
+  }
+  static async #prepareOriginalLedger(operationId: string, candidate: CurrentPcbStringCreateCandidate,
+    createPlan: CurrentPcbStringCreateObservationPlan, provenance: CurrentPcbStringSaveProvenance): Promise<CurrentPcbStringLifecycleLedger> {
+    const { before } = currentPcbStringSaveProvenanceSource(provenance);
+    need(!consumedProvenances.has(provenance), "original provenance already reserved"); consumedProvenances.add(provenance);
+    need(createPlan.target.projectUuid === provenance.identity.projectUuid && createPlan.target.branchUuid === provenance.identity.branchUuid &&
+      createPlan.target.documentUuid === provenance.identity.documentUuid, "original source target differs");
+    const ledger = await CurrentPcbStringLifecycleLedger.prepare(operationId, candidate, createPlan, before);
+    ledger.#originalProvenance = provenance;
+    try {
+      currentPcbStringSaveProvenanceSource(provenance);
+      await ledger.#current(); await ledger.#append("original-sources", { provenance, nativeOwnerVerified: false });
+      currentPcbStringSaveProvenanceSource(provenance); return ledger;
+    } catch (error) { ledger.#phase = "failed"; throw error; }
+  }
   public status(): CurrentPcbStringLedgerStatus {
     return Object.freeze({ profile: "private.current-pcb-string-lifecycle-ledger.v1", operationId: this.#operationId,
       phase: this.#phase, busy: this.#busy, createAttemptConsumed: this.#createConsumed, saveAttemptConsumed: this.#saveConsumed,
-      recordCount: this.#records.length, acknowledgedPrimitiveId: this.#primitiveId, ...LIMITS });
+      recordCount: this.#records.length, acknowledgedPrimitiveId: this.#primitiveId,
+      originalSourcesRetained: this.#originalProvenance !== null, saveClockPlanRecorded: this.#clockPlan !== null,
+      saveClockPostRecorded: this.#clockPostRecorded, ...LIMITS });
   }
   public records(): readonly PublishedManagedAttachment[] { return Object.freeze([...this.#records]); }
   async #current(): Promise<void> {
+    if (this.#originalProvenance !== null) {
+      const operations = await readCurrentPcbStringLedgerReservations();
+      need(operations.length === 1 && operations[0] === this.#operationId, "other unresolved String lifecycle");
+    }
     originalCandidate(this.#candidate); requireOriginalCurrentPcbStringCreateObservationPlan(this.#createPlan); finished(this.#before);
     const root = await controlRootCapability(false);
     const directory = await root.openDirectory(this.#path, false);
@@ -161,7 +229,7 @@ export class CurrentPcbStringLifecycleLedger {
     await this.#current();
     const previous = this.#records.at(-1);
     const sequence = this.#records.length;
-    need(sequence < 12, "journal record bound exceeded");
+    need(sequence < 16, "journal record bound exceeded");
     const record = { schema: "easyeda-pro-control.pcb-string-dormant-ledger-record.v1", operationId: this.#operationId,
       sequence, kind, previousSha256: previous?.sha256 ?? null, data, executionAuthorized: false };
     const bytes = Buffer.from(`${JSON.stringify(record)}\n`);
@@ -189,9 +257,11 @@ export class CurrentPcbStringLifecycleLedger {
    * independently issued original eligibility capability before any dispatch. */
   public reserveCreate(): Promise<CurrentPcbStringLedgerAttempt> {
     return this.#step("prepared", async () => {
+      if (this.#originalProvenance !== null) { currentPcbStringSaveProvenanceSource(this.#originalProvenance); }
       this.#createConsumed = true; this.#phase = "create-intent";
       const record = await this.#append("create-intent", { createPlanSha256: this.#createPlan.planSha256,
         candidateBodySha256: this.#candidate.expectedBodySha256, dispatchAuthorized: false });
+      if (this.#originalProvenance !== null) { currentPcbStringSaveProvenanceSource(this.#originalProvenance); }
       this.#createAttempt = this.#attempt("create", record); return this.#createAttempt;
     });
   }
@@ -234,6 +304,26 @@ export class CurrentPcbStringLifecycleLedger {
       this.#phase = "publication-compared"; return this.status();
     });
   }
+  /** Seals and publishes actual original clock objects before Save reservation.
+   * The owner must have admitted the fixed RPC separately; this method does
+   * not dispatch it or treat a supplied scalar as that observation. */
+  public armSaveClock(issuer: CurrentPcbStringNativeClockIssuer, before: CurrentPcbStringNativeClockObservation,
+    armed: CurrentPcbStringNativeClockObservation, serverRunner: CurrentPcbStringServerClockRunner,
+    server: CurrentPcbStringServerClockPacket): Promise<CurrentPcbStringLedgerStatus> {
+    return this.#step("publication-compared", async () => {
+      need(this.#originalProvenance !== null && !this.#clockAttempted, "original clock source missing or consumed");
+      this.#clockAttempted = true;
+      const plan = prepareCurrentPcbStringSaveClock(this.#originalProvenance, issuer, before, armed, serverRunner, server);
+      await this.#append("save-clock-plan", { plan });
+      requireOriginalCurrentPcbStringSaveClock(plan, this.#originalProvenance); this.#clockPlan = plan; return this.status();
+    });
+  }
+  /** Returns this ledger's original provenance only while the retained actor
+   * and SQL objects still pass their own validators. It is not owner authority. */
+  public originalSaveProvenance(): CurrentPcbStringSaveProvenance {
+    need(this.#originalProvenance !== null && this.#phase !== "failed", "original String sources missing");
+    currentPcbStringSaveProvenanceSource(this.#originalProvenance); return this.#originalProvenance;
+  }
   /** Reserves the Save only after composing original String actor selection,
    * publication and SQL plans. Their supplied clocks still grant no authority. */
   public reserveSave(provenance: CurrentPcbStringSaveProvenance, history: CurrentPcbStringHistoryProjection,
@@ -241,16 +331,33 @@ export class CurrentPcbStringLifecycleLedger {
     return this.#step("publication-compared", async () => {
       need(this.#publication !== null && this.#savePlan !== null, "original create/publication missing");
       const actor = compareCurrentPcbStringSaveHistoryProvenance(provenance, history);
+      if (this.#originalProvenance !== null) {
+        need(provenance === this.#originalProvenance && this.#clockPlan !== null, "original Save clock/provenance required");
+        const clock = requireOriginalCurrentPcbStringSaveClock(this.#clockPlan, provenance);
+        need(witness !== null && typeof witness === "object" && !types.isProxy(witness) &&
+          (Object.getPrototypeOf(witness) === Object.prototype || Object.getPrototypeOf(witness) === null), "own SQL clock witness required");
+        const suppliedClocks = ["backendClockMinMs", "backendClockMaxMs", "backendLocalOffsetMinutes"].map(key => {
+          const descriptor = Object.getOwnPropertyDescriptor(witness, key);
+          need(descriptor !== undefined && Object.hasOwn(descriptor, "value"), "own SQL clock fields required");
+          return descriptor.value as unknown;
+        });
+        need(suppliedClocks[0] === clock.backendWindow.minimumMs && suppliedClocks[1] === clock.backendWindow.maximumMs &&
+          suppliedClocks[2] === clock.backendLocalOffsetMinutes && history.saveTime >= clock.saveWindow.minimumMs &&
+          history.saveTime <= clock.saveWindow.maximumMs && history.backendTime >= clock.backendWindow.minimumMs &&
+          history.backendTime <= clock.backendWindow.maximumMs, "Save clock-derived witness differs");
+      }
       need(actor.beforeSqlSha256 === this.#before.logicalSha256 && history.primitiveId === this.#primitiveId &&
         history.targetUuid === this.#createPlan.target.documentUuid && history.client === this.#publication.binding.client &&
         history.uniqueId === this.#publication.binding.uniqueId && history.publicationTicket === this.#publication.expectedTicket &&
         history.bodyText === this.#candidate.expectedBodyText, "history and original create differ");
       const sql = await prepareCurrentPcbStringSql({ before: this.#before, history, witness });
       compareCurrentPcbStringSaveHistoryProvenance(provenance, history);
+      if (this.#clockPlan !== null) { requireOriginalCurrentPcbStringSaveClock(this.#clockPlan, provenance); }
       await this.#current(); this.#saveConsumed = true; this.#phase = "save-intent";
       const record = await this.#append("save-intent", { savePlanSha256: this.#savePlan.planSha256,
         historyChunkSha256: history.chunkSha256, actor, sql, dispatchAuthorized: false });
-      this.#sqlPlan = sql; this.#saveAttempt = this.#attempt("save", record); return this.#saveAttempt;
+      if (this.#clockPlan !== null) { requireOriginalCurrentPcbStringSaveClock(this.#clockPlan, provenance); }
+      this.#sqlPlan = sql; this.#history = history; this.#saveAttempt = this.#attempt("save", record); return this.#saveAttempt;
     });
   }
   public recordSaveOutcome(token: CurrentPcbStringLedgerAttempt, supplied: unknown): Promise<CurrentPcbStringLedgerStatus> {
@@ -267,11 +374,25 @@ export class CurrentPcbStringLifecycleLedger {
       this.#phase = completed ? "save-acknowledged" : "failed"; return this.status();
     });
   }
-  public compareClosedSql(after: Inventory): Promise<CurrentPcbStringLedgerStatus> {
+  public recordSavePost(post: CurrentPcbStringNativeClockObservation): Promise<CurrentPcbStringLedgerStatus> {
+    return this.#step("save-acknowledged", async () => {
+      need(this.#clockPlan !== null && !this.#clockPostRecorded, "original Save post missing or consumed");
+      recordCurrentPcbStringSaveClockPost(this.#clockPlan, post);
+      await this.#append("save-clock-post", { post }); this.#clockPostRecorded = true; return this.status();
+    });
+  }
+  public compareClosedSql(after: Inventory, termination?: CurrentPcbStringNativeClockObservation): Promise<CurrentPcbStringLedgerStatus> {
     return this.#step("save-acknowledged", async () => {
       need(this.#sqlPlan !== null && after !== this.#before, "distinct original post-Save SQL required"); finished(after);
+      let clockRelation: ReturnType<typeof compareCurrentPcbStringSaveClockHistory> | null = null;
+      if (this.#originalProvenance === null) { need(termination === undefined, "comparison-only ledger cannot adopt native clocks"); }
+      else {
+        need(this.#clockPlan !== null && this.#clockPostRecorded && this.#history !== null && termination !== undefined,
+          "original post and termination clocks required");
+        clockRelation = compareCurrentPcbStringSaveClockHistory(this.#clockPlan, this.#history, termination);
+      }
       const relation = await verifyCurrentPcbStringSql(this.#sqlPlan, after); finished(after);
-      await this.#append("closed-sql-comparison", { relation }); this.#afterSql = after;
+      await this.#append("closed-sql-comparison", { relation, clockRelation, ...(clockRelation === null ? {} : { termination }) }); this.#afterSql = after;
       this.#phase = "closed-sql-compared"; return this.status();
     });
   }
@@ -299,7 +420,7 @@ export class CurrentPcbStringLifecycleLedger {
 export const CURRENT_PCB_STRING_LEDGER_REMAINING = freezeDeep([
   "Original eligibility must cover full native baseline, all effects and contained destinations before either reserved attempt may dispatch.",
   "A future owner must call the fixed create and Save programs exactly once after these durable reservations; this ledger has no transport.",
-  "Launch/quarantine integration must block every unresolved original operation; a fresh operation ID must not bypass an ambiguous earlier attempt.",
+  "Global launch/bridge/native-edit admission blocks every String ledger, including partial and comparison-complete journals; native completion cannot yet clear them.",
   "Observed generation closure and cache-excluded fresh reopening require retained original handles, not supplied SQL or matching raw samples.",
   "Original visual evidence and a separate acceptance review remain required; the final comparison state is deliberately not lifecycle completion.",
 ]);

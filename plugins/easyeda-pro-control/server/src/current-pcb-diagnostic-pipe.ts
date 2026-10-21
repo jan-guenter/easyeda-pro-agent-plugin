@@ -59,8 +59,8 @@ const REQUEST_PHASES = [
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
   "model-snapshot-v2", "model-pending-v2",
   ...CURRENT_PCB_STRING_PRECREATE_PHASES.map(phase => `string-${phase}` as const),
-  "common-wrapper", "common-properties", "common-handler", "common-constructors", "common-presentation", "common-rules",
-  "common-preference", "common-assets", "common-metadata", "common-release",
+  "common-wrapper", "common-properties", "common-handler", "common-constructors", "common-presentation-seed", "common-rules-seed",
+  "common-preference-seed", "common-packet-advance", "common-packet-read", "common-packet-result", "common-assets", "common-metadata", "common-release",
   ...CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE.map(phase => `worker-producer-${phase}` as const),
   ...CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.map(phase => `actor-clock-${phase}` as const),
   ...CURRENT_PCB_STRING_MOVE_SEQUENCE.map(phase => `move-${phase}` as const),
@@ -354,7 +354,7 @@ class CurrentPcbFixedPipeCore {
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
       sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource",
-      common: ["common-presentation", "common-rules", "common-preference", "common-assets", "common-metadata"].includes(phase) };
+      common: ["common-packet-read", "common-packet-result", "common-assets", "common-metadata"].includes(phase) };
     this.#pending = pending;
     // Reserve before write, including synchronous throw and synchronous peer
     // Reply. A callback error still defeats an earlier received response.

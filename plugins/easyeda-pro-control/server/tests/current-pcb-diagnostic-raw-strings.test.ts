@@ -3,8 +3,10 @@ import { createHash } from "node:crypto";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
+import { z } from "zod";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256,
   CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES, decodeCurrentPcbDiagnosticRawStringsReply } from "../src/current-pcb-diagnostic-raw-strings.ts";
+import { currentPcbRawStringFailureDetail } from "../src/current-pcb-raw-string-failure.ts";
 
 /** Self-authored raw layouts, not executed vendor code or a live PCB. */
 const SETUP = `(()=>{
@@ -112,6 +114,21 @@ void test("raw reply decoder rejects extra claims, mismatched membership, duplic
   assert.throws(() => decodeCurrentPcbDiagnosticRawStringsReply(proxy), /RAW_STRINGS_REPLY/u);
 });
 
+void test("malformed CDP and side-effect refusals retain only the bounded decode/reply label", () => {
+  let read = false;
+  const exception = Object.defineProperty({}, "text", { get(): never { read = true; throw new Error("PRIVATE_VENDOR_TEXT"); } });
+  for (const input of [{ result: { type: "undefined" }, exceptionDetails: exception }, reply("not-json"), reply("é".repeat(65_536))]) {
+    assert.throws(() => decodeCurrentPcbDiagnosticRawStringsReply(input), caught => {
+      assert.ok(caught instanceof Error); assert.equal(caught.message, "PCB_DIAGNOSTIC_RAW_STRINGS_REPLY");
+      assert.deepEqual(currentPcbRawStringFailureDetail(caught), {
+        schema: "easyeda-pro-control.pcb-raw-string-failure.v1", stage: "decode", reason: "reply",
+      }); return true;
+    });
+  }
+  assert.equal(read, false);
+  assert.equal(currentPcbRawStringFailureDetail(new Error("PCB_DIAGNOSTIC_RAW_STRINGS_REPLY")), null);
+});
+
 void test("the raw observer bounds the aggregate encoded response without truncating membership", () => {
   const expanded = `rawState.bo.manager.map.clear();
 for(let i=0;i<16;i++){const id=i.toString(16).padStart(16,"0"),m=new scope.object.rd(id);
@@ -147,6 +164,56 @@ void test("fixed raw observer runs under inspector side-effect checking and refu
 new Proxy(original,{getOwnPropertyDescriptor(target,key){getterReads++;return Reflect.getOwnPropertyDescriptor(target,key);}}));`, context);
     const refused = await evaluate();
     assert.throws(() => decodeCurrentPcbDiagnosticRawStringsReply(refused), /RAW_STRINGS_REPLY/u);
+    assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
+  } finally { session.disconnect(); }
+});
+
+/** Runtime.evaluate on a supplied scope-shaped object does not exercise V8's
+ * internal scope wrapper. This follows the retained function -> [[Scopes]] ->
+ * scope zero -> callFunctionOn path without executing any vendor source. */
+void test("raw observer uses an actual V8 closure scope and original remote callback with callFunctionOn", async () => {
+  const session = new Session(); session.connect();
+  const name = "pcb-raw-strings-remote-scope-synthetic";
+  let uniqueContextId = "";
+  session.on("Runtime.executionContextCreated", ({ params }): void => {
+    if (params.context.name === name && "uniqueId" in params.context && typeof params.context.uniqueId === "string") {
+      uniqueContextId = params.context.uniqueId;
+    }
+  });
+  try {
+    await session.post("Runtime.enable");
+    const context = createContext({}, { name });
+    const closure = SETUP.replace("globalThis.rawState=", "globalThis.syntheticHandler=async()=>[x,bo,Jr,t7,rd,yr,U8,ib,Ls,S,ee];globalThis.rawState=");
+    runInContext(closure, context, { timeout: 1000 });
+    assert.notEqual(uniqueContextId, "");
+    const remote = z.object({ objectId: z.string().min(1).optional(), subtype: z.string().optional(), description: z.string().optional() });
+    const property = z.object({ name: z.string(), value: remote });
+    const evaluate = (expression: string): Promise<unknown> => session.post("Runtime.evaluate", { expression, uniqueContextId, returnByValue: false });
+    const properties = (objectId: string): Promise<unknown> => session.post("Runtime.getProperties", { objectId,
+      ownProperties: true, accessorPropertiesOnly: false, generatePreview: false });
+    const handler = z.object({ result: remote }).parse(await evaluate("syntheticHandler"));
+    const handlerId = handler.result.objectId; assert.ok(handlerId !== undefined);
+    const handlerProperties = z.object({ internalProperties: z.array(property) }).parse(await properties(handlerId));
+    const scopesId = handlerProperties.internalProperties.find(item => item.name === "[[Scopes]]")?.value.objectId; assert.ok(scopesId !== undefined);
+    const scopes = z.object({ result: z.array(property) }).parse(await properties(scopesId));
+    const first = scopes.result.find(item => item.name === "0")?.value; assert.ok(first);
+    assert.equal(first.subtype, "internal#scope"); assert.equal(first.description, "Closure");
+    const scopeId = first.objectId; assert.ok(scopeId !== undefined);
+    const callback = z.object({ result: remote }).parse(await evaluate('MSG_BUS_PCB.messageBus.subscribed["pcb/saveCompiler"][0].callback'));
+    const callbackId = callback.result.objectId; assert.ok(callbackId !== undefined);
+    const observe = (): Promise<unknown> => session.post("Runtime.callFunctionOn", { objectId: scopeId,
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, arguments: [{ objectId: callbackId }],
+      returnByValue: true, throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false });
+    assert.equal(decodeCurrentPcbDiagnosticRawStringsReply(await observe()).managerModelCount, 1);
+    runInContext("rawState.bo.manager.map.clear();", context);
+    assert.equal(decodeCurrentPcbDiagnosticRawStringsReply(await observe()).managerModelCount, 0);
+    runInContext("rawState.Jr.mgr={};", context);
+    const rejected = await observe();
+    assert.throws(() => decodeCurrentPcbDiagnosticRawStringsReply(rejected), caught => {
+      assert.deepEqual(currentPcbRawStringFailureDetail(caught), {
+        schema: "easyeda-pro-control.pcb-raw-string-failure.v1", stage: "view-manager", reason: "guard",
+      }); return true;
+    });
     assert.equal(runInContext("getterReads+vendorCalls", context) as unknown, 0);
   } finally { session.disconnect(); }
 });

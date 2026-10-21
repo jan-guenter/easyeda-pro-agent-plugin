@@ -9,10 +9,25 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Update `0.3.0+codex.20261021100337` combines [move/startup observations,
+Update `0.3.0+codex.20261021121921` adds bounded common-state packets, original actor/SQL
+provenance in the retained owner, ledger integration and shared unresolved-operation
+gating, fixed raw-String failure labels and separate root/Job cleanup details.
+Pre-bootstrap worker construction capture remains private and unregistered.
+No new geometry writer or live validation is claimed. See the
+[packet reader and its limits](docs/current-pcb-common-packets-2026-10-21.md),
+[original ledger integration](docs/current-pcb-string-original-ledger-2026-10-21.md)
+and [private worker capture](docs/current-pcb-worker-construction-capture-2026-10-21.md).
+
+Installed100337 admitted the actual facade and opened only the disposable project.
+Its precreate observation refused in the raw-String reader, before create or
+explicit Save. Normal close, original root/whole-Job termination and release
+passed. The closed disposable remained byte-exact with no sidecars. The cause
+of the reader refusal remains unknown; synthetic scope-handle tests pass.
+
+Update `0.3.0+codex.20261021100337` combined [move/startup observations,
 finite-effect reporting, actor/SQL and clock components, and a durable lifecycle
 ledger](docs/current-pcb-string-lifecycle-batch-2026-10-21.md). The registered
-precreate workflow uses215 requests, or237 with common, and retains V3 evidence
+precreate workflow used215 requests, or237 with common, and retained V3 evidence
 up to712KiB. Create, Save, server-time and lifecycle components remain dormant;
 no geometry writer or API coverage increase is claimed.
 

@@ -38,9 +38,11 @@ function rawModel(): Record<string, unknown> {
       rightLow: { x: 35.989999999999995, y: -45 }, rightUp: { x: 35.989999999999995, y: -33 } } },
     stateWatcher: { kind: "value", value: "reciprocal-yr" } };
 }
-async function actorCollection(): Promise<{
+export async function stringLedgerActorCollection(): Promise<{
   runner: CurrentPcbStringActorClockRunner; packet: Awaited<ReturnType<CurrentPcbStringActorClockRunner["observe"]>>;
+  expire: () => void;
 }> {
+  let current = true;
   const runner = new CurrentPcbStringActorClockRunner({
     request: (command): Promise<unknown> => {
       const stamp = { milliseconds: 1000, iso: new Date(1000).toISOString(), timezoneOffsetMinutes: 0 };
@@ -50,11 +52,9 @@ async function actorCollection(): Promise<{
         workerUserText: JSON.stringify(user), ...(command.actorClockPhase === "ui" ? { cachedActor: actor, startupActor: actor } : {}) };
       return Promise.resolve({ result: { type: "string", value: JSON.stringify(value) } });
     },
-    assertCurrent(): void {
-      // Synthetic original transport is never replaced.
-    },
+    assertCurrent(): void { assert.equal(current, true, "original actor owner lost"); },
   }, { ui: "synthetic-ui", worker: "synthetic-worker", pcb: "synthetic-pcb" }, identity);
-  return { runner, packet: await runner.observe() };
+  return { runner, packet: await runner.observe(), expire(): void { current = false; } };
 }
 interface LedgerFixture {
   readonly path: string;
@@ -103,7 +103,7 @@ export async function stringLedgerFixture(): Promise<LedgerFixture> {
     backendActor: { uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic" } });
   const witness = { projectUuid: project, branchUuid: IDS.branch, backendClockMinMs: clocks.minimumMs,
     backendClockMaxMs: clocks.maximumMs, backendLocalOffsetMinutes: 120 };
-  const { runner, packet } = await actorCollection();
+  const { runner, packet } = await stringLedgerActorCollection();
   const provenance = prepareCurrentPcbStringSaveProvenance(runner, packet, before);
   const payloadJson = JSON.stringify([{ [IDS.target]: { ...publication.expectedPayload[0][IDS.target], length: 0 } },
     ...publication.expectedPayload.slice(1)]);

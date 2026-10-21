@@ -39,9 +39,13 @@ import { CurrentPcbCommonBaselineSession } from "./current-pcb-common-baseline-s
 import { currentPcbCommonBaselineFailure, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
 import type { CurrentPcbCommonBaselineFailure, CurrentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
+import { readerCompletion } from "./sqlite-inventory.ts";
 import { CurrentPcbStringWorkerProducerRunner } from "./current-pcb-string-worker-producer-runner.ts";
 import { currentPcbStringWorkerProducerFailureDetail } from "./current-pcb-string-worker-producer-evidence.ts";
 import { CurrentPcbStringActorClockRunner } from "./current-pcb-string-actor-clock-runner.ts";
+import type { CurrentPcbStringActorClockPacket } from "./current-pcb-string-actor-clock-runner.ts";
+import { prepareCurrentPcbStringSaveProvenance, requireOriginalCurrentPcbStringSaveProvenance } from "./current-pcb-string-save-provenance.ts";
+import type { CurrentPcbStringSaveProvenance } from "./current-pcb-string-save-provenance.ts";
 import { CurrentPcbStringMoveRunner, currentPcbStringMoveFailureDetail } from "./current-pcb-string-move-runner.ts";
 import { inspectCurrentPcbStringFiniteEffects } from "./current-pcb-string-finite-effects.ts";
 import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
@@ -49,8 +53,8 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const HELPER_SHA256 = "a56a296ab09abbf2d4a901819d5aa30df2234aa212d4e757e58a5ed3b0024b75";
-const HELPER_BYTES = 545_116;
+const HELPER_SHA256 = "6f961eab97eda5d6f73f8ca54432c803ea2fabbf2690fedf46b9916fefb14081";
+const HELPER_BYTES = 611_926;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -72,6 +76,15 @@ interface Pending {
 function record(value: unknown): value is RecordValue { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: RecordValue, fields: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === fields.toSorted().join(","); }
 function error(code: string): Error { return new Error(`PCB_DIAGNOSTIC_OWNER_${code}`); }
+interface TerminationObservation { readonly originalRootExited: boolean | null; readonly originalJobEmpty: boolean | null; readonly terminated: boolean }
+function terminationObservation(value: RecordValue): Readonly<TerminationObservation> {
+  const { originalRootExited, originalJobEmpty, terminated } = value;
+  if (!exact(value, ["terminated", "originalRootExited", "originalJobEmpty"]) ||
+      typeof terminated !== "boolean" || originalRootExited !== null && typeof originalRootExited !== "boolean" ||
+      originalJobEmpty !== null && typeof originalJobEmpty !== "boolean" ||
+      terminated !== (originalRootExited === true && originalJobEmpty === true)) { throw error("TERMINATION_REPLY"); }
+  return Object.freeze({ originalRootExited, originalJobEmpty, terminated });
+}
 function binding(value: RecordValue): Binding {
   const { helperInstance, jobId, rootPid, rootCreated } = value;
   if (!exact(value, ["helperInstance", "jobId", "rootPid", "rootCreated"]) ||
@@ -150,9 +163,13 @@ class CurrentPcbRetainedOwnerCore {
   #commonBaselineFailure: CurrentPcbCommonBaselineFailure | null = null;
   #stringWorkerRunner: CurrentPcbStringWorkerProducerRunner | null = null;
   #stringActorRunner: CurrentPcbStringActorClockRunner | null = null;
+  #stringActorPacket: CurrentPcbStringActorClockPacket | null = null;
+  #stringBeforeSql: Awaited<ReturnType<typeof readExactSqlInventory>> | null = null;
+  #stringSaveProvenance: CurrentPcbStringSaveProvenance | null = null;
   #stringMoveRunner: CurrentPcbStringMoveRunner | null = null;
   #stringNativeClock: CurrentPcbStringNativeClockIssuer | null = null;
   #terminationObserved = false;
+  #terminationObservation: Readonly<TerminationObservation> | null = null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, stringPurpose: boolean) {
@@ -187,6 +204,7 @@ class CurrentPcbRetainedOwnerCore {
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
     observationFailure?: CurrentPcbObservationFailure | null;
+    lastTerminationObservation?: Readonly<TerminationObservation> | null;
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
@@ -199,6 +217,7 @@ class CurrentPcbRetainedOwnerCore {
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
       observationFailure: this.#observationFailure,
+      lastTerminationObservation: this.#terminationObservation,
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
@@ -518,7 +537,7 @@ class CurrentPcbRetainedOwnerCore {
 
   /** Separate pre-create generation only. It collects both original contexts
    * in one retained lifetime but does not qualify backend delivery or writing. */
-  public async observeStringPrecreate(): Promise<Readonly<RecordValue>> {
+  public async observeStringPrecreate(before?: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, target = this.#projectOpeningTarget, worker = this.#workerContext;
     const pipe = this.#pipe;
     if (!this.#stringPurpose || !(pipe instanceof CurrentPcbStringPrecreatePipe) || this.#stringPrecreateConsumed || context === null || worker === null || target === null ||
@@ -528,6 +547,15 @@ class CurrentPcbRetainedOwnerCore {
     this.#enter(true); this.#stringPrecreateConsumed = true;
     let phase: CurrentPcbObservationPhase = "owner";
     try {
+      // Only synthetic owners without an admitted installation may omit SQL.
+      // The lifecycle forwards its retained pre-navigation reader, never JSON.
+      if (this.#installation !== null && before === undefined) { throw error("STRING_ORIGINAL_SQL_REQUIRED"); }
+      if (before !== undefined) {
+        const completion = readerCompletion(before);
+        if (!completion.observedChildClose || completion.exitCode !== 0 || completion.exitSignal !== null) {
+          throw error("STRING_ORIGINAL_SQL_REQUIRED");
+        }
+      }
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       const selected = context.modelContext(), workerContext = worker.evaluationContext();
       const producerContext = worker.producerContext(), uiContext = context.pcbOpeningContext();
@@ -535,7 +563,9 @@ class CurrentPcbRetainedOwnerCore {
       if (windowTabId === undefined || windowTabId !== this.#pcbFrameObservation?.windowTabId) { throw error("STRING_WINDOW_CHANGED"); }
       const assertCurrent = (): void => {
         this.#available();
-        if (this.#stagedContext !== context || this.#workerContext !== worker || this.#projectOpeningTarget !== target ||
+        if (this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || this.#pipe.status().failure !== null ||
+            this.#terminationObservation?.originalRootExited === true || this.#terminationObservation?.originalJobEmpty === true ||
+            this.#stagedContext !== context || this.#workerContext !== worker || this.#projectOpeningTarget !== target ||
             JSON.stringify(context.modelContext()) !== JSON.stringify(selected) || worker.evaluationContext() !== workerContext ||
             JSON.stringify(worker.producerContext()) !== JSON.stringify(producerContext) ||
             JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(uiContext)) {
@@ -578,6 +608,11 @@ class CurrentPcbRetainedOwnerCore {
       // V2's680KiB plus16KiB move/startup and16KiB finite-effect report.
       if (Buffer.byteLength(canonicalJson(actorClock)) > 131_072 || Buffer.byteLength(canonicalJson(moveProducers)) > 16_384 ||
           Buffer.byteLength(canonicalJson(finiteEffects)) > 16_384 || Buffer.byteLength(canonicalJson(combined)) > 729_088) { throw error("STRING_COMBINED_BOUND"); }
+      if (before !== undefined) {
+        const provenance = prepareCurrentPcbStringSaveProvenance(this.#stringActorRunner, actorClock, before);
+        assertCurrent();
+        this.#stringActorPacket = actorClock; this.#stringBeforeSql = before; this.#stringSaveProvenance = provenance;
+      }
       return combined;
     } catch (caughtError) {
       const failure = currentPcbObservationFailureDetail(caughtError) === null ?
@@ -587,6 +622,18 @@ class CurrentPcbRetainedOwnerCore {
       this.#input.emit("error", error("STRING_PRECREATE_FAILED")); throw failure;
     }
     finally { this.#busy = false; }
+  }
+
+  /** Private in-process composition only. A copied observation/SQL object is
+   * never adopted, and closing the original owner invalidates this live source.
+   * Attribution retains its explicit false backend/clock/writer authority. */
+  public originalStringSaveProvenance(): CurrentPcbStringSaveProvenance {
+    this.#available();
+    if (!this.#stringPurpose || this.#busy || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+        this.#stringActorRunner === null || this.#stringActorPacket === null || this.#stringBeforeSql === null ||
+        this.#stringSaveProvenance === null) { throw error("STRING_ORIGINAL_PROVENANCE_UNAVAILABLE"); }
+    return requireOriginalCurrentPcbStringSaveProvenance(this.#stringSaveProvenance,
+      this.#stringActorRunner, this.#stringActorPacket, this.#stringBeforeSql);
   }
 
   /** Optional fixed common baseline, before the unchanged precreate attempt.
@@ -745,11 +792,11 @@ class CurrentPcbRetainedOwnerCore {
   public async observeTermination(): Promise<boolean> {
     this.#enter();
     try {
-      await this.#verify(); this.#available(); const reply = await this.#request({ action: "termination" });
+      await this.#verify(); this.#available(); const reply = terminationObservation(await this.#request({ action: "termination" }));
       await this.#verify(); this.#available();
-      if (!exact(reply, ["terminated"]) || typeof reply["terminated"] !== "boolean") { throw error("TERMINATION_REPLY"); }
-      if (reply["terminated"]) { this.#terminationObserved = true; }
-      return reply["terminated"];
+      this.#terminationObservation = reply;
+      if (reply.terminated) { this.#terminationObserved = true; }
+      return reply.terminated;
     } finally { this.#busy = false; }
   }
 
@@ -826,8 +873,8 @@ class CurrentPcbRetainedOwnerCore {
     try {
       await this.#verify(); this.#available();
       if (!unlaunched) {
-        const termination = await this.#request({ action: "termination" });
-        if (!exact(termination, ["terminated"]) || termination["terminated"] !== true) { throw error("RETAIN_LIVE_OWNER"); }
+        const termination = terminationObservation(await this.#request({ action: "termination" }));
+        if (!termination.terminated) { throw error("RETAIN_LIVE_OWNER"); }
       }
       this.#releaseConsumed = true;
       // Native release independently observes original root and Job again.
