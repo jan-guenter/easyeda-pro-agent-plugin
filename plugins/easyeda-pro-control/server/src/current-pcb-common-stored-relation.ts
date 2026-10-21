@@ -192,10 +192,14 @@ async function targetOccurrences(chunks: readonly string[], documentUuid: string
   }
   return result;
 }
-function selectHeader(occurrences: readonly Occurrence[], target: NativeDocumentSnapshot, expected: string): Occurrence {
+function selectedHeader(occurrences: readonly Occurrence[], target: NativeDocumentSnapshot): Occurrence {
   let selected: Occurrence | undefined;
   for (const item of occurrences) { if (item.type === "DOCHEAD" && (selected === undefined || item.ticket > selected.ticket)) { selected = item; } }
   need(selected !== undefined && canonicalJson(selected.body) === canonicalJson(target.metadata), "materialized header join differs");
+  return selected;
+}
+function selectHeader(occurrences: readonly Occurrence[], target: NativeDocumentSnapshot, expected: string): Occurrence {
+  const selected = selectedHeader(occurrences, target);
   need(selected.bodyText === expected, "supplied header bytes differ"); return selected;
 }
 function joinRow(expected: BodyRow, stored: NativeObjectSnapshot, occurrences: readonly Occurrence[]): JoinedRow {
@@ -227,6 +231,44 @@ function commonRows(replies: Record<string, unknown>): { rows: readonly BodyRow[
 function targetDocument(history: DecodedHistory, documentUuid: string): NativeDocumentSnapshot {
   const matches = history.history.documents.filter(document => document.uuid === documentUuid), target = matches[0];
   need(matches.length === 1 && target !== undefined && target.docType === "PCB" && !isNativeDocumentDeleted(target), "active PCB target required"); return target;
+}
+
+export interface CurrentPcbCommonHistoricalHeader {
+  readonly profile: "private.current-pcb-common-historical-header.v1";
+  readonly identity: CurrentPcbCommonStoredIdentity;
+  readonly headerText: string;
+  readonly headerSha256: string;
+  readonly beforeSqlSha256: string;
+  readonly checkpointSha256: string;
+  readonly historySha256: string;
+  readonly targetSemanticSha256: string;
+  readonly selected: Commitment;
+  readonly currentOwnerVerified: false;
+  readonly closedFileOwnershipVerified: false;
+  readonly executionAuthorized: false;
+}
+
+/** Extract the exact winning DOCHEAD body from the original completed reader.
+ * This is historical evidence, not a newly fabricated header, a current file
+ * lease or a live compiler timestamp. The existing strict stored-header shape
+ * is checked here before any live common reader needs to run. */
+export async function readCurrentPcbCommonHistoricalHeader(before: Inventory,
+  suppliedIdentity: CurrentPcbCommonStoredIdentity): Promise<CurrentPcbCommonHistoricalHeader> {
+  const completion = readerCompletion(before);
+  need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null, "original completed SQL reader required");
+  const identity = identitySchema.parse(own(suppliedIdentity, ["projectUuid", "branchUuid", "documentUuid"]));
+  const history = await decodeCurrentSymbolPreEditHistory(before, { projectUuid: identity.projectUuid, branchUuid: identity.branchUuid });
+  const target = targetDocument(history, identity.documentUuid);
+  const occurrences = await targetOccurrences(history.chunks, identity.documentUuid);
+  const header = selectedHeader(occurrences, target);
+  const raw = decodeCurrentPcbDiagnosticJson(Buffer.from(header.bodyText));
+  const parsed = currentPcbStoredHeaderSchema.parse(raw);
+  need(parsed.uuid === identity.documentUuid && JSON.stringify(raw) === header.bodyText, "historical header encoding differs");
+  need(readerCompletion(before) === completion, "original SQL reader changed");
+  return freezeDeep({ profile: "private.current-pcb-common-historical-header.v1", identity, headerText: header.bodyText,
+    headerSha256: sha256Text(header.bodyText), beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256,
+    historySha256: history.history.semanticSha256, targetSemanticSha256: target.semanticSha256, selected: commitment(header),
+    currentOwnerVerified: false, closedFileOwnershipVerified: false, executionAuthorized: false });
 }
 
 /** Decode the original completed SQL inventory and each strict raw observation.

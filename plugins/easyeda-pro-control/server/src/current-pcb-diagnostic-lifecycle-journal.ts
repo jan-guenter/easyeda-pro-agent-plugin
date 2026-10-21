@@ -11,6 +11,8 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
 import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
+// oxlint-disable-next-line import/max-dependencies -- One append-only journal validates separately bounded diagnostic, String and common evidence without sharing their authority.
+import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
@@ -95,7 +97,7 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-export const lifecycleObservationStages = [...diagnosticObservationStageSchema.options, "string-precreate"] as const;
+export const lifecycleObservationStages = [...diagnosticObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
@@ -116,6 +118,23 @@ const stringPrecreateIntentSchema = z.object({
   operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("string-precreate"),
   bindingSha256: diagnosticLifecycleDigestSchema, pcbOpeningResultSha256: diagnosticLifecycleDigestSchema,
   workerScriptResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const commonBaselineIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-common-baseline-intent.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("common-baseline"),
+  bindingSha256: diagnosticLifecycleDigestSchema, pcbOpeningResultSha256: diagnosticLifecycleDigestSchema,
+  workerScriptResultSha256: diagnosticLifecycleDigestSchema, beforeSqlSha256: diagnosticLifecycleDigestSchema,
+  checkpointSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const commonBaselineResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-common-baseline-result.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, stage: z.literal("common-baseline"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentPcbCommonBaselineResultSchema, executionAuthorized: z.literal(false),
+}).strict();
+const commonBaselineFailureSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-common-baseline-failure-record.v1"), ...base,
+  operationId: currentPcbStringPrecreateIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  failure: currentPcbCommonBaselineFailureSchema, executionAuthorized: z.literal(false),
 }).strict();
 export const stringPrecreateObservationResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation.v1"),
@@ -153,6 +172,7 @@ const projectOpeningIntentSchema = z.object({
   bindingSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
   target: currentDisposableOpenSealedTargetSchema, preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema,
   checkpointReceiptSha256: diagnosticLifecycleDigestSchema,
+  commonBeforeSqlSha256: diagnosticLifecycleDigestSchema.optional(),
   confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
 }).strict();
 const projectOpeningResultSchema = z.object({
@@ -185,6 +205,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
+  "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
+  "common-baseline-failure.json": commonBaselineFailureSchema,
   "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
@@ -204,6 +226,7 @@ function recordBound(name: RecordName): number {
   // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
   if (name === "project-opening-intent.json") { return 64 * 1024; }
   if (name === "string-precreate-result.json") { return STRING_PRECREATE_OBSERVATION_MAX_BYTES + MAX_BYTES; }
+  if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
 }
 function same(left: BigIntStats, right: BigIntStats): boolean {
@@ -268,6 +291,9 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(!stringPurpose || operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "STRING_PURPOSE_ID");
   requireValue(intent === undefined || stringPurpose || !operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "RESERVED_STRING_PURPOSE_ID");
   requireValue(stringPurpose || records["string-precreate-intent.json"] === undefined && records["string-precreate-result.json"] === undefined, "STRING_PURPOSE_REQUIRED");
+  requireValue(stringPurpose || records["common-baseline-intent.json"] === undefined && records["common-baseline-result.json"] === undefined &&
+    records["common-baseline-failure.json"] === undefined && records["project-opening-intent.json"]?.commonBeforeSqlSha256 === undefined,
+  "COMMON_PURPOSE_REQUIRED");
   requireValue(!stringPurpose || records["model-state-intent.json"] === undefined && records["worker-state-intent.json"] === undefined &&
     (records["script-intent.json"] === undefined || records["script-intent.json"].family === "ui"), "STRING_PURPOSE_BRANCH");
   for (const stage of lifecycleObservationStages) {
@@ -301,6 +327,32 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(!stringPurpose || records["workers-intent.json"] === undefined ||
     pcbObserved !== undefined && opening !== undefined && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target), "STRING_WORKERS_SOURCE_CHAIN");
   const stringObservation = records["string-precreate-intent.json"], workerScript = records["worker-script-result.json"];
+  const commonObservation = records["common-baseline-intent.json"], commonResult = records["common-baseline-result.json"];
+  const commonFailure = records["common-baseline-failure.json"];
+  requireValue(commonObservation === undefined || stringPurpose && pcbObserved !== undefined && opening !== undefined &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && commonObservation.pcbOpeningResultSha256 === sha256Json(pcbObserved) &&
+    workerScript !== undefined && workerScript.result["sourceVerified"] === true && commonObservation.workerScriptResultSha256 === sha256Json(workerScript) &&
+    commonObservation.beforeSqlSha256 === opening.commonBeforeSqlSha256 && commonObservation.checkpointSha256 === opening.preparationCheckpoint.sha256,
+  "COMMON_BASELINE_SOURCE_CHAIN");
+  requireValue(commonResult === undefined || commonObservation !== undefined && opening !== undefined &&
+    canonicalJson(commonResult.result.identity) === canonicalJson({ projectUuid: opening.target.projectUuid, branchUuid: opening.target.branchUuid,
+      documentUuid: opening.target.documentUuid }) && commonResult.result.beforeSqlSha256 === commonObservation.beforeSqlSha256 &&
+    commonResult.result.checkpointSha256 === commonObservation.checkpointSha256, "COMMON_BASELINE_TARGET_CHAIN");
+  requireValue(commonFailure === undefined || commonObservation !== undefined && opening !== undefined &&
+    commonFailure.intentSha256 === sha256Json(commonObservation) && canonicalJson(commonFailure.failure.identity) === canonicalJson({
+      projectUuid: opening.target.projectUuid, branchUuid: opening.target.branchUuid, documentUuid: opening.target.documentUuid }) &&
+    (commonFailure.failure.historicalHeader === null || commonFailure.failure.historicalHeader.beforeSqlSha256 === commonObservation.beforeSqlSha256 &&
+      commonFailure.failure.historicalHeader.checkpointSha256 === commonObservation.checkpointSha256), "COMMON_BASELINE_FAILURE_CHAIN");
+  const comparisonRefused = commonResult?.result.schema === "easyeda-pro-control.pcb-common-baseline-refusal.v1";
+  requireValue(commonResult === undefined || (comparisonRefused ? commonFailure?.failure.nativeContinuationAllowed === true &&
+    commonResult.result.historicalHeaderSha256 === commonFailure.failure.historicalHeader?.headerSha256 &&
+    commonResult.result.observationSha256 === commonFailure.failure.observationSha256 &&
+    canonicalJson(commonResult.result.retainedReplySha256) === canonicalJson(commonFailure.failure.retainedReplySha256) : commonFailure === undefined),
+  "COMMON_BASELINE_REFUSAL_CHAIN");
+  requireValue(commonFailure === undefined || commonResult === undefined || comparisonRefused, "COMMON_BASELINE_FAILURE_RESULT");
+  requireValue(stringObservation === undefined || commonObservation === undefined || commonResult !== undefined &&
+    (commonFailure === undefined || comparisonRefused && commonFailure.failure.nativeContinuationAllowed),
+    "COMMON_BASELINE_PRECREATE_ORDER");
   requireValue(stringObservation === undefined || stringPurpose && pcbObserved !== undefined && opening !== undefined &&
     diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) &&
     stringObservation.pcbOpeningResultSha256 === sha256Json(pcbObserved) && workerScript !== undefined &&

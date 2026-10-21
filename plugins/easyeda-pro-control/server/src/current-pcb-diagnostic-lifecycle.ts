@@ -5,7 +5,7 @@ import type { z } from "zod";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
-import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
 import { startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner } from "./current-pcb-diagnostic-owner.ts";
@@ -24,17 +24,21 @@ import { DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTE
   reserveCurrentPcbDiagnosticLifecycle, stringPrecreateObservationResultSchema, stringPrecreateTargetMatches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticLaunchLease, DiagnosticLifecycleBinding, DiagnosticLifecycleOperation, DiagnosticLifecycleRecordName, DiagnosticLifecycleRecords } from "./current-pcb-diagnostic-lifecycle-journal.ts";
 import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
+import { currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineFailureSummary, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
+import { readerCompletion } from "./sqlite-inventory.ts";
+import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest;
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
 type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" }>;
-type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "string-precreate";
+type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]>;
-export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate">;
-type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate">>;
+type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
+export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StringOwnerMethods;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<StringOwnerMethods>;
 export interface CurrentPcbDiagnosticLifecycleOptions extends CurrentPcbDiagnosticInstallationOptions {
   readonly assertAllowed: () => Promise<void>;
   /** Original local method/environment identity only. No bridge or full startup admission. */
@@ -54,6 +58,7 @@ export interface CurrentPcbDiagnosticLifecycleDependencies {
 }
 export interface CurrentPcbStringPrecreateLifecycleDependencies extends Omit<CurrentPcbDiagnosticLifecycleDependencies, "allocateOwner"> {
   readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbStringPrecreateLifecycleOwner>;
+  readonly readCommonInventory?: typeof readCurrentPcbCommonOpenInventory;
 }
 interface Retained {
   readonly operationId: string;
@@ -69,6 +74,7 @@ interface ProjectPreparation {
   readonly prepared: CurrentDisposableOpenCheckpoint;
   readonly preparedText: string;
   readonly originalTarget: Extract<Request, { action: "open-project" }>["target"];
+  readonly commonInventory: Awaited<ReturnType<typeof readExactSqlInventory>> | null;
 }
 const claims = Object.freeze({ bridgeAuthentication: false, frameWorkerVerified: false, startupQualified: false,
   validationOnly: true, executionAuthorized: false, designExecutionAuthorized: false, savedStateVerified: false, historicalOwnershipRecreated: false });
@@ -112,6 +118,7 @@ class CurrentPcbLifecycleCore {
   readonly #prepareCheckpoint: typeof prepareCurrentDisposableOpenCheckpoint;
   readonly #verifyCheckpoint: typeof verifyCurrentDisposableOpenCheckpoint;
   readonly #verifyHistoricalCheckpoint: typeof verifyHistoricalCurrentDisposableOpenCheckpoint;
+  readonly #readCommonInventory: typeof readCurrentPcbCommonOpenInventory;
   readonly #pending = new Map<DiagnosticLifecycleRecordName, string>();
   readonly #observations = new Map<ObservationStage, Readonly<Record<string, unknown>>>();
   readonly #observationConsumed = new Set<ObservationStage>();
@@ -142,6 +149,7 @@ class CurrentPcbLifecycleCore {
     this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
     this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
     this.#verifyHistoricalCheckpoint = dependencies.verifyHistoricalCheckpoint ?? verifyHistoricalCurrentDisposableOpenCheckpoint;
+    this.#readCommonInventory = "readCommonInventory" in dependencies ? dependencies.readCommonInventory ?? readCurrentPcbCommonOpenInventory : readCurrentPcbCommonOpenInventory;
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
@@ -158,6 +166,9 @@ class CurrentPcbLifecycleCore {
       const pendingFailure = original ? this.#pending.get("observation-failure.json") : undefined;
       const failureRecord = pendingFailure === undefined ? operation?.records["observation-failure.json"] :
         diagnosticLifecycleRecordSchemas["observation-failure.json"].parse(JSON.parse(pendingFailure) as unknown);
+      const commonPending = original ? this.#pending.get("common-baseline-failure.json") : undefined;
+      const commonFailure = commonPending === undefined ? operation?.records["common-baseline-failure.json"] :
+        diagnosticLifecycleRecordSchemas["common-baseline-failure.json"].parse(JSON.parse(commonPending) as unknown);
       const selectedStage = request.observation ?? this.#stages.toReversed().find(stage =>
         operation?.records[`${stage}-result.json`] !== undefined || original && this.#pending.has(`${stage}-result.json`));
       const observations = this.#stages.map(stage => {
@@ -205,6 +216,8 @@ class CurrentPcbLifecycleCore {
         diagnosticFailureObservation: native?.diagnosticFailureObservation ?? null,
         observationFailure: native?.observationFailure ?? failureRecord?.failure ?? null,
         observationFailurePublished: operation?.records["observation-failure.json"] !== undefined,
+        commonBaselineFailure: commonFailure === undefined ? null : currentPcbCommonBaselineFailureSummary(commonFailure.failure),
+        commonBaselineFailurePublished: operation?.records["common-baseline-failure.json"] !== undefined,
         nativeSendError: native?.nativeSendError ?? null,
         ...(native === null ? {} : { nativeLaunchError: native.nativeLaunchError, createProcessError: native.createProcessError }),
         ...(pendingIntent === null ? {} : { intentSha256: pendingIntent.intentSha256, publicationSettlementAvailable: this.#lease !== null,
@@ -245,7 +258,9 @@ class CurrentPcbLifecycleCore {
     const status = retained.methods.status.call(retained.owner);
     requireValue(status.profile === (this.#stringPurpose ? "string-precreate" : "diagnostic") &&
       (!this.#stringPurpose || typeof retained.methods.observeStringPrecreate === "function" &&
-        retained.owner.observeStringPrecreate === retained.methods.observeStringPrecreate), "OWNER_PURPOSE_CHANGED");
+        retained.owner.observeStringPrecreate === retained.methods.observeStringPrecreate &&
+        typeof retained.methods.observeCommonBaseline === "function" && retained.owner.observeCommonBaseline === retained.methods.observeCommonBaseline &&
+        typeof retained.methods.retainedCommonBaselineFailure === "function" && retained.owner.retainedCommonBaselineFailure === retained.methods.retainedCommonBaselineFailure), "OWNER_PURPOSE_CHANGED");
     requireValue(retained.binding === null || canonicalJson(status.binding) === canonicalJson(retained.binding), "BINDING_CHANGED");
   }
   async #installation(retained: Retained): Promise<void> {
@@ -419,7 +434,8 @@ class CurrentPcbLifecycleCore {
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
-      ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate } : {}) });
+      ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
+        retainedCommonBaselineFailure: owner.retainedCommonBaselineFailure } : {}) });
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
       intentSha256: sha256Json(intent), binding: null };
     this.#retained = retained;
@@ -471,6 +487,7 @@ class CurrentPcbLifecycleCore {
     await assertSnapshot(operations); this.#assertOwner(retained);
     if (request.action === "open-project") { return this.#openProject(request, operation, operations, retained); }
     if (request.action === "open-pcb") { return this.#openPcb(request, operation, operations, retained); }
+    if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
         request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate") {
@@ -570,6 +587,14 @@ class CurrentPcbLifecycleCore {
     }
     if (stage === "string-precreate") {
       requireValue(this.#stringPurpose, "STRING_PURPOSE_REQUIRED");
+      if (this.#observationConsumed.has("common-baseline") || operation.records["common-baseline-intent.json"] !== undefined) {
+        const common = operation.records["common-baseline-result.json"], failure = operation.records["common-baseline-failure.json"];
+        requireValue(common !== undefined && this.#pending.get("common-baseline-result.json") === canonicalJson(common) &&
+          canonicalJson(this.#observations.get("common-baseline")) === canonicalJson(common.result) &&
+          (common.result.schema === "easyeda-pro-control.pcb-common-baseline-refusal.v1" ? failure !== undefined &&
+            failure.failure.nativeContinuationAllowed && this.#pending.get("common-baseline-failure.json") === canonicalJson(failure) : failure === undefined),
+        "COMMON_RESULT_PUBLICATION_REQUIRED");
+      }
       this.#originalPcbSource(operation);
       const record = operation.records["worker-script-result.json"], source = this.#observations.get("worker-script");
       requireValue(source !== undefined && record !== undefined && source["sourceVerified"] === true &&
@@ -650,6 +675,98 @@ class CurrentPcbLifecycleCore {
     await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
     return { ...describe(request.operationId, operation), stage, result: record.result };
   }
+  async #observeCommonBaseline(request: Extract<CleanupRequest, { action: "observe-common-baseline" }>, operation: DiagnosticLifecycleOperation,
+    operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
+    const failureReader = retained.methods.retainedCommonBaselineFailure, observe = retained.methods.observeCommonBaseline;
+    requireValue(this.#stringPurpose && observe !== undefined && failureReader !== undefined, "COMMON_PURPOSE_REQUIRED");
+    requireValue(!this.#observationConsumed.has("common-baseline") && operation.records["common-baseline-intent.json"] === undefined,
+      "COMMON_OBSERVATION_CONSUMED");
+    requireValue(!this.#observationConsumed.has("string-precreate") && operation.records["string-precreate-intent.json"] === undefined &&
+      operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "COMMON_OBSERVATION_UNAVAILABLE");
+    this.#originalPcbSource(operation);
+    const preparation = this.#originalProjectOpening(operation);
+    const before = preparation.commonInventory, originalWorker = this.#observations.get("worker-script"), worker = operation.records["worker-script-result.json"];
+    requireValue(before !== null && worker !== undefined && originalWorker !== undefined && originalWorker["sourceVerified"] === true &&
+      canonicalJson(worker.result) === canonicalJson(originalWorker) && this.#pending.get("worker-script-result.json") === canonicalJson(worker),
+    "COMMON_ORIGINAL_BASELINE_REQUIRED");
+    const completion = readerCompletion(before);
+    requireValue(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
+      before.logicalSha256 === operation.records["project-opening-intent.json"]?.commonBeforeSqlSha256 &&
+      before.checkpointSha256 === preparation.prepared.checkpoint.checkpointSha256, "COMMON_ORIGINAL_SQL_REQUIRED");
+    await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+    await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget);
+    requireValue(this.#projectPreparation === preparation && canonicalJson(preparation.prepared) === preparation.preparedText &&
+      readerCompletion(before) === completion, "COMMON_BASELINE_CHANGED");
+    await assertSnapshot(operations); this.#assertOwner(retained);
+    const intent: NonNullable<DiagnosticLifecycleRecords["common-baseline-intent.json"]> = {
+      schema: "easyeda-pro-control.pcb-common-baseline-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      stage: "common-baseline", bindingSha256: request.expectedBindingSha256,
+      pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]), workerScriptResultSha256: sha256Json(worker),
+      beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256,
+    };
+    this.#observationConsumed.add("common-baseline"); await this.#record(request.operationId, "common-baseline-intent.json", intent);
+    const updated = { ...operation, records: { ...operation.records, "common-baseline-intent.json": intent } };
+    const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
+    await assertSnapshot(expected); this.#assertOwner(retained);
+    let result: Awaited<ReturnType<NonNullable<LifecycleOwner["observeCommonBaseline"]>>>;
+    try { result = await observe.call(retained.owner, before); }
+    catch (caughtError) {
+      const rawFailure = failureReader.call(retained.owner);
+      if (rawFailure !== null) {
+        const failure = currentPcbCommonBaselineFailureSchema.parse(rawFailure);
+        const record: NonNullable<DiagnosticLifecycleRecords["common-baseline-failure.json"]> = {
+          schema: "easyeda-pro-control.pcb-common-baseline-failure-record.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+          intentSha256: sha256Json(intent), failure, executionAuthorized: false,
+        };
+        this.#retainRecord("common-baseline-failure.json", record);
+        try {
+          this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+          await this.#publish(request.operationId, "common-baseline-failure.json", record);
+          const failed = { ...updated, records: { ...updated.records, "common-baseline-failure.json": record } };
+          await assertSnapshot(expected.map(value => value.operationId === request.operationId ? failed : value)); this.#assertOwner(retained);
+        } catch (publicationError) {
+          // oxlint-disable-next-line eslint/preserve-caught-error -- Preserve the original observation cause and the distinct later evidence-publication failure.
+          throw new AggregateError([caughtError, publicationError], "PCB_COMMON_BASELINE_FAILURE_PUBLICATION", { cause: caughtError });
+        }
+      }
+      throw caughtError;
+    }
+    this.#observations.set("common-baseline", result);
+    const parsed = currentPcbCommonBaselineResultSchema.parse(result), target = preparation.sealedTarget;
+    requireValue(parsed.identity.projectUuid === target.projectUuid && parsed.identity.branchUuid === target.branchUuid &&
+      parsed.identity.documentUuid === target.documentUuid && parsed.beforeSqlSha256 === before.logicalSha256 &&
+      parsed.checkpointSha256 === before.checkpointSha256, "COMMON_RESULT_TARGET");
+    const record: NonNullable<DiagnosticLifecycleRecords["common-baseline-result.json"]> = {
+      schema: "easyeda-pro-control.pcb-common-baseline-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+      stage: "common-baseline", intentSha256: sha256Json(intent), result: parsed, executionAuthorized: false,
+    };
+    let preceding = updated;
+    if (parsed.schema === "easyeda-pro-control.pcb-common-baseline-refusal.v1") {
+      const failure = currentPcbCommonBaselineFailureSchema.parse(failureReader.call(retained.owner));
+      requireValue(failure.nativeContinuationAllowed && canonicalJson(failure.identity) === canonicalJson(parsed.identity) &&
+        failure.historicalHeader?.headerSha256 === parsed.historicalHeaderSha256 &&
+        failure.observationSha256 === parsed.observationSha256 &&
+        canonicalJson(failure.retainedReplySha256) === canonicalJson(parsed.retainedReplySha256), "COMMON_REFUSAL_EVIDENCE_REQUIRED");
+      const failed: NonNullable<DiagnosticLifecycleRecords["common-baseline-failure.json"]> = {
+        schema: "easyeda-pro-control.pcb-common-baseline-failure-record.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), failure, executionAuthorized: false,
+      };
+      // Retain both plans before the first publication. Settlement can only
+      // Publish these same bytes, in failure-before-result order.
+      this.#retainRecord("common-baseline-failure.json", failed);
+      this.#retainRecord("common-baseline-result.json", record);
+      this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+      await this.#publish(request.operationId, "common-baseline-failure.json", failed);
+      preceding = { ...updated, records: { ...updated.records, "common-baseline-failure.json": failed } };
+    } else { this.#retainRecord("common-baseline-result.json", record); }
+    const precedingExpected = expected.map(value => value.operationId === request.operationId ? preceding : value);
+    this.#assertOwner(retained); await assertSnapshot(precedingExpected); this.#assertOwner(retained);
+    await this.#publish(request.operationId, "common-baseline-result.json", record);
+    const completed = { ...preceding, records: { ...preceding.records, "common-baseline-result.json": record } };
+    await assertSnapshot(precedingExpected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
+    return { ...describe(request.operationId, completed), stage: "common-baseline", result: parsed };
+  }
+
   async #openProject(request: Extract<CleanupRequest, { action: "open-project" }>, operation: DiagnosticLifecycleOperation,
     operations: readonly DiagnosticLifecycleOperation[], retained: Retained): Promise<Record<string, unknown>> {
     requireValue(!this.#openingAttempted && operation.records["project-opening-intent.json"] === undefined, "PROJECT_OPENING_CONSUMED");
@@ -670,7 +787,14 @@ class CurrentPcbLifecycleCore {
     requireValue(prepared.targetEvidence.projectUuid === target.projectUuid && prepared.targetEvidence.documentUuid === target.documentUuid &&
       prepared.targetEvidence.docType === "PCB" && prepared.targetEvidence.sourceSha256 === target.expectedSourceSha256, "PROJECT_CHECKPOINT_BINDING");
     const sealedTarget = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ ...target, branchUuid: prepared.targetEvidence.branchUuid }));
-    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target });
+    const commonInventory = this.#stringPurpose ? await this.#readCommonInventory(prepared, target) : null;
+    this.#assertOwner(retained);
+    if (commonInventory !== null) {
+      const completion = readerCompletion(commonInventory);
+      requireValue(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
+        commonInventory.checkpointSha256 === prepared.checkpoint.checkpointSha256, "COMMON_ORIGINAL_SQL_REQUIRED");
+    }
+    this.#projectPreparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory });
     const preparationCheckpoint = currentDisposableOpenPreparationCheckpointSchema.parse(prepared.preparationCheckpoint);
     await this.#verifyCheckpoint(prepared, target);
     requireValue(canonicalJson(prepared) === preparedText, "PROJECT_CHECKPOINT_CHANGED");
@@ -679,6 +803,7 @@ class CurrentPcbLifecycleCore {
       schema: "easyeda-pro-control.pcb-diagnostic-project-opening-intent.v1", operationId: request.operationId,
       createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256, scriptResultSha256: sha256Json(script),
       target: sealedTarget, preparationCheckpoint, checkpointReceiptSha256: sha256Json(prepared.checkpoint),
+      ...(commonInventory === null ? {} : { commonBeforeSqlSha256: commonInventory.logicalSha256 }),
       confirmDisposableProject: true, acceptNormalOpenEffects: true,
     };
     await this.#record(request.operationId, "project-opening-intent.json", intent);

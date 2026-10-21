@@ -4,6 +4,8 @@ import { runInContext } from "node:vm";
 import { CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT,
   CurrentPcbCommonBaselineRunner, requireOriginalCurrentPcbCommonBaselineReplies } from "../src/current-pcb-common-baseline-runner.ts";
 import type { CurrentPcbCommonBaselineCommand } from "../src/current-pcb-common-baseline-runner.ts";
+import { currentPcbCommonRunnerFailureDetail } from "../src/current-pcb-common-baseline-failure.ts";
+import { currentPcbConstructorFailure } from "../src/current-pcb-constructor-failure.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_LOCATIONS } from "../src/current-pcb-diagnostic-model-scope.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_PROFILES } from "../src/current-pcb-constructor-scope.ts";
 import type { CurrentPcbConstructorName } from "../src/current-pcb-constructor-scope.ts";
@@ -189,6 +191,24 @@ void test("common baseline retains primary and release errors separately and nev
     assert.equal(caughtError.message, "PCB_COMMON_BASELINE_OBSERVATION_FAILED_RELEASE_RELEASE_FAILED"); return true;
   });
   assert.equal(release.commands.length, CURRENT_PCB_COMMON_BASELINE_REQUEST_COUNT);
+});
+
+void test("common runner retains only original branded constructor labels and cleanup outcome", async () => {
+  const primary = currentPcbConstructorFailure({ schema: "easyeda-pro-control.pcb-constructor-failure.v1",
+    bundle: "common", profile: "Yme", stage: "constructor", reason: "name" });
+  for (const cleanupFailure of [undefined, new Error("secret cleanup")]) {
+    const value = fixture({ ...(cleanupFailure === undefined ? {} : { cleanupFailure }), replace: (phase, reply) => {
+      if (phase === "constructors") { throw primary; } return reply;
+    } });
+    await assert.rejects(value.runner.observe(), (caughtError: unknown) => {
+      const detail = currentPcbCommonRunnerFailureDetail(caughtError); assert.ok(detail);
+      assert.equal(detail.phase, "constructors"); assert.equal(detail.cleanup, cleanupFailure === undefined ? "released" : "failed");
+      assert.equal(detail.constructor?.profile, "Yme"); assert.equal(detail.constructor?.reason, "name");
+      assert.equal(currentPcbCommonRunnerFailureDetail(structuredClone(caughtError)), null);
+      assert.equal(JSON.stringify(detail).includes("secret"), false); return true;
+    });
+  }
+  assert.equal(currentPcbCommonRunnerFailureDetail(new Error("PCB_COMMON_BASELINE_OBSERVATION_FAILED_CONSTRUCTORS")), null);
 });
 
 void test("common baseline withholds a sample when original ownership changes during private cleanup", async () => {

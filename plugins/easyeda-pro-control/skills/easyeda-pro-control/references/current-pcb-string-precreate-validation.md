@@ -60,9 +60,20 @@ All calls below use the new tool's `request` object.
 7. `inspect-workers`, then `inspect-worker-script` using a target from that
    retained direct-child inventory. The worker's full source and original
    context must pass. No alternate attachment or worker selection after failure.
-8. `observe-string-precreate` once. It accepts no caller program or selector.
+8. Optionally call `observe-common-baseline` once, before any precreate attempt.
+   It uses the complete SQL inventory retained during this operation's original
+   pre-open checkpoint, then reads common state from the original PCB context.
+   It accepts no checkpoint, observation or SQL inventory from the caller.
+   The result compares the surviving common and metadata records with that
+   historical snapshot. It does not establish a complete PCB baseline or allow
+   writing. A refusal consumes the stage. Only an explicitly retained stored-state
+   comparison refusal, after successful reads, group release and fresh identity
+   checks, permits the separate precreate read. Its failure and result records
+   must first be published or settled from the original bytes. Other failures
+   require normal cleanup. Do not retry or open again to bypass a refusal.
+9. `observe-string-precreate` once. It accepts no caller program or selector.
    It retains two matching sweeps from the original PCB and worker contexts.
-9. `observe-window`, `normal-close` with that observed `hwnd` and
+10. `observe-window`, `normal-close` with that observed `hwnd` and
    `confirmNormalClose:true`, then `observe-termination` until original root
    exit and whole-Job emptiness are proved. Finish with `release-closed` and any
    required `settle-records`. Leave unexpected Save/Discard prompts unanswered.
@@ -70,8 +81,8 @@ All calls below use the new tool's `request` object.
 Every dispatch stage is consumed once, including failed or uncertain attempts.
 Never repeat opening or launch under a fresh ID to evade that consumed state.
 Use local `inspect` to retrieve retained results. Its observation selector is
-one of `browser`, `frames`, `script`, `pcb-opening`, `workers`, `worker-script`
-or `string-precreate`. The original cleanup and receipt-settlement paths remain
+one of `browser`, `frames`, `script`, `pcb-opening`, `workers`, `worker-script`,
+`common-baseline` or `string-precreate`. The original cleanup and receipt-settlement paths remain
 available after a refusal. Do not disconnect the native pipe to close EasyEDA.
 
 After an observation failure, retain `inspect.observationFailure` when present.
@@ -91,13 +102,18 @@ root inventory, renderer/channel identity, worker/channel identity and selected
 empty producer memberships. The runner compares the exact sealed project,
 branch, PCB and original window, and the compiler's unique token. It checks
 target/frame identity around each sweep and releases its private object group.
-The full supported route has a fixed 112-request limit; the diagnostic route
-has 82. The added requests qualify fixed source-owned instance constructors
+The String owner has a fixed155request ceiling. The complete route uses155 with
+the optional common stage or133 without it; the diagnostic ceiling is103.
+The added requests qualify fixed source-owned instance constructors
 against the already-admitted original script, exact function location and own
 class metadata. V8 can omit top-level-only class bindings from a retained closure;
 do not retry an absent binding or replace the check with a matching class name.
 Each leaf rechecks its instance/prototype/constructor association. This is not
 proof of the original lexical binding. There is no caller-controlled extension.
+The teardrop owner is discovered through six original bound callbacks, with exact
+target source/location and empty bound arguments, shared receiver identity and
+registry reproof. The pinned Save closure does not retain `Zec`; matching class
+names cannot replace this association. No callback or constructor is invoked.
 
 The four existing diagnostic samples retain their combined 128 KiB limit.
 Each complete sweep is bounded to 184 KiB; the paired result is bounded to
@@ -114,17 +130,22 @@ All complete-source, publication, Save and execution authority flags stay false.
 
 The package contains dormant fixed create/Save programs, publication-capture
 instrumentation, post-create/post-Save readers and supplied-data SQL/history
-comparators. Separate private runners now collect raw common presentation,
-rules, routing preferences and empty font/blob holders, and inspect selected
-move, structure, debounce, cooperation and upload producer closures. This tool
-does not dispatch those runners or any writer program. The common-state graph
+comparators. The optional common-baseline stage collects raw common presentation,
+rules, routing preferences, compiler metadata and empty font/blob holders.
+Separate private readers inspect selected move, structure, debounce, cooperation
+and upload producer closures; this tool does not dispatch those producer readers
+or any writer program. The common-state graph
 preserves aliases, field order, undefined and signed zero; it is not the saved
 format or proof that stored and live state match. The private common runner also
 retains compiler document metadata and original reply text. Its supplied-data
 relation accounts for every surviving target common/META row, raw winning clocks
 and history occurrences, and project-tree metadata. Missing stored defaults or
-unmodeled rows refuse. This relation does not establish live ownership, complete
-asset ownership or an atomic baseline.
+unmodeled rows refuse. The original session retains its own five raw replies
+and derives the winning historical DOCHEAD from its completed SQL reader.
+Cloned packets, replacement observations and later SQL reads cannot recreate
+that session. A later stored-state refusal retains any completed observation
+separately from a successful join. This relation does not establish complete
+asset ownership, current saved state or an atomic baseline.
 
 Separate raw producer markers preserve null lazy managers and timer/notification
 state without calling them empty or complete. They are not dispatched by this

@@ -37,7 +37,7 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("'Target.setAutoAttach' {$fields+=@('sessionId')}"));
   assert.ok(source.includes("'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}"));
-  assert.ok(source.includes('if(id<1 || id>(stringPurpose?112:82) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
+  assert.ok(source.includes('if(id<1 || id>(stringPurpose?155:103) || (method!="Runtime.evaluate" && uniqueContextId!=null))'));
   assert.ok(source.includes("return ProtocolMessageCore(id,method,targetId,sessionId,scriptId,uniqueContextId,false);"));
   assert.ok(source.includes('if(scriptId!=null || !token(uniqueContextId))'));
   assert.ok(source.includes(String.raw`\"filter\":[{\"type\":\"worker\",\"exclude\":false},{\"exclude\":true}]`));
@@ -86,7 +86,7 @@ void test("native opening and model programs are byte-exact fixed commands, not 
 void test("native dispatch preserves missing PowerShell fields through object-typed boundaries without accepting supplied empties", async () => {
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("public void Send(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId)"));
-  assert.ok(source.includes("public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId)"));
+  assert.ok(source.includes("public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId,object teardropObjectId)"));
   assert.ok(source.includes("if(value==null) return null;"));
   assert.ok(source.includes('string text=value as string; if(text==null) throw Error("optional-text-type");'));
   assert.ok(source.includes('if(targetId!=null || sessionId!=null || scriptId!=null) throw Error("discovery-fields")'));
@@ -106,7 +106,7 @@ void test("native constructor grammar admits only purpose-matched fixed selector
   assert.ok(source.includes('((phase=="pending" || phase=="root-inventory") && !handle(constructorObjectId))'));
   assert.ok(source.includes('if(phase!="empty-producers" && constructors!=null) throw Error("string-scope")'));
   assert.ok(source.includes('(phase=="empty-producers" && !handle(constructors))'));
-  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
+  assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}"));
   assert.ok(source.includes("'root-inventory' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
   assert.ok(source.includes("'empty-producers' {$fields+=@('objectId','callbackObjectId','constructorObjectId')}"));
   assert.ok(source.includes("'constructors-diagnostic' {if ($StringPrecreate) {throw 'pcb-diagnostic-model-constructors'}"));
@@ -115,10 +115,10 @@ void test("native constructor grammar admits only purpose-matched fixed selector
     "constructors-extra-smoke", "string-constructors-extra-smoke", "pcb-diagnostic-bound-constructor-field"]) {
     assert.ok(source.includes(check), check);
   }
-  assert.ok(source.includes('ProtocolMessage(82,"Browser.getVersion",null,null,null,null)'));
-  assert.ok(source.includes('ProtocolMessage(83,"Browser.getVersion",null,null,null,null)'));
-  assert.ok(source.includes('StringPrecreateProtocolMessage(112,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
-  assert.ok(source.includes('StringPrecreateProtocolMessage(113,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
+  assert.ok(source.includes('ProtocolMessage(103,"Browser.getVersion",null,null,null,null)'));
+  assert.ok(source.includes('ProtocolMessage(104,"Browser.getVersion",null,null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(155,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
+  assert.ok(source.includes('StringPrecreateProtocolMessage(156,"Runtime.evaluate","worker","worker-association","context",null,null,null)'));
 });
 
 void test("native creation failure captures numeric error before cleanup while preserving unknown-creation refusal", async () => {

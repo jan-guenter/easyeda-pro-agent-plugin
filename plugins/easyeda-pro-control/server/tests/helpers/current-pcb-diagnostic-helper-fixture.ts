@@ -1,4 +1,5 @@
 /** Synthetic native-helper protocol peer. No Windows/EasyEDA launch or handles. */
+/* oxlint-disable import/max-dependencies -- This synthetic protocol peer composes the separate source-bound common, model, worker and native-owner fixtures. */
 import assert from "node:assert/strict";
 import process from "node:process";
 import { createInterface } from "node:readline";
@@ -9,6 +10,11 @@ import { pendingModelReply, rawStringsModelReply, rootInventoryModelReply } from
 import { constructorBundleReply, constructorHandle, constructorPropertiesReply, constructorTupleReply } from "./current-pcb-constructor-replies.ts";
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLES } from "../../src/current-pcb-constructor-scope.ts";
 import { callPcbStringObservation, pcbStringObservationFixture, pcbStringReply } from "./current-pcb-string-observation-fixture.ts";
+import { teardropArgumentsReply, teardropBoundReply, teardropCallbacksReply, teardropProofReply, teardropTargetReply, teardropTupleReply } from "./current-pcb-teardrop-replies.ts";
+import { pcbCommonFixture } from "./current-pcb-common-fixture.ts";
+import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../../src/current-pcb-common-state.ts";
+import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../../src/current-pcb-common-metadata.ts";
+import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../../src/current-pcb-string-empty-assets.ts";
 
 const scenario = process.argv[2];
 const owner = { helperInstance: "b".repeat(32), jobId: "a".repeat(32), rootPid: 123, rootCreated: "133712345678901234" };
@@ -37,6 +43,7 @@ let branchUuid = "b".repeat(32), projectUuid = "a".repeat(64), stringReads = 0;
 let launchAttempted = false;
 let frameReads = 0, targetReads = 0;
 let ancillaryReads = 0;
+let commonReading = false;
 let sent = Buffer.alloc(0), terminated = false;
 const lines = createInterface({ input: process.stdin });
 lines.on("line", line => {
@@ -86,10 +93,14 @@ lines.on("line", line => {
       } else {
         assert.ok("sessionId" in request);
         assert.equal(request["sessionId"], "session-1");
-        if ("stringPhase" in request) {
+        if ("commonPhase" in request) {
+          assert.equal(stringCase, true);
+          payload = commonResponse(request);
+        } else if ("stringPhase" in request) {
           assert.equal(stringCase, true); payload = stringResponse(request);
         } else if ("modelPhase" in request) {
-          assert.equal(modelCase, true); payload = modelResponse(request, events);
+          assert.equal(modelCase, true);
+          payload = commonReading ? commonResponse({ ...request, commonPhase: request.modelPhase }) : modelResponse(request, events);
         } else if (request["method"] === "Target.setAutoAttach") {
           assert.ok(workerCase || openingCase); payload = {};
           events.push(...workerAttachment());
@@ -222,6 +233,30 @@ function sourceScriptUrl(): string {
   if (openingCase) { return "https://client/pro-ui/test-version/js/ui.js"; }
   return staged ? "file:///synthetic/pro-pcb/test-version/js/pcb.js" : "file:///synthetic/pcb.js";
 }
+function commonResponse(request: object & Record<"commonPhase", unknown>): unknown {
+  const phase = request.commonPhase;
+  if (phase === "wrapper") { commonReading = true; }
+  if (phase === "release") { commonReading = false; }
+  if (phase === "wrapper" || phase === "handler" || phase === "release") { return modelResponse({ ...request, modelPhase: phase }, []); }
+  if (phase === "constructors") { return constructorBundleReply("common"); }
+  assert.ok("objectId" in request);
+  if (phase === "properties") {
+    if (request.objectId === "constructors") { return constructorTupleReply("common"); }
+    for (const name of CURRENT_PCB_CONSTRUCTOR_BUNDLES.common) {
+      if (request.objectId === constructorHandle(name)) { return constructorPropertiesReply(name, "pcb-script-1"); }
+    }
+    return modelResponse({ ...request, modelPhase: "properties" }, []);
+  }
+  const programs = { presentation: CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, rules: CURRENT_PCB_COMMON_RULES_FUNCTION,
+    preference: CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, metadata: CURRENT_PCB_COMMON_METADATA_FUNCTION, assets: CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION };
+  assert.ok(typeof phase === "string" && Object.hasOwn(programs, phase));
+  const program: unknown = Reflect.get(programs, phase); assert.equal(typeof program, "string");
+  const context = pcbCommonFixture(`const env=scope.object.x.env,compiler=env._compiler;
+env._id=${JSON.stringify(pcbDocumentUuid)};env._tabId=${JSON.stringify(pcbTabId)};compiler.uuid=env._id;compiler.base.uuid=env._id;
+compiler.base.path=${JSON.stringify(projectUuid)};compiler.project=compiler.base.path;compiler.isProject=true;
+compiler.docDetail={title:"Empty PCB",parent:"",source:"",board:"",zIndex:null};`);
+  return pcbStringReply(callPcbStringObservation(context, String(program)));
+}
 function modelResponse(request: object & Record<"modelPhase", unknown>, events: unknown[]): unknown {
   const phase = request.modelPhase;
   if (phase === "wrapper" || phase === "handler") {
@@ -231,13 +266,31 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   if (phase === "release") { return scenario === "staged-model-release-refused" ? { extra: true } : {}; }
   assert.ok("objectId" in request);
   const id = request.objectId;
+  if (phase === "teardrop-callbacks" || phase === "teardrop-owner") {
+    assert.equal(id, "handler-scopes-zero");
+    assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
+    if (phase === "teardrop-callbacks") { return teardropCallbacksReply(); }
+    assert.ok("teardropCallbacksObjectId" in request); assert.equal(request.teardropCallbacksObjectId, "teardrop-callbacks");
+    for (let index = 0; index < 6; index += 1) {
+      assert.equal(Reflect.get(request, `teardropReceiver${index}`) as unknown, `teardrop-receiver-${index}`);
+      assert.equal(Reflect.get(request, `teardropTarget${index}`) as unknown, `teardrop-target-${index}`);
+    }
+    return teardropProofReply();
+  }
   if (phase === "constructors-diagnostic" || phase === "constructors-precreate") {
     assert.equal(id, "handler-scopes-zero");
     assert.ok("callbackObjectId" in request); assert.equal(request.callbackObjectId, "wrapper");
+    assert.ok("teardropObjectId" in request); assert.equal(request.teardropObjectId, "teardrop-proof");
     assert.equal(phase, stringCase ? "constructors-precreate" : "constructors-diagnostic");
     return constructorBundleReply(stringCase ? "precreate" : "diagnostic");
   }
   if (phase === "properties") {
+    if (id === "teardrop-callbacks") { return teardropTupleReply(); }
+    for (let index = 0; index < 6; index += 1) {
+      if (id === `teardrop-callback-${index}`) { return teardropBoundReply(index); }
+      if (id === `teardrop-target-${index}`) { return teardropTargetReply(index, pcbCase ? "pcb-script-1" : "script-1"); }
+      if (id === `teardrop-arguments-${index}`) { return teardropArgumentsReply(); }
+    }
     const kind = stringCase ? "precreate" : "diagnostic";
     if (id === "constructors") { return constructorTupleReply(kind); }
     for (const name of CURRENT_PCB_CONSTRUCTOR_BUNDLES[kind]) {
@@ -270,6 +323,7 @@ function modelResponse(request: object & Record<"modelPhase", unknown>, events: 
   const documentUuid = pcbCase && scenario !== "opening-pcb-model-document-drift" ? pcbDocumentUuid : "a".repeat(32);
   if (phase === "pending") {
     assert.ok("constructorObjectId" in request); assert.equal(request.constructorObjectId, "constructors");
+    assert.ok("teardropObjectId" in request); assert.equal(request.teardropObjectId, "teardrop-proof");
     if (scenario === "opening-pcb-string-pending-refused") {
       return { result: { type: "string", value: JSON.stringify({
         schema: "easyeda-pro-control.pcb-diagnostic-pending-failure.v1", stage: "teardrops", reason: "own",

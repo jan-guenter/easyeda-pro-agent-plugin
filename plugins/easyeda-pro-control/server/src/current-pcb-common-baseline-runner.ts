@@ -1,8 +1,9 @@
-/** Dormant composed common-state observation. The future retained owner must
- * admit the original PCB script/context before calling this runner. No public
- * tool, native request budget, writer, FileSource or Save route uses it. */
+/** Fixed common-state observation used only by the original String-purpose
+ * owner after PCB script/context admission. No writer, FileSource or Save
+ * authority follows from these samples or their later stored comparison. */
 import { types } from "node:util";
 import { canonicalJson } from "./core.ts";
+import { currentPcbCommonRunnerFailure } from "./current-pcb-common-baseline-failure.ts";
 import { CURRENT_PCB_COMMON_GRAPH_BYTES } from "./current-pcb-common-graph.ts";
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION, decodeCurrentPcbCommonMetadata } from "./current-pcb-common-metadata.ts";
 import type { CurrentPcbCommonMetadata } from "./current-pcb-common-metadata.ts";
@@ -17,6 +18,7 @@ import { decodeCurrentPcbDiagnosticModelFunction, decodeCurrentPcbDiagnosticMode
   decodeCurrentPcbDiagnosticModelScopeList } from "./current-pcb-diagnostic-model-scope.ts";
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION, decodeCurrentPcbStringEmptyAssets } from "./current-pcb-string-empty-assets.ts";
 import type { CurrentPcbStringEmptyAssets } from "./current-pcb-string-empty-assets.ts";
+// oxlint-disable-next-line import/max-dependencies -- The fixed runner composes its existing independently audited readers and one branded failure boundary.
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_COMMON_BASELINE_OBJECT_GROUP = "easyeda-pro-control-pcb-common-baseline-v2";
@@ -230,8 +232,9 @@ export class CurrentPcbCommonBaselineRunner {
     }
     if (failures.length > 0) {
       const phase = failures.length === 1 && cleanupFailed ? "release" : failurePhase;
-      throw new AggregateError(failures, `PCB_COMMON_BASELINE_OBSERVATION_FAILED_${phase.toUpperCase()}${cleanupFailed ? "_RELEASE_FAILED" : ""}`,
-        { cause: failures[0] });
+      let cleanup: "not-started" | "released" | "failed" = "not-started";
+      if (started) { cleanup = cleanupFailed ? "failed" : "released"; }
+      throw currentPcbCommonRunnerFailure(phase, cleanup, failures);
     }
     if (result === undefined || replies === undefined) { return refuse(); }
     retainedReplies.set(result, replies);

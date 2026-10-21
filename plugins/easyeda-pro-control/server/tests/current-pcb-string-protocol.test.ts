@@ -14,22 +14,22 @@ const COMMANDS = [
   currentPcbStringScopeCommand("empty-producers", "scope", "callback", "constructors"),
 ] as const;
 void test("separate String native protocol accepts exactly three fixed precreate programs without forwarding code", () => {
-  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 112);
+  assert.equal(CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, 155);
   for (const { stringPhase, ...command } of COMMANDS) {
-    const encoded = wire({ id: 112, ...command, sessionId: "original" });
+    const encoded = wire({ id: 155, ...command, sessionId: "original" });
     const result = stringPrecreateNativeRequest(encoded);
-    assert.equal(result["stringPhase"], stringPhase); assert.equal(result["requestId"], 112);
+    assert.equal(result["stringPhase"], stringPhase); assert.equal(result["requestId"], 155);
     assert.equal(result["sessionId"], "original");
     for (const field of ["params", "expression", "functionDeclaration", "arguments", "timeout"]) {
       assert.equal(Object.hasOwn(result, field), false);
     }
     assert.throws(() => diagnosticNativeRequest(encoded), /OUTBOUND/u);
     assert.throws(() => diagnosticNativeRequest(wire({ id: 1, ...command, sessionId: "original" })), /OUTBOUND/u);
-    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 113, ...command, sessionId: "original" })), /OUTBOUND/u);
+    assert.throws(() => stringPrecreateNativeRequest(wire({ id: 156, ...command, sessionId: "original" })), /OUTBOUND/u);
   }
-  assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 112, method: "Target.getTargets" })),
-    { action: "send", requestId: 112, method: "Target.getTargets" });
-  assert.throws(() => diagnosticNativeRequest(wire({ id: 83, method: "Target.getTargets" })), /OUTBOUND/u);
+  assert.deepEqual(stringPrecreateNativeRequest(wire({ id: 155, method: "Target.getTargets" })),
+    { action: "send", requestId: 155, method: "Target.getTargets" });
+  assert.throws(() => diagnosticNativeRequest(wire({ id: 104, method: "Target.getTargets" })), /OUTBOUND/u);
 });
 void test("String native protocol rejects caller code, effect overrides, extra arguments and public phase routing", () => {
   for (const { stringPhase, ...command } of COMMANDS) {

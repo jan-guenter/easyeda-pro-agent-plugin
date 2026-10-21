@@ -4,6 +4,51 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
+### 055237 batch frozen; delivery checks in progress, 2026-10-21
+
+Actual233238 admission passed main and independent checks: facade1927870/
+start53543483, parent1926256/start53538056, pinned Node24.18.0/core0,
+source564/48823583, runtime3/fcaf312d and compatibility6bb53e61. Complete
+installed1661file/mode comparison matches mergedmainf2a509e3. Post-main
+Linux39518076592 is SUCCESS/all10jobs; both platforms are green. Main receipt
+0941857d is in `/root/.cache/easyeda-233238-live-RDhYWdoM/admission.json`;
+independent receipt0be5e36e is in
+`/root/.cache/easyeda-233238-independent-admission-cxgxFgPn/admission.json`.
+
+NEW `string-precreate-233238-20261021-01` is terminal released; NEVER replay.
+Original launch, UI source, disposable project/PCB opening, PCB source and
+direct-child project-worker source passed. The combined observation refused at
+`PCB_STRING_PRECREATE_OBSERVATION_FAILED_CONSTRUCTORS_PRECREATE` before model
+samples, create or Save. Published primary failure has leafnull,
+cleanupFailedfalse/failureCount1; later model-release input is synthetic owner
+invalidation, not cleanup failure. Original root53200/created134370342719206233,
+binding26b983aa and hwnd241437640 closed normally; retained root/whole-Job exit
+and helper release passed. Closed disposable remains598016/e620d21a exactly.
+No prompt choice or production-design access. Complete responses are retained
+in `/root/.cache/easyeda-233238-live-RDhYWdoM`.
+
+Working branch `feature/pcb-owned-baseline-gates-20261021` batches original
+common-baseline/pre-open-SQL integration, fixed native transport, subscribed
+teardrop-owner discovery, bounded failure evidence and private worker gates.
+Both public observation paths use six qualified original bound callbacks, not
+an omitted lexical Zec binding. Optionalcommon comparison/refusal consumes one
+attempt; only successful reads/release/context reproof and published failure+
+result permit independent precreate after a comparison refusal. No writer added.
+
+Candidate055237 is frozen/reviewed:574source b2b05caf,3runtime8edc0a3a,
+compatibilitycb8030bd. Only facade projections/reviewtime changed. Native helper
+331961/ae7e5dfc and22 embedded programs pass independent parity. Actual Windows
+PowerShell5.1 no-app CompileOnly passes BOTH profiles; no process launched.
+Dependency tree/signatures/audit/sanitizer/build/types/strictlint pass; repository/
+privacy and all7skillvalidators pass. Full local verify is running on this
+frozen payload; protected exact-head Linux+Windows CI and installation remain
+pending. Evidence `/root/.cache/easyeda-055237-release-A9HNggaz`.
+
+Loaded facade1927870 remains233238, untouched. No pending live/native case and
+no further live call planned in this session. Installed payload remains233238
+until the full batch is published. New connected validation needs a fresh chat
+after installation. Backlog: `docs/current-pcb-owned-baseline-batch-2026-10-21.md`.
+
 ### Delivered233238 checkpoint, 2026-10-21
 
 Delivered `0.3.0+codex.20261020233238` through protected PR92. Exact tested head

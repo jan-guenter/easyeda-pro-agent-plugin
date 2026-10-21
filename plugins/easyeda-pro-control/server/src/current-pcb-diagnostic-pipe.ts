@@ -15,6 +15,8 @@ import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbDiagnosticOpeningPhase } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticModelCommand } from "./current-pcb-diagnostic-model-runner.ts";
+import type { CurrentPcbCommonBaselineCommand } from "./current-pcb-common-baseline-runner.ts";
+import { CURRENT_PCB_COMMON_GRAPH_BYTES } from "./current-pcb-common-graph.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_STRING_PRECREATE_PHASES, CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT } from "./current-pcb-string-commands.ts";
 import type { CurrentPcbStringPrecreateCommand, CurrentPcbStringPrecreatePhase } from "./current-pcb-string-commands.ts";
@@ -22,6 +24,9 @@ import type { CurrentPcbStringPrecreateCommand, CurrentPcbStringPrecreatePhase }
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
 const MAX_FRAME_BYTES = 1024 * 1024;
+// A fixed reader returns JSON text inside a CDP string. Escaped quotes and
+// Backslashes can double its524288-byte text plus the bounded CDP envelope.
+const COMMON_FRAME_BYTES = 2 * CURRENT_PCB_COMMON_GRAPH_BYTES + 1024;
 const MAX_CHUNK_BYTES = MAX_FRAME_BYTES + 1;
 const DEADLINE_MS = 5000;
 type Reply = Readonly<Record<string, unknown>>;
@@ -31,7 +36,8 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
-  `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}`;
+  `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
+  `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -41,8 +47,11 @@ const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
+  "model-teardrop-callbacks", "model-teardrop-owner",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
   ...CURRENT_PCB_STRING_PRECREATE_PHASES.map(phase => `string-${phase}` as const),
+  "common-wrapper", "common-properties", "common-handler", "common-constructors", "common-presentation", "common-rules",
+  "common-preference", "common-assets", "common-metadata", "common-release",
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -84,6 +93,7 @@ interface Pending {
   readonly timer: ReturnType<typeof setTimeout>;
   readonly sessionId: string | null;
   readonly source: boolean;
+  readonly common: boolean;
   written: boolean;
   reply: Reply | null;
 }
@@ -239,6 +249,15 @@ class CurrentPcbFixedPipeCore {
     return this.#request({ id: this.#nextId, ...wire,
       sessionId: stringPhase === "worker-association" ? this.#workerSession() : this.#sessionId }, `string-${stringPhase}`);
   }
+  /** The separate String facade observes common state on its original page.
+   * Constructor/reader programs and remote groups are fixed by the adapter. */
+  protected observeCommonBaselineCommand(command: CurrentPcbCommonBaselineCommand): Promise<Reply> {
+    if (!this.#stringPurpose || this.#sessionId === null || this.#selectedWorkerSession === null) {
+      return Promise.reject(new Error("PCB_COMMON_PIPE_PURPOSE"));
+    }
+    const { commonPhase, ...wire } = command;
+    return this.#request({ id: this.#nextId, ...wire, sessionId: this.#sessionId }, `common-${commonPhase}`);
+  }
   public observePcbOpening(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
     phase: CurrentPcbDiagnosticPcbOpeningPhase): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
@@ -299,7 +318,8 @@ class CurrentPcbFixedPipeCore {
     else if (command.method === "Runtime.callFunctionOn" && command.params.awaitPromise) { deadline = 60_000; }
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
-      sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource" };
+      sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource",
+      common: ["common-presentation", "common-rules", "common-preference", "common-assets", "common-metadata"].includes(phase) };
     this.#pending = pending;
     // Reserve before write, including synchronous throw and synchronous peer
     // Reply. A callback error still defeats an earlier received response.
@@ -405,7 +425,9 @@ class CurrentPcbFixedPipeCore {
     while (start < chunk.length && this.#failure === null) {
       const delimiter = chunk.indexOf(0, start), end = delimiter === -1 ? chunk.length : delimiter;
       const size = end - start; const needed = this.#used + size;
-      const frameLimit = this.#pending?.source === true ? DIAGNOSTIC_SOURCE_FRAME_BYTES : MAX_FRAME_BYTES;
+      let frameLimit = MAX_FRAME_BYTES;
+      if (this.#pending?.source === true) { frameLimit = DIAGNOSTIC_SOURCE_FRAME_BYTES; }
+      else if (this.#pending?.common === true) { frameLimit = COMMON_FRAME_BYTES; }
       if (needed > frameLimit) { this.#fail("framing"); return; }
       if (needed > this.#buffer.length) {
         const replacement = Buffer.alloc(Math.min(frameLimit, Math.max(needed, this.#buffer.length * 2)));
@@ -434,4 +456,7 @@ export class CurrentPcbDiagnosticPipe extends CurrentPcbFixedPipeCore {
  * vocabulary and cannot extend an existing diagnostic pipe's lifetime budget. */
 export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, true); }
+  public observeCommonBaseline(command: CurrentPcbCommonBaselineCommand): Promise<Reply> {
+    return this.observeCommonBaselineCommand(command);
+  }
 }

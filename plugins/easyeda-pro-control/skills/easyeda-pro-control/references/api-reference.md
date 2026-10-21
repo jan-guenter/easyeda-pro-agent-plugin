@@ -143,7 +143,11 @@ For the separate combined PCB/worker path, query
 `easyeda_control_pcb_string_precreate_validation`; operation IDs begin
 `string-precreate-`. Its fixed purpose is not a mode of an existing diagnostic
 owner. Read [the String sequence](current-pcb-string-precreate-validation.md)
-before launch. Two matching sweeps do not establish complete live source,
+before launch. Its optional `observe-common-baseline` stage consumes the original
+pre-open SQL reader and five fixed replies; it accepts no caller observation.
+Only an explicitly retained comparison refusal with successful context/cleanup
+checks and completed publication permits continuing to the independent precreate
+read. Other failures require normal cleanup. Two matching sweeps do not establish complete live source,
 publication, saved state or writer eligibility.
 
 ## Omitted system-library component lookup

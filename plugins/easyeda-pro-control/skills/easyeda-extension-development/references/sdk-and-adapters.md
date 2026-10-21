@@ -346,7 +346,7 @@ Protocol failure must not close a live diagnostic pipe: Electron can quit when
 it disconnects. Normal closure, original root/Job termination and helper release
 are separate steps, without Save/Discard choice or forced exit. Never infer
 debugger-socket absence from pipe flags. Discovery stays bounded to 8 MiB;
-attached diagnostic transport permits 64 MiB total, 82 requests and 4096 events/8 MiB.
+attached diagnostic transport permits 64 MiB total, 103 requests and 4096 events/8 MiB.
 Ordinary frames stay at 1 MiB. Only script-source replies allow 32 MiB encoded
 JSON and 20 MiB decoded UTF-8, enough for the pinned UI asset. Synthetic tests
 and empty-Job construction do not qualify the custom EasyEDA build. Actual
@@ -375,7 +375,7 @@ corrections and synthetic sequences are not captured EasyEDA navigation evidence
 
 The separate PCB model reader follows the source/location-admitted
 `pcb/saveCompiler` wrapper and handler's original V8 scopes without calling them.
-Twenty-nine fixed requests qualify constructors and sample main/custom-footprint compiler queues, selected pending
+Fifty fixed requests qualify bound callbacks and constructors and sample main/custom-footprint compiler queues, selected pending
 producers, raw String-manager membership and a populated-safe root census, then
 release the original remote-object group. The four samples must share a document identity but are not
 atomic. Raw absent/undefined/null/zero fields remain distinct, and models without
@@ -396,7 +396,7 @@ stage derives the original sealed target; `observe-pcb-opening` then binds the
 new child frame through its DOM owner, complete pinned source and default
 context before the fixed native identity observation. Preserve the original UI
 identity and source throughout. This branch excludes worker discovery and
-stays within the82request budget, including all five ancillary checks and
+stays within the103request budget, including all five ancillary checks and
 object-group release. It does not validate writes or saved state.
 
 V8 can elide a class binding used only to initialize a top-level instance, even
@@ -406,11 +406,26 @@ qualify each function's exact location, name, arity and prototype against the
 already-admitted script. Leaves recheck those associations. No constructor runs;
 no name-only fallback or arbitrary scope lookup is allowed. This proves a
 source-associated constructor, not the original lexical binding. The separate
-precreate profile has twenty such constructors and a112request total; the dormant
-common reader has four. Lpe has arity1; the source alias $me points to named Sy
+precreate profile has twenty such constructors and a133request total, or155
+including the optional original-owner common-baseline stage. That stage qualifies
+four common constructors, retains five original raw replies and joins them with
+the completed SQL inventory from the operation's original pre-open checkpoint.
+It cannot adopt caller-supplied observations or recreate ownership from JSON.
+Only these common-leaf replies allow a1MiB+1KiB encoded frame, covering their
+bounded524288byte text at maximum JSON escaping; other ordinary frames retain
+the1MiB limit. Neither a successful join nor a retained comparison refusal grants
+writer authority. Lpe has arity1; the source alias $me points to named Sy
 with four exact numeric statics. Preserve these profile differences. For the
 static-map owner pP, the captured native alias is Xh; class self-references do
 not prove an outer pP closure binding. These observation budgets do not admit a writer.
+
+The pinned `Zec=new Sfe` variable is not captured by the Save handler. Discover
+the subscribed Sfe owner through its six original `.bind(this)` callbacks instead:
+require exact target source/location/name/arity, empty bound arguments, one shared
+receiver, no instance shadow and a fresh registry association check. Distinct CDP
+handles can refer to the same receiver; compare object identity in the original
+context. This proves the subscribed owner, not lexical Zec identity. Bound-function
+metadata does not solve hidden receivers in class arrows.
 
 The private SCH preflight used by these coordinators reads the strict key-value roster, exact target
 and `getIdByName` routes twice and compares them with the original completed SQL

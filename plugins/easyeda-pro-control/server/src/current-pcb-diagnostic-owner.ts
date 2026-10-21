@@ -13,6 +13,7 @@ import process from "node:process";
 import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { sha256Json } from "./core.ts";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
@@ -34,9 +35,13 @@ import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnos
 import { CurrentPcbStringPrecreateRunner } from "./current-pcb-string-precreate-runner.ts";
 import { currentPcbObservationFailureDetail } from "./current-pcb-observation-failure.ts";
 import type { CurrentPcbObservationFailure } from "./current-pcb-observation-failure.ts";
+import { CurrentPcbCommonBaselineSession } from "./current-pcb-common-baseline-session.ts";
+import { currentPcbCommonBaselineFailure, currentPcbCommonBaselineRefusal, currentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
+import type { CurrentPcbCommonBaselineFailure, CurrentPcbCommonBaselineResult } from "./current-pcb-common-baseline-validation.ts";
+import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
-const HELPER_SHA256 = "3c5d875e3980df13f9551aed25af87b323fce6ea265928729395bacdf0427731";
-const HELPER_BYTES = 212_714;
+const HELPER_SHA256 = "ae7e5dfceb4949b7ff98663dce987040c71d773b4e32f4710a569d3f705231bb";
+const HELPER_BYTES = 331_961;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -131,6 +136,9 @@ class CurrentPcbRetainedOwnerCore {
   #pcbSourceQualified = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
+  #commonBaselineConsumed = false;
+  #commonBaselineSession: CurrentPcbCommonBaselineSession | null = null;
+  #commonBaselineFailure: CurrentPcbCommonBaselineFailure | null = null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, stringPurpose: boolean) {
@@ -168,7 +176,7 @@ class CurrentPcbRetainedOwnerCore {
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
-    stringPrecreateConsumed: boolean; profile: "diagnostic" | "string-precreate" }> {
+    stringPrecreateConsumed: boolean; commonBaselineConsumed?: boolean; profile: "diagnostic" | "string-precreate" }> {
     return Object.freeze({ helperPid: this.#child.pid ?? null, binding: this.#binding, failure: this.#failure,
       busy: this.#busy, launchConsumed: this.#launchConsumed, closeConsumed: this.#closeConsumed,
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
@@ -180,7 +188,8 @@ class CurrentPcbRetainedOwnerCore {
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
-      stringPrecreateConsumed: this.#stringPrecreateConsumed, profile: this.#stringPurpose ? "string-precreate" : "diagnostic" });
+      stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
+      profile: this.#stringPurpose ? "string-precreate" : "diagnostic" });
   }
 
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
@@ -530,6 +539,67 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  /** Optional fixed common baseline, before the unchanged precreate attempt.
+   * The enclosing lifecycle supplies only its original pre-navigation reader. */
+  public async observeCommonBaseline(before: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentPcbCommonBaselineResult> {
+    const context = this.#stagedContext, target = this.#projectOpeningTarget, worker = this.#workerContext;
+    const pipe = this.#pipe;
+    if (!this.#stringPurpose || !(pipe instanceof CurrentPcbStringPrecreatePipe) || this.#commonBaselineConsumed ||
+        this.#stringPrecreateConsumed || context === null || worker === null || target === null ||
+        !this.#pcbSourceQualified || !this.#workerScriptConsumed || this.#modelConsumed || this.#workerStateConsumed) {
+      throw error("COMMON_BASELINE_UNAVAILABLE");
+    }
+    this.#enter(true); this.#commonBaselineConsumed = true;
+    const identity = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid };
+    const progress: { phase: CurrentPcbCommonBaselineFailure["phase"] } = { phase: "owner-before" };
+    try {
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      const selected = context.modelContext(), workerContext = worker.evaluationContext();
+      const assertCurrent = (): void => {
+        this.#available();
+        if (this.#stagedContext !== context || this.#workerContext !== worker || this.#projectOpeningTarget !== target ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(selected) || worker.evaluationContext() !== workerContext) {
+          throw error("COMMON_CONTEXT_CHANGED");
+        }
+      };
+      await this.#observeParent(); assertCurrent();
+      const session = new CurrentPcbCommonBaselineSession({ before, identity, scriptId: selected.scriptId,
+        uniqueContextId: selected.uniqueContextId, transport: {
+          request: (command): Promise<unknown> => this.#transfer(() => pipe.observeCommonBaseline(command)), assertCurrent,
+        } });
+      this.#commonBaselineSession = session;
+      const finishOwner = async (): Promise<void> => {
+        progress.phase = "owner-after";
+        assertCurrent(); await this.#observeParent(); assertCurrent();
+        await this.#verifyInstallation(); await this.#verify(); assertCurrent();
+      };
+      let packet: Awaited<ReturnType<CurrentPcbCommonBaselineSession["observeAndJoin"]>>;
+      try { packet = await session.observeAndJoin(); }
+      catch (caughtError) {
+        if (!session.comparisonRefused()) { throw caughtError; }
+        // Only the original completed reader's comparison exception is eligible.
+        // Native, decoder, cleanup and ownership exceptions never enter this path.
+        session.requireOriginalComparisonRefusal(); await finishOwner();
+        const observation = session.requireOriginalComparisonRefusal();
+        this.#commonBaselineFailure = currentPcbCommonBaselineFailure(identity, "stored-relation", observation,
+          session.retainedHistoricalHeader(), true);
+        return currentPcbCommonBaselineRefusal(this.#commonBaselineFailure, sha256Json(observation));
+      }
+      await finishOwner();
+      session.requireOriginalPacket(packet);
+      return currentPcbCommonBaselineResult(packet);
+    } catch (caughtError) {
+      const session = this.#commonBaselineSession;
+      this.#commonBaselineFailure = currentPcbCommonBaselineFailure(identity, progress.phase === "owner-after" ? progress.phase : session?.status().failurePhase ?? progress.phase,
+        session?.retainedObservation() ?? null, session?.retainedHistoricalHeader() ?? null, false, session?.retainedFailure());
+      this.#input.emit("error", error("COMMON_BASELINE_FAILED")); throw caughtError;
+    } finally { this.#busy = false; }
+  }
+
+  /** Original retained diagnostic evidence only; callable after reader failure.
+   * No historical JSON, new native dispatch or owner adoption is involved. */
+  public retainedCommonBaselineFailure(): CurrentPcbCommonBaselineFailure | null { return this.#commonBaselineFailure; }
+
   async #observeParent(): Promise<RecordValue> {
     const context = this.#stagedContext;
     if (context === null) { throw error("WORKER_PARENT_UNAVAILABLE"); }
@@ -831,7 +901,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #childClose = (): void => { this.#childClosed = true; if (!this.#released) { this.#fail("HELPER_CLOSED"); } this.#closed.resolve(null); };
 }
 
-/** Existing diagnostic facade retains82 requests and mutually exclusive
+/** Existing diagnostic facade retains103 requests and mutually exclusive
  * worker/PCB-model branches. Callers cannot select another purpose. */
 export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
