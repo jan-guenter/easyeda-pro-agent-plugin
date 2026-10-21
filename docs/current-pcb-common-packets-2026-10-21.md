@@ -81,4 +81,4 @@ host JSON is represented as a native raw reply.
 
 Files: `current-pcb-common-packet-program.ts`, `current-pcb-common-packet.ts`,
 `current-pcb-common-baseline-runner.ts` and their focused packet/runner tests.
-No PianoPi or other production design was read, hashed or changed for this work.
+No production design was read, hashed or changed for this work.

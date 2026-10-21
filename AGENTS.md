@@ -28,6 +28,16 @@ filesystem: `/root/.cache/easyeda-batch-test-tmp-20261021-8xVne3`. No evidence o
 unrelated temporary files were removed. Use that TMPDIR for remaining checks.
 No further live attempt, production access or loaded-runtime replacement.
 
+The first repository privacy check refused a production-project name in one new
+document. The isolated final checkout removes that name and passes repository
+validation. Windows CI on7831239 compiled the helper, then its synthetic launch
+check refused the stale previous helper byte count. The final checkout corrects
+only that smoke pin/comment and adds a Linux regression checking actual helper
+bytes/hash against both owner and smoke pins. Seven focused native tests and
+strict lint pass. Runtime source, helper, bundles and compatibility pins remain
+unchanged; the original full local suite continues separately on7831239. Final
+protected CI must test the corrected head. Preserve the earlier failed checks.
+
 ### Terminal100337 and combined continuation, 2026-10-21
 
 Actual installed100337 facade2341107/start55788122 and its parent2339467 were
