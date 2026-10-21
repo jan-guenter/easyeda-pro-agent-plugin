@@ -68,16 +68,20 @@ required. Clock observations do not authorize create or Save.
 
 Installed073200 passed actual main and independent admission. Its new disposable
 case stopped at common-presentation request 76 with a deadline, before precreate,
-create or explicit Save. The one normal-close request was acknowledged, but five
-termination observations were false. A missing visible window or dialog does
-not establish root/whole-Job closure. The case must retain its original owner
-and consumption state; it cannot be called closed or replayed.
+create or explicit Save. The one normal-close request was acknowledged, but six
+termination observations were false. After the user explicitly approved forced
+exit, the exact original root's creation time and image were rechecked through
+one retained process handle before termination. The original MCP owner then
+proved root exit and an empty Job and released its helper. No record settlement
+remains pending. The closed disposable file is byte-identical to its pre-open
+raw baseline, with no WAL/SHM/journal sidecars. This is forced recovery, not a
+successful normal lifecycle. The consumed case must never be replayed.
 
 The retained termination API currently reports only the combined root-exit and
 whole-Job-empty predicate. A future original-owner diagnostic should distinguish
 those two facts without adopting PIDs or adding force termination. This missing
-detail does not permit replacing today's owner or treating the missing window
-as successful cleanup.
+detail did not permit replacing the original owner or treating a missing window
+as successful cleanup. No force-termination method was added to the plugin.
 
 Before a writer can be registered, the original coordinator still needs complete
 baseline, startup and publisher/receiver provenance; external destination and
@@ -94,6 +98,7 @@ Both actual Windows no-app CompileOnly profiles pass, including embedded-program
 parity and clock grammar checks. The initial stale native budget-smoke assertion
 was corrected to237 acceptance/238 refusal before those successful checks.
 Build, compatibility, package/MCP, repository/privacy and skill checks pass.
-These results do not qualify a connected String writer. Full release verification,
-exact-payload CI, publication and installation remain pending; no new release
-version was assigned while the original disposable owner remained unresolved.
+These results do not qualify a connected String writer. After terminal recovery,
+the combined candidate was assigned `0.3.0+codex.20261021100337`. Full release
+verification, exact-payload CI, publication and official installation remain
+pending. No new release was installed while the disposable owner was unresolved.

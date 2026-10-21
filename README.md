@@ -9,7 +9,21 @@ checks. The separate current-version tool now supports forward-only name and/or
 description edits for unused project-local symbols with eligible complete history. This is a
 narrow native equivalent, not general library or symbol-geometry editing.
 
-Published `0.3.0+codex.20261021073200` combines [inherited-constructor correction,
+Update `0.3.0+codex.20261021100337` combines [move/startup observations,
+finite-effect reporting, actor/SQL and clock components, and a durable lifecycle
+ledger](docs/current-pcb-string-lifecycle-batch-2026-10-21.md). The registered
+precreate workflow uses215 requests, or237 with common, and retains V3 evidence
+up to712KiB. Create, Save, server-time and lifecycle components remain dormant;
+no geometry writer or API coverage increase is claimed.
+
+Installed073200 passed disposable opening and source qualification, then timed
+out during common presentation before precreate/create/explicit Save. After
+separately approved forced exit, its original owner proved root/whole-Job exit
+and released its helper. The closed disposable was unchanged with no sidecars.
+This recovery does not prove normal closure or validate the new common-reader
+deadline. Production designs were not accessed.
+
+Previous update `0.3.0+codex.20261021073200` combines [inherited-constructor correction,
 versioned lazy-state readers and original worker/actor collection](docs/current-pcb-owned-producers-batch-2026-10-21.md).
 The existing precreate action now retains unavailable managers as unmet
 conditions, samples worker queues/callbacks, and compares account/local-clock

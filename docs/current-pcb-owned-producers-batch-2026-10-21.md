@@ -19,10 +19,13 @@ for implementation boundaries and remaining work.
 
 Actual073200 process admission has passed. Its new disposable live case stopped
 at common-presentation request 76 with a deadline, before precreate, create or
-explicit Save. The original normal-close request was acknowledged once; four
-later termination observations were false. The user reports no visible window
-or dialog, which is not root/whole-Job exit proof. This case is not terminal and
-must not be replayed. The new cooperative graph budget adds fail-closed checks;
+explicit Save. The original normal-close request was acknowledged once; six
+later termination observations were false. The user then explicitly approved
+forced exit. After exact root identity checks, root-only termination succeeded;
+the original MCP owner proved whole-Job exit and released its helper. No record
+settlement remains pending, and the closed disposable raw file is unchanged
+with no sidecars. This case is terminal after forced recovery, not a successful
+normal lifecycle, and must never replay. The new graph budget adds checks;
 it is not a demonstrated fix for that live deadline. Production designs remain
 untouched.
 

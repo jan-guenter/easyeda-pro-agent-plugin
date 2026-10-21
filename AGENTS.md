@@ -4,7 +4,7 @@ Keep current rules/status here and evidence in dated docs. Open questions are no
 
 ## Current checkpoint
 
-### Active073200 continuation and combined source batch, 2026-10-21
+### Terminal073200 recovery and combined source batch, 2026-10-21
 
 Actual facade2190173/start54575608 and parent2188465/start54571655 were admitted
 on installed073200: pinned Node24.18.0/core0, exact source583/0612598f,
@@ -20,17 +20,19 @@ constructor qualification had passed. No returned presentation, precreate,
 create or explicit Save. Common failure is published; native continuation false.
 Original root52636/created134370446269413942, helper96efcc55b90c484d982e613f5b25288a,
 Jobda615031c9624230b1ac1a03918227c6, bindingf8676c45a3348bec8e94ffaeb248244cc66dddf9571c4ee263fd02c31777ab9a.
-Normal close of observed HWND4588258 was acknowledged ONCE. Five subsequent
-original termination observations remain false. KEEP THIS FACADE/HELPER ALIVE;
-do not replay/launch/Save/release or restart Codex before actual root/whole-Job
-exit and release. Windows computer-use failed before app access with
-`sandboxCwd is not a local file URI`; user was asked whether a dialog is visible,
-leaving any Save/Discard prompt unanswered. User reports no visible EasyEDA
-window or dialog; a later question asks about a normal tray Quit/Exit command.
-No force termination, repeated close or replacement launch is authorized by
-this checkpoint. A false combined termination observation does not distinguish
-the retained root from remaining Job members. Private live evidence:
-`/root/.cache/easyeda-073200-live-khfaU70i`. Production designs remain excluded.
+Normal close of observed HWND4588258 was acknowledged ONCE, followed by six
+false termination observations. User confirmed no visible window/dialog/tray,
+then explicitly approved killing EasyEDA. At10:01:00Z the exact original
+root52636/creation134370446269413942/image was rechecked and terminated through
+one retained .NET Process.Handle. No broad name-based kill, Codex or helper
+termination. The original MCP termination7 then proved root exit/whole-Job empty;
+release-closed succeeded and inspect confirms released, not busy, with no record
+settlement pending. This is approved forced recovery, NOT normal lifecycle proof.
+Closed disposable598016/e620d21a is byte-exact to its pre-open raw baseline;
+no WAL/SHM/journal sidecars. No Save, discard, restore or replay. This operation
+is terminal and must NEVER replay. Private original intent/result/termination/
+release/closed-file evidence: `/root/.cache/easyeda-073200-live-khfaU70i`.
+Production designs remain excluded, including reads and hashes.
 
 Combined source batch is implemented and locally built, not released/installed:
 original move/startup collector/native integration; finite-effect destination
@@ -57,8 +59,10 @@ are clean. Build/sanitizer/SQL-program/compatibility, plugin/MCP, repository/
 privacy and packaged all7skill checks pass; changed skill also passes the official
 quick validator. Skill handoff now distinguishes registered observations from
 dormant writer pieces and instructs retention after ambiguous timeouts.
-No broad full release suite, dependency audit, new CI, version bump, publication
-or installation this turn. Those release gates remain required before shipping.
+Combined candidate `0.3.0+codex.20261021100337` is now entering release checks.
+Dependency audit/full verification, final exact-payload CI, publication and
+official installation are pending. No new installed runtime is claimed.
+Release evidence: `/root/.cache/easyeda-100337-release-GZa75uEt`.
 See `docs/current-pcb-string-lifecycle-batch-2026-10-21.md` and its source notes.
 
 ### Delivered073200 checkpoint, 2026-10-21
