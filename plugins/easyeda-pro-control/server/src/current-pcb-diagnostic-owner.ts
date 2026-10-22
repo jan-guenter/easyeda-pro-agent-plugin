@@ -53,8 +53,8 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const HELPER_SHA256 = "6f961eab97eda5d6f73f8ca54432c803ea2fabbf2690fedf46b9916fefb14081";
-const HELPER_BYTES = 611_926;
+const HELPER_SHA256 = "54c7b075e6db450f9db5f1dca5a6ecf6b0ba16a1c30133dfa0af8b637ca1fbd0";
+const HELPER_BYTES = 711_460;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;

@@ -1,7 +1,9 @@
+/* oxlint-disable import/max-dependencies -- This complete original-class composition joins the retained clock coordinator and ledger with synthetic replies and SQL, without native calls. */
 /** Original-class composition over synthetic replies/SQLite, no native calls. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { CurrentPcbStringClockCoordinator } from "../src/current-pcb-string-clock-coordinator.ts";
 import { CurrentPcbStringLifecycleLedger } from "../src/current-pcb-string-lifecycle-ledger.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "../src/current-pcb-string-ledger-exclusion.ts";
 import { CurrentPcbStringNativeClockIssuer } from "../src/current-pcb-string-native-clock.ts";
@@ -47,26 +49,37 @@ void test("original-source ledger durably joins clocks, one Save and closed SQL 
       sequence: request.sequence, binding, clock: { before: { tzAbsent: true, reason: null, sample: sample(0) },
         after: { tzAbsent: true, reason: null, sample: sample(2) } } });
   }, assertCurrent(phase): void { assert.equal(phase === "termination", terminated); } }, binding);
-  const before = await native.observe("before");
+  let serverCalls = 0;
   const server = new CurrentPcbStringServerClockRunner(provenance, { request(): Promise<unknown> {
+    serverCalls += 1; assert.equal(ledger.status().serverClockAttemptConsumed, true);
+    assert.match(ledger.records().at(-1)?.path ?? "", /server-clock-intent/u);
     const milliseconds = start + 200, stamp = { milliseconds, iso: new Date(milliseconds).toISOString(), timezoneOffsetMinutes: -120 };
     return Promise.resolve({ result: { type: "string", value: JSON.stringify({ schema: "easyeda-pro-control.pcb-string-server-clock.v1",
       identity: provenance.identity, workerUserText: provenance.workerUserText, busUuid: "11111111-1111-1111-1111-111111111111",
       rpcTicketBefore: 0, rpcTicketAfter: 1, serverTimeMs: milliseconds, clock: { before: stamp, after: stamp } }) } });
   }, assertCurrent(): void { assert.equal(terminated, false); } });
-  const serverPacket = await server.observe(); const armed = await native.observe("armed");
-  await ledger.armSaveClock(native, before, armed, server, serverPacket);
+  assert.throws(() => server.requireOriginalProvenance(structuredClone(provenance)), /original String provenance/u);
+  const coordinator = CurrentPcbStringClockCoordinator.prepare(ledger, native);
+  assert.throws(() => CurrentPcbStringClockCoordinator.prepare(ledger, native), /unused original/u);
+  const reservation = await coordinator.reserveServerClock(server);
+  assert.equal(reservation.dispatchAuthorized, false); assert.equal(serverCalls, 0);
+  assert.equal(coordinator.status().serverRpcSenderImplemented, false);
+  await assert.rejects(coordinator.reserveServerClock(server), /phase consumed/u);
+  const serverPacket = await server.observe();
+  await coordinator.acceptServerClock(reservation, serverPacket);
+  assert.equal(serverCalls, 1);
   const clockRecord = ledger.records().at(-1); assert.ok(clockRecord);
   assert.match(await readFile(clockRecord.path, "utf8"), /save-clock-plan/u);
   const save = await ledger.reserveSave(provenance, f.history, { ...f.witness,
     backendClockMinMs: start, backendClockMaxMs: start + 60_000 });
   assert.equal(save.dispatchAuthorized, false); await ledger.recordSaveOutcome(save, f.saveResult);
-  await ledger.recordSavePost(await native.observe("post"));
-  terminated = true; actor.expire(); const termination = await native.observe("termination"); f.apply();
-  await ledger.compareClosedSql(await inventory(f.path), termination);
+  await coordinator.recordSavePost();
+  terminated = true; actor.expire(); f.apply();
+  await coordinator.compareClosedSql(await inventory(f.path));
   await ledger.compareReopenedString(f.afterRaw, f.afterRaw);
   const status = await ledger.compareFinalSql(await inventory(f.path));
-  assert.equal(status.phase, "comparisons-complete-awaiting-native-lifecycle-proof"); assert.equal(status.recordCount, 13);
+  assert.equal(status.phase, "comparisons-complete-awaiting-native-lifecycle-proof"); assert.equal(status.recordCount, 15);
+  assert.equal(status.serverClockAttemptConsumed, true); assert.equal(status.serverClockResultRecorded, true);
   assert.equal(status.saveClockPlanRecorded, true); assert.equal(status.saveClockPostRecorded, true);
   assert.equal(status.originalSaveVerified, false); assert.equal(status.nativeOwnerVerified, false);
   assert.equal(status.completeLifecycleVerified, false); assert.equal(status.executionAuthorized, false);

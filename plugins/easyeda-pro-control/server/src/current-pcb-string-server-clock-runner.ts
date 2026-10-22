@@ -69,12 +69,33 @@ export class CurrentPcbStringServerClockRunner {
   }
   public status(): Readonly<{ phase: "ready" | "observing" | "completed" | "failed"; rawReplyRetained: boolean;
     rpcMayRemainPending: boolean; saveAuthorized: false }> {
+    return this.#status();
+  }
+  #status(): ReturnType<CurrentPcbStringServerClockRunner["status"]> {
     return Object.freeze({ phase: this.#phase, rawReplyRetained: this.#received,
       rpcMayRemainPending: this.#phase === "observing" || this.#phase === "failed", saveAuthorized: false });
   }
   /** Private failure evidence only. An unresolved request may have installed a
    * reply subscriber. Never replay it or label timeout as cancellation. */
   public retainedReply(): unknown { return this.#raw; }
+  /** Exact in-memory provenance association for durable attempt accounting.
+   * Failure inspection preserves the consumed attempt without claiming its
+   * former transport is still current. This method authorizes no request. */
+  public requireOriginalProvenance(provenance: CurrentPcbStringSaveProvenance): ReturnType<CurrentPcbStringServerClockRunner["status"]> {
+    need(provenance === this.#provenance, "original String provenance differs");
+    if (this.#phase !== "failed") { this.#current(); }
+    return this.#status();
+  }
+  /** Historical failure accounting only. A pending request can outlive its
+   * owner, so stopping its ledger must not require that lost owner to become
+   * current again. This immutable snapshot cannot validate a result or retry. */
+  public retainedFailureState(provenance: CurrentPcbStringSaveProvenance): Readonly<ReturnType<CurrentPcbStringServerClockRunner["status"]> & {
+    originalProvenanceRetained: true; currentOwnerVerified: false; rpcCancellationProved: false; retryAuthorized: false;
+  }> {
+    need(provenance === this.#provenance, "original String provenance differs");
+    return Object.freeze({ ...this.#status(), originalProvenanceRetained: true,
+      currentOwnerVerified: false, rpcCancellationProved: false, retryAuthorized: false });
+  }
   public async observe(): Promise<CurrentPcbStringServerClockPacket> {
     need(this.#phase === "ready" && !consumed.has(this.#provenance), "original String attempt consumed");
     consumed.add(this.#provenance); this.#phase = "observing";

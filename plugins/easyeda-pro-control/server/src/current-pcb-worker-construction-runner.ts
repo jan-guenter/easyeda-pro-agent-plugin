@@ -5,7 +5,12 @@ import { types } from "node:util";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentPcbStringProducerCallbackFunction, decodeCurrentPcbStringProducerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
 import type { CurrentPcbStringProducerCallbackKind } from "./current-pcb-string-producer-callback-scope.ts";
-import { decodeCurrentPcbStringProducerFunction } from "./current-pcb-string-producer-scope.ts";
+import { decodeCurrentPcbStringProducerFunction, decodeCurrentPcbStringProducerScopeList,
+  decodeCurrentPcbStringProducerScopes } from "./current-pcb-string-producer-scope.ts";
+import type { CurrentPcbStringProducerKind } from "./current-pcb-string-producer-scope.ts";
+import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS,
+  CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION } from "./current-pcb-worker-construction-assignment.ts";
+import type { CurrentPcbWorkerConstructionAssignment, CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE, CURRENT_PCB_WORKER_CONSTRUCTION_SITES,
   CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
@@ -58,6 +63,7 @@ export interface CurrentPcbWorkerConstructionIdentities {
   readonly structureDebounce: string;
 }
 const issued = new WeakMap<CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionRunner>();
+const assignmentsIssued = new WeakMap<CurrentPcbWorkerConstructionAssignments, CurrentPcbWorkerConstructionRunner>();
 function fail(code: string): Error { return new Error(`PCB_WORKER_CONSTRUCTION_${code}`); }
 async function bounded<T>(promise: Promise<T>, duration = REQUEST_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -103,6 +109,9 @@ export class CurrentPcbWorkerConstructionRunner {
   #released = false;
   #releaseConsumed = false;
   #packet: CurrentPcbWorkerConstructionPacket | null = null;
+  #assignmentConsumed = false;
+  #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
+  #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
 
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     transportMembers(transport);
@@ -296,6 +305,74 @@ export class CurrentPcbWorkerConstructionRunner {
     await this.#current();
     return Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
       upload: token, cooperation: token, uploadStructure: token, structure: token, structureDebounce: token }).strict().parse(this.#identities));
+  }
+  #assignmentCall(objectId: string, functionDeclaration: string, args: readonly string[], returnByValue = true): Promise<unknown> {
+    return this.#request({ method: "Runtime.callFunctionOn", params: { objectId, functionDeclaration,
+      arguments: args.map(value => ({ objectId: value })), objectGroup: GROUP, silent: true, returnByValue,
+      generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } });
+  }
+  async #assignmentScopes(original: string, kind: CurrentPcbStringProducerKind): Promise<readonly string[]> {
+    const list = decodeCurrentPcbStringProducerScopeList(await this.#request({ method: "Runtime.getProperties",
+      params: { objectId: original, ownProperties: true, generatePreview: false } }), this.#scriptId, kind);
+    return decodeCurrentPcbStringProducerScopes(await this.#request({ method: "Runtime.getProperties",
+      params: { objectId: list, ownProperties: true, generatePreview: false } }), kind);
+  }
+  async #assignmentRecheck(original: Readonly<CurrentPcbWorkerConstructionIdentities>,
+    wrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>>): Promise<void> {
+    resultBoolean.parse(await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK,
+      [original.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload]));
+  }
+  /** This original-event continuation is not a supplied-data projection. Every
+   * callback argument comes from the retained constructor pauses. Current
+   * wrappers are independently source/location-qualified in the same worker.
+   * It neither observes continuous ownership nor admits a pending writer. */
+  public async proveCurrentAssignments(packet: CurrentPcbWorkerConstructionPacket): Promise<CurrentPcbWorkerConstructionAssignments> {
+    const original = await this.requireOriginal(packet);
+    if (this.#assignmentConsumed) { throw fail("ASSIGNMENTS_CONSUMED"); } this.#assignmentConsumed = true;
+    try {
+      const wrappers: Partial<Record<CurrentPcbWorkerConstructionAssignment, string>> = {};
+      for (const field of ["uploadStructure", "structure", "cooperation", "upload"] as const) {
+        const kind = field === "uploadStructure" || field === "structure" ? "serial" : field;
+        const wrapper = decodeCurrentPcbStringProducerFunction(await this.#assignmentCall(original.project,
+          CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field], [], false), kind);
+        const scopes = await this.#assignmentScopes(wrapper, kind);
+        const scope = scopes[0];
+        if (scope === undefined) { throw fail("ASSIGNMENT_SCOPE"); }
+        const callback = field === "structure" ? original.structureDebounce : original[field];
+        resultBoolean.parse(await this.#assignmentCall(scope, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS[field],
+          [original.project, wrapper, callback]));
+        if (field === "structure") {
+          const debounceScopes = await this.#assignmentScopes(original.structureDebounce, "debounce"), parameters = debounceScopes[1];
+          if (parameters === undefined) { throw fail("ASSIGNMENT_SCOPE"); }
+          resultBoolean.parse(await this.#assignmentCall(parameters, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION,
+            [original.project, wrapper, scope, original.structureDebounce, original.structure]));
+        }
+        wrappers[field] = wrapper;
+      }
+      const complete = Object.freeze(z.object({ uploadStructure: token, structure: token, cooperation: token, upload: token }).strict().parse(wrappers));
+      await this.#assignmentRecheck(original, complete);
+      const observation: CurrentPcbWorkerConstructionAssignments = Object.freeze({
+        profile: "private.current-pcb-worker-construction-assignments.v1",
+        callbackKinds: Object.freeze(["uploadStructure", "structure", "cooperation", "upload"] as const), originalConstructionCallbacksMatched: true,
+        originalCallbackReceiversVerified: true, currentProjectWrapperRelationsVerified: true,
+        continuousAssignmentOwnershipVerified: false, nativeChannelIntrinsicAndPeerOwnershipVerified: false,
+        completePublishersVerified: false, writeDestinationsContained: false, atomicSnapshotVerified: false,
+        queueCompletionVerified: false, executionAuthorized: false,
+      });
+      this.#assignedWrappers = complete; this.#assignments = observation; assignmentsIssued.set(observation, this); return observation;
+    } catch (error) { this.#failed ??= fail("ASSIGNMENTS_FAILED"); throw error; }
+  }
+  /** Reprove current PROJECT and all four field assignments, not only that a
+   * historical report once existed. Constant callback bindings were qualified
+   * from the pinned wrapper source in proveCurrentAssignments. */
+  public async requireCurrentAssignments(packet: CurrentPcbWorkerConstructionPacket,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
+    if (assignments !== this.#assignments || assignmentsIssued.get(assignments) !== this || this.#assignedWrappers === null) {
+      throw fail("ORIGINAL_ASSIGNMENTS");
+    }
+    const original = await this.requireOriginal(packet);
+    try { await this.#assignmentRecheck(original, this.#assignedWrappers); }
+    catch (error) { this.#failed ??= fail("ASSIGNMENTS_CHANGED"); throw error; }
   }
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }

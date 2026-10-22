@@ -295,3 +295,5 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-21-readme-release-notes.md](2026-10-21-readme-release-notes.md) | `README.md` |
 | [2026-10-22 documentation reorganization](2026-10-22-documentation-reorganization.md) | New record |
 | [2026-10-22 Vitest audit fix](2026-10-22-vitest-audit-fix.md) | PR97 dependency audit follow-up |
+| [2026-10-23 worker-startup batch](2026-10-23-worker-startup-batch.md) | New combined implementation and verification record |
+| [2026-10-23 worker-startup integration plan](2026-10-23-worker-startup-integration-plan.md) | New plan; native-owner wiring remains pending |

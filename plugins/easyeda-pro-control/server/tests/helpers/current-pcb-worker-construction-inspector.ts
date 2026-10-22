@@ -13,6 +13,7 @@ export async function constructionInspector(context: TestContext, loseAtPause = 
   transport: CurrentPcbWorkerConstructionTransport; commands: string[];
   counts: () => Readonly<{ pauses: number; resumes: number }>; lose: () => void;
   run: () => Promise<unknown>; completed: () => Promise<boolean>; interrupt: () => Promise<void>;
+  syntheticEvaluate: (expression: string) => Promise<unknown>;
 }>> {
   const child = spawn(process.execPath, ["--inspect=127.0.0.1:0", "--input-type=commonjs", "-e", "setInterval(()=>{},1000)"], { stdio: ["pipe", "pipe", "pipe"] });
   const address = Promise.withResolvers<string>(); let stderr = "";
@@ -71,6 +72,7 @@ export async function constructionInspector(context: TestContext, loseAtPause = 
       try { await request("Debugger.pause", {}); await observed.promise; } finally { subscribers.delete(listener); }
     },
     run: (): Promise<unknown> => request("Runtime.runScript", { scriptId: compiled.scriptId, returnByValue: true }),
+    syntheticEvaluate: (expression: string): Promise<unknown> => request("Runtime.evaluate", { expression, returnByValue: true }),
     completed: async (): Promise<boolean> => z.object({ result: z.object({ type: z.literal("boolean"), value: z.boolean() }).strict() }).strict()
       .parse(await request("Runtime.evaluate", { expression: "globalThis.CONSTRUCTION_COMPLETE===true", returnByValue: true })).result.value,
   };

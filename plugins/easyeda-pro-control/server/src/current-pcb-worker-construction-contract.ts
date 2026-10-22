@@ -44,9 +44,11 @@ export type CurrentPcbWorkerConstructionCommand =
     generatePreview: false; throwOnSideEffect: true; includeCommandLineAPI: false }> }>
   | Readonly<{ method: "Runtime.getProperties"; params: Readonly<{ objectId: string; ownProperties: true; generatePreview: false }> }>
   | Readonly<{ method: "Runtime.callFunctionOn"; params: Readonly<{ objectId: string;
-    functionDeclaration: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SAME | typeof CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT;
+    /** Only the fixed construction and construction-assignment programs. The
+     * native boundary must reject every other string before forwarding. */
+    functionDeclaration: string;
     arguments: readonly Readonly<{ objectId: string }>[]; objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
-    silent: true; returnByValue: true; generatePreview: false; throwOnSideEffect: true; awaitPromise: false; userGesture: false }> }>
+    silent: true; returnByValue: boolean; generatePreview: false; throwOnSideEffect: true; awaitPromise: false; userGesture: false }> }>
   | Readonly<{ method: "Runtime.releaseObjectGroup"; params: Readonly<{ objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group }> }>;
 
 /** This transport is a trusted, original single-worker owner dependency, not an
