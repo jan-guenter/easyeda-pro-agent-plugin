@@ -408,7 +408,7 @@ export const SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL =
 function assertExactReadExecutionSupported(request: ExactReadRequest): void {
   // Preserve the request/payload schema for immutable historical receipts.
   // Never compile or dispatch the former supposedly read-only netlist exporter.
-  // See docs/api-coverage-review-2026-10-10.md for the hash-pinned call chain.
+  // See docs/history/2026-10-10-api-coverage-review.md for the hash-pinned call chain.
   if (request.kind === "schematic-topology") { throw new Error(SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL); }
 }
 

@@ -23,7 +23,7 @@ void test("remaining researched mutations expose concrete native effects without
     for (const fact of item.facts) { assert.match(row.omission.reason, fact); }
     assert.match(row.omission.nextRequirement, item.next);
     assert.match(row.omission.nextRequirement, /feasible|not inherent infeasibility/u);
-    assert.ok(row.omission.evidence.includes("docs/api-remaining-method-effects-2026-10-11.md"));
+    assert.ok(row.omission.evidence.includes("docs/history/2026-10-11-api-remaining-method-effects.md"));
     assert.ok(row.omission.evidence.some((entry) => /@sha256:[a-f0-9]{64};utf16:\d/u.test(entry)));
   }
 });

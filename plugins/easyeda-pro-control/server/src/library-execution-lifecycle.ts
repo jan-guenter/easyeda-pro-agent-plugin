@@ -9,7 +9,7 @@ const structureLifecycleActions = new Set<string>([
  * The existing task1 upload wait excludes its future timer and task2 work;
  * document-history proofs do not account for the structure table's SQL delta.
  * Keep pure planning and historical evidence readable, without live authority.
- * Source pins and scheduler offsets: docs/symbol-delete-native-effects-2026-10-12.md.
+ * Source pins and scheduler offsets: docs/history/2026-10-12-symbol-delete-native-effects.md.
  */
 export function libraryExecutionLifecycleRefusal(action: string): string | undefined {
   return structureLifecycleActions.has(action)

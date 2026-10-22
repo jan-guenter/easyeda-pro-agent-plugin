@@ -21,7 +21,7 @@ function refuse(): never { throw new Error("PCB_DIAGNOSTIC_CHILD_NAVIGATION"); }
 /** Chromium146 separates browser loading/start events from renderer events.
  * Do not impose a total order across those producers. A scheduled/clear pair
  * is renderer-local; committed loaders remain distinct from pending starts.
- * See docs/current-pcb-cdp-navigation-audit-2026-10-20.md. */
+ * See docs/history/2026-10-20-current-pcb-cdp-navigation-audit.md. */
 export class CurrentPcbDiagnosticChildNavigation {
   readonly #childId: string;
   readonly #rootId: string;

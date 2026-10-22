@@ -86,7 +86,7 @@ const records: readonly OperationValidationRecord[] = [{
     reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
     reviewedAt: "2026-10-12",
     scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
-    reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review",
+    reference: "docs/history/2026-10-12-api-coverage-220050-release.md#historical-wire-source-review",
   }],
   fixture: {
     category: "disposable-schematic-validation",
