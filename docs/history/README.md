@@ -294,3 +294,4 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-21-current-pcb-worker-construction-capture.md](2026-10-21-current-pcb-worker-construction-capture.md) | `docs/current-pcb-worker-construction-capture-2026-10-21.md` |
 | [2026-10-21-readme-release-notes.md](2026-10-21-readme-release-notes.md) | `README.md` |
 | [2026-10-22 documentation reorganization](2026-10-22-documentation-reorganization.md) | New record |
+| [2026-10-22 Vitest audit fix](2026-10-22-vitest-audit-fix.md) | PR97 dependency audit follow-up |

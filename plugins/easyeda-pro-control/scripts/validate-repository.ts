@@ -612,7 +612,7 @@ check(
     vendoredBridgePackageManifest.private &&
     vendoredBridgePackageManifest.devDependencies?.["esbuild"] === "0.28.2" &&
     vendoredBridgePackageManifest.devDependencies?.["typescript"] === "7.0.2" &&
-    vendoredBridgePackageManifest.devDependencies?.["vitest"] === "4.1.11" &&
+    vendoredBridgePackageManifest.devDependencies?.["vitest"] === "4.1.12" &&
     vendoredBridgePackageManifest.devDependencies?.["esbuild"] ===
       pluginPackageManifest.devDependencies?.["esbuild"] &&
     vendoredBridgePackageManifest.devDependencies?.["typescript"] ===

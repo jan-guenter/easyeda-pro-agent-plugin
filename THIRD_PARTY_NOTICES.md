@@ -26,7 +26,7 @@ The development and CI toolchain uses:
 - [`@types/ws` 8.18.1](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ws), copyright Microsoft Corporation, [MIT License](plugins/easyeda-pro-control/licenses/types-ws-MIT.txt).
 - [`Oxlint` 1.87.0](https://github.com/oxc-project/oxc), copyright VoidZero Inc., Boshen, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-MIT.txt).
 - [`oxlint-tsgolint` 7.0.2003](https://github.com/oxc-project/tsgolint), copyright VoidZero Inc., typescript-eslint, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-tsgolint-MIT.txt).
-- [`Vitest` 4.1.11](https://github.com/vitest-dev/vitest), copyright VoidZero Inc. and Vitest contributors, [MIT License](plugins/easyeda-pro-control/licenses/vitest-MIT.txt); used to test the authenticated bridge source.
+- [`Vitest` 4.1.12](https://github.com/vitest-dev/vitest), copyright VoidZero Inc. and Vitest contributors, [MIT License](plugins/easyeda-pro-control/licenses/vitest-MIT.txt); used to test the authenticated bridge source.
 
 The offline API catalog includes extracted metadata from the official
 `@jlceda/pro-api-types` declarations. The [Apache-2.0 license](plugins/easyeda-pro-control/third-party/pro-api-types/LICENSE)

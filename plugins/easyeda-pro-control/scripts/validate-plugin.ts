@@ -519,7 +519,7 @@ check(
     bridgePackageManifest["private"] === true &&
     bridgeDevDependencies["esbuild"] === "0.28.2" &&
     bridgeDevDependencies["typescript"] === "7.0.2" &&
-    bridgeDevDependencies["vitest"] === "4.1.11" &&
+    bridgeDevDependencies["vitest"] === "4.1.12" &&
     !Object.hasOwn(bridgeDevDependencies, "archiver") &&
     !existsSync(join(pluginRoot, "easyeda-bridge-extension", "package-lock.json")),
 );
