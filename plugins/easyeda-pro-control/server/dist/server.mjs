@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "913d8504ecda6d6aadc8016a03d108f6ea2148161dcf07f9fd7869d1197248ce";
+const __easyedaBundlePairId = "e93167e7063d0afc5c24c0656567fb86ffe937651ad89229f8b873ed93bb2ee7";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -118488,7 +118488,7 @@ var init_authenticated_bridge_build_identity = __esm({
     MAXIMUM_ARCHIVE_BYTES = 64 * 1024 * 1024;
     MAXIMUM_RECEIPT_BYTES = 1024 * 1024;
     AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY = Object.freeze({
-      closureSha256: "3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2",
+      closureSha256: "5f22ad229477ccb898ad6502cb47fd67d24171c9bededd330f118b527e4eb204",
       commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
       fileCount: 70,
       repository: "https://github.com/oaslananka/easyeda-mcp-pro",

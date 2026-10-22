@@ -702,7 +702,7 @@ check(
       '"cc8893215e736f9efca78e4216033469008ea8e9"',
     ) &&
     reviewedBridgeSource.includes(
-      '"3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2"',
+      '"5f22ad229477ccb898ad6502cb47fd67d24171c9bededd330f118b527e4eb204"',
     ) &&
     reviewedBridgeSource.includes("captureVendoredSourceClosure") &&
     reviewedBridgeSource.includes('"src/mutual-auth.ts"') &&
