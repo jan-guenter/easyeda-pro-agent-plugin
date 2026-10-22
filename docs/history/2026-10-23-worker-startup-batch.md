@@ -124,3 +124,19 @@ then passed the maintained offline catalog probe: 26 restricted tools, seven
 skills, ten offline queries and clean owned-child exit, with no upstream child
 or bridge socket. This intermediate package proof precedes the two fixture
 corrections above and is not the final installation proof.
+
+PR98 initially published implementation commit
+`ca3b11673e6c98185a95c5839026f8675fa4940f`. Windows run39866671873 passed.
+Linux run39866671812 exposed the same stale exact-build-script assertion in the
+separate MCP-contract validator, after its other build checks passed. The
+validator now requires the generated startup check and both fixed generator
+commands. Runtime source, native helper, compatibility projections and bundles
+remain frozen; this tooling correction does not enable a capability.
+
+The detached package for that initial commit passed the maintained Git-byte/mode
+verifier: 1,746 files, 42 directories and 35,798,889 bytes, inventory
+`1044cc830292b35dd821d43f55d3171dea9a0d11152b9cb63566d1a15d3f8802`.
+Its maintained offline probe passed 26 tools and ten queries; its original child
+closed through stdin EOF with exit zero and no stderr. This is package evidence,
+not admission of the running host; the tooling correction changes package bytes
+and therefore needs a fresh final file comparison.
