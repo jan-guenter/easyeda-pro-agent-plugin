@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "e93167e7063d0afc5c24c0656567fb86ffe937651ad89229f8b873ed93bb2ee7";
+const __easyedaBundlePairId = "a4e8af588594493d2071bc436b4f24f086eacb1430ee97bb244c27cab07b8e88";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -140091,8 +140091,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_string_native_clock();
     init_current_pcb_string_clock_reply();
     init_sqlite_inventory_core();
-    HELPER_SHA256 = "6f961eab97eda5d6f73f8ca54432c803ea2fabbf2690fedf46b9916fefb14081";
-    HELPER_BYTES = 611926;
+    HELPER_SHA256 = "54c7b075e6db450f9db5f1dca5a6ecf6b0ba16a1c30133dfa0af8b637ca1fbd0";
+    HELPER_BYTES = 711460;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();

@@ -12,6 +12,7 @@ import { controlDataDirectory, controlRootCapability, publishManagedAttachmentEx
 import type { PublishedManagedAttachment } from "./artifacts.ts";
 import { compareCompleteClosedSql } from "./closed-sql-equality.ts";
 import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentPcbDiagnosticRawStringsReply } from "./current-pcb-diagnostic-raw-strings.ts";
 import { compareCurrentPcbStringCreateBody } from "./current-pcb-string-create.ts";
 import type { CurrentPcbStringActorClockPacket, CurrentPcbStringActorClockRunner } from "./current-pcb-string-actor-clock-runner.ts";
@@ -29,8 +30,11 @@ import type { CurrentPcbStringSaveProvenance } from "./current-pcb-string-save-p
 import { compareCurrentPcbStringSaveClockHistory, prepareCurrentPcbStringSaveClock,
   recordCurrentPcbStringSaveClockPost, requireOriginalCurrentPcbStringSaveClock } from "./current-pcb-string-save-clock.ts";
 import type { CurrentPcbStringSaveClockPlan } from "./current-pcb-string-save-clock.ts";
-import type { CurrentPcbStringNativeClockIssuer, CurrentPcbStringNativeClockObservation } from "./current-pcb-string-native-clock.ts";
-import type { CurrentPcbStringServerClockPacket, CurrentPcbStringServerClockRunner } from "./current-pcb-string-server-clock-runner.ts";
+import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
+import type { CurrentPcbStringNativeClockObservation } from "./current-pcb-string-native-clock.ts";
+import { CurrentPcbStringServerClockRunner } from "./current-pcb-string-server-clock-runner.ts";
+import type { CurrentPcbStringServerClockPacket } from "./current-pcb-string-server-clock-runner.ts";
+import { currentPcbStringServerClockCommand } from "./current-pcb-string-server-clock.ts";
 import { CURRENT_PCB_STRING_LEDGER_DIRECTORY, assertNoUnresolvedCurrentPcbStringLedgers,
   readCurrentPcbStringLedgerReservations } from "./current-pcb-string-ledger-exclusion.ts";
 import type { CurrentPcbStringHistoryProjection } from "./current-pcb-string-history.ts";
@@ -44,7 +48,7 @@ type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Phase = "prepared" | "create-intent" | "create-acknowledged" | "postcreate-compared" | "publication-compared" |
   "save-intent" | "save-acknowledged" | "closed-sql-compared" | "reopened-string-compared" |
   "comparisons-complete-awaiting-native-lifecycle-proof" | "failed";
-type AttemptKind = "create" | "save";
+type AttemptKind = "create" | "save" | "server-clock";
 const DIRECTORY = CURRENT_PCB_STRING_LEDGER_DIRECTORY;
 let originalPreparationBusy = false;
 const MAX_RECORD_BYTES = 256 * 1024;
@@ -68,6 +72,8 @@ export interface CurrentPcbStringLedgerStatus extends Readonly<typeof LIMITS> {
   readonly busy: boolean;
   readonly createAttemptConsumed: boolean;
   readonly saveAttemptConsumed: boolean;
+  readonly serverClockAttemptConsumed: boolean;
+  readonly serverClockResultRecorded: boolean;
   readonly recordCount: number;
   readonly acknowledgedPrimitiveId: string | null;
   readonly originalSourcesRetained: boolean;
@@ -77,6 +83,13 @@ export interface CurrentPcbStringLedgerStatus extends Readonly<typeof LIMITS> {
 const originalAttempts = new WeakMap<CurrentPcbStringLedgerAttempt, CurrentPcbStringLifecycleLedger>();
 const consumedPlans = new WeakSet<CurrentPcbStringCreateObservationPlan>();
 const consumedProvenances = new WeakSet<CurrentPcbStringSaveProvenance>();
+// oxlint-disable typescript/unbound-method -- Captured private-field methods are called with their original class receivers only.
+const originalNativeClock = CurrentPcbStringNativeClockIssuer.prototype.requireOriginal;
+const originalServerProvenance = CurrentPcbStringServerClockRunner.prototype.requireOriginalProvenance;
+const originalServerPacket = CurrentPcbStringServerClockRunner.prototype.requireOriginal;
+const originalServerReply = CurrentPcbStringServerClockRunner.prototype.retainedReply;
+const originalServerFailure = CurrentPcbStringServerClockRunner.prototype.retainedFailureState;
+// oxlint-enable typescript/unbound-method
 function need(value: boolean, detail: string): asserts value {
   if (!value) { throw new Error(`PCB_STRING_LIFECYCLE_LEDGER: ${detail}`); }
 }
@@ -115,6 +128,12 @@ export class CurrentPcbStringLifecycleLedger {
   #saveConsumed = false;
   #createAttempt: CurrentPcbStringLedgerAttempt | null = null;
   #saveAttempt: CurrentPcbStringLedgerAttempt | null = null;
+  #serverClockAttempt: CurrentPcbStringLedgerAttempt | null = null;
+  #serverClockConsumed = false;
+  #serverClockResultRecorded = false;
+  #serverClockOwner: Readonly<{ issuer: CurrentPcbStringNativeClockIssuer; before: CurrentPcbStringNativeClockObservation;
+    runner: CurrentPcbStringServerClockRunner }> | null = null;
+  #serverClockPacket: CurrentPcbStringServerClockPacket | null = null;
   #createResult: string | null = null;
   #primitiveId: string | null = null;
   #publication: CurrentPcbStringPublicationPlan | null = null;
@@ -202,6 +221,7 @@ export class CurrentPcbStringLifecycleLedger {
   public status(): CurrentPcbStringLedgerStatus {
     return Object.freeze({ profile: "private.current-pcb-string-lifecycle-ledger.v1", operationId: this.#operationId,
       phase: this.#phase, busy: this.#busy, createAttemptConsumed: this.#createConsumed, saveAttemptConsumed: this.#saveConsumed,
+      serverClockAttemptConsumed: this.#serverClockConsumed, serverClockResultRecorded: this.#serverClockResultRecorded,
       recordCount: this.#records.length, acknowledgedPrimitiveId: this.#primitiveId,
       originalSourcesRetained: this.#originalProvenance !== null, saveClockPlanRecorded: this.#clockPlan !== null,
       saveClockPostRecorded: this.#clockPostRecorded, ...LIMITS });
@@ -250,7 +270,8 @@ export class CurrentPcbStringLifecycleLedger {
     originalAttempts.set(token, this); return token;
   }
   #requireAttempt(token: CurrentPcbStringLedgerAttempt, kind: AttemptKind): void {
-    need(originalAttempts.get(token) === this && (kind === "create" ? token === this.#createAttempt : token === this.#saveAttempt),
+    const expected = { create: this.#createAttempt, save: this.#saveAttempt, "server-clock": this.#serverClockAttempt }[kind];
+    need(originalAttempts.get(token) === this && token === expected,
       "original ledger attempt required");
   }
   /** Publishes a durable reservation only. A live caller still needs an
@@ -304,6 +325,60 @@ export class CurrentPcbStringLifecycleLedger {
       this.#phase = "publication-compared"; return this.status();
     });
   }
+  /** Reserve the fixed effectful RPC before its original runner is used. This
+   * ledger supplies no sender, route containment or execution authority. */
+  public reserveServerClock(issuer: CurrentPcbStringNativeClockIssuer, before: CurrentPcbStringNativeClockObservation,
+    runner: CurrentPcbStringServerClockRunner): Promise<CurrentPcbStringLedgerAttempt> {
+    return this.#step("publication-compared", async () => {
+      need(this.#originalProvenance !== null && !this.#serverClockConsumed, "original server clock missing or consumed");
+      const provenance = this.#originalProvenance;
+      const check = (): void => {
+        currentPcbStringSaveProvenanceSource(provenance); originalNativeClock.call(issuer, before);
+        need(before.phase === "before" && originalServerProvenance.call(runner, provenance).phase === "ready",
+          "unstarted original server runner and native before required");
+      };
+      check(); this.#serverClockConsumed = true;
+      this.#serverClockOwner = Object.freeze({ issuer, before, runner });
+      const source = currentPcbStringSaveProvenanceSource(provenance);
+      const command = currentPcbStringServerClockCommand(source.packet.contexts.worker, provenance.identity, provenance.workerUserText);
+      const record = await this.#append("server-clock-intent", { before, commandSha256: sha256Json(command),
+        actorPacketSha256: provenance.actorPacketSha256, beforeSqlSha256: provenance.beforeSqlSha256,
+        dispatchAuthorized: false, rpcCancellationProved: false });
+      check(); this.#serverClockAttempt = this.#attempt("server-clock", record); return this.#serverClockAttempt;
+    });
+  }
+  /** Retain the original raw runner reply before sealing a Save clock plan.
+   * A copied packet or a runner that was already used before reservation fails. */
+  public recordServerClock(token: CurrentPcbStringLedgerAttempt, runner: CurrentPcbStringServerClockRunner,
+    packet: CurrentPcbStringServerClockPacket): Promise<CurrentPcbStringLedgerStatus> {
+    this.#requireAttempt(token, "server-clock");
+    return this.#step("publication-compared", async () => {
+      need(this.#originalProvenance !== null && this.#serverClockOwner?.runner === runner && !this.#serverClockResultRecorded,
+        "original reserved server runner required");
+      const provenance = this.#originalProvenance;
+      originalServerProvenance.call(runner, provenance); originalServerPacket.call(runner, packet);
+      const raw = captureCurrentPcbStringClockReply(originalServerReply.call(runner));
+      need(raw.sha256 === packet.rawReplySha256, "original server reply differs");
+      await this.#append("server-clock-result", { intentSha256: token.intentSha256, packet, rawReply: raw.value,
+        rawReplySha256: raw.sha256, originalRunnerRetained: true, dispatchAuthorized: false });
+      originalServerProvenance.call(runner, provenance); originalServerPacket.call(runner, packet);
+      this.#serverClockPacket = packet; this.#serverClockResultRecorded = true; return this.status();
+    });
+  }
+  /** An unknown or failed RPC never becomes a retry. Keep the reservation and
+   * any safely captured original reply; absence is not non-dispatch proof. */
+  public stopServerClock(token: CurrentPcbStringLedgerAttempt): Promise<CurrentPcbStringLedgerStatus> {
+    this.#requireAttempt(token, "server-clock");
+    return this.#step("publication-compared", async () => {
+      need(this.#originalProvenance !== null && this.#serverClockOwner !== null, "original reserved server runner missing");
+      const runner = this.#serverClockOwner.runner;
+      const state = originalServerFailure.call(runner, this.#originalProvenance);
+      const raw = state.rawReplyRetained ? captureCurrentPcbStringClockReply(originalServerReply.call(runner)) : null;
+      await this.#append("server-clock-stopped", { intentSha256: token.intentSha256, runner: state,
+        rawReply: raw?.value ?? null, rawReplySha256: raw?.sha256 ?? null, rpcCancellationProved: false, retryAuthorized: false });
+      this.#phase = "failed"; return this.status();
+    });
+  }
   /** Seals and publishes actual original clock objects before Save reservation.
    * The owner must have admitted the fixed RPC separately; this method does
    * not dispatch it or treat a supplied scalar as that observation. */
@@ -312,6 +387,9 @@ export class CurrentPcbStringLifecycleLedger {
     server: CurrentPcbStringServerClockPacket): Promise<CurrentPcbStringLedgerStatus> {
     return this.#step("publication-compared", async () => {
       need(this.#originalProvenance !== null && !this.#clockAttempted, "original clock source missing or consumed");
+      need(this.#serverClockResultRecorded && this.#serverClockPacket === server && this.#serverClockOwner?.issuer === issuer &&
+        this.#serverClockOwner.before === before && this.#serverClockOwner.runner === serverRunner,
+      "original durable server clock reservation/result required");
       this.#clockAttempted = true;
       const plan = prepareCurrentPcbStringSaveClock(this.#originalProvenance, issuer, before, armed, serverRunner, server);
       await this.#append("save-clock-plan", { plan });

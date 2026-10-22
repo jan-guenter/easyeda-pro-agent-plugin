@@ -100,15 +100,16 @@ jobs:
           Write-Output 'Windows PowerShell 5.1 recovery helper emitted no stderr, observed its parent and no EasyEDA process.'
           exit 0
 
-      - name: Compile diagnostic owner and check empty Job and pipe inheritance
+      - name: Compile each fixed owner purpose and check empty Job and pipe inheritance
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version Latest
           $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-owner.ps1'
+          foreach ($purpose in @('', '-StringPrecreate', '-WorkerStartup')) {
           $child = [Diagnostics.Process]::new()
           $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
-          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly'
+          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly ' + $purpose
           $child.StartInfo.UseShellExecute = $false
           $child.StartInfo.CreateNoWindow = $true
           $child.StartInfo.RedirectStandardOutput = $true
@@ -135,6 +136,7 @@ jobs:
               throw 'Diagnostic compilation helper did not prove the empty native construction.'
             }
           } finally { $child.Dispose() }
+          }
           Write-Output 'Diagnostic helper compiled and checked an empty Job plus four anonymous pipe endpoints; no application launched.'
 
       - name: Verify suspended image admission with a fresh no-op child
