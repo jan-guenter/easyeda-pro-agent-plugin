@@ -8,7 +8,10 @@ Read [`AGENTS.md`](AGENTS.md) first. This project controls an EDA application, s
 - Describe authority, target scope, failure modes, inverse behavior, persistence proof, and compatibility impact.
 - Add adversarial tests for malformed data, context drift, timeout/disconnect, collateral changes, and durable-baseline races where applicable.
 - Do not weaken an assertion to make a fixture pass. Normalize only a representation that is independently proven for the pinned build.
-- Update skill/reference documentation and the durable engineering record when behavior changes.
+- Update skill/reference documentation when behavior changes. Record research,
+  work results and release evidence in `docs/history/YYYY-MM-DD-topic.md`, and
+  link the record from [`docs/history/README.md`](docs/history/README.md). Keep
+  lasting requirements in `AGENTS.md` and human setup/usage in `README.md`.
 - Leave the production writer disabled unless the pull request includes reviewed connected sacrificial-board evidence.
 
 ## Local checks

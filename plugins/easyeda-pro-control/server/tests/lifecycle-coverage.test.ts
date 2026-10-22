@@ -46,7 +46,7 @@ void test("symbol deletion remains nonexecutable until subscriber and delayed st
   assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
   assert.ok(row.omission);
   assert.equal(row.omission?.code, "symbol-delete-subscriber-and-structure-lifecycle");
-  assert.ok(row.omission.evidence.includes("docs/symbol-delete-native-effects-2026-10-12.md"));
+  assert.ok(row.omission.evidence.includes("docs/history/2026-10-12-symbol-delete-native-effects.md"));
   assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
   const operation = { id: "closed-symbol-delete", action: "library.symbol.delete", libraryUuid: "project", target: { uuid: "symbol" } };
   assert.throws(() => libraryExecutionKind(operation), /no completed execution proof profile/u);

@@ -27,7 +27,7 @@ export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 // Returning a File does not make an export read-only. These installed paths
 // Save unrelated dirty tabs (and schematic netlists can annotate parts first).
 // A post-export comparison is too late to authorize or undo that hidden Save.
-// Exact source chains and hashes: docs/api-coverage-review-2026-10-10.md.
+// Exact source chains and hashes: docs/history/2026-10-10-api-coverage-review.md.
 const unsafeExportReasons = new Map<string, string>([
   ["export.schematic.netlist", "The installed schematic netlist exporter can annotate designators/Unique IDs and invoke SaveAll; no read-only or no-repeat Save lifecycle is implemented."],
   ["export.schematic.bom", "The installed schematic BOM exporter invokes SaveAll before generating the file; a project-scoped file export cannot authorize saving unrelated dirty tabs."],

@@ -326,7 +326,7 @@ before(async () => {
         commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
         upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
         closureSha256:
-          "3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2",
+          "5f22ad229477ccb898ad6502cb47fd67d24171c9bededd330f118b527e4eb204",
         fileCount: 70,
         totalBytes: 856_665,
         derivative: REVIEWED_BRIDGE_SOURCE.derivative,

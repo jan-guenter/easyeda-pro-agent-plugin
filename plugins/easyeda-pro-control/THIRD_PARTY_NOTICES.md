@@ -24,7 +24,7 @@ The development and CI toolchain uses:
 - `@types/ws` 8.18.1 — MIT (`licenses/types-ws-MIT.txt`)
 - `Oxlint` 1.87.0 — MIT (`licenses/oxlint-MIT.txt`)
 - `oxlint-tsgolint` 7.0.2003 — MIT (`licenses/oxlint-tsgolint-MIT.txt`)
-- `Vitest` 4.1.11 — MIT (`licenses/vitest-MIT.txt`)
+- `Vitest` 4.1.12 — MIT (`licenses/vitest-MIT.txt`)
 
 The offline extension API catalog derives method/type metadata from the official
 `@jlceda/pro-api-types` declarations. Its pinned versions, SHA-256 digests and

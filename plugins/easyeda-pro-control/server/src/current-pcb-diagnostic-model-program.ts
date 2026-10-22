@@ -1,7 +1,7 @@
 /** Fixed, descriptor-only reads for the source-admitted PCB Save closure.
  * The original callback is inspected, never called. The scope object must come
  * from its retained V8 [[Scopes]], not a caller-created object or global alias.
- * See docs/current-pcb-model-observation-2026-10-20.md for the pinned source path.
+ * See docs/history/2026-10-20-current-pcb-model-observation.md for the pinned source path.
  */
 import { createHash } from "node:crypto";
 import { types } from "node:util";

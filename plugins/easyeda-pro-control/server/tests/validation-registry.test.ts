@@ -50,7 +50,7 @@ void test("adapter changes, including comments, require a deliberate historical 
     reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
     reviewedAt: "2026-10-12",
     scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
-    reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review",
+    reference: "docs/history/2026-10-12-api-coverage-220050-release.md#historical-wire-source-review",
   }]);
   assert.ok(record.sourceRevisionReviews.every((revision) => record.adapterBindings.some((binding) =>
     binding.path === revision.path && binding.sha256 === revision.historicalSha256)));

@@ -1,6 +1,6 @@
 /** Fixed populated-safe census of original PCB model roots and spatial indexes.
  * Dormant leaf: no transport, complete baseline, empty-root or writer authority.
- * Source and omissions: docs/current-pcb-root-membership-2026-10-20.md.
+ * Source and omissions: docs/history/2026-10-20-current-pcb-root-membership.md.
  */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
