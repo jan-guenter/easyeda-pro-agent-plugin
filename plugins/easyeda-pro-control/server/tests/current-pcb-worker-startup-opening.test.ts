@@ -60,7 +60,11 @@ function fixture(preflightRefused = false, openedWindow?: string): Readonly<{
         const refused = phase === "open-project" ? openedWindow === undefined : preflightRefused;
         return Promise.resolve(reply(phase, refused, phase === "open-project" ? openedWindow : undefined));
       }
-      calls.push(command.method); return Promise.resolve({});
+      calls.push(command.method);
+      if (command.method === "Target.getTargets") {
+        return Promise.resolve({ targetInfos: [{ targetId: "parent-target", type: "page", title: "EasyEDA", url: "https://client/editor", attached: true }] });
+      }
+      return Promise.resolve({});
     },
   });
   return { coordinator: new CurrentPcbWorkerStartupOpening({ dependency, opening }), calls, state };

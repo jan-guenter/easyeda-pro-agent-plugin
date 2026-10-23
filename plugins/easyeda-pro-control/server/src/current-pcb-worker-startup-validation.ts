@@ -23,9 +23,10 @@ export const currentPcbWorkerStartupCaptureRequestSchema = z.object({ action: z.
   acceptNormalOpenEffects: z.literal(true), acceptDebuggerPauseEffects: z.literal(true) }).strict();
 export const currentPcbWorkerStartupAssignmentsRequestSchema = z.object({ action: z.literal("observe-current-assignments"), ...bound }).strict();
 export const currentPcbWorkerStartupActorRequestSchema = z.object({ action: z.literal("observe-actor-clock"), ...bound }).strict();
+export const currentPcbWorkerStartupChannelRequestSchema = z.object({ action: z.literal("observe-current-channel"), ...bound }).strict();
 export const currentPcbWorkerStartupValidationRequestSchema = z.discriminatedUnion("action", [
   ...currentPcbWorkerStartupLifecycleRequestSchema.options, currentPcbWorkerStartupCaptureRequestSchema,
-  currentPcbWorkerStartupAssignmentsRequestSchema, currentPcbWorkerStartupActorRequestSchema,
+  currentPcbWorkerStartupAssignmentsRequestSchema, currentPcbWorkerStartupActorRequestSchema, currentPcbWorkerStartupChannelRequestSchema,
 ]);
 export type CurrentPcbWorkerStartupValidationRequest = z.infer<typeof currentPcbWorkerStartupValidationRequestSchema>;
 export function queryCurrentPcbWorkerStartupValidation(includeSchemas: boolean): Record<string, unknown> {
@@ -38,6 +39,7 @@ export function queryCurrentPcbWorkerStartupValidation(includeSchemas: boolean):
       "Existing-profile launch and opening may restore designs, migrate files, replay caches, use the network and automatically persist data. No profile isolation or zero-write claim is made.",
       "After the original capture result is published, observe-current-assignments consumes one journaled read of the four current PROJECT wrappers and their original constructor callbacks. It rechecks those same assignments before publication; the result is a point-in-time, non-atomic observation, not an execution token.",
       "After the assignment result is published, observe-actor-clock consumes one UI/worker/worker/UI bracket on those original owners. It compares the retained account values and local Date readings, not a PCB realm, Windows/server clock, backend actor, future Save or continuous publication interval.",
+      "After the assignment result is published, observe-current-channel independently consumes one bounded original-channel relation and publisher-method observation with paired gate samples. It does not call publisher methods or establish native channel peers, continuous ownership, contained destinations or queue completion; it does not require the actor stage.",
       "Constructor and current-assignment observations are not continuous channel/publisher ownership, destination containment, full startup completion, stable baseline, create/Save authority or saved-content proof. No writer or explicit Save is offered.",
       "Every stage is consumed once. Inspect retained outcomes after uncertainty; do not repeat capture-project. Original normal close, root/Job termination, helper release and exact record settlement remain separate. Historical records never recreate a native owner.",
     ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbWorkerStartupValidationRequestSchema) } : {}) };

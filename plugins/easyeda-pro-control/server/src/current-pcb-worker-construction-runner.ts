@@ -18,6 +18,10 @@ import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionE
   CurrentPcbWorkerConstructionSite, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
+import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
+import type { CurrentPcbWorkerStartupChannelObservationCommand,
+  CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
+import { CurrentPcbWorkerStartupChannelObservationRunner } from "./current-pcb-worker-startup-channel-observation-runner.ts";
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -125,6 +129,9 @@ export class CurrentPcbWorkerConstructionRunner {
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #actorSampleAttempts = 0;
   #actorSampleBusy = false;
+  #channelAttempted = false;
+  #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
+  #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
 
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     transportMembers(transport);
@@ -430,6 +437,56 @@ export class CurrentPcbWorkerConstructionRunner {
       await this.requireCurrentAssignments(packet, assignments); return raw;
     } catch (error) { this.#failed ??= fail("ACTOR_OBSERVATION_FAILED"); throw error; }
     finally { this.#actorSampleBusy = false; }
+  }
+  /** Original private handles are closed over here. The leaf only selects
+   * metadata handles returned by these fixed programs, never another PROJECT,
+   * worker bus, channel, callback, worker session or execution context. */
+  #channelRequest(original: Readonly<CurrentPcbWorkerConstructionIdentities>,
+    command: CurrentPcbWorkerStartupChannelObservationCommand): Promise<unknown> {
+    switch (command.phase) {
+      case "channel-relation": {
+        return this.#assignmentCall(original.project, CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS["channel-relation"].program,
+          [original.channelBus, original.channel, original.onmessage]);
+      }
+      case "gate-select": { return this.#assignmentCall(original.project, CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS["gate-select"].program, [], false); }
+      case "properties": {
+        return this.#request({ method: "Runtime.getProperties", params: { objectId: command.objectId, ownProperties: true, generatePreview: false } });
+      }
+      case "gates": { return this.#assignmentCall(original.project, CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS.gates.program, [command.bundle, command.scope]); }
+      default: { throw fail("CHANNEL_PHASE"); }
+    }
+  }
+  public retainedChannelObservation(): Readonly<Record<string, unknown>> | null {
+    return this.#channel === null ? null : Object.freeze({ status: this.#channel.status(), gateReplies: this.#channel.retainedGateReplies() });
+  }
+  /** Full wrapper association is checked on both sides of this consumed stage.
+   * Each internal await rechecks the same worker/source owner. Samples cannot
+   * establish continuous assignment, native peers or destination containment. */
+  public async observeCurrentChannel(packet: CurrentPcbWorkerConstructionPacket,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcbWorkerStartupChannelPacket> {
+    if (this.#channelAttempted || this.#projectIdentity === null) { throw fail("CHANNEL_CONSUMED"); }
+    this.#channelAttempted = true;
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      const original = await this.requireOriginal(packet);
+      const channel = new CurrentPcbWorkerStartupChannelObservationRunner(Object.freeze({ scriptId: this.#scriptId,
+        request: (command: CurrentPcbWorkerStartupChannelObservationCommand): Promise<unknown> => this.#channelRequest(original, command),
+        assertCurrent: (): Promise<void> => this.#current(),
+      }), this.#projectIdentity);
+      this.#channel = channel;
+      const observation = await channel.observe(); this.#channelPacket = observation;
+      await this.requireCurrentAssignments(packet, assignments); return observation;
+    } catch (error) { this.#failed ??= fail("CHANNEL_OBSERVATION_FAILED"); throw error; }
+  }
+  public async requireCurrentChannel(packet: CurrentPcbWorkerConstructionPacket,
+    assignments: CurrentPcbWorkerConstructionAssignments, channelPacket: CurrentPcbWorkerStartupChannelPacket): Promise<void> {
+    if (channelPacket !== this.#channelPacket || this.#channel === null) { throw fail("ORIGINAL_CHANNEL_PACKET"); }
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      const original = await this.requireOriginal(packet);
+      resultBoolean.parse(await this.#channelRequest(original, { phase: "channel-relation" }));
+      await this.#channel.requireOriginal(channelPacket); await this.#current();
+    } catch (error) { this.#failed ??= fail("CHANNEL_OBSERVATION_CHANGED"); throw error; }
   }
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }

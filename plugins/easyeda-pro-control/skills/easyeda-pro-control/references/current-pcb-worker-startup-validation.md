@@ -39,6 +39,10 @@ schema, then validate assembled requests with
    auto-attachment before opening and services constructor capture concurrently
    with the fixed project opener. Do not open the project manually or through
    another route first: that loses the original constructor observation.
+   The final pre-open target inventory also binds existing running workers.
+   Only matching, previously observed background workers may attach without
+   waiting. They are not selected, inspected, resumed or treated as qualified
+   project workers. A pre-existing project worker or changed inventory refuses.
 5. Inspect the returned data and retained records. The expected worker name is
    bound before capture; the retained PROJECT receiver must subsequently match
    the selected project, derived branch and original UI window. Full worker
@@ -49,11 +53,17 @@ schema, then validate assembled requests with
 6. After successful capture and publication, `observe-current-assignments`
    consumes one check of the four current PROJECT wrappers against the original
    constructor callbacks. After that result is published, `observe-actor-clock`
-   consumes a UI/worker/worker/UI bracket using the same original owners. Both
-   requests take only the operation ID and binding digest; do not supply actor,
+   consumes a UI/worker/worker/UI bracket using the same original owners.
+   Independently, `observe-current-channel` requires published assignments and
+   checks the constructor-captured channel and callback, eight source-qualified
+   publisher methods and two matching raw gate samples. It does not invoke
+   those methods. These requests take only the operation ID and binding digest;
+   do not supply actor,
    clock or object-handle values. These reads are sequential, not atomic or
    continuous. Matching user JSON and local Date samples do not prove a backend
-   actor, Windows/server time, queue completion or a future Save.
+   actor, Windows/server time, queue completion or a future Save. Channel
+   equality does not prove pristine native intrinsics, every peer/subscriber,
+   continuous ownership or containment of write destinations.
 7. Keep the same facade alive. `observe-window`, `normal-close`,
    `observe-termination` and `release-closed` use that original owner. Normal
    close requires the observed `hwnd` and `confirmNormalClose:true`. Do not
@@ -65,22 +75,24 @@ schema, then validate assembled requests with
 
 Every preparation/opening/capture stage is consumed once, including uncertain
 replies. Nested `inspect` remains local while another call is running. Look at
-`workerStartupOpeningState` (including its stage/step diagnostics),
+`workerStartupOpeningState` including its stage/step diagnostics and bounded
+transport summary. The summary counts existing workers and retains the first
+event-failure method/reason without exposing raw target data. Also inspect
 `workerStartupOpeningNativeReply`, retained opening result and record publication;
-never
-repeat `capture-project` to obtain a clearer response. `settle-records` publishes
+never repeat `capture-project` to obtain a clearer response. `settle-records` publishes
 only absent records from the same original in-memory bytes. It cannot rerun
 capture or replace conflicting evidence. Original unlaunched/no-process cleanup
 has the same strict retained-handle requirements as ordinary diagnostics.
 
-Assignment and actor attempts also remain consumed after failure or publication
-uncertainty. Inspect their retained-result and publication fields. The actor
-summary identifies its full managed result record; partial samples are diagnostic
+Assignment, actor and channel attempts also remain consumed after failure or
+publication uncertainty. Inspect their retained-result and publication fields.
+Actor and channel summaries identify their full managed result records;
+partial samples are diagnostic
 evidence only. A deadline does not prove that an outstanding call stopped. Do
 not start a second capture, extend a timeout ad hoc or treat an unpublished
 result as authority. Finish original-owner closure and retain the failed case.
 
-Different workers, extra children, changed source/context, unsupported navigation,
+Unrecognized workers, extra children, changed source/context, unsupported navigation,
 failed checkpoint reproof or expired capture refuse. Cleanup retains late
 attachment/breakpoint replies. Historical journals and matching PIDs cannot
 recreate the original owner after a restart. Do not borrow String-precreate or

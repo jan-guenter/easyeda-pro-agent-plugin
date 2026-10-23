@@ -10,13 +10,14 @@ import type { CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOpeningBind
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, decodeCurrentPcbDiagnosticOpeningReply } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import type { CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionProjectIdentity, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcbWorkerStartupActorRunner } from "./current-pcb-worker-startup-actor-runner.ts";
 import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
+import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 
 type Row = Record<string, unknown>;
 const recordSchema = z.record(z.string(), z.unknown());
@@ -97,6 +98,9 @@ export class CurrentPcbWorkerStartupOpening {
   #actorAttempted = false;
   #actor: CurrentPcbWorkerStartupActorRunner | null = null;
   #actorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
+  #channelAttempted = false;
+  #channelRunner: CurrentPcbWorkerConstructionRunner | null = null;
+  #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
   #stage: OpeningStage = "idle";
   #step: OpeningStep = "idle";
   #failure: CurrentPcbWorkerStartupOpeningDiagnostics["failure"] = null;
@@ -112,10 +116,11 @@ export class CurrentPcbWorkerStartupOpening {
   }
   public status(): Readonly<{ consumed: boolean; settled: boolean; openingAttempted: boolean;
     openingResultRetained: boolean; constructionRetained: boolean; completed: boolean;
+    transport: ReturnType<CurrentPcbWorkerStartupTransport["status"]>;
     diagnostics: CurrentPcbWorkerStartupOpeningDiagnostics; executionAuthorized: false }> {
     return Object.freeze({ consumed: this.#consumed, settled: this.#settled, openingAttempted: this.#openingAttempted,
       openingResultRetained: this.#openingResult !== null, constructionRetained: this.#construction !== null,
-      completed: this.#completed !== null,
+      completed: this.#completed !== null, transport: this.#transport.status(),
       diagnostics: Object.freeze({ stage: this.#stage, step: this.#step, failure: this.#failure }), executionAuthorized: false });
   }
   public retainedOpeningResult(): CurrentPcbDiagnosticOpeningResult | null { return this.#openingResult; }
@@ -143,12 +148,12 @@ export class CurrentPcbWorkerStartupOpening {
     const reply = recordSchema.parse(captureCurrentPcbStringClockReply(raw).value);
     await this.#current(); return reply;
   }
-  async #parent(finish = false): Promise<void> {
+  async #parent(finish = false): Promise<Row> {
     const targets = await this.#send({ method: "Target.getTargets", params: {} }, "browser-targets");
     const frames = await this.#send({ method: "Page.getFrameTree", params: {}, sessionId: this.#context().sessionId }, "parent-frames");
     this.#step = "parent-observation";
     if (finish) { this.#opening.finish(targets, frames); } else { this.#opening.observeParent(targets, frames); }
-    await this.#current();
+    await this.#current(); return targets;
   }
   async #ancillary(): Promise<void> {
     await this.#current(); const frameId = this.#opening.ancillaryFrame();
@@ -191,10 +196,11 @@ export class CurrentPcbWorkerStartupOpening {
       if (!preflight.ok || title === null) { throw fail("PREFLIGHT_REFUSED"); }
       this.#stage = "checkpoint-reverification"; this.#step = "checkpoint-reverification";
       await reverify(); await this.#current();
-      this.#stage = "parent-before-open"; await this.#parent();
+      this.#stage = "parent-before-open"; const targets = await this.#parent();
       this.#stage = "ancillary-before-open"; await this.#ancillary();
       this.#stage = "worker-auto-attach"; this.#step = "bind-project";
       this.#transport.bindExpectedProject({ projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId: title.windowTabId });
+      this.#transport.bindExistingWorkers(targets);
       const capture = this.#transport.capture(); this.#capture = capture; void observe(capture);
       this.#step = "worker-arming";
       await this.#transport.whenArmed(); await this.#current();
@@ -282,6 +288,32 @@ export class CurrentPcbWorkerStartupOpening {
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcbWorkerStartupActorPacket): Promise<void> {
     if (packet !== this.#actorPacket || this.#actor === null) { throw fail("ORIGINAL_ACTOR_PACKET"); }
     await this.requireCurrentAssignments(result, assignments); await this.#actor.requireOriginal(packet); await this.#current();
+  }
+  public retainedChannelObservation(): Readonly<Record<string, unknown>> | null {
+    return this.#channelRunner?.retainedChannelObservation() ?? null;
+  }
+  /** The construction owner closes over its original channel handles. Its full
+   * assignment checks bracket the stage; each internal await rechecks the same
+   * source-qualified worker without spending the channel budget on duplicate
+   * assignment reads. These samples grant no writer or persistence authority. */
+  public async observeCurrentChannel(result: CurrentPcbWorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcbWorkerStartupChannelPacket> {
+    if (this.#channelAttempted) { throw fail("CHANNEL_CONSUMED"); } this.#channelAttempted = true;
+    if (assignments !== this.#assignments || this.#assignments === null) { throw fail("ORIGINAL_ASSIGNMENTS"); }
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    this.#channelRunner = runner;
+    const packet = await runner.observeCurrentChannel(result.construction, assignments);
+    this.#channelPacket = packet; await this.#current(); return packet;
+  }
+  public async requireCurrentChannel(result: CurrentPcbWorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcbWorkerStartupChannelPacket): Promise<void> {
+    if (packet !== this.#channelPacket || this.#channelRunner === null || assignments !== this.#assignments ||
+        this.#assignments === null) { throw fail("ORIGINAL_CHANNEL_PACKET"); }
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    if (runner !== this.#channelRunner) { throw fail("ORIGINAL_CHANNEL_OWNER"); }
+    await runner.requireCurrentChannel(result.construction, assignments, packet); await this.#current();
   }
   public async releaseAfterTermination(): Promise<void> {
     if (!this.#settled || this.#released || this.#releasing) { throw fail("RELEASE_STATE"); }

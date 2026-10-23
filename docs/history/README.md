@@ -299,3 +299,4 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-23 worker-startup integration plan](2026-10-23-worker-startup-integration-plan.md) | New plan; native-owner wiring remains pending |
 | [2026-10-23 worker-startup owner](2026-10-23-worker-startup-owner.md) | Combined native owner, channel and checkpoint-opening integration |
 | [2026-10-23 startup assignment batch](2026-10-23-startup-assignment-batch.md) | Assignment/actor stages, opening diagnostics and active lease proof |
+| [2026-10-23 startup containment batch](2026-10-23-startup-containment-batch.md) | Original-channel observations, existing-worker attachment handling and retained diagnostics |

@@ -2464,7 +2464,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
     readonly assignments: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupAssignments"];
-    readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"]; readonly assertLocal: () => void } | undefined;
+    readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"];
+    readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"]; readonly assertLocal: () => void } | undefined;
   const runStartup = (request: CurrentPcbWorkerStartupValidationRequest): Promise<{ result: Record<string, unknown> }> => {
     if (startupOriginal === undefined) {
       const environment = process.env;
@@ -2476,7 +2477,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
         disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
         ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
-          "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor", "hasActiveReservation"]
+          "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
+          "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation"]
           .map(key => disposableOwnerMethod(CurrentPcbWorkerStartupLifecycle.prototype, key))];
       const capturedMethods = methodIdentities();
       const assertLocal = (): void => {
@@ -2490,7 +2492,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run ||
               startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture ||
               startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments ||
-              startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
+              startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor ||
+              startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
       };
       const assertUnreserved = (): void => {
         assertLocal();
@@ -2512,7 +2515,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       // oxlint-disable-next-line typescript/unbound-method -- Retain exact methods; dispatch always uses their original receiver.
       startupOriginal = { owner, run: owner.run, capture: owner.captureWorkerStartup,
         // oxlint-disable-next-line typescript/unbound-method -- These fixed stage methods are invoked with the same retained owner.
-        assignments: owner.observeWorkerStartupAssignments, actor: owner.observeWorkerStartupActor, assertLocal };
+        assignments: owner.observeWorkerStartupAssignments, actor: owner.observeWorkerStartupActor,
+        // oxlint-disable-next-line typescript/unbound-method -- Preserve the original channel method for receiver-bound dispatch and later substitution checks.
+        channel: owner.observeWorkerStartupChannel, assertLocal };
     }
     const retained = startupOriginal; retained.assertLocal();
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
@@ -2525,6 +2530,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         result = await retained.assignments.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-actor-clock") {
         result = await retained.actor.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "observe-current-channel") {
+        result = await retained.channel.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else { result = await retained.run.call(retained.owner, request); }
       retained.assertLocal(); return { result };
     };
@@ -2532,7 +2539,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   };
   server.registerTool("easyeda_control_pcb_diagnostic_validation", {
     title: "Validate a contained native EasyEDA diagnostic session",
-    description: "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. These are point-in-time, non-atomic observations, not clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
+    description: "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. The independent observe-current-channel stage checks original channel relations, fixed publisher-method associations and paired gates after published assignments. These are point-in-time, non-atomic observations, not native peer ownership, contained destinations, clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   }, guarded((input: z.infer<typeof inputSchema>) => {

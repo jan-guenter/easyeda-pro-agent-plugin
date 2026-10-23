@@ -56,8 +56,8 @@ import { CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-cha
 import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 
-const HELPER_SHA256 = "aa88123f3835a79c32d149126dce1b5d5b441b6f23c1770a72d4484f094f3e83";
-const HELPER_BYTES = 785_985;
+const HELPER_SHA256 = "90d86d38b1c0c876ae6180523ae5d21924aa81d0ba85cd76f9d371876af1601a";
+const HELPER_BYTES = 818_600;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;

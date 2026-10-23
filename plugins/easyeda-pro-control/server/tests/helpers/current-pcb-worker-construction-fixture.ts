@@ -1,6 +1,7 @@
 /** Inert reviewed constructor/factory excerpts from the pinned project worker.
  * Synthetic dependencies never invoke their retained callbacks or do I/O.
  * This is not full vendor execution, native channel qualification or admission. */
+import { currentPcbStringWorkerGateSources } from "./current-pcb-string-worker-gate-fixture.ts";
 /* oxlint-disable eslint/no-template-curly-in-string -- Literal vendor source, including nested template placeholders, must retain its exact bytes. */
 export const WORKER_CONSTRUCTION_EXCERPTS = {
   "channel": "constructor(e,t=crypto.randomUUID()){super(t),this.bc=new BroadcastChannel(e),this.bc.onmessage=s=>{this.onMessage(s.data)}}",
@@ -14,13 +15,14 @@ export const WORKER_CONSTRUCTION_EXCERPTS = {
 /* oxlint-enable eslint/no-template-curly-in-string */
 export const WORKER_CONSTRUCTION_NEWLINES = [24_758,238_150,238_261,239_411,246_854,246_940,264_508,264_699,267_358,291_865,292_033,292_165,293_484,294_116,294_366,294_511,294_630,308_328,368_020,627_783,636_749,646_218,646_219,646_499,646_794,646_870,646_891,647_137,647_148,647_174,647_199,647_232,647_297,647_455,647_498,647_574,647_595,647_841,647_852,648_017,648_060,648_136,648_157,648_400,648_411,649_016,652_449,656_075,660_229,660_275,660_351,660_372,660_519,660_565,660_641,660_662,662_494,665_206,665_252,665_328,665_349,669_585,672_965,673_215,673_353,673_497,673_650,673_797,673_953,682_174,682_233,682_473,682_519,682_918,683_106,683_146,685_709,809_025,859_654,957_707,958_857,966_300,966_386,976_964,988_936,1_048_628,1_304_362,1_313_127,1_313_170,1_313_246,1_313_267,1_313_510,1_313_521,1_314_758,1_318_295,1_318_341,1_318_417,1_318_438,1_318_975,1_321_687,1_321_733,1_321_809,1_321_830,1_489_643,1_489_782,1_628_459,1_701_494,1_701_495,1_847_288,2_014_185,2_177_130] as const;
 
-export function workerConstructionFixtureSource(): string {
+export function workerConstructionFixtureSource(publisherMethods = false): string {
   const source = Array.from({ length: 2_177_180 }, () => " ");
   const put = (offset: number, text: string): void => {
     for (let index = 0; index < text.length; index += 1) { source[offset + index] = text.charAt(index); }
   };
   for (const offset of WORKER_CONSTRUCTION_NEWLINES) { source[offset] = "\n"; }
-  put(0, "(function(){var self=globalThis;var crypto={randomUUID:()=>\"synthetic-sender\"};var KP=class{constructor(t){this.uuid=t}};var BroadcastChannel=class{constructor(name){this.name=name}};var ja=class{constructor(){this.orderTree={orderChange(){}}}setCacheData(){}onHeadChange(){}onChange(){}};var Pg=class{},Cg=Pg,bg=Pg,Dg=Pg,vg=Pg,Og=Pg,Sg=Pg,wg=Pg,Eg=Pg,_g=Pg,Tg=Pg,Ag=Pg,xg=Pg,Ig=Pg;function EP(){globalThis.CONSTRUCTION_COMPLETE=true;}");
+  const prelude = "(function(){var self=globalThis;var crypto={randomUUID:()=>\"synthetic-sender\"};var KP=class{constructor(t){this.uuid=t}};var BroadcastChannel=class{constructor(name){this.name=name}};var ja=class{constructor(){this.orderTree={orderChange(){}}}setCacheData(){}onHeadChange(){}onChange(){}};var Pg=class{},Cg=Pg,bg=Pg,Dg=Pg,vg=Pg,Og=Pg,Sg=Pg,wg=Pg,Eg=Pg,_g=Pg,Tg=Pg,Ag=Pg,xg=Pg,Ig=Pg;function EP(){globalThis.CONSTRUCTION_COMPLETE=true;}";
+  put(0, publisherMethods ? prelude.replace("var KP=class{constructor(t){this.uuid=t}};", "var jr=false;var Mb=class{};var KP;") : prelude);
   put(11_665, "var JP=class extends KP{"); put(11_689, WORKER_CONSTRUCTION_EXCERPTS.channel); put(11_813, "onMessage(){} };");
   put(1_847_033, WORKER_CONSTRUCTION_EXCERPTS.serial);
   put(1_856_028, WORKER_CONSTRUCTION_EXCERPTS.cooperation);
@@ -30,6 +32,16 @@ export function workerConstructionFixtureSource(): string {
   put(2_103_240, "var Lg=class extends Gd{"); put(2_103_264, WORKER_CONSTRUCTION_EXCERPTS.project); put(2_107_636, "};");
   put(2_177_000, "var Hj=new JP(\"synthetic-channel\",\"synthetic-sender\");var TP=new Lg({},Hj);");
   put(2_177_102, "self.PROJECT=TP;EP(TP);"); put(2_177_150, "})();");
+  if (publisherMethods) {
+    // Optional inert exact-source methods for the composed startup collector.
+    // Neither their bodies nor any real BroadcastChannel implementation runs.
+    const methods = currentPcbStringWorkerGateSources;
+    put(8000, "KP=class extends Mb{constructor(t){super();this.uuid=t}");
+    put(9842, methods.publish); put(10_418, methods.received); put(10_687, "};");
+    put(11_813, methods.message); put(12_230, methods.broadcast); put(12_638, methods.post); put(12_717, "};");
+    put(2_012_635, methods.format); put(2_012_676, "set isV2Format(value){this._isV2Format=value}"); put(2_013_215, methods.readOnly);
+    put(2_107_636, "  "); put(2_108_520, methods.canPublish); put(2_108_598, "};");
+  }
   return source.join("");
 }
 

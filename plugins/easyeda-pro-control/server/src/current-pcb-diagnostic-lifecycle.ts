@@ -34,6 +34,7 @@ import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-
 import type { CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
+import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupCaptureRequestSchema,
   currentPcbWorkerStartupLifecycleIdSchema, currentPcbWorkerStartupLifecycleRequestSchema } from "./current-pcb-worker-startup-validation.ts";
 
@@ -46,7 +47,8 @@ const launchPurposeFields = {
 } as const;
 const startupCaptureInputSchema = currentPcbWorkerStartupCaptureRequestSchema.omit({ action: true, operationId: true, expectedBindingSha256: true });
 const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requireOriginal", "proveCurrentAssignments", "requireCurrentAssignments",
-  "retainedActorObservation", "observeActorClock", "requireActorClock", "releaseAfterTermination"] as const;
+  "retainedActorObservation", "observeActorClock", "requireActorClock", "retainedChannelObservation", "observeCurrentChannel", "requireCurrentChannel",
+  "releaseAfterTermination"] as const;
 export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof startupOpeningMethods)[number]>;
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
 type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" }>;
@@ -136,6 +138,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupAssignmentsResultPublished: records?.["worker-startup-assignments-result.json"] !== undefined,
     workerStartupActorAttemptConsumed: records?.["worker-startup-actor-intent.json"] !== undefined,
     workerStartupActorResultPublished: records?.["worker-startup-actor-result.json"] !== undefined,
+    workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
+    workerStartupChannelResultPublished: records?.["worker-startup-channel-result.json"] !== undefined,
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
     ...claims };
 }
@@ -162,6 +166,16 @@ function publicStartupActorResult(operationId: string,
   return { schema: "easyeda-pro-control.pcb-worker-startup-actor-summary.v1", ...summary,
     summaryOnly: true, pointInTimeObservation: true, sampleCount: samples.length, workerUserTextSha256: sha256Text(workerUserText),
     record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "worker-startup-actor-result.json"),
+      published, sha256: sha256Json(record), bytes: Buffer.byteLength(canonicalJson(record)) } };
+}
+function publicStartupChannelResult(operationId: string,
+  record: DiagnosticLifecycleRecords["worker-startup-channel-result.json"], published: boolean): Readonly<Record<string, unknown>> | null {
+  if (record === undefined) { return null; }
+  const { gateReplies, ...summary } = record.result;
+  return { schema: "easyeda-pro-control.pcb-worker-startup-channel-summary.v1", ...summary,
+    summaryOnly: true, pointInTimeObservation: true, sampleCount: gateReplies.length,
+    gateReplySha256: gateReplies.map(reply => sha256Text(reply)),
+    record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "worker-startup-channel-result.json"),
       published, sha256: sha256Json(record), bytes: Buffer.byteLength(canonicalJson(record)) } };
 }
 
@@ -207,6 +221,8 @@ class CurrentPcbLifecycleCore {
   #startupAssignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #startupActorAttempted = false;
   #startupActorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
+  #startupChannelAttempted = false;
+  #startupChannelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies,
@@ -280,6 +296,10 @@ class CurrentPcbLifecycleCore {
       const actorPublished = operation?.records["worker-startup-actor-result.json"];
       const actorRecord = actorPending === undefined ? actorPublished :
         diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse(JSON.parse(actorPending) as unknown);
+      const channelPending = original ? this.#pending.get("worker-startup-channel-result.json") : undefined;
+      const channelPublished = operation?.records["worker-startup-channel-result.json"];
+      const channelRecord = channelPending === undefined ? channelPublished :
+        diagnosticLifecycleRecordSchemas["worker-startup-channel-result.json"].parse(JSON.parse(channelPending) as unknown);
       let openingState = openingConsumed ? "opening-unknown" : "not-attempted";
       if (openingResult !== undefined) {
         openingState = openingResult["ok"] === true && openingResult["status"] === "opened-prefix-observed" ? "opened-prefix-observed" : "refused";
@@ -304,6 +324,11 @@ class CurrentPcbLifecycleCore {
         workerStartupActorObservation: original && this.#startupOpening !== null ?
           this.#startupOpening.methods.retainedActorObservation.call(this.#startupOpening.owner) : null,
         workerStartupActorResult: publicStartupActorResult(request.operationId, actorRecord, actorPublished !== undefined),
+        workerStartupChannelAttemptConsumed: operation?.records["worker-startup-channel-intent.json"] !== undefined || original && this.#startupChannelAttempted,
+        workerStartupChannelResultRetained: original && this.#startupChannelPacket !== null,
+        workerStartupChannelObservation: original && this.#startupOpening !== null ?
+          this.#startupOpening.methods.retainedChannelObservation.call(this.#startupOpening.owner) : null,
+        workerStartupChannelResult: publicStartupChannelResult(request.operationId, channelRecord, channelPublished !== undefined),
         projectOpeningAttemptConsumed: openingConsumed,
         projectOpeningResultRetained: original && this.#openingResult !== null,
         projectOpeningState: openingState,
@@ -457,7 +482,9 @@ class CurrentPcbLifecycleCore {
       const captured = Object.freeze({ open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
         requireOriginal: owner.requireOriginal, proveCurrentAssignments: owner.proveCurrentAssignments,
         requireCurrentAssignments: owner.requireCurrentAssignments, retainedActorObservation: owner.retainedActorObservation,
-        observeActorClock: owner.observeActorClock, requireActorClock: owner.requireActorClock, releaseAfterTermination: owner.releaseAfterTermination });
+        observeActorClock: owner.observeActorClock, requireActorClock: owner.requireActorClock,
+        retainedChannelObservation: owner.retainedChannelObservation, observeCurrentChannel: owner.observeCurrentChannel,
+        requireCurrentChannel: owner.requireCurrentChannel, releaseAfterTermination: owner.releaseAfterTermination });
       this.#startupOpening = Object.freeze({ owner, methods: captured }); this.#assertOwner(retained);
       let reverified = false, reverifyAttempted = false;
       const result = await captured.open.call(owner, sealedTarget, async () => {
@@ -632,6 +659,53 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected); this.#assertOwner(retained);
       await this.#publish(operationId, "worker-startup-actor-result.json", result);
       const completed = { ...updated, records: { ...updated.records, "worker-startup-actor-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
+        validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+
+  protected async observeStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const openingRecord = operation?.records["worker-startup-opening-result.json"], record = operation?.records["worker-startup-assignments-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined && record !== undefined &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupChannelAttempted && operation.records["worker-startup-channel-intent.json"] === undefined, "WORKER_STARTUP_CHANNEL_CONSUMED");
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-channel-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb-worker-startup-channel-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, assignmentsResultSha256: sha256Json(record),
+      };
+      this.#startupChannelAttempted = true;
+      await this.#record(operationId, "worker-startup-channel-intent.json", intent);
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-channel-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const packet = await original.methods.observeCurrentChannel.call(original.owner, openingResult, assignments);
+      this.#startupChannelPacket = packet; this.#assertOwner(retained);
+      await original.methods.requireCurrentChannel.call(original.owner, openingResult, assignments, packet); this.#assertOwner(retained);
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-channel-result.json"].parse({
+        schema: "easyeda-pro-control.pcb-worker-startup-channel-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: structuredClone(packet), pointInTimeObservation: true,
+        executionAuthorized: false, saveAuthorized: false,
+      });
+      requireValue(canonicalJson(result.result.identity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_CHANNEL_IDENTITY");
+      this.#retainRecord("worker-startup-channel-result.json", result);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await this.#publish(operationId, "worker-startup-channel-result.json", result);
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-channel-result.json": result } };
       await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
       return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
         validationOnly: true, executionAuthorized: false, saveAuthorized: false };
@@ -1374,5 +1448,8 @@ export class CurrentPcbWorkerStartupLifecycle extends CurrentPcbLifecycleCore {
   }
   public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupActor(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupChannel(operationId, expectedBindingSha256);
   }
 }

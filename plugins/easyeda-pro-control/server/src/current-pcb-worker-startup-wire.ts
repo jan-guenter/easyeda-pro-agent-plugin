@@ -12,6 +12,8 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION } from "./current-pcb-worker-startup-actor.ts";
+// oxlint-disable-next-line import/max-dependencies -- The native boundary must compare all fixed startup programs with their original contract literals in one encoder.
+import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT = 256;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -137,7 +139,13 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
       }
       const assignment = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
-      if (assignment === undefined) {
+      const channel = Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)
+        .find(([, value]) => value.program === parsed.params.functionDeclaration);
+      if (channel !== undefined) {
+        const [phase, expected] = channel;
+        if (parsed.params.arguments.length !== expected.arguments || parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
+        fields = { startupPhase: `channel-${phase}`, objectId: parsed.params.objectId };
+      } else if (assignment === undefined) {
         if (parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_SAME && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT &&
             parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION ||
             parsed.params.arguments.length !== 1 || !parsed.params.returnByValue) { return fail(); }
